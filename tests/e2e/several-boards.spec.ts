@@ -26,8 +26,9 @@ async function createBoard(page: Page, name: string, emoji: string): Promise<str
 test('a Member creates a Board from the switcher, switches between Boards, and the app reopens the last one', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await signIn(page, ALLOWLISTED[9])
-  await gotoHydrated(page, '/')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🍳 Meine Küche')
+  const home = await createBoard(page, 'Daheim', '🌱')
+  await gotoHydrated(page, `/b/${home}`)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
 
   await switcher(page).click()
   await boardList(page).getByRole('button', { name: 'Neues Board' }).click()
@@ -42,13 +43,13 @@ test('a Member creates a Board from the switcher, switches between Boards, and t
   await switcher(page).click()
   const links = boardList(page).getByRole('link')
   await expect(links.filter({ hasText: 'Kochclub' })).toHaveAttribute('aria-current', 'page')
-  await links.filter({ hasText: 'Meine Küche' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🍳 Meine Küche')
+  await links.filter({ hasText: 'Daheim' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
   await expect(boardList(page)).toHaveCount(0)
 
   // A new visit opens the Board used last.
   await gotoHydrated(page, '/')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🍳 Meine Küche')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
 })
 
 test('a Dish moved to another Board from its detail leaves this one and keeps its Cooking History', async ({ page }) => {

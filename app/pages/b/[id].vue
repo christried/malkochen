@@ -511,6 +511,9 @@ async function deleteFromMenu() {
             ><path d="M15 6l-6 6 6 6" /></svg>
             {{ t.dish.back }}
           </button>
+          <p class="px-1 text-overline uppercase text-text-muted">
+            {{ t.dish.moveTo }}
+          </p>
           <MoveTargetPicker
             v-if="menuColumnId"
             :board="board"

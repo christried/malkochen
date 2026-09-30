@@ -37,7 +37,7 @@ async function createBoard(caller: Caller, name: string, emoji: string): Promise
   return (await caller.fetch(`/api/boards/${id}`)).json()
 }
 
-test('a new Board gets the default Columns and its creator as Owner', async () => {
+test('a new Board gets the default Columns and whoever creates it as Owner', async () => {
   const annie = await signIn(ALLOWLISTED[9])
   await landingBoard(annie)
 

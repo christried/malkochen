@@ -6,7 +6,7 @@ import type { ColumnView } from '~~/server/utils/columns'
 // first, then each of the user's other Boards with its Columns. Picking one
 // emits `move` with the Column and, for another Board, that Board. The other
 // Boards are fetched when it shows; until they arrive, this Board's Columns
-// are there already.
+// are there already. The sheet around it gives the heading.
 const props = defineProps<{
   board: { id: string, columns: ColumnView[] }
   fromColumnId: string
@@ -14,56 +14,55 @@ const props = defineProps<{
 defineEmits<{ move: [columnId: string, toBoard: BoardListing | null] }>()
 const t = useStrings()
 
-const others = ref<BoardListing[]>([])
+const otherBoards = ref<BoardListing[]>([])
 onMounted(async () => {
   const boards = await $fetch<BoardListing[]>('/api/boards').catch(() => [])
-  others.value = boards.filter(b => b.id !== props.board.id)
+  otherBoards.value = boards.filter(b => b.id !== props.board.id)
 })
 
-const here = computed(() => props.board.columns
-  .map((column, index) => ({ column, accent: columnAccent(index) }))
-  .filter(({ column }) => column.id !== props.fromColumnId))
+// One group per Board, each Column with its accent. This Board's group is
+// named only once there are others to tell it from.
+const groups = computed(() => [
+  {
+    id: props.board.id,
+    label: otherBoards.value.length ? t.dish.thisBoard : null,
+    toBoard: null,
+    columns: props.board.columns.map((column, index) => ({ column, accent: columnAccent(index) })).filter(({ column }) => column.id !== props.fromColumnId),
+  },
+  ...otherBoards.value.map(other => ({
+    id: other.id,
+    label: `${other.emoji} ${other.name}`,
+    toBoard: other,
+    columns: other.columns.map((column, index) => ({ column, accent: columnAccent(index) })),
+  })),
+])
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
-    <p class="px-1 text-overline uppercase text-text-muted">
-      {{ others.length ? t.dish.thisBoard : t.dish.moveTo }}
-    </p>
-    <button
-      v-for="{ column, accent } in here"
-      :key="column.id"
-      type="button"
-      class="flex items-center gap-3 rounded-field bg-surface-muted px-5 py-3.5 text-left text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-      @click="$emit('move', column.id, null)"
-    >
-      <span
-        aria-hidden="true"
-        class="h-3 w-3 shrink-0 rounded-full"
-        :style="{ background: accent }"
-      />
-      {{ column.name }}
-    </button>
+  <div class="flex flex-col gap-5">
     <section
-      v-for="other in others"
-      :key="other.id"
-      class="mt-3 flex flex-col gap-2"
-      :aria-label="other.name"
+      v-for="group in groups"
+      :key="group.id"
+      class="flex flex-col gap-2"
+      :aria-label="group.toBoard?.name"
     >
-      <p class="px-1 text-overline uppercase text-text-muted">
-        <span aria-hidden="true">{{ other.emoji }}</span> {{ other.name }}
+      <p
+        v-if="group.label"
+        class="px-1 text-overline uppercase text-text-muted"
+      >
+        {{ group.label }}
       </p>
       <button
-        v-for="(column, index) in other.columns"
+        v-for="{ column, accent } in group.columns"
         :key="column.id"
         type="button"
         class="flex items-center gap-3 rounded-field bg-surface-muted px-5 py-3.5 text-left text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-        @click="$emit('move', column.id, other)"
+        @click="$emit('move', column.id, group.toBoard)"
       >
         <span
           aria-hidden="true"
           class="h-3 w-3 shrink-0 rounded-full"
-          :style="{ background: columnAccent(index) }"
+          :style="{ background: accent }"
         />
         {{ column.name }}
       </button>

@@ -60,6 +60,7 @@ function newBoard() {
         ref="pill"
         type="button"
         class="pill flex items-center gap-2 rounded-pill py-1 pl-1 pr-2 text-left transition-transform duration-tap ease-tap active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
+        :aria-label="t.boards.switcher(board.name)"
         :aria-expanded="open"
         :aria-controls="panelId"
         @click="toggle"
