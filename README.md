@@ -80,8 +80,14 @@ pnpm db:migrate    # applies pending migrations to DATABASE_URL
 ```
 
 `db:migrate` uses the same neon-http driver as the app for Neon URLs (not
-`drizzle-kit migrate`, whose WebSocket transport fails in plain Node). To
-migrate a deployed database, run it with that environment's `DATABASE_URL`.
+`drizzle-kit migrate`, whose WebSocket transport fails in plain Node).
+
+Deployed databases migrate themselves: `vercel.json` makes every Vercel build
+run `pnpm db:migrate` before `pnpm build`, against that environment's
+`DATABASE_URL` (production builds migrate production, previews the preview
+database). A failing migration fails the build, so the old deployment stays
+live. Keep migrations additive, since the previous deployment keeps running
+on the migrated schema until the new one is promoted.
 
 ## Design tokens, theme, motion and text
 
