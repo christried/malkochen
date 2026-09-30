@@ -39,7 +39,12 @@ function act(action: ToastAction) {
         :class="toast.actions?.length ? 'pr-2' : 'pr-5'"
         data-toast
       >
-        <p class="min-w-0">
+        <!-- Beside two actions (the Gekocht toast) there's only room for a
+             short text, kept on one line. -->
+        <p
+          class="min-w-0"
+          :class="{ 'shrink-0 whitespace-nowrap': (toast.actions?.length ?? 0) > 1 }"
+        >
           {{ toast.text }}
         </p>
         <button

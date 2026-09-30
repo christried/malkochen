@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import type { BoardView } from '~~/server/utils/boards'
+import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import { dishOnBoard } from '~~/shared/board'
 
@@ -37,7 +38,9 @@ function showColumn(index: number) {
 const columnsEl = useTemplateRef<HTMLElement>('columns')
 const tabBar = useTemplateRef<ComponentPublicInstance>('tabBar')
 
-// One Toast at a time: notices, and "Rückgängig" after deleting a Dish.
+// One Toast at a time: notices, "Rückgängig" after deleting a Dish or a
+// Cooking, and the Gekocht toast. While the Dish detail is open, it shows
+// the Toast itself (the Board behind it is inert).
 const toast = ref<Toast | null>(null)
 function showToast(shown: Toast) {
   toast.value = shown
@@ -46,8 +49,42 @@ function showNotice(text: string) {
   showToast({ text, duration: NOTICE_MS })
 }
 
+// The Cooking note sheet, from the Gekocht toast or the Cooking History.
+const noting = ref<{ dish: DishView, cooking: CookingView } | null>(null)
+const notingCooking = computed({
+  get: () => noting.value?.cooking ?? null,
+  set: (cooking) => {
+    if (!cooking) noting.value = null
+  },
+})
+function addNote(dish: DishView, cooking: CookingView) {
+  noting.value = { dish, cooking }
+}
+
 const { deleteDish, focusCard } = useDishDelete(board, showToast)
-const { moveDish, dropDish } = useDishMove(board, showToast)
+const { moveDish, dropDish, cookDish } = useDishMove(board, showToast, addNote)
+const { deleteCooking } = useCookingHistory(showToast)
+
+// "Gekocht ✓" on a card: it leaves for the Gekocht Column (or stays, if it
+// is there), and focus goes to what took its place.
+async function cookFromCard(dishId: string) {
+  const focusId = cookDish(dishId)
+  await nextTick()
+  if (focusId) document.getElementById(focusId)?.focus()
+}
+
+// The Dish detail's cooking actions, for the Dish it shows.
+function detailDish(dishId: string) {
+  return board.value && dishOnBoard(board.value, dishId)?.dish
+}
+function noteFromDetail(dishId: string, cooking: CookingView) {
+  const dish = detailDish(dishId)
+  if (dish) addNote(dish, cooking)
+}
+function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
+  const dish = detailDish(dishId)
+  if (dish) deleteCooking(dish, cooking)
+}
 
 // A Dish dropped into a Column tab makes the tab squash and burst.
 const landing = ref<{ columnId: string, n: number } | null>(null)
@@ -296,6 +333,16 @@ async function deleteFromMenu() {
                     r="2"
                   /></svg>
                 </button>
+                <button
+                  type="button"
+                  class="absolute bottom-2.5 right-2.5 rounded-pill px-3.5 py-2 text-button transition duration-tap ease-tap active:scale-[.94] focus-visible:outline-2 focus-visible:outline-focus"
+                  :class="dish.cookings.length ? 'bg-sage text-sage-ink' : 'bg-surface-muted text-text'"
+                  :aria-label="t.dish.cookLabel(dish.title)"
+                  data-cook
+                  @click="cookFromCard(dish.id)"
+                >
+                  {{ t.dish.cook }}
+                </button>
               </template>
             </li>
           </TransitionGroup>
@@ -347,7 +394,15 @@ async function deleteFromMenu() {
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
 
-    <AppToast v-model="toast" />
+    <AppToast
+      v-if="!route.params.dishId"
+      v-model="toast"
+    />
+
+    <CookingNoteSheet
+      v-model:cooking="notingCooking"
+      :dish-title="noting?.dish.title ?? ''"
+    />
 
     <AddDishSheet
       v-model:open="adding"
@@ -417,9 +472,13 @@ async function deleteFromMenu() {
     </AppSheet>
 
     <NuxtPage
+      v-model:toast="toast"
       :board="board"
       @edited="onEdited"
       @delete="deleteDish"
+      @cook="cookDish"
+      @note="noteFromDetail"
+      @delete-cooking="deleteCookingFromDetail"
     />
   </main>
 </template>

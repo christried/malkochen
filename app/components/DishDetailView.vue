@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import type { BoardSummary } from '~~/server/utils/boards'
+import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 
 // The Dish detail's contents: a large image, the title and note, the Source
 // with "Original öffnen", where the Dish is (Board and Column), who added it
-// and when, its Cooking History (a placeholder until #12), and "Löschen".
+// and when, its Cooking History with "Gekocht ✓", and "Löschen".
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
-defineEmits<{ close: [], edit: [], delete: [] }>()
+defineEmits<{
+  close: []
+  edit: []
+  delete: []
+  cook: []
+  note: [cooking: CookingView]
+  deleteCooking: [cooking: CookingView]
+}>()
 const t = useStrings()
 
 const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, new Date(props.dish.createdAt)))
@@ -94,18 +102,12 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
         <span>{{ added }}</span>
       </p>
 
-      <!-- The Cooking History arrives with #12. -->
-      <section
-        :aria-label="t.detail.cookingHistory"
-        class="mt-2 flex flex-col gap-2 border-t border-line pt-5"
-      >
-        <h2 class="font-display text-title-s">
-          {{ t.detail.cookingHistory }}
-        </h2>
-        <p class="text-small text-text-muted">
-          {{ t.detail.cookingHistoryEmpty }}
-        </p>
-      </section>
+      <CookingHistory
+        :dish="dish"
+        @cook="$emit('cook')"
+        @note="cooking => $emit('note', cooking)"
+        @delete="cooking => $emit('deleteCooking', cooking)"
+      />
 
       <DangerButton
         class="mt-auto self-start"

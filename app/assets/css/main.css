@@ -22,6 +22,11 @@ html {
   --dur-drop-collapse: 400ms;
   --dur-drop-burst: 620ms;
 }
+/* Deleting a Cooking History entry (handoff components.json:
+   CookingHistoryEntry): it slides away and collapses. */
+:root {
+  --dur-entry-collapse: 280ms;
+}
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-drop-settle: 0ms;
@@ -29,6 +34,7 @@ html {
     --dur-drop-shrink: 0ms;
     --dur-drop-collapse: 0ms;
     --dur-drop-burst: 0ms;
+    --dur-entry-collapse: 0ms;
   }
 }
 
