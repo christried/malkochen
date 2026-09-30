@@ -1,0 +1,193 @@
+{
+  "canvas": "viewBox 120x120, composition in centred safe square; ground tint (p0) fills any crop",
+  "mixSpace": "oklch",
+  "tokens": {
+    "p0": "mix(hue 18%, surfaceVariant)",
+    "p1": "mix(hue 34%, surfaceVariant)",
+    "p2": "mix(hue 58%, surfaceVariant)",
+    "p3": "mix(hue 82%, onSurface 18%)",
+    "a1": "mix(accent 62%, surfaceVariant)",
+    "a2": "mix(accent 85%, onSurface 15%)",
+    "cream": "mix(#FFF4DE 80%, surfaceVariant)",
+    "herb": "mix(#8DB596 74%, surfaceVariant)",
+    "herbDeep": "mix(#5E8F6A 85%, onSurface 15%)",
+    "cocoa": "mix(#6B4A34 85%, surfaceVariant)",
+    "wood": "mix(#D9A86C 76%, surfaceVariant)"
+  },
+  "hues": {
+    "butter": "#F7B94A",
+    "orchid": "#DE8CF2",
+    "sage": "#A5C7AE",
+    "carrot": "#F08A5D",
+    "sky": "#A8BEE3"
+  },
+  "rules": {
+    "still": "frame 0 of the loop (SVGs are exported at frame 0)",
+    "play": {
+      "continuous": [
+        "long-press",
+        "Dish detail",
+        "picker selection"
+      ],
+      "once": [
+        "first appearance on the Board",
+        "scroll stops: the card nearest the centre plays one loop"
+      ]
+    },
+    "reducedMotion": "never play",
+    "colourChoice": "applies to this Dish only; Auto = dish hue",
+    "autoPick": "match title keywords first, then URL path words; fallback bowl",
+    "darkMode": "same formulas, theme surface + ink swap"
+  },
+  "dishes": {
+    "pasta": {
+      "hue": "butter",
+      "accent": "carrot",
+      "animatedGroups": "fork",
+      "properties": "translateY −10 · rotate −10°",
+      "duration": "3.0s",
+      "easing": "easeInOut",
+      "keys": "0 / 50 / 100%"
+    },
+    "ramen": {
+      "hue": "sky",
+      "accent": "butter",
+      "animatedGroups": "steam_1..3",
+      "properties": "alpha 0→.85→0 · y +6→−14",
+      "duration": "2.7s",
+      "easing": "easeOut",
+      "keys": "offset 0.9s each"
+    },
+    "curry": {
+      "hue": "carrot",
+      "accent": "sky",
+      "animatedGroups": "bubble_1..3",
+      "properties": "scale .2→1→1.35 · alpha",
+      "duration": "2.4s",
+      "easing": "easeOut",
+      "keys": "offset 0.8s each"
+    },
+    "bowl": {
+      "hue": "sage",
+      "accent": "carrot",
+      "animatedGroups": "topping_1..3",
+      "properties": "y −7 · squash 1.08/.92",
+      "duration": "3.0s",
+      "easing": "easeInOut",
+      "keys": "offset 0.25s each"
+    },
+    "salad": {
+      "hue": "sage",
+      "accent": "carrot",
+      "animatedGroups": "leaves",
+      "properties": "y −4 · rotate −5°",
+      "duration": "3.2s",
+      "easing": "easeInOut",
+      "keys": "0 / 50 / 100%"
+    },
+    "burger": {
+      "hue": "butter",
+      "accent": "carrot",
+      "animatedGroups": "bun_top",
+      "properties": "y −14 · rotate −5° → squash",
+      "duration": "2.8s",
+      "easing": "spring(0.6, 400)",
+      "keys": "0/35/60/72/82%"
+    },
+    "tacos": {
+      "hue": "butter",
+      "accent": "carrot",
+      "animatedGroups": "taco_1, taco_2",
+      "properties": "rotate ±7° (pivot bottom)",
+      "duration": "1.8s",
+      "easing": "easeInOut",
+      "keys": "taco_2 phase −0.9s"
+    },
+    "pizza": {
+      "hue": "carrot",
+      "accent": "butter",
+      "animatedGroups": "slice",
+      "properties": "x +10 · y −14 · rotate −8°",
+      "duration": "3.6s",
+      "easing": "easeInOut",
+      "keys": "hold 45–65%"
+    },
+    "wok": {
+      "hue": "sky",
+      "accent": "carrot",
+      "animatedGroups": "pan, veg_1..5",
+      "properties": "pan rotate −6° · veg y −26 + rotate 360°",
+      "duration": "2.4s",
+      "easing": "cubic(.3,.6,.4,1)",
+      "keys": "veg offset 40ms"
+    },
+    "porridge": {
+      "hue": "orchid",
+      "accent": "butter",
+      "animatedGroups": "drop, ripple",
+      "properties": "drop y +34 · ripple scale .3→1.4",
+      "duration": "3.0s",
+      "easing": "easeIn / easeOut",
+      "keys": "impact at 45%"
+    },
+    "bread": {
+      "hue": "butter",
+      "accent": "carrot",
+      "animatedGroups": "loaf, steam_1..2",
+      "properties": "scale 1.04 × 1.10 (pivot bottom)",
+      "duration": "3.6s",
+      "easing": "easeInOut",
+      "keys": "0 / 50 / 100%"
+    },
+    "cake": {
+      "hue": "orchid",
+      "accent": "butter",
+      "animatedGroups": "berry, spark_1..2",
+      "properties": "berry y −10 → squash · spark scale 0→1",
+      "duration": "2.4s",
+      "easing": "easeInOut",
+      "keys": "spark_2 +1.2s"
+    },
+    "dumplings": {
+      "hue": "sage",
+      "accent": "carrot",
+      "animatedGroups": "steam_1..3",
+      "properties": "alpha 0→.85→0 · y +6→−14",
+      "duration": "2.7s",
+      "easing": "easeOut",
+      "keys": "offset 0.9s each"
+    },
+    "wrap": {
+      "hue": "orchid",
+      "accent": "carrot",
+      "animatedGroups": "sheet, roll",
+      "properties": "sheet scaleX .08↔1 (pivot left) · roll scale 1.12↔1",
+      "duration": "3.6s",
+      "easing": "cubic(.4,0,.2,1)",
+      "keys": "rolled 0–15 / 85–100%"
+    },
+    "smoothie": {
+      "hue": "orchid",
+      "accent": "sage",
+      "animatedGroups": "bubble_1..3",
+      "properties": "y 0→−38 · alpha",
+      "duration": "2.4s",
+      "easing": "easeIn",
+      "keys": "offset 0.8s each"
+    },
+    "eintopf": {
+      "hue": "carrot",
+      "accent": "sage",
+      "animatedGroups": "lid, puff_l, puff_r",
+      "properties": "lid y −3 · rotate ±4° ×2 · puffs scale + alpha",
+      "duration": "2.0s",
+      "easing": "easeInOut",
+      "keys": "rattle 0–32%, rest"
+    }
+  },
+  "svg": {
+    "folder": "handoff/svg/{light|dark}/{dish}.svg",
+    "animatedElements": "carry id (e.g. steam_1), data-loop (keyframe name, duration, easing, delay) and data-pivot",
+    "colours": "resolved from the tokens with OKLCH mixing, per theme"
+  }
+}

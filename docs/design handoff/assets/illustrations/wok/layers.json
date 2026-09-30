@@ -1,0 +1,137 @@
+{
+  "dish": "wok",
+  "viewBox": "0 0 120 120",
+  "note": "Every layer is a full-canvas SVG in the shared viewBox: stack by z (1 = back) at identical position. Transform origin = pivot (viewBox units) or the layer bbox centre if null.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-pan_1.svg",
+      "name": "pan_1",
+      "animated": true,
+      "loop": "pan 2.4s ease-in-out infinite",
+      "pivot": "30% 50%"
+    },
+    {
+      "z": 4,
+      "file": "layers/light/04-veg_1.svg",
+      "name": "veg_1",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 5,
+      "file": "layers/light/05-veg_2.svg",
+      "name": "veg_2",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .08s infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 6,
+      "file": "layers/light/06-veg_3.svg",
+      "name": "veg_3",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .16s infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 7,
+      "file": "layers/light/07-veg_4.svg",
+      "name": "veg_4",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .04s infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 8,
+      "file": "layers/light/08-veg_5.svg",
+      "name": "veg_5",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .12s infinite",
+      "pivot": "center"
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-pan_1.svg",
+      "name": "pan_1",
+      "animated": true,
+      "loop": "pan 2.4s ease-in-out infinite",
+      "pivot": "30% 50%"
+    },
+    {
+      "z": 4,
+      "file": "layers/dark/04-veg_1.svg",
+      "name": "veg_1",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 5,
+      "file": "layers/dark/05-veg_2.svg",
+      "name": "veg_2",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .08s infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 6,
+      "file": "layers/dark/06-veg_3.svg",
+      "name": "veg_3",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .16s infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 7,
+      "file": "layers/dark/07-veg_4.svg",
+      "name": "veg_4",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .04s infinite",
+      "pivot": "center"
+    },
+    {
+      "z": 8,
+      "file": "layers/dark/08-veg_5.svg",
+      "name": "veg_5",
+      "animated": true,
+      "loop": "toss 2.4s cubic-bezier(.3,.6,.4,1) .12s infinite",
+      "pivot": "center"
+    }
+  ]
+}

@@ -1,0 +1,320 @@
+{
+  "viewBox": "0 -20 140 150",
+  "ink": "outline stays #1F1E1C in light and dark (character colour, not theme)",
+  "note": "Stack layers by z at identical position. Speeds match Mascot.dc.html; ×--spd for reduced tempo. Reduced motion: whole stack static, eyes open.",
+  "moods": {
+    "happy": {
+      "whole": "whole character: y 0→−4 (45–55%) scale .98/1.03, 90% y+1 scale 1.03/.97, 2.6s easeInOut, pivot 70,130",
+      "layers": [
+        {
+          "z": 1,
+          "file": "topfbert-happy-01-steam_1.svg",
+          "name": "steam_1",
+          "motion": "alpha 0→.8→0, y +6→−14, scaleY .8→1.1, 2.2s easeOut"
+        },
+        {
+          "z": 2,
+          "file": "topfbert-happy-02-steam_2.svg",
+          "name": "steam_2",
+          "motion": "same as steam_1, delay .9s"
+        },
+        {
+          "z": 3,
+          "file": "topfbert-happy-03-handles.svg",
+          "name": "handles",
+          "motion": null
+        },
+        {
+          "z": 4,
+          "file": "topfbert-happy-04-body.svg",
+          "name": "body",
+          "motion": null
+        },
+        {
+          "z": 5,
+          "file": "topfbert-happy-05-eyes.svg",
+          "name": "eyes",
+          "motion": "blink scaleY 1→.1→1 at 92–100% of 4s (happy only), pivot = eye centre"
+        },
+        {
+          "z": 6,
+          "file": "topfbert-happy-06-cheeks.svg",
+          "name": "cheeks",
+          "motion": null
+        },
+        {
+          "z": 7,
+          "file": "topfbert-happy-07-mouth.svg",
+          "name": "mouth",
+          "motion": null
+        },
+        {
+          "z": 8,
+          "file": "topfbert-happy-08-rim.svg",
+          "name": "rim",
+          "motion": null
+        },
+        {
+          "z": 9,
+          "file": "topfbert-happy-09-hat.svg",
+          "name": "hat",
+          "motion": "rotate −14°↔−9° + y −2, 3s easeInOut, pivot 36,46 (hat is authored upright — apply base rotate −14°)"
+        }
+      ]
+    },
+    "stir": {
+      "whole": "whole character: y 0→−4 (45–55%) scale .98/1.03, 90% y+1 scale 1.03/.97, 1.2s easeInOut, pivot 70,130",
+      "layers": [
+        {
+          "z": 1,
+          "file": "topfbert-stir-01-spoon.svg",
+          "name": "spoon",
+          "motion": "rotate −20°↔20°, 1.2s easeInOut, pivot 71.5,54.4"
+        },
+        {
+          "z": 2,
+          "file": "topfbert-stir-02-orbit_1.svg",
+          "name": "orbit_1",
+          "motion": "x −40↔40 and y −12↔8, 1.6s easeInOut alternate, phase 0"
+        },
+        {
+          "z": 3,
+          "file": "topfbert-stir-03-orbit_2.svg",
+          "name": "orbit_2",
+          "motion": "same, phase −1.07s"
+        },
+        {
+          "z": 4,
+          "file": "topfbert-stir-04-orbit_3.svg",
+          "name": "orbit_3",
+          "motion": "same, phase −2.14s"
+        },
+        {
+          "z": 5,
+          "file": "topfbert-stir-05-handles.svg",
+          "name": "handles",
+          "motion": null
+        },
+        {
+          "z": 6,
+          "file": "topfbert-stir-06-body.svg",
+          "name": "body",
+          "motion": null
+        },
+        {
+          "z": 7,
+          "file": "topfbert-stir-07-eyes.svg",
+          "name": "eyes",
+          "motion": "blink scaleY 1→.1→1 at 92–100% of 4s (happy only), pivot = eye centre"
+        },
+        {
+          "z": 8,
+          "file": "topfbert-stir-08-cheeks.svg",
+          "name": "cheeks",
+          "motion": null
+        },
+        {
+          "z": 9,
+          "file": "topfbert-stir-09-mouth.svg",
+          "name": "mouth",
+          "motion": null
+        },
+        {
+          "z": 10,
+          "file": "topfbert-stir-10-rim.svg",
+          "name": "rim",
+          "motion": null
+        },
+        {
+          "z": 11,
+          "file": "topfbert-stir-11-hat.svg",
+          "name": "hat",
+          "motion": "rotate −14°↔−9° + y −2, 3s easeInOut, pivot 36,46 (hat is authored upright — apply base rotate −14°)"
+        }
+      ]
+    },
+    "oops": {
+      "whole": "whole character (all layers): rotate −6°→−2° + x 2px, 2.4s easeInOut, pivot 70,130",
+      "layers": [
+        {
+          "z": 1,
+          "file": "topfbert-oops-01-handles.svg",
+          "name": "handles",
+          "motion": null
+        },
+        {
+          "z": 2,
+          "file": "topfbert-oops-02-body.svg",
+          "name": "body",
+          "motion": null
+        },
+        {
+          "z": 3,
+          "file": "topfbert-oops-03-eyes.svg",
+          "name": "eyes",
+          "motion": "blink scaleY 1→.1→1 at 92–100% of 4s (happy only), pivot = eye centre"
+        },
+        {
+          "z": 4,
+          "file": "topfbert-oops-04-cheeks.svg",
+          "name": "cheeks",
+          "motion": null
+        },
+        {
+          "z": 5,
+          "file": "topfbert-oops-05-mouth.svg",
+          "name": "mouth",
+          "motion": null
+        },
+        {
+          "z": 6,
+          "file": "topfbert-oops-06-rim.svg",
+          "name": "rim",
+          "motion": null
+        },
+        {
+          "z": 7,
+          "file": "topfbert-oops-07-hat.svg",
+          "name": "hat",
+          "motion": "rotate −14°↔−9° + y −2, 3s easeInOut, pivot 36,46 (hat is authored upright — apply base rotate −14°)"
+        },
+        {
+          "z": 8,
+          "file": "topfbert-oops-08-drop.svg",
+          "name": "drop",
+          "motion": "appear scale 0→1 at 20–30%, fall y 0→14 and fade 80–100%, 2.4s easeIn"
+        }
+      ]
+    },
+    "wow": {
+      "whole": "whole character: y 0→−4 (45–55%) scale .98/1.03, 90% y+1 scale 1.03/.97, 2.6s easeInOut, pivot 70,130",
+      "layers": [
+        {
+          "z": 1,
+          "file": "topfbert-wow-01-steam_1.svg",
+          "name": "steam_1",
+          "motion": "alpha 0→.8→0, y +6→−14, scaleY .8→1.1, 2.2s easeOut"
+        },
+        {
+          "z": 2,
+          "file": "topfbert-wow-02-steam_2.svg",
+          "name": "steam_2",
+          "motion": "same as steam_1, delay .9s"
+        },
+        {
+          "z": 3,
+          "file": "topfbert-wow-03-handles.svg",
+          "name": "handles",
+          "motion": null
+        },
+        {
+          "z": 4,
+          "file": "topfbert-wow-04-body.svg",
+          "name": "body",
+          "motion": null
+        },
+        {
+          "z": 5,
+          "file": "topfbert-wow-05-eyes.svg",
+          "name": "eyes",
+          "motion": "blink scaleY 1→.1→1 at 92–100% of 4s (happy only), pivot = eye centre"
+        },
+        {
+          "z": 6,
+          "file": "topfbert-wow-06-cheeks.svg",
+          "name": "cheeks",
+          "motion": null
+        },
+        {
+          "z": 7,
+          "file": "topfbert-wow-07-mouth.svg",
+          "name": "mouth",
+          "motion": null
+        },
+        {
+          "z": 8,
+          "file": "topfbert-wow-08-rim.svg",
+          "name": "rim",
+          "motion": null
+        },
+        {
+          "z": 9,
+          "file": "topfbert-wow-09-hat.svg",
+          "name": "hat",
+          "motion": "rotate −14°↔−9° + y −2, 3s easeInOut, pivot 36,46 (hat is authored upright — apply base rotate −14°)"
+        },
+        {
+          "z": 10,
+          "file": "topfbert-wow-10-spark_1.svg",
+          "name": "spark_1",
+          "motion": "scale 0→1→0, rotate 0→90°, 1.4s"
+        },
+        {
+          "z": 11,
+          "file": "topfbert-wow-11-spark_2.svg",
+          "name": "spark_2",
+          "motion": "same, delay .5s"
+        },
+        {
+          "z": 12,
+          "file": "topfbert-wow-12-spark_3.svg",
+          "name": "spark_3",
+          "motion": "same, delay .9s"
+        }
+      ]
+    },
+    "sleep": {
+      "whole": "whole character: y 0→−4 (45–55%) scale .98/1.03, 90% y+1 scale 1.03/.97, 4s easeInOut, pivot 70,130",
+      "layers": [
+        {
+          "z": 1,
+          "file": "topfbert-sleep-01-handles.svg",
+          "name": "handles",
+          "motion": null
+        },
+        {
+          "z": 2,
+          "file": "topfbert-sleep-02-body.svg",
+          "name": "body",
+          "motion": null
+        },
+        {
+          "z": 3,
+          "file": "topfbert-sleep-03-eyes.svg",
+          "name": "eyes",
+          "motion": "blink scaleY 1→.1→1 at 92–100% of 4s (happy only), pivot = eye centre"
+        },
+        {
+          "z": 4,
+          "file": "topfbert-sleep-04-cheeks.svg",
+          "name": "cheeks",
+          "motion": null
+        },
+        {
+          "z": 5,
+          "file": "topfbert-sleep-05-mouth.svg",
+          "name": "mouth",
+          "motion": null
+        },
+        {
+          "z": 6,
+          "file": "topfbert-sleep-06-rim.svg",
+          "name": "rim",
+          "motion": null
+        },
+        {
+          "z": 7,
+          "file": "topfbert-sleep-07-hat.svg",
+          "name": "hat",
+          "motion": "rotate −14°↔−9° + y −2, 3s easeInOut, pivot 36,46 (hat is authored upright — apply base rotate −14°)"
+        },
+        {
+          "z": 8,
+          "file": "topfbert-sleep-08-z_1.svg",
+          "name": "z_1",
+          "motion": "rise y 0→−8 and fade, 4s"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,331 @@
+[
+  {
+    "name": "DishCard",
+    "variants": [
+      "compact (phone/desktop lane): 86px thumb + text, 128px high",
+      "thumb: photo | placeholder illustration",
+      "with Neu pebble",
+      "with note icon"
+    ],
+    "states": [
+      "default",
+      "pressed",
+      "hover (desktop)",
+      "focused (keyboard)",
+      "lifted (drag)",
+      "cooked (button filled)",
+      "collapsing (delete)",
+      "ghost slot"
+    ],
+    "motion": [
+      "press: scale .98 · tap",
+      "hover: translateY(-4px) rotate(-.6deg) + photo scale 1.08 + placeholder loop starts · pop",
+      "lift: see Interaction \"Drag lift\"",
+      "enter: rise 48px + fade, stagger 80ms · settle",
+      "delete: scale .9 + fade 260ms, list closes up · settle",
+      "Neu: pop from −20° at card enter +620ms, ring pulse 3.2s until seen 2s"
+    ],
+    "tokens": [
+      "radius.card",
+      "radius.thumb",
+      "shadow.card",
+      "type.title-s",
+      "type.caption"
+    ]
+  },
+  {
+    "name": "SourceBadge",
+    "variants": [
+      "chip (on surface-muted)",
+      "glass (on photo)",
+      "dot-only (desktop card)"
+    ],
+    "states": [
+      "default"
+    ],
+    "motion": [
+      "found: pop from scale 0 at image reveal 34% · pop"
+    ],
+    "tokens": [
+      "radius.chip",
+      "color.source.*",
+      "type.caption"
+    ]
+  },
+  {
+    "name": "Avatar",
+    "variants": [
+      "18 · 22 · 24 · 30 · 36 · 60px",
+      "stack (−8px overlap, 2.5px bg ring)",
+      "with Owner crown chip",
+      "with Google badge"
+    ],
+    "states": [
+      "default",
+      "hover ring (desktop)"
+    ],
+    "motion": [
+      "invite: pop in sequence 100ms · pop",
+      "wave: rotate 18/−10/14° once per 3.2s (invite only)"
+    ],
+    "tokens": [
+      "color.avatar.*"
+    ]
+  },
+  {
+    "name": "ColumnTabs",
+    "variants": [
+      "pebble tabs (phone, 3 radii)",
+      "lane header (desktop)"
+    ],
+    "states": [
+      "default",
+      "active (accent fill, scale 1.06, −1.5°)",
+      "drop target",
+      "dimmed (other target active)"
+    ],
+    "motion": [
+      "switch: active moves with swipe progress; spring on release · settle",
+      "count change: roll 16px up · pop",
+      "drop target: see Interaction \"Drop target\""
+    ],
+    "tokens": [
+      "radius.tab-1..3",
+      "color.column-*"
+    ]
+  },
+  {
+    "name": "BoardSwitcher",
+    "variants": [
+      "dropdown (phone + desktop)",
+      "row: emoji pebble · name · meta · avatar stack · check"
+    ],
+    "states": [
+      "open",
+      "current Board",
+      "row pressed"
+    ],
+    "motion": [
+      "open: from pill, translateY(-16px) scale .96 → 1 · pop",
+      "rows: rise 14px, stagger 50ms",
+      "emoji idle: hop every 4s, offset 0.9s per row (paused when reduced motion)"
+    ],
+    "tokens": [
+      "radius.card",
+      "shadow.dialog"
+    ]
+  },
+  {
+    "name": "BottomSheet",
+    "variants": [
+      "tall (Add Dish, top 58px)",
+      "content-height (menu, note, picker)",
+      "stacked (second sheet)",
+      "desktop → Dialog"
+    ],
+    "states": [
+      "opening",
+      "open",
+      "dragging down",
+      "closing"
+    ],
+    "motion": [
+      "see Interaction \"Sheet\""
+    ],
+    "tokens": [
+      "radius.sheet",
+      "shadow.sheet",
+      "color.scrim",
+      "motion.sheet"
+    ]
+  },
+  {
+    "name": "Dialog",
+    "variants": [
+      "confirm (2 buttons)",
+      "destructive (danger button)",
+      "type-to-confirm",
+      "picker (radio list)"
+    ],
+    "states": [
+      "open",
+      "confirm disabled",
+      "confirm enabled"
+    ],
+    "motion": [
+      "open: scale .4 → 1 with overshoot (phone) / .92 → 1 (desktop) · pop",
+      "close: fade 150ms",
+      "wrong input: translateX ±5px once 500ms"
+    ],
+    "tokens": [
+      "radius.dialog",
+      "shadow.dialog"
+    ]
+  },
+  {
+    "name": "Toast",
+    "variants": [
+      "text + action",
+      "text + 2 actions (Gekocht)",
+      "success (sage check)",
+      "with Topfbert above"
+    ],
+    "states": [
+      "entering",
+      "visible (progress bar = undo window)",
+      "leaving"
+    ],
+    "motion": [
+      "in: translateY(150px) → −8px → 0 · settle",
+      "bar: scaleX 1 → 0 linear over undo window",
+      "out: translateY(150px) 300ms",
+      "FAB moves up 76px while toast visible · settle"
+    ],
+    "tokens": [
+      "radius.pill",
+      "color.inverse",
+      "shadow.fab"
+    ]
+  },
+  {
+    "name": "Button",
+    "variants": [
+      "primary (inverse pill)",
+      "secondary (surface-muted)",
+      "success (sage)",
+      "danger (danger 10% bg)",
+      "dashed (add)",
+      "glass (on image)",
+      "icon (circle 36–46px)",
+      "FAB (morphing pebble 66–70px)"
+    ],
+    "states": [
+      "default",
+      "hover",
+      "pressed",
+      "disabled (35%)",
+      "loading (3 dots)",
+      "success flip (Kopiert!)"
+    ],
+    "motion": [
+      "press: scale .94 · tap",
+      "hover: scale 1.03–1.05 (+ −1° on primary) · pop",
+      "FAB idle: border-radius morph 8s + breathe 3.6s",
+      "success flip: label up/out, check label in with pop, 5-pebble burst"
+    ],
+    "tokens": [
+      "radius.pill",
+      "type.button",
+      "type.button-l"
+    ]
+  },
+  {
+    "name": "Input",
+    "variants": [
+      "text",
+      "serif title",
+      "textarea (note)",
+      "link (with source dot + Einfügen)",
+      "select row (Board)",
+      "segmented (theme, expiry)"
+    ],
+    "states": [
+      "default",
+      "focus (butter ring 2px)",
+      "required/prompt (butter glow pulse)",
+      "valid (sage ring + check)",
+      "loading (dots)"
+    ],
+    "motion": [
+      "focus ring: 180ms",
+      "prompt glow: ring 2→11px breathe 2.4s (never red)",
+      "segmented thumb: spring slide 420ms"
+    ],
+    "tokens": [
+      "radius.field",
+      "color.focus"
+    ]
+  },
+  {
+    "name": "EmojiPicker",
+    "variants": [
+      "grid 7 columns"
+    ],
+    "states": [
+      "default",
+      "selected (ink ring, scale 1.1, −4°)"
+    ],
+    "motion": [
+      "open: tiles pop, stagger 18ms",
+      "select: spring scale · pop; preview pebble bobs 2.4s + ring pulse"
+    ],
+    "tokens": [
+      "radius 14px"
+    ]
+  },
+  {
+    "name": "PlaceholderPicker",
+    "variants": [
+      "inline 4×2 (Add Dish)",
+      "full 4×4 sheet (Bild wählen)"
+    ],
+    "states": [
+      "default",
+      "selected (ring, scale 1.05, −1.5°, check pops, loop plays)"
+    ],
+    "motion": [
+      "unroll: clip-path inset top→bottom 520ms, tiles pop stagger 40ms",
+      "select: previous tile pauses on frame 0; new tile loop starts",
+      "Topfbert header hops on each pick"
+    ],
+    "tokens": [
+      "radius.thumb"
+    ]
+  },
+  {
+    "name": "CookingHistoryEntry",
+    "variants": [
+      "with note",
+      "without note (+ Notiz)",
+      "fresh (sage date pebble)"
+    ],
+    "states": [
+      "default",
+      "hover",
+      "deleting",
+      "restoring"
+    ],
+    "motion": [
+      "add: max-height 0 → 96px + fade · settle",
+      "delete: slide +40px + collapse 280ms, toast with undo",
+      "restore: reverse with overshoot",
+      "+ Notiz glows 3× on fresh entry"
+    ],
+    "tokens": [
+      "radius 16px",
+      "type.body-serif"
+    ]
+  },
+  {
+    "name": "AchievementBadge",
+    "variants": [
+      "Ausprobiert 58px",
+      "Wird Liebling 66px (3×)",
+      "Stammgericht 74px (5×)",
+      "WG-Klassiker 84px (10×)"
+    ],
+    "states": [
+      "counting",
+      "idle ring"
+    ],
+    "motion": [
+      "count-up 170ms per step, pop per step",
+      "size grows on level change 420ms spring",
+      "pips fill toward next level"
+    ],
+    "tokens": [
+      "radius.blob",
+      "color.gradient.neu"
+    ]
+  }
+]
