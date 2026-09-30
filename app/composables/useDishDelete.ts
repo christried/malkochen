@@ -1,5 +1,5 @@
 import type { BoardView } from '~~/server/utils/boards'
-import { dishOnBoard } from '~~/shared/board'
+import { dishOnBoard, focusAfterLeaving } from '~~/shared/board'
 
 // Deleting a Dish (PRD story 47): its card goes at once, and a Toast offers
 // "Rückgängig" for the undo window, which puts it back where it was. The
@@ -25,10 +25,9 @@ export function useDishDelete(board: Ref<BoardView | undefined>, showToast: (toa
     // Its neighbours find its place again, whatever was added meanwhile.
     const above = column.dishes[index - 1]
     const below = column.dishes[index + 1]
+    focusAfterDelete.set(dishId, focusAfterLeaving(column, index))
     column.dishes.splice(index, 1)
     hapticReject()
-    const next = below ?? above
-    focusAfterDelete.set(dishId, next ? `dish-${next.id}` : `column-${column.id}`)
 
     function putBack() {
       if (column.dishes.includes(dish)) return

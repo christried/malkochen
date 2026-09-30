@@ -4,6 +4,7 @@
 // end). Letting go past 18% of the width, or flicking faster than 0.5px/ms,
 // goes to the next Column; anything less springs back. Vertical pans stay
 // the page's scroll. Touch and pen only: a mouse will drag Dishes instead.
+// From 768px the Columns sit side by side and a sideways pan just scrolls.
 //
 // Reduced motion: the Board doesn't follow the finger, the swipe only pages.
 export function useColumnSwipe(
@@ -21,11 +22,10 @@ export function useColumnSwipe(
   // A swipe that ends on a card must not open it.
   let swallowClick = false
 
-  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
   const atEdge = (move: number) => (options.active() === 0 && move > 0) || (options.active() === options.count() - 1 && move < 0)
 
   function onDown(event: PointerEvent) {
-    if (event.pointerType === 'mouse' || !event.isPrimary) return
+    if (event.pointerType === 'mouse' || !event.isPrimary || !isPhoneLayout()) return
     start = { x: event.clientX, y: event.clientY, pointerId: event.pointerId }
     captured = false
     swallowClick = false
@@ -44,7 +44,7 @@ export function useColumnSwipe(
         return
       }
       captured = true
-      following.value = !reducedMotion()
+      following.value = !prefersReducedMotion()
     }
     samples.push({ x: event.clientX, t: event.timeStamp })
     samples = samples.filter(s => event.timeStamp - s.t <= 100)
@@ -86,31 +86,22 @@ export function useColumnSwipe(
     event.stopPropagation()
   }
 
-  useEventListener(() => surface.value, 'pointerdown', onDown)
-  useEventListener(() => surface.value, 'click', onClick, { capture: true })
-  useEventListener(() => window, 'pointermove', onMove)
-  useEventListener(() => window, 'pointerup', onUp)
-  useEventListener(() => window, 'pointercancel', onCancel)
+  const onWindow = [['pointermove', onMove], ['pointerup', onUp], ['pointercancel', onCancel]] as const
+  let bound: HTMLElement | null = null
+  onMounted(() => {
+    bound = surface.value
+    bound?.addEventListener('pointerdown', onDown)
+    bound?.addEventListener('click', onClick, { capture: true })
+    for (const [type, listener] of onWindow) window.addEventListener(type, listener)
+  })
+  onBeforeUnmount(() => {
+    bound?.removeEventListener('pointerdown', onDown)
+    bound?.removeEventListener('click', onClick, { capture: true })
+    for (const [type, listener] of onWindow) window.removeEventListener(type, listener)
+  })
 
   // Where the Board is between Columns: the active index, fractional mid-swipe.
   const progress = computed(() => options.active() - dx.value / width.value)
 
   return { dx, progress, following }
-}
-
-// Adds a listener while the component is mounted (so only in the browser).
-// The target is read then: a template ref is only set once mounted.
-function useEventListener<E extends Event>(
-  target: () => EventTarget | null,
-  type: string,
-  listener: (event: E) => void,
-  options?: AddEventListenerOptions,
-) {
-  const handler = listener as EventListener
-  let bound: EventTarget | null = null
-  onMounted(() => {
-    bound = target()
-    bound?.addEventListener(type, handler, options)
-  })
-  onBeforeUnmount(() => bound?.removeEventListener(type, handler, options))
 }

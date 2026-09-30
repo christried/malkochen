@@ -144,16 +144,18 @@ export async function restoreDish(dishId: string, userId: string): Promise<DishV
   return row ? toView(row) : null
 }
 
-// Moves a Dish to the top of a Column on its own Board (PRD story 33).
-// Drag and drop and Cooking build on this. Null unless the Dish is on a
-// Board the user is a Member of, not deleted, and the Column is on that Board.
+// Moves a Dish to the top of a Column on its own Board (PRD story 33); one
+// already in that Column stays where it is. Drag and drop and Cooking build
+// on this. Null unless the Dish is on a Board the user is a Member of, not
+// deleted, and the Column is on that Board.
 export async function moveDish(dishId: string, userId: string, columnId: string): Promise<DishView | null> {
   const target = onMembersBoard(dishId, userId)
   const moved = await db
     .update(dish)
     .set({
       columnId,
-      position: sql`(select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId})`,
+      position: sql`case when ${dish.columnId} = ${columnId} then ${dish.position}
+        else (select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId}) end`,
     })
     .where(and(
       target,

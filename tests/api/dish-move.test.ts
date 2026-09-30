@@ -53,15 +53,17 @@ test('a moved Dish goes to the top of the target Column', async () => {
   expect(dieseWocheIds!.slice(0, 2)).toEqual([dish.id, waiting.id])
 })
 
-test('a Dish moved within its own Column goes to the top of it', async () => {
+test('moving a Dish to the Column it is in changes nothing', async () => {
   const barbara = await signIn(ALLOWLISTED[4])
   const bottom = await addDish(barbara, 'Minestrone')
   const top = await addDish(barbara, 'Bibimbap')
   const ideen = (await landingBoard(barbara)).columns[0]!
 
-  expect((await moveDish(barbara, bottom.id, ideen.id)).status).toBe(200)
+  const res = await moveDish(barbara, bottom.id, ideen.id)
 
-  expect((await columnDishIds(barbara))[0]!.slice(0, 2)).toEqual([bottom.id, top.id])
+  expect(res.status).toBe(200)
+  expect(await res.json()).toMatchObject({ id: bottom.id, title: 'Minestrone' })
+  expect((await columnDishIds(barbara))[0]!.slice(0, 2)).toEqual([top.id, bottom.id])
 })
 
 test('a Dish can’t be moved to a Column of another Board', async () => {

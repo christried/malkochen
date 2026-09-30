@@ -12,6 +12,6 @@ export default defineEventHandler(async (event): Promise<DishView> => {
   const user = requireUser(event)
   const moved = await moveDish(dishId, user.id, parsed.data.columnId)
   if (moved) return moved
-  if (await isDishMember(dishId, user.id)) throw createError({ statusCode: 400, statusMessage: 'Column is not on the Dish’s Board' })
+  if (await isDishMember(dishId, user.id)) throw createError({ statusCode: 400, statusMessage: 'Column not on this Board' })
   throw dishNotFound()
 })

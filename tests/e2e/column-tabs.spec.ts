@@ -5,7 +5,7 @@ import { gotoHydrated, reloadHydrated } from './hydration'
 import { seedDish } from './seed'
 
 // Column tabs and swiping on phones, "Verschieben nach…" from a card's menu,
-// and lanes side by side from 768px (PRD stories 28, 33). Barbara's Board is
+// and all Columns side by side from 768px (PRD stories 28, 33). Barbara's Board is
 // used by this file only.
 test.describe.configure({ mode: 'serial' })
 
@@ -119,7 +119,7 @@ test('"Verschieben nach…" moves a Dish to the top of another Column', async ({
   await expect(titles(page, 'Diese Woche')).toHaveText(['Ramen', 'Kürbissuppe'])
 })
 
-test('the menu can go back from the Column list', async ({ page }) => {
+test('the menu goes back from choosing a Column', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await signIn(page, ALLOWLISTED[4])
   await gotoHydrated(page, '/')
@@ -133,14 +133,48 @@ test('the menu can go back from the Column list', async ({ page }) => {
   await expect(menu.getByRole('button', { name: 'Diese Woche' })).toHaveCount(0)
 })
 
-test('from 768px all Columns show as lanes that scroll-snap', async ({ page }) => {
+test('a failed move puts the card back and says so; one already deleted just goes', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await signIn(page, ALLOWLISTED[4])
+  await gotoHydrated(page, '/')
+  const answer = { status: 500 }
+  await page.route('**/api/dishes/*/move', route => route.fulfill(answer))
+  async function moveTacos() {
+    await page.getByRole('button', { name: 'Mehr zu „Tacos“' }).click()
+    const menu = page.getByRole('dialog', { name: 'Tacos' })
+    await menu.getByRole('button', { name: 'Verschieben nach…' }).click()
+    await menu.getByRole('button', { name: 'Gekocht' }).click()
+  }
+
+  await moveTacos()
+
+  await expect(page.locator('[data-toast]')).toHaveText('„Tacos“ ließ sich nicht verschieben. Versuch es gleich noch mal.')
+  await expect(titles(page, 'Ideen')).toHaveText(['Tacos'])
+  await expect(tab(page, 'Gekocht 0')).toBeVisible()
+
+  // Another Member deleted it first: the server doesn't find it any more.
+  answer.status = 404
+  await moveTacos()
+
+  await expect(page.locator('[data-toast]')).toContainText('„Tacos“ nach „Gekocht“ verschoben')
+  await expect(column(page, 'Ideen').getByText('Noch nichts hier.')).toBeVisible()
+  await expect(tab(page, 'Gekocht 0')).toBeVisible()
+})
+
+test('from 768px all Columns show side by side and scroll-snap', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 800 })
   await signIn(page, ALLOWLISTED[4])
   await gotoHydrated(page, '/')
 
   await expect(page.getByRole('navigation', { name: 'Spalten' })).toBeHidden()
+  // A sideways touch pan here scrolls the Columns; it doesn't switch the one
+  // a phone would show.
+  await swipe(page.getByTestId('columns'), -300)
   for (const name of ['Ideen', 'Diese Woche', 'Gekocht']) await expect(column(page, name)).toBeVisible()
   const board = page.getByTestId('columns')
   expect(await board.evaluate(el => getComputedStyle(el).scrollSnapType)).toContain('x')
   expect(await column(page, 'Ideen').evaluate(el => getComputedStyle(el).scrollSnapAlign)).toBe('start')
+
+  await page.setViewportSize(PHONE)
+  await expect(tab(page, 'Ideen 1')).toHaveAttribute('aria-pressed', 'true')
 })
