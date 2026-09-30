@@ -36,18 +36,17 @@ watch(() => route.params.dishId, async (dishId, closedId) => {
 
 const adding = ref(false)
 // A Dish saved to another Board doesn't show here. If a Source image
-// couldn't be stored, a notice says why the Dish has a Placeholder.
+// couldn't be stored, a notice says which image the Dish has instead.
 const notice = ref('')
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
-function noticeImageNotStored({ imageNotStored, title }: SavedDish) {
-  if (!imageNotStored) return
-  notice.value = t.addDish.imageNotStored(title)
+function showNotice(text: string) {
+  notice.value = text
   clearTimeout(noticeTimer)
   noticeTimer = setTimeout(() => notice.value = '', 8000)
 }
 
 function onAdded(saved: SavedDish, boardId: string) {
-  noticeImageNotStored(saved)
+  if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
   const first = board.value?.columns[0]
   if (!first || boardId !== board.value?.id) return
@@ -56,7 +55,7 @@ function onAdded(saved: SavedDish, boardId: string) {
 }
 
 function onEdited(saved: SavedDish) {
-  noticeImageNotStored(saved)
+  if (saved.imageNotStored) showNotice(t.detail.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
   for (const column of board.value?.columns ?? []) {
     const index = column.dishes.findIndex(d => d.id === dish.id)

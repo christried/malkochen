@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import type { SourceKind, SourceLookupResult } from '~~/server/source-lookup'
-import type { DishSource, DishView, SavedDish } from '~~/server/utils/dishes'
+import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import type { Placeholder } from '~~/shared/placeholders'
 import { webLink } from '~/utils/web-link'
 
 // The Dish detail's edit mode (PRD stories 43–45): title, note, image and
-// Source. Changing the Source leaves the image alone; only "Bild neu laden"
-// looks the Source up again, and the image it finds (or the Placeholder, if
-// none) is shown here and stored on Speichern. Nothing changes until then.
+// Source. A new link is looked up (Source Lookup, as in Add Dish) so it is
+// saved as what it really is, but that never changes the image: only "Bild
+// neu laden" does, and the image it finds (or the Placeholder, if none) is
+// shown here and stored on Speichern. Nothing changes until then.
 const props = defineProps<{ dish: DishView }>()
 const emit = defineEmits<{ saved: [dish: SavedDish], cancel: [] }>()
 const t = useStrings()
@@ -31,17 +32,32 @@ type ImageChoice
     | { kind: 'found', url: string, ticket: string | null }
 const image = ref<ImageChoice>({ kind: 'keep' })
 
-// GET /api/source-lookup, as in Add Dish.
+// GET /api/source-lookup, once per link: when the link changes (at once when
+// pasted, after a short pause while typing), on "Bild neu laden", and before
+// saving a new link. A failed lookup is forgotten, so the next one retries.
 type LookupAnswer = SourceLookupResult & { imageTicket: string | null }
+const lookups = new Map<string, Promise<LookupAnswer | null>>()
+function lookUp(target: string): Promise<LookupAnswer | null> {
+  let answer = lookups.get(target)
+  if (!answer) {
+    answer = $fetch<LookupAnswer>('/api/source-lookup', { query: { link: target } }).catch(() => {
+      lookups.delete(target)
+      return null
+    })
+    lookups.set(target, answer)
+  }
+  return answer
+}
+
 type Reload = 'idle' | 'looking' | 'found' | 'nothing' | 'failed'
 const reload = ref<Reload>('idle')
-// What the last lookup said about which link, to save the Source's kind with it.
-const looked = ref<{ link: string, result: LookupAnswer }>()
 
 const sourceLink = computed(() => link.value.trim() === '' ? null : webLink(link.value))
 const linkInvalid = computed(() => link.value.trim() !== '' && sourceLink.value === null)
+// Whether the link is the Dish's own Source, whose kind is already known.
+const linkUnchanged = computed(() => link.value.trim() === props.dish.source?.link)
 
-// Only the latest lookup's answer counts; changing the link drops what an
+// Only the latest "Bild neu laden" counts; changing the link drops what an
 // earlier one found, since that image belongs to the other link.
 let reloadRun = 0
 async function reloadImage() {
@@ -49,30 +65,38 @@ async function reloadImage() {
   if (!target) return
   const run = ++reloadRun
   reload.value = 'looking'
-  try {
-    const result = await $fetch<LookupAnswer>('/api/source-lookup', { query: { link: target } })
-    if (run !== reloadRun) return
-    looked.value = { link: link.value.trim(), result }
-    if (result.imageUrl) {
-      image.value = { kind: 'found', url: result.imageUrl, ticket: result.imageTicket }
-      reload.value = 'found'
-    }
-    else {
-      image.value = { kind: 'placeholder' }
-      reload.value = 'nothing'
-    }
+  const result = await lookUp(target)
+  if (run !== reloadRun) return
+  if (!result) {
+    reload.value = 'failed'
   }
-  catch {
-    if (run === reloadRun) reload.value = 'failed'
+  else if (result.imageUrl) {
+    image.value = { kind: 'found', url: result.imageUrl, ticket: result.imageTicket }
+    reload.value = 'found'
+  }
+  else {
+    image.value = { kind: 'placeholder' }
+    reload.value = 'nothing'
   }
 }
 
+let lookupTimer: ReturnType<typeof setTimeout> | undefined
+let pasted = false
 watch(link, () => {
+  clearTimeout(lookupTimer)
+  const target = sourceLink.value
+  if (target && !linkUnchanged.value) lookupTimer = setTimeout(() => lookUp(target), pasted ? 0 : 300)
+  pasted = false
+
   if (reload.value === 'idle') return
   reloadRun++
   reload.value = 'idle'
   if (image.value.kind === 'found' || image.value.kind === 'placeholder') image.value = { kind: 'keep' }
 })
+onBeforeUnmount(() => clearTimeout(lookupTimer))
+function onPaste() {
+  pasted = true
+}
 
 const choosingImage = ref(false)
 // Tapping a tile (or Enter/Space on it) closes the picker; arrow keys only
@@ -85,14 +109,15 @@ watch(placeholder, () => {
   reload.value = 'idle'
 })
 
-// The Source as saved: the kind the Dish or the last lookup knows for this
-// very link (a blog stays a blog); the server reads it from the link otherwise.
-function source(): { link: string, kind?: SourceKind } | null {
-  const typed = link.value.trim()
-  if (!sourceLink.value) return null
-  if (looked.value?.link === typed) return { link: looked.value.result.canonicalLink, kind: looked.value.result.kind }
-  const current: DishSource | null = props.dish.source
-  return current?.link === typed ? { ...current } : { link: sourceLink.value }
+// The Source as saved: the Dish's own, or what Source Lookup says the new
+// link is (canonical link and kind). If the lookup fails, the server reads the
+// kind from the link itself.
+async function sourceToSave(): Promise<{ link: string, kind?: SourceKind } | null> {
+  const target = sourceLink.value
+  if (!target) return null
+  if (linkUnchanged.value && props.dish.source) return { ...props.dish.source }
+  const result = await lookUp(target)
+  return result ? { link: result.canonicalLink, kind: result.kind } : { link: target }
 }
 
 const saving = ref(false)
@@ -105,12 +130,13 @@ async function save() {
   failed.value = false
   const choice = image.value
   try {
+    const source = await sourceToSave()
     const saved = await $fetch<SavedDish>(`/api/dishes/${props.dish.id}`, {
       method: 'PATCH',
       body: {
         title: title.value,
         note: note.value,
-        source: source(),
+        source,
         placeholder: placeholder.value,
         ...choice.kind === 'placeholder' && { imageUrl: null },
         ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
@@ -240,6 +266,7 @@ async function save() {
         :aria-describedby="linkHintId"
         :aria-invalid="linkInvalid || undefined"
         class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        @paste="onPaste"
       >
       <span
         :id="linkHintId"

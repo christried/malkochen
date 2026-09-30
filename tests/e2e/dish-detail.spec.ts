@@ -127,6 +127,10 @@ test('changing the Source keeps the image; "Bild neu laden" replaces it, or fall
   await signIn(page, ALLOWLISTED[0])
   const image = await storedImage(160, 90)
   await seedDish(page, { title: 'Ofengemüse', imageUrl: image, sourceLink: blog, sourceKind: 'blog' })
+  // A new link is looked up at once; what it finds for the image is only
+  // used by "Bild neu laden".
+  await stubSourceLookup(page, { kind: 'instagram-reel', canonicalLink: reel, suggestedTitle: '', imageUrl: found, imageTicket: 'fixture-ticket' })
+  await stubImage(page, found, 90, 160)
   await gotoHydrated(page, '/')
   const detail = await openDetail(page, 'Ofengemüse')
   await expect(detail.locator('[data-dish-image]')).toHaveAttribute('src', image)
@@ -145,18 +149,15 @@ test('changing the Source keeps the image; "Bild neu laden" replaces it, or fall
 
   // "Bild neu laden" looks the new Source up and shows what it found; saving
   // stores it. The fixture host never resolves, so the copy fails and the
-  // Dish falls back to its Placeholder, with a notice saying why.
-  await stubSourceLookup(page, { kind: 'instagram-reel', canonicalLink: reel, suggestedTitle: '', imageUrl: found, imageTicket: 'fixture-ticket' })
-  await stubImage(page, found, 90, 160)
+  // Dish keeps the image it had, with a notice saying why.
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
   await detail.getByRole('button', { name: 'Bild neu laden' }).click()
   await expect(detail.locator('[data-reloaded-image]')).toHaveAttribute('src', found)
   body = editedBody(page)
   await detail.getByRole('button', { name: 'Speichern' }).click()
   expect(await body).toMatchObject({ imageUrl: found, imageTicket: 'fixture-ticket', source: { link: reel, kind: 'instagram-reel' } })
-  await expect(page.locator('[data-notice]')).toContainText('„Ofengemüse“ hat jetzt ein Platzhalterbild')
-  await expect(detail.locator('img[src="/placeholders/bowl-light.svg"]').first()).toBeVisible()
-  await expect(detail.locator('[data-dish-image]')).toHaveCount(0)
+  await expect(page.locator('[data-notice]')).toContainText('„Ofengemüse“ behält sein bisheriges Bild')
+  await expect(detail.locator('[data-dish-image]')).toHaveAttribute('src', image)
 
   // Nothing found: the Placeholder it is.
   await page.unrouteAll()
@@ -253,4 +254,30 @@ test('beside the Board, tapping the dimmed Board or Escape closes the detail but
 
   await page.mouse.click(100, 450)
   await expect(detail).toBeHidden()
+})
+
+test('a new link is saved as what it really is, looked up like in Add Dish', async ({ page }) => {
+  const blog = 'https://www.kochblog.example/rezept/linsen-dal'
+  let release!: () => void
+  const hold = new Promise<void>(resolve => release = resolve)
+  await signIn(page, ALLOWLISTED[0])
+  await seedDish(page, { title: 'Linsen-Dal', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await stubSourceLookup(page, { kind: 'blog', canonicalLink: blog, suggestedTitle: 'Linsen-Dal', imageUrl: 'https://images.invalid/dal.png', imageTicket: 'fixture-ticket' }, hold)
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Linsen-Dal')
+
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.getByLabel('Link').fill(`${blog}?utm_source=pinterest`)
+  const body = editedBody(page)
+  // Saving waits for the lookup's answer.
+  await detail.getByRole('button', { name: 'Speichern' }).click()
+  await expect(detail.getByRole('button', { name: 'Speichert …' })).toBeVisible()
+  release()
+
+  const sent = await body
+  expect(sent).toMatchObject({ source: { link: blog, kind: 'blog' } })
+  // The lookup never changes the image; only "Bild neu laden" does.
+  expect(sent).not.toHaveProperty('imageUrl')
+  await expect(detail.getByText('Web')).toBeVisible()
+  await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveAttribute('href', blog)
 })

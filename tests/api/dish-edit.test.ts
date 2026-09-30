@@ -104,9 +104,9 @@ const me = async (caller: Caller) => ((await (await caller.fetch('/api/me')).jso
 
 // "Bild neu laden": the image Source Lookup found again, with its Image
 // Ticket. A private address is never fetched, so here the copy always fails
-// and the Dish shows its Placeholder, saying so; a stored copy is covered by
-// the Image Store tests and the browser tests.
-test('a reloaded image that cannot be stored leaves the Placeholder, and says so', async () => {
+// and the Dish keeps the image it had, saying so; a stored copy (and keeping
+// one) is covered by the Image Store tests and the browser tests.
+test('a reloaded image that cannot be stored leaves the image as it was, and says so', async () => {
   const ada = await signIn(ALLOWLISTED[0])
   const dish = await addDish(ada, { placeholder: 'wok', source: { link: TIKTOK } })
   const imageUrl = 'http://127.0.0.1/reloaded.jpeg'

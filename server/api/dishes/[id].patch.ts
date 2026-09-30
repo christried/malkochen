@@ -19,7 +19,7 @@ const body = z.object({
 
 // PATCH /api/dishes/:id — edits a Dish from its detail. Only the fields sent
 // change. A reloaded image is copied into the Image Store; if that fails, the
-// Dish shows its Placeholder and the answer carries `imageNotStored: true`.
+// Dish keeps the image it had and the answer carries `imageNotStored: true`.
 export default defineEventHandler(async (event): Promise<SavedDish> => {
   const dishId = dishIdParam(event)
   const parsed = body.safeParse(await readBody(event).catch(() => null))
@@ -33,7 +33,8 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   const edited = await editDish(dishId, user.id, {
     ...rest,
     ...source !== undefined && { source: source && sourceOf(source) },
-    ...imageUrl !== undefined && { imageUrl: stored },
+    // A reloaded image that couldn't be stored leaves the image as it was.
+    ...(imageUrl === null || stored) && { imageUrl: stored },
   })
   if (!edited) throw dishNotFound()
   return imageUrl && !stored ? { ...edited, imageNotStored: true } : edited

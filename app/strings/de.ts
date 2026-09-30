@@ -74,6 +74,7 @@ export const de = {
     saving: 'Speichert …',
     cancel: 'Abbrechen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    imageNotStored: (title: string) => `Das neue Bild ließ sich nicht speichern. „${title}“ behält sein bisheriges Bild.`,
   },
   sources: {
     tiktok: 'TikTok',
