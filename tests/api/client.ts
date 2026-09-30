@@ -6,7 +6,7 @@ export interface Caller {
   fetch: (path: string, init?: RequestInit) => Promise<Response>
 }
 
-export const ALLOWLISTED = ['ada@example.com', 'grace@example.com', 'linus@example.com'] as const
+export { ALLOWLISTED } from '../support/test-auth-env'
 
 export function anonymous(): Caller {
   return { fetch: (path, init) => fetch(`${inject('apiBaseUrl')}${path}`, init) }

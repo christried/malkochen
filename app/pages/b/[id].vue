@@ -1,12 +1,7 @@
 <script setup lang="ts">
+import type { BoardView } from '~~/server/utils/boards'
+
 // A Board: its name and emoji and its Columns. Dishes come in later tickets.
-interface BoardView {
-  id: string
-  name: string
-  emoji: string
-  isOwner: boolean
-  columns: { id: string, name: string, isGekocht: boolean }[]
-}
 
 const t = useStrings()
 const { signOut } = useAuth()

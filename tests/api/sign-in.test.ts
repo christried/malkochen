@@ -23,7 +23,15 @@ describe('sign-in', () => {
   })
 
   test('the API refuses callers without a session', async () => {
-    const res = await anonymous().fetch('/api/boards/landing')
-    expect(res.status).toBe(401)
+    expect((await anonymous().fetch('/api/boards/landing')).status).toBe(401)
+    expect((await anonymous().fetch('/api/me')).status).toBe(401)
+  })
+
+  test('/api/me tells a signed-in user who they are', async () => {
+    const ada = await signIn(ALLOWLISTED[0])
+
+    const res = await ada.fetch('/api/me')
+    expect(res.status).toBe(200)
+    expect((await res.json()).email).toBe(ALLOWLISTED[0])
   })
 })

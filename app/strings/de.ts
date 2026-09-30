@@ -9,11 +9,12 @@ export const de = {
     headline: 'Was willst du mal kochen?',
     intro: 'Sammelt Essen, das ihr online findet, und plant, was ihr als Nächstes kocht.',
     google: 'Mit Google anmelden',
+    pending: 'Einen Moment …',
     failed: 'Die Anmeldung hat nicht geklappt. Versuch es gleich noch mal.',
   },
   notUnlocked: {
     headline: 'Gleich geht’s los!',
-    body: 'Du bist noch nicht für malkochen freigeschaltet. Sag der Person Bescheid, die dich eingeladen hat, dann kannst du loslegen.',
+    body: 'Du bist noch nicht für malkochen freigeschaltet. Sag der Person Bescheid, die malkochen für euch eingerichtet hat, dann kannst du loslegen.',
     otherAccount: 'Mit einem anderen Konto anmelden',
   },
   board: {

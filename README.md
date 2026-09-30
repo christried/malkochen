@@ -34,6 +34,7 @@ variables are validated at startup by `server/env.ts` — add new ones there too
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client for sign-in. | `.env` locally; Vercel **production, preview and development**. |
 | `ALLOWLIST_EMAILS` | The Allowlist: comma-separated emails allowed to sign in at all. | `.env` locally; Vercel **production, preview and development**. |
 | `AUTH_DEV_BYPASS` | `1` enables `POST /api/auth/dev/sign-in` (below). The server refuses to start with it on Vercel production or preview. | `.env` locally, optional. The test runners set it themselves. **Never** in Vercel. |
+| `VERCEL_ENV` | Set by Vercel itself; `server/env.ts` reads it only to refuse `AUTH_DEV_BYPASS` in production and preview. | Never set by hand. |
 | `TEST_DATABASE_ADMIN_URL` | Superuser URL of the **local** Postgres. `pnpm test` and `pnpm test:e2e` use it to create and drop a throwaway database per run. | `.env` locally; `env:` of `.github/workflows/ci.yml` (points at the job's Postgres service, no secret). Never in Vercel. |
 
 The test runners (`tests/api/global-setup.ts`, `tests/e2e/run.ts`) override

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
 
@@ -19,7 +20,7 @@ test('a refused sign-in shows the friendly "Not unlocked" screen', async ({ page
 })
 
 test('after signing in the app opens "Meine Küche" with its three Columns', async ({ page }) => {
-  await signIn(page, 'linus@example.com')
+  await signIn(page, ALLOWLISTED[2])
   await gotoHydrated(page, '/')
 
   await expect(page).toHaveURL(/\/b\/[0-9a-f-]{36}$/)

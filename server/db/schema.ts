@@ -9,8 +9,8 @@ const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull(
 
 // ---------------------------------------------------------------------------
 // Better Auth. The JS property names are what its Drizzle adapter queries, so
-// they must match its own field names exactly -- tests/unit/auth-schema.test.ts
-// compares them against better-auth's table definitions.
+// they must match its own field names exactly. Better Auth checks this itself on
+// first use (SchemaMismatchError), which the API tests' sign-ins exercise.
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),

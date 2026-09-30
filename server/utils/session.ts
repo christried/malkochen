@@ -17,9 +17,15 @@ export function requireUser(event: H3Event): SessionUser {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// The one answer for a Board that doesn't exist or isn't the caller's: 404
+// either way, so non-Members can't tell the two apart.
+export function boardNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Board not found' })
+}
+
 // A Board id from the route. Anything that isn't a UUID can't be a Board.
 export function boardIdParam(event: H3Event): string {
   const id = getRouterParam(event, 'id') ?? ''
-  if (!UUID.test(id)) throw createError({ statusCode: 404, statusMessage: 'Board not found' })
+  if (!UUID.test(id)) throw boardNotFound()
   return id
 }

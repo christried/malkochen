@@ -5,13 +5,25 @@
 // graphics (topfbert-wow, not-unlocked) are wired in a later ticket.
 const t = useStrings()
 const { signInWithGoogle } = useAuth()
+
+// "Signing in" state: from the tap until the browser leaves for Google.
+const signingIn = ref(false)
+async function startGoogleSignIn() {
+  signingIn.value = true
+  try {
+    await signInWithGoogle()
+  }
+  catch {
+    signingIn.value = false
+  }
+}
 const route = useRoute()
 
 const notUnlocked = computed(() => route.query.error === 'not_allowed')
 const failed = computed(() => Boolean(route.query.error) && !notUnlocked.value)
 
-// The sign-in hero's ring of Placeholder Image tiles around Topfbert.
-const RING = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake']
+// The sign-in hero's ring of Placeholder Images around Topfbert.
+const HERO_PLACEHOLDERS = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake']
 </script>
 
 <template>
@@ -38,19 +50,21 @@ const RING = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake'
       </p>
       <button
         type="button"
-        class="mt-8 rounded-pill bg-surface-muted px-6 py-4 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-        @click="signInWithGoogle"
+        class="mt-8 rounded-pill bg-surface-muted px-6 py-4 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+        :disabled="signingIn"
+        :aria-busy="signingIn"
+        @click="startGoogleSignIn"
       >
-        {{ t.notUnlocked.otherAccount }}
+        {{ signingIn ? t.signIn.pending : t.notUnlocked.otherAccount }}
       </button>
     </template>
 
     <template v-else>
       <div class="relative w-[min(88vw,360px)] aspect-square">
         <img
-          v-for="(dish, i) in RING"
-          :key="dish"
-          :src="`/placeholders/${dish}-light.svg`"
+          v-for="(placeholder, i) in HERO_PLACEHOLDERS"
+          :key="placeholder"
+          :src="`/placeholders/${placeholder}-light.svg`"
           alt=""
           class="absolute left-1/2 top-1/2 -ml-[11%] -mt-[11%] w-[22%] rounded-thumb shadow-card"
           :style="{ transform: `rotate(${i * 45}deg) translateY(-205%) rotate(${-i * 45}deg)` }"
@@ -81,10 +95,12 @@ const RING = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake'
       </p>
       <button
         type="button"
-        class="mt-8 rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse shadow-fab transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-        @click="signInWithGoogle"
+        class="mt-8 rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse shadow-fab transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+        :disabled="signingIn"
+        :aria-busy="signingIn"
+        @click="startGoogleSignIn"
       >
-        {{ t.signIn.google }}
+        {{ signingIn ? t.signIn.pending : t.signIn.google }}
       </button>
     </template>
   </main>
