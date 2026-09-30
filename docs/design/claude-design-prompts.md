@@ -27,7 +27,7 @@ The prompts are in English, but the **app's UI is German**: every UI string in q
 > - **Motion graphic** (a pre-made animated clip, e.g. an animated illustration or a celebration).
 >
 > For now, design only the **Board screen on a phone**, in **2–3 clearly different directions** within that style:
-> - A **Board switcher** at the top, showing the Board's emoji and name (e.g. "🍜 WG-Küche").
+> - A **Board switcher** at the top, showing the Board's emoji and name (e.g. "🍜 Kochclub").
 > - **Column tabs** with Dish counts ("Ideen 12 · Diese Woche 3 · Gekocht 27"). One Column is visible at a time, and you swipe between Columns.
 > - A **search** entry and a prominent, thumb-reachable **add** action.
 > - A list of **Dish cards**. Each card has:
@@ -173,7 +173,7 @@ The prompts are in English, but the **app's UI is German**: every UI string in q
 >    - "Besitz übertragen" (hand over ownership),
 >    - delete the Board, with a **type-the-Board-name confirmation**.
 > 5. **Delete Column dialog**: "4 Gerichte in 'Diese Woche'. Wohin verschieben?", with a Column picker (defaults to the first Column).
-> 6. **Invite landing**: "Du wurdest zu 🍜 WG-Küche eingeladen", with the Board's emoji and name, who invited you, and "Mit Google anmelden". Make this a warm, animated welcome (a **motion graphic**): it's many people's first contact with the app.
+> 6. **Invite landing**: "Du wurdest zu 🍜 Kochclub eingeladen", with the Board's emoji and name, who invited you, and "Mit Google anmelden". Make this a warm, animated welcome (a **motion graphic**): it's many people's first contact with the app.
 >
 > Light and dark.
 

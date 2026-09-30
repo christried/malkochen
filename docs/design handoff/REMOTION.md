@@ -287,7 +287,7 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
 - **Group:** Celebrations · **Usage:** 10th cooking (after toast)
 - **Canvas:** 1080×1080 (1:1) · **Length:** 54 frames = 1.8s @30fps · **Loop:** one-shot
 - **Background:** sage 55% into bg (full-screen wash is Vue; clip bg matches) — light `#D1DAC5` / dark `#686B59`
-- **Note:** Headline "WG-Klassiker!" and subline are Vue text over the wash.
+- **Note:** Headline "Klassiker!" and subline are Vue text over the wash.
 - **Storyboard:**
   - f0: Empty sage
   - f4: 10× pebble pops from scale 0, −20° (to f26, overshoot 1.12 at f18)
