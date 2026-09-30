@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@import "./tokens.css";
+/* The design handoff's Tailwind preset (docs/design handoff/tailwind.preset.js,
+   copied verbatim) maps every utility to a CSS variable from tokens.css, so
+   light/dark needs no `dark:` variants. */
+@config "../../../tailwind.config.cjs";
+
+html {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Global reduced-motion rule. Durations already collapse via the --dur-*
+   tokens in tokens.css (fades keep their 200ms, per the handoff's
+   reducedMotion notes), so transitions must use the tokens. This rule catches
+   everything else: keyframe animations stop after one instant pass, and
+   smooth scrolling jumps. JS-driven motion checks
+   `matchMedia('(prefers-reduced-motion: reduce)')` itself. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
