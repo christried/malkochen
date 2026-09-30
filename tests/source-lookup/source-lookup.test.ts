@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { createSourceLookup } from '../../server/source-lookup'
 import { fakeUpstream, fixture, html, json, redirect, status, type Route } from './fake-upstream'
 
-function lookupWith(routes: Route[], options: { instagramAccessToken?: string, timeoutMs?: number } = {}) {
+function lookupWith(routes: Route[], options: { timeoutMs?: number } = {}) {
   const upstream = fakeUpstream(routes)
   return { lookup: createSourceLookup({ fetch: upstream.fetch, ...options }), upstream }
 }
@@ -66,58 +66,42 @@ describe('TikTok', () => {
   })
 })
 
-const INSTAGRAM_OEMBED = 'https://graph.facebook.com/'
+const INSTAGRAM_REEL_PAGE = 'https://www.instagram.com/reel/C0WUh-tqkxU/'
 
 describe('Instagram', () => {
-  test('a Reel gives caption and thumbnail when Meta returns them', async () => {
-    const { lookup } = lookupWith(
-      [[INSTAGRAM_OEMBED, () => json(fixture('instagram-oembed.json'))]],
-      { instagramAccessToken: '123|secret' },
-    )
+  test('a Reel gives the image from its page and never a title (Instagram shows no caption to servers)', async () => {
+    const { lookup } = lookupWith([[INSTAGRAM_REEL_PAGE, () => html(fixture('instagram-reel-page.html'))]])
 
-    expect(await lookup('https://www.instagram.com/reel/C7xYzAbCdEf/?igsh=MTc4MmM1YmI2Ng==')).toEqual({
+    expect(await lookup('https://www.instagram.com/vegan_govegan/reel/C0WUh-tqkxU/?igsh=MTc4MmM1YmI2Ng==')).toEqual({
       kind: 'instagram-reel',
-      canonicalLink: 'https://www.instagram.com/reel/C7xYzAbCdEf/',
-      suggestedTitle: 'Creamy Gochujang Pasta',
-      imageUrl: expect.stringMatching(/^https:\/\/scontent-fra5-1\.cdninstagram\.com\/v\/t51\.2885-15\/448577823_n\.jpg\?/),
+      canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
+      suggestedTitle: '',
+      imageUrl: expect.stringMatching(/^https:\/\/scontent-dus1-1\.cdninstagram\.com\/v\/t51\.71878-15\/498545386_3002789429884475_7188408567440722305_n\.jpg\?stp=cmp1_dst-jpg_e35_s640x640_tt6&_nc_cat=100&/),
     })
   })
 
-  test('a post whose oEmbed lacks title and thumbnail degrades to no title, no image', async () => {
-    const { lookup } = lookupWith(
-      [[INSTAGRAM_OEMBED, () => json(fixture('instagram-oembed-no-fields.json'))]],
-      { instagramAccessToken: '123|secret' },
-    )
+  test('a post is its own kind of Source', async () => {
+    const { lookup } = lookupWith([['https://www.instagram.com/p/C0WUh-tqkxU/', () => html(fixture('instagram-reel-page.html'))]])
 
-    expect(await lookup('https://instagram.com/p/C8aBcDeFgHi')).toEqual({
+    expect(await lookup('https://instagram.com/p/C0WUh-tqkxU')).toMatchObject({
       kind: 'instagram-post',
-      canonicalLink: 'https://www.instagram.com/p/C8aBcDeFgHi/',
-      suggestedTitle: '',
-      imageUrl: null,
+      canonicalLink: 'https://www.instagram.com/p/C0WUh-tqkxU/',
+      imageUrl: expect.stringMatching(/^https:\/\/scontent-dus1-1\.cdninstagram\.com\//),
     })
   })
 
-  test('without an access token it asks nobody and degrades to no title, no image', async () => {
-    const { lookup, upstream } = lookupWith([[INSTAGRAM_OEMBED, () => json(fixture('instagram-oembed.json'))]])
+  test('a login wall gives no title and no image', async () => {
+    const { lookup } = lookupWith([
+      [INSTAGRAM_REEL_PAGE, () => redirect('https://www.instagram.com/accounts/login/?next=%2Freel%2FC0WUh-tqkxU%2F')],
+      ['https://www.instagram.com/accounts/login/', () => html(fixture('instagram-login-page.html'))],
+    ])
 
-    expect(await lookup('https://www.instagram.com/veganbowls/reel/C7xYzAbCdEf/')).toEqual({
+    expect(await lookup('https://www.instagram.com/reels/C0WUh-tqkxU/')).toEqual({
       kind: 'instagram-reel',
-      canonicalLink: 'https://www.instagram.com/reel/C7xYzAbCdEf/',
+      canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
       suggestedTitle: '',
       imageUrl: null,
     })
-    expect(upstream.requested).toEqual([])
-  })
-
-  test('a Meta error response degrades to no title, no image', async () => {
-    const { lookup } = lookupWith(
-      [[INSTAGRAM_OEMBED, () => json({ error: { message: 'Invalid OAuth access token.', code: 190 } }, 400)]],
-      { instagramAccessToken: '123|wrong' },
-    )
-
-    const result = await lookup('https://www.instagram.com/reels/C7xYzAbCdEf/')
-
-    expect(result).toMatchObject({ kind: 'instagram-reel', suggestedTitle: '', imageUrl: null })
   })
 })
 

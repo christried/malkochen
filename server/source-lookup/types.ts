@@ -35,7 +35,6 @@ export type SourceLookup = (link: string) => Promise<SourceLookupResult>
 
 export interface StrategyContext {
   http: Http
-  instagramAccessToken?: string
 }
 
 // One per kind of Source. `match` decides from the link alone (no network)

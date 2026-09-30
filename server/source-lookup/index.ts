@@ -14,9 +14,6 @@ export type { SourceKind, SourceLookup, SourceLookupResult } from './types'
 // can be swapped for a paid unfurl service without changes elsewhere.
 
 export interface SourceLookupOptions {
-  // Meta app access token (`<app id>|<app secret>`) for Instagram oEmbed.
-  // Without it Instagram links give no title and no image.
-  instagramAccessToken?: string
   // Time budget for one lookup, across all its upstream requests.
   timeoutMs?: number
   fetch?: typeof fetch
@@ -50,7 +47,7 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
 
     const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
     try {
-      return await strategy.lookup(url, { http, instagramAccessToken: options.instagramAccessToken })
+      return await strategy.lookup(url, { http })
     }
     catch {
       return nothingFound(guess)

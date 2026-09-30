@@ -1,11 +1,11 @@
-import { asString, httpUrl, withoutTracking } from './link'
-import { shortenTitle } from './title'
+import { metaTags } from './html'
+import { httpUrl, withoutTracking } from './link'
 import { nothingFound, type SourceGuess, type SourceKind, type Strategy } from './types'
 
-// Instagram: Meta's instagram_oembed with an app access token. Meta has
-// removed fields from it before; with no token, an error, or missing fields
-// it degrades to "no title, no image" (the Placeholder Image picker covers it).
-const GRAPH_API = 'https://graph.facebook.com/v23.0/instagram_oembed'
+// Instagram: the image comes from the post page's og:image, which Instagram
+// serves to servers without a login. The caption never is ("caption":null),
+// and Meta's instagram_oembed has returned neither since November 2025, so an
+// Instagram link never has a Suggested Title. A login wall gives no image.
 const HOST = /^(?:www\.|m\.)?(?:instagram\.com|instagr\.am)$/
 // /reel/<code>, /reels/<code>, /p/<code>, /tv/<code>, optionally after a
 // /<username>/ prefix.
@@ -40,18 +40,18 @@ export const instagram: Strategy = {
     return guess(url)
   },
 
-  async lookup(url, { http, instagramAccessToken }) {
+  async lookup(url, { http }) {
     const post = SHARE_PATH.test(url.pathname)
       ? postLink(await http.resolve(url.href, hop => postLink(hop) !== null))
       : postLink(url)
-    if (!post || !instagramAccessToken) return nothingFound(post ?? guess(url))
+    if (!post) return nothingFound(guess(url))
 
-    const query = new URLSearchParams({ url: post.canonicalLink, access_token: instagramAccessToken })
-    const oembed = await http.json(`${GRAPH_API}?${query}`)
+    const page = await http.page(post.canonicalLink)
+    const meta = metaTags(page.html ?? '')
     return {
       ...post,
-      suggestedTitle: shortenTitle(asString(oembed?.title)),
-      imageUrl: httpUrl(oembed?.thumbnail_url),
+      suggestedTitle: '',
+      imageUrl: httpUrl(meta.get('og:image')) ?? httpUrl(meta.get('twitter:image')),
     }
   },
 }

@@ -41,7 +41,7 @@ The link a Dish came from. Optional: a Dish can also be added from memory or a c
 _Avoid_: URL, post, origin
 
 **Supported Source**:
-A kind of Source malkochen fully supports, with an image reliably found: TikTok video, Instagram Reel, Instagram post, YouTube Short, Pinterest Pin, food blog page. All except Pinterest Pins also yield a Suggested Title. Any other link is still accepted, on a best-effort basis.
+A kind of Source malkochen fully supports, with an image reliably found: TikTok video, Instagram Reel, Instagram post, YouTube Short, Pinterest Pin, food blog page. TikTok videos, YouTube Shorts and food blog pages also yield a Suggested Title; Instagram and Pinterest don't show captions to other apps, so their Dishes are titled by hand. Any other link is still accepted, on a best-effort basis.
 _Avoid_: Platform, integration
 
 **Suggested Title**:
