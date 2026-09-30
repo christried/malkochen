@@ -42,9 +42,9 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   if (!await isMember(boardId, user.id)) throw boardNotFound()
 
   const { source, imageUrl, imageTicket, ...rest } = parsed.data
-  const stored = imageUrl && imageTicket && imageTickets.check(user.id, imageUrl, imageTicket)
-    ? await copyImage(imageUrl)
-    : null
+  const ticketValid = Boolean(imageUrl && imageTicket && imageTickets.check(user.id, imageUrl, imageTicket))
+  if (imageUrl && !ticketValid) console.warn(`[image-store] not copied: no valid Image Ticket (${imageUrl})`)
+  const stored = imageUrl && ticketValid ? await copyImage(imageUrl) : null
   const created = await addDish(boardId, user, {
     ...rest,
     source: source ? sourceOf(source) : null,

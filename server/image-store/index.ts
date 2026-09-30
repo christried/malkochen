@@ -27,6 +27,8 @@ export interface ImageStoreOptions {
   timeoutMs?: number
   maxBytes?: number
   fetch?: typeof fetch
+  // Told why a copy failed; the copy itself still just answers null.
+  onFailure?: (imageUrl: string, reason: string) => void
 }
 
 // Raster formats only: an SVG served from our own origin could run script.
@@ -47,17 +49,21 @@ export function createImageStore(options: ImageStoreOptions): ImageStore {
   const fetchImpl = options.fetch ?? globalThis.fetch
   const timeoutMs = options.timeoutMs ?? 10_000
   const maxBytes = options.maxBytes ?? 10_000_000
+  const fail = (imageUrl: string, reason: string) => {
+    options.onFailure?.(imageUrl, reason)
+    return null
+  }
 
   return async (imageUrl) => {
+    const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
+    const found = await http.bytes(imageUrl, type => mediaType(type) in IMAGE_TYPES, maxBytes).catch(() => null)
+    if (!found) return fail(imageUrl, 'download failed (unreachable, not an image, empty or too large)')
+    const type = mediaType(found.contentType)
     try {
-      const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
-      const found = await http.bytes(imageUrl, type => mediaType(type) in IMAGE_TYPES, maxBytes)
-      if (!found) return null
-      const type = mediaType(found.contentType)
       return await options.storage.save(`dishes/${randomUUID()}.${IMAGE_TYPES[type]}`, found.bytes, type)
     }
-    catch {
-      return null
+    catch (error) {
+      return fail(imageUrl, `storage failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 }

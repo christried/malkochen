@@ -147,3 +147,17 @@ test('disk storage writes the file and serves it under /images/', async () => {
   expect(url).toBe('/images/dishes/abc.jpg')
   expect([...await readFile(join(dir, 'dishes', 'abc.jpg'))]).toEqual([...JPEG])
 })
+
+test('each failure is reported with its reason, so production logs show why', async () => {
+  const failures: string[] = []
+  const onFailure = (imageUrl: string, reason: string) => { failures.push(`${imageUrl}: ${reason}`) }
+  const upstream = fakeUpstream([[COVER, () => image()], ['https://cdn.example/page', () => new Response('<html>', { headers: { 'content-type': 'text/html' } })]])
+
+  await createImageStore({ fetch: upstream.fetch, storage: recordingStorage(), onFailure })('https://cdn.example/page')
+  await createImageStore({ fetch: upstream.fetch, storage: recordingStorage(true), onFailure })(COVER)
+
+  expect(failures).toEqual([
+    'https://cdn.example/page: download failed (unreachable, not an image, empty or too large)',
+    `${COVER}: storage failed: storage is down`,
+  ])
+})

@@ -11,6 +11,8 @@ export const IMAGE_DIR = resolve('.data/images')
 
 export const copyImage: ImageStore = createImageStore({
   storage: BLOB_READ_WRITE_TOKEN ? blobStorage(BLOB_READ_WRITE_TOKEN) : diskStorage(IMAGE_DIR),
+  // The Member only sees a notice; the reason goes to the runtime logs.
+  onFailure: (imageUrl, reason) => console.warn(`[image-store] not copied: ${reason} (${imageUrl})`),
 })
 
 // Signs the images Source Lookup finds, so only those are ever copied.
