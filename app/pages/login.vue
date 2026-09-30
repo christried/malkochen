@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { InviteView } from '~~/server/utils/invites'
+
 // Sign-in, and the "Not unlocked" screen for a refused one: Better Auth sends
 // a refused Google sign-in back here as /login?error=not_allowed
 // (server/utils/auth.ts). Both are the handoff's stills for now; their motion
@@ -21,6 +23,16 @@ const route = useRoute()
 
 const notUnlocked = computed(() => route.query.error === 'not_allowed')
 const failed = computed(() => Boolean(route.query.error) && !notUnlocked.value)
+
+// Someone refused on the way in from an Invite Link is told to ask its Owner
+// (PRD story 2). The invite stays remembered, so a later sign-in joins.
+const { data: invite } = await useFetch<InviteView>('/api/invites/pending', {
+  immediate: notUnlocked.value,
+  watch: false,
+})
+const notUnlockedBody = computed(() => invite.value
+  ? t.notUnlocked.invitedBody(invite.value.owner.name, `${invite.value.board.emoji} ${invite.value.board.name}`)
+  : t.notUnlocked.body)
 
 // The sign-in hero's ring of Placeholder Images around Topfbert.
 const HERO_PLACEHOLDERS = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake']
@@ -46,7 +58,7 @@ const HERO_PLACEHOLDERS = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 
         {{ t.notUnlocked.headline }}
       </h1>
       <p class="mt-4 max-w-md text-body text-text-muted">
-        {{ t.notUnlocked.body }}
+        {{ notUnlockedBody }}
       </p>
       <button
         type="button"

@@ -30,6 +30,8 @@ export interface BoardSummary extends BoardNameAndEmoji {
 }
 
 export interface BoardView extends BoardSummary {
+  // The secret of its Invite Link, which every Member may share.
+  inviteToken: string
   columns: { id: string, name: string, isGekocht: boolean, dishes: DishView[] }[]
 }
 
@@ -149,7 +151,7 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: Omit<Bo
 // The Board with its Columns and their Dishes, or null unless the user is one of its Members.
 export async function getBoard(boardId: string, userId: string): Promise<BoardView | null> {
   const [found] = await db
-    .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner })
+    .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, inviteToken: board.inviteToken })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))

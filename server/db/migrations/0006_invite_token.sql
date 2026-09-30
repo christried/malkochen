@@ -1,0 +1,2 @@
+ALTER TABLE "board" ADD COLUMN "invite_token" text DEFAULT replace(gen_random_uuid()::text, '-', '') NOT NULL;--> statement-breakpoint
+ALTER TABLE "board" ADD CONSTRAINT "board_invite_token_unique" UNIQUE("invite_token");

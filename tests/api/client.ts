@@ -26,11 +26,44 @@ export async function signIn(email: string): Promise<Caller> {
   }
 }
 
-export function devSignIn(email: string): Promise<Response> {
-  return anonymous().fetch('/api/auth/dev/sign-in', {
+// A browser that keeps every cookie the server sets or clears, before and
+// after signing in -- for state that must survive a sign-in, like a
+// remembered invite.
+export interface Browser extends Caller {
+  signIn: (email: string) => Promise<Response>
+  cookie: (name: string) => string | undefined
+}
+
+export function browser(): Browser {
+  const jar = new Map<string, string>()
+  const fetchKeeping = async (path: string, init?: RequestInit) => {
+    const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ')
+    const res = await fetch(`${inject('apiBaseUrl')}${path}`, { ...init, headers: { ...init?.headers, cookie } })
+    for (const set of res.headers.getSetCookie()) {
+      const [pair = ''] = set.split(';')
+      const name = pair.slice(0, pair.indexOf('='))
+      const value = pair.slice(pair.indexOf('=') + 1)
+      if (value === '' || /max-age=0\b/i.test(set)) jar.delete(name)
+      else jar.set(name, value)
+    }
+    return res
+  }
+  return {
+    fetch: fetchKeeping,
+    signIn: email => fetchKeeping('/api/auth/dev/sign-in', devSignInInit(email)),
+    cookie: name => jar.get(name),
+  }
+}
+
+function devSignInInit(email: string): RequestInit {
+  return {
     method: 'POST',
     // What a browser sends; Better Auth refuses cookie-carrying POSTs without it.
     headers: { 'content-type': 'application/json', 'origin': inject('apiBaseUrl') },
     body: JSON.stringify({ email }),
-  })
+  }
+}
+
+export function devSignIn(email: string): Promise<Response> {
+  return anonymous().fetch('/api/auth/dev/sign-in', devSignInInit(email))
 }

@@ -1,0 +1,117 @@
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import type { H3Event } from 'h3'
+import { db } from '../db'
+import { board, membership, user } from '../db/schema'
+import type { BoardMember, BoardNameAndEmoji } from './boards'
+
+// Invite Links (CONTEXT.md): /invite/<token> lets a signed-in user on the
+// Allowlist become a Member of the Board. The token is the Board's
+// `invite_token`; it never expires, and the Owner can reset it.
+
+// What the invite landing shows: the Board, who invited you (its Owner) and
+// who is already on it.
+export interface InviteView {
+  board: Omit<BoardNameAndEmoji, 'id'>
+  owner: BoardMember
+  members: BoardMember[]
+}
+
+// Tokens are 32 hex characters; anything else can't be one.
+const TOKEN = /^[0-9a-f]{32}$/
+
+export function inviteNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Invite Link not found' })
+}
+
+// An Invite Link token from the route. Anything malformed is a link that doesn't exist.
+export function inviteTokenParam(event: H3Event): string {
+  const token = getRouterParam(event, 'token') ?? ''
+  if (!TOKEN.test(token)) throw inviteNotFound()
+  return token
+}
+
+async function boardIdOf(token: string): Promise<string | null> {
+  if (!TOKEN.test(token)) return null
+  const [found] = await db.select({ id: board.id }).from(board).where(eq(board.inviteToken, token))
+  return found?.id ?? null
+}
+
+// The invite landing for a token, or null if no Board has it (any more).
+export async function inviteView(token: string): Promise<InviteView | null> {
+  const [found] = await db
+    .select({ id: board.id, name: board.name, emoji: board.emoji })
+    .from(board)
+    .where(eq(board.inviteToken, token))
+  if (!found) return null
+
+  const members = await db
+    .select({ id: user.id, name: user.name, image: user.image, isOwner: membership.isOwner })
+    .from(membership)
+    .innerJoin(user, eq(user.id, membership.userId))
+    .where(eq(membership.boardId, found.id))
+    .orderBy(desc(membership.isOwner), asc(membership.joinedAt))
+  const [owner] = members
+  if (!owner?.isOwner) return null
+  const strip = ({ isOwner: _, ...m }: typeof owner): BoardMember => m
+  return { board: { name: found.name, emoji: found.emoji }, owner: strip(owner), members: members.map(strip) }
+}
+
+// Makes the user a Member of the token's Board (PRD story 64); for someone
+// already on it, nothing changes (story 65). Joining counts as opening the
+// Board, so the app lands on it next. The Board's id, or null if no Board
+// has the token.
+export async function joinByInvite(token: string, userId: string): Promise<string | null> {
+  const boardId = await boardIdOf(token)
+  if (!boardId) return null
+  await db
+    .insert(membership)
+    .values({ boardId, userId, lastOpenedAt: new Date() })
+    .onConflictDoNothing()
+  return boardId
+}
+
+// Gives the Board a new token, so the old link stops working (story 66).
+// 'forbidden' for a Member who isn't the Owner, null for a non-Member.
+export async function resetInvite(boardId: string, userId: string): Promise<string | 'forbidden' | null> {
+  const [found] = await db
+    .select({ isOwner: membership.isOwner })
+    .from(membership)
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+  if (!found) return null
+  if (!found.isOwner) return 'forbidden'
+  const [updated] = await db
+    .update(board)
+    .set({ inviteToken: sql`default` })
+    .where(eq(board.id, boardId))
+    .returning({ inviteToken: board.inviteToken })
+  return updated?.inviteToken ?? null
+}
+
+// ---------------------------------------------------------------------------
+// The remembered invite (story 5): a cookie set on the invite landing when
+// the visitor starts signing in. A sign-in that goes through joins its Board
+// (server/utils/auth.ts); a refused one leaves it, so "Not unlocked" can name
+// the Owner and a later sign-in still joins.
+
+export const REMEMBERED_INVITE_COOKIE = 'malkochen.invite'
+
+// Long enough for the Owner to put the visitor on the Allowlist.
+export const REMEMBERED_INVITE_MAX_AGE = 60 * 60 * 24 * 30
+
+export function rememberInvite(event: H3Event, token: string) {
+  setCookie(event, REMEMBERED_INVITE_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: getRequestURL(event).protocol === 'https:',
+    path: '/',
+    maxAge: REMEMBERED_INVITE_MAX_AGE,
+  })
+}
+
+export function rememberedInvite(event: H3Event): string | undefined {
+  return getCookie(event, REMEMBERED_INVITE_COOKIE)
+}
+
+export function forgetInvite(event: H3Event) {
+  deleteCookie(event, REMEMBERED_INVITE_COOKIE, { path: '/' })
+}

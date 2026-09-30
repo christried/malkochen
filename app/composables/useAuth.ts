@@ -7,7 +7,9 @@ const authClient = createAuthClient()
 
 export function useAuth() {
   return {
-    signInWithGoogle: () => authClient.signIn.social({ provider: 'google', callbackURL: '/' }),
+    // Back to `callbackURL` once signed in: the Board used last, or the
+    // invite landing, which then opens the invited Board.
+    signInWithGoogle: (callbackURL = '/') => authClient.signIn.social({ provider: 'google', callbackURL }),
     signOut: async () => {
       await authClient.signOut()
       await navigateTo('/login')

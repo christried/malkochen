@@ -7,7 +7,7 @@ import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
 // and emoji, and its Columns. Its own page, not a child of the Board: any
 // page under b/[id]/ opens over the Board (a route group doesn't help, it is
 // nested all the same), so it lives here and sets its path. Later tickets add
-// Members, the Invite Link and "Board verlassen" below. Every change saves at
+// Members and "Board verlassen" below. Every change saves at
 // once; one that fails is put back and a notice says so.
 definePageMeta({ path: '/b/:id/settings' })
 
@@ -149,6 +149,52 @@ async function gotDishes(column: ColumnRow): Promise<boolean> {
   return true
 }
 
+// The Invite Link (PRD stories 62, 63, 66): any Member copies or shares it;
+// only the Owner resets it, after confirming, since the old one then stops
+// working wherever it was sent.
+const origin = useRequestURL().origin
+const inviteToken = ref(board.value?.inviteToken ?? '')
+const inviteLink = computed(() => `${origin}/invite/${inviteToken.value}`)
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(inviteLink.value)
+    toast.value = { text: t.settings.copied, duration: NOTICE_MS }
+  }
+  catch {
+    failed()
+  }
+}
+
+// The phone's share sheet, where the browser has one.
+const canShare = ref(false)
+onMounted(() => {
+  canShare.value = typeof navigator.share === 'function'
+})
+async function shareLink() {
+  const label = `${saved.value.emoji} ${saved.value.name}`
+  try {
+    await navigator.share({ title: label, text: t.settings.shareText(label), url: inviteLink.value })
+  }
+  catch (err) {
+    // Closing the share sheet without sharing is no failure.
+    if (!(err instanceof DOMException && err.name === 'AbortError')) failed()
+  }
+}
+
+const confirmingReset = ref(false)
+async function resetLink() {
+  confirmingReset.value = false
+  try {
+    const reset = await $fetch<{ inviteToken: string }>(`/api/boards/${id.value}/invite/reset`, { method: 'POST' })
+    inviteToken.value = reset.inviteToken
+    toast.value = { text: t.settings.resetDone, duration: NOTICE_MS }
+  }
+  catch {
+    failed()
+  }
+}
+
 function confirmDelete() {
   const column = deleting.value
   const target = columns.value.find(c => c.id === moveTo.value)
@@ -263,7 +309,86 @@ function confirmDelete() {
           </button>
         </form>
       </section>
+
+      <section
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-invite"
+      >
+        <h2
+          id="settings-invite"
+          class="px-1 text-overline uppercase text-text-muted"
+        >
+          {{ t.settings.invite }}
+        </h2>
+        <div class="flex flex-col gap-1.5">
+          <label
+            for="settings-invite-link"
+            class="text-label"
+          >{{ t.settings.inviteLink }}</label>
+          <input
+            id="settings-invite-link"
+            :value="inviteLink"
+            type="text"
+            readonly
+            aria-describedby="settings-invite-hint"
+            class="truncate rounded-field border border-line-strong bg-surface-muted px-4 py-3 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            @focus="($event.target as HTMLInputElement).select()"
+          >
+          <p
+            id="settings-invite-hint"
+            class="px-1 text-small text-text-muted"
+          >
+            {{ t.settings.inviteHint }}
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button
+            v-if="canShare"
+            type="button"
+            class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            @click="shareLink"
+          >
+            {{ t.settings.shareLink }}
+          </button>
+          <button
+            type="button"
+            class="rounded-pill px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            :class="canShare ? 'bg-surface-muted text-text' : 'bg-inverse text-on-inverse'"
+            @click="copyLink"
+          >
+            {{ t.settings.copyLink }}
+          </button>
+          <DangerButton
+            v-if="board.isOwner"
+            @click="confirmingReset = true"
+          >
+            {{ t.settings.resetLink }}
+          </DangerButton>
+        </div>
+      </section>
     </div>
+
+    <AppSheet
+      v-model:open="confirmingReset"
+      :title="t.settings.resetConfirm"
+      :close-label="t.settings.close"
+    >
+      <p class="mt-3 text-body text-text-muted">
+        {{ t.settings.resetBody }}
+      </p>
+      <div class="mt-5 flex flex-col gap-2">
+        <DangerButton @click="resetLink">
+          {{ t.settings.resetLink }}
+        </DangerButton>
+        <button
+          type="button"
+          class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+          @click="confirmingReset = false"
+        >
+          {{ t.settings.cancel }}
+        </button>
+      </div>
+    </AppSheet>
 
     <AppSheet
       v-model:open="choosingEmoji"
