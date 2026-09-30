@@ -158,6 +158,18 @@ watch(() => route.params.dishId, async (dishId, closedId) => {
 
 const adding = ref(false)
 
+// Search (PRD story 36): the magnifier opens a field; while it holds a
+// query, what the search found takes the place of the Columns.
+const searchOpen = ref(false)
+const searchButton = useTemplateRef<ComponentPublicInstance>('searchButton')
+const { query, answer, failed: searchFailed, active: searching } = useDishSearch(() => id.value, board)
+async function closeSearch() {
+  query.value = ''
+  searchOpen.value = false
+  await nextTick()
+  searchButton.value?.$el.focus()
+}
+
 // A Dish saved to another Board doesn't show here. If a Source image
 // couldn't be stored, a notice says which image the Dish has instead.
 function onAdded(saved: SavedDish, boardId: string) {
@@ -225,9 +237,22 @@ async function deleteFromMenu() {
     :style="{ '--tint': tint, '--drop-tint': dropTint }"
   >
     <header class="flex flex-wrap items-center justify-between gap-4">
-      <h1 class="font-display text-title-l tablet:text-display-m">
-        <span aria-hidden="true">{{ board.emoji }}</span> {{ board.name }}
-      </h1>
+      <div class="flex items-center gap-3">
+        <h1 class="font-display text-title-l tablet:text-display-m">
+          <span aria-hidden="true">{{ board.emoji }}</span> {{ board.name }}
+        </h1>
+        <RoundButton
+          v-if="!searchOpen"
+          ref="searchButton"
+          :aria-label="t.search.open"
+          @click="searchOpen = true"
+        >
+          <AppIcon
+            name="search"
+            :size="20"
+          />
+        </RoundButton>
+      </div>
       <div class="flex flex-wrap items-center gap-3">
         <ThemePicker />
         <button
@@ -240,7 +265,23 @@ async function deleteFromMenu() {
       </div>
     </header>
 
+    <BoardSearchBar
+      v-if="searchOpen"
+      v-model="query"
+      class="mx-auto mt-4 max-w-[560px]"
+      @close="closeSearch"
+    />
+    <SearchResults
+      v-if="searching"
+      class="mx-auto mt-6 max-w-[560px]"
+      :board="board"
+      :answer="answer"
+      :failed="searchFailed"
+      data-testid="search-results"
+    />
+
     <ColumnTabs
+      v-show="!searching"
       ref="tabBar"
       class="tabs-bar sticky top-0 z-tabs -mx-4 mt-4 px-4 tablet:hidden"
       :columns="tabs"
@@ -253,6 +294,7 @@ async function deleteFromMenu() {
     />
 
     <div
+      v-show="!searching"
       ref="columns"
       data-testid="columns"
       class="columns mt-2 tablet:mt-8 tablet:snap-x tablet:snap-mandatory tablet:overflow-x-auto tablet:pb-4"
