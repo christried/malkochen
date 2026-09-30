@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SourceLookupResult } from '~~/server/source-lookup'
 import type { BoardSummary } from '~~/server/utils/boards'
-import type { DishView } from '~~/server/utils/dishes'
+import type { SavedDish } from '~~/server/utils/dishes'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
 
@@ -11,7 +11,7 @@ import { badgeKind } from '~~/shared/source-badge'
 // the Member picks the Board (the one they are on) and saves.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{ boardId: string }>()
-const emit = defineEmits<{ added: [dish: DishView, boardId: string] }>()
+const emit = defineEmits<{ added: [dish: SavedDish, boardId: string] }>()
 const t = useStrings()
 
 // "bowl" is the handoff's fallback Placeholder (illustrations.json autoPick).
@@ -19,10 +19,13 @@ const DEFAULT_PLACEHOLDER: Placeholder = 'bowl'
 
 const withoutLink = ref(false)
 const link = ref('')
+// GET /api/source-lookup: what Source Lookup found, and the Image Ticket
+// saving needs to copy the image.
+type LookupAnswer = SourceLookupResult & { imageTicket: string | null }
 type Lookup
   = | { status: 'idle' }
     | { status: 'looking' }
-    | { status: 'found', result: SourceLookupResult }
+    | { status: 'found', result: LookupAnswer }
     | { status: 'failed' }
 const lookup = ref<Lookup>({ status: 'idle' })
 
@@ -98,7 +101,7 @@ watch(link, (value) => {
   lookup.value = { status: 'looking' }
   lookupTimer = setTimeout(async () => {
     try {
-      const found = await $fetch<SourceLookupResult>('/api/source-lookup', { query: { link: target } })
+      const found = await $fetch<LookupAnswer>('/api/source-lookup', { query: { link: target } })
       if (run !== lookupRun) return
       title.value = found.suggestedTitle.slice(0, 200)
       lookup.value = { status: 'found', result: found }
@@ -150,7 +153,7 @@ async function save() {
       ? { link: result.value.canonicalLink, kind: result.value.kind }
       : { link: link.value.trim() }
   try {
-    const dish = await $fetch<DishView>(`/api/boards/${target}/dishes`, {
+    const dish = await $fetch<SavedDish>(`/api/boards/${target}/dishes`, {
       method: 'POST',
       body: {
         title: title.value,
@@ -158,6 +161,7 @@ async function save() {
         placeholder: placeholder.value,
         source,
         imageUrl: usingSourceImage.value ? sourceImage.value : null,
+        imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
       },
     })
     emit('added', dish, target)

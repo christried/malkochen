@@ -13,6 +13,7 @@ export interface LookupFixture {
   canonicalLink: string
   suggestedTitle: string
   imageUrl: string | null
+  imageTicket: string | null
 }
 
 // A lookup that answers with `fixture`, or fails like a broken server.

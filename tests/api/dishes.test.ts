@@ -1,4 +1,6 @@
 import { expect, test } from 'vitest'
+import { createImageTickets } from '../../server/image-store/tickets'
+import { testAuthEnv } from '../support/test-auth-env'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 
 interface Dish {
@@ -103,6 +105,8 @@ test('a Dish from a link keeps its Source: the canonical link and its kind', asy
   expect(res.status).toBe(201)
   const created = await res.json() as Dish
   expect(created.source).toEqual({ link: TIKTOK, kind: 'tiktok' })
+  // No image was asked for, so none failed to be stored.
+  expect(created).not.toHaveProperty('imageNotStored')
   expect((await landingBoard(ada)).columns[0]!.dishes[0]).toEqual(created)
 })
 
@@ -120,20 +124,48 @@ test('the Source kind comes from the link, except that a web page may be a blog'
     .toEqual({ link: 'https://www.chefkoch.de/rezepte/123/dal.html', kind: 'other' })
 })
 
-test('if the image cannot be copied, the Dish is saved with its Placeholder Image', async () => {
+// Tickets as GET /api/source-lookup issues them (same secret as the server).
+const tickets = createImageTickets(testAuthEnv('').BETTER_AUTH_SECRET!)
+const me = async (caller: Caller) => ((await (await caller.fetch('/api/me')).json()) as { id: string }).id
+
+test('if the image cannot be copied, the Dish is saved with its Placeholder Image, and says so', async () => {
   const ada = await signIn(ALLOWLISTED[0])
   const board = await landingBoard(ada)
-
   // A private address: the Image Store never fetches it, so the copy fails.
+  const imageUrl = 'http://127.0.0.1/cover.jpeg'
+
   const res = await addDish(ada, board.id, {
     title: 'Ramen',
     placeholder: 'ramen',
     source: { link: TIKTOK },
-    imageUrl: 'http://127.0.0.1/cover.jpeg',
+    imageUrl,
+    imageTicket: tickets.issue(await me(ada), imageUrl),
   })
 
   expect(res.status).toBe(201)
-  expect(await res.json()).toMatchObject({ title: 'Ramen', placeholder: 'ramen', imageUrl: null, source: { kind: 'tiktok' } })
+  const created = await res.json()
+  expect(created).toMatchObject({ title: 'Ramen', placeholder: 'ramen', imageUrl: null, source: { kind: 'tiktok' }, imageNotStored: true })
+  expect((await landingBoard(ada)).columns[0]!.dishes[0]).toEqual({ ...created, imageNotStored: undefined })
+})
+
+test.each([
+  ['no Image Ticket', () => undefined],
+  ['a forged Image Ticket', () => `${Date.now() + 60_000}.AAAA`],
+  ['another Member’s Image Ticket', () => tickets.issue('someone-else', 'https://cdn.example/cover.jpg')],
+])('an image with %s is not copied', async (_, ticket) => {
+  const ada = await signIn(ALLOWLISTED[0])
+  const board = await landingBoard(ada)
+
+  const res = await addDish(ada, board.id, {
+    title: 'Pho',
+    placeholder: 'ramen',
+    source: { link: TIKTOK },
+    imageUrl: 'https://cdn.example/cover.jpg',
+    imageTicket: ticket(),
+  })
+
+  expect(res.status).toBe(201)
+  expect(await res.json()).toMatchObject({ imageUrl: null, placeholder: 'ramen', imageNotStored: true })
 })
 
 test.each([

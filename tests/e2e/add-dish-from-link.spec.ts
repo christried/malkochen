@@ -36,6 +36,7 @@ test('a pasted link shows a loading state, then a preview with image and editabl
     canonicalLink: TIKTOK,
     suggestedTitle: 'Crispy Tofu Bowl',
     imageUrl: PORTRAIT,
+    imageTicket: 'fixture-ticket',
   }, new Promise(r => answer = r))
   await stubImage(page, PORTRAIT, 90, 160)
   const sheet = await openAddDish(page)
@@ -64,20 +65,23 @@ test('a pasted link shows a loading state, then a preview with image and editabl
     note: 'mit Erdnusssoße',
     source: { link: TIKTOK, kind: 'tiktok' },
     imageUrl: PORTRAIT,
+    imageTicket: 'fixture-ticket',
   })
   await expect(sheet).toBeHidden()
   const card = page.getByRole('region', { name: 'Ideen' }).getByRole('article').first()
   await expect(card).toHaveAccessibleName('Knusprige Tofu-Bowl')
   await expect(card.getByText('TikTok')).toBeVisible()
-  // The fixture host can't be downloaded from, so the copy failed and the
-  // Dish shows its Placeholder: never the third-party link.
+  // The image wasn't stored (the fixture ticket isn't valid, and the fixture
+  // host can't be downloaded from anyway), so the Dish shows its Placeholder,
+  // never the third-party link, and the Member is told.
   await expect(card.locator('img[src="/placeholders/bowl-light.svg"]')).toBeVisible()
   await expect(card.locator(`img[src="${PORTRAIT}"]`)).toHaveCount(0)
+  await expect(page.locator('[data-notice]')).toHaveText('Das Bild vom Link ließ sich nicht speichern. „Knusprige Tofu-Bowl“ hat jetzt ein Platzhalterbild.')
 })
 
 test('image only (Pinterest): a friendly prompt asks for the title, which is required', async ({ page }) => {
   const pin = 'https://www.pinterest.com/pin/123456789/'
-  await stubSourceLookup(page, { kind: 'pinterest-pin', canonicalLink: pin, suggestedTitle: '', imageUrl: LANDSCAPE })
+  await stubSourceLookup(page, { kind: 'pinterest-pin', canonicalLink: pin, suggestedTitle: '', imageUrl: LANDSCAPE, imageTicket: 'fixture-ticket' })
   await stubImage(page, LANDSCAPE, 160, 90)
   const sheet = await openAddDish(page)
 
@@ -102,15 +106,18 @@ test('image only (Pinterest): a friendly prompt asks for the title, which is req
 
   const body = savedBody(page)
   await save.click()
-  expect(await body).toMatchObject({ placeholder: 'pasta', imageUrl: null, source: { link: pin, kind: 'pinterest-pin' } })
+  expect(await body).toMatchObject({ placeholder: 'pasta', imageUrl: null, imageTicket: null, source: { link: pin, kind: 'pinterest-pin' } })
   const card = page.getByRole('article', { name: 'Zucchini-Lasagne' })
+  // A Placeholder the Member chose is no failure: no notice.
+  await expect(card).toBeVisible()
+  await expect(page.locator('[data-notice]')).toHaveCount(0)
   await expect(card.getByText('Pinterest')).toBeVisible()
   await expect(card.locator('img[src="/placeholders/pasta-light.svg"]')).toBeVisible()
 })
 
 test('nothing found: the Placeholder picker opens by itself and the title is required', async ({ page }) => {
   const blog = 'https://kochblog.example/rezept/linsen-dal'
-  await stubSourceLookup(page, { kind: 'other', canonicalLink: blog, suggestedTitle: '', imageUrl: null })
+  await stubSourceLookup(page, { kind: 'other', canonicalLink: blog, suggestedTitle: '', imageUrl: null, imageTicket: null })
   const sheet = await openAddDish(page)
 
   await sheet.getByLabel('Link').fill(blog)

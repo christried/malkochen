@@ -30,6 +30,10 @@ export interface DishView {
   createdAt: string
 }
 
+// What saving a Dish answers: the Dish, and whether a Source image that was
+// asked for could not be stored (the Dish then shows its Placeholder).
+export type SavedDish = DishView & { imageNotStored?: true }
+
 export interface NewDish {
   title: string
   note: string | null

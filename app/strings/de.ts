@@ -64,6 +64,7 @@ export const de = {
     saving: 'Speichert …',
     close: 'Schließen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    imageNotStored: (title: string) => `Das Bild vom Link ließ sich nicht speichern. „${title}“ hat jetzt ein Platzhalterbild.`,
   },
   placeholders: {
     pasta: 'Pasta',
