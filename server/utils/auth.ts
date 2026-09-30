@@ -7,7 +7,7 @@ import { db } from '../db'
 import * as schema from '../db/schema'
 import { parseServerEnv } from '../env'
 import { isAllowlisted, NOT_ALLOWLISTED } from './allowlist'
-import { joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
+import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
 
 const env = parseServerEnv(process.env)
 
@@ -69,7 +69,7 @@ export const auth = betterAuth({
       const token = ctx.getCookie(REMEMBERED_INVITE_COOKIE)
       if (!signedIn || !token) return
       await joinByInvite(token, signedIn.user.id)
-      ctx.setCookie(REMEMBERED_INVITE_COOKIE, '', { path: '/', maxAge: 0 })
+      ctx.setCookie(REMEMBERED_INVITE_COOKIE, '', FORGOTTEN_INVITE_COOKIE)
     }),
   },
   plugins: env.AUTH_DEV_BYPASS === '1' ? [devSignIn] : [],

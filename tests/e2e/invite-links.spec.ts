@@ -25,7 +25,7 @@ async function secondBrowser(browser: Browser): Promise<Page> {
 }
 
 test('a first-time user opens the Invite Link, signs in, and lands on the Board without a "Meine Küche"', async ({ page, browser }) => {
-  const { link } = await ownersLink(page, 'Kochclub', '🍜')
+  const { boardId, link } = await ownersLink(page, 'Kochclub', '🍜')
   const invited = await secondBrowser(browser)
 
   await gotoHydrated(invited, link)
@@ -40,10 +40,12 @@ test('a first-time user opens the Invite Link, signs in, and lands on the Board 
   await gotoHydrated(invited, '/login?error=not_allowed')
   await expect(invited.getByText('Sag frances Bescheid')).toBeVisible()
   await expect(invited.getByText('Deine Einladung zu 🍜 Kochclub merken wir uns.')).toBeVisible()
-  // Once let in, what Google's callback does: sign in (the remembered invite joins).
+  // Once let in, what Google's callback does: sign in (the remembered invite
+  // joins), then back to where sign-in started, the link, then the Board.
   await signIn(invited, ALLOWLISTED[13])
 
-  await gotoHydrated(invited, '/')
+  await gotoHydrated(invited, link)
+  await expect(invited).toHaveURL(new RegExp(`/b/${boardId}$`))
   await expect(invited.getByRole('heading', { level: 1 })).toHaveText('🍜 Kochclub')
   await invited.getByRole('heading', { level: 1 }).getByRole('button').click()
   await expect(invited.getByRole('navigation', { name: 'Deine Boards' }).getByRole('link')).toHaveText([/Kochclub/])
@@ -53,10 +55,13 @@ test('a signed-in user opening the link joins at once, and a reset link stops wo
   const { boardId, link } = await ownersLink(page, 'Grillabend', '🔥')
   const invited = await secondBrowser(browser)
   await signIn(invited, ALLOWLISTED[10])
+  // An invite remembered from an earlier visit is used up by this join.
+  await invited.request.post(`/api/invites/${link.split('/').pop()}/remember`)
 
   await gotoHydrated(invited, link)
   await expect(invited).toHaveURL(new RegExp(`/b/${boardId}$`))
   await expect(invited.getByRole('heading', { level: 1 })).toHaveText('🔥 Grillabend')
+  expect((await invited.context().cookies()).map(c => c.name)).not.toContain('malkochen.invite')
 
   // Only the Owner sees "Link zurücksetzen".
   await gotoHydrated(invited, `/b/${boardId}/settings`)

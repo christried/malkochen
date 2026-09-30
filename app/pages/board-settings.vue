@@ -154,8 +154,8 @@ async function gotDishes(column: ColumnRow): Promise<boolean> {
 // only the Owner resets it, after confirming, since the old one then stops
 // working wherever it was sent.
 const origin = useRequestURL().origin
-const inviteToken = ref(board.value?.inviteToken ?? '')
-const inviteLink = computed(() => `${origin}/invite/${inviteToken.value}`)
+// Read from the Board itself, so a refetch never shows an old link.
+const inviteLink = computed(() => `${origin}/invite/${board.value?.inviteToken ?? ''}`)
 
 async function copyLink() {
   try {
@@ -188,7 +188,8 @@ async function resetLink() {
   confirmingReset.value = false
   try {
     const reset = await $fetch<{ inviteToken: string }>(`/api/boards/${id.value}/invite/reset`, { method: 'POST' })
-    inviteToken.value = reset.inviteToken
+    // A new object: useFetch's data is a shallow ref.
+    if (board.value) board.value = { ...board.value, inviteToken: reset.inviteToken }
     toast.value = { text: t.settings.resetDone, duration: NOTICE_MS }
   }
   catch {

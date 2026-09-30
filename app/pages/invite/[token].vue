@@ -11,18 +11,26 @@ import { boardLabel } from '~~/shared/board'
 const t = useStrings()
 const route = useRoute()
 const token = String(route.params.token)
+const fetchPassingCookies = useFetchPassingCookies()
 
 const { data: invite } = await useFetch<InviteView>(`/api/invites/${token}`)
 // The same request the page guard just made, so it isn't sent twice. It
-// fails for anyone who can't use the app yet: signed out, or signed in but
-// off the Allowlist (whose sign-in then ends on "Not unlocked").
+// fails for anyone who can't use the app yet: 401 signed out, 403 signed in
+// but off the Allowlist.
 const { error: noAccess } = await useFetch('/api/me', { key: `me:${route.fullPath}` })
 
 if (invite.value && !noAccess.value) {
-  const joined = await useRequestFetch()<{ boardId: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch(() => null)
+  // Joining also clears a remembered invite, hence the cookies.
+  const joined = await fetchPassingCookies<{ boardId: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch(() => null)
   // A link reset since it was looked up shows as not working.
   if (joined) await navigateTo(`/b/${joined.boardId}`, { replace: true })
   else invite.value = undefined
+}
+else if (invite.value && noAccess.value?.statusCode === 403) {
+  // Off the Allowlist: signing in again can't help. Remember the invite and
+  // go straight to "Not unlocked", which names whom to ask.
+  await fetchPassingCookies(`/api/invites/${token}/remember`, { method: 'POST' }).catch(() => null)
+  await navigateTo({ path: '/login', query: { error: 'not_allowed' } }, { replace: true })
 }
 
 const invitedTo = computed(() => invite.value ? boardLabel(invite.value.board) : '')
