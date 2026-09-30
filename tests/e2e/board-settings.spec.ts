@@ -6,8 +6,7 @@ import { gotoHydrated, reloadHydrated } from './hydration'
 import { seedDish } from './seed'
 
 // Board settings (PRD stories 57–60, 62): the Board's name and emoji, and
-// its Columns. Grace's Board: add-dish.spec.ts, the only other file using
-// it, has run by now (files run one at a time, in order).
+// its Columns. Ida's Board is used by this file only.
 test.describe.configure({ mode: 'serial' })
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
@@ -19,7 +18,7 @@ async function expectColumnNames(page: Page, expected: string[]) {
 }
 
 async function openSettings(page: Page) {
-  await signIn(page, ALLOWLISTED[1])
+  await signIn(page, ALLOWLISTED[8])
   await gotoHydrated(page, '/')
   await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()

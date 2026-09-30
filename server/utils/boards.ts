@@ -13,14 +13,17 @@ export const DEFAULT_COLUMNS = [
   { name: 'Gekocht', isGekocht: true },
 ] as const
 
-// What Board settings change: the Board's name and emoji.
-export interface BoardName {
+// A Board as Board settings shows it: its name and emoji.
+export interface BoardNameAndEmoji {
   id: string
   name: string
   emoji: string
 }
 
-export interface BoardSummary extends BoardName {
+// What Board settings may change.
+export type BoardChanges = Partial<Pick<BoardNameAndEmoji, 'name' | 'emoji'>>
+
+export interface BoardSummary extends BoardNameAndEmoji {
   isOwner: boolean
 }
 
@@ -105,17 +108,18 @@ export async function markOpened(boardId: string, userId: string): Promise<boole
 
 // Renames the Board or changes its emoji (PRD story 62); fields left out stay
 // as they are. Null unless the user is a Member.
-export async function editBoard(boardId: string, userId: string, changes: Partial<BoardName>): Promise<BoardName | null> {
+export async function editBoard(boardId: string, userId: string, changes: BoardChanges): Promise<BoardNameAndEmoji | null> {
   const [edited] = await db
     .update(board)
     // Setting the id to itself keeps an empty change a valid statement.
     .set({ id: sql`${board.id}`, ...changes })
-    .where(and(eq(board.id, boardId), exists(memberOf(boardId, userId))))
+    .where(and(eq(board.id, boardId), exists(membershipOf(boardId, userId))))
     .returning({ id: board.id, name: board.name, emoji: board.emoji })
   return edited ?? null
 }
 
-function memberOf(boardId: string, userId: string) {
+// The user's membership of the Board, if any.
+function membershipOf(boardId: string, userId: string) {
   return db
     .select({ boardId: membership.boardId })
     .from(membership)
@@ -124,9 +128,6 @@ function memberOf(boardId: string, userId: string) {
 
 // Whether the user is a Member of the Board.
 export async function isMember(boardId: string, userId: string): Promise<boolean> {
-  const [found] = await db
-    .select({ boardId: membership.boardId })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+  const [found] = await membershipOf(boardId, userId)
   return found !== undefined
 }

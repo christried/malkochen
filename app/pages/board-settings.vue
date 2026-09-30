@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BoardName, BoardView } from '~~/server/utils/boards'
+import type { BoardChanges, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
 
@@ -14,14 +14,15 @@ const t = useStrings()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
-const { data: board, error } = await useFetch<BoardView>(() => `/api/boards/${id.value}`)
+const { data: board, error, refresh } = await useFetch<BoardView>(() => `/api/boards/${id.value}`)
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
 
 useHead({ title: () => `${t.settings.heading} · ${t.app.name}` })
 
 const name = ref(board.value?.name ?? '')
 const emoji = ref(board.value?.emoji ?? '')
-const columns = ref<ColumnRow[]>(board.value?.columns.map(c => ({ id: c.id, name: c.name, isGekocht: c.isGekocht, count: c.dishes.length })) ?? [])
+const rows = (view: BoardView | undefined): ColumnRow[] => view?.columns.map(c => ({ id: c.id, name: c.name, isGekocht: c.isGekocht, count: c.dishes.length })) ?? []
+const columns = ref(rows(board.value))
 
 const toast = ref<Toast | null>(null)
 function failed() {
@@ -30,9 +31,9 @@ function failed() {
 
 // The Board's name and emoji. A blank name puts the saved one back.
 const saved = ref({ name: name.value, emoji: emoji.value })
-async function saveBoard(changes: Partial<Pick<BoardName, 'name' | 'emoji'>>) {
+async function saveBoard(changes: BoardChanges) {
   try {
-    saved.value = await $fetch<BoardName>(`/api/boards/${id.value}`, { method: 'PATCH', body: changes })
+    saved.value = await $fetch<BoardNameAndEmoji>(`/api/boards/${id.value}`, { method: 'PATCH', body: changes })
   }
   catch {
     failed()
@@ -102,7 +103,8 @@ async function addColumn() {
 }
 
 // Deleting: an empty Column goes at once (PRD story 59); one with Dishes
-// first asks where they go, the first other Column chosen (story 58).
+// first asks where they go (story 58), the first Column chosen that isn't
+// Gekocht, where new Dishes go too.
 const deleting = ref<ColumnRow | null>(null)
 const deletingOpen = computed({
   get: () => deleting.value !== null,
@@ -115,7 +117,8 @@ const moveTo = ref<string>()
 
 function askDelete(column: ColumnRow) {
   if (column.count === 0) return deleteColumn(column)
-  moveTo.value = columns.value.find(c => c !== column)?.id
+  const others = columns.value.filter(c => c !== column)
+  moveTo.value = (others.find(c => !c.isGekocht) ?? others[0])?.id
   deleting.value = column
 }
 
@@ -130,8 +133,19 @@ async function deleteColumn(column: ColumnRow, target?: ColumnRow) {
   catch {
     if (target) target.count -= column.count
     columns.value = before
-    failed()
+    if (target || !await gotDishes(column)) failed()
   }
+}
+
+// A Column that looked empty may have got Dishes meanwhile (another Member
+// added some): with the counts fetched afresh, it asks where they go after all.
+async function gotDishes(column: ColumnRow): Promise<boolean> {
+  await refresh()
+  columns.value = rows(board.value)
+  const fresh = columns.value.find(c => c.id === column.id)
+  if (!fresh?.count) return false
+  askDelete(fresh)
+  return true
 }
 
 function confirmDelete() {

@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
-import { db, runAtomic } from '../db'
+import { db, runAtomic, type Db } from '../db'
 import { boardColumn, dish, membership } from '../db/schema'
 import { isMember } from './boards'
 
@@ -23,18 +24,29 @@ function onMembersBoard(columnId: string, userId: string) {
   )
 }
 
+// Adding, reordering and deleting a Board's Columns first take this lock, so
+// they run one after the other per Board: two Members deleting the last two
+// Columns besides Gekocht at once can't both succeed, and two Columns added
+// at once don't share a place. Held until the batch commits.
+function lockColumns(d: Db, boardId: string) {
+  return d.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`columns:${boardId}`}, 0))`)
+}
+
 // Adds a Column at the end of the Board. Never a Gekocht Column: a Board has
 // exactly one. Null unless the user is a Member.
 export async function addColumn(boardId: string, userId: string, name: string): Promise<ColumnView | null> {
   if (!await isMember(boardId, userId)) return null
-  const [added] = await db
-    .insert(boardColumn)
-    .values({
+  const id = randomUUID()
+  await runAtomic(d => [
+    lockColumns(d, boardId),
+    d.insert(boardColumn).values({
+      id,
       boardId,
       name,
       position: sql`(select coalesce(max(${boardColumn.position}), -1) + 1 from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
-    })
-    .returning(columnView)
+    }),
+  ])
+  const [added] = await db.select(columnView).from(boardColumn).where(eq(boardColumn.id, id))
   return added ?? null
 }
 
@@ -52,57 +64,68 @@ export async function boardColumns(boardId: string): Promise<ColumnView[]> {
 
 // Puts the Board's Columns in the given order; the Gekocht Column can go
 // anywhere. 'invalid' unless the order names each of the Board's Columns
-// exactly once (checked in the same statement, so a Column added meanwhile
-// makes it fail rather than share a place). Null unless the user is a Member.
+// exactly once. Null unless the user is a Member.
 export async function reorderColumns(boardId: string, userId: string, columnIds: string[]): Promise<ColumnView[] | 'invalid' | null> {
   if (!await isMember(boardId, userId)) return null
   const ids = sql`array[${sql.join(columnIds.map(id => sql`${id}::uuid`), sql`, `)}]`
-  const updated = await db
-    .update(boardColumn)
-    .set({ position: sql`array_position(${ids}, ${boardColumn.id}) - 1` })
-    .where(and(
-      eq(boardColumn.boardId, boardId),
-      sql`cardinality(${ids}) = (select count(distinct x) from unnest(${ids}) as x)`,
-      sql`${ids} <@ array(select ${boardColumn.id} from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
-      sql`cardinality(${ids}) = (select count(*) from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
-    ))
-    .returning({ id: boardColumn.id })
-  return updated.length === 0 ? 'invalid' : boardColumns(boardId)
+  await runAtomic(d => [
+    lockColumns(d, boardId),
+    d
+      .update(boardColumn)
+      .set({ position: sql`array_position(${ids}, ${boardColumn.id}) - 1` })
+      .where(and(
+        eq(boardColumn.boardId, boardId),
+        sql`cardinality(${ids}) = (select count(distinct x) from unnest(${ids}) as x)`,
+        sql`${ids} <@ array(select ${boardColumn.id} from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
+        sql`cardinality(${ids}) = (select count(*) from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
+      )),
+  ])
+  const columns = await boardColumns(boardId)
+  const applied = columns.length === columnIds.length && columns.every((c, i) => c.id === columnIds[i])
+  return applied ? columns : 'invalid'
 }
 
-export type DeleteColumnResult = 'deleted' | 'not-found' | 'gekocht' | 'last' | 'not-empty' | 'bad-target'
+export type DeleteColumnResult = 'deleted' | 'not-found' | ColumnRefusal
+
+type ColumnRefusal = 'gekocht' | 'last' | 'not-empty' | 'bad-target'
+
+// Why the Column can't be deleted as asked, if it can't.
+async function refusal(column: { id: string, boardId: string, isGekocht: boolean }, moveTo?: string): Promise<ColumnRefusal | null> {
+  if (column.isGekocht) return 'gekocht'
+  const columns = await boardColumns(column.boardId)
+  if (!columns.some(c => c.id !== column.id && !c.isGekocht)) return 'last'
+  if (moveTo !== undefined) return moveTo !== column.id && columns.some(c => c.id === moveTo) ? null : 'bad-target'
+  const [live] = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, column.id), isNull(dish.deletedAt))).limit(1)
+  return live ? 'not-empty' : null
+}
 
 // Deletes a Column (PRD stories 57–60). Its Dishes go to the top of `moveTo`,
 // in their order, deleted ones too (so "Rückgängig" still finds a Column);
 // moved into the Gekocht Column they record no Cooking, since nobody cooked
-// them. An empty Column needs no `moveTo`; any deleted Dishes still in it go
-// for good. Refused for the Gekocht Column, the Board's last other Column,
-// a Column with Dishes but no `moveTo`, and a `moveTo` that isn't another
-// Column of the same Board.
+// them. An empty Column needs no `moveTo`; Dishes deleted from it, which
+// could only come back into a Column that is gone, go for good. Refused for
+// the Gekocht Column, the Board's last other Column, a Column with Dishes but
+// no `moveTo`, and a `moveTo` that isn't another Column of the same Board.
 export async function deleteColumn(columnId: string, userId: string, moveTo?: string): Promise<DeleteColumnResult> {
-  const [column] = await db
-    .select({ boardId: boardColumn.boardId, isGekocht: boardColumn.isGekocht })
+  const [found] = await db
+    .select({ id: boardColumn.id, boardId: boardColumn.boardId, isGekocht: boardColumn.isGekocht })
     .from(boardColumn)
     .where(onMembersBoard(columnId, userId))
-  if (!column) return 'not-found'
-  if (column.isGekocht) return 'gekocht'
+  if (!found) return 'not-found'
+  const refused = await refusal(found, moveTo)
+  if (refused) return refused
 
-  const others = await boardColumns(column.boardId)
-  if (!others.some(c => c.id !== columnId && !c.isGekocht)) return 'last'
-  if (moveTo !== undefined && (moveTo === columnId || !others.some(c => c.id === moveTo))) return 'bad-target'
-  if (moveTo === undefined) {
-    const [live] = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, columnId), isNull(dish.deletedAt))).limit(1)
-    if (live) return 'not-empty'
-  }
-
-  // Each statement repeats the check, so a Column deleted or a Dish added
-  // meanwhile leaves everything as it was.
+  // Under the lock the Board's Columns can't change, only its Dishes, but
+  // each statement checks again all the same: a Column changed before the
+  // lock was granted leaves everything as it was, and a Dish added to this
+  // Column meanwhile keeps it (Dishes already moved stay moved).
   const deletable = sql`not ${boardColumn.isGekocht} and exists (
     select 1 from ${boardColumn} as other
-    where other.board_id = ${column.boardId} and other.id <> ${columnId} and not other.is_gekocht
+    where other.board_id = ${found.boardId} and other.id <> ${columnId} and not other.is_gekocht
   )`
   const stillDeletable = sql`exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${columnId} and ${deletable})`
   await runAtomic(d => [
+    lockColumns(d, found.boardId),
     moveTo === undefined
       ? d.delete(dish).where(and(
           eq(dish.columnId, columnId),
@@ -120,6 +143,7 @@ export async function deleteColumn(columnId: string, userId: string, moveTo?: st
           update ${dish} set column_id = ${moveTo}, position = top.position - moving.n + moving.rank - 1
           from moving, top
           where ${dish.id} = moving.id and ${stillDeletable}
+            and exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${moveTo} and ${boardColumn.boardId} = ${found.boardId})
         `),
     d.delete(boardColumn).where(and(
       eq(boardColumn.id, columnId),
@@ -129,5 +153,6 @@ export async function deleteColumn(columnId: string, userId: string, moveTo?: st
   ])
 
   const [left] = await db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.id, columnId))
-  return left ? 'not-empty' : 'deleted'
+  if (!left) return 'deleted'
+  return await refusal(found, moveTo) ?? 'not-empty'
 }

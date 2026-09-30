@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
+import type { ColumnView } from '~~/server/utils/columns'
 
 // Board settings' Columns (PRD stories 57–60): each can be renamed in place,
 // moved with ↑/↓ or dragged by its grip, and deleted, except the Gekocht
 // Column (marked) and the last Column besides it. The order changes here
 // while dragging; `reordered` says a move is done, with the order before it.
-export interface ColumnRow {
-  id: string
-  name: string
-  isGekocht: boolean
-  count: number
-}
+export type ColumnRow = ColumnView & { count: number }
 
 const columns = defineModel<ColumnRow[]>({ required: true })
 const emit = defineEmits<{
@@ -147,7 +143,7 @@ function drop() {
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         >
         <span class="px-2 text-small text-text-muted">
-          {{ t.settings.dishCount(column.count) }}<template v-if="column.isGekocht"> · {{ t.settings.gekocht }}</template>
+          {{ t.settings.dishCount(column.count) }}<template v-if="column.isGekocht"> · {{ t.settings.notDeletable }}</template>
         </span>
       </div>
       <button

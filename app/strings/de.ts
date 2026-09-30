@@ -17,6 +17,11 @@ function addedDate(date: Date): string {
   }).format(date)
 }
 
+// "1 Gericht", "4 Gerichte".
+function dishCount(count: number): string {
+  return count === 1 ? '1 Gericht' : `${count} Gerichte`
+}
+
 export const de = {
   app: {
     name: 'malkochen',
@@ -46,7 +51,7 @@ export const de = {
     prompt: 'Welches Gericht suchst du?',
     close: 'Suche schließen',
     resultsLabel: 'Suchergebnisse',
-    found: (count: number) => count === 1 ? '1 Gericht gefunden' : `${count} Gerichte gefunden`,
+    found: (count: number) => `${dishCount(count)} gefunden`,
     noResultsTitle: 'Nichts gefunden.',
     noResultsBody: (query: string) => `Kein Gericht mit „${query}“ im Namen.`,
     failed: 'Die Suche hat nicht geklappt. Versuch es gleich noch mal.',
@@ -190,8 +195,8 @@ export const de = {
     close: 'Schließen',
     columns: 'Spalten',
     columnName: (name: string) => `Name der Spalte „${name}“`,
-    gekocht: 'Kann nicht gelöscht werden',
-    dishCount: (count: number) => count === 1 ? '1 Gericht' : `${count} Gerichte`,
+    notDeletable: 'Kann nicht gelöscht werden',
+    dishCount,
     moveUp: (name: string) => `„${name}“ nach oben`,
     moveDown: (name: string) => `„${name}“ nach unten`,
     deleteColumn: (name: string) => `Spalte „${name}“ löschen`,
@@ -199,7 +204,7 @@ export const de = {
     newColumn: 'Neue Spalte',
     newColumnPrompt: 'z. B. „Wochenende“',
     add: 'Hinzufügen',
-    moveDishes: (count: number, column: string) => `${count === 1 ? '1 Gericht' : `${count} Gerichte`} in „${column}“. Wohin verschieben?`,
+    moveDishes: (count: number, column: string) => `${dishCount(count)} in „${column}“. Wohin verschieben?`,
     moveAndDelete: 'Verschieben und löschen',
     cancel: 'Abbrechen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
