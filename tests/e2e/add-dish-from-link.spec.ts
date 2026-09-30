@@ -73,7 +73,7 @@ test('a pasted link shows a loading state, then a preview with image and editabl
   // never the third-party link, and the Member is told.
   await expect(card.locator('img[src="/placeholders/bowl-light.svg"]')).toBeVisible()
   await expect(card.locator(`img[src="${PORTRAIT}"]`)).toHaveCount(0)
-  await expect(page.locator('[data-notice]')).toHaveText('Das Bild vom Link ließ sich nicht speichern. „Knusprige Tofu-Bowl“ hat jetzt ein Platzhalterbild.')
+  await expect(page.locator('[data-toast]')).toHaveText('Das Bild vom Link ließ sich nicht speichern. „Knusprige Tofu-Bowl“ hat jetzt ein Platzhalterbild.')
 })
 
 test('image only (Pinterest): a friendly prompt asks for the title, which is required', async ({ page }) => {
@@ -107,7 +107,7 @@ test('image only (Pinterest): a friendly prompt asks for the title, which is req
   const card = page.getByRole('article', { name: 'Zucchini-Lasagne' })
   // A Placeholder the Member chose is no failure: no notice.
   await expect(card).toBeVisible()
-  await expect(page.locator('[data-notice]')).toHaveCount(0)
+  await expect(page.locator('[data-toast]')).toHaveCount(0)
   await expect(card.getByText('Pinterest')).toBeVisible()
   await expect(card.locator('img[src="/placeholders/pasta-light.svg"]')).toBeVisible()
 })

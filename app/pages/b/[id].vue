@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
-import type { SavedDish } from '~~/server/utils/dishes'
+import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import { dishOnBoard } from '~~/shared/board'
+import type { Toast } from '~/components/AppToast.vue'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time
 // with a simple switch (the real tabs and swiping come with #10); tablet and
@@ -26,25 +27,33 @@ const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length =
 
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
 // phones its Column comes to the front, so closing it lands there.
-// Closing it puts focus back on the Dish's card.
+// Closing it puts focus back on the Dish's card (or, if it was deleted, the
+// card that took its place).
 watch(() => route.params.dishId, async (dishId, closedId) => {
   const opened = board.value && dishOnBoard(board.value, dishId)
   if (opened) activeColumnId.value = opened.column.id
   if (dishId || typeof closedId !== 'string') return
   await nextTick()
-  document.getElementById(`dish-${closedId}`)?.focus()
+  focusCard(closedId)
 }, { immediate: true })
+
+// Focuses a Dish's card, or for one just deleted the card now in its place
+// (none if its Column is empty).
+let deletedInPlaceOf: { dishId: string, next: string | null } | null = null
+function focusCard(dishId: string) {
+  const id = deletedInPlaceOf?.dishId === dishId ? deletedInPlaceOf.next : dishId
+  if (id) document.getElementById(`dish-${id}`)?.focus()
+}
+
+// One Toast at a time: notices, and "Rückgängig" after deleting a Dish.
+const toast = ref<Toast | null>(null)
+function showNotice(text: string) {
+  toast.value = { text, duration: 8000 }
+}
 
 const adding = ref(false)
 // A Dish saved to another Board doesn't show here. If a Source image
 // couldn't be stored, a notice says which image the Dish has instead.
-const notice = ref('')
-let noticeTimer: ReturnType<typeof setTimeout> | undefined
-function showNotice(text: string) {
-  notice.value = text
-  clearTimeout(noticeTimer)
-  noticeTimer = setTimeout(() => notice.value = '', 8000)
-}
 
 function onAdded(saved: SavedDish, boardId: string) {
   if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
@@ -60,6 +69,59 @@ function onEdited(saved: SavedDish) {
   const { imageNotStored: _, ...dish } = saved
   const edited = board.value && dishOnBoard(board.value, dish.id)
   if (edited) Object.assign(edited.dish, dish)
+}
+
+// Deleting a Dish (PRD story 47): its card goes at once, and the Toast
+// offers "Rückgängig" for 5 seconds, which puts it back where it was.
+function deleteDish(dishId: string) {
+  const found = board.value && dishOnBoard(board.value, dishId)
+  if (!found) return
+  const { dish, column } = found
+  const index = column.dishes.indexOf(dish)
+  column.dishes.splice(index, 1)
+  deletedInPlaceOf = { dishId, next: column.dishes[Math.min(index, column.dishes.length - 1)]?.id ?? null }
+
+  const putBack = () => {
+    if (!column.dishes.includes(dish)) column.dishes.splice(Math.min(index, column.dishes.length), 0, dish)
+  }
+  const deleting = $fetch(`/api/dishes/${dishId}`, { method: 'DELETE' })
+  deleting.catch(() => {
+    putBack()
+    showNotice(t.dish.deleteFailed(dish.title))
+  })
+
+  // Undo waits for the delete, so the two never cross on the way.
+  async function undo() {
+    try {
+      await deleting
+    }
+    catch {
+      return // Never deleted, and already back.
+    }
+    putBack()
+    await $fetch(`/api/dishes/${dishId}/restore`, { method: 'POST' }).catch(() => {
+      column.dishes.splice(column.dishes.indexOf(dish), 1)
+      showNotice(t.dish.restoreFailed(dish.title))
+    })
+  }
+  toast.value = { text: t.dish.deleted(dish.title), duration: 5000, action: { label: t.dish.undo, run: undo } }
+}
+
+// The card's "…" menu. "Verschieben nach…" joins "Löschen" with #10.
+const menuDish = ref<DishView | null>(null)
+const menuOpen = computed({
+  get: () => menuDish.value !== null,
+  set: (open) => {
+    if (!open) menuDish.value = null
+  },
+})
+async function deleteFromMenu() {
+  const dishId = menuDish.value?.id
+  menuDish.value = null
+  if (!dishId) return
+  deleteDish(dishId)
+  await nextTick()
+  focusCard(dishId)
 }
 </script>
 
@@ -120,6 +182,7 @@ function onEdited(saved: SavedDish) {
           <li
             v-for="dish in column.dishes"
             :key="dish.id"
+            class="relative"
           >
             <NuxtLink
               :id="`dish-${dish.id}`"
@@ -129,6 +192,33 @@ function onEdited(saved: SavedDish) {
             >
               <DishCard :dish="dish" />
             </NuxtLink>
+            <button
+              type="button"
+              class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              :aria-label="t.dish.menu(dish.title)"
+              aria-haspopup="dialog"
+              @click="menuDish = dish"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+                aria-hidden="true"
+              ><circle
+                cx="5"
+                cy="12"
+                r="2"
+              /><circle
+                cx="12"
+                cy="12"
+                r="2"
+              /><circle
+                cx="19"
+                cy="12"
+                r="2"
+              /></svg>
+            </button>
           </li>
         </ol>
         <EmptyBoard v-else-if="isEmpty && index === 0" />
@@ -138,8 +228,8 @@ function onEdited(saved: SavedDish) {
 
     <button
       type="button"
-      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center bg-inverse text-on-inverse shadow-fab transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
-      :class="{ 'fab-prompt': isEmpty }"
+      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center bg-inverse text-on-inverse shadow-fab active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
+      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
       :aria-label="t.addDish.open"
       @click="adding = true"
     >
@@ -155,26 +245,7 @@ function onEdited(saved: SavedDish) {
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
 
-    <!-- Always in the page, so screen readers announce what appears in it. -->
-    <div
-      role="status"
-      class="pointer-events-none fixed inset-x-4 bottom-28 z-fab flex justify-center tablet:bottom-32"
-    >
-      <Transition
-        enter-from-class="translate-y-4 opacity-0"
-        leave-to-class="translate-y-4 opacity-0"
-        enter-active-class="transition duration-settle ease-settle"
-        leave-active-class="transition duration-fade ease-fade"
-      >
-        <p
-          v-if="notice"
-          class="pointer-events-auto max-w-md rounded-pill bg-inverse px-5 py-3 text-small text-on-inverse shadow-fab"
-          data-notice
-        >
-          {{ notice }}
-        </p>
-      </Transition>
-    </div>
+    <AppToast v-model="toast" />
 
     <AddDishSheet
       v-model:open="adding"
@@ -182,17 +253,39 @@ function onEdited(saved: SavedDish) {
       @added="onAdded"
     />
 
+    <AppSheet
+      v-model:open="menuOpen"
+      :title="menuDish?.title ?? ''"
+      :close-label="t.dish.closeMenu"
+    >
+      <div class="mt-5 flex flex-col gap-2">
+        <button
+          type="button"
+          class="rounded-pill bg-danger/10 px-5 py-3.5 text-button text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          @click="deleteFromMenu"
+        >
+          {{ t.dish.delete }}
+        </button>
+      </div>
+    </AppSheet>
+
     <NuxtPage
       :board="board"
       @edited="onEdited"
+      @delete="deleteDish"
     />
   </main>
 </template>
 
 <style scoped>
-/* The FAB is a pebble, not a circle (handoff Button "FAB"). */
+/* The FAB is a pebble, not a circle (handoff Button "FAB"). While a Toast
+   shows, it moves up out of its way. */
 .fab {
   border-radius: var(--radius-blob);
+  transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+}
+.fab-lifted {
+  translate: 0 -76px;
 }
 /* On an empty Board the add action is highlighted: a butter ring breathes
    around it. Reduced motion (main.css) stops it after one pass. */

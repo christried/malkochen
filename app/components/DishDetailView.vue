@@ -4,9 +4,9 @@ import type { DishView } from '~~/server/utils/dishes'
 
 // The Dish detail's contents: a large image, the title and note, the Source
 // with "Original öffnen", where the Dish is (Board and Column), who added it
-// and when, and its Cooking History (a placeholder until #12).
+// and when, its Cooking History (a placeholder until #12), and "Löschen".
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
-defineEmits<{ close: [], edit: [] }>()
+defineEmits<{ close: [], edit: [], delete: [] }>()
 const t = useStrings()
 
 const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, new Date(props.dish.createdAt)))
@@ -106,6 +106,14 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
           {{ t.detail.cookingHistoryEmpty }}
         </p>
       </section>
+
+      <button
+        type="button"
+        class="mt-auto self-start rounded-pill bg-danger/10 px-5 py-3 text-button text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        @click="$emit('delete')"
+      >
+        {{ t.dish.delete }}
+      </button>
     </div>
   </div>
 </template>

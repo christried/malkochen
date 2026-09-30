@@ -43,6 +43,13 @@ export const de = {
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
     hasNote: 'Mit Notiz',
+    menu: (title: string) => `Mehr zu „${title}“`,
+    closeMenu: 'Schließen',
+    delete: 'Löschen',
+    deleted: (title: string) => `„${title}“ gelöscht`,
+    undo: 'Rückgängig',
+    deleteFailed: (title: string) => `„${title}“ ließ sich nicht löschen. Versuch es gleich noch mal.`,
+    restoreFailed: (title: string) => `„${title}“ ließ sich nicht zurückholen.`,
   },
   detail: {
     close: 'Schließen',

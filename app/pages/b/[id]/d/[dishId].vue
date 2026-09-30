@@ -7,9 +7,10 @@ import { dishOnBoard } from '~~/shared/board'
 // on phones, a side panel over the Board from 768px (440px; 480px from
 // 1200px). A native modal <dialog>, like AppSheet: the browser traps focus,
 // makes the Board inert and closes it on Escape. The Dish comes from the
-// Board the parent page already has; edits go back to it via `edited`.
+// Board the parent page already has; edits go back to it via `edited`, and
+// "Löschen" asks it to `delete` the Dish (it offers the undo).
 const props = defineProps<{ board: BoardView }>()
-const emit = defineEmits<{ edited: [dish: SavedDish] }>()
+const emit = defineEmits<{ edited: [dish: SavedDish], delete: [dishId: string] }>()
 const t = useStrings()
 const route = useRoute()
 const router = useRouter()
@@ -46,6 +47,11 @@ function onEscape(event: KeyboardEvent) {
 }
 function onBackdrop() {
   if (!editing.value) close()
+}
+
+function onDelete() {
+  if (located.value) emit('delete', located.value.dish.id)
+  close()
 }
 
 function onSaved(dish: SavedDish) {
@@ -85,6 +91,7 @@ watch(editing, async (isEditing) => {
         :column-name="located.column.name"
         @close="close"
         @edit="editing = true"
+        @delete="onDelete"
       />
     </template>
   </dialog>
