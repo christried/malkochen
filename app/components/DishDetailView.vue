@@ -44,6 +44,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
         <button
           type="button"
           class="rounded-pill bg-glass px-4 py-2.5 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          data-edit
           @click="$emit('edit')"
         >
           {{ t.detail.edit }}

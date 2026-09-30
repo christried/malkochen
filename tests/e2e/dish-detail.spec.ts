@@ -168,3 +168,89 @@ test('changing the Source keeps the image; "Bild neu laden" replaces it, or fall
   await detail.getByRole('button', { name: 'Speichern' }).click()
   expect(await body).toMatchObject({ imageUrl: null })
 })
+
+test('an image found for one link is dropped when the link changes again', async ({ page }) => {
+  const reel = 'https://www.instagram.com/reel/OfenGemuese1/'
+  const found = 'https://images.invalid/wechsel.png'
+  await signIn(page, ALLOWLISTED[0])
+  const image = await storedImage(160, 90)
+  await seedDish(page, { title: 'Linkwechsel', imageUrl: image, sourceLink: reel, sourceKind: 'instagram-reel' })
+  await stubSourceLookup(page, { kind: 'instagram-reel', canonicalLink: reel, suggestedTitle: '', imageUrl: found, imageTicket: 'fixture-ticket' })
+  await stubImage(page, found, 90, 160)
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Linkwechsel')
+
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.getByRole('button', { name: 'Bild neu laden' }).click()
+  await expect(detail.locator('[data-reloaded-image]')).toHaveAttribute('src', found)
+  await detail.getByLabel('Link').fill('https://www.youtube.com/shorts/anderesVideo1')
+
+  await expect(detail.locator('[data-reloaded-image]')).toHaveCount(0)
+  await expect(detail.locator('[data-dish-image]')).toHaveAttribute('src', image)
+  await expect(detail.getByText('Neues Bild vom Link.')).toHaveCount(0)
+  const body = editedBody(page)
+  await detail.getByRole('button', { name: 'Speichern' }).click()
+  expect(await body).not.toHaveProperty('imageUrl')
+})
+
+test('a Placeholder chosen with the arrow keys is the one shown and saved', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[0])
+  const image = await storedImage(160, 90)
+  await seedDish(page, { title: 'Pfeiltasten', imageUrl: image, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Pfeiltasten')
+
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.getByRole('button', { name: 'Bild wählen' }).click()
+  const picker = page.getByRole('dialog', { name: 'Bild wählen' })
+  await picker.getByRole('radio', { name: 'Bowl' }).focus()
+  await page.keyboard.press('ArrowRight')
+  await picker.getByRole('button', { name: 'Schließen' }).click()
+
+  await expect(detail.locator('img[src="/placeholders/salad-light.svg"]').first()).toBeVisible()
+  await expect(detail.locator('[data-dish-image]')).toHaveCount(0)
+  const body = editedBody(page)
+  await detail.getByRole('button', { name: 'Speichern' }).click()
+  expect(await body).toMatchObject({ placeholder: 'salad', imageUrl: null })
+})
+
+test('focus follows the detail: into edit mode, back out, and back to the card', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Pfeiltasten')
+
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await expect(detail.getByLabel('Titel')).toBeFocused()
+  await detail.getByRole('button', { name: 'Abbrechen' }).click()
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.getByRole('button', { name: 'Speichern' }).click()
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
+
+  await detail.getByRole('button', { name: 'Schließen' }).click()
+  await expect(detail).toBeHidden()
+  await expect(page.getByRole('link', { name: 'Pfeiltasten' })).toBeFocused()
+})
+
+test('beside the Board, tapping the dimmed Board or Escape closes the detail but never discards edits', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Pfeiltasten')
+
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.getByLabel('Titel').fill('Halb bearbeitet')
+  await page.mouse.click(100, 450)
+  await expect(detail.getByLabel('Titel')).toHaveValue('Halb bearbeitet')
+
+  // Escape in the picker closes only the picker; in edit mode, only edit mode.
+  await detail.getByRole('button', { name: 'Bild wählen' }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog', { name: 'Bild wählen' })).toBeHidden()
+  await expect(detail.getByLabel('Titel')).toHaveValue('Halb bearbeitet')
+  await page.keyboard.press('Escape')
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
+
+  await page.mouse.click(100, 450)
+  await expect(detail).toBeHidden()
+})

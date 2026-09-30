@@ -13,6 +13,8 @@ const emit = defineEmits<{ saved: [dish: SavedDish], cancel: [] }>()
 const t = useStrings()
 
 const title = ref(props.dish.title)
+const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
+onMounted(() => titleInput.value?.focus())
 const note = ref(props.dish.note ?? '')
 const link = ref(props.dish.source?.link ?? '')
 const placeholder = ref<Placeholder>(props.dish.placeholder)
@@ -39,12 +41,17 @@ const looked = ref<{ link: string, result: LookupAnswer }>()
 const sourceLink = computed(() => link.value.trim() === '' ? null : webLink(link.value))
 const linkInvalid = computed(() => link.value.trim() !== '' && sourceLink.value === null)
 
+// Only the latest lookup's answer counts; changing the link drops what an
+// earlier one found, since that image belongs to the other link.
+let reloadRun = 0
 async function reloadImage() {
   const target = sourceLink.value
   if (!target) return
+  const run = ++reloadRun
   reload.value = 'looking'
   try {
     const result = await $fetch<LookupAnswer>('/api/source-lookup', { query: { link: target } })
+    if (run !== reloadRun) return
     looked.value = { link: link.value.trim(), result }
     if (result.imageUrl) {
       image.value = { kind: 'found', url: result.imageUrl, ticket: result.imageTicket }
@@ -56,20 +63,27 @@ async function reloadImage() {
     }
   }
   catch {
-    reload.value = 'failed'
+    if (run === reloadRun) reload.value = 'failed'
   }
 }
 
+watch(link, () => {
+  if (reload.value === 'idle') return
+  reloadRun++
+  reload.value = 'idle'
+  if (image.value.kind === 'found' || image.value.kind === 'placeholder') image.value = { kind: 'keep' }
+})
+
 const choosingImage = ref(false)
-// Tapping a tile (or Enter/Space on it) picks that Placeholder and closes
-// the picker; arrow keys only move the selection.
+// Tapping a tile (or Enter/Space on it) closes the picker; arrow keys only
+// move the selection. Either way the chosen Placeholder becomes the image.
 function closeOnTile(event: MouseEvent) {
-  if ((event.target as Element).closest('[role="radio"]')) {
-    choosingImage.value = false
-    image.value = { kind: 'placeholder' }
-    reload.value = 'idle'
-  }
+  if ((event.target as Element).closest('[role="radio"]')) choosingImage.value = false
 }
+watch(placeholder, () => {
+  image.value = { kind: 'placeholder' }
+  reload.value = 'idle'
+})
 
 // The Source as saved: the kind the Dish or the last lookup knows for this
 // very link (a blog stays a blog); the server reads it from the link otherwise.
@@ -185,6 +199,7 @@ async function save() {
       >{{ t.detail.title }}</label>
       <input
         :id="titleId"
+        ref="titleInput"
         v-model="title"
         type="text"
         required

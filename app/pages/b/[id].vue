@@ -25,9 +25,13 @@ const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length =
 
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
 // phones its Column comes to the front, so closing it lands there.
-watch(() => route.params.dishId, (dishId) => {
+// Closing it puts focus back on the Dish's card.
+watch(() => route.params.dishId, async (dishId, closedId) => {
   const column = board.value?.columns.find(c => c.dishes.some(d => d.id === dishId))
   if (column) activeColumnId.value = column.id
+  if (dishId || typeof closedId !== 'string') return
+  await nextTick()
+  document.getElementById(`dish-${closedId}`)?.focus()
 }, { immediate: true })
 
 const adding = ref(false)
@@ -120,6 +124,7 @@ function onEdited(saved: SavedDish) {
             :key="dish.id"
           >
             <NuxtLink
+              :id="`dish-${dish.id}`"
               :to="`/b/${board.id}/d/${dish.id}`"
               :aria-label="dish.title"
               class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"

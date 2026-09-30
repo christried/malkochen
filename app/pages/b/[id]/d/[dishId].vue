@@ -40,17 +40,31 @@ async function close() {
   else await navigateTo(boardPath.value, { replace: true })
 }
 
-// Escape leaves edit mode first, then the detail.
-function onCancel(event: Event) {
-  if (!editing.value) return
+// While editing, Escape leaves edit mode and tapping the dimmed Board does
+// nothing, so edits are never lost by accident. Escape is caught on keydown:
+// Chrome may skip the dialog's cancel event on a repeated Escape. One meant
+// for the Placeholder picker's own sheet is left to it.
+function onEscape(event: KeyboardEvent) {
+  if (!editing.value || (event.target as Element).closest('dialog') !== dialog.value) return
   event.preventDefault()
   editing.value = false
+}
+function onBackdrop() {
+  if (!editing.value) close()
 }
 
 function onSaved(dish: SavedDish) {
   emit('edited', dish)
   editing.value = false
 }
+
+// Leaving edit mode puts focus back on "Bearbeiten" (edit mode focuses its
+// title itself), so it never falls to the page behind.
+watch(editing, async (isEditing) => {
+  if (isEditing) return
+  await nextTick()
+  dialog.value?.querySelector<HTMLElement>('[data-edit]')?.focus()
+})
 </script>
 
 <template>
@@ -58,9 +72,9 @@ function onSaved(dish: SavedDish) {
     ref="dialog"
     class="detail bg-bg p-0 text-text tablet:shadow-sheet"
     :aria-label="found?.dish.title"
-    @cancel="onCancel"
+    @keydown.esc="onEscape"
     @close="close"
-    @click.self="close"
+    @click.self="onBackdrop"
   >
     <template v-if="found">
       <DishDetailEditor
