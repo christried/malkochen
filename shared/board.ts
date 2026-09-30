@@ -17,3 +17,8 @@ export function focusAfterLeaving(column: { id: string, dishes: { id: string }[]
   const next = column.dishes[index + 1] ?? column.dishes[index - 1]
   return next ? `dish-${next.id}` : `column-${column.id}`
 }
+
+// How a Board is named in running text and titles: "🍜 Kochclub".
+export function boardLabel(board: { emoji: string, name: string }): string {
+  return `${board.emoji} ${board.name}`
+}

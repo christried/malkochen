@@ -43,6 +43,13 @@
       "when": 1790782967049,
       "tag": "0005_cooking",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790798028408,
+      "tag": "0006_invite_token",
+      "breakpoints": true
     }
   ]
 }

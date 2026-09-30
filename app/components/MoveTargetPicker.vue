@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardListing } from '~~/server/utils/boards'
 import type { ColumnView } from '~~/server/utils/columns'
+import { boardLabel } from '~~/shared/board'
 
 // "Verschieben nach…" (PRD stories 33, 46): this Board's other Columns
 // first, then each of the user's other Boards with its Columns. Picking one
@@ -31,7 +32,7 @@ const groups = computed(() => [
   },
   ...otherBoards.value.map(other => ({
     id: other.id,
-    label: `${other.emoji} ${other.name}`,
+    label: boardLabel(other),
     toBoard: other,
     columns: other.columns.map((column, index) => ({ column, accent: columnAccent(index) })),
   })),

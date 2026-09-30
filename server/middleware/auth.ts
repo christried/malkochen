@@ -1,9 +1,11 @@
 import { allowlistRefusal, auth } from '../utils/auth'
 
 // The security boundary for /api/**: every route needs a session, except
-// Better Auth's own and the health check. Page navigation is guarded
-// separately by app/middleware/auth.global.ts.
-const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/]
+// Better Auth's own, the health check, and what the invite landing and "Not
+// unlocked" need before sign-in (seeing an invite, remembering it, the one
+// remembered). Page navigation is
+// guarded separately by app/middleware/auth.global.ts.
+const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/]
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname

@@ -1,7 +1,7 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, MovedDish } from '~~/server/utils/dishes'
-import { dishOnBoard, focusAfterLeaving } from '~~/shared/board'
+import { boardLabel, dishOnBoard, focusAfterLeaving } from '~~/shared/board'
 
 // "Verschieben nach…" (PRD story 33), drag and drop (stories 31, 32, 34)
 // and "Gekocht ✓" (story 35): the Dish goes at once to its new place. The
@@ -147,7 +147,7 @@ export function useDishMove(
     const from = column.dishes.indexOf(dish)
     const focusId = focusAfterLeaving(column, from)
     column.dishes.splice(from, 1)
-    showToast({ text: t.dish.movedToBoard(dish.title, `${toBoard.emoji} ${toBoard.name}`, target.name), duration: NOTICE_MS })
+    showToast({ text: t.dish.movedToBoard(dish.title, boardLabel(toBoard), target.name), duration: NOTICE_MS })
 
     $fetch(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId } }).catch((error: { statusCode?: number }) => {
       // Gone meanwhile (another Member deleted it): it stays gone.

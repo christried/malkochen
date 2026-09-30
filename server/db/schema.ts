@@ -67,6 +67,9 @@ export const board = pgTable('board', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   emoji: text('emoji').notNull(),
+  // The secret in the Board's Invite Link (/invite/<token>). It never
+  // expires; the Owner resets it by setting it back to its default.
+  inviteToken: text('invite_token').notNull().unique().default(sql`replace(gen_random_uuid()::text, '-', '')`),
   createdAt: createdAt(),
 })
 

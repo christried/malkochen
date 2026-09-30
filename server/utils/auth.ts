@@ -1,12 +1,13 @@
 import { betterAuth, type BetterAuthPlugin } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { APIError, createAuthEndpoint } from 'better-auth/api'
+import { APIError, createAuthEndpoint, createAuthMiddleware } from 'better-auth/api'
 import { setSessionCookie } from 'better-auth/cookies'
 import { z } from 'zod'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { parseServerEnv } from '../env'
 import { isAllowlisted, NOT_ALLOWLISTED } from './allowlist'
+import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
 
 const env = parseServerEnv(process.env)
 
@@ -57,6 +58,19 @@ export const auth = betterAuth({
     // Runs on user creation and, for Google, on every repeat sign-in too, so
     // someone removed from the Allowlist can't sign in again.
     validateUserInfo: ({ user }) => allowlistRefusal(String(user.email)),
+  },
+  hooks: {
+    // A sign-in that goes through joins the remembered invite's Board (PRD
+    // stories 4, 5, 64) before the app picks where to land, so a first-time
+    // user arriving this way never gets "Meine Küche". A refused sign-in
+    // creates no session and keeps the invite for the next try.
+    after: createAuthMiddleware(async (ctx) => {
+      const signedIn = ctx.context.newSession
+      const token = ctx.getCookie(REMEMBERED_INVITE_COOKIE)
+      if (!signedIn || !token) return
+      await joinByInvite(token, signedIn.user.id)
+      ctx.setCookie(REMEMBERED_INVITE_COOKIE, '', FORGOTTEN_INVITE_COOKIE)
+    }),
   },
   plugins: env.AUTH_DEV_BYPASS === '1' ? [devSignIn] : [],
 })
