@@ -56,7 +56,8 @@ Google sign-in; only the trip to Google is skipped.
 ## Tests
 
 ```bash
-pnpm test       # Vitest: builds the app, boots it on a throwaway local database, runs tests/api
+pnpm test       # Vitest: tests/api (builds the app, boots it on a throwaway local database)
+                #   and tests/source-lookup (Source Lookup against recorded upstream fixtures, no network)
 pnpm test:e2e   # Playwright: dev server on a throwaway local database, runs tests/e2e
 pnpm typecheck
 pnpm lint
