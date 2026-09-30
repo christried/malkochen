@@ -1,32 +1,21 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../../../shared/placeholders'
-import { guessSource, SOURCE_KINDS, type SourceKind } from '../../../source-lookup'
 import { isMember } from '../../../utils/boards'
-import { addDish, type DishSource, type SavedDish } from '../../../utils/dishes'
-import { copyImage, imageTickets } from '../../../utils/image-store'
-
-const webLink = z.url({ protocol: /^https?$/ }).max(2048)
+import { dishNote, dishTitle, sourceInput, sourceOf, webLinkInput } from '../../../utils/dish-input'
+import { addDish, type SavedDish } from '../../../utils/dishes'
+import { storeFoundImage } from '../../../utils/image-store'
 
 const body = z.object({
-  title: z.string().trim().min(1).max(200),
-  // Optional; a blank note is no note.
-  note: z.string().trim().max(2000).nullish().transform(note => note || null),
+  title: dishTitle,
+  note: dishNote,
   // The fallback image, and the image if there is no Source image.
   placeholder: z.enum(PLACEHOLDERS),
-  // The canonical link and kind from Source Lookup. The kind is read from the
-  // link itself; the one sent only tells a blog from any other web page.
-  source: z.object({ link: webLink, kind: z.enum(SOURCE_KINDS).optional() }).nullish(),
+  source: sourceInput.nullish(),
   // The Source image Source Lookup found (third-party) and the Image Ticket it
   // came with; copied on save, but only with a valid ticket.
-  imageUrl: webLink.nullish(),
+  imageUrl: webLinkInput.nullish(),
   imageTicket: z.string().max(200).nullish(),
 })
-
-function sourceOf(input: { link: string, kind?: SourceKind }): DishSource {
-  const guess = guessSource(input.link)
-  const isBlog = guess.kind === 'other' && input.kind === 'blog'
-  return { link: guess.canonicalLink, kind: isBlog ? 'blog' : guess.kind }
-}
 
 // POST /api/boards/:id/dishes — adds a Dish at the top of the Board's first
 // Column: from a link (Source and Source image), or without one ("Ohne Link
@@ -42,9 +31,7 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   if (!await isMember(boardId, user.id)) throw boardNotFound()
 
   const { source, imageUrl, imageTicket, ...rest } = parsed.data
-  const ticketValid = Boolean(imageUrl && imageTicket && imageTickets.check(user.id, imageUrl, imageTicket))
-  if (imageUrl && !ticketValid) console.warn(`[image-store] not copied: no valid Image Ticket (${imageUrl})`)
-  const stored = imageUrl && ticketValid ? await copyImage(imageUrl) : null
+  const stored = imageUrl ? await storeFoundImage(user.id, imageUrl, imageTicket) : null
   const created = await addDish(boardId, user, {
     ...rest,
     source: source ? sourceOf(source) : null,

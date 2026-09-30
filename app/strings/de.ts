@@ -4,6 +4,19 @@
 import type { Placeholder } from '~~/shared/placeholders'
 import type { SourceBadgeKind } from '~~/shared/source-badge'
 
+// "3. Sept.", with the year only when it isn't this year. Always in German
+// time, so the server and the browser render the same day.
+function addedDate(date: Date): string {
+  const zone = 'Europe/Berlin'
+  const year = (d: Date) => new Intl.DateTimeFormat('de-DE', { year: 'numeric', timeZone: zone }).format(d)
+  return new Intl.DateTimeFormat('de-DE', {
+    day: 'numeric',
+    month: 'short',
+    year: year(date) === year(new Date()) ? undefined : 'numeric',
+    timeZone: zone,
+  }).format(date)
+}
+
 export const de = {
   app: {
     name: 'malkochen',
@@ -30,6 +43,38 @@ export const de = {
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
     hasNote: 'Mit Notiz',
+  },
+  detail: {
+    close: 'Schließen',
+    openOriginal: 'Original öffnen',
+    noSource: 'Ohne Link',
+    placement: (board: string, column: string) => `${board} · ${column}`,
+    added: (name: string | null, date: Date) => {
+      const day = addedDate(date)
+      return name ? `Hinzugefügt von ${name} am ${day}` : `Hinzugefügt am ${day}`
+    },
+    cookingHistory: 'Gekocht',
+    cookingHistoryEmpty: 'Noch nie gekocht.',
+    edit: 'Bearbeiten',
+    editing: 'Gericht bearbeiten',
+    title: 'Titel',
+    note: 'Notiz',
+    notePrompt: 'Optional, z. B. „mit Räuchertofu statt Speck“',
+    source: 'Link',
+    sourcePrompt: 'Link von TikTok, Instagram, YouTube, Pinterest oder einem Blog',
+    sourceHint: 'Ein neuer Link ändert das Bild nicht. Dafür gibt es „Bild neu laden“.',
+    image: 'Bild',
+    chooseImage: 'Bild wählen',
+    reloadImage: 'Bild neu laden',
+    reloadingImage: 'Lädt …',
+    reloadFound: 'Neues Bild vom Link. Es wird beim Speichern übernommen.',
+    reloadNothingFound: 'Kein Bild gefunden. Beim Speichern bekommt das Gericht sein Platzhalterbild.',
+    reloadFailed: 'Das Nachschauen hat nicht geklappt. Versuch es gleich noch mal.',
+    save: 'Speichern',
+    saving: 'Speichert …',
+    cancel: 'Abbrechen',
+    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    imageNotStored: (title: string) => `Das neue Bild ließ sich nicht speichern. „${title}“ behält sein bisheriges Bild.`,
   },
   sources: {
     tiktok: 'TikTok',

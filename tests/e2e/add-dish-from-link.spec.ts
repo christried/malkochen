@@ -1,12 +1,9 @@
-import { randomUUID } from 'node:crypto'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
-import { seedDish } from './seed'
-import { png, stubImage, stubSourceLookup } from './source-lookup-stub'
+import { removeStoredImages, seedDish, storedImage } from './seed'
+import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // Linus's Board is used by this file only. Source Lookup is stubbed with
 // fixtures (tests/e2e/source-lookup-stub.ts).
@@ -178,7 +175,7 @@ test('a link already on the Board warns, naming the Dish and its Column; "Trotzd
   await expect(page.getByRole('region', { name: 'Ideen' }).getByRole('article', { name: 'Crispy Tofu' })).toHaveCount(2)
 })
 
-test('"Öffnen" goes to the Dish already on the Board, in its Column', async ({ page }) => {
+test('"Öffnen" opens the detail of the Dish already on the Board', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   const blog = 'https://kochblog.example/rezept/tofu-scramble'
   await signIn(page, ALLOWLISTED[2])
@@ -191,30 +188,18 @@ test('"Öffnen" goes to the Dish already on the Board, in its Column', async ({ 
   await sheet.getByRole('button', { name: 'Öffnen' }).click()
 
   await expect(sheet).toBeHidden()
-  // Phones show one Column at a time: the Dish's Column comes to the front.
+  const detail = page.getByRole('dialog', { name: 'Tofu-Scramble' })
+  await expect(detail).toBeVisible()
+  await expect(detail.getByText('Diese Woche')).toBeVisible()
+  // Closing it leaves the Board on the Dish's Column (phones show one at a time).
+  await detail.getByRole('button', { name: 'Schließen' }).click()
+  await expect(detail).toBeHidden()
   await expect(page.getByRole('button', { name: /^Diese Woche/ })).toHaveAttribute('aria-pressed', 'true')
-  const card = page.getByRole('article', { name: 'Tofu-Scramble' })
-  await expect(card).toBeInViewport()
-  await expect(card.locator('..')).toBeFocused()
-  await expect(page).not.toHaveURL(/dish=/)
   // Nothing was saved.
   await expect(page.getByRole('article', { name: 'Tofu Scramble' })).toHaveCount(0)
 })
 
-// Stored images are served from disk here (no Blob token), as in local dev.
-const IMAGE_DIR = resolve('.data/images/dishes')
-const written: string[] = []
-test.afterAll(async () => {
-  await Promise.all(written.map(path => rm(path, { force: true })))
-})
-
-async function storedImage(width: number, height: number): Promise<string> {
-  const name = `${randomUUID()}.png`
-  await mkdir(IMAGE_DIR, { recursive: true })
-  await writeFile(join(IMAGE_DIR, name), png(width, height))
-  written.push(join(IMAGE_DIR, name))
-  return `/images/dishes/${name}`
-}
+test.afterAll(removeStoredImages)
 
 test('portrait and landscape images both fill the card\'s image', async ({ page }) => {
   await signIn(page, ALLOWLISTED[2])

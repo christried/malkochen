@@ -98,7 +98,4 @@ watch(open, (isOpen) => {
 @keyframes dialog-in {
   from { transform: scale(.92); opacity: 0; }
 }
-@keyframes scrim-in {
-  from { opacity: 0; }
-}
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { SavedDish } from '~~/server/utils/dishes'
+import { dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time
 // with a simple switch (the real tabs and swiping come with #10); tablet and
@@ -11,7 +12,8 @@ const { signOut } = useAuth()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
-const { data: board, error } = await useFetch<BoardView>(() => `/api/boards/${id.value}`)
+// Deep: adding and editing Dishes change the Board in place.
+const { data: board, error } = await useFetch<BoardView>(() => `/api/boards/${id.value}`, { deep: true })
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
 
 // Remember this as the Board to reopen next time.
@@ -22,39 +24,42 @@ useHead({ title: () => board.value ? `${board.value.emoji} ${board.value.name} �
 const activeColumnId = ref(board.value?.columns[0]?.id)
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 
-// ?dish=… (Add Dish's "Öffnen" on a duplicate): shows that Dish's card, until
-// the detail view (#8) exists. Its Column comes to the front; the card
-// scrolls into view, takes focus and is highlighted for a moment.
-const router = useRouter()
-const foundDishId = ref<string>()
-onMounted(() => watch([() => route.query.dish, board], async ([dishId]) => {
-  if (typeof dishId !== 'string' || board.value?.id !== id.value) return
-  const column = board.value.columns.find(c => c.dishes.some(d => d.id === dishId))
-  await router.replace({ query: {} })
-  if (!column) return
-  activeColumnId.value = column.id
-  foundDishId.value = dishId
+// The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
+// phones its Column comes to the front, so closing it lands there.
+// Closing it puts focus back on the Dish's card.
+watch(() => route.params.dishId, async (dishId, closedId) => {
+  const opened = board.value && dishOnBoard(board.value, dishId)
+  if (opened) activeColumnId.value = opened.column.id
+  if (dishId || typeof closedId !== 'string') return
   await nextTick()
-  const card = document.getElementById(`dish-${dishId}`)
-  card?.scrollIntoView({ block: 'center', inline: 'nearest' })
-  card?.focus({ preventScroll: true })
-}, { immediate: true }))
+  document.getElementById(`dish-${closedId}`)?.focus()
+}, { immediate: true })
 
 const adding = ref(false)
-// A Dish saved to another Board doesn't show here. If its Source image
-// couldn't be stored, a notice says why it has a Placeholder.
+// A Dish saved to another Board doesn't show here. If a Source image
+// couldn't be stored, a notice says which image the Dish has instead.
 const notice = ref('')
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
-function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
-  if (imageNotStored) {
-    notice.value = t.addDish.imageNotStored(dish.title)
-    clearTimeout(noticeTimer)
-    noticeTimer = setTimeout(() => notice.value = '', 8000)
-  }
+function showNotice(text: string) {
+  notice.value = text
+  clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => notice.value = '', 8000)
+}
+
+function onAdded(saved: SavedDish, boardId: string) {
+  if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
+  const { imageNotStored: _, ...dish } = saved
   const first = board.value?.columns[0]
   if (!first || boardId !== board.value?.id) return
   first.dishes.unshift(dish)
   activeColumnId.value = first.id
+}
+
+function onEdited(saved: SavedDish) {
+  if (saved.imageNotStored) showNotice(t.detail.imageNotStored(saved.title))
+  const { imageNotStored: _, ...dish } = saved
+  const edited = board.value && dishOnBoard(board.value, dish.id)
+  if (edited) Object.assign(edited.dish, dish)
 }
 </script>
 
@@ -114,14 +119,16 @@ function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
         >
           <li
             v-for="dish in column.dishes"
-            :id="`dish-${dish.id}`"
             :key="dish.id"
-            tabindex="-1"
-            class="rounded-card focus:outline-none"
-            :class="{ 'dish-found': foundDishId === dish.id }"
-            @animationend="foundDishId = undefined"
           >
-            <DishCard :dish="dish" />
+            <NuxtLink
+              :id="`dish-${dish.id}`"
+              :to="`/b/${board.id}/d/${dish.id}`"
+              :aria-label="dish.title"
+              class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              <DishCard :dish="dish" />
+            </NuxtLink>
           </li>
         </ol>
         <EmptyBoard v-else-if="isEmpty && index === 0" />
@@ -174,6 +181,11 @@ function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
       :board-id="board.id"
       @added="onAdded"
     />
+
+    <NuxtPage
+      :board="board"
+      @edited="onEdited"
+    />
   </main>
 </template>
 
@@ -186,14 +198,6 @@ function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
    around it. Reduced motion (main.css) stops it after one pass. */
 .fab-prompt {
   animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
-}
-/* The card "Öffnen" led to: a butter ring that fades out. */
-.dish-found {
-  animation: dish-found var(--dur-idle) var(--ease-idle) both;
-}
-@keyframes dish-found {
-  0%, 60% { box-shadow: 0 0 0 3px var(--color-focus); }
-  100% { box-shadow: 0 0 0 3px transparent; }
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }
