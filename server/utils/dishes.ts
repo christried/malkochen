@@ -80,6 +80,25 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
   return byColumn
 }
 
+// A Dish already on a Board with the Source being added (PRD story 24).
+export interface DuplicateDish {
+  id: string
+  title: string
+  columnName: string
+}
+
+// The Board's newest Dish whose Source is this canonical link, if any.
+export async function dishWithSource(boardId: string, canonicalLink: string): Promise<DuplicateDish | null> {
+  const [found] = await db
+    .select({ id: dish.id, title: dish.title, columnName: boardColumn.name })
+    .from(dish)
+    .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
+    .where(and(eq(dish.boardId, boardId), eq(dish.sourceLink, canonicalLink)))
+    .orderBy(desc(dish.createdAt), desc(dish.id))
+    .limit(1)
+  return found ?? null
+}
+
 // Adds a Dish at the top of the Board's first Column (PRD story 13). Null
 // unless the user is a Member of the Board.
 export async function addDish(

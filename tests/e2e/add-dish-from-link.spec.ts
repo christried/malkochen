@@ -158,6 +158,49 @@ test('lookup failed: the Dish can still be saved with a Placeholder and a typed 
   await expect(card.locator('img[src="/placeholders/ramen-light.svg"]')).toBeVisible()
 })
 
+test('a link already on the Board warns, naming the Dish and its Column; "Trotzdem speichern" adds it again', async ({ page }) => {
+  const short = 'https://www.youtube.com/shorts/dupWarnTofu1'
+  await signIn(page, ALLOWLISTED[2])
+  await seedDish(page, { title: 'Crispy Tofu', sourceLink: short, sourceKind: 'youtube-short' })
+  await stubSourceLookup(page, { kind: 'youtube-short', canonicalLink: short, suggestedTitle: 'Crispy Tofu', imageUrl: null, imageTicket: null })
+  const sheet = await openAddDish(page)
+
+  // Another form of the same link.
+  await sheet.getByLabel('Link').fill(`${short}?feature=share`)
+
+  await expect(sheet.getByRole('alert')).toContainText('Schon auf dem Board: „Crispy Tofu“ in Ideen')
+  await expect(sheet.getByRole('button', { name: 'Speichern', exact: true })).toHaveCount(0)
+  const body = savedBody(page)
+  await sheet.getByRole('button', { name: 'Trotzdem speichern' }).click()
+
+  expect(await body).toMatchObject({ title: 'Crispy Tofu', source: { link: short } })
+  await expect(sheet).toBeHidden()
+  await expect(page.getByRole('region', { name: 'Ideen' }).getByRole('article', { name: 'Crispy Tofu' })).toHaveCount(2)
+})
+
+test('"Öffnen" goes to the Dish already on the Board, in its Column', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const blog = 'https://kochblog.example/rezept/tofu-scramble'
+  await signIn(page, ALLOWLISTED[2])
+  await seedDish(page, { title: 'Tofu-Scramble', sourceLink: blog, sourceKind: 'blog', column: 1 })
+  await stubSourceLookup(page, { kind: 'blog', canonicalLink: blog, suggestedTitle: 'Tofu Scramble', imageUrl: null, imageTicket: null })
+  const sheet = await openAddDish(page)
+
+  await sheet.getByLabel('Link').fill(`${blog}?utm_source=pinterest`)
+  await expect(sheet.getByRole('alert')).toContainText('Schon auf dem Board: „Tofu-Scramble“ in Diese Woche')
+  await sheet.getByRole('button', { name: 'Öffnen' }).click()
+
+  await expect(sheet).toBeHidden()
+  // Phones show one Column at a time: the Dish's Column comes to the front.
+  await expect(page.getByRole('button', { name: /^Diese Woche/ })).toHaveAttribute('aria-pressed', 'true')
+  const card = page.getByRole('article', { name: 'Tofu-Scramble' })
+  await expect(card).toBeInViewport()
+  await expect(card.locator('..')).toBeFocused()
+  await expect(page).not.toHaveURL(/dish=/)
+  // Nothing was saved.
+  await expect(page.getByRole('article', { name: 'Tofu Scramble' })).toHaveCount(0)
+})
+
 // Stored images are served from disk here (no Blob token), as in local dev.
 const IMAGE_DIR = resolve('.data/images/dishes')
 const written: string[] = []
