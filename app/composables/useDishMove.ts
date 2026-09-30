@@ -134,6 +134,31 @@ export function useDishMove(
     return moved.focusId
   }
 
+  // To a Column on another Board (PRD story 46): it leaves this Board at
+  // once, keeping its Cooking History, and a Toast says where it went; into
+  // that Board's Gekocht Column it records a Cooking, but with no Gekocht
+  // toast or undo, as it is no longer here. Answers the id of the element
+  // to focus instead of the Dish's card.
+  function moveToBoard(dishId: string, columnId: string, toBoard: { emoji: string, name: string, columns: { id: string, name: string }[] }): string | null {
+    const found = board.value && dishOnBoard(board.value, dishId)
+    const target = toBoard.columns.find(c => c.id === columnId)
+    if (!found || !target) return null
+    const { dish, column } = found
+    const from = column.dishes.indexOf(dish)
+    const focusId = focusAfterLeaving(column, from)
+    column.dishes.splice(from, 1)
+    showToast({ text: t.dish.movedToBoard(dish.title, `${toBoard.emoji} ${toBoard.name}`, target.name), duration: NOTICE_MS })
+
+    $fetch(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId } }).catch((error: { statusCode?: number }) => {
+      // Gone meanwhile (another Member deleted it): it stays gone.
+      if (error.statusCode === 404) return
+      const now = board.value?.columns.find(c => c.id === column.id)
+      now?.dishes.splice(Math.min(from, now.dishes.length), 0, dish)
+      showToast({ text: t.dish.moveFailed(dish.title), duration: NOTICE_MS })
+    })
+    return focusId
+  }
+
   // "Gekocht ✓" on a card or in the Dish detail: to the top of the Gekocht
   // Column, or where it is if it is there already. Answers the id of the
   // element to focus instead of the Dish's card.
@@ -143,7 +168,7 @@ export function useDishMove(
     return dropDish(dishId, { columnId: gekocht.id }, { cook: true })?.focusId ?? null
   }
 
-  return { moveDish, dropDish, cookDish }
+  return { moveDish, moveToBoard, dropDish, cookDish }
 }
 
 // Takes `item` out of `list`; false if it wasn't in it.

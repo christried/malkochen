@@ -67,7 +67,7 @@ test('moving a Dish to the Column it is in changes nothing', async () => {
   expect((await columnDishIds(barbara))[0]!.slice(0, 2)).toEqual([top.id, bottom.id])
 })
 
-test('a Dish can’t be moved to a Column of another Board', async () => {
+test('a Dish can’t be moved to a Column of a Board the user isn’t a Member of', async () => {
   const barbara = await signIn(ALLOWLISTED[4])
   const linus = await signIn(ALLOWLISTED[2])
   const dish = await addDish(barbara, 'Falafel')

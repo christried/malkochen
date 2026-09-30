@@ -5,11 +5,13 @@ import type { DishView } from '~~/server/utils/dishes'
 
 // The Dish detail's contents: a large image, the title and note, the Source
 // with "Original öffnen", where the Dish is (Board and Column), who added it
-// and when, its Cooking History with "Gekocht ✓", and "Löschen".
+// and when, its Cooking History with "Gekocht ✓", "Verschieben nach…" and
+// "Löschen".
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
 defineEmits<{
   close: []
   edit: []
+  move: []
   delete: []
   cook: []
   note: [cooking: CookingView]
@@ -100,12 +102,20 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
         @delete="cooking => $emit('deleteCooking', cooking)"
       />
 
-      <DangerButton
-        class="mt-auto self-start"
-        @click="$emit('delete')"
-      >
-        {{ t.dish.delete }}
-      </DangerButton>
+      <div class="mt-auto flex flex-wrap gap-3">
+        <button
+          type="button"
+          class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          aria-haspopup="dialog"
+          data-move
+          @click="$emit('move')"
+        >
+          {{ t.dish.moveTo }}
+        </button>
+        <DangerButton @click="$emit('delete')">
+          {{ t.dish.delete }}
+        </DangerButton>
+      </div>
     </div>
   </div>
 </template>

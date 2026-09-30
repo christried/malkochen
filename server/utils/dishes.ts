@@ -163,14 +163,15 @@ export async function restoreDish(dishId: string, userId: string): Promise<DishV
 // What moving a Dish answers: the Dish, and the Cooking the move recorded, if any.
 export type MovedDish = DishView & { cooking?: CookingView }
 
-// Moves a Dish to the top of a Column on its own Board (PRD story 33); one
-// already in that Column stays where it is. With an `index` (drag and drop,
+// Moves a Dish to the top of a Column (PRD story 33), on its own Board or
+// another one the user is a Member of (story 46), where it keeps its Cooking
+// History; one already in that Column stays where it is. With an `index` (drag and drop,
 // PRD stories 31, 32, 34) it goes to that place among the Column's other
 // Dishes instead, in its own Column too, or to the end if the Column is
 // shorter. Moving it into the Gekocht Column records a Cooking (PRD story
 // 49); with `cook`, so does a move within it (story 55). Null unless the
-// Dish is on a Board the user is a Member of, not deleted, and the Column is
-// on that Board.
+// Dish and the Column are both on Boards the user is a Member of, and the
+// Dish isn't deleted.
 export async function moveDish(
   dishId: string,
   userId: string,
@@ -178,7 +179,7 @@ export async function moveDish(
   { index, cook = false }: { index?: number, cook?: boolean } = {},
 ): Promise<MovedDish | null> {
   const target = onMembersBoard(dishId, userId)
-  const movable = movableTo(target, columnId)
+  const movable = movableTo(target, userId, columnId)
   const cookingId = randomUUID()
   await runAtomic(d => [
     // First, so it still sees the Column the Dish comes from.
@@ -215,7 +216,7 @@ export async function cookDish(dishId: string, userId: string): Promise<MovedDis
 // the Cooking (cookingDishId).
 export async function undoCooking(cookingId: string, dishId: string, userId: string, columnId: string, index: number): Promise<DishView | null> {
   const stillCooked = inArray(dish.columnId, db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.isGekocht, true)))
-  const movable = movableTo(and(onMembersBoard(dishId, userId), stillCooked), columnId)
+  const movable = movableTo(and(onMembersBoard(dishId, userId), stillCooked), userId, columnId)
   await runAtomic(d => [
     d.delete(cooking).where(and(
       eq(cooking.id, cookingId),
@@ -227,12 +228,22 @@ export async function undoCooking(cookingId: string, dishId: string, userId: str
   return findDish(and(onMembersBoard(dishId, userId), eq(dish.columnId, columnId)))
 }
 
-// The Dish `target`, if the Column is on its Board.
-function movableTo(target: SQL | undefined, columnId: string) {
+// The Dish `target`, if the Column is on a Board the user is a Member of:
+// its own, or another one (PRD story 46).
+function movableTo(target: SQL | undefined, userId: string, columnId: string) {
   return and(
     target,
-    inArray(dish.boardId, db.select({ id: boardColumn.boardId }).from(boardColumn).where(eq(boardColumn.id, columnId))),
+    exists(db
+      .select({ id: boardColumn.id })
+      .from(boardColumn)
+      .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
+      .where(eq(boardColumn.id, columnId))),
   )
+}
+
+// The Board of the Column, for a Dish moving into it.
+function boardOf(columnId: string) {
+  return sql`(select ${boardColumn.boardId} from ${boardColumn} where ${boardColumn.id} = ${columnId})`
 }
 
 // Moves a Dish to the top of a Column, if `movable`; one already in that
@@ -242,6 +253,7 @@ function toTop(d: Db, columnId: string, movable: SQL | undefined) {
     .update(dish)
     .set({
       columnId,
+      boardId: boardOf(columnId),
       position: sql`case when ${dish.columnId} = ${columnId} then ${dish.position}
         else (select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId}) end`,
     })
@@ -271,6 +283,7 @@ function renumberForDrop(d: Db, dishId: string, columnId: string, index: number,
     .update(dish)
     .set({
       columnId,
+      boardId: boardOf(columnId),
       position: sql`case when ${dish.id} = ${dishId} then ${index}::integer
         else (select case when rank < ${index}::integer then rank else rank + 1 end from ${others} where ${others.id} = ${dish.id}) end`,
     })
