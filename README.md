@@ -29,7 +29,7 @@ variables are validated at startup by `server/env.ts` — add new ones there too
 | Variable | Purpose | Where it is set |
 |---|---|---|
 | `DATABASE_URL` | Postgres connection string. Neon in deployed environments (neon-http driver); a `localhost` URL switches to node-postgres (`server/db/index.ts`). | `.env` locally; Vercel **production, preview and development**, each with its own Neon database or branch. |
-| `TEST_DATABASE_ADMIN_URL` | Superuser URL of the **local** Postgres. `pnpm test` and `pnpm test:e2e` use it to create and drop a throwaway database per run. | `.env` only. Never in Vercel. |
+| `TEST_DATABASE_ADMIN_URL` | Superuser URL of the **local** Postgres. `pnpm test` and `pnpm test:e2e` use it to create and drop a throwaway database per run. | `.env` locally; `env:` of `.github/workflows/ci.yml` (points at the job's Postgres service, no secret). Never in Vercel. |
 
 ## Tests
 
@@ -39,6 +39,9 @@ pnpm test:e2e   # Playwright: dev server on a throwaway local database, runs tes
 pnpm typecheck
 pnpm lint
 ```
+
+CI (`.github/workflows/ci.yml`) runs all four on every PR and push to `main`,
+against a Postgres service container.
 
 Both suites create a `malkochen_test_*` database from `TEST_DATABASE_ADMIN_URL`,
 apply the migrations, and drop it afterwards; leftovers of killed runs are

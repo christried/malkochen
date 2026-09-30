@@ -8,7 +8,7 @@ async function main(): Promise<number> {
   const database = await createThrowawayDatabase(readAdminUrl())
   try {
     return await new Promise<number>((resolve, reject) => {
-      // cmd.exe quoting: this repo is developed and tested on Windows only.
+      // cmd.exe-style quoting (local dev is Windows). CI passes no arguments.
       const args = process.argv.slice(2).map(a => /[\s"]/.test(a) ? `"${a.replaceAll('"', '""')}"` : a)
       const child = spawn(['pnpm', 'exec', 'playwright', 'test', ...args].join(' '), {
         stdio: 'inherit',
