@@ -88,6 +88,7 @@ export interface DuplicateDish {
 }
 
 // The Board's newest Dish whose Source is this canonical link, if any.
+// Once Dishes can be deleted (#9), deleted ones must not count here.
 export async function dishWithSource(boardId: string, canonicalLink: string): Promise<DuplicateDish | null> {
   const [found] = await db
     .select({ id: dish.id, title: dish.title, columnName: boardColumn.name })

@@ -22,12 +22,12 @@ async function addDish(caller: Caller, boardId: string, title: string, link: str
   return (await res.json()) as { id: string }
 }
 
-function check(caller: Caller, boardId: string, link: string) {
+function checkDuplicate(caller: Caller, boardId: string, link: string) {
   return caller.fetch(`/api/boards/${boardId}/duplicate?link=${encodeURIComponent(link)}`)
 }
 
 async function duplicateOf(caller: Caller, boardId: string, link: string) {
-  const res = await check(caller, boardId, link)
+  const res = await checkDuplicate(caller, boardId, link)
   expect(res.status).toBe(200)
   return ((await res.json()) as Duplicate).duplicate
 }
@@ -82,7 +82,7 @@ test('only Members can ask, and only about web links', async () => {
   const linus = await signIn(ALLOWLISTED[2])
   const adasBoard = await landingBoardId(ada)
 
-  expect((await check(linus, adasBoard, 'https://www.youtube.com/shorts/dupCrispyTofu1')).status).toBe(404)
-  expect((await check(ada, adasBoard, 'javascript:alert(1)')).status).toBe(400)
+  expect((await checkDuplicate(linus, adasBoard, 'https://www.youtube.com/shorts/dupCrispyTofu1')).status).toBe(404)
+  expect((await checkDuplicate(ada, adasBoard, 'javascript:alert(1)')).status).toBe(400)
   expect((await ada.fetch(`/api/boards/${adasBoard}/duplicate`)).status).toBe(400)
 })

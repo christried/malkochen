@@ -90,7 +90,7 @@ const warnDuplicate = computed(() => duplicate.value !== null && !saveAnyway.val
 const canSave = computed(() =>
   showForm.value && title.value.trim() !== '' && !saving.value && !checkingDuplicate.value && !warnDuplicate.value)
 
-function saveDuplicate() {
+function saveDespiteDuplicate() {
   saveAnyway.value = true
   save()
 }
@@ -98,9 +98,9 @@ function saveDuplicate() {
 // "Öffnen": to the Dish already on the Board, instead of adding it again.
 async function openDuplicate() {
   if (!duplicate.value) return
-  const target = { path: `/b/${boardId.value}`, query: { dish: duplicate.value.id } }
+  const dishId = duplicate.value.id
   open.value = false
-  await navigateTo(target)
+  await navigateTo({ path: `/b/${boardId.value}`, query: { dish: dishId } })
 }
 
 // The inline picker (handoff: 4×2) offers the first eight Placeholders; one
@@ -335,7 +335,7 @@ async function save() {
               type="button"
               class="rounded-pill bg-inverse px-4 py-2.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               :disabled="saving"
-              @click="saveDuplicate"
+              @click="saveDespiteDuplicate"
             >
               {{ t.addDish.saveAnyway }}
             </button>

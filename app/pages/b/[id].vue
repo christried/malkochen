@@ -189,7 +189,7 @@ function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
 }
 /* The card "Öffnen" led to: a butter ring that fades out. */
 .dish-found {
-  animation: dish-found var(--dur-celebrate) var(--ease-fade) both;
+  animation: dish-found var(--dur-idle) var(--ease-idle) both;
 }
 @keyframes dish-found {
   0%, 60% { box-shadow: 0 0 0 3px var(--color-focus); }
