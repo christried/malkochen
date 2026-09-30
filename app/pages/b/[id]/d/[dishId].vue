@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
+import type { CookingView } from '~~/server/utils/cookings'
 import type { SavedDish } from '~~/server/utils/dishes'
 import { dishOnBoard } from '~~/shared/board'
 
@@ -8,9 +9,18 @@ import { dishOnBoard } from '~~/shared/board'
 // 1200px). A native modal <dialog>, like AppSheet: the browser traps focus,
 // makes the Board inert and closes it on Escape. The Dish comes from the
 // Board the parent page already has; edits go back to it via `edited`, and
-// "Löschen" asks it to `delete` the Dish (it offers the undo).
+// "Löschen" asks it to `delete` the Dish (it offers the undo). So do the
+// Cooking History's actions: `cook`, `note` and `deleteCooking`. The Board
+// is inert behind this dialog, so its Toast shows in here.
 const props = defineProps<{ board: BoardView }>()
-const emit = defineEmits<{ edited: [dish: SavedDish], delete: [dishId: string] }>()
+const emit = defineEmits<{
+  edited: [dish: SavedDish]
+  delete: [dishId: string]
+  cook: [dishId: string]
+  note: [dishId: string, cooking: CookingView]
+  deleteCooking: [dishId: string, cooking: CookingView]
+}>()
+const toast = defineModel<Toast | null>('toast', { required: true })
 const t = useStrings()
 const route = useRoute()
 const router = useRouter()
@@ -92,8 +102,12 @@ watch(editing, async (isEditing) => {
         @close="close"
         @edit="editing = true"
         @delete="onDelete"
+        @cook="emit('cook', located.dish.id)"
+        @note="cooking => located && emit('note', located.dish.id, cooking)"
+        @delete-cooking="cooking => located && emit('deleteCooking', located.dish.id, cooking)"
       />
     </template>
+    <AppToast v-model="toast" />
   </dialog>
 </template>
 

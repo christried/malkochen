@@ -132,22 +132,22 @@ test('a failed move puts the card back and says so; one already deleted just goe
     await page.getByRole('button', { name: 'Mehr zu „Tacos“' }).click()
     const menu = page.getByRole('dialog', { name: 'Tacos' })
     await menu.getByRole('button', { name: 'Verschieben nach…' }).click()
-    await menu.getByRole('button', { name: 'Gekocht' }).click()
+    await menu.getByRole('button', { name: 'Diese Woche' }).click()
   }
 
   await moveTacos()
 
   await expect(page.locator('[data-toast]')).toHaveText('„Tacos“ ließ sich nicht verschieben. Versuch es gleich noch mal.')
   await expect(titles(page, 'Ideen')).toHaveText(['Tacos'])
-  await expect(tab(page, 'Gekocht 0')).toBeVisible()
+  await expect(tab(page, 'Diese Woche 2')).toBeVisible()
 
   // Another Member deleted it first: the server doesn't find it any more.
   answer.status = 404
   await moveTacos()
 
-  await expect(page.locator('[data-toast]')).toContainText('„Tacos“ nach „Gekocht“ verschoben')
+  await expect(page.locator('[data-toast]')).toContainText('„Tacos“ nach „Diese Woche“ verschoben')
   await expect(column(page, 'Ideen').getByText('Noch nichts hier.')).toBeVisible()
-  await expect(tab(page, 'Gekocht 0')).toBeVisible()
+  await expect(tab(page, 'Diese Woche 2')).toBeVisible()
 })
 
 test('from 768px all Columns show side by side and scroll-snap', async ({ page }) => {

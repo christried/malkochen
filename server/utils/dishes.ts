@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
-import { db } from '../db'
-import { boardColumn, dish, membership, user } from '../db/schema'
+import { db, runAtomic, type Db } from '../db'
+import { boardColumn, cooking, dish, membership, user } from '../db/schema'
+import { cookingsByDish, type CookingView } from './cookings'
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -28,6 +30,8 @@ export interface DishView {
   // Null once the account that added it is gone.
   addedBy: DishAdder | null
   createdAt: string
+  // Its Cooking History, newest first; "N× gekocht" counts it.
+  cookings: CookingView[]
 }
 
 // What saving a Dish answers: the Dish, and whether a Source image that was
@@ -52,7 +56,8 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
   const rows = await selectDishes()
     .where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt)))
     .orderBy(asc(dish.position), desc(dish.createdAt), desc(dish.id))
-  for (const row of rows) byColumn.get(row.columnId)?.push(toView(row))
+  const views = await toViews(rows)
+  rows.forEach((row, i) => byColumn.get(row.columnId)?.push(views[i]!))
   return byColumn
 }
 
@@ -79,13 +84,26 @@ function selectDishes() {
 
 type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
 
-function toView({ columnId: _, sourceLink, sourceKind, adderId, adderName, adderImage, ...row }: DishRow): DishView {
+function toView({ columnId: _, sourceLink, sourceKind, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[]): DishView {
   return {
     ...row,
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
     createdAt: row.createdAt.toISOString(),
+    cookings,
   }
+}
+
+// The rows as Dishes, each with its Cooking History.
+async function toViews(rows: DishRow[]): Promise<DishView[]> {
+  const cookings = await cookingsByDish(rows.map(row => row.id))
+  return rows.map(row => toView(row, cookings.get(row.id) ?? []))
+}
+
+// The one Dish matching `where`, if any.
+async function findDish(where: SQL | undefined): Promise<DishView | null> {
+  const [view] = await toViews(await selectDishes().where(where))
+  return view ?? null
 }
 
 // What editing a Dish may change (PRD story 43); fields left out stay as
@@ -124,8 +142,7 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
     if (updated.length === 0) return null
   }
 
-  const [row] = await selectDishes().where(target)
-  return row ? toView(row) : null
+  return findDish(target)
 }
 
 // Deletes a Dish (PRD story 47): a soft delete, so it can be restored. False
@@ -140,45 +157,103 @@ export async function deleteDish(dishId: string, userId: string): Promise<boolea
 export async function restoreDish(dishId: string, userId: string): Promise<DishView | null> {
   const target = onMembersBoardIncludingDeleted(dishId, userId)
   await db.update(dish).set({ deletedAt: null }).where(target)
-  const [row] = await selectDishes().where(target)
-  return row ? toView(row) : null
+  return findDish(target)
 }
+
+// What moving a Dish answers: the Dish, and the Cooking the move recorded, if any.
+export type MovedDish = DishView & { cooking?: CookingView }
 
 // Moves a Dish to the top of a Column on its own Board (PRD story 33); one
 // already in that Column stays where it is. With an `index` (drag and drop,
 // PRD stories 31, 32, 34) it goes to that place among the Column's other
 // Dishes instead, in its own Column too, or to the end if the Column is
-// shorter. Cooking builds on this. Null unless the Dish is on a Board the
-// user is a Member of, not deleted, and the Column is on that Board.
-export async function moveDish(dishId: string, userId: string, columnId: string, index?: number): Promise<DishView | null> {
+// shorter. Moving it into the Gekocht Column records a Cooking (PRD story
+// 49); with `cook`, so does a move within it (story 55). Null unless the
+// Dish is on a Board the user is a Member of, not deleted, and the Column is
+// on that Board.
+export async function moveDish(
+  dishId: string,
+  userId: string,
+  columnId: string,
+  { index, cook = false }: { index?: number, cook?: boolean } = {},
+): Promise<MovedDish | null> {
   const target = onMembersBoard(dishId, userId)
-  const movable = and(
+  const movable = movableTo(target, columnId)
+  const cookingId = randomUUID()
+  await runAtomic(d => [
+    // First, so it still sees the Column the Dish comes from.
+    d.execute(sql`
+      insert into ${cooking} (id, dish_id, recorded_by)
+      select ${cookingId}, ${dish.id}, ${userId} from ${dish}
+      where ${and(movable, cook ? undefined : ne(dish.columnId, columnId))}
+        and exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${columnId} and ${boardColumn.isGekocht})
+    `),
+    index === undefined ? toTop(d, columnId, movable) : renumberForDrop(d, dishId, columnId, index, movable),
+  ])
+
+  const moved = await findDish(and(target, eq(dish.columnId, columnId)))
+  const recorded = moved?.cookings.find(c => c.id === cookingId)
+  return moved && recorded ? { ...moved, cooking: recorded } : moved
+}
+
+// "Gekocht ✓" (PRD story 35): records a Cooking and moves the Dish to the
+// top of its Board's Gekocht Column; one already there stays where it is.
+// Null unless the Dish is on a Board the user is a Member of and not deleted.
+export async function cookDish(dishId: string, userId: string): Promise<MovedDish | null> {
+  const [gekocht] = await db
+    .select({ id: boardColumn.id })
+    .from(dish)
+    .innerJoin(boardColumn, and(eq(boardColumn.boardId, dish.boardId), eq(boardColumn.isGekocht, true)))
+    .where(onMembersBoard(dishId, userId))
+  return gekocht ? moveDish(dishId, userId, gekocht.id, { cook: true }) : null
+}
+
+// "Rückgängig" after cooking (PRD story 51): removes the Cooking for good
+// and puts its Dish back at `index` in the Column it came from. Null unless
+// the Dish is still in the Gekocht Column (nobody moved it on meanwhile) and
+// that Column is on its Board. The caller has checked that the user may see
+// the Cooking (cookingDishId).
+export async function undoCooking(cookingId: string, dishId: string, userId: string, columnId: string, index: number): Promise<DishView | null> {
+  const stillCooked = inArray(dish.columnId, db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.isGekocht, true)))
+  const movable = movableTo(and(onMembersBoard(dishId, userId), stillCooked), columnId)
+  await runAtomic(d => [
+    d.delete(cooking).where(and(
+      eq(cooking.id, cookingId),
+      eq(cooking.dishId, dishId),
+      exists(db.select({ id: dish.id }).from(dish).where(movable)),
+    )),
+    renumberForDrop(d, dishId, columnId, index, movable),
+  ])
+  return findDish(and(onMembersBoard(dishId, userId), eq(dish.columnId, columnId)))
+}
+
+// The Dish `target`, if the Column is on its Board.
+function movableTo(target: SQL | undefined, columnId: string) {
+  return and(
     target,
     inArray(dish.boardId, db.select({ id: boardColumn.boardId }).from(boardColumn).where(eq(boardColumn.id, columnId))),
   )
-  const moved = index === undefined
-    ? await db
-        .update(dish)
-        .set({
-          columnId,
-          position: sql`case when ${dish.columnId} = ${columnId} then ${dish.position}
-            else (select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId}) end`,
-        })
-        .where(movable)
-        .returning({ id: dish.id })
-    : await renumberForDrop(dishId, columnId, index, movable)
-  if (!moved.some(row => row.id === dishId)) return null
+}
 
-  const [row] = await selectDishes().where(target)
-  return row ? toView(row) : null
+// Moves a Dish to the top of a Column, if `movable`; one already in that
+// Column stays where it is.
+function toTop(d: Db, columnId: string, movable: SQL | undefined) {
+  return d
+    .update(dish)
+    .set({
+      columnId,
+      position: sql`case when ${dish.columnId} = ${columnId} then ${dish.position}
+        else (select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId}) end`,
+    })
+    .where(movable)
 }
 
 // Drops a Dish at `index` in a Column, if `movable`: one statement numbers
 // the Column afresh, 0, 1, 2…, leaving that place free for the Dish. Deleted
 // Dishes keep their position, so undo still puts them back about where they were.
-function renumberForDrop(dishId: string, columnId: string, index: number, movable: SQL | undefined) {
-  const others = db.$with('others').as(
-    db
+function renumberForDrop(d: Db, dishId: string, columnId: string, index: number, movable: SQL | undefined) {
+  const others = d.$with('others').as(
+    d
       .select({
         id: dish.id,
         rank: sql<number>`row_number() over (order by ${dish.position}, ${dish.createdAt} desc, ${dish.id} desc) - 1`.as('rank'),
@@ -191,7 +266,7 @@ function renumberForDrop(dishId: string, columnId: string, index: number, movabl
         exists(db.select({ id: dish.id }).from(dish).where(movable)),
       )),
   )
-  return db
+  return d
     .with(others)
     .update(dish)
     .set({
@@ -201,9 +276,8 @@ function renumberForDrop(dishId: string, columnId: string, index: number, movabl
     })
     .where(or(
       and(eq(dish.id, dishId), movable),
-      inArray(dish.id, db.select({ id: others.id }).from(others)),
+      inArray(dish.id, d.select({ id: others.id }).from(others)),
     ))
-    .returning({ id: dish.id })
 }
 
 // A Dish already on a Board with the Source being added (PRD story 24).
@@ -268,5 +342,6 @@ export async function addDish(
     placeholder: input.placeholder,
     addedBy: { id: adder.id, name: adder.name, image: adder.image ?? null },
     createdAt: created.createdAt.toISOString(),
+    cookings: [],
   }
 }

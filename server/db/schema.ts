@@ -127,3 +127,20 @@ export const dish = pgTable('dish', {
   index('dish_board_id_idx').on(t.boardId),
   index('dish_column_id_position_idx').on(t.columnId, t.position),
 ])
+
+// ---------------------------------------------------------------------------
+// Cooking (CONTEXT.md: Cooking, Cooked). A Dish's Cookings are its Cooking
+// History; they stay when it moves out of the Gekocht Column.
+
+export const cooking = pgTable('cooking', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
+  cookedAt: timestamp('cooked_at', { withTimezone: true }).notNull().defaultNow(),
+  note: text('note'),
+  // Who recorded it; kept (as unknown) if their account is ever deleted.
+  recordedBy: text('recorded_by').references(() => user.id, { onDelete: 'set null' }),
+  // Set when a Member deletes it from the Cooking History, so "Rückgängig"
+  // can bring it back; left out everywhere else. Undoing the move that
+  // recorded it removes it for good instead.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+}, t => [index('cooking_dish_id_idx').on(t.dishId, t.cookedAt)])
