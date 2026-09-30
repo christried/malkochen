@@ -22,6 +22,24 @@ useHead({ title: () => board.value ? `${board.value.emoji} ${board.value.name} �
 const activeColumnId = ref(board.value?.columns[0]?.id)
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 
+// ?dish=… (Add Dish's "Öffnen" on a duplicate): shows that Dish's card, until
+// the detail view (#8) exists. Its Column comes to the front; the card
+// scrolls into view, takes focus and is highlighted for a moment.
+const router = useRouter()
+const foundDishId = ref<string>()
+onMounted(() => watch([() => route.query.dish, board], async ([dishId]) => {
+  if (typeof dishId !== 'string' || board.value?.id !== id.value) return
+  const column = board.value.columns.find(c => c.dishes.some(d => d.id === dishId))
+  await router.replace({ query: {} })
+  if (!column) return
+  activeColumnId.value = column.id
+  foundDishId.value = dishId
+  await nextTick()
+  const card = document.getElementById(`dish-${dishId}`)
+  card?.scrollIntoView({ block: 'center', inline: 'nearest' })
+  card?.focus({ preventScroll: true })
+}, { immediate: true }))
+
 const adding = ref(false)
 // A Dish saved to another Board doesn't show here. If its Source image
 // couldn't be stored, a notice says why it has a Placeholder.
@@ -96,7 +114,12 @@ function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
         >
           <li
             v-for="dish in column.dishes"
+            :id="`dish-${dish.id}`"
             :key="dish.id"
+            tabindex="-1"
+            class="rounded-card focus:outline-none"
+            :class="{ 'dish-found': foundDishId === dish.id }"
+            @animationend="foundDishId = undefined"
           >
             <DishCard :dish="dish" />
           </li>
@@ -163,6 +186,14 @@ function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
    around it. Reduced motion (main.css) stops it after one pass. */
 .fab-prompt {
   animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
+}
+/* The card "Öffnen" led to: a butter ring that fades out. */
+.dish-found {
+  animation: dish-found var(--dur-idle) var(--ease-idle) both;
+}
+@keyframes dish-found {
+  0%, 60% { box-shadow: 0 0 0 3px var(--color-focus); }
+  100% { box-shadow: 0 0 0 3px transparent; }
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }

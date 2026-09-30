@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type { SourceLookupResult } from '~~/server/source-lookup'
 import type { BoardSummary } from '~~/server/utils/boards'
-import type { SavedDish } from '~~/server/utils/dishes'
+import type { DuplicateDish, SavedDish } from '~~/server/utils/dishes'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
 
 // Add Dish. First a link: pasting one looks it up right away (Source Lookup)
 // and shows a preview with the image and an editable Suggested Title. Or
 // "Ohne Link hinzufügen": a title, a note and a Placeholder Image. Either way
-// the Member picks the Board (the one they are on) and saves.
+// the Member picks the Board (the one they are on) and saves. If the link is
+// already on that Board, a warning names the Dish and its Column: open it, or
+// save anyway.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{ boardId: string }>()
 const emit = defineEmits<{ added: [dish: SavedDish, boardId: string] }>()
@@ -53,7 +55,53 @@ const usingSourceImage = computed(() => sourceImage.value !== null && !preferPla
 // Found an image but no title (Pinterest, Instagram): ask for one, kindly.
 const titleNeeded = computed(() => result.value !== null && result.value.suggestedTitle === '' && title.value.trim() === '')
 
-const canSave = computed(() => showForm.value && title.value.trim() !== '' && !saving.value)
+// The Source link the Dish is saved with: the canonical one if the lookup
+// found it, else the link as pasted. None without a link, or before either.
+const sourceLink = computed(() => {
+  if (withoutLink.value) return null
+  if (result.value) return result.value.canonicalLink
+  return lookup.value.status === 'failed' ? webLink(link.value) : null
+})
+
+// A Dish with this Source already on the chosen Board (PRD story 24), asked
+// again whenever the link or the Board changes. Saving waits for the answer,
+// and while the warning shows, only "Trotzdem speichern" saves.
+const duplicate = ref<DuplicateDish | null>(null)
+const checkingDuplicate = ref(false)
+const saveAnyway = ref(false)
+let duplicateRun = 0
+watch([sourceLink, boardId], async ([target, board]) => {
+  const run = ++duplicateRun
+  duplicate.value = null
+  saveAnyway.value = false
+  if (!target) {
+    checkingDuplicate.value = false
+    return
+  }
+  checkingDuplicate.value = true
+  const answer = await $fetch<{ duplicate: DuplicateDish | null }>(`/api/boards/${board}/duplicate`, { query: { link: target } })
+    .catch(() => ({ duplicate: null }))
+  if (run !== duplicateRun) return
+  duplicate.value = answer.duplicate
+  checkingDuplicate.value = false
+})
+const warnDuplicate = computed(() => duplicate.value !== null && !saveAnyway.value)
+
+const canSave = computed(() =>
+  showForm.value && title.value.trim() !== '' && !saving.value && !checkingDuplicate.value && !warnDuplicate.value)
+
+function saveDespiteDuplicate() {
+  saveAnyway.value = true
+  save()
+}
+
+// "Öffnen": to the Dish already on the Board, instead of adding it again.
+async function openDuplicate() {
+  if (!duplicate.value) return
+  const dishId = duplicate.value.id
+  open.value = false
+  await navigateTo({ path: `/b/${boardId.value}`, query: { dish: dishId } })
+}
 
 // The inline picker (handoff: 4×2) offers the first eight Placeholders; one
 // chosen from the full picker ("Bild wählen") takes the last inline slot, so
@@ -262,6 +310,39 @@ async function save() {
 
       <template v-if="showForm">
         <div
+          v-if="warnDuplicate && duplicate"
+          role="alert"
+          class="duplicate-panel flex flex-col gap-3 rounded-panel p-3"
+          data-duplicate
+        >
+          <div class="flex items-center gap-3">
+            <img
+              src="/illustrations/topfbert-wow.svg"
+              alt=""
+              class="w-14 shrink-0"
+            >
+            <span class="text-body">{{ t.addDish.duplicate(duplicate.title, duplicate.columnName) }}</span>
+          </div>
+          <div class="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              class="rounded-pill bg-surface px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              @click="openDuplicate"
+            >
+              {{ t.addDish.openDuplicate }}
+            </button>
+            <button
+              type="button"
+              class="rounded-pill bg-inverse px-4 py-2.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              :disabled="saving"
+              @click="saveDespiteDuplicate"
+            >
+              {{ t.addDish.saveAnyway }}
+            </button>
+          </div>
+        </div>
+
+        <div
           v-if="usingSourceImage"
           class="relative overflow-hidden rounded-thumb bg-surface-muted"
         >
@@ -385,6 +466,7 @@ async function save() {
         </p>
 
         <button
+          v-if="!warnDuplicate"
           type="submit"
           class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           :disabled="!canSave"
@@ -414,6 +496,11 @@ async function save() {
 /* remotion-briefs.json lookup-stir: butter 22% into surface-muted. */
 .lookup-panel {
   background: color-mix(in oklch, var(--color-butter) 22%, var(--color-surface-muted));
+}
+/* Same butter wash as the lookup panel, a little stronger: it asks for a
+   decision. */
+.duplicate-panel {
+  background: color-mix(in oklch, var(--color-butter) 38%, var(--color-surface-muted));
 }
 /* Input "required/prompt": a butter glow that breathes, never red. Reduced
    motion (main.css) stops it after one pass. */
