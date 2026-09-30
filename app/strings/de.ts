@@ -2,6 +2,7 @@
 // so adding English later means adding an `en.ts` of type `Strings` and
 // choosing between them in useStrings() -- no component changes.
 import type { Placeholder } from '~~/shared/placeholders'
+import type { SourceBadgeKind } from '~~/shared/source-badge'
 
 export const de = {
   app: {
@@ -30,8 +31,28 @@ export const de = {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
     hasNote: 'Mit Notiz',
   },
+  sources: {
+    tiktok: 'TikTok',
+    instagram: 'Instagram',
+    youtube: 'YouTube',
+    pinterest: 'Pinterest',
+    web: 'Web',
+  } satisfies Record<SourceBadgeKind, string>,
   addDish: {
     open: 'Gericht hinzufügen',
+    heading: 'Gericht hinzufügen',
+    link: 'Link',
+    linkPrompt: 'Link von TikTok, Instagram, YouTube, Pinterest oder einem Blog',
+    paste: 'Einfügen',
+    lookingUp: 'Ich schau mal nach …',
+    titleNeeded: 'Titel eingeben',
+    titleNeededHint: 'Zu diesem Link gibt es keinen Titel. Wie heißt das Gericht?',
+    nothingFound: 'Kein Bild gefunden. Such dir eins aus!',
+    lookupFailed: 'Das Nachschauen hat nicht geklappt. Speichern geht trotzdem: mit Titel und Bild von dir.',
+    sourceImage: 'Bild vom Link',
+    changeImage: 'Bild ändern',
+    useSourceImage: 'Bild vom Link nehmen',
+    board: 'Board',
     withoutLink: 'Ohne Link hinzufügen',
     title: 'Titel',
     titlePrompt: 'Wie heißt das Gericht?',

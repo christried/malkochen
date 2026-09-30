@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
+import type { SourceKind } from '../source-lookup'
 import { boolean, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
@@ -97,7 +98,7 @@ export const boardColumn = pgTable('board_column', {
 ])
 
 // ---------------------------------------------------------------------------
-// Dishes (CONTEXT.md: Dish, Placeholder Image).
+// Dishes (CONTEXT.md: Dish, Source, Placeholder Image).
 
 export const dish = pgTable('dish', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -109,7 +110,12 @@ export const dish = pgTable('dish', {
   position: integer('position').notNull(),
   title: text('title').notNull(),
   note: text('note'),
-  // A key from shared/placeholders.ts. Stored images come with #6.
+  // The Source: its canonical link and kind, both null for a Dish without one.
+  sourceLink: text('source_link'),
+  sourceKind: text('source_kind').$type<SourceKind>(),
+  // The image: a copy in the Image Store if there is one, else the
+  // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
+  imageUrl: text('image_url'),
   placeholder: text('placeholder').$type<Placeholder>().notNull(),
   // Who added it; kept (as unknown) if their account is ever deleted.
   addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),

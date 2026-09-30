@@ -1,13 +1,16 @@
 import type { Http } from './http'
 
-export type SourceKind
-  = | 'tiktok'
-    | 'instagram-reel'
-    | 'instagram-post'
-    | 'youtube-short'
-    | 'pinterest-pin'
-    | 'blog'
-    | 'other'
+export const SOURCE_KINDS = [
+  'tiktok',
+  'instagram-reel',
+  'instagram-post',
+  'youtube-short',
+  'pinterest-pin',
+  'blog',
+  'other',
+] as const
+
+export type SourceKind = typeof SOURCE_KINDS[number]
 
 // What we know about a link. Only `kind` and `canonicalLink` are always
 // meaningful; the title may be empty and the image absent.

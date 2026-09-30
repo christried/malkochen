@@ -9,6 +9,10 @@ const databaseEnvSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
 })
 
+function isDeployed(vercelEnv: string | undefined): boolean {
+  return vercelEnv === 'production' || vercelEnv === 'preview'
+}
+
 const serverEnvSchema = databaseEnvSchema.extend({
   // Signs session cookies. A long random string, different per environment.
   BETTER_AUTH_SECRET: z.string().min(32),
@@ -22,11 +26,18 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // Local dev and tests only: '1' enables POST /api/auth/dev/sign-in, which
   // signs in any Allowlisted email without Google.
   AUTH_DEV_BYPASS: z.enum(['', '0', '1']).default(''),
-  // Set by Vercel itself; used only to refuse the dev bypass there.
+  // Vercel Blob read/write token for the Image Store. Without it, images are
+  // stored on disk under .data/images (local dev and tests only).
+  BLOB_READ_WRITE_TOKEN: z.string().default(''),
+  // Set by Vercel itself; used to refuse the dev bypass there and to require
+  // the Blob token.
   VERCEL_ENV: z.string().optional(),
 }).refine(
-  env => !(env.AUTH_DEV_BYPASS === '1' && (env.VERCEL_ENV === 'production' || env.VERCEL_ENV === 'preview')),
+  env => !(env.AUTH_DEV_BYPASS === '1' && isDeployed(env.VERCEL_ENV)),
   { path: ['AUTH_DEV_BYPASS'], message: 'must never be set in Vercel production or preview' },
+).refine(
+  env => env.BLOB_READ_WRITE_TOKEN !== '' || !isDeployed(env.VERCEL_ENV),
+  { path: ['BLOB_READ_WRITE_TOKEN'], message: 'is required in Vercel production and preview' },
 )
 
 type Source = Record<string, string | undefined>

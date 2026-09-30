@@ -21,6 +21,13 @@ export default defineConfig({
           include: ['tests/source-lookup/**/*.test.ts'],
         },
       },
+      {
+        test: {
+          // Seam 3: the Image Store against a faked upstream and storage.
+          name: 'image-store',
+          include: ['tests/image-store/**/*.test.ts'],
+        },
+      },
     ],
   },
 })

@@ -33,8 +33,9 @@ variables are validated at startup by `server/env.ts` — add new ones there too
 | `BETTER_AUTH_URL` | The app's public origin. Google redirects to `<this>/api/auth/callback/google`, which must be an authorised redirect URI of the Google OAuth client. | `.env` locally (`http://localhost:3000`); Vercel **production, preview and development**, each with its own origin. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client for sign-in. | `.env` locally; Vercel **production, preview and development**. |
 | `ALLOWLIST_EMAILS` | The Allowlist: comma-separated emails allowed to sign in at all. | `.env` locally; Vercel **production, preview and development**. |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token: the Image Store copies each Dish's Source image there on save. Required in Vercel production and preview (the server refuses to start without it). Empty locally stores images on disk under `.data/images`, served at `/images/…`. | Vercel **production, preview and development**, set by connecting the project's Blob store. Optional in `.env`. Never in CI (tests store on disk). |
 | `AUTH_DEV_BYPASS` | `1` enables `POST /api/auth/dev/sign-in` (below). The server refuses to start with it on Vercel production or preview. | `.env` locally, optional. The test runners set it themselves. **Never** in Vercel. |
-| `VERCEL_ENV` | Set by Vercel itself; `server/env.ts` reads it only to refuse `AUTH_DEV_BYPASS` in production and preview. | Never set by hand. |
+| `VERCEL_ENV` | Set by Vercel itself; `server/env.ts` reads it only to refuse `AUTH_DEV_BYPASS` and require `BLOB_READ_WRITE_TOKEN` in production and preview. | Never set by hand. |
 | `TEST_DATABASE_ADMIN_URL` | Superuser URL of the **local** Postgres. `pnpm test` and `pnpm test:e2e` use it to create and drop a throwaway database per run. | `.env` locally; `env:` of `.github/workflows/ci.yml` (points at the job's Postgres service, no secret). Never in Vercel. |
 
 The test runners (`tests/api/global-setup.ts`, `tests/e2e/run.ts`) override
@@ -57,7 +58,8 @@ Google sign-in; only the trip to Google is skipped.
 
 ```bash
 pnpm test       # Vitest: tests/api (builds the app, boots it on a throwaway local database)
-                #   and tests/source-lookup (Source Lookup against recorded upstream fixtures, no network)
+                #   tests/source-lookup (Source Lookup against recorded upstream fixtures, no network)
+                #   and tests/image-store (Image Store against a faked upstream and storage)
 pnpm test:e2e   # Playwright: dev server on a throwaway local database, runs tests/e2e
 pnpm typecheck
 pnpm lint

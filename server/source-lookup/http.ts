@@ -1,4 +1,4 @@
-// The only way the strategies talk to the outside world. Every helper shares
+// The only way the strategies (and the Image Store) talk to the outside world. Every helper shares
 // one deadline for the whole lookup, follows redirects itself (so each hop can
 // be checked), refuses private hosts, and turns every failure into `null`:
 // a strategy just sees "nothing there".
@@ -19,6 +19,9 @@ export interface Http {
   resolve: (url: string, arrived: (url: URL) => boolean) => Promise<URL>
   // An HTML page and the URL it was finally served from.
   page: (url: string) => Promise<{ url: string, html: string | null }>
+  // The body of a 2xx response whose content type `accept` allows, unless it
+  // is empty or larger than `maxBytes`.
+  bytes: (url: string, accept: (contentType: string) => boolean, maxBytes: number) => Promise<{ bytes: Uint8Array, contentType: string } | null>
 }
 
 // Loopback, private, link-local and similar addresses, by name or literal IP.
@@ -90,18 +93,20 @@ export function createHttp(fetchImpl: typeof fetch, signal: AbortSignal): Http {
     return { url: current, response: null }
   }
 
-  async function readText(response: Response): Promise<string | null> {
+  // Reads up to `limit` bytes; `truncated` says whether there was more.
+  async function readBody(response: Response, limit: number): Promise<{ bytes: Buffer, truncated: boolean } | null> {
     if (!response.body) return null
     const reader = response.body.getReader()
     const chunks: Uint8Array[] = []
     let size = 0
     try {
-      while (size < MAX_PAGE_BYTES) {
+      while (size <= limit) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) return { bytes: Buffer.concat(chunks), truncated: false }
         chunks.push(value)
         size += value.byteLength
       }
+      return { bytes: Buffer.concat(chunks).subarray(0, limit), truncated: true }
     }
     catch {
       return null
@@ -109,7 +114,11 @@ export function createHttp(fetchImpl: typeof fetch, signal: AbortSignal): Http {
     finally {
       reader.cancel().catch(() => {})
     }
-    return new TextDecoder().decode(Buffer.concat(chunks))
+  }
+
+  async function readText(response: Response): Promise<string | null> {
+    const body = await readBody(response, MAX_PAGE_BYTES)
+    return body && new TextDecoder().decode(body.bytes)
   }
 
   return {
@@ -144,6 +153,18 @@ export function createHttp(fetchImpl: typeof fetch, signal: AbortSignal): Http {
         return { url: finalUrl, html: null }
       }
       return { url: finalUrl, html: await readText(response) }
+    },
+
+    async bytes(url, accept, maxBytes) {
+      const { response } = await follow(url)
+      const contentType = response?.headers.get('content-type') ?? ''
+      if (!response?.ok || !accept(contentType)) {
+        await response?.body?.cancel().catch(() => {})
+        return null
+      }
+      const body = await readBody(response, maxBytes)
+      if (!body || body.truncated || body.bytes.byteLength === 0) return null
+      return { bytes: new Uint8Array(body.bytes), contentType }
     },
   }
 }

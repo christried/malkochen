@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
+import type { SourceKind } from '../source-lookup'
 import { db } from '../db'
 import { boardColumn, dish, membership, user } from '../db/schema'
 
@@ -10,10 +11,19 @@ export interface DishAdder {
   image: string | null
 }
 
+// Where a Dish came from (CONTEXT.md: Source).
+export interface DishSource {
+  link: string
+  kind: SourceKind
+}
+
 export interface DishView {
   id: string
   title: string
   note: string | null
+  source: DishSource | null
+  // The stored copy of the Source image; null shows the Placeholder.
+  imageUrl: string | null
   placeholder: Placeholder
   // Null once the account that added it is gone.
   addedBy: DishAdder | null
@@ -23,6 +33,9 @@ export interface DishView {
 export interface NewDish {
   title: string
   note: string | null
+  source: DishSource | null
+  // Must already be a stored image (Image Store), never a third-party link.
+  imageUrl: string | null
   placeholder: Placeholder
 }
 
@@ -38,6 +51,9 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
       columnId: dish.columnId,
       title: dish.title,
       note: dish.note,
+      sourceLink: dish.sourceLink,
+      sourceKind: dish.sourceKind,
+      imageUrl: dish.imageUrl,
       placeholder: dish.placeholder,
       createdAt: dish.createdAt,
       adderId: user.id,
@@ -49,9 +65,10 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
     .where(inArray(dish.columnId, columnIds))
     .orderBy(asc(dish.position), desc(dish.createdAt), desc(dish.id))
 
-  for (const { columnId, adderId, adderName, adderImage, ...row } of rows) {
+  for (const { columnId, sourceLink, sourceKind, adderId, adderName, adderImage, ...row } of rows) {
     byColumn.get(columnId)?.push({
       ...row,
+      source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
       addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
       createdAt: row.createdAt.toISOString(),
     })
@@ -83,6 +100,9 @@ export async function addDish(
       position: sql`(select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${firstColumn.id})`,
       title: input.title,
       note: input.note,
+      sourceLink: input.source?.link ?? null,
+      sourceKind: input.source?.kind ?? null,
+      imageUrl: input.imageUrl,
       placeholder: input.placeholder,
       addedBy: adder.id,
     })
@@ -91,7 +111,11 @@ export async function addDish(
 
   return {
     id: created.id,
-    ...input,
+    title: input.title,
+    note: input.note,
+    source: input.source,
+    imageUrl: input.imageUrl,
+    placeholder: input.placeholder,
     addedBy: { id: adder.id, name: adder.name, image: adder.image ?? null },
     createdAt: created.createdAt.toISOString(),
   }

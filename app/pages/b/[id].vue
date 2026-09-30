@@ -23,9 +23,10 @@ const activeColumnId = ref(board.value?.columns[0]?.id)
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 
 const adding = ref(false)
-function onAdded(dish: DishView) {
+// A Dish saved to another Board doesn't show here.
+function onAdded(dish: DishView, boardId: string) {
   const first = board.value?.columns[0]
-  if (!first) return
+  if (!first || boardId !== board.value?.id) return
   first.dishes.unshift(dish)
   activeColumnId.value = first.id
 }

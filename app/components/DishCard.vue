@@ -1,10 +1,21 @@
 <script setup lang="ts">
 import type { DishView } from '~~/server/utils/dishes'
 
-// The handoff's compact DishCard: 86px thumb + text, 128px high. The Source
-// badge, "N× gekocht", "Neu" and the card's actions come with later tickets.
-defineProps<{ dish: DishView }>()
+// The handoff's compact DishCard: 86px thumb + text, 128px high. The thumb
+// crops any image, portrait (TikTok, Reels, Shorts) or landscape (blogs), to
+// fill it. "N× gekocht", "Neu" and the card's actions come with later tickets.
+const props = defineProps<{ dish: DishView }>()
 const t = useStrings()
+
+// A stored image that fails to load falls back to the Placeholder. On a
+// server-rendered card it may have failed before hydration, when no @error
+// listener was attached yet, so mounting checks too.
+const imageBroken = ref(false)
+const image = useTemplateRef<HTMLImageElement>('image')
+watch(() => props.dish.imageUrl, () => imageBroken.value = false)
+onMounted(() => {
+  if (image.value?.complete && image.value.naturalWidth === 0) imageBroken.value = true
+})
 </script>
 
 <template>
@@ -13,7 +24,25 @@ const t = useStrings()
     :aria-label="dish.title"
   >
     <div class="relative w-[86px] shrink-0 overflow-hidden rounded-thumb bg-surface-muted">
-      <PlaceholderStill :placeholder="dish.placeholder" />
+      <img
+        v-if="dish.imageUrl && !imageBroken"
+        ref="image"
+        :src="dish.imageUrl"
+        alt=""
+        class="h-full w-full object-cover"
+        loading="lazy"
+        data-dish-image
+        @error="imageBroken = true"
+      >
+      <PlaceholderStill
+        v-else
+        :placeholder="dish.placeholder"
+      />
+      <SourceBadge
+        v-if="dish.source"
+        :kind="dish.source.kind"
+        class="absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)]"
+      />
     </div>
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">
       <h3 class="line-clamp-2 font-display text-title-s">

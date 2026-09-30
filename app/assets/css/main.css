@@ -36,3 +36,11 @@ html {
   :root:not([data-theme="light"]) .only-dark { display: block; }
   :root:not([data-theme="light"]) .only-light { display: none; }
 }
+
+/* A Source's colour dot (SourceBadge, the Add Dish link field). The colours
+   are tokens.json → color.source.*, which the handoff's tokens.css lacks. */
+.source-dot[data-source="tiktok"] { background: linear-gradient(135deg, #25F4EE 0 50%, #FE2C55 50%); }
+.source-dot[data-source="instagram"] { background: linear-gradient(135deg, #FEDA75, #D62976 55%, #4F5BD5); }
+.source-dot[data-source="youtube"] { background: #FF0033; }
+.source-dot[data-source="pinterest"] { background: #E60023; }
+.source-dot[data-source="web"] { background: #8E8A83; }
