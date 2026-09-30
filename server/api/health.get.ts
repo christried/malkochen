@@ -2,10 +2,9 @@ import { sql } from 'drizzle-orm'
 import { db } from '../db'
 
 // Liveness plus a database round trip. Reads Drizzle's own migration journal,
-// so "ok" means the database is reachable AND has been migrated.
+// which only exists once migrations ran: an unreachable or unmigrated
+// database makes the query throw, so the endpoint answers 500.
 export default defineEventHandler(async () => {
-  const result = await db.execute<{ applied: number }>(
-    sql`select count(*)::int as applied from drizzle.__drizzle_migrations`)
-  const applied = 'rows' in result ? result.rows[0]?.applied : undefined
-  return { status: 'ok', database: applied ? 'ok' : 'unmigrated' }
+  await db.execute(sql`select 1 from drizzle.__drizzle_migrations limit 1`)
+  return { status: 'ok', database: 'ok' }
 })

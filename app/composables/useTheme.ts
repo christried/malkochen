@@ -1,6 +1,6 @@
 export type ThemePreference = 'light' | 'dark' | 'system'
 
-export const THEMES: readonly ThemePreference[] = ['light', 'dark', 'system']
+const THEMES: readonly ThemePreference[] = ['light', 'dark', 'system']
 
 // Light / dark / system, stored in a cookie so the server renders the right
 // `data-theme` and the page never flashes the wrong theme. tokens.css does the

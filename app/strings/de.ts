@@ -4,7 +4,6 @@
 export const de = {
   app: {
     name: 'malkochen',
-    tagline: 'Rezepte sammeln. Zusammen kochen.',
   },
   home: {
     headline: 'Was willst du mal kochen?',

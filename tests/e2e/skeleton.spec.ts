@@ -1,9 +1,12 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { gotoHydrated, reloadHydrated } from './hydration'
 
 // Handoff tokens.css: light --color-bg #F7F6F2, dark #131211.
 const LIGHT_BG = 'rgb(247, 246, 242)'
 const DARK_BG = 'rgb(19, 18, 17)'
+
+const token = (page: Page, name: string) =>
+  page.evaluate(n => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name)
 
 test.describe('design tokens', () => {
   test.use({ colorScheme: 'light' })
@@ -51,9 +54,8 @@ test.describe('reduced motion', () => {
 
   test('motion tokens collapse and fades shorten to 200ms', async ({ page }) => {
     await gotoHydrated(page, '/')
-    const token = (name: string) => page.evaluate(n => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name)
-    expect(await token('--dur-pop')).toBe('0ms')
-    expect(await token('--dur-fade')).toBe('200ms')
+    expect(await token(page, '--dur-pop')).toBe('0ms')
+    expect(await token(page, '--dur-fade')).toBe('200ms')
     await expect(page.getByRole('radio', { name: 'Hell' })).toHaveCSS('transition-duration', '0.2s')
   })
 })
@@ -63,8 +65,7 @@ test.describe('full motion', () => {
 
   test('motion tokens keep their handoff values', async ({ page }) => {
     await gotoHydrated(page, '/')
-    const pop = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--dur-pop').trim())
-    expect(pop).toBe('460ms')
+    expect(await token(page, '--dur-pop')).toBe('460ms')
     await expect(page.getByRole('radio', { name: 'Hell' })).toHaveCSS('transition-duration', '0.24s')
   })
 })
