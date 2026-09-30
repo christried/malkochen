@@ -4,10 +4,11 @@ import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
 
 // Board settings (PRD stories 57–60, 62), for any Member: the Board's name
-// and emoji, and its Columns. Its own page, not a child of the Board (which
-// is why the path is set here), so later tickets can add Members, the
-// Invite Link and "Board verlassen" below. Every change saves at once; one
-// that fails is put back and a notice says so.
+// and emoji, and its Columns. Its own page, not a child of the Board: any
+// page under b/[id]/ opens over the Board (a route group doesn't help, it is
+// nested all the same), so it lives here and sets its path. Later tickets add
+// Members, the Invite Link and "Board verlassen" below. Every change saves at
+// once; one that fails is put back and a notice says so.
 definePageMeta({ path: '/b/:id/settings' })
 
 const t = useStrings()
@@ -17,7 +18,7 @@ const id = computed(() => String(route.params.id))
 const { data: board, error, refresh } = await useFetch<BoardView>(() => `/api/boards/${id.value}`)
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
 
-useHead({ title: () => `${t.settings.heading} · ${t.app.name}` })
+useHead({ title: () => `${t.settings.title} · ${t.app.name}` })
 
 const name = ref(board.value?.name ?? '')
 const emoji = ref(board.value?.emoji ?? '')
@@ -173,7 +174,7 @@ function confirmDelete() {
           />
         </NuxtLink>
         <h1 class="font-display text-title-l tablet:text-display-m">
-          {{ t.settings.heading }}
+          {{ t.settings.title }}
         </h1>
       </header>
 

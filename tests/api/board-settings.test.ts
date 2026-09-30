@@ -240,3 +240,18 @@ test('with the Gekocht Column first, a new Dish goes to the first Column after i
   expect(dishIds(after.columns[1])![0]).toBe(dish.id)
   await reorder(mary, board.id, ids)
 })
+
+test('a Dish deleted from an empty Column can still be brought back once the Column is gone', async () => {
+  const mary = await signIn(ALLOWLISTED[7])
+  const board = await landingBoard(mary)
+  const leaving = await addColumn(mary, board.id, 'Kurz da')
+  const dish = await addDish(mary, board.id, 'Zucchinipuffer')
+  await moveDish(mary, dish.id, leaving.id)
+  await mary.fetch(`/api/dishes/${dish.id}`, { method: 'DELETE' })
+
+  expect((await deleteColumn(mary, leaving.id)).status).toBe(204)
+
+  expect((await mary.fetch(`/api/dishes/${dish.id}/restore`, { method: 'POST' })).status).toBe(200)
+  const firstNotGekocht = (await landingBoard(mary)).columns.find(c => !c.isGekocht)
+  expect(dishIds(firstNotGekocht)![0]).toBe(dish.id)
+})

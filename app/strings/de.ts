@@ -185,8 +185,7 @@ export const de = {
     smoothie: 'Smoothie',
   } satisfies Record<Placeholder, string>,
   settings: {
-    open: 'Board-Einstellungen',
-    heading: 'Board-Einstellungen',
+    title: 'Board-Einstellungen',
     back: 'Zurück zum Board',
     board: 'Board',
     name: 'Name',

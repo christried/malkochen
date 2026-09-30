@@ -33,6 +33,11 @@ function rename(column: ColumnRow, event: Event) {
 const list = useTemplateRef<ComponentPublicInstance>('list')
 const listEl = () => list.value?.$el as HTMLElement | undefined
 
+const STEPS = [
+  { delta: -1, icon: 'up', label: t.settings.moveUp },
+  { delta: 1, icon: 'down', label: t.settings.moveDown },
+] as const
+
 // ↑/↓. When the Column reaches either end, focus goes to the other arrow.
 async function step(column: ColumnRow, delta: -1 | 1) {
   const before = [...columns.value]
@@ -147,24 +152,16 @@ function drop() {
         </span>
       </div>
       <button
+        v-for="{ delta, icon, label } in STEPS"
+        :key="delta"
         type="button"
-        class="step flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="t.settings.moveUp(column.name)"
-        :disabled="index === 0"
-        data-step="-1"
-        @click="step(column, -1)"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
+        :aria-label="label(column.name)"
+        :disabled="!columns[index + delta]"
+        :data-step="delta"
+        @click="step(column, delta)"
       >
-        <AppIcon name="up" />
-      </button>
-      <button
-        type="button"
-        class="step flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="t.settings.moveDown(column.name)"
-        :disabled="index === columns.length - 1"
-        data-step="1"
-        @click="step(column, 1)"
-      >
-        <AppIcon name="down" />
+        <AppIcon :name="icon" />
       </button>
       <button
         v-if="!column.isGekocht"

@@ -119,7 +119,7 @@ export async function editBoard(boardId: string, userId: string, changes: BoardC
 }
 
 // The user's membership of the Board, if any.
-function membershipOf(boardId: string, userId: string) {
+export function membershipOf(boardId: string, userId: string) {
   return db
     .select({ boardId: membership.boardId })
     .from(membership)
