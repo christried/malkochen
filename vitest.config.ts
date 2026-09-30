@@ -13,6 +13,14 @@ export default defineConfig({
           hookTimeout: 180_000,
         },
       },
+      {
+        test: {
+          // Seam 2: Source Lookup against recorded upstream fixtures. No
+          // server, no database, no network.
+          name: 'source-lookup',
+          include: ['tests/source-lookup/**/*.test.ts'],
+        },
+      },
     ],
   },
 })

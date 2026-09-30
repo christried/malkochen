@@ -24,9 +24,16 @@ const serverEnvSchema = databaseEnvSchema.extend({
   AUTH_DEV_BYPASS: z.enum(['', '0', '1']).default(''),
   // Set by Vercel itself; used only to refuse the dev bypass there.
   VERCEL_ENV: z.string().optional(),
+  // Meta app for Instagram oEmbed (Source Lookup). Optional: without them,
+  // Instagram links give no Suggested Title and no image.
+  META_APP_ID: z.string().default(''),
+  META_APP_SECRET: z.string().default(''),
 }).refine(
   env => !(env.AUTH_DEV_BYPASS === '1' && (env.VERCEL_ENV === 'production' || env.VERCEL_ENV === 'preview')),
   { path: ['AUTH_DEV_BYPASS'], message: 'must never be set in Vercel production or preview' },
+).refine(
+  env => !env.META_APP_ID === !env.META_APP_SECRET,
+  { path: ['META_APP_SECRET'], message: 'META_APP_ID and META_APP_SECRET are set together or not at all' },
 )
 
 type Source = Record<string, string | undefined>
