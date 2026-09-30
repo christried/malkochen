@@ -1,6 +1,8 @@
 // Every piece of UI text lives here. Components read it through useStrings(),
 // so adding English later means adding an `en.ts` of type `Strings` and
 // choosing between them in useStrings() -- no component changes.
+import type { Placeholder } from '~~/shared/placeholders'
+
 export const de = {
   app: {
     name: 'malkochen',
@@ -18,9 +20,47 @@ export const de = {
     otherAccount: 'Mit einem anderen Konto anmelden',
   },
   board: {
+    emptyBoardTitle: 'Noch nichts hier.',
+    emptyBoardBody: 'Füg deinen ersten Link ein!',
     emptyColumn: 'Noch nichts hier.',
+    columns: 'Spalten',
     signOut: 'Abmelden',
   },
+  dish: {
+    addedBy: (name: string) => `Hinzugefügt von ${name}`,
+    hasNote: 'Mit Notiz',
+  },
+  addDish: {
+    open: 'Gericht hinzufügen',
+    withoutLink: 'Ohne Link hinzufügen',
+    title: 'Titel',
+    titlePrompt: 'Wie heißt das Gericht?',
+    note: 'Notiz',
+    notePrompt: 'Optional, z. B. „mit Räuchertofu statt Speck“',
+    image: 'Bild',
+    save: 'Speichern',
+    saving: 'Speichert …',
+    close: 'Schließen',
+    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+  },
+  placeholders: {
+    pasta: 'Pasta',
+    ramen: 'Ramen',
+    curry: 'Curry',
+    bowl: 'Bowl',
+    salad: 'Salat',
+    burger: 'Burger',
+    tacos: 'Tacos',
+    pizza: 'Pizza',
+    wok: 'Wok',
+    porridge: 'Porridge',
+    bread: 'Brot',
+    cake: 'Kuchen',
+    dumplings: 'Dumplings',
+    eintopf: 'Eintopf',
+    wrap: 'Wrap',
+    smoothie: 'Smoothie',
+  } satisfies Record<Placeholder, string>,
   theme: {
     label: 'Darstellung',
     light: 'Hell',

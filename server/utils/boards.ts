@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
 import { board, boardColumn, membership } from '../db/schema'
+import { dishesByColumn, type DishView } from './dishes'
 
 // The Board a user gets on their first sign-in (PRD story 3).
 const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍳' }
@@ -20,7 +21,7 @@ export interface BoardSummary {
 }
 
 export interface BoardView extends BoardSummary {
-  columns: { id: string, name: string, isGekocht: boolean }[]
+  columns: { id: string, name: string, isGekocht: boolean, dishes: DishView[] }[]
 }
 
 // The user's Boards, the one they opened last first.
@@ -70,7 +71,7 @@ export async function landingBoardId(userId: string): Promise<string> {
   return created.id
 }
 
-// The Board with its Columns, or null unless the user is one of its Members.
+// The Board with its Columns and their Dishes, or null unless the user is one of its Members.
 export async function getBoard(boardId: string, userId: string): Promise<BoardView | null> {
   const [found] = await db
     .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner })
@@ -84,7 +85,8 @@ export async function getBoard(boardId: string, userId: string): Promise<BoardVi
     .from(boardColumn)
     .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))
-  return { ...found, columns }
+  const dishes = await dishesByColumn(columns.map(c => c.id))
+  return { ...found, columns: columns.map(c => ({ ...c, dishes: dishes.get(c.id) ?? [] })) }
 }
 
 // Records that the user just opened the Board. False unless they are a Member.
