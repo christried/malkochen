@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { spawn } from 'node:child_process'
 import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
+import { E2E_ORIGIN, testAuthEnv } from '../support/test-auth-env'
 
 // `pnpm test:e2e [playwright args]`: runs Playwright against its own throwaway
 // local database, dropped afterwards whatever the outcome.
@@ -13,7 +14,7 @@ async function main(): Promise<number> {
       const child = spawn(['pnpm', 'exec', 'playwright', 'test', ...args].join(' '), {
         stdio: 'inherit',
         shell: true,
-        env: { ...process.env, DATABASE_URL: database.url, MALKOCHEN_E2E: '1' },
+        env: { ...process.env, ...testAuthEnv(E2E_ORIGIN), DATABASE_URL: database.url, MALKOCHEN_E2E: '1' },
       })
       // Ctrl+C reaches Playwright directly; the wrapper only outlives it so
       // `finally` can drop the database.

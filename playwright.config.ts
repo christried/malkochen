@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test'
+import { E2E_ORIGIN } from './tests/support/test-auth-env'
 
-const PORT = 3100
+const PORT = new URL(E2E_ORIGIN).port
 
 // Start through `pnpm test:e2e` (tests/e2e/run.ts): it creates a throwaway
 // local database, points DATABASE_URL at it, and drops it afterwards.
@@ -14,11 +15,11 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: E2E_ORIGIN,
   },
   webServer: {
     command: `pnpm dev --port ${PORT}`,
-    url: `http://localhost:${PORT}`,
+    url: E2E_ORIGIN,
     // Never reuse: a server started outside this run would be on another database.
     reuseExistingServer: false,
     timeout: 120_000,
