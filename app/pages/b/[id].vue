@@ -175,7 +175,7 @@ async function closeSearch() {
 function onAdded(saved: SavedDish, boardId: string) {
   if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
-  const first = board.value?.columns[0]
+  const first = board.value?.columns.find(c => !c.isGekocht)
   if (!first || boardId !== board.value?.id) return
   first.dishes.unshift(dish)
   activeColumnId.value = first.id
@@ -252,6 +252,16 @@ async function deleteFromMenu() {
             :size="20"
           />
         </RoundButton>
+        <NuxtLink
+          :to="`/b/${board.id}/settings`"
+          :aria-label="t.settings.title"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        >
+          <AppIcon
+            name="settings"
+            :size="20"
+          />
+        </NuxtLink>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <ThemePicker />

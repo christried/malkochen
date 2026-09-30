@@ -316,8 +316,9 @@ function escapeLike(text: string): string {
   return text.replace(/[\\%_]/g, c => `\\${c}`)
 }
 
-// Adds a Dish at the top of the Board's first Column (PRD story 13). Null
-// unless the user is a Member of the Board.
+// Adds a Dish at the top of the Board's first Column (PRD story 13), skipping
+// the Gekocht Column: a new Dish hasn't been cooked. Null unless the user is
+// a Member of the Board.
 export async function addDish(
   boardId: string,
   adder: Omit<DishAdder, 'image'> & { image?: string | null },
@@ -327,7 +328,7 @@ export async function addDish(
     .select({ id: boardColumn.id })
     .from(boardColumn)
     .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, adder.id)))
-    .where(eq(boardColumn.boardId, boardId))
+    .where(and(eq(boardColumn.boardId, boardId), eq(boardColumn.isGekocht, false)))
     .orderBy(asc(boardColumn.position))
     .limit(1)
   if (!firstColumn) return null

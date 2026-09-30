@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, sql } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
 import { board, boardColumn, membership } from '../db/schema'
 import { dishesByColumn, type DishView } from './dishes'
@@ -13,10 +13,17 @@ export const DEFAULT_COLUMNS = [
   { name: 'Gekocht', isGekocht: true },
 ] as const
 
-export interface BoardSummary {
+// A Board as Board settings shows it: its name and emoji.
+export interface BoardNameAndEmoji {
   id: string
   name: string
   emoji: string
+}
+
+// What Board settings may change.
+export type BoardChanges = Partial<Pick<BoardNameAndEmoji, 'name' | 'emoji'>>
+
+export interface BoardSummary extends BoardNameAndEmoji {
   isOwner: boolean
 }
 
@@ -99,11 +106,28 @@ export async function markOpened(boardId: string, userId: string): Promise<boole
   return updated.length > 0
 }
 
-// Whether the user is a Member of the Board.
-export async function isMember(boardId: string, userId: string): Promise<boolean> {
-  const [found] = await db
+// Renames the Board or changes its emoji (PRD story 62); fields left out stay
+// as they are. Null unless the user is a Member.
+export async function editBoard(boardId: string, userId: string, changes: BoardChanges): Promise<BoardNameAndEmoji | null> {
+  const [edited] = await db
+    .update(board)
+    // Setting the id to itself keeps an empty change a valid statement.
+    .set({ id: sql`${board.id}`, ...changes })
+    .where(and(eq(board.id, boardId), exists(membershipOf(boardId, userId))))
+    .returning({ id: board.id, name: board.name, emoji: board.emoji })
+  return edited ?? null
+}
+
+// The user's membership of the Board, if any.
+export function membershipOf(boardId: string, userId: string) {
+  return db
     .select({ boardId: membership.boardId })
     .from(membership)
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+}
+
+// Whether the user is a Member of the Board.
+export async function isMember(boardId: string, userId: string): Promise<boolean> {
+  const [found] = await membershipOf(boardId, userId)
   return found !== undefined
 }

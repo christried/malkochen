@@ -26,6 +26,30 @@ export async function seedDish(page: Page, dish: { title: string, imageUrl?: str
   }
 }
 
+// Puts the signed-in user's landing Board back as a new Board starts: named
+// "Meine Küche" 🍳, with the default Columns and no Dishes. For files whose
+// tests each need that start, whatever the test before them left.
+export async function resetBoard(page: Page) {
+  const { boardId } = await (await page.request.get('/api/boards/landing')).json() as { boardId: string }
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    await client.query('begin')
+    await client.query(`update board set name = 'Meine Küche', emoji = '🍳' where id = $1`, [boardId])
+    await client.query('delete from dish where board_id = $1', [boardId])
+    await client.query('delete from board_column where board_id = $1', [boardId])
+    await client.query(
+      `insert into board_column (board_id, name, position, is_gekocht)
+       values ($1, 'Ideen', 0, false), ($1, 'Diese Woche', 1, false), ($1, 'Gekocht', 2, true)`,
+      [boardId],
+    )
+    await client.query('commit')
+  }
+  finally {
+    await client.end()
+  }
+}
+
 // Stored images are served from disk here (no Blob token), as in local dev.
 // A solid PNG of the given size, as the Image Store would have written it;
 // removeStoredImages() deletes them again.

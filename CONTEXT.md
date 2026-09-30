@@ -57,7 +57,7 @@ One of a fixed set of illustrations of vegan dishes, used as a Dish's image when
 _Avoid_: Default image, fallback image, stock photo
 
 **Gekocht Column**:
-The one Column per Board that marks Dishes as Cooked. It can be renamed and moved but not deleted.
+The one Column per Board that marks Dishes as Cooked. It can be renamed and moved but not deleted. A Board always keeps at least one other Column: new Dishes go to the first Column that isn't the Gekocht Column.
 _Avoid_: Done column, archive
 
 **Cooked**:
@@ -65,5 +65,5 @@ A Dish is Cooked once it has been moved into the Gekocht Column at least once.
 _Avoid_: Done, finished, completed
 
 **Cooking**:
-One occasion a Dish was cooked, with a date, an optional note and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there. A Dish's Cookings form its Cooking History, which is kept when it moves out again.
+One occasion a Dish was cooked, with a date, an optional note and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. A Dish's Cookings form its Cooking History, which is kept when it moves out again.
 _Avoid_: Done entry, log entry
