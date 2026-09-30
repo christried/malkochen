@@ -2,13 +2,19 @@
 // The handoff's ColumnTabs on phones: a pebble per Column with its Dish
 // count. The accent pebble behind the active tab follows a swipe as it
 // happens (`progress` is the Column index, fractional mid-swipe) and springs
-// into place on release.
+// into place on release. While a Dish is dragged up to them, the tab under
+// it is a drop target; a Dish dropped in makes it squash and burst.
 const props = defineProps<{
   columns: { id: string, name: string, count: number }[]
   active: number
   progress: number
   // True while a finger drags the Board: the pebble follows without easing.
   following: boolean
+  // The Column whose tab a dragged Dish is over, if any.
+  dropTarget?: string | null
+  // A Dish just dropped into this Column's tab; `n` counts drops, so the
+  // same tab reacts again.
+  landing?: { columnId: string, n: number } | null
 }>()
 const emit = defineEmits<{ select: [index: number] }>()
 
@@ -51,6 +57,19 @@ const pebble = computed(() => {
   }
 })
 
+// The tab a Dish was just dropped into, while it squashes and bursts.
+const bursting = ref<string | null>(null)
+let burstEnd: ReturnType<typeof setTimeout> | undefined
+watch(() => props.landing, async (landing) => {
+  bursting.value = null
+  clearTimeout(burstEnd)
+  if (!landing) return
+  await nextTick()
+  bursting.value = landing.columnId
+  burstEnd = setTimeout(() => (bursting.value = null), motionMs('drop-burst'))
+})
+onBeforeUnmount(() => clearTimeout(burstEnd))
+
 // Keep the active tab in view when the row is wider than the phone.
 watch(() => props.active, index => tabs[index]?.scrollIntoView({
   block: 'nearest',
@@ -78,11 +97,27 @@ watch(() => props.active, index => tabs[index]?.scrollIntoView({
       type="button"
       :aria-pressed="active === index"
       :aria-controls="`column-${column.id}`"
+      :data-tab-column-id="column.id"
       class="tab relative shrink-0 px-4 py-2.5 text-button transition-[scale,rotate,color] duration-settle ease-settle focus-visible:outline-2 focus-visible:outline-focus"
-      :class="active === index ? 'is-active text-on-accent' : 'text-text'"
-      :style="{ borderRadius: tabRadius(index) }"
+      :class="[
+        active === index ? 'is-active text-on-accent' : 'text-text',
+        dropTarget && (dropTarget === column.id ? 'is-drop-target text-on-accent' : 'is-dimmed'),
+      ]"
+      :style="{ borderRadius: tabRadius(index), '--accent': columnAccent(index) }"
       @click="emit('select', index)"
     >
+      <span
+        v-if="bursting === column.id"
+        aria-hidden="true"
+        class="landed absolute inset-0"
+      >
+        <span
+          v-for="n in 5"
+          :key="n"
+          class="burst-pebble"
+          :style="{ '--angle': `${n * 72 - 90}deg` }"
+        />
+      </span>
       {{ column.name }}
       <span class="relative inline-block overflow-hidden align-bottom opacity-60">
         <Transition name="count">
@@ -131,6 +166,66 @@ nav {
 }
 .tab-pebble.following {
   transition: none;
+}
+/* A dragged Dish over a tab (handoff "Drop target (tab / lane)"): the tab
+   grows and fills with its Column's accent, with a glow ring, and wiggles
+   every 1.2s; the other tabs dim. Leaving reverses in 200ms. Reduced motion:
+   fill and ring only. */
+.tab {
+  transition-property: scale, rotate, color, opacity;
+}
+.tab.is-drop-target {
+  scale: 1.16;
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent);
+  animation: tab-wiggle 1.2s var(--ease-idle) infinite;
+  transition-duration: var(--dur-fade);
+  transition-timing-function: var(--ease-pop);
+}
+.tab.is-drop-target::before {
+  background: var(--accent);
+}
+.tab.is-dimmed {
+  opacity: .45;
+  transition-duration: var(--dur-fade);
+}
+@keyframes tab-wiggle {
+  0%, 50%, 100% { rotate: 0deg; }
+  12.5% { rotate: -3deg; }
+  37.5% { rotate: 3deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab.is-drop-target {
+    scale: 1;
+    animation: none;
+  }
+}
+/* A Dish dropped in: the tab squashes (1.32/.84, then .9/1.1, then back)
+   and five pebbles burst out of it. Reduced motion (main.css) skips both. */
+.landed {
+  pointer-events: none;
+}
+.tab:has(> .landed) {
+  animation: tab-squash var(--dur-drop-swallow) var(--ease-settle);
+}
+@keyframes tab-squash {
+  30% { scale: 1.32 .84; }
+  65% { scale: .9 1.1; }
+}
+.burst-pebble {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px;
+  border-radius: var(--radius-tab-1);
+  background: var(--accent);
+  opacity: 0;
+  animation: burst var(--dur-drop-burst) var(--ease-settle);
+}
+@keyframes burst {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateX(0) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateX(34px) scale(.4); }
 }
 /* A count that changes rolls 16px up: the new number pops in from below as
    the old one leaves above (handoff: count change · pop). Reduced motion:

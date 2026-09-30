@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
 import { db } from '../db'
@@ -145,27 +145,65 @@ export async function restoreDish(dishId: string, userId: string): Promise<DishV
 }
 
 // Moves a Dish to the top of a Column on its own Board (PRD story 33); one
-// already in that Column stays where it is. Drag and drop and Cooking build
-// on this. Null unless the Dish is on a Board the user is a Member of, not
-// deleted, and the Column is on that Board.
-export async function moveDish(dishId: string, userId: string, columnId: string): Promise<DishView | null> {
+// already in that Column stays where it is. With an `index` (drag and drop,
+// PRD stories 31, 32, 34) it goes to that place among the Column's other
+// Dishes instead, in its own Column too, or to the end if the Column is
+// shorter. Cooking builds on this. Null unless the Dish is on a Board the
+// user is a Member of, not deleted, and the Column is on that Board.
+export async function moveDish(dishId: string, userId: string, columnId: string, index?: number): Promise<DishView | null> {
   const target = onMembersBoard(dishId, userId)
-  const moved = await db
-    .update(dish)
-    .set({
-      columnId,
-      position: sql`case when ${dish.columnId} = ${columnId} then ${dish.position}
-        else (select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId}) end`,
-    })
-    .where(and(
-      target,
-      inArray(dish.boardId, db.select({ id: boardColumn.boardId }).from(boardColumn).where(eq(boardColumn.id, columnId))),
-    ))
-    .returning({ id: dish.id })
-  if (moved.length === 0) return null
+  const movable = and(
+    target,
+    inArray(dish.boardId, db.select({ id: boardColumn.boardId }).from(boardColumn).where(eq(boardColumn.id, columnId))),
+  )
+  const moved = index === undefined
+    ? await db
+        .update(dish)
+        .set({
+          columnId,
+          position: sql`case when ${dish.columnId} = ${columnId} then ${dish.position}
+            else (select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId}) end`,
+        })
+        .where(movable)
+        .returning({ id: dish.id })
+    : await renumberForDrop(dishId, columnId, index, movable)
+  if (!moved.some(row => row.id === dishId)) return null
 
   const [row] = await selectDishes().where(target)
   return row ? toView(row) : null
+}
+
+// Drops a Dish at `index` in a Column, if `movable`: one statement numbers
+// the Column afresh, 0, 1, 2…, leaving that place free for the Dish. Deleted
+// Dishes keep their position, so undo still puts them back about where they were.
+function renumberForDrop(dishId: string, columnId: string, index: number, movable: SQL | undefined) {
+  const others = db.$with('others').as(
+    db
+      .select({
+        id: dish.id,
+        rank: sql<number>`row_number() over (order by ${dish.position}, ${dish.createdAt} desc, ${dish.id} desc) - 1`.as('rank'),
+      })
+      .from(dish)
+      .where(and(
+        eq(dish.columnId, columnId),
+        isNull(dish.deletedAt),
+        ne(dish.id, dishId),
+        exists(db.select({ id: dish.id }).from(dish).where(movable)),
+      )),
+  )
+  return db
+    .with(others)
+    .update(dish)
+    .set({
+      columnId,
+      position: sql`case when ${dish.id} = ${dishId} then ${index}::integer
+        else (select case when rank < ${index}::integer then rank else rank + 1 end from ${others} where ${others.id} = ${dish.id}) end`,
+    })
+    .where(or(
+      and(eq(dish.id, dishId), movable),
+      inArray(dish.id, db.select({ id: others.id }).from(others)),
+    ))
+    .returning({ id: dish.id })
 }
 
 // A Dish already on a Board with the Source being added (PRD story 24).

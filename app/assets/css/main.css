@@ -12,6 +12,26 @@ html {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Dragging a Dish: timings from the handoff's interactions.json that have
+   no token in tokens.css. Script reads them too (motionMs), so the two can't
+   drift apart. Reduced motion collapses them, like the handoff's own. */
+:root {
+  --dur-drop-settle: 260ms;
+  --dur-drop-swallow: 420ms;
+  --dur-drop-shrink: 280ms;
+  --dur-drop-collapse: 400ms;
+  --dur-drop-burst: 620ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-drop-settle: 0ms;
+    --dur-drop-swallow: 0ms;
+    --dur-drop-shrink: 0ms;
+    --dur-drop-collapse: 0ms;
+    --dur-drop-burst: 0ms;
+  }
+}
+
 /* Global reduced-motion rule. Durations already collapse via the --dur-*
    tokens in tokens.css (fades keep their 200ms, per the handoff's
    reducedMotion notes), so transitions must use the tokens. This rule catches

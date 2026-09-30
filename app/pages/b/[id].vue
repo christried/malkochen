@@ -6,7 +6,8 @@ import { dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
 // switched with the Column tabs or by swiping; tablet and desktop show all
-// Columns side by side, scroll-snapping.
+// Columns side by side, scroll-snapping. Dishes can be dragged: within a
+// Column, onto a Column tab (phones) or across lanes (from 768px).
 
 const t = useStrings()
 const { signOut } = useAuth()
@@ -34,10 +35,44 @@ function showColumn(index: number) {
 }
 
 const columnsEl = useTemplateRef<HTMLElement>('columns')
+const tabBar = useTemplateRef<ComponentPublicInstance>('tabBar')
+
+// One Toast at a time: notices, and "Rückgängig" after deleting a Dish.
+const toast = ref<Toast | null>(null)
+function showToast(shown: Toast) {
+  toast.value = shown
+}
+function showNotice(text: string) {
+  showToast({ text, duration: NOTICE_MS })
+}
+
+const { deleteDish, focusCard } = useDishDelete(board, showToast)
+const { moveDish, dropDish } = useDishMove(board, showToast)
+
+// A Dish dropped into a Column tab makes the tab squash and burst.
+const landing = ref<{ columnId: string, n: number } | null>(null)
+const { drag, dragging, entries } = useDishDrag(columnsEl, {
+  board: () => board.value,
+  activeColumnId: () => activeColumnId.value,
+  tabBar: () => tabBar.value?.$el ?? null,
+  drop: dropDish,
+  landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
+})
+// Each Column's cards as they show, with the slot while a Dish is dragged.
+const lists = computed(() => new Map(board.value?.columns.map(c => [c.id, entries(c)])))
+const listOf = (column: { id: string }) => lists.value.get(column.id) ?? []
+// The Column a dragged Dish is over as a drop target (a tab or a lane).
+const dropTarget = computed(() => drag.value?.tabColumnId ?? drag.value?.laneColumnId ?? null)
+const dropTint = computed(() => {
+  const index = board.value?.columns.findIndex(c => c.id === dropTarget.value) ?? -1
+  return index === -1 ? undefined : columnAccent(index)
+})
+
 const { dx, progress, following } = useColumnSwipe(columnsEl, {
   count: () => board.value?.columns.length ?? 0,
   active: () => activeIndex.value,
   go: showColumn,
+  blocked: () => dragging.value,
 })
 
 // While the Board slides (to another Column, or back after a short swipe),
@@ -56,7 +91,6 @@ watch(following, isFollowing => isFollowing || slide())
 // On phones, switching Columns slides the Board, and if the page was
 // scrolled down the old Column, the new one starts at its top, just below
 // the sticky tabs.
-const tabBar = useTemplateRef<ComponentPublicInstance>('tabBar')
 watch(activeIndex, () => {
   if (!isPhoneLayout() || !columnsEl.value) return
   const top = columnsEl.value.getBoundingClientRect().top + window.scrollY - (tabBar.value?.$el.offsetHeight ?? 0)
@@ -72,18 +106,6 @@ function titleMotion(index: number) {
 }
 const tint = computed(() => accentAt(clampProgress(progress.value, board.value?.columns.length ?? 1)))
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
-
-// One Toast at a time: notices, and "Rückgängig" after deleting a Dish.
-const toast = ref<Toast | null>(null)
-function showToast(shown: Toast) {
-  toast.value = shown
-}
-function showNotice(text: string) {
-  showToast({ text, duration: NOTICE_MS })
-}
-
-const { deleteDish, focusCard } = useDishDelete(board, showToast)
-const { moveDish } = useDishMove(board, showToast)
 
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
 // phones its Column comes to the front, so closing it lands there.
@@ -162,8 +184,8 @@ async function deleteFromMenu() {
   <main
     v-if="board"
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
-    :class="{ following }"
-    :style="{ '--tint': tint }"
+    :class="{ following, dragging, 'drop-tinted': dropTint }"
+    :style="{ '--tint': tint, '--drop-tint': dropTint }"
   >
     <header class="flex flex-wrap items-center justify-between gap-4">
       <h1 class="font-display text-title-l tablet:text-display-m">
@@ -188,6 +210,8 @@ async function deleteFromMenu() {
       :active="activeIndex"
       :progress="progress"
       :following="following"
+      :drop-target="drag?.tabColumnId"
+      :landing="landing"
       @select="showColumn"
     />
 
@@ -208,8 +232,13 @@ async function deleteFromMenu() {
           :aria-label="column.name"
           tabindex="-1"
           class="column w-full shrink-0 rounded-panel bg-surface-muted p-3 focus-visible:outline-2 focus-visible:outline-focus tablet:w-[340px] tablet:snap-start desktop:w-[330px] tablet:p-4"
-          :class="{ parked: parked(index) }"
-          :style="titleMotion(index)"
+          :class="{
+            'parked': parked(index),
+            'lane-target': drag?.laneColumnId === column.id,
+            'lane-dimmed': drag?.laneColumnId && drag.laneColumnId !== column.id,
+          }"
+          :style="{ ...titleMotion(index), '--accent': columnAccent(index) }"
+          :data-column-id="column.id"
           :data-gekocht="column.isGekocht || undefined"
         >
           <h2 class="column-title px-1 font-display text-title-s">
@@ -219,55 +248,83 @@ async function deleteFromMenu() {
             tag="ol"
             name="card"
             class="relative flex flex-col gap-3"
-            :class="{ 'mt-3': column.dishes.length }"
+            :class="{ 'mt-3': listOf(column).length }"
+            data-dish-list
           >
             <li
-              v-for="dish in column.dishes"
-              :key="dish.id"
+              v-for="{ key, dish, state } in listOf(column)"
+              :key="key"
               class="relative"
+              :class="{ 'drop-slot h-32 rounded-card': !dish }"
+              :data-dish-id="dish?.id"
+              :data-drag-state="state"
+              :data-drop-slot="!dish || undefined"
             >
-              <NuxtLink
-                :id="`dish-${dish.id}`"
-                :to="`/b/${board.id}/d/${dish.id}`"
-                :aria-label="dish.title"
-                class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-              >
-                <DishCard :dish="dish" />
-              </NuxtLink>
-              <button
-                type="button"
-                class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-                :aria-label="t.dish.menu(dish.title)"
-                aria-haspopup="dialog"
-                @click="menuDish = dish"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                ><circle
-                  cx="5"
-                  cy="12"
-                  r="2"
-                /><circle
-                  cx="12"
-                  cy="12"
-                  r="2"
-                /><circle
-                  cx="19"
-                  cy="12"
-                  r="2"
-                /></svg>
-              </button>
+              <template v-if="dish">
+                <NuxtLink
+                  :id="`dish-${dish.id}`"
+                  :to="`/b/${board.id}/d/${dish.id}`"
+                  :aria-label="dish.title"
+                  class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                >
+                  <DishCard :dish="dish" />
+                </NuxtLink>
+                <button
+                  type="button"
+                  class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                  :aria-label="t.dish.menu(dish.title)"
+                  aria-haspopup="dialog"
+                  @click="menuDish = dish"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  ><circle
+                    cx="5"
+                    cy="12"
+                    r="2"
+                  /><circle
+                    cx="12"
+                    cy="12"
+                    r="2"
+                  /><circle
+                    cx="19"
+                    cy="12"
+                    r="2"
+                  /></svg>
+                </button>
+              </template>
             </li>
           </TransitionGroup>
-          <template v-if="!column.dishes.length">
+          <template v-if="!listOf(column).some(e => e.state !== 'gone')">
             <EmptyBoard v-if="isEmpty && index === 0" />
             <EmptyColumn v-else />
           </template>
         </section>
+      </div>
+    </div>
+
+    <!-- The dragged card, following the pointer above everything. -->
+    <div
+      v-if="drag"
+      aria-hidden="true"
+      class="drag-card pointer-events-none fixed left-0 top-0 z-drag"
+      :class="[`is-${drag.phase}`, { 'near-tabs': drag.nearTabs }]"
+      :style="{
+        'translate': `${drag.x}px ${drag.y}px`,
+        'width': `${drag.width}px`,
+        '--grab-x': `${drag.grabX}px`,
+        '--grab-y': `${drag.grabY}px`,
+        '--width': `${drag.width}px`,
+        '--tilt': `${drag.tilt}deg`,
+      }"
+      data-testid="drag-card"
+    >
+      <div class="drag-card-lift rounded-card">
+        <DishCard :dish="drag.dish" />
       </div>
     </div>
 
@@ -459,6 +516,174 @@ async function deleteFromMenu() {
   .card-enter-from {
     scale: none;
   }
+}
+/* Dragging a Dish (handoff "Drag lift"). The card lifts under the pointer:
+   it grows to 1.04, tilts (-2°, then with the pointer's sideways speed) and
+   casts the lift shadow. Near the Column tabs it shrinks to half and hangs
+   just below the finger, so the tabs stay visible. Letting go, it settles
+   into its slot, upright, or on phones spins into a Column tab (--dur-drop-*
+   in main.css). Reduced motion: no scale or tilt,
+   an ink outline instead; it jumps into its slot, and fades into a tab. */
+.drag-card {
+  touch-action: none;
+}
+.drag-card-lift {
+  transform-origin: var(--grab-x) var(--grab-y);
+  scale: 1.04;
+  rotate: var(--tilt);
+  box-shadow: var(--shadow-lift);
+  transition:
+    rotate var(--dur-tap) var(--ease-tap),
+    scale var(--dur-drop-shrink) var(--ease-settle),
+    translate var(--dur-drop-shrink) var(--ease-settle),
+    box-shadow var(--dur-lift) var(--ease-lift);
+  animation: lift var(--dur-lift) var(--ease-lift);
+}
+.drag-card-lift :deep(article) {
+  box-shadow: none;
+}
+.near-tabs .drag-card-lift {
+  scale: .5;
+  translate: calc((var(--grab-x) - var(--width) / 2) / 2) calc(var(--grab-y) / 2 + 24px);
+}
+.drag-card.is-settling {
+  transition: translate var(--dur-drop-settle) var(--ease-settle);
+}
+.is-settling .drag-card-lift {
+  scale: 1;
+  rotate: 0deg;
+  box-shadow: var(--shadow-card);
+  transition-duration: var(--dur-drop-settle);
+}
+.drag-card.is-swallowing {
+  transition: translate var(--dur-drop-swallow) var(--ease-swoosh);
+}
+.is-swallowing .drag-card-lift {
+  scale: .05;
+  rotate: -40deg;
+  transition: scale var(--dur-drop-swallow) var(--ease-swoosh), rotate var(--dur-drop-swallow) var(--ease-swoosh);
+}
+@keyframes lift {
+  from {
+    scale: 1;
+    rotate: 0deg;
+    box-shadow: var(--shadow-card);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drag-card-lift,
+  .is-swallowing .drag-card-lift {
+    scale: none;
+    rotate: none;
+    translate: none;
+    outline: 2px solid var(--color-text);
+    transition: none;
+  }
+  .near-tabs .drag-card-lift {
+    scale: none;
+    translate: 0 calc(var(--grab-y) + 24px);
+  }
+  .drag-card.is-settling,
+  .drag-card.is-swallowing {
+    transition: none;
+  }
+  .is-swallowing .drag-card-lift {
+    opacity: 0;
+    transition: opacity var(--dur-fade) var(--ease-fade);
+  }
+}
+/* A card can't be selected or called up as a link while it may be dragged. */
+.card-link {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+/* The dragged card's place in its Column: a dashed outline at its height.
+   In another Column a slot in that Column's accent opens instead, and the
+   card's own place closes. The cards around make room in 320ms. */
+[data-drag-state="slot"] > * {
+  visibility: hidden;
+}
+[data-drag-state="slot"]::after,
+.drop-slot {
+  border: 2.5px dashed color-mix(in srgb, var(--color-text) 25%, transparent);
+  border-radius: var(--radius-card);
+}
+[data-drag-state="slot"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.drop-slot {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+[data-drag-state="gone"] {
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  margin-bottom: -.75rem;
+  animation: slot-collapse var(--dur-drop-collapse) var(--ease-settle);
+}
+/* Closing, the place shrinks from a card's height (128px) to nothing. */
+@keyframes slot-collapse {
+  from {
+    height: 8rem;
+    margin: 0;
+    visibility: visible;
+  }
+}
+[data-drag-state="gone"]:last-child {
+  margin-bottom: 0;
+  margin-top: -.75rem;
+}
+[data-drag-state="gone"]:only-child {
+  margin: 0;
+}
+.dragging .card-move {
+  transition-duration: calc(var(--dur-settle) * 2 / 3);
+}
+/* The drop slot comes and goes at once, and the dragged card, once it has
+   landed, just is there: the flying card already showed the way. */
+.drop-slot.card-enter-active,
+.drop-slot.card-leave-active {
+  transition: none;
+}
+.drop-slot.card-leave-active {
+  visibility: hidden;
+}
+/* A lane a dragged Dish is over (handoff "Drop target", desktop): it grows
+   a little, fills with its accent and glows, and wiggles once; the other
+   lanes dim. The background tints toward it. Reduced motion: fill and ring. */
+@media (min-width: 768px) {
+  .column {
+    transition: scale var(--dur-fade) var(--ease-pop), opacity var(--dur-fade) var(--ease-fade), box-shadow var(--dur-fade) var(--ease-fade), background-color var(--dur-fade) var(--ease-fade);
+  }
+  .column.lane-target {
+    scale: 1.012;
+    background-color: color-mix(in srgb, var(--accent) 30%, var(--color-surface-muted));
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent);
+    animation: lane-wiggle 600ms var(--ease-idle);
+  }
+  .column.lane-dimmed {
+    opacity: .6;
+  }
+}
+@keyframes lane-wiggle {
+  25% { rotate: -.3deg; }
+  75% { rotate: .3deg; }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+  .column.lane-target {
+    scale: none;
+  }
+}
+.board.drop-tinted {
+  background-color: color-mix(in oklch, var(--drop-tint) 22%, var(--color-bg));
+  transition: background-color var(--dur-fade) var(--ease-fade);
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }
