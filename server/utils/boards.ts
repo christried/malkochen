@@ -1,0 +1,98 @@
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { db, runAtomic } from '../db'
+import { board, boardColumn, membership } from '../db/schema'
+
+// The Board a user gets on their first sign-in (PRD story 3).
+const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍳' }
+
+// Every new Board starts with these Columns; the last is the Gekocht Column.
+export const DEFAULT_COLUMNS = [
+  { name: 'Ideen', isGekocht: false },
+  { name: 'Diese Woche', isGekocht: false },
+  { name: 'Gekocht', isGekocht: true },
+] as const
+
+export interface BoardSummary {
+  id: string
+  name: string
+  emoji: string
+  isOwner: boolean
+}
+
+export interface BoardView extends BoardSummary {
+  columns: { id: string, name: string, isGekocht: boolean }[]
+}
+
+// The user's Boards, the one they opened last first.
+export async function listBoards(userId: string): Promise<BoardSummary[]> {
+  return db
+    .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner })
+    .from(membership)
+    .innerJoin(board, eq(board.id, membership.boardId))
+    .where(eq(membership.userId, userId))
+    .orderBy(sql`${membership.lastOpenedAt} desc nulls last`, desc(membership.joinedAt))
+}
+
+// The Board the app opens on: the one used last. A user who belongs to no
+// Board at all (a first sign-in) gets "Meine Küche" created for them here --
+// not when their account is created, so someone arriving through an Invite
+// Link can join that Board first and never get an extra empty one (story 4).
+export async function landingBoardId(userId: string): Promise<string> {
+  const [last] = await listBoards(userId)
+  if (last) return last.id
+
+  const columns = sql.join(
+    DEFAULT_COLUMNS.map((c, i) => sql`(${c.name}, ${i}::int, ${c.isGekocht}::boolean)`),
+    sql`, `,
+  )
+  await runAtomic(d => [
+    // Serialises concurrent first landings of the same user until commit, so
+    // a second one sees the first one's Board and creates none.
+    d.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`starter-board:${userId}`}, 0))`),
+    d.execute(sql`
+      with new_board as (
+        insert into ${board} (name, emoji)
+        select ${STARTER_BOARD.name}, ${STARTER_BOARD.emoji}
+        where not exists (select 1 from ${membership} where user_id = ${userId})
+        returning id
+      ), owner as (
+        insert into ${membership} (board_id, user_id, is_owner)
+        select id, ${userId}, true from new_board
+      )
+      insert into ${boardColumn} (board_id, name, position, is_gekocht)
+      select new_board.id, c.name, c.position, c.is_gekocht
+      from new_board cross join (values ${columns}) as c(name, position, is_gekocht)
+    `),
+  ])
+
+  const [created] = await listBoards(userId)
+  if (!created) throw new Error(`no landing Board for user ${userId}`)
+  return created.id
+}
+
+// The Board with its Columns, or null unless the user is one of its Members.
+export async function getBoard(boardId: string, userId: string): Promise<BoardView | null> {
+  const [found] = await db
+    .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner })
+    .from(membership)
+    .innerJoin(board, eq(board.id, membership.boardId))
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+  if (!found) return null
+
+  const columns = await db
+    .select({ id: boardColumn.id, name: boardColumn.name, isGekocht: boardColumn.isGekocht })
+    .from(boardColumn)
+    .where(eq(boardColumn.boardId, boardId))
+    .orderBy(asc(boardColumn.position))
+  return { ...found, columns }
+}
+
+// Records that the user just opened the Board. False unless they are a Member.
+export async function markOpened(boardId: string, userId: string): Promise<boolean> {
+  const updated = await db
+    .update(membership)
+    .set({ lastOpenedAt: new Date() })
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+    .returning({ boardId: membership.boardId })
+  return updated.length > 0
+}
