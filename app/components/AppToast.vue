@@ -1,15 +1,7 @@
 <script setup lang="ts">
-// The handoff's Toast: an inverse pill at the bottom of the screen, with an
-// optional action (e.g. "Rückgängig") and a progress bar showing how long it
-// stays. A new toast replaces the one showing. It waits while hovered or
-// focused, so there's time to reach the action.
-export interface Toast {
-  text: string
-  action?: { label: string, run: () => void }
-  // How long it stays, in ms (the undo window for one with an action).
-  duration: number
-}
-
+// The handoff's Toast: an inverse pill at the bottom of the screen, with
+// optional actions (e.g. "Rückgängig") and a progress bar showing how long
+// it stays. A new toast replaces the one showing.
 const toast = defineModel<Toast | null>({ required: true })
 const bar = useTemplateRef<HTMLElement>('bar')
 
@@ -28,19 +20,9 @@ watch([toast, bar], ([, el]) => {
 }, { flush: 'post' })
 onBeforeUnmount(() => timer?.cancel())
 
-function pause() {
-  timer?.pause()
-}
-function resume(event: FocusEvent | PointerEvent) {
-  const root = event.currentTarget as HTMLElement
-  const hovered = event.type !== 'pointerleave' && root.matches(':hover')
-  const focused = event instanceof FocusEvent ? root.contains(event.relatedTarget as Node | null) : root.matches(':focus-within')
-  if (!hovered && !focused) timer?.play()
-}
-
-function act() {
-  toast.value?.action?.run()
+function act(action: ToastAction) {
   toast.value = null
+  action.run()
 }
 </script>
 
@@ -54,29 +36,26 @@ function act() {
       <div
         v-if="toast"
         class="pointer-events-auto relative flex max-w-md items-center gap-4 overflow-hidden rounded-pill bg-inverse py-3 pl-5 text-small text-on-inverse shadow-fab"
-        :class="toast.action ? 'pr-2' : 'pr-5'"
+        :class="toast.actions?.length ? 'pr-2' : 'pr-5'"
         data-toast
-        @pointerenter="pause"
-        @pointerleave="resume"
-        @focusin="pause"
-        @focusout="resume"
       >
         <p class="min-w-0">
           {{ toast.text }}
         </p>
         <button
-          v-if="toast.action"
+          v-for="action in toast.actions"
+          :key="action.label"
           type="button"
           class="shrink-0 rounded-pill px-3 py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          @click="act"
+          @click="act(action)"
         >
-          {{ toast.action.label }}
+          {{ action.label }}
         </button>
         <span
           ref="bar"
           aria-hidden="true"
           class="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-on-inverse/40"
-          :class="{ invisible: !toast.action }"
+          :class="{ invisible: !toast.actions?.length }"
         />
       </div>
     </Transition>
@@ -84,9 +63,9 @@ function act() {
 </template>
 
 <style scoped>
-/* In: up from below with a little overshoot (settle). Out: down, 300ms. */
+/* In: up from below, 380ms with a little overshoot (sheet). Out: down, 300ms. */
 .toast-enter-active {
-  transition: translate var(--dur-settle) var(--ease-settle), opacity var(--dur-fade) var(--ease-fade);
+  transition: translate 380ms var(--ease-sheet), opacity var(--dur-fade) var(--ease-fade);
 }
 .toast-leave-active {
   transition: translate 300ms var(--ease-swoosh), opacity 300ms var(--ease-fade);

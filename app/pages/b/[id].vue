@@ -2,7 +2,6 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import { dishOnBoard } from '~~/shared/board'
-import type { Toast } from '~/components/AppToast.vue'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time
 // with a simple switch (the real tabs and swiping come with #10); tablet and
@@ -25,10 +24,21 @@ useHead({ title: () => board.value ? `${board.value.emoji} ${board.value.name} �
 const activeColumnId = ref(board.value?.columns[0]?.id)
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 
+// One Toast at a time: notices, and "Rückgängig" after deleting a Dish.
+const toast = ref<Toast | null>(null)
+function showToast(shown: Toast) {
+  toast.value = shown
+}
+function showNotice(text: string) {
+  showToast({ text, duration: NOTICE_MS })
+}
+
+const { deleteDish, focusCard } = useDishDelete(board, showToast)
+
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
 // phones its Column comes to the front, so closing it lands there.
-// Closing it puts focus back on the Dish's card (or, if it was deleted, the
-// card that took its place).
+// Closing it puts focus back on the Dish's card (or, if it was deleted, on
+// what took its place).
 watch(() => route.params.dishId, async (dishId, closedId) => {
   const opened = board.value && dishOnBoard(board.value, dishId)
   if (opened) activeColumnId.value = opened.column.id
@@ -37,24 +47,10 @@ watch(() => route.params.dishId, async (dishId, closedId) => {
   focusCard(closedId)
 }, { immediate: true })
 
-// Focuses a Dish's card, or for one just deleted the card now in its place
-// (none if its Column is empty).
-let deletedInPlaceOf: { dishId: string, next: string | null } | null = null
-function focusCard(dishId: string) {
-  const id = deletedInPlaceOf?.dishId === dishId ? deletedInPlaceOf.next : dishId
-  if (id) document.getElementById(`dish-${id}`)?.focus()
-}
-
-// One Toast at a time: notices, and "Rückgängig" after deleting a Dish.
-const toast = ref<Toast | null>(null)
-function showNotice(text: string) {
-  toast.value = { text, duration: 8000 }
-}
-
 const adding = ref(false)
+
 // A Dish saved to another Board doesn't show here. If a Source image
 // couldn't be stored, a notice says which image the Dish has instead.
-
 function onAdded(saved: SavedDish, boardId: string) {
   if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
@@ -69,42 +65,6 @@ function onEdited(saved: SavedDish) {
   const { imageNotStored: _, ...dish } = saved
   const edited = board.value && dishOnBoard(board.value, dish.id)
   if (edited) Object.assign(edited.dish, dish)
-}
-
-// Deleting a Dish (PRD story 47): its card goes at once, and the Toast
-// offers "Rückgängig" for 5 seconds, which puts it back where it was.
-function deleteDish(dishId: string) {
-  const found = board.value && dishOnBoard(board.value, dishId)
-  if (!found) return
-  const { dish, column } = found
-  const index = column.dishes.indexOf(dish)
-  column.dishes.splice(index, 1)
-  deletedInPlaceOf = { dishId, next: column.dishes[Math.min(index, column.dishes.length - 1)]?.id ?? null }
-
-  const putBack = () => {
-    if (!column.dishes.includes(dish)) column.dishes.splice(Math.min(index, column.dishes.length), 0, dish)
-  }
-  const deleting = $fetch(`/api/dishes/${dishId}`, { method: 'DELETE' })
-  deleting.catch(() => {
-    putBack()
-    showNotice(t.dish.deleteFailed(dish.title))
-  })
-
-  // Undo waits for the delete, so the two never cross on the way.
-  async function undo() {
-    try {
-      await deleting
-    }
-    catch {
-      return // Never deleted, and already back.
-    }
-    putBack()
-    await $fetch(`/api/dishes/${dishId}/restore`, { method: 'POST' }).catch(() => {
-      column.dishes.splice(column.dishes.indexOf(dish), 1)
-      showNotice(t.dish.restoreFailed(dish.title))
-    })
-  }
-  toast.value = { text: t.dish.deleted(dish.title), duration: 5000, action: { label: t.dish.undo, run: undo } }
 }
 
 // The card's "…" menu. "Verschieben nach…" joins "Löschen" with #10.
@@ -166,18 +126,22 @@ async function deleteFromMenu() {
     <div class="mt-4 tablet:mt-8 tablet:flex tablet:snap-x tablet:gap-4 tablet:overflow-x-auto tablet:pb-4">
       <section
         v-for="(column, index) in board.columns"
+        :id="`column-${column.id}`"
         :key="column.id"
         :aria-label="column.name"
-        class="rounded-panel bg-surface-muted p-3 tablet:block tablet:w-[340px] tablet:shrink-0 tablet:snap-start tablet:p-4"
+        tabindex="-1"
+        class="rounded-panel bg-surface-muted p-3 focus-visible:outline-2 focus-visible:outline-focus tablet:block tablet:w-[340px] tablet:shrink-0 tablet:snap-start tablet:p-4"
         :class="activeColumnId === column.id ? 'block' : 'hidden'"
         :data-gekocht="column.isGekocht || undefined"
       >
         <h2 class="px-1 font-display text-title-s">
           {{ column.name }}
         </h2>
-        <ol
-          v-if="column.dishes.length"
-          class="mt-3 flex flex-col gap-3"
+        <TransitionGroup
+          tag="ol"
+          name="card"
+          class="relative flex flex-col gap-3"
+          :class="{ 'mt-3': column.dishes.length }"
         >
           <li
             v-for="dish in column.dishes"
@@ -220,9 +184,11 @@ async function deleteFromMenu() {
               /></svg>
             </button>
           </li>
-        </ol>
-        <EmptyBoard v-else-if="isEmpty && index === 0" />
-        <EmptyColumn v-else />
+        </TransitionGroup>
+        <template v-if="!column.dishes.length">
+          <EmptyBoard v-if="isEmpty && index === 0" />
+          <EmptyColumn v-else />
+        </template>
       </section>
     </div>
 
@@ -259,13 +225,9 @@ async function deleteFromMenu() {
       :close-label="t.dish.closeMenu"
     >
       <div class="mt-5 flex flex-col gap-2">
-        <button
-          type="button"
-          class="rounded-pill bg-danger/10 px-5 py-3.5 text-button text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          @click="deleteFromMenu"
-        >
+        <DangerButton @click="deleteFromMenu">
           {{ t.dish.delete }}
-        </button>
+        </DangerButton>
       </div>
     </AppSheet>
 
@@ -291,6 +253,31 @@ async function deleteFromMenu() {
    around it. Reduced motion (main.css) stops it after one pass. */
 .fab-prompt {
   animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
+}
+/* Deleting a Dish (handoff "Delete collapse + undo"): its card shrinks and
+   fades while the list closes up; "Rückgängig" brings it back with a little
+   overshoot. Reduced motion: it only fades. */
+.card-leave-active {
+  position: absolute;
+  inset-inline: 0;
+  transition: scale 260ms var(--ease-settle), opacity 260ms var(--ease-fade);
+}
+.card-enter-active {
+  transition: scale 380ms var(--ease-settle), opacity 380ms var(--ease-fade);
+}
+.card-leave-to,
+.card-enter-from {
+  scale: .9;
+  opacity: 0;
+}
+.card-move {
+  transition: transform var(--dur-settle) var(--ease-settle);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-leave-to,
+  .card-enter-from {
+    scale: none;
+  }
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }

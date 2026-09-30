@@ -93,7 +93,7 @@ function toView({ columnId: _, sourceLink, sourceKind, adderId, adderName, adder
 export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'imageUrl' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
-function onMembersBoardOrDeleted(dishId: string, userId: string) {
+function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
   return and(
     eq(dish.id, dishId),
     inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
@@ -102,7 +102,7 @@ function onMembersBoardOrDeleted(dishId: string, userId: string) {
 
 // The Dish, if it is on a Board the user is a Member of and not deleted.
 function onMembersBoard(dishId: string, userId: string) {
-  return and(onMembersBoardOrDeleted(dishId, userId), isNull(dish.deletedAt))
+  return and(onMembersBoardIncludingDeleted(dishId, userId), isNull(dish.deletedAt))
 }
 
 // Whether the Dish exists on a Board the user is a Member of.
@@ -138,7 +138,7 @@ export async function deleteDish(dishId: string, userId: string): Promise<boolea
 // Undoes deleting a Dish. It kept its Column and position, so it is back
 // where it was. Null unless it is on a Board the user is a Member of.
 export async function restoreDish(dishId: string, userId: string): Promise<DishView | null> {
-  const target = onMembersBoardOrDeleted(dishId, userId)
+  const target = onMembersBoardIncludingDeleted(dishId, userId)
   await db.update(dish).set({ deletedAt: null }).where(target)
   const [row] = await selectDishes().where(target)
   return row ? toView(row) : null

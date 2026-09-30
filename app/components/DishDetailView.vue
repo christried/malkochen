@@ -107,13 +107,12 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
         </p>
       </section>
 
-      <button
-        type="button"
-        class="mt-auto self-start rounded-pill bg-danger/10 px-5 py-3 text-button text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+      <DangerButton
+        class="mt-auto self-start"
         @click="$emit('delete')"
       >
         {{ t.dish.delete }}
-      </button>
+      </DangerButton>
     </div>
   </div>
 </template>

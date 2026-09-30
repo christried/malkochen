@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { landingBoard as landingBoardOf, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 
 // Deleting a Dish with undo (PRD story 47): DELETE /api/dishes/:id takes it
@@ -14,18 +15,11 @@ interface Board {
   columns: { id: string, dishes: Dish[] }[]
 }
 
-async function landingBoard(caller: Caller): Promise<Board> {
-  const { boardId } = await (await caller.fetch('/api/boards/landing')).json() as { boardId: string }
-  return (await caller.fetch(`/api/boards/${boardId}`)).json()
-}
+const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
 
 async function addDish(caller: Caller, title: string, link?: string): Promise<Dish> {
   const board = await landingBoard(caller)
-  const res = await caller.fetch(`/api/boards/${board.id}/dishes`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ title, placeholder: 'curry', ...link && { source: { link } } }),
-  })
+  const res = await postDish(caller, board.id, { title, placeholder: 'curry', ...link && { source: { link } } })
   expect(res.status).toBe(201)
   return res.json()
 }

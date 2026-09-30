@@ -60,3 +60,63 @@ test('deleting from the detail closes it; without undo the Dish stays gone', asy
   await reloadHydrated(page)
   await expect(ideen(page)).toHaveText(['Pad Thai', 'Shakshuka'])
 })
+
+test('undo finds the Dish’s place even after a Dish was added meanwhile; focus follows', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[3])
+  await gotoHydrated(page, '/')
+  await expect(ideen(page)).toHaveText(['Pad Thai', 'Shakshuka'])
+
+  await page.getByRole('button', { name: 'Mehr zu „Shakshuka“' }).click()
+  await page.getByRole('dialog', { name: 'Shakshuka' }).getByRole('button', { name: 'Löschen' }).click()
+  // The card in its place (here: the one above it) takes focus.
+  await expect(page.getByRole('link', { name: 'Pad Thai' })).toBeFocused()
+
+  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
+  await page.getByRole('dialog', { name: 'Gericht hinzufügen' }).getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+  await sheet.getByLabel('Titel').fill('Tacos')
+  await sheet.getByRole('button', { name: 'Speichern' }).click()
+  await expect(ideen(page)).toHaveText(['Tacos', 'Pad Thai'])
+
+  await page.getByRole('status').getByRole('button', { name: 'Rückgängig' }).click()
+
+  await expect(ideen(page)).toHaveText(['Tacos', 'Pad Thai', 'Shakshuka'])
+  await expect(page.getByRole('link', { name: 'Shakshuka' })).toBeFocused()
+  await reloadHydrated(page)
+  await expect(ideen(page)).toHaveText(['Tacos', 'Pad Thai', 'Shakshuka'])
+})
+
+test('deleting a Column’s last Dish puts focus on the Column', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await signIn(page, ALLOWLISTED[3])
+  await seedDish(page, { title: 'Ramen', sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
+  await gotoHydrated(page, '/')
+
+  await page.getByRole('button', { name: 'Mehr zu „Ramen“' }).click()
+  await page.getByRole('dialog', { name: 'Ramen' }).getByRole('button', { name: 'Löschen' }).click()
+
+  const dieseWoche = page.getByRole('region', { name: 'Diese Woche' })
+  await expect(dieseWoche).toBeFocused()
+  await expect(dieseWoche.getByText('Noch nichts hier.')).toBeVisible()
+})
+
+test('a failed delete puts the card back and says so; one already deleted just goes', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[3])
+  await gotoHydrated(page, '/')
+  const answer = { status: 500 }
+  await page.route('**/api/dishes/*', route => route.request().method() === 'DELETE' ? route.fulfill(answer) : route.fallback())
+
+  await page.getByRole('button', { name: 'Mehr zu „Tacos“' }).click()
+  await page.getByRole('dialog', { name: 'Tacos' }).getByRole('button', { name: 'Löschen' }).click()
+
+  await expect(page.locator('[data-toast]')).toHaveText('„Tacos“ ließ sich nicht löschen. Versuch es gleich noch mal.')
+  await expect(ideen(page)).toHaveText(['Tacos', 'Pad Thai', 'Shakshuka'])
+
+  // Another Member deleted it first: the server doesn't find it any more.
+  answer.status = 404
+  await page.getByRole('button', { name: 'Mehr zu „Tacos“' }).click()
+  await page.getByRole('dialog', { name: 'Tacos' }).getByRole('button', { name: 'Löschen' }).click()
+
+  await expect(page.locator('[data-toast]')).toContainText('„Tacos“ gelöscht')
+  await expect(ideen(page)).toHaveText(['Pad Thai', 'Shakshuka'])
+})
