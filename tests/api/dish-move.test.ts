@@ -106,3 +106,104 @@ test('only Members can move a Dish, and a missing or deleted Dish looks the same
     expect((await moveDish(barbara, id, dieseWoche.id)).status).toBe(404)
   }
 })
+
+// Drag and drop (PRD stories 31, 32, 34): with an `index`, the Dish lands at
+// that place among the target Column's other Dishes.
+
+function moveDishTo(caller: Caller, dishId: string, columnId: string, index: unknown) {
+  return caller.fetch(`/api/dishes/${dishId}/move`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ columnId, index }),
+  })
+}
+
+// The Column's ids as they should be once `dishId` is dropped at `index`.
+function droppedAt(ids: string[], dishId: string, index: number): string[] {
+  const others = ids.filter(id => id !== dishId)
+  others.splice(index, 0, dishId)
+  return others
+}
+
+test('a Dish dropped within its Column keeps the place it was dropped at', async () => {
+  const barbara = await signIn(ALLOWLISTED[4])
+  for (const title of ['Dal', 'Pad Thai', 'Shakshuka']) await addDish(barbara, title)
+  const board = await landingBoard(barbara)
+  const ideen = board.columns[0]!
+  const ids = ideen.dishes.map(d => d.id)
+  const shakshuka = ids[0]!
+
+  const res = await moveDishTo(barbara, shakshuka, ideen.id, 2)
+
+  expect(res.status).toBe(200)
+  expect(await res.json()).toMatchObject({ id: shakshuka, title: 'Shakshuka' })
+  expect((await columnDishIds(barbara))[0]).toEqual(droppedAt(ids, shakshuka, 2))
+
+  // And back up to the top.
+  await moveDishTo(barbara, shakshuka, ideen.id, 0)
+  expect((await columnDishIds(barbara))[0]).toEqual(ids)
+})
+
+test('a Dish dropped into another Column lands at the place it was dropped at', async () => {
+  const barbara = await signIn(ALLOWLISTED[4])
+  const dish = await addDish(barbara, 'Linsensalat')
+  const [, dieseWoche] = (await landingBoard(barbara)).columns
+  const before = await columnDishIds(barbara)
+  expect(before[1]!.length).toBeGreaterThanOrEqual(2)
+
+  expect((await moveDishTo(barbara, dish.id, dieseWoche!.id, 1)).status).toBe(200)
+
+  const after = await columnDishIds(barbara)
+  expect(after[0]).toEqual(before[0]!.filter(id => id !== dish.id))
+  expect(after[1]).toEqual(droppedAt(before[1]!, dish.id, 1))
+})
+
+test('a Dish dropped past the end of a Column goes to its end', async () => {
+  const barbara = await signIn(ALLOWLISTED[4])
+  const dish = await addDish(barbara, 'Ofengemüse')
+  const [, dieseWoche] = (await landingBoard(barbara)).columns
+  const before = await columnDishIds(barbara)
+
+  expect((await moveDishTo(barbara, dish.id, dieseWoche!.id, 999)).status).toBe(200)
+
+  expect((await columnDishIds(barbara))[1]).toEqual([...before[1]!, dish.id])
+})
+
+test('a Dish added after reordering still goes to the top', async () => {
+  const barbara = await signIn(ALLOWLISTED[4])
+  const ideen = (await landingBoard(barbara)).columns[0]!
+  const [first] = ideen.dishes
+  await moveDishTo(barbara, first!.id, ideen.id, 1)
+
+  const dish = await addDish(barbara, 'Frühlingsrollen')
+
+  expect((await columnDishIds(barbara))[0]![0]).toBe(dish.id)
+})
+
+test('the drop place must be a whole number from 0', async () => {
+  const barbara = await signIn(ALLOWLISTED[4])
+  const dish = await addDish(barbara, 'Tomatensuppe')
+  const ideen = (await landingBoard(barbara)).columns[0]!
+  const before = await columnDishIds(barbara)
+
+  for (const index of [-1, 1.5, 'oben', null]) {
+    expect((await moveDishTo(barbara, dish.id, ideen.id, index)).status).toBe(400)
+  }
+  expect(await columnDishIds(barbara)).toEqual(before)
+})
+
+test('only Members can drop a Dish, and not into another Board', async () => {
+  const barbara = await signIn(ALLOWLISTED[4])
+  const linus = await signIn(ALLOWLISTED[2])
+  const dish = await addDish(barbara, 'Barbaras Borschtsch')
+  const before = await columnDishIds(barbara)
+  const [ideen] = (await landingBoard(barbara)).columns
+  const elsewhere = (await landingBoard(linus)).columns[1]!
+  const linusBefore = await columnDishIds(linus)
+
+  expect((await moveDishTo(linus, dish.id, ideen!.id, 1)).status).toBe(404)
+  expect((await moveDishTo(barbara, dish.id, elsewhere.id, 0)).status).toBe(400)
+
+  expect(await columnDishIds(barbara)).toEqual(before)
+  expect(await columnDishIds(linus)).toEqual(linusBefore)
+})

@@ -8,3 +8,18 @@ export function hapticReject() {
 export function hapticTick() {
   if ('vibrate' in navigator) navigator.vibrate(8)
 }
+
+// LONG_PRESS: a card is picked up to drag.
+export function hapticLongPress() {
+  if ('vibrate' in navigator) navigator.vibrate(15)
+}
+
+// GESTURE_THRESHOLD_ACTIVATE: a dragged card reaches a drop target.
+export function hapticActivate() {
+  if ('vibrate' in navigator) navigator.vibrate(12)
+}
+
+// CONFIRM: something landed, e.g. a Dish dropped into a Column tab.
+export function hapticConfirm() {
+  if ('vibrate' in navigator) navigator.vibrate([10, 50, 20])
+}

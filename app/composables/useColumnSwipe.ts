@@ -7,9 +7,10 @@
 // From 768px the Columns sit side by side and a sideways pan just scrolls.
 //
 // Reduced motion: the Board doesn't follow the finger, the swipe only pages.
+// While a Dish is dragged (`blocked`), the finger moves the card instead.
 export function useColumnSwipe(
   surface: Readonly<Ref<HTMLElement | null>>,
-  options: { count: () => number, active: () => number, go: (index: number) => void },
+  options: { count: () => number, active: () => number, go: (index: number) => void, blocked: () => boolean },
 ) {
   // How far the finger has taken the Board, in px; 0 when not swiping.
   const dx = ref(0)
@@ -35,6 +36,10 @@ export function useColumnSwipe(
 
   function onMove(event: PointerEvent) {
     if (!start || event.pointerId !== start.pointerId) return
+    if (!captured && options.blocked()) {
+      start = null
+      return
+    }
     const moveX = event.clientX - start.x
     const moveY = event.clientY - start.y
     if (!captured) {
