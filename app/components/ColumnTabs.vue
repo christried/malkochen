@@ -66,7 +66,7 @@ watch(() => props.landing, async (landing) => {
   if (!landing) return
   await nextTick()
   bursting.value = landing.columnId
-  burstEnd = setTimeout(() => (bursting.value = null), 700)
+  burstEnd = setTimeout(() => (bursting.value = null), motionMs('drop-burst'))
 })
 onBeforeUnmount(() => clearTimeout(burstEnd))
 
@@ -178,7 +178,7 @@ nav {
   scale: 1.16;
   box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent);
   animation: tab-wiggle 1.2s var(--ease-idle) infinite;
-  transition-duration: 240ms;
+  transition-duration: var(--dur-fade);
   transition-timing-function: var(--ease-pop);
 }
 .tab.is-drop-target::before {
@@ -186,7 +186,7 @@ nav {
 }
 .tab.is-dimmed {
   opacity: .45;
-  transition-duration: 200ms;
+  transition-duration: var(--dur-fade);
 }
 @keyframes tab-wiggle {
   0%, 50%, 100% { rotate: 0deg; }
@@ -205,7 +205,7 @@ nav {
   pointer-events: none;
 }
 .tab:has(> .landed) {
-  animation: tab-squash 420ms var(--ease-settle);
+  animation: tab-squash var(--dur-drop-swallow) var(--ease-settle);
 }
 @keyframes tab-squash {
   30% { scale: 1.32 .84; }
@@ -221,7 +221,7 @@ nav {
   border-radius: var(--radius-tab-1);
   background: var(--accent);
   opacity: 0;
-  animation: burst 620ms var(--ease-settle);
+  animation: burst var(--dur-drop-burst) var(--ease-settle);
 }
 @keyframes burst {
   0% { opacity: 1; transform: rotate(var(--angle)) translateX(0) scale(1); }

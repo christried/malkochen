@@ -55,7 +55,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   board: () => board.value,
   activeColumnId: () => activeColumnId.value,
   tabBar: () => tabBar.value?.$el ?? null,
-  drop: (dishId, { columnId, index }) => dropDish(dishId, columnId, index),
+  drop: dropDish,
   landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
 })
 // Each Column's cards as they show, with the slot while a Dish is dragged.
@@ -520,8 +520,9 @@ async function deleteFromMenu() {
 /* Dragging a Dish (handoff "Drag lift"). The card lifts under the pointer:
    it grows to 1.04, tilts (-2°, then with the pointer's sideways speed) and
    casts the lift shadow. Near the Column tabs it shrinks to half and hangs
-   just below the finger, so the tabs stay visible. Letting go, it settles into its slot, upright, in 260ms, or on
-   phones spins into a Column tab in 420ms. Reduced motion: no scale or tilt,
+   just below the finger, so the tabs stay visible. Letting go, it settles
+   into its slot, upright, or on phones spins into a Column tab (--dur-drop-*
+   in main.css). Reduced motion: no scale or tilt,
    an ink outline instead; it jumps into its slot, and fades into a tab. */
 .drag-card {
   touch-action: none;
@@ -533,8 +534,8 @@ async function deleteFromMenu() {
   box-shadow: var(--shadow-lift);
   transition:
     rotate var(--dur-tap) var(--ease-tap),
-    scale 280ms var(--ease-settle),
-    translate 280ms var(--ease-settle),
+    scale var(--dur-drop-shrink) var(--ease-settle),
+    translate var(--dur-drop-shrink) var(--ease-settle),
     box-shadow var(--dur-lift) var(--ease-lift);
   animation: lift var(--dur-lift) var(--ease-lift);
 }
@@ -546,21 +547,21 @@ async function deleteFromMenu() {
   translate: calc((var(--grab-x) - var(--width) / 2) / 2) calc(var(--grab-y) / 2 + 24px);
 }
 .drag-card.is-settling {
-  transition: translate 260ms var(--ease-settle);
+  transition: translate var(--dur-drop-settle) var(--ease-settle);
 }
 .is-settling .drag-card-lift {
   scale: 1;
   rotate: 0deg;
   box-shadow: var(--shadow-card);
-  transition-duration: 260ms;
+  transition-duration: var(--dur-drop-settle);
 }
 .drag-card.is-swallowing {
-  transition: translate 420ms var(--ease-swoosh);
+  transition: translate var(--dur-drop-swallow) var(--ease-swoosh);
 }
 .is-swallowing .drag-card-lift {
   scale: .05;
   rotate: -40deg;
-  transition: scale 420ms var(--ease-swoosh), rotate 420ms var(--ease-swoosh);
+  transition: scale var(--dur-drop-swallow) var(--ease-swoosh), rotate var(--dur-drop-swallow) var(--ease-swoosh);
 }
 @keyframes lift {
   from {
@@ -625,6 +626,15 @@ async function deleteFromMenu() {
   overflow: hidden;
   visibility: hidden;
   margin-bottom: -.75rem;
+  animation: slot-collapse var(--dur-drop-collapse) var(--ease-settle);
+}
+/* Closing, the place shrinks from a card's height (128px) to nothing. */
+@keyframes slot-collapse {
+  from {
+    height: 8rem;
+    margin: 0;
+    visibility: visible;
+  }
 }
 [data-drag-state="gone"]:last-child {
   margin-bottom: 0;
@@ -650,7 +660,7 @@ async function deleteFromMenu() {
    lanes dim. The background tints toward it. Reduced motion: fill and ring. */
 @media (min-width: 768px) {
   .column {
-    transition: scale 240ms var(--ease-pop), opacity 200ms var(--ease-fade), box-shadow 200ms var(--ease-fade), background-color 200ms var(--ease-fade);
+    transition: scale var(--dur-fade) var(--ease-pop), opacity var(--dur-fade) var(--ease-fade), box-shadow var(--dur-fade) var(--ease-fade), background-color var(--dur-fade) var(--ease-fade);
   }
   .column.lane-target {
     scale: 1.012;
@@ -673,7 +683,7 @@ async function deleteFromMenu() {
 }
 .board.drop-tinted {
   background-color: color-mix(in oklch, var(--drop-tint) 22%, var(--color-bg));
-  transition: background-color 240ms var(--ease-fade);
+  transition: background-color var(--dur-fade) var(--ease-fade);
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }

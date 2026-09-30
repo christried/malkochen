@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import { tab, titles } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { seedDish } from './seed'
 
@@ -13,25 +14,18 @@ const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1280, height: 900 }
 
-function column(page: Page, name: string) {
-  return page.getByRole('region', { name })
-}
-
-function titles(page: Page, name: string) {
-  return column(page, name).getByRole('heading', { level: 3 })
-}
-
 function card(page: Page, title: string) {
   return page.getByRole('link', { name: title, exact: true })
-}
-
-function tab(page: Page, name: string) {
-  return page.getByRole('navigation', { name: 'Spalten' }).getByRole('button', { name })
 }
 
 async function center(locator: Locator) {
   const box = (await locator.boundingBox())!
   return { x: box.x + box.width / 2, y: box.y + box.height / 2, box }
+}
+
+// Letting go, the card flies to where it lands; only then has it moved.
+async function landed(page: Page) {
+  await expect(page.getByTestId('drag-card')).toHaveCount(0)
 }
 
 // A mouse picking a card up by its middle and letting go at `to`.
@@ -41,6 +35,7 @@ async function mouseDrag(page: Page, from: Locator, to: { x: number, y: number }
   await page.mouse.down()
   await page.mouse.move(to.x, to.y, { steps: 12 })
   await page.mouse.up()
+  await landed(page)
 }
 
 // A finger long-pressing a card by its middle, dragging it to `to` and
@@ -57,6 +52,7 @@ async function touchDrag(page: Page, from: Locator, to: { x: number, y: number }
     await page.waitForTimeout(16)
   }
   await board.dispatchEvent('pointerup', at(to.x, to.y))
+  await landed(page)
 }
 
 test('desktop: a Dish dragged within its Column stays where it was dropped', async ({ page }) => {
@@ -149,6 +145,22 @@ test('phone: a Dish dropped on its own Column’s tab goes to the top', async ({
   await reloadHydrated(page)
   await tab(page, 'Diese Woche 4').click()
   await expect(titles(page, 'Diese Woche')).toHaveText(['Bowl', 'Tacos', 'Kürbissuppe', 'Curry'])
+})
+
+test('phone: a Dish let go above the tabs stays in its Column', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await signIn(page, ALLOWLISTED[5])
+  await gotoHydrated(page, '/')
+  await expect(tab(page, 'Ideen 1')).toHaveAttribute('aria-pressed', 'true')
+  const heading = await center(page.getByRole('heading', { level: 1 }))
+  const tabBar = await center(page.getByRole('navigation', { name: 'Spalten' }))
+
+  // The header sits right above the tab to the right of the active one.
+  await touchDrag(page, card(page, 'Ramen'), { x: tabBar.box.x + tabBar.box.width / 2, y: heading.y })
+
+  await expect(titles(page, 'Ideen')).toHaveText(['Ramen'])
+  await expect(tab(page, 'Ideen 1')).toBeVisible()
+  await expect(tab(page, 'Diese Woche 4')).toBeVisible()
 })
 
 test('phone: a finger that moves before the long-press swipes instead of dragging', async ({ page }) => {

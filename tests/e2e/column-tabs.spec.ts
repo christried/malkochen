@@ -1,6 +1,7 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import { column, tab, titles } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { seedDish } from './seed'
 
@@ -11,18 +12,6 @@ test.describe.configure({ mode: 'serial' })
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const PHONE = { width: 390, height: 844 }
-
-function column(page: Page, name: string) {
-  return page.getByRole('region', { name })
-}
-
-function titles(page: Page, name: string) {
-  return column(page, name).getByRole('heading', { level: 3 })
-}
-
-function tab(page: Page, name: string) {
-  return page.getByRole('navigation', { name: 'Spalten' }).getByRole('button', { name })
-}
 
 // A finger swiping across the Board, as touch pointer events: a positive dx
 // swipes right (back to the Column before), a negative one left. A slow

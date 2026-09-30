@@ -166,7 +166,7 @@ export async function moveDish(dishId: string, userId: string, columnId: string,
         })
         .where(movable)
         .returning({ id: dish.id })
-    : await dropDish(dishId, columnId, index, movable)
+    : await renumberForDrop(dishId, columnId, index, movable)
   if (!moved.some(row => row.id === dishId)) return null
 
   const [row] = await selectDishes().where(target)
@@ -176,7 +176,7 @@ export async function moveDish(dishId: string, userId: string, columnId: string,
 // Drops a Dish at `index` in a Column, if `movable`: one statement numbers
 // the Column afresh, 0, 1, 2…, leaving that place free for the Dish. Deleted
 // Dishes keep their position, so undo still puts them back about where they were.
-function dropDish(dishId: string, columnId: string, index: number, movable: SQL | undefined) {
+function renumberForDrop(dishId: string, columnId: string, index: number, movable: SQL | undefined) {
   const others = db.$with('others').as(
     db
       .select({

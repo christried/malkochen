@@ -61,8 +61,6 @@ const MOUSE_SLOP = 4
 const TAB_ZONE = 60
 const EDGE = 60
 const MAX_SCROLL_STEP = 16
-const SETTLE_MS = 260
-const SWALLOW_MS = 420
 
 export function useDishDrag(
   surface: Readonly<Ref<HTMLElement | null>>,
@@ -91,6 +89,8 @@ export function useDishDrag(
   } | null = null
   let pointer = { x: 0, y: 0, id: -1 }
   let samples: { x: number, t: number }[] = []
+  // Whether the lifted card has moved yet: until then it keeps the lift's tilt.
+  let moved = false
   let frame = 0
 
   const finePointer = () => matchMedia('(pointer: fine)').matches
@@ -119,12 +119,20 @@ export function useDishDrag(
     const current = drag.value
     if (!current || current.phase !== 'lifted') return
     samples.push({ x: event.clientX, t: event.timeStamp })
-    samples = samples.filter(s => event.timeStamp - s.t <= 100)
-    const first = samples[0]!
-    const elapsed = event.timeStamp - first.t
-    const speed = elapsed > 0 ? (event.clientX - first.x) / elapsed * 1000 : 0
-    current.tilt = prefersReducedMotion() ? 0 : Math.max(-3, Math.min(3, -2 + speed * 0.02))
+    moved = true
     follow(current)
+  }
+
+  // The card tilts with the pointer's sideways speed over the last 100ms
+  // (0.02° per px/s, at most 3° either way), so it straightens once still.
+  function tiltNow(): number {
+    const now = performance.now()
+    samples = samples.filter(s => now - s.t <= 100)
+    const first = samples[0]
+    const last = samples.at(-1)
+    if (!first || !last || last.t === first.t) return 0
+    const speed = (last.x - first.x) / (last.t - first.t) * 1000
+    return Math.max(-3, Math.min(3, speed * 0.02))
   }
 
   function onUp(event: PointerEvent) {
@@ -175,6 +183,7 @@ export function useDishDrag(
       laneColumnId: null,
     }
     samples = []
+    moved = false
     swallowClick = true
     if (!mouse) hapticLongPress()
     frame = requestAnimationFrame(tick)
@@ -198,6 +207,8 @@ export function useDishDrag(
   function tick() {
     const current = drag.value
     if (!current || current.phase !== 'lifted') return
+    // Lifting tilts it to -2°; from the first move on, speed decides.
+    if (moved && !prefersReducedMotion()) current.tilt = tiltNow()
     autoScroll(current)
     follow(current)
     frame = requestAnimationFrame(tick)
@@ -209,17 +220,29 @@ export function useDishDrag(
     locate(current)
   }
 
+  // Phones: the band from the top of the Column tabs to 60px below them,
+  // where a dragged card is up by the tabs.
+  function tabZone(): { top: number, bottom: number } | null {
+    const box = isPhoneLayout() ? options.tabBar()?.getBoundingClientRect() : undefined
+    return box ? { top: box.top, bottom: box.bottom + TAB_ZONE } : null
+  }
+
+  // The element whose box spans `x`, if any.
+  function spanning(elements: Iterable<HTMLElement>, x: number): HTMLElement | null {
+    for (const el of elements) {
+      const box = el.getBoundingClientRect()
+      if (x >= box.left && x <= box.right) return el
+    }
+    return null
+  }
+
   function locate(current: DishDrag) {
     const phone = isPhoneLayout()
-    const bar = phone ? options.tabBar() : null
-    const barBox = bar?.getBoundingClientRect()
-    if (bar && barBox && pointer.y < barBox.bottom + TAB_ZONE) {
+    const zone = tabZone()
+    if (zone && pointer.y >= zone.top && pointer.y < zone.bottom) {
       current.nearTabs = true
-      const tab = [...bar.querySelectorAll<HTMLElement>('[data-tab-column-id]')].find((el) => {
-        const box = el.getBoundingClientRect()
-        return pointer.x >= box.left && pointer.x <= box.right
-      })
-      const tabColumnId = tab?.dataset.tabColumnId ?? null
+      const tabs = options.tabBar()?.querySelectorAll<HTMLElement>('[data-tab-column-id]') ?? []
+      const tabColumnId = spanning(tabs, pointer.x)?.dataset.tabColumnId ?? null
       if (tabColumnId && tabColumnId !== current.tabColumnId) hapticActivate()
       current.tabColumnId = tabColumnId
       return
@@ -231,9 +254,8 @@ export function useDishDrag(
     const columnId = section?.dataset.columnId
     if (!section || !columnId) return
     const index = indexIn(section, pointer.y - current.grabY + current.height / 2, current.dish.id)
-    const laneColumnId = phone || columnId === current.fromColumnId ? null : columnId
-    if (laneColumnId && laneColumnId !== current.laneColumnId) hapticActivate()
-    current.laneColumnId = laneColumnId
+    // Lanes have no haptic of their own (handoff: n/a on desktop).
+    current.laneColumnId = phone || columnId === current.fromColumnId ? null : columnId
     if (columnId !== current.over.columnId || index !== current.over.index) {
       current.over = { columnId, index }
       hapticTick()
@@ -245,10 +267,7 @@ export function useDishDrag(
   }
 
   function laneAt(x: number) {
-    return [...surface.value?.querySelectorAll<HTMLElement>('[data-column-id]') ?? []].find((el) => {
-      const box = el.getBoundingClientRect()
-      return x >= box.left && x <= box.right
-    }) ?? null
+    return spanning(surface.value?.querySelectorAll<HTMLElement>('[data-column-id]') ?? [], x)
   }
 
   // Where a card whose middle is at `middle` goes among the Column's other
@@ -275,8 +294,7 @@ export function useDishDrag(
     }
     else {
       // On phones the top edge is the tabs; the band just below them scrolls.
-      const barBox = isPhoneLayout() ? options.tabBar()?.getBoundingClientRect() : undefined
-      const topEdge = barBox ? barBox.bottom + TAB_ZONE : 0
+      const topEdge = tabZone()?.bottom ?? 0
       if (!current.nearTabs && pointer.y < topEdge + EDGE) scrollBy(0, -step(topEdge + EDGE - pointer.y))
     }
     const lanes = surface.value
@@ -327,7 +345,7 @@ export function useDishDrag(
       current.x = box.left
       current.y = box.top
     }
-    const ms = prefersReducedMotion() || !box ? 0 : SETTLE_MS
+    const ms = box ? motionMs('drop-settle') : 0
     setTimeout(() => land(current, current.over), ms)
   }
 
@@ -342,7 +360,7 @@ export function useDishDrag(
       current.x = box.left + box.width / 2 - current.grabX
       current.y = box.top + box.height / 2 - current.grabY
     }
-    const ms = prefersReducedMotion() ? motionMs('fade') : SWALLOW_MS
+    const ms = prefersReducedMotion() ? motionMs('fade') : motionMs('drop-swallow')
     setTimeout(() => {
       hapticConfirm()
       options.landed(columnId)
@@ -365,7 +383,8 @@ export function useDishDrag(
     const others: DragEntry[] = cards.filter(e => e.dish !== current.dish)
     const here = current.over.columnId === column.id && current.phase !== 'swallowing'
     if (column.id === current.fromColumnId) {
-      const at = here ? current.over.index : current.fromIndex
+      // Swallowed into a tab, it closes where its slot was.
+      const at = current.over.columnId === column.id ? current.over.index : current.fromIndex
       others.splice(Math.min(at, others.length), 0, { key: current.dish.id, dish: current.dish, state: here ? 'slot' : 'gone' })
     }
     else if (here) {

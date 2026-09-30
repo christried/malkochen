@@ -8,18 +8,22 @@ import { dishOnBoard, focusAfterLeaving } from '~~/shared/board'
 export function useDishMove(board: Ref<BoardView | undefined>, showToast: (toast: Toast) => void) {
   const t = useStrings()
 
-  // Puts the Dish at `index` among the target Column's other Dishes, or at
-  // the top of another Column without one. False if there is nothing to do.
-  function move(dishId: string, columnId: string, index?: number): boolean {
+  // Puts the Dish at `index` among the target Column's other Dishes (as
+  // dragged, in any Column), or without one at the top of another Column.
+  // Answers where it went and the id of the element to focus instead of its
+  // card (the card now in its place, or its Column if that is empty), or
+  // null if it didn't move.
+  function dropDish(dishId: string, { columnId, index }: { columnId: string, index?: number }) {
     const found = board.value && dishOnBoard(board.value, dishId)
     const target = board.value?.columns.find(c => c.id === columnId)
-    if (!found || !target || (index === undefined && target === found.column)) return false
+    if (!found || !target || (index === undefined && target === found.column)) return null
     const { dish, column } = found
     const from = column.dishes.indexOf(dish)
+    const focusId = focusAfterLeaving(column, from)
     column.dishes.splice(from, 1)
     const to = Math.min(index ?? 0, target.dishes.length)
     target.dishes.splice(to, 0, dish)
-    if (target === column && to === from) return false
+    if (target === column && to === from) return null
 
     $fetch(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId, index } }).catch((error: { statusCode?: number }) => {
       const at = target.dishes.indexOf(dish)
@@ -29,26 +33,16 @@ export function useDishMove(board: Ref<BoardView | undefined>, showToast: (toast
       column.dishes.splice(Math.min(from, column.dishes.length), 0, dish)
       showToast({ text: t.dish.moveFailed(dish.title), duration: NOTICE_MS })
     })
-    return true
+    return { dish, target, focusId }
   }
 
   // From the menu: to the top of another Column, and a Toast says where.
-  // Answers the id of the element to focus instead of its card: the card
-  // now in its place, or its Column if that is empty.
+  // Answers the id of the element to focus instead of the Dish's card.
   function moveDish(dishId: string, columnId: string): string | null {
-    const found = board.value && dishOnBoard(board.value, dishId)
-    const target = board.value?.columns.find(c => c.id === columnId)
-    if (!found || !target) return null
-    const focusId = focusAfterLeaving(found.column, found.column.dishes.indexOf(found.dish))
-    if (!move(dishId, columnId)) return null
-    showToast({ text: t.dish.moved(found.dish.title, target.name), duration: NOTICE_MS })
-    return focusId
-  }
-
-  // Dragged: to `index` in any Column, its own too. No Toast; the card
-  // shows where it went.
-  function dropDish(dishId: string, columnId: string, index: number) {
-    move(dishId, columnId, index)
+    const moved = dropDish(dishId, { columnId })
+    if (!moved) return null
+    showToast({ text: t.dish.moved(moved.dish.title, moved.target.name), duration: NOTICE_MS })
+    return moved.focusId
   }
 
   return { moveDish, dropDish }
