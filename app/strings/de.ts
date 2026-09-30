@@ -45,9 +45,10 @@ export const de = {
     label: 'Gerichte suchen',
     prompt: 'Welches Gericht suchst du?',
     close: 'Suche schließen',
-    results: (count: number) => count === 1 ? '1 Gericht gefunden' : `${count} Gerichte gefunden`,
+    resultsLabel: 'Suchergebnisse',
+    found: (count: number) => count === 1 ? '1 Gericht gefunden' : `${count} Gerichte gefunden`,
     noResultsTitle: 'Nichts gefunden.',
-    noResultsBody: (query: string) => `Kein Gericht heißt „${query}“.`,
+    noResultsBody: (query: string) => `Kein Gericht mit „${query}“ im Namen.`,
     failed: 'Die Suche hat nicht geklappt. Versuch es gleich noch mal.',
   },
   dish: {

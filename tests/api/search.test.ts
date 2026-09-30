@@ -9,7 +9,6 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 interface Dish {
   id: string
   title: string
-  columnId: string
 }
 interface Board {
   id: string
@@ -56,11 +55,8 @@ test('finds Dishes by part of their title, ignoring case, in every Column', asyn
 
   const dishes = await found(caller, board.id, 'cUrRy')
 
-  expect(dishes.map(d => [d.title, d.columnId])).toEqual([
-    [idea.title, board.columns[0]!.id],
-    [planned.title, board.columns[1]!.id],
-    [cooked.title, board.columns[2]!.id],
-  ])
+  // In Board order: Ideen, Diese Woche, Gekocht.
+  expect(dishes.map(d => d.id)).toEqual([idea.id, planned.id, cooked.id])
 })
 
 test('finds neither deleted Dishes nor Dishes on other Boards', async () => {

@@ -159,33 +159,15 @@ watch(() => route.params.dishId, async (dishId, closedId) => {
 const adding = ref(false)
 
 // Search (PRD story 36): the magnifier opens a field; while it holds a
-// query, one list of the matching Dishes, each with its Column, takes the
-// place of the Columns. Each shows as it is on the Board now, so editing,
-// moving or deleting it from the results shows there too.
+// query, what the search found takes the place of the Columns.
 const searchOpen = ref(false)
-const searchField = useTemplateRef<HTMLInputElement>('searchField')
-const searchButton = useTemplateRef<HTMLButtonElement>('searchButton')
-const search = useDishSearch(() => id.value)
-const { query, active: searching } = search
-const results = computed(() => {
-  if (!board.value || !search.found.value) return null
-  return search.found.value.flatMap((found) => {
-    const on = dishOnBoard(board.value!, found.id)
-    if (!on) return []
-    const index = board.value!.columns.indexOf(on.column)
-    return [{ dish: on.dish, column: on.column, accent: columnAccent(index) }]
-  })
-})
-async function openSearch() {
-  searchOpen.value = true
-  await nextTick()
-  searchField.value?.focus()
-}
+const searchButton = useTemplateRef<ComponentPublicInstance>('searchButton')
+const { query, answer, failed: searchFailed, active: searching } = useDishSearch(() => id.value, board)
 async function closeSearch() {
   query.value = ''
   searchOpen.value = false
   await nextTick()
-  searchButton.value?.focus()
+  searchButton.value?.$el.focus()
 }
 
 // A Dish saved to another Board doesn't show here. If a Source image
@@ -259,29 +241,17 @@ async function deleteFromMenu() {
         <h1 class="font-display text-title-l tablet:text-display-m">
           <span aria-hidden="true">{{ board.emoji }}</span> {{ board.name }}
         </h1>
-          <button
-            v-if="!searchOpen"
-            ref="searchButton"
-            type="button"
-            class="flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-            :aria-label="t.search.open"
-            @click="openSearch"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              aria-hidden="true"
-            ><circle
-              cx="10.5"
-              cy="10.5"
-              r="6.5"
-            /><path d="M15.5 15.5L20 20" /></svg>
-          </button>
+        <RoundButton
+          v-if="!searchOpen"
+          ref="searchButton"
+          :aria-label="t.search.open"
+          @click="searchOpen = true"
+        >
+          <AppIcon
+            name="search"
+            :size="20"
+          />
+        </RoundButton>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <ThemePicker />
@@ -295,111 +265,20 @@ async function deleteFromMenu() {
       </div>
     </header>
 
-    <div
+    <BoardSearchBar
       v-if="searchOpen"
-      role="search"
-      class="mx-auto mt-4 flex max-w-[560px] items-center gap-2"
-      @keydown.esc="closeSearch"
-    >
-      <div class="flex min-w-0 flex-1 items-center gap-2 rounded-pill bg-surface px-4 shadow-card focus-within:outline-2 focus-within:outline-focus">
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          class="shrink-0 text-text-muted"
-          aria-hidden="true"
-        ><circle
-          cx="10.5"
-          cy="10.5"
-          r="6.5"
-        /><path d="M15.5 15.5L20 20" /></svg>
-        <input
-          ref="searchField"
-          v-model="query"
-          type="search"
-          enterkeyhint="search"
-          autocomplete="off"
-          class="search-field min-w-0 flex-1 bg-transparent py-3 text-body text-text outline-none placeholder:text-text-muted"
-          :aria-label="t.search.label"
-          :placeholder="t.search.prompt"
-        >
-      </div>
-      <button
-        type="button"
-        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="t.search.close"
-        @click="closeSearch"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          aria-hidden="true"
-        ><path d="M6 6l12 12M18 6L6 18" /></svg>
-      </button>
-    </div>
-
-    <section
+      v-model="query"
+      class="mx-auto mt-4 max-w-[560px]"
+      @close="closeSearch"
+    />
+    <SearchResults
       v-if="searching"
       class="mx-auto mt-6 max-w-[560px]"
-      :aria-label="t.search.label"
+      :board="board"
+      :answer="answer"
+      :failed="searchFailed"
       data-testid="search-results"
-    >
-      <p
-        class="sr-only"
-        role="status"
-      >
-        {{ search.failed.value ? t.search.failed : results ? t.search.results(results.length) : '' }}
-      </p>
-      <p
-        v-if="search.failed.value"
-        class="py-6 text-center text-small text-text-muted"
-      >
-        {{ t.search.failed }}
-      </p>
-      <template v-else-if="results">
-        <SearchEmpty
-          v-if="results.length === 0"
-          :query="query.trim()"
-        />
-        <TransitionGroup
-          v-else
-          tag="ol"
-          name="result"
-          class="flex flex-col gap-4"
-        >
-          <li
-            v-for="({ dish, column, accent }, i) in results"
-            :key="dish.id"
-            :style="{ '--i': i }"
-          >
-            <p class="mb-1.5 flex items-center gap-2 px-1 text-label text-text-muted">
-              <span
-                aria-hidden="true"
-                class="h-2.5 w-2.5 shrink-0 rounded-full"
-                :style="{ background: accent }"
-              />
-              {{ column.name }}
-            </p>
-            <NuxtLink
-              :to="`/b/${board.id}/d/${dish.id}`"
-              :aria-label="`${dish.title}, ${column.name}`"
-              class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            >
-              <DishCard :dish="dish" />
-            </NuxtLink>
-          </li>
-        </TransitionGroup>
-      </template>
-    </section>
+    />
 
     <ColumnTabs
       v-show="!searching"
@@ -699,28 +578,6 @@ async function deleteFromMenu() {
   .column.parked {
     opacity: 0;
   }
-}
-/* Search results pop in one after another as the query changes (handoff
-   "Search results re-stagger"); reduced motion: they just replace. */
-.result-enter-active {
-  transition: scale var(--dur-pop) var(--ease-pop), opacity var(--dur-fade) var(--ease-fade);
-  transition-delay: calc(min(var(--i), 8) * 50ms);
-}
-.result-enter-from {
-  scale: .94;
-  opacity: 0;
-}
-.result-move {
-  transition: transform var(--dur-settle) var(--ease-settle);
-}
-@media (prefers-reduced-motion: reduce) {
-  .result-enter-active {
-    transition: none;
-  }
-}
-/* The browser's own clear button is left out; ✕ closes the search. */
-.search-field::-webkit-search-cancel-button {
-  appearance: none;
 }
 /* The FAB is a pebble, not a circle (handoff Button "FAB"). While a Toast
    shows, it moves up out of its way. */

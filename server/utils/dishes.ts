@@ -300,19 +300,15 @@ export async function dishWithSource(boardId: string, canonicalLink: string): Pr
   return found ?? null
 }
 
-// A Dish a search found, with the Column it is in.
-export type FoundDish = DishView & { columnId: string }
-
 // The Board's Dishes whose title contains the query, ignoring case (PRD
 // story 36), in Board order: Column by Column, each in its own order.
 // Deleted Dishes don't count.
-export async function searchDishes(boardId: string, query: string): Promise<FoundDish[]> {
+export async function searchDishes(boardId: string, query: string): Promise<DishView[]> {
   const rows = await selectDishes()
     .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
     .where(and(eq(dish.boardId, boardId), isNull(dish.deletedAt), ilike(dish.title, `%${escapeLike(query)}%`)))
     .orderBy(asc(boardColumn.position), asc(dish.position), desc(dish.createdAt), desc(dish.id))
-  const views = await toViews(rows)
-  return rows.map((row, i) => ({ ...views[i]!, columnId: row.columnId }))
+  return toViews(rows)
 }
 
 // So %, _ and \ in a query match themselves (\ is Postgres's LIKE escape).

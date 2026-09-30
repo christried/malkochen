@@ -1,42 +1,66 @@
-import type { FoundDish } from '~~/server/utils/dishes'
+import type { WatchSource } from 'vue'
+import type { DishView } from '~~/server/utils/dishes'
 
 // How long typing pauses before the search asks.
 const SEARCH_PAUSE_MS = 180
+// How long after the Board changed the search asks again: most changes show
+// on the Board before the server has them (a move, a delete, its undo).
+const REFRESH_PAUSE_MS = 800
+
+// The answer to one query: the Dishes it found, in Board order. `round`
+// counts the queries answered, so each new query's results can pop in anew
+// while a refresh of the same query keeps them in place.
+export interface SearchAnswer {
+  query: string
+  dishes: DishView[]
+  round: number
+}
 
 // Searching the Board's Dishes by title (PRD story 36). The server is asked
-// once typing pauses; an answer to an older query is dropped. `found` is null
-// while there is no query (the Board shows as usual) and until the first
-// answer for it arrives, so the previous results stay up while typing on.
-export function useDishSearch(boardId: () => string) {
+// once typing pauses; an answer to an older request is dropped. `answer` is
+// null while there is no query (the Board shows as usual) and until the first
+// answer arrives, then the previous answer stays up while typing on. When
+// the Board changes (a Dish added, renamed, moved or deleted), the same query
+// is asked again, so the results keep up with it.
+export function useDishSearch(boardId: () => string, boardChanged: WatchSource) {
   const query = ref('')
-  const found = ref<FoundDish[] | null>(null)
+  const answer = ref<SearchAnswer | null>(null)
   const failed = ref(false)
   const active = computed(() => query.value.trim() !== '')
 
-  let asked = 0
+  let latestRequest = 0
   let pause: ReturnType<typeof setTimeout> | undefined
-  watch(query, () => {
+
+  function ask(wait: number) {
     clearTimeout(pause)
     const q = query.value.trim()
-    const ask = ++asked
+    const request = ++latestRequest
     if (!q) {
-      found.value = null
+      answer.value = null
       failed.value = false
       return
     }
     pause = setTimeout(async () => {
       try {
-        const { dishes } = await $fetch<{ dishes: FoundDish[] }>(`/api/boards/${boardId()}/dishes`, { query: { q } })
-        if (ask !== asked) return
-        found.value = dishes
+        const { dishes } = await $fetch<{ dishes: DishView[] }>(`/api/boards/${boardId()}/dishes`, { query: { q } })
+        if (request !== latestRequest) return
+        const round = (answer.value?.round ?? 0) + (answer.value?.query === q ? 0 : 1)
+        answer.value = { query: q, dishes, round }
         failed.value = false
       }
       catch {
-        if (ask === asked) failed.value = true
+        if (request === latestRequest) failed.value = true
       }
-    }, SEARCH_PAUSE_MS)
+    }, wait)
+  }
+
+  watch(query, (now, before) => {
+    if (now.trim() === before.trim()) return
+    failed.value = false
+    ask(SEARCH_PAUSE_MS)
   })
+  watch(boardChanged, () => active.value && ask(REFRESH_PAUSE_MS), { deep: true })
   onScopeDispose(() => clearTimeout(pause))
 
-  return { query, found, failed, active }
+  return { query, answer, failed, active }
 }

@@ -38,16 +38,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
           :aria-label="t.detail.close"
           @click="$emit('close')"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            aria-hidden="true"
-          ><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <AppIcon name="close" />
         </button>
         <button
           type="button"
