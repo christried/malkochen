@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DishView } from '~~/server/utils/dishes'
-import type { Placeholder } from '~~/shared/placeholders'
+import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 
 // Add Dish. For now only "Ohne Link hinzufügen": a title (required), an
 // optional note and a Placeholder Image. Pasting a link comes with #6 and
@@ -16,9 +16,24 @@ const DEFAULT_PLACEHOLDER: Placeholder = 'bowl'
 const title = ref('')
 const note = ref('')
 const placeholder = ref<Placeholder>(DEFAULT_PLACEHOLDER)
+const choosingImage = ref(false)
 const saving = ref(false)
 const failed = ref(false)
 const canSave = computed(() => title.value.trim() !== '' && !saving.value)
+
+// The inline picker (handoff: 4×2) offers the first eight Placeholders; one
+// chosen from the full picker ("Bild wählen") takes the last inline slot, so
+// the selection is always in view.
+const INLINE_COUNT = 8
+const inlineOptions = computed<Placeholder[]>(() => {
+  const first = PLACEHOLDERS.slice(0, INLINE_COUNT)
+  return first.includes(placeholder.value) ? first : [...first.slice(0, -1), placeholder.value]
+})
+// In the full picker, arrow keys move the selection; tapping a tile (or
+// Enter/Space on it) also closes the picker.
+function closeOnTile(event: MouseEvent) {
+  if ((event.target as Element).closest('[role="radio"]')) choosingImage.value = false
+}
 
 // Every opening starts from an empty form.
 watch(open, (isOpen) => {
@@ -86,13 +101,23 @@ async function save() {
       </label>
 
       <div class="flex flex-col gap-2">
-        <span
-          class="text-label"
-          aria-hidden="true"
-        >{{ t.addDish.image }}</span>
+        <div class="flex items-center justify-between gap-4">
+          <span
+            class="text-label"
+            aria-hidden="true"
+          >{{ t.addDish.image }}</span>
+          <button
+            type="button"
+            class="rounded-pill bg-surface-muted px-3.5 py-2 text-label text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            @click="choosingImage = true"
+          >
+            {{ t.addDish.chooseImage }}
+          </button>
+        </div>
         <PlaceholderPicker
           v-model="placeholder"
           :label="t.addDish.image"
+          :options="inlineOptions"
         />
       </div>
 
@@ -113,5 +138,18 @@ async function save() {
         {{ saving ? t.addDish.saving : t.addDish.save }}
       </button>
     </form>
+
+    <AppSheet
+      v-model:open="choosingImage"
+      :title="t.addDish.chooseImage"
+      :close-label="t.addDish.close"
+    >
+      <PlaceholderPicker
+        v-model="placeholder"
+        class="mt-5"
+        :label="t.addDish.chooseImage"
+        @click="closeOnTile"
+      />
+    </AppSheet>
   </AppSheet>
 </template>

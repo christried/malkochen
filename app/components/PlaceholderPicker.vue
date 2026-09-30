@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 
-// The grid of the 16 Placeholder Images with the current one selected
-// (handoff PlaceholderPicker, stills only until the loops land).
+// A grid of Placeholder Images with the current one selected (handoff
+// PlaceholderPicker, stills only until the loops land): all 16 by default, or
+// the few the inline variant passes in.
 const selected = defineModel<Placeholder>({ required: true })
-defineProps<{ label: string }>()
+const props = withDefaults(defineProps<{
+  label: string
+  options?: readonly Placeholder[]
+}>(), { options: () => PLACEHOLDERS })
 const t = useStrings()
 
 // Radio-group keyboard behaviour: arrows move the selection, one tab stop.
+// With the selection outside `options`, the first tile takes the tab stop.
 const tiles = useTemplateRef<HTMLButtonElement[]>('tiles')
+const tabStop = computed(() => props.options.includes(selected.value) ? selected.value : props.options[0])
 function move(step: number) {
-  const index = (PLACEHOLDERS.indexOf(selected.value) + step + PLACEHOLDERS.length) % PLACEHOLDERS.length
-  selected.value = PLACEHOLDERS[index]!
+  const { options } = props
+  const index = (Math.max(options.indexOf(selected.value), 0) + step + options.length) % options.length
+  selected.value = options[index]!
   tiles.value?.[index]?.focus()
 }
 </script>
@@ -27,14 +34,14 @@ function move(step: number) {
     @keydown.up.prevent="move(-4)"
   >
     <button
-      v-for="placeholder in PLACEHOLDERS"
+      v-for="placeholder in options"
       ref="tiles"
       :key="placeholder"
       type="button"
       role="radio"
       :aria-checked="selected === placeholder"
       :aria-label="t.placeholders[placeholder]"
-      :tabindex="selected === placeholder ? 0 : -1"
+      :tabindex="tabStop === placeholder ? 0 : -1"
       class="relative aspect-square overflow-hidden rounded-thumb bg-surface-muted transition-transform duration-pop ease-pop focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       :class="selected === placeholder ? '-rotate-[1.5deg] scale-105 ring-[3px] ring-inverse' : 'active:scale-95'"
       @click="selected = placeholder"

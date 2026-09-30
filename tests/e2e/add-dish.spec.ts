@@ -22,8 +22,24 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
 
   await sheet.getByLabel('Titel').fill('Omas Linsensuppe')
   await sheet.getByLabel('Notiz').fill('mit Räuchertofu statt Speck')
-  await sheet.getByRole('radio', { name: 'Eintopf' }).click()
-  await expect(sheet.getByRole('radio', { name: 'Eintopf' })).toHaveAttribute('aria-checked', 'true')
+  // Inline: 4×2 with the default (Bowl) selected; Eintopf is only in the full picker.
+  const inline = sheet.getByRole('radiogroup', { name: 'Bild' })
+  await expect(inline.getByRole('radio')).toHaveCount(8)
+  await expect(inline.getByRole('radio', { name: 'Bowl' })).toHaveAttribute('aria-checked', 'true')
+  await expect(inline.getByRole('radio', { name: 'Eintopf' })).toHaveCount(0)
+
+  await sheet.getByRole('button', { name: 'Bild wählen' }).click()
+  const all = page.getByRole('dialog', { name: 'Bild wählen' })
+  await expect(all.getByRole('radio')).toHaveCount(16)
+  await all.getByRole('radio', { name: 'Bowl' }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(all.getByRole('radio', { name: 'Salat' })).toBeFocused()
+  await expect(all).toBeVisible()
+  await all.getByRole('radio', { name: 'Eintopf' }).click()
+  await expect(all).toBeHidden()
+  await expect(sheet).toBeVisible()
+  await expect(inline.getByRole('radio')).toHaveCount(8)
+  await expect(inline.getByRole('radio', { name: 'Eintopf' })).toHaveAttribute('aria-checked', 'true')
   await save.click()
 
   await expect(sheet).toBeHidden()

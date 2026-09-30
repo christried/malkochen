@@ -38,6 +38,7 @@ export const de = {
     note: 'Notiz',
     notePrompt: 'Optional, z. B. „mit Räuchertofu statt Speck“',
     image: 'Bild',
+    chooseImage: 'Bild wählen',
     save: 'Speichern',
     saving: 'Speichert …',
     close: 'Schließen',
