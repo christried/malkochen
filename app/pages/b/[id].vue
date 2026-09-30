@@ -2,9 +2,9 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { DishView } from '~~/server/utils/dishes'
 
-// A Board: its Columns with their Dishes as cards. Phones show one Column at a
-// time with a simple switch (the real tabs and swiping come with #10); tablet
-// and desktop show the Columns as lanes side by side.
+// A Board: its Columns with their Dishes. Phones show one Column at a time
+// with a simple switch (the real tabs and swiping come with #10); tablet and
+// desktop show all Columns side by side.
 
 const t = useStrings()
 const { signOut } = useAuth()
@@ -132,7 +132,7 @@ function onAdded(dish: DishView) {
 /* On an empty Board the add action is highlighted: a butter ring breathes
    around it. Reduced motion (main.css) stops it after one pass. */
 .fab-prompt {
-  animation: fab-prompt 2.4s var(--ease-idle) infinite;
+  animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }

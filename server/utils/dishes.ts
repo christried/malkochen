@@ -3,13 +3,20 @@ import type { Placeholder } from '../../shared/placeholders'
 import { db } from '../db'
 import { boardColumn, dish, membership, user } from '../db/schema'
 
+// The Member who added a Dish, as the card shows them.
+export interface DishAdder {
+  id: string
+  name: string
+  image: string | null
+}
+
 export interface DishView {
   id: string
   title: string
   note: string | null
   placeholder: Placeholder
   // Null once the account that added it is gone.
-  addedBy: { id: string, name: string, image: string | null } | null
+  addedBy: DishAdder | null
   createdAt: string
 }
 
@@ -45,7 +52,6 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
   for (const { columnId, adderId, adderName, adderImage, ...row } of rows) {
     byColumn.get(columnId)?.push({
       ...row,
-      placeholder: row.placeholder as Placeholder,
       addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
       createdAt: row.createdAt.toISOString(),
     })
@@ -57,7 +63,7 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
 // unless the user is a Member of the Board.
 export async function addDish(
   boardId: string,
-  adder: { id: string, name: string, image?: string | null },
+  adder: Omit<DishAdder, 'image'> & { image?: string | null },
   input: NewDish,
 ): Promise<DishView | null> {
   const [firstColumn] = await db

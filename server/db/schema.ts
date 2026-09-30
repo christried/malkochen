@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm'
+import type { Placeholder } from '../../shared/placeholders'
 import { boolean, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
@@ -109,7 +110,7 @@ export const dish = pgTable('dish', {
   title: text('title').notNull(),
   note: text('note'),
   // A key from shared/placeholders.ts. Stored images come with #6.
-  placeholder: text('placeholder').notNull(),
+  placeholder: text('placeholder').$type<Placeholder>().notNull(),
   // Who added it; kept (as unknown) if their account is ever deleted.
   addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
