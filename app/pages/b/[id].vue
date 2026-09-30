@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
-import type { DishView } from '~~/server/utils/dishes'
+import type { SavedDish } from '~~/server/utils/dishes'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time
 // with a simple switch (the real tabs and swiping come with #10); tablet and
@@ -23,9 +23,18 @@ const activeColumnId = ref(board.value?.columns[0]?.id)
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 
 const adding = ref(false)
-function onAdded(dish: DishView) {
+// A Dish saved to another Board doesn't show here. If its Source image
+// couldn't be stored, a notice says why it has a Placeholder.
+const notice = ref('')
+let noticeTimer: ReturnType<typeof setTimeout> | undefined
+function onAdded({ imageNotStored, ...dish }: SavedDish, boardId: string) {
+  if (imageNotStored) {
+    notice.value = t.addDish.imageNotStored(dish.title)
+    clearTimeout(noticeTimer)
+    noticeTimer = setTimeout(() => notice.value = '', 8000)
+  }
   const first = board.value?.columns[0]
-  if (!first) return
+  if (!first || boardId !== board.value?.id) return
   first.dishes.unshift(dish)
   activeColumnId.value = first.id
 }
@@ -115,6 +124,27 @@ function onAdded(dish: DishView) {
         aria-hidden="true"
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
+
+    <!-- Always in the page, so screen readers announce what appears in it. -->
+    <div
+      role="status"
+      class="pointer-events-none fixed inset-x-4 bottom-28 z-fab flex justify-center tablet:bottom-32"
+    >
+      <Transition
+        enter-from-class="translate-y-4 opacity-0"
+        leave-to-class="translate-y-4 opacity-0"
+        enter-active-class="transition duration-settle ease-settle"
+        leave-active-class="transition duration-fade ease-fade"
+      >
+        <p
+          v-if="notice"
+          class="pointer-events-auto max-w-md rounded-pill bg-inverse px-5 py-3 text-small text-on-inverse shadow-fab"
+          data-notice
+        >
+          {{ notice }}
+        </p>
+      </Transition>
+    </div>
 
     <AddDishSheet
       v-model:open="adding"

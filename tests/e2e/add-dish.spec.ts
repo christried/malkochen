@@ -1,7 +1,14 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
+
+// The sheet opens on the link step; "Ohne Link hinzufügen" leads to the form.
+async function addWithoutLink(page: Page) {
+  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
+  await page.getByRole('dialog', { name: 'Gericht hinzufügen' }).getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
+  return page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+}
 
 // Grace's Board is used by this file only, so it starts empty.
 test.describe.configure({ mode: 'serial' })
@@ -15,8 +22,7 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   await expect(ideen.getByText('Füg deinen ersten Link ein!')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Diese Woche' }).getByText('Noch nichts hier.')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+  const sheet = await addWithoutLink(page)
   const save = sheet.getByRole('button', { name: 'Speichern' })
   await expect(save).toBeDisabled()
 
@@ -46,12 +52,14 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   const card = ideen.getByRole('article').first()
   await expect(card).toHaveAccessibleName('Omas Linsensuppe')
   await expect(card.getByText('Mit Notiz')).toBeAttached()
+  // No Source, no Source badge.
+  await expect(card.locator('[data-source-badge]')).toHaveCount(0)
   await expect(card.locator('img[src="/placeholders/eintopf-light.svg"]')).toBeVisible()
   await expect(card.locator('img[src="/placeholders/eintopf-dark.svg"]')).toBeHidden()
   await expect(ideen.getByText('Füg deinen ersten Link ein!')).toHaveCount(0)
 
   // A second Dish, without a note, goes above the first, also after a reload.
-  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
+  await addWithoutLink(page)
   await sheet.getByLabel('Titel').fill('Pad Thai')
   await sheet.getByRole('button', { name: 'Speichern' }).click()
   const titles = ideen.getByRole('heading', { level: 3 })
@@ -88,8 +96,7 @@ test('a phone shows one Column at a time, a tablet shows them side by side', asy
   await expect(ideen).toBeHidden()
 
   // Adding a Dish switches back to the first Column, where it lands.
-  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+  const sheet = await addWithoutLink(page)
   await sheet.getByLabel('Titel').fill('Shakshuka')
   await sheet.getByRole('button', { name: 'Speichern' }).click()
   await expect(ideen.getByRole('heading', { level: 3 }).first()).toHaveText('Shakshuka')

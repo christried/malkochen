@@ -1,0 +1,17 @@
+import { resolve } from 'node:path'
+import { blobStorage, createImageStore, diskStorage, type ImageStore } from '../image-store'
+import { createImageTickets } from '../image-store/tickets'
+import { parseServerEnv } from '../env'
+
+const { BLOB_READ_WRITE_TOKEN, BETTER_AUTH_SECRET } = parseServerEnv(process.env)
+
+// The app's one Image Store: Vercel Blob when a token is set (always, in
+// deployed environments), otherwise the disk (local dev and tests).
+export const IMAGE_DIR = resolve('.data/images')
+
+export const copyImage: ImageStore = createImageStore({
+  storage: BLOB_READ_WRITE_TOKEN ? blobStorage(BLOB_READ_WRITE_TOKEN) : diskStorage(IMAGE_DIR),
+})
+
+// Signs the images Source Lookup finds, so only those are ever copied.
+export const imageTickets = createImageTickets(BETTER_AUTH_SECRET)

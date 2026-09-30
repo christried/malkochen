@@ -98,3 +98,12 @@ export async function markOpened(boardId: string, userId: string): Promise<boole
     .returning({ boardId: membership.boardId })
   return updated.length > 0
 }
+
+// Whether the user is a Member of the Board.
+export async function isMember(boardId: string, userId: string): Promise<boolean> {
+  const [found] = await db
+    .select({ boardId: membership.boardId })
+    .from(membership)
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+  return found !== undefined
+}
