@@ -25,3 +25,14 @@ html {
     scroll-behavior: auto !important;
   }
 }
+
+/* Theme-dependent stills (Placeholder Images come as <key>-light.svg and
+   <key>-dark.svg): render both, show the one matching the theme. Follows the
+   same rules as tokens.css: data-theme wins, no attribute = the device. */
+.only-dark { display: none; }
+[data-theme="dark"] .only-dark { display: block; }
+[data-theme="dark"] .only-light { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .only-dark { display: block; }
+  :root:not([data-theme="light"]) .only-light { display: none; }
+}

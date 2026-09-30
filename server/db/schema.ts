@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm'
+import type { Placeholder } from '../../shared/placeholders'
 import { boolean, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
@@ -93,4 +94,27 @@ export const boardColumn = pgTable('board_column', {
   index('board_column_board_id_idx').on(t.boardId),
   // Exactly one Gekocht Column per Board (at most one here; creation sets one).
   uniqueIndex('board_column_one_gekocht_idx').on(t.boardId).where(sql`${t.isGekocht}`),
+])
+
+// ---------------------------------------------------------------------------
+// Dishes (CONTEXT.md: Dish, Placeholder Image).
+
+export const dish = pgTable('dish', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
+  // No cascade: a Column's Dishes must be moved before it can be deleted.
+  columnId: uuid('column_id').notNull().references(() => boardColumn.id),
+  // Order within the Column, smallest first. New Dishes take one less than the
+  // Column's smallest, so they go on top without touching the others.
+  position: integer('position').notNull(),
+  title: text('title').notNull(),
+  note: text('note'),
+  // A key from shared/placeholders.ts. Stored images come with #6.
+  placeholder: text('placeholder').$type<Placeholder>().notNull(),
+  // Who added it; kept (as unknown) if their account is ever deleted.
+  addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+}, t => [
+  index('dish_board_id_idx').on(t.boardId),
+  index('dish_column_id_position_idx').on(t.columnId, t.position),
 ])

@@ -15,6 +15,13 @@
       "when": 1790750481256,
       "tag": "0001_auth_and_boards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790757497093,
+      "tag": "0002_dishes",
+      "breakpoints": true
     }
   ]
 }
