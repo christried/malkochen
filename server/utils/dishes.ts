@@ -49,7 +49,15 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
   const byColumn = new Map<string, DishView[]>(columnIds.map(id => [id, []]))
   if (columnIds.length === 0) return byColumn
 
-  const rows = await db
+  const rows = await selectDishes()
+    .where(inArray(dish.columnId, columnIds))
+    .orderBy(asc(dish.position), desc(dish.createdAt), desc(dish.id))
+  for (const row of rows) byColumn.get(row.columnId)?.push(toView(row))
+  return byColumn
+}
+
+function selectDishes() {
+  return db
     .select({
       id: dish.id,
       columnId: dish.columnId,
@@ -66,18 +74,52 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
     })
     .from(dish)
     .leftJoin(user, eq(user.id, dish.addedBy))
-    .where(inArray(dish.columnId, columnIds))
-    .orderBy(asc(dish.position), desc(dish.createdAt), desc(dish.id))
+    .$dynamic()
+}
 
-  for (const { columnId, sourceLink, sourceKind, adderId, adderName, adderImage, ...row } of rows) {
-    byColumn.get(columnId)?.push({
-      ...row,
-      source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
-      addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
-      createdAt: row.createdAt.toISOString(),
-    })
+type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
+
+function toView({ columnId: _, sourceLink, sourceKind, adderId, adderName, adderImage, ...row }: DishRow): DishView {
+  return {
+    ...row,
+    source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
+    addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
+    createdAt: row.createdAt.toISOString(),
   }
-  return byColumn
+}
+
+// What editing a Dish may change (PRD story 43); fields left out stay as
+// they are. `imageUrl` must already be a stored image, never a third-party link.
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'imageUrl' | 'placeholder'>>
+
+// Whether the Dish exists on a Board the user is a Member of.
+export async function isDishMember(dishId: string, userId: string): Promise<boolean> {
+  const [found] = await db
+    .select({ id: dish.id })
+    .from(dish)
+    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
+    .where(eq(dish.id, dishId))
+  return found !== undefined
+}
+
+// Edits a Dish. Null unless it exists and the user is a Member of its Board.
+export async function editDish(dishId: string, userId: string, changes: DishChanges): Promise<DishView | null> {
+  const { source, ...rest } = changes
+  const values = {
+    ...rest,
+    ...source !== undefined && { sourceLink: source?.link ?? null, sourceKind: source?.kind ?? null },
+  }
+  const onMembersBoard = and(
+    eq(dish.id, dishId),
+    inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+  )
+  if (Object.keys(values).length > 0) {
+    const updated = await db.update(dish).set(values).where(onMembersBoard).returning({ id: dish.id })
+    if (updated.length === 0) return null
+  }
+
+  const [row] = await selectDishes().where(onMembersBoard)
+  return row ? toView(row) : null
 }
 
 // A Dish already on a Board with the Source being added (PRD story 24).

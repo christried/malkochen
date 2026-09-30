@@ -29,3 +29,15 @@ export function boardIdParam(event: H3Event): string {
   if (!UUID.test(id)) throw boardNotFound()
   return id
 }
+
+// Same for a Dish: one that doesn't exist and one on someone else's Board look alike.
+export function dishNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Dish not found' })
+}
+
+// A Dish id from the route. Anything that isn't a UUID can't be a Dish.
+export function dishIdParam(event: H3Event): string {
+  const id = getRouterParam(event, 'id') ?? ''
+  if (!UUID.test(id)) throw dishNotFound()
+  return id
+}

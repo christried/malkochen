@@ -4,6 +4,7 @@ import type { BoardSummary } from '~~/server/utils/boards'
 import type { DuplicateDish, SavedDish } from '~~/server/utils/dishes'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
+import { webLink } from '~/utils/web-link'
 
 // Add Dish. First a link: pasting one looks it up right away (Source Lookup)
 // and shows a preview with the image and an editable Suggested Title. Or
@@ -95,12 +96,13 @@ function saveDespiteDuplicate() {
   save()
 }
 
-// "Öffnen": to the Dish already on the Board, instead of adding it again.
+// "Öffnen": the detail of the Dish already on the Board, instead of adding
+// it again.
 async function openDuplicate() {
   if (!duplicate.value) return
   const dishId = duplicate.value.id
   open.value = false
-  await navigateTo({ path: `/b/${boardId.value}`, query: { dish: dishId } })
+  await navigateTo(`/b/${boardId.value}/d/${dishId}`)
 }
 
 // The inline picker (handoff: 4×2) offers the first eight Placeholders; one
@@ -117,16 +119,6 @@ function closeOnTile(event: MouseEvent) {
   if ((event.target as Element).closest('[role="radio"]')) {
     choosingImage.value = false
     preferPlaceholder.value = true
-  }
-}
-
-function webLink(value: string): string | null {
-  try {
-    const url = new URL(value.trim())
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null
-  }
-  catch {
-    return null
   }
 }
 

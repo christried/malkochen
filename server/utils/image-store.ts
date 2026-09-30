@@ -17,3 +17,13 @@ export const copyImage: ImageStore = createImageStore({
 
 // Signs the images Source Lookup finds, so only those are ever copied.
 export const imageTickets = createImageTickets(BETTER_AUTH_SECRET)
+
+// Stores a Source image Source Lookup found for this user: copied only with
+// its valid Image Ticket. The stored image's URL, or null if it wasn't stored.
+export async function storeFoundImage(userId: string, imageUrl: string, imageTicket: string | null | undefined): Promise<string | null> {
+  if (!imageTicket || !imageTickets.check(userId, imageUrl, imageTicket)) {
+    console.warn(`[image-store] not copied: no valid Image Ticket (${imageUrl})`)
+    return null
+  }
+  return copyImage(imageUrl)
+}

@@ -1,5 +1,9 @@
+import { randomUUID } from 'node:crypto'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import type { Page } from '@playwright/test'
 import pg from 'pg'
+import { png } from './source-lookup-stub'
 
 // Puts a Dish straight into the test database: for states the UI can't reach
 // in a test, like a successfully stored image (the server can't download from
@@ -20,4 +24,22 @@ export async function seedDish(page: Page, dish: { title: string, imageUrl?: str
   finally {
     await client.end()
   }
+}
+
+// Stored images are served from disk here (no Blob token), as in local dev.
+// A solid PNG of the given size, as the Image Store would have written it;
+// removeStoredImages() deletes them again.
+const IMAGE_DIR = resolve('.data/images/dishes')
+const written: string[] = []
+
+export async function storedImage(width: number, height: number): Promise<string> {
+  const name = `${randomUUID()}.png`
+  await mkdir(IMAGE_DIR, { recursive: true })
+  await writeFile(join(IMAGE_DIR, name), png(width, height))
+  written.push(join(IMAGE_DIR, name))
+  return `/images/dishes/${name}`
+}
+
+export async function removeStoredImages() {
+  await Promise.all(written.splice(0).map(path => rm(path, { force: true })))
 }
