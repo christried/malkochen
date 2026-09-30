@@ -1,4 +1,4 @@
-import { httpUrl, text } from './link'
+import { asString, httpUrl } from './link'
 import { shortenTitle } from './title'
 import type { Strategy } from './types'
 
@@ -12,15 +12,19 @@ function shortId(url: URL): string | undefined {
   return HOST.test(url.hostname) ? url.pathname.match(SHORT_PATH)?.[1] : undefined
 }
 
+function shortLink(id: string): string {
+  return `https://www.youtube.com/shorts/${id}`
+}
+
 export const youtube: Strategy = {
   match(url) {
     const id = shortId(url)
-    return id ? { kind: 'youtube-short', canonicalLink: `https://www.youtube.com/shorts/${id}` } : null
+    return id ? { kind: 'youtube-short', canonicalLink: shortLink(id) } : null
   },
 
   async lookup(url, { http }) {
     const id = shortId(url) ?? ''
-    const canonicalLink = `https://www.youtube.com/shorts/${id}`
+    const canonicalLink = shortLink(id)
     const vertical = `https://i.ytimg.com/vi/${id}/oar2.jpg`
     const [oembed, hasVertical] = await Promise.all([
       http.json(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(canonicalLink)}`),
@@ -29,7 +33,7 @@ export const youtube: Strategy = {
     return {
       kind: 'youtube-short',
       canonicalLink,
-      suggestedTitle: shortenTitle(text(oembed?.title)),
+      suggestedTitle: shortenTitle(asString(oembed?.title)),
       imageUrl: hasVertical ? vertical : httpUrl(oembed?.thumbnail_url),
     }
   },

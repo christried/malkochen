@@ -1,11 +1,11 @@
 import { httpUrl, withoutTracking } from './link'
 import { shortenTitle } from './title'
-import type { Strategy } from './types'
+import { nothingFound, type Strategy } from './types'
 
 // Blogs and every other link: read the page itself. Title and image are each
 // taken from the first of schema.org Recipe (JSON-LD), og:, twitter:, and
-// (title only) <title>. A page describing a Recipe is a blog; anything else
-// is "other".
+// (title only) <title>. A page that yields either is a blog; one that can't
+// be read or says nothing is "other".
 
 const ENTITIES: Record<string, string> = {
   amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ', shy: '',
@@ -116,7 +116,7 @@ export const webPage: Strategy = {
   async lookup(url, { http }) {
     const page = await http.page(url.href)
     const canonicalLink = withoutTracking(new URL(page.url))
-    if (!page.html) return { kind: 'other', canonicalLink, suggestedTitle: '', imageUrl: null }
+    if (!page.html) return nothingFound({ kind: 'other', canonicalLink })
 
     const recipe = jsonLdRecipe(page.html)
     const meta = metaTags(page.html)
@@ -136,11 +136,7 @@ export const webPage: Strategy = {
       ?? httpUrl(meta.get('twitter:image'), page.url)
       ?? httpUrl(meta.get('twitter:image:src'), page.url)
 
-    return {
-      kind: recipe ? 'blog' : 'other',
-      canonicalLink,
-      suggestedTitle: shortenTitle(withoutSiteName(title, siteName)),
-      imageUrl,
-    }
+    const suggestedTitle = shortenTitle(withoutSiteName(title, siteName))
+    return { kind: suggestedTitle || imageUrl ? 'blog' : 'other', canonicalLink, suggestedTitle, imageUrl }
   },
 }

@@ -1,6 +1,6 @@
-import { httpUrl, text, withoutTracking } from './link'
+import { asString, httpUrl, withoutTracking } from './link'
 import { shortenTitle } from './title'
-import type { SourceKind, Strategy } from './types'
+import { nothingFound, type SourceGuess, type SourceKind, type Strategy } from './types'
 
 // Instagram: Meta's instagram_oembed with an app access token. Meta has
 // removed fields from it before; with no token, an error, or missing fields
@@ -17,7 +17,8 @@ function kindOf(segment: string): SourceKind {
   return segment === 'p' ? 'instagram-post' : 'instagram-reel'
 }
 
-function parse(url: URL): { kind: SourceKind, canonicalLink: string } | null {
+// A post link (not a share link), normalised.
+function postLink(url: URL): SourceGuess | null {
   const match = url.pathname.match(POST_PATH)
   if (!match || match[1] === undefined || match[2] === undefined) return null
   return {
@@ -26,11 +27,11 @@ function parse(url: URL): { kind: SourceKind, canonicalLink: string } | null {
   }
 }
 
-// What a link says about itself before any request.
-function guess(url: URL): { kind: SourceKind, canonicalLink: string } {
+// What any Instagram link says about itself before any request.
+function guess(url: URL): SourceGuess {
   const share = url.pathname.match(SHARE_PATH)?.[1]
   if (share) return { kind: kindOf(share), canonicalLink: withoutTracking(url) }
-  return parse(url) ?? { kind: 'other', canonicalLink: withoutTracking(url) }
+  return postLink(url) ?? { kind: 'other', canonicalLink: withoutTracking(url) }
 }
 
 export const instagram: Strategy = {
@@ -40,14 +41,16 @@ export const instagram: Strategy = {
   },
 
   async lookup(url, { http, instagramAccessToken }) {
-    const post = SHARE_PATH.test(url.pathname) ? parse(await http.resolve(url.href, hop => parse(hop) !== null)) : parse(url)
-    if (!post || !instagramAccessToken) return { ...(post ?? guess(url)), suggestedTitle: '', imageUrl: null }
+    const post = SHARE_PATH.test(url.pathname)
+      ? postLink(await http.resolve(url.href, hop => postLink(hop) !== null))
+      : postLink(url)
+    if (!post || !instagramAccessToken) return nothingFound(post ?? guess(url))
 
     const query = new URLSearchParams({ url: post.canonicalLink, access_token: instagramAccessToken })
     const oembed = await http.json(`${GRAPH_API}?${query}`)
     return {
       ...post,
-      suggestedTitle: shortenTitle(text(oembed?.title)),
+      suggestedTitle: shortenTitle(asString(oembed?.title)),
       imageUrl: httpUrl(oembed?.thumbnail_url),
     }
   },

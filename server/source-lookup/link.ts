@@ -1,4 +1,5 @@
-// Small helpers for links and the loosely typed JSON upstreams return.
+// Small helpers for links, and for reading the loosely typed values upstreams
+// return.
 
 const TRACKING_PARAM = /^(utm_\w+|fbclid|gclid|dclid|msclkid|igshid|igsh|mc_cid|mc_eid|_hs\w+|si)$/i
 
@@ -13,7 +14,7 @@ export function withoutTracking(url: URL): string {
   return clean.href
 }
 
-export function text(value: unknown): string {
+export function asString(value: unknown): string {
   return typeof value === 'string' ? value : ''
 }
 

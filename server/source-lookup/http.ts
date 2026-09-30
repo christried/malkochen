@@ -14,7 +14,7 @@ export interface Http {
   // Whether the URL answers 2xx.
   exists: (url: string) => Promise<boolean>
   // Where a short link leads: the first hop `arrived` accepts (that page is
-  // never requested; platforms' post pages often stall for servers), else
+  // never requested; TikTok's and Pinterest's post pages stall for servers), else
   // the last reachable hop.
   resolve: (url: string, arrived: (url: URL) => boolean) => Promise<URL>
   // An HTML page and the URL it was finally served from.

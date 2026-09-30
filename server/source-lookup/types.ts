@@ -17,9 +17,17 @@ export interface SourceLookupResult {
   // share parameters, mobile host) gives the same value.
   canonicalLink: string
   suggestedTitle: string
-  // A third-party image URL. It may expire; the Image Store copies it when a
-  // Dish is saved.
+  // A third-party image URL. It may expire, so it is copied into our own
+  // storage when a Dish is saved.
   imageUrl: string | null
+}
+
+// What a link says about itself before any request.
+export type SourceGuess = Pick<SourceLookupResult, 'kind' | 'canonicalLink'>
+
+// The answer when nothing more than the guess could be found.
+export function nothingFound(guess: SourceGuess): SourceLookupResult {
+  return { ...guess, suggestedTitle: '', imageUrl: null }
 }
 
 // Given a link, return what we know about it. Never rejects.
@@ -30,9 +38,9 @@ export interface StrategyContext {
   instagramAccessToken?: string
 }
 
-// One per platform. `match` decides from the link alone (no network) whether
-// the strategy handles it, and what to answer if the lookup then fails.
+// One per kind of Source. `match` decides from the link alone (no network)
+// whether the strategy handles it, and what to answer if the lookup then fails.
 export interface Strategy {
-  match: (url: URL) => Pick<SourceLookupResult, 'kind' | 'canonicalLink'> | null
+  match: (url: URL) => SourceGuess | null
   lookup: (url: URL, context: StrategyContext) => Promise<SourceLookupResult>
 }

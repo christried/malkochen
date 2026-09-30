@@ -153,10 +153,14 @@ describe('YouTube Shorts', () => {
 })
 
 const PINTEREST_OEMBED = 'https://www.pinterest.com/oembed.json?'
+const PIN_IMAGE_736 = 'https://i.pinimg.com/736x/a7/66/56/a76656e966b1958f568d63c3f1c05aec.jpg'
 
 describe('Pinterest', () => {
   test('a Pin gives a larger image and never its unusable "oEmbed" title', async () => {
-    const { lookup } = lookupWith([[PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))]])
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_IMAGE_736, () => status(200)],
+    ])
 
     expect(await lookup('https://de.pinterest.com/pin/99360735500167749/?mt=login')).toEqual({
       kind: 'pinterest-pin',
@@ -166,6 +170,17 @@ describe('Pinterest', () => {
     })
   })
 
+  test('keeps the oEmbed image when no larger size exists', async () => {
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_IMAGE_736, () => status(404)],
+    ])
+
+    const result = await lookup('https://www.pinterest.com/pin/99360735500167749/')
+
+    expect(result.imageUrl).toBe('https://i.pinimg.com/236x/a7/66/56/a76656e966b1958f568d63c3f1c05aec.jpg')
+  })
+
   test('a pin.it short link resolves to the canonical Pin link', async () => {
     const { lookup } = lookupWith([
       // Recorded: pin.it → api.pinterest.com/url_shortener/… → the Pin.
@@ -173,6 +188,7 @@ describe('Pinterest', () => {
       ['https://api.pinterest.com/url_shortener/1nzvMpNHh/redirect/', () => redirect('https://www.pinterest.de/pin/99360735500167749/sent/?invite_code=a1b2&sender=123&sfo=1')],
       ['https://www.pinterest.de/pin/', () => 'hang'],
       [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_IMAGE_736, () => status(200)],
     ])
 
     const result = await lookup('https://pin.it/1nzvMpNHh')
@@ -218,7 +234,7 @@ describe('blogs and other links', () => {
 
   test('a page with only og: tags uses them, without the site name', async () => {
     expect(await page('https://salt-and-pan.example/shakshuka', 'blog-og-only.html')).toEqual({
-      kind: 'other',
+      kind: 'blog',
       canonicalLink: 'https://salt-and-pan.example/shakshuka',
       suggestedTitle: 'Weekend Shakshuka',
       imageUrl: 'https://cdn.salt-and-pan.example/shakshuka.jpg',
@@ -227,6 +243,7 @@ describe('blogs and other links', () => {
 
   test('a page with only twitter: tags uses them', async () => {
     expect(await page('https://pics.example/miso', 'blog-twitter-only.html')).toMatchObject({
+      kind: 'blog',
       suggestedTitle: 'Miso Aubergine',
       imageUrl: 'https://pics.example/miso.jpg',
     })
@@ -234,6 +251,7 @@ describe('blogs and other links', () => {
 
   test('a page with nothing but a <title> gives that title and no image', async () => {
     expect(await page('https://recipes.example/crumble', 'blog-title-only.html')).toMatchObject({
+      kind: 'blog',
       suggestedTitle: 'Grandma\'s Apple Crumble',
       imageUrl: null,
     })

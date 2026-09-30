@@ -1,4 +1,4 @@
-import { httpUrl, text } from './link'
+import { asString, httpUrl } from './link'
 import { shortenTitle } from './title'
 import type { Strategy } from './types'
 
@@ -30,8 +30,8 @@ export const tiktok: Strategy = {
     const oembed = await http.json(`https://www.tiktok.com/oembed?url=${encodeURIComponent(canonical(post))}`)
     return {
       kind: 'tiktok',
-      canonicalLink: canonical(post, text(oembed?.author_unique_id)),
-      suggestedTitle: shortenTitle(text(oembed?.title)),
+      canonicalLink: canonical(post, asString(oembed?.author_unique_id)),
+      suggestedTitle: shortenTitle(asString(oembed?.title)),
       imageUrl: httpUrl(oembed?.thumbnail_url),
     }
   },

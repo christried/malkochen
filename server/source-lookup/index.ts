@@ -1,17 +1,16 @@
 import { createHttp } from './http'
-import { withoutTracking } from './link'
 import { instagram } from './instagram'
 import { pinterest } from './pinterest'
 import { tiktok } from './tiktok'
 import { webPage } from './web-page'
 import { youtube } from './youtube'
-import type { SourceLookup, SourceLookupResult, Strategy } from './types'
+import { nothingFound, type SourceGuess, type SourceLookup, type Strategy } from './types'
 
 export type { SourceKind, SourceLookup, SourceLookupResult } from './types'
 
 // Source Lookup: given a link, return what we know about it (Source kind,
-// Suggested Title, image, canonical link). Every per-platform strategy is
-// hidden in here; callers only ever see a SourceLookup, so the whole module
+// Suggested Title, image, canonical link). The strategy for each kind of
+// Source is hidden in here; callers only ever see a SourceLookup, so the whole module
 // can be swapped for a paid unfurl service without changes elsewhere.
 
 export interface SourceLookupOptions {
@@ -36,16 +35,17 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
       url = new URL(link.trim())
     }
     catch {
-      return { kind: 'other', canonicalLink: link.trim(), suggestedTitle: '', imageUrl: null }
+      return nothingFound({ kind: 'other', canonicalLink: link.trim() })
     }
 
-    const [strategy, guess] = STRATEGIES
-      .map(s => [s, s.match(url)] as const)
-      .find(([, match]) => match) ?? [webPage, webPage.match(url)]
-    const fallback: SourceLookupResult = {
-      ...(guess ?? { kind: 'other', canonicalLink: withoutTracking(url) }),
-      suggestedTitle: '',
-      imageUrl: null,
+    let strategy = webPage
+    let guess: SourceGuess = { kind: 'other', canonicalLink: link.trim() }
+    for (const candidate of STRATEGIES) {
+      const match = candidate.match(url)
+      if (match) {
+        [strategy, guess] = [candidate, match]
+        break
+      }
     }
 
     const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
@@ -53,7 +53,7 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
       return await strategy.lookup(url, { http, instagramAccessToken: options.instagramAccessToken })
     }
     catch {
-      return fallback
+      return nothingFound(guess)
     }
   }
 }
