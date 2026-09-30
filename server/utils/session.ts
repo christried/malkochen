@@ -42,6 +42,18 @@ export function dishIdParam(event: H3Event): string {
   return id
 }
 
+// Same for a Column: one that doesn't exist and one on someone else's Board look alike.
+export function columnNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Column not found' })
+}
+
+// A Column id from the route. Anything that isn't a UUID can't be a Column.
+export function columnIdParam(event: H3Event): string {
+  const id = getRouterParam(event, 'id') ?? ''
+  if (!UUID.test(id)) throw columnNotFound()
+  return id
+}
+
 // Same for a Cooking: one that doesn't exist and one on someone else's Board look alike.
 export function cookingNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Cooking not found' })

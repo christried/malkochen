@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, sql } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
 import { board, boardColumn, membership } from '../db/schema'
 import { dishesByColumn, type DishView } from './dishes'
@@ -13,10 +13,14 @@ export const DEFAULT_COLUMNS = [
   { name: 'Gekocht', isGekocht: true },
 ] as const
 
-export interface BoardSummary {
+// What Board settings change: the Board's name and emoji.
+export interface BoardName {
   id: string
   name: string
   emoji: string
+}
+
+export interface BoardSummary extends BoardName {
   isOwner: boolean
 }
 
@@ -97,6 +101,25 @@ export async function markOpened(boardId: string, userId: string): Promise<boole
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
     .returning({ boardId: membership.boardId })
   return updated.length > 0
+}
+
+// Renames the Board or changes its emoji (PRD story 62); fields left out stay
+// as they are. Null unless the user is a Member.
+export async function editBoard(boardId: string, userId: string, changes: Partial<BoardName>): Promise<BoardName | null> {
+  const [edited] = await db
+    .update(board)
+    // Setting the id to itself keeps an empty change a valid statement.
+    .set({ id: sql`${board.id}`, ...changes })
+    .where(and(eq(board.id, boardId), exists(memberOf(boardId, userId))))
+    .returning({ id: board.id, name: board.name, emoji: board.emoji })
+  return edited ?? null
+}
+
+function memberOf(boardId: string, userId: string) {
+  return db
+    .select({ boardId: membership.boardId })
+    .from(membership)
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
 }
 
 // Whether the user is a Member of the Board.
