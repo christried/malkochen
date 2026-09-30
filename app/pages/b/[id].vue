@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import type { BoardView } from '~~/server/utils/boards'
+import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import { dishOnBoard } from '~~/shared/board'
@@ -62,7 +62,7 @@ function addNote(dish: DishView, cooking: CookingView) {
 }
 
 const { deleteDish, focusCard } = useDishDelete(board, showToast)
-const { moveDish, dropDish, cookDish } = useDishMove(board, showToast, addNote)
+const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, addNote)
 const { deleteCooking } = useCookingDelete(showToast)
 
 // "Gekocht ✓" on a card: it leaves for the Gekocht Column (or stays, if it
@@ -145,15 +145,20 @@ const tint = computed(() => accentAt(clampProgress(progress.value, board.value?.
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
-// phones its Column comes to the front, so closing it lands there.
-// Closing it puts focus back on the Dish's card (or, if it was deleted, on
-// what took its place).
+// phones its Column comes to the front, so closing it lands there (in the
+// Column it was moved to, if it was). Closing it puts focus back on the
+// Dish's card (or, if it was deleted or moved to another Board, on what
+// took its place).
+const focusAfterDetail = ref<string | null>(null)
 watch(() => route.params.dishId, async (dishId, closedId) => {
-  const opened = board.value && dishOnBoard(board.value, dishId)
-  if (opened) activeColumnId.value = opened.column.id
+  const shown = board.value && dishOnBoard(board.value, dishId ?? closedId)
+  if (shown) activeColumnId.value = shown.column.id
   if (dishId || typeof closedId !== 'string') return
+  const focusId = focusAfterDetail.value
+  focusAfterDetail.value = null
   await nextTick()
-  focusCard(closedId)
+  if (focusId) document.getElementById(focusId)?.focus()
+  else focusCard(closedId)
 }, { immediate: true })
 
 const adding = ref(false)
@@ -189,7 +194,7 @@ function onEdited(saved: SavedDish) {
 }
 
 // The card's "…" menu: "Verschieben nach…", which lists the Board's other
-// Columns in the same sheet, and "Löschen".
+// Columns and the user's other Boards in the same sheet, and "Löschen".
 const menuDish = ref<DishView | null>(null)
 const menuOpen = computed({
   get: () => menuDish.value !== null,
@@ -205,17 +210,23 @@ async function chooseColumn(choosing: boolean) {
   await nextTick()
   menuSteps.value?.querySelector('button')?.focus()
 }
-const moveTargets = computed(() => {
-  const from = board.value && menuDish.value && dishOnBoard(board.value, menuDish.value.id)
-  return board.value?.columns
-    .map((column, index) => ({ column, accent: columnAccent(index) }))
-    .filter(({ column }) => from && column !== from.column) ?? []
-})
-async function moveFromMenu(columnId: string) {
+const menuColumnId = computed(() => board.value && menuDish.value && dishOnBoard(board.value, menuDish.value.id)?.column.id)
+async function moveFromMenu(columnId: string, toBoard: BoardListing | null) {
   const dishId = menuDish.value?.id
   menuDish.value = null
-  if (!dishId) return
-  const focusId = moveDish(dishId, columnId)
+  if (dishId) await moveAndFocus(dishId, columnId, toBoard)
+}
+
+// "Verschieben nach…", from the card's menu or the Dish detail: within this
+// Board, or to another one. Focus goes to what took the card's place.
+// From the Dish detail, the Board is inert until the detail closes, so a
+// Dish gone to another Board has focus put on what took its place then.
+async function moveAndFocus(dishId: string, columnId: string, toBoard: BoardListing | null) {
+  const focusId = toBoard ? moveToBoard(dishId, columnId, toBoard) : moveDish(dishId, columnId)
+  if (route.params.dishId) {
+    if (toBoard) focusAfterDetail.value = focusId
+    return
+  }
   await nextTick()
   if (focusId) document.getElementById(focusId)?.focus()
 }
@@ -238,9 +249,7 @@ async function deleteFromMenu() {
   >
     <header class="flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <h1 class="font-display text-title-l tablet:text-display-m">
-          <span aria-hidden="true">{{ board.emoji }}</span> {{ board.name }}
-        </h1>
+        <BoardSwitcher :board="board" />
         <RoundButton
           v-if="!searchOpen"
           ref="searchButton"
@@ -505,20 +514,12 @@ async function deleteFromMenu() {
           <p class="px-1 text-overline uppercase text-text-muted">
             {{ t.dish.moveTo }}
           </p>
-          <button
-            v-for="{ column, accent } in moveTargets"
-            :key="column.id"
-            type="button"
-            class="flex items-center gap-3 rounded-field bg-surface-muted px-5 py-3.5 text-left text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-            @click="moveFromMenu(column.id)"
-          >
-            <span
-              aria-hidden="true"
-              class="h-3 w-3 shrink-0 rounded-full"
-              :style="{ background: accent }"
-            />
-            {{ column.name }}
-          </button>
+          <MoveTargetPicker
+            v-if="menuColumnId"
+            :board="board"
+            :from-column-id="menuColumnId"
+            @move="moveFromMenu"
+          />
         </template>
       </div>
     </AppSheet>
@@ -528,6 +529,7 @@ async function deleteFromMenu() {
       :board="board"
       @edited="onEdited"
       @delete="deleteDish"
+      @move="moveAndFocus"
       @cook="cookDish"
       @note="noteFromDetail"
       @delete-cooking="deleteCookingFromDetail"
