@@ -50,6 +50,10 @@ export const de = {
     undo: 'Rückgängig',
     deleteFailed: (title: string) => `„${title}“ ließ sich nicht löschen. Versuch es gleich noch mal.`,
     restoreFailed: (title: string) => `„${title}“ ließ sich nicht zurückholen.`,
+    moveTo: 'Verschieben nach…',
+    back: 'Zurück',
+    moved: (title: string, column: string) => `„${title}“ nach „${column}“ verschoben`,
+    moveFailed: (title: string) => `„${title}“ ließ sich nicht verschieben. Versuch es gleich noch mal.`,
   },
   detail: {
     close: 'Schließen',

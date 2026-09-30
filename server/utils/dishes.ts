@@ -144,6 +144,28 @@ export async function restoreDish(dishId: string, userId: string): Promise<DishV
   return row ? toView(row) : null
 }
 
+// Moves a Dish to the top of a Column on its own Board (PRD story 33).
+// Drag and drop and Cooking build on this. Null unless the Dish is on a
+// Board the user is a Member of, not deleted, and the Column is on that Board.
+export async function moveDish(dishId: string, userId: string, columnId: string): Promise<DishView | null> {
+  const target = onMembersBoard(dishId, userId)
+  const moved = await db
+    .update(dish)
+    .set({
+      columnId,
+      position: sql`(select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId})`,
+    })
+    .where(and(
+      target,
+      inArray(dish.boardId, db.select({ id: boardColumn.boardId }).from(boardColumn).where(eq(boardColumn.id, columnId))),
+    ))
+    .returning({ id: dish.id })
+  if (moved.length === 0) return null
+
+  const [row] = await selectDishes().where(target)
+  return row ? toView(row) : null
+}
+
 // A Dish already on a Board with the Source being added (PRD story 24).
 export interface DuplicateDish {
   id: string
