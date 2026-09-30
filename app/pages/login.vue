@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { InviteView } from '~~/server/utils/invites'
+import { boardLabel } from '~~/shared/board'
 
 // Sign-in, and the "Not unlocked" screen for a refused one: Better Auth sends
 // a refused Google sign-in back here as /login?error=not_allowed
@@ -31,7 +32,7 @@ const { data: invite } = await useFetch<InviteView>('/api/invites/pending', {
   watch: false,
 })
 const notUnlockedBody = computed(() => invite.value
-  ? t.notUnlocked.invitedBody(invite.value.owner.name, `${invite.value.board.emoji} ${invite.value.board.name}`)
+  ? t.notUnlocked.invitedBody(invite.value.owner.name, boardLabel(invite.value.board))
   : t.notUnlocked.body)
 
 // The sign-in hero's ring of Placeholder Images around Topfbert.

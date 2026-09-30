@@ -30,18 +30,19 @@ export function inviteTokenParam(event: H3Event): string {
   return token
 }
 
-async function boardIdOf(token: string): Promise<string | null> {
+// The Board a token opens, or null if none has it (any more).
+async function boardOf(token: string) {
   if (!TOKEN.test(token)) return null
-  const [found] = await db.select({ id: board.id }).from(board).where(eq(board.inviteToken, token))
-  return found?.id ?? null
-}
-
-// The invite landing for a token, or null if no Board has it (any more).
-export async function inviteView(token: string): Promise<InviteView | null> {
   const [found] = await db
     .select({ id: board.id, name: board.name, emoji: board.emoji })
     .from(board)
     .where(eq(board.inviteToken, token))
+  return found ?? null
+}
+
+// The invite landing for a token, or null if no Board has it (any more).
+export async function inviteView(token: string): Promise<InviteView | null> {
+  const found = await boardOf(token)
   if (!found) return null
 
   const members = await db
@@ -57,22 +58,23 @@ export async function inviteView(token: string): Promise<InviteView | null> {
 }
 
 // Makes the user a Member of the token's Board (PRD story 64); for someone
-// already on it, nothing changes (story 65). Joining counts as opening the
-// Board, so the app lands on it next. The Board's id, or null if no Board
-// has the token.
+// already on it, only this changes (story 65): following the link counts as
+// opening the Board, so the app lands on it next. The Board's id, or null if
+// no Board has the token.
 export async function joinByInvite(token: string, userId: string): Promise<string | null> {
-  const boardId = await boardIdOf(token)
-  if (!boardId) return null
+  const found = await boardOf(token)
+  if (!found) return null
+  const now = new Date()
   await db
     .insert(membership)
-    .values({ boardId, userId, lastOpenedAt: new Date() })
-    .onConflictDoNothing()
-  return boardId
+    .values({ boardId: found.id, userId, lastOpenedAt: now })
+    .onConflictDoUpdate({ target: [membership.boardId, membership.userId], set: { lastOpenedAt: now } })
+  return found.id
 }
 
 // Gives the Board a new token, so the old link stops working (story 66).
 // 'forbidden' for a Member who isn't the Owner, null for a non-Member.
-export async function resetInvite(boardId: string, userId: string): Promise<string | 'forbidden' | null> {
+export async function resetInvite(boardId: string, userId: string): Promise<{ inviteToken: string } | 'forbidden' | null> {
   const [found] = await db
     .select({ isOwner: membership.isOwner })
     .from(membership)
@@ -84,7 +86,7 @@ export async function resetInvite(boardId: string, userId: string): Promise<stri
     .set({ inviteToken: sql`default` })
     .where(eq(board.id, boardId))
     .returning({ inviteToken: board.inviteToken })
-  return updated?.inviteToken ?? null
+  return updated ?? null
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +98,7 @@ export async function resetInvite(boardId: string, userId: string): Promise<stri
 export const REMEMBERED_INVITE_COOKIE = 'malkochen.invite'
 
 // Long enough for the Owner to put the visitor on the Allowlist.
-export const REMEMBERED_INVITE_MAX_AGE = 60 * 60 * 24 * 30
+const REMEMBERED_INVITE_MAX_AGE = 60 * 60 * 24 * 30
 
 export function rememberInvite(event: H3Event, token: string) {
   setCookie(event, REMEMBERED_INVITE_COOKIE, token, {

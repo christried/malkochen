@@ -3,7 +3,7 @@ import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
-import { dishOnBoard } from '~~/shared/board'
+import { boardLabel, dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
 // switched with the Column tabs or by swiping; tablet and desktop show all
@@ -22,7 +22,7 @@ if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, 
 // Remember this as the Board to reopen next time.
 onMounted(() => $fetch(`/api/boards/${id.value}/open`, { method: 'POST' }))
 
-useHead({ title: () => board.value ? `${board.value.emoji} ${board.value.name} · ${t.app.name}` : t.app.name })
+useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
 
 const activeColumnId = ref(board.value?.columns[0]?.id)
 const activeIndex = computed(() => Math.max(0, board.value?.columns.findIndex(c => c.id === activeColumnId.value) ?? 0))

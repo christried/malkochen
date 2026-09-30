@@ -36,7 +36,11 @@ test('a first-time user opens the Invite Link, signs in, and lands on the Board 
   await invited.route(/accounts\.google\.com/, route => route.fulfill({ contentType: 'text/html', body: '<title>Google</title>' }))
   await invited.getByRole('button', { name: 'Mit Google anmelden' }).click()
   await invited.waitForURL(/accounts\.google\.com/)
-  // What Google's callback does: sign in (the remembered invite joins).
+  // Where Better Auth sends a refused sign-in: the remembered invite names the Owner.
+  await gotoHydrated(invited, '/login?error=not_allowed')
+  await expect(invited.getByText('Sag frances Bescheid')).toBeVisible()
+  await expect(invited.getByText('Deine Einladung zu 🍜 Kochclub merken wir uns.')).toBeVisible()
+  // Once let in, what Google's callback does: sign in (the remembered invite joins).
   await signIn(invited, ALLOWLISTED[13])
 
   await gotoHydrated(invited, '/')

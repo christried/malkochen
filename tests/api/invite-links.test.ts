@@ -154,3 +154,17 @@ test('a remembered link that was reset meanwhile joins nothing and is forgotten'
   expect((await visitor.signIn(ALLOWLISTED[2])).status).toBe(200)
   expect(await boardNames(visitor)).not.toContain('Kuchenrunde')
 })
+
+test('a Member signing in with a remembered invite lands on that Board, not the one used last', async () => {
+  const board = await idasBoard('Stammtisch')
+  const member = await evelyn()
+  await join(member, board.inviteToken)
+  const other = await idasBoard('Anderswo')
+  await join(member, other.inviteToken)
+  const again = browser()
+  await remember(again, board.inviteToken)
+
+  expect((await again.signIn(ALLOWLISTED[14])).status).toBe(200)
+
+  expect(await (await again.fetch('/api/boards/landing')).json()).toEqual({ boardId: board.id })
+})

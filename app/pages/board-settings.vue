@@ -2,6 +2,7 @@
 import type { BoardChanges, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
+import { boardLabel } from '~~/shared/board'
 
 // Board settings (PRD stories 57–60, 62), for any Member: the Board's name
 // and emoji, and its Columns. Its own page, not a child of the Board: any
@@ -172,7 +173,7 @@ onMounted(() => {
   canShare.value = typeof navigator.share === 'function'
 })
 async function shareLink() {
-  const label = `${saved.value.emoji} ${saved.value.name}`
+  const label = boardLabel(saved.value)
   try {
     await navigator.share({ title: label, text: t.settings.shareText(label), url: inviteLink.value })
   }

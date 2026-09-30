@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { InviteView } from '~~/server/utils/invites'
+import { boardLabel } from '~~/shared/board'
 
 // The invite landing (PRD stories 4, 64, 65): "Du wurdest zu 🍜 Kochclub
 // eingeladen", then sign-in, then the Board. A signed-in user joins at once
@@ -12,16 +13,20 @@ const route = useRoute()
 const token = String(route.params.token)
 
 const { data: invite } = await useFetch<InviteView>(`/api/invites/${token}`)
-// The same request the page guard just made, so it isn't sent twice.
-const { error: signedOut } = await useFetch('/api/me', { key: `me:${route.fullPath}` })
+// The same request the page guard just made, so it isn't sent twice. It
+// fails for anyone who can't use the app yet: signed out, or signed in but
+// off the Allowlist (whose sign-in then ends on "Not unlocked").
+const { error: noAccess } = await useFetch('/api/me', { key: `me:${route.fullPath}` })
 
-if (invite.value && !signedOut.value) {
-  const { boardId } = await useRequestFetch()<{ boardId: string }>(`/api/invites/${token}/join`, { method: 'POST' })
-  await navigateTo(`/b/${boardId}`, { replace: true })
+if (invite.value && !noAccess.value) {
+  const joined = await useRequestFetch()<{ boardId: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch(() => null)
+  // A link reset since it was looked up shows as not working.
+  if (joined) await navigateTo(`/b/${joined.boardId}`, { replace: true })
+  else invite.value = undefined
 }
 
-const boardLabel = computed(() => invite.value ? `${invite.value.board.emoji} ${invite.value.board.name}` : '')
-useHead({ title: () => invite.value ? `${t.invite.headline(boardLabel.value)} · ${t.app.name}` : t.app.name })
+const invitedTo = computed(() => invite.value ? boardLabel(invite.value.board) : '')
+useHead({ title: () => invite.value ? `${t.invite.headline(invitedTo.value)} · ${t.app.name}` : t.app.name })
 
 const { signInWithGoogle } = useAuth()
 
@@ -84,7 +89,7 @@ async function startGoogleSignIn() {
         </ul>
       </div>
       <h1 class="mt-8 max-w-md font-display text-display-m tablet:text-display-l">
-        {{ t.invite.headline(boardLabel) }}
+        {{ t.invite.headline(invitedTo) }}
       </h1>
       <p class="mt-4 max-w-md text-body text-text-muted">
         {{ t.invite.body(invite.owner.name) }}
