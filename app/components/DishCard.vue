@@ -3,7 +3,8 @@ import type { DishView } from '~~/server/utils/dishes'
 
 // The handoff's compact DishCard: 86px thumb + text, 128px high. The thumb
 // crops any image, portrait (TikTok, Reels, Shorts) or landscape (blogs), to
-// fill it. "N× gekocht", "Neu" and the card's actions come with later tickets.
+// fill it. The Board puts the "…" menu button in its top-right corner, so the
+// title leaves room for it. "N× gekocht" and "Neu" come with later tickets.
 defineProps<{ dish: DishView }>()
 const t = useStrings()
 </script>
@@ -26,7 +27,7 @@ const t = useStrings()
       />
     </div>
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">
-      <h3 class="line-clamp-2 font-display text-title-s">
+      <h3 class="line-clamp-2 pr-8 font-display text-title-s">
         {{ dish.title }}
       </h3>
       <div class="mt-auto flex items-center gap-2 text-text-muted">

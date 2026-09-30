@@ -120,6 +120,9 @@ export const dish = pgTable('dish', {
   // Who added it; kept (as unknown) if their account is ever deleted.
   addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
+  // Set when a Member deletes the Dish. A deleted Dish keeps its Column and
+  // position, so undo puts it back where it was; it is left out everywhere else.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, t => [
   index('dish_board_id_idx').on(t.boardId),
   index('dish_column_id_position_idx').on(t.columnId, t.position),

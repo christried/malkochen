@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { landingBoard, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 
 // Duplicate-Source detection (PRD story 24): before saving, Add Dish asks
@@ -9,15 +10,11 @@ interface Duplicate {
 }
 
 async function landingBoardId(caller: Caller): Promise<string> {
-  return ((await (await caller.fetch('/api/boards/landing')).json()) as { boardId: string }).boardId
+  return (await landingBoard(caller)).id
 }
 
 async function addDish(caller: Caller, boardId: string, title: string, link: string) {
-  const res = await caller.fetch(`/api/boards/${boardId}/dishes`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ title, placeholder: 'bowl', source: { link } }),
-  })
+  const res = await postDish(caller, boardId, { title, placeholder: 'bowl', source: { link } })
   expect(res.status).toBe(201)
   return (await res.json()) as { id: string }
 }

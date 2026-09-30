@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
 import { db } from '../db'
@@ -50,7 +50,7 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
   if (columnIds.length === 0) return byColumn
 
   const rows = await selectDishes()
-    .where(inArray(dish.columnId, columnIds))
+    .where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt)))
     .orderBy(asc(dish.position), desc(dish.createdAt), desc(dish.id))
   for (const row of rows) byColumn.get(row.columnId)?.push(toView(row))
   return byColumn
@@ -92,12 +92,17 @@ function toView({ columnId: _, sourceLink, sourceKind, adderId, adderName, adder
 // they are. `imageUrl` must already be a stored image, never a third-party link.
 export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'imageUrl' | 'placeholder'>>
 
-// The Dish, if it is on a Board the user is a Member of.
-function onMembersBoard(dishId: string, userId: string) {
+// The Dish, if it is on a Board the user is a Member of, deleted or not.
+function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
   return and(
     eq(dish.id, dishId),
     inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
   )
+}
+
+// The Dish, if it is on a Board the user is a Member of and not deleted.
+function onMembersBoard(dishId: string, userId: string) {
+  return and(onMembersBoardIncludingDeleted(dishId, userId), isNull(dish.deletedAt))
 }
 
 // Whether the Dish exists on a Board the user is a Member of.
@@ -123,6 +128,22 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
   return row ? toView(row) : null
 }
 
+// Deletes a Dish (PRD story 47): a soft delete, so it can be restored. False
+// unless it is on a Board the user is a Member of and not deleted yet.
+export async function deleteDish(dishId: string, userId: string): Promise<boolean> {
+  const deleted = await db.update(dish).set({ deletedAt: new Date() }).where(onMembersBoard(dishId, userId)).returning({ id: dish.id })
+  return deleted.length > 0
+}
+
+// Undoes deleting a Dish. It kept its Column and position, so it is back
+// where it was. Null unless it is on a Board the user is a Member of.
+export async function restoreDish(dishId: string, userId: string): Promise<DishView | null> {
+  const target = onMembersBoardIncludingDeleted(dishId, userId)
+  await db.update(dish).set({ deletedAt: null }).where(target)
+  const [row] = await selectDishes().where(target)
+  return row ? toView(row) : null
+}
+
 // A Dish already on a Board with the Source being added (PRD story 24).
 export interface DuplicateDish {
   id: string
@@ -131,13 +152,13 @@ export interface DuplicateDish {
 }
 
 // The Board's newest Dish whose Source is this canonical link, if any.
-// Once Dishes can be deleted (#9), deleted ones must not count here.
+// Deleted Dishes don't count.
 export async function dishWithSource(boardId: string, canonicalLink: string): Promise<DuplicateDish | null> {
   const [found] = await db
     .select({ id: dish.id, title: dish.title, columnName: boardColumn.name })
     .from(dish)
     .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
-    .where(and(eq(dish.boardId, boardId), eq(dish.sourceLink, canonicalLink)))
+    .where(and(eq(dish.boardId, boardId), eq(dish.sourceLink, canonicalLink), isNull(dish.deletedAt)))
     .orderBy(desc(dish.createdAt), desc(dish.id))
     .limit(1)
   return found ?? null

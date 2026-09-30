@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import { createImageTickets } from '../../server/image-store/tickets'
 import { testAuthEnv } from '../support/test-auth-env'
+import { landingBoard as landingBoardOf, postDish as addDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 
 interface Dish {
@@ -17,18 +18,7 @@ interface Board {
   columns: { id: string, name: string, dishes: Dish[] }[]
 }
 
-async function landingBoard(caller: Caller): Promise<Board> {
-  const { boardId } = await (await caller.fetch('/api/boards/landing')).json() as { boardId: string }
-  return (await caller.fetch(`/api/boards/${boardId}`)).json()
-}
-
-function addDish(caller: Caller, boardId: string, body: unknown) {
-  return caller.fetch(`/api/boards/${boardId}/dishes`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
+const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
 
 const titles = (board: Board, column = 0) => board.columns[column]!.dishes.map(d => d.title)
 

@@ -156,7 +156,7 @@ test('changing the Source keeps the image; "Bild neu laden" replaces it, or fall
   body = editedBody(page)
   await detail.getByRole('button', { name: 'Speichern' }).click()
   expect(await body).toMatchObject({ imageUrl: found, imageTicket: 'fixture-ticket', source: { link: reel, kind: 'instagram-reel' } })
-  await expect(page.locator('[data-notice]')).toContainText('„Ofengemüse“ behält sein bisheriges Bild')
+  await expect(page.locator('[data-toast]')).toContainText('„Ofengemüse“ behält sein bisheriges Bild')
   await expect(detail.locator('[data-dish-image]')).toHaveAttribute('src', image)
 
   // Nothing found: the Placeholder it is.

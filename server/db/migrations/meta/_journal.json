@@ -29,6 +29,13 @@
       "when": 1790759790073,
       "tag": "0003_dish_source_and_image",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790771333829,
+      "tag": "0004_dish_deleted_at",
+      "breakpoints": true
     }
   ]
 }

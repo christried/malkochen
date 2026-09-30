@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
-import type { SavedDish } from '~~/server/utils/dishes'
+import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import { dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time
@@ -24,28 +24,33 @@ useHead({ title: () => board.value ? `${board.value.emoji} ${board.value.name} �
 const activeColumnId = ref(board.value?.columns[0]?.id)
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 
+// One Toast at a time: notices, and "Rückgängig" after deleting a Dish.
+const toast = ref<Toast | null>(null)
+function showToast(shown: Toast) {
+  toast.value = shown
+}
+function showNotice(text: string) {
+  showToast({ text, duration: NOTICE_MS })
+}
+
+const { deleteDish, focusCard } = useDishDelete(board, showToast)
+
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
 // phones its Column comes to the front, so closing it lands there.
-// Closing it puts focus back on the Dish's card.
+// Closing it puts focus back on the Dish's card (or, if it was deleted, on
+// what took its place).
 watch(() => route.params.dishId, async (dishId, closedId) => {
   const opened = board.value && dishOnBoard(board.value, dishId)
   if (opened) activeColumnId.value = opened.column.id
   if (dishId || typeof closedId !== 'string') return
   await nextTick()
-  document.getElementById(`dish-${closedId}`)?.focus()
+  focusCard(closedId)
 }, { immediate: true })
 
 const adding = ref(false)
+
 // A Dish saved to another Board doesn't show here. If a Source image
 // couldn't be stored, a notice says which image the Dish has instead.
-const notice = ref('')
-let noticeTimer: ReturnType<typeof setTimeout> | undefined
-function showNotice(text: string) {
-  notice.value = text
-  clearTimeout(noticeTimer)
-  noticeTimer = setTimeout(() => notice.value = '', 8000)
-}
-
 function onAdded(saved: SavedDish, boardId: string) {
   if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
@@ -60,6 +65,23 @@ function onEdited(saved: SavedDish) {
   const { imageNotStored: _, ...dish } = saved
   const edited = board.value && dishOnBoard(board.value, dish.id)
   if (edited) Object.assign(edited.dish, dish)
+}
+
+// The card's "…" menu. "Verschieben nach…" joins "Löschen" with #10.
+const menuDish = ref<DishView | null>(null)
+const menuOpen = computed({
+  get: () => menuDish.value !== null,
+  set: (open) => {
+    if (!open) menuDish.value = null
+  },
+})
+async function deleteFromMenu() {
+  const dishId = menuDish.value?.id
+  menuDish.value = null
+  if (!dishId) return
+  deleteDish(dishId)
+  await nextTick()
+  focusCard(dishId)
 }
 </script>
 
@@ -104,22 +126,27 @@ function onEdited(saved: SavedDish) {
     <div class="mt-4 tablet:mt-8 tablet:flex tablet:snap-x tablet:gap-4 tablet:overflow-x-auto tablet:pb-4">
       <section
         v-for="(column, index) in board.columns"
+        :id="`column-${column.id}`"
         :key="column.id"
         :aria-label="column.name"
-        class="rounded-panel bg-surface-muted p-3 tablet:block tablet:w-[340px] tablet:shrink-0 tablet:snap-start tablet:p-4"
+        tabindex="-1"
+        class="rounded-panel bg-surface-muted p-3 focus-visible:outline-2 focus-visible:outline-focus tablet:block tablet:w-[340px] tablet:shrink-0 tablet:snap-start tablet:p-4"
         :class="activeColumnId === column.id ? 'block' : 'hidden'"
         :data-gekocht="column.isGekocht || undefined"
       >
         <h2 class="px-1 font-display text-title-s">
           {{ column.name }}
         </h2>
-        <ol
-          v-if="column.dishes.length"
-          class="mt-3 flex flex-col gap-3"
+        <TransitionGroup
+          tag="ol"
+          name="card"
+          class="relative flex flex-col gap-3"
+          :class="{ 'mt-3': column.dishes.length }"
         >
           <li
             v-for="dish in column.dishes"
             :key="dish.id"
+            class="relative"
           >
             <NuxtLink
               :id="`dish-${dish.id}`"
@@ -129,17 +156,46 @@ function onEdited(saved: SavedDish) {
             >
               <DishCard :dish="dish" />
             </NuxtLink>
+            <button
+              type="button"
+              class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              :aria-label="t.dish.menu(dish.title)"
+              aria-haspopup="dialog"
+              @click="menuDish = dish"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+                aria-hidden="true"
+              ><circle
+                cx="5"
+                cy="12"
+                r="2"
+              /><circle
+                cx="12"
+                cy="12"
+                r="2"
+              /><circle
+                cx="19"
+                cy="12"
+                r="2"
+              /></svg>
+            </button>
           </li>
-        </ol>
-        <EmptyBoard v-else-if="isEmpty && index === 0" />
-        <EmptyColumn v-else />
+        </TransitionGroup>
+        <template v-if="!column.dishes.length">
+          <EmptyBoard v-if="isEmpty && index === 0" />
+          <EmptyColumn v-else />
+        </template>
       </section>
     </div>
 
     <button
       type="button"
-      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center bg-inverse text-on-inverse shadow-fab transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
-      :class="{ 'fab-prompt': isEmpty }"
+      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center bg-inverse text-on-inverse shadow-fab active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
+      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
       :aria-label="t.addDish.open"
       @click="adding = true"
     >
@@ -155,26 +211,7 @@ function onEdited(saved: SavedDish) {
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
 
-    <!-- Always in the page, so screen readers announce what appears in it. -->
-    <div
-      role="status"
-      class="pointer-events-none fixed inset-x-4 bottom-28 z-fab flex justify-center tablet:bottom-32"
-    >
-      <Transition
-        enter-from-class="translate-y-4 opacity-0"
-        leave-to-class="translate-y-4 opacity-0"
-        enter-active-class="transition duration-settle ease-settle"
-        leave-active-class="transition duration-fade ease-fade"
-      >
-        <p
-          v-if="notice"
-          class="pointer-events-auto max-w-md rounded-pill bg-inverse px-5 py-3 text-small text-on-inverse shadow-fab"
-          data-notice
-        >
-          {{ notice }}
-        </p>
-      </Transition>
-    </div>
+    <AppToast v-model="toast" />
 
     <AddDishSheet
       v-model:open="adding"
@@ -182,22 +219,65 @@ function onEdited(saved: SavedDish) {
       @added="onAdded"
     />
 
+    <AppSheet
+      v-model:open="menuOpen"
+      :title="menuDish?.title ?? ''"
+      :close-label="t.dish.closeMenu"
+    >
+      <div class="mt-5 flex flex-col gap-2">
+        <DangerButton @click="deleteFromMenu">
+          {{ t.dish.delete }}
+        </DangerButton>
+      </div>
+    </AppSheet>
+
     <NuxtPage
       :board="board"
       @edited="onEdited"
+      @delete="deleteDish"
     />
   </main>
 </template>
 
 <style scoped>
-/* The FAB is a pebble, not a circle (handoff Button "FAB"). */
+/* The FAB is a pebble, not a circle (handoff Button "FAB"). While a Toast
+   shows, it moves up out of its way. */
 .fab {
   border-radius: var(--radius-blob);
+  transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+}
+.fab-lifted {
+  translate: 0 -76px;
 }
 /* On an empty Board the add action is highlighted: a butter ring breathes
    around it. Reduced motion (main.css) stops it after one pass. */
 .fab-prompt {
   animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
+}
+/* Deleting a Dish (handoff "Delete collapse + undo"): its card shrinks and
+   fades while the list closes up; "Rückgängig" brings it back with a little
+   overshoot. Reduced motion: it only fades. */
+.card-leave-active {
+  position: absolute;
+  inset-inline: 0;
+  transition: scale 260ms var(--ease-settle), opacity 260ms var(--ease-fade);
+}
+.card-enter-active {
+  transition: scale 380ms var(--ease-settle), opacity 380ms var(--ease-fade);
+}
+.card-leave-to,
+.card-enter-from {
+  scale: .9;
+  opacity: 0;
+}
+.card-move {
+  transition: transform var(--dur-settle) var(--ease-settle);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-leave-to,
+  .card-enter-from {
+    scale: none;
+  }
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }
