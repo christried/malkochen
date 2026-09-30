@@ -65,5 +65,5 @@ A Dish is Cooked once it has been moved into the Gekocht Column at least once.
 _Avoid_: Done, finished, completed
 
 **Cooking**:
-One occasion a Dish was cooked, with a date and an optional note, recorded each time the Dish is moved into the Gekocht Column. A Dish's Cookings form its Cooking History, which is kept when it moves out again.
+One occasion a Dish was cooked, with a date, an optional note and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there. A Dish's Cookings form its Cooking History, which is kept when it moves out again.
 _Avoid_: Done entry, log entry

@@ -4,7 +4,7 @@ import type { DishView } from '~~/server/utils/dishes'
 // Deleting a single Cooking from a Dish's Cooking History (PRD story 48):
 // it goes at once, and a Toast offers "Rückgängig" for the undo window,
 // which puts it back. The Dish's copy (the Board's) is changed in place.
-export function useCookingHistory(showToast: (toast: Toast) => void) {
+export function useCookingDelete(showToast: (toast: Toast) => void) {
   const t = useStrings()
 
   function deleteCooking(dish: DishView, cooking: CookingView) {

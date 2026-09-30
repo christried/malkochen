@@ -57,7 +57,6 @@ export const de = {
     cook: 'Gekocht ✓',
     cookLabel: (title: string) => `Gekocht ✓: „${title}“`,
     cookedCount: (count: number) => `${count}× gekocht`,
-    cooked: 'Gekocht ✓',
     addNote: 'Notiz hinzufügen',
     cookFailed: (title: string) => `„${title}“ ließ sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,
     uncookFailed: (title: string) => `„${title}“ ließ sich nicht zurückholen.`,

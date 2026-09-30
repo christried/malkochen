@@ -63,13 +63,13 @@ function keyOf(cooking: CookingView): number {
 
     <TransitionGroup
       tag="ol"
-      name="entry"
+      name="cooking"
       class="relative flex flex-col gap-2"
     >
       <li
         v-for="cooking in dish.cookings"
         :key="keyOf(cooking)"
-        class="entry flex items-start gap-3 rounded-[16px] bg-surface-muted p-3"
+        class="flex items-start gap-3 rounded-[16px] bg-surface-muted p-3"
         data-cooking
       >
         <span
@@ -149,41 +149,41 @@ function keyOf(cooking: CookingView): number {
 /* handoff CookingHistoryEntry. Added: it opens (max-height 0 → 96px) and
    fades in. Deleted: it slides 40px aside and the list closes up; restored,
    it comes back with a little overshoot. Reduced motion: it only fades. */
-.entry-enter-active {
+.cooking-enter-active {
   overflow: hidden;
   transition: max-height var(--dur-settle) var(--ease-settle), opacity var(--dur-fade) var(--ease-fade);
 }
-.entry-enter-from {
+.cooking-enter-from {
   max-height: 0;
   opacity: 0;
 }
-.entry-enter-to {
+.cooking-enter-to {
   max-height: 96px;
 }
-.entry-leave-active {
+.cooking-leave-active {
   position: absolute;
   inset-inline: 0;
-  transition: translate var(--dur-entry-collapse) var(--ease-swoosh), opacity var(--dur-entry-collapse) var(--ease-fade);
+  transition: translate var(--dur-cooking-collapse) var(--ease-swoosh), opacity var(--dur-cooking-collapse) var(--ease-fade);
 }
-.entry-leave-to {
+.cooking-leave-to {
   translate: 40px 0;
   opacity: 0;
 }
-.entry-move {
+.cooking-move {
   transition: transform var(--dur-settle) var(--ease-settle);
 }
 @media (prefers-reduced-motion: reduce) {
-  .entry-enter-active {
+  .cooking-enter-active {
     transition: opacity var(--dur-fade) var(--ease-fade);
   }
-  .entry-enter-from,
-  .entry-enter-to {
+  .cooking-enter-from,
+  .cooking-enter-to {
     max-height: none;
   }
-  .entry-leave-active {
+  .cooking-leave-active {
     transition: opacity var(--dur-fade) var(--ease-fade);
   }
-  .entry-leave-to {
+  .cooking-leave-to {
     translate: none;
   }
 }

@@ -210,6 +210,21 @@ test('undoing "Gekocht ✓" on a Dish already in Gekocht only removes the Cookin
   expect(found.dish.cookings).toEqual([first])
 })
 
+test('once the Dish has left Gekocht again, undo is refused and the Cooking stays', async () => {
+  const caller = await hedy()
+  const { ideen, dieseWoche } = await columnsOf(caller)
+  const dish = await addDish(caller, 'Tomatensuppe')
+  const cooking = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
+  // Another Member moves it on before the toast's undo arrives.
+  await moveDish(caller, dish.id, dieseWoche.id)
+
+  expect((await undoCooking(caller, cooking.id, ideen.id, 0)).status).toBe(400)
+
+  const found = await located(caller, dish.id)
+  expect(found.column.id).toBe(dieseWoche.id)
+  expect(found.dish.cookings).toEqual([cooking])
+})
+
 test('undo needs a Column of the Dish’s Board and a place', async () => {
   const caller = await hedy()
   const other = await linus()

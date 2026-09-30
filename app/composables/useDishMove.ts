@@ -83,7 +83,7 @@ export function useDishMove(
     if (pending) {
       hapticConfirm()
       showToast({
-        text: t.dish.cooked,
+        text: t.dish.cook,
         duration: UNDO_WINDOW_MS,
         actions: [
           { label: t.dish.addNote, run: async () => {
@@ -111,9 +111,10 @@ export function useDishMove(
     takeBack()
     await nextTick()
     document.getElementById(`dish-${dish.id}`)?.focus()
-    await $fetch(`/api/cookings/${cooking.id}/undo`, { method: 'POST', body: { columnId: column.id, index: from } }).catch(() => {
-      // Back to where the move put it, with its Cooking.
-      dish.cookings.unshift(cooking)
+    await $fetch(`/api/cookings/${cooking.id}/undo`, { method: 'POST', body: { columnId: column.id, index: from } }).catch((error: { statusCode?: number }) => {
+      // Back to where the move put it, with its Cooking unless that is gone
+      // (deleted from the Cooking History meanwhile).
+      if (error.statusCode !== 404) dish.cookings.unshift(cooking)
       const back = board.value && dishOnBoard(board.value, dish.id)
       if (now && back && back.column !== now.column) {
         removeFrom(back.column.dishes, back.dish)

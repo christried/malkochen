@@ -63,7 +63,7 @@ function addNote(dish: DishView, cooking: CookingView) {
 
 const { deleteDish, focusCard } = useDishDelete(board, showToast)
 const { moveDish, dropDish, cookDish } = useDishMove(board, showToast, addNote)
-const { deleteCooking } = useCookingHistory(showToast)
+const { deleteCooking } = useCookingDelete(showToast)
 
 // "Gekocht ✓" on a card: it leaves for the Gekocht Column (or stays, if it
 // is there), and focus goes to what took its place.
