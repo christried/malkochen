@@ -4,7 +4,7 @@ import type { SourceKind } from '../server/source-lookup'
 // blog/web). Reels and posts share Instagram's; any web page gets "web".
 export type SourceBadgeKind = 'tiktok' | 'instagram' | 'youtube' | 'pinterest' | 'web'
 
-export function sourceBadge(kind: SourceKind): SourceBadgeKind {
+export function badgeKind(kind: SourceKind): SourceBadgeKind {
   switch (kind) {
     case 'tiktok': return 'tiktok'
     case 'instagram-reel':

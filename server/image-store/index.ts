@@ -30,7 +30,8 @@ export interface ImageStoreOptions {
 }
 
 // Raster formats only: an SVG served from our own origin could run script.
-const EXTENSIONS: Record<string, string> = {
+// Media type → file extension.
+export const IMAGE_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
@@ -50,10 +51,10 @@ export function createImageStore(options: ImageStoreOptions): ImageStore {
   return async (imageUrl) => {
     try {
       const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
-      const found = await http.bytes(imageUrl, type => mediaType(type) in EXTENSIONS, maxBytes)
+      const found = await http.bytes(imageUrl, type => mediaType(type) in IMAGE_TYPES, maxBytes)
       if (!found) return null
       const type = mediaType(found.contentType)
-      return await options.storage.save(`dishes/${randomUUID()}.${EXTENSIONS[type]}`, found.bytes, type)
+      return await options.storage.save(`dishes/${randomUUID()}.${IMAGE_TYPES[type]}`, found.bytes, type)
     }
     catch {
       return null

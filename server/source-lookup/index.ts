@@ -27,10 +27,10 @@ const STRATEGIES: Strategy[] = [tiktok, instagram, youtube, pinterest, webPage]
 // canonical link. Used when a Dish is saved, so the stored Source never
 // depends on what the client claims.
 export function guessSource(link: string): SourceGuess {
-  return pick(link).guess
+  return matchStrategy(link).guess
 }
 
-function pick(link: string): { url: URL | null, strategy: Strategy, guess: SourceGuess } {
+function matchStrategy(link: string): { url: URL | null, strategy: Strategy, guess: SourceGuess } {
   const fallback = { kind: 'other', canonicalLink: link.trim() } as const
   let url: URL
   try {
@@ -51,7 +51,7 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
   const timeoutMs = options.timeoutMs ?? 8000
 
   return async (link) => {
-    const { url, strategy, guess } = pick(link)
+    const { url, strategy, guess } = matchStrategy(link)
     if (!url) return nothingFound(guess)
 
     const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))

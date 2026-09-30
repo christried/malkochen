@@ -1,5 +1,5 @@
-// The only way the strategies (and the Image Store) talk to the outside world. Every helper shares
-// one deadline for the whole lookup, follows redirects itself (so each hop can
+// The only way the strategies (and the Image Store) talk to the outside
+// world. Every helper shares one deadline for the whole lookup, follows redirects itself (so each hop can
 // be checked), refuses private hosts, and turns every failure into `null`:
 // a strategy just sees "nothing there".
 

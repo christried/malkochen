@@ -195,3 +195,24 @@ test('a stored image that fails to load falls back to the Placeholder', async ({
   await expect(card.locator('img[src="/placeholders/bowl-light.svg"]')).toBeVisible()
   await expect(card.locator('[data-dish-image]')).toHaveCount(0)
 })
+
+test('every Source kind gets its badge', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[2])
+  const badges = [
+    ['Reel', 'instagram-reel', 'https://www.instagram.com/reel/C1a2b3c4d5e/', 'Instagram'],
+    ['Post', 'instagram-post', 'https://www.instagram.com/p/C1a2b3c4d5e/', 'Instagram'],
+    ['Short', 'youtube-short', 'https://www.youtube.com/shorts/aBcDeFgHiJk', 'YouTube'],
+    ['Pin', 'pinterest-pin', 'https://www.pinterest.com/pin/123/', 'Pinterest'],
+    ['Video', 'tiktok', TIKTOK, 'TikTok'],
+    ['Blog', 'blog', 'https://kochblog.example/b', 'Web'],
+    ['Seite', 'other', 'https://example.org/c', 'Web'],
+  ] as const
+  for (const [title, sourceKind, sourceLink] of badges) {
+    await seedDish(page, { title: `Badge ${title}`, sourceLink, sourceKind })
+  }
+  await gotoHydrated(page, '/')
+
+  for (const [title, , , badge] of badges) {
+    await expect(page.getByRole('article', { name: `Badge ${title}` }).locator('[data-source-badge]')).toHaveText(badge)
+  }
+})

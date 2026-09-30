@@ -3,7 +3,7 @@ import type { SourceLookupResult } from '~~/server/source-lookup'
 import type { BoardSummary } from '~~/server/utils/boards'
 import type { DishView } from '~~/server/utils/dishes'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
-import { sourceBadge } from '~~/shared/source-badge'
+import { badgeKind } from '~~/shared/source-badge'
 
 // Add Dish. First a link: pasting one looks it up right away (Source Lookup)
 // and shows a preview with the image and an editable Suggested Title. Or
@@ -194,7 +194,7 @@ async function save() {
               v-if="result"
               aria-hidden="true"
               class="source-dot h-2.5 w-2.5 shrink-0 rounded-full"
-              :data-source="sourceBadge(result.kind)"
+              :data-source="badgeKind(result.kind)"
             />
             <input
               :id="linkId"
@@ -414,7 +414,7 @@ async function save() {
 /* Input "required/prompt": a butter glow that breathes, never red. Reduced
    motion (main.css) stops it after one pass. */
 .title-prompt {
-  animation: title-prompt 2.4s var(--ease-idle) infinite;
+  animation: title-prompt var(--dur-idle) var(--ease-idle) infinite;
 }
 @keyframes title-prompt {
   0%, 100% { box-shadow: 0 0 0 2px var(--color-focus); }

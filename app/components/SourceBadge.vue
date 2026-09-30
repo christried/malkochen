@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { SourceKind } from '~~/server/source-lookup'
-import { sourceBadge } from '~~/shared/source-badge'
+import { badgeKind } from '~~/shared/source-badge'
 
 // The handoff's SourceBadge, glass variant (it sits on the card's image): a
 // coloured dot and the Source's name.
 const props = defineProps<{ kind: SourceKind }>()
 const t = useStrings()
-const badge = computed(() => sourceBadge(props.kind))
+const badge = computed(() => badgeKind(props.kind))
 </script>
 
 <template>
