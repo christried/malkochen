@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../../shared/placeholders'
-import { dishNote, dishTitle, sourceInput, sourceOf, webLink } from '../../utils/dish-input'
+import { dishNote, dishTitle, sourceInput, sourceOf, webLinkInput } from '../../utils/dish-input'
 import { editDish, isDishMember, type SavedDish } from '../../utils/dishes'
 import { storeFoundImage } from '../../utils/image-store'
 
@@ -13,7 +13,7 @@ const body = z.object({
   // Null drops the stored image, so the Dish shows its Placeholder. A link is
   // the image "Bild neu laden" found (third-party) and needs the Image Ticket
   // it came with, as when adding a Dish.
-  imageUrl: webLink.nullable().optional(),
+  imageUrl: webLinkInput.nullable().optional(),
   imageTicket: z.string().max(200).nullish(),
 })
 

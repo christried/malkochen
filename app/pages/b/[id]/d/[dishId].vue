@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { SavedDish } from '~~/server/utils/dishes'
+import { dishOnBoard } from '~~/shared/board'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
 // on phones, a side panel over the Board from 768px (440px; 480px from
@@ -13,17 +14,11 @@ const t = useStrings()
 const route = useRoute()
 const router = useRouter()
 
-const found = computed(() => {
-  const dishId = route.params.dishId
-  for (const column of props.board.columns) {
-    const dish = column.dishes.find(d => d.id === dishId)
-    if (dish) return { dish, column }
-  }
-  return null
-})
-if (!found.value) throw createError({ statusCode: 404, statusMessage: 'Dish not found', fatal: true })
+// The Dish shown, and its Column.
+const located = computed(() => dishOnBoard(props.board, route.params.dishId))
+if (!located.value) throw createError({ statusCode: 404, statusMessage: 'Dish not found', fatal: true })
 
-useHead({ title: () => found.value ? `${found.value.dish.title} · ${t.app.name}` : t.app.name })
+useHead({ title: () => located.value ? `${located.value.dish.title} · ${t.app.name}` : t.app.name })
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const editing = ref(false)
@@ -71,23 +66,23 @@ watch(editing, async (isEditing) => {
   <dialog
     ref="dialog"
     class="detail bg-bg p-0 text-text tablet:shadow-sheet"
-    :aria-label="found?.dish.title"
+    :aria-label="located?.dish.title"
     @keydown.esc="onEscape"
     @close="close"
     @click.self="onBackdrop"
   >
-    <template v-if="found">
+    <template v-if="located">
       <DishDetailEditor
         v-if="editing"
-        :dish="found.dish"
+        :dish="located.dish"
         @saved="onSaved"
         @cancel="editing = false"
       />
       <DishDetailView
         v-else
-        :dish="found.dish"
+        :dish="located.dish"
         :board="board"
-        :column-name="found.column.name"
+        :column-name="located.column.name"
         @close="close"
         @edit="editing = true"
       />
@@ -140,8 +135,5 @@ watch(editing, async (isEditing) => {
 }
 @keyframes detail-slide {
   from { transform: translateX(100%); }
-}
-@keyframes scrim-in {
-  from { opacity: 0; }
 }
 </style>

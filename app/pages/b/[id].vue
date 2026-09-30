@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { SavedDish } from '~~/server/utils/dishes'
+import { dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time
 // with a simple switch (the real tabs and swiping come with #10); tablet and
@@ -27,8 +28,8 @@ const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length =
 // phones its Column comes to the front, so closing it lands there.
 // Closing it puts focus back on the Dish's card.
 watch(() => route.params.dishId, async (dishId, closedId) => {
-  const column = board.value?.columns.find(c => c.dishes.some(d => d.id === dishId))
-  if (column) activeColumnId.value = column.id
+  const opened = board.value && dishOnBoard(board.value, dishId)
+  if (opened) activeColumnId.value = opened.column.id
   if (dishId || typeof closedId !== 'string') return
   await nextTick()
   document.getElementById(`dish-${closedId}`)?.focus()
@@ -57,10 +58,8 @@ function onAdded(saved: SavedDish, boardId: string) {
 function onEdited(saved: SavedDish) {
   if (saved.imageNotStored) showNotice(t.detail.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
-  for (const column of board.value?.columns ?? []) {
-    const index = column.dishes.findIndex(d => d.id === dish.id)
-    if (index !== -1) column.dishes[index] = dish
-  }
+  const edited = board.value && dishOnBoard(board.value, dish.id)
+  if (edited) Object.assign(edited.dish, dish)
 }
 </script>
 

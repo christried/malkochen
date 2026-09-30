@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { SourceKind, SourceLookupResult } from '~~/server/source-lookup'
+import type { SourceLookupResult } from '~~/server/source-lookup'
+import type { SourceInput } from '~~/server/utils/dish-input'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import type { Placeholder } from '~~/shared/placeholders'
 import { webLink } from '~/utils/web-link'
@@ -51,6 +52,14 @@ function lookUp(target: string): Promise<LookupAnswer | null> {
 
 type Reload = 'idle' | 'looking' | 'found' | 'nothing' | 'failed'
 const reload = ref<Reload>('idle')
+// What the status line under the image says in each state.
+const reloadMessage = computed(() => ({
+  idle: '',
+  looking: '',
+  found: t.detail.reloadFound,
+  nothing: t.detail.reloadNothingFound,
+  failed: t.detail.reloadFailed,
+} satisfies Record<Reload, string>)[reload.value])
 
 const sourceLink = computed(() => link.value.trim() === '' ? null : webLink(link.value))
 const linkInvalid = computed(() => link.value.trim() !== '' && sourceLink.value === null)
@@ -112,7 +121,7 @@ watch(placeholder, () => {
 // The Source as saved: the Dish's own, or what Source Lookup says the new
 // link is (canonical link and kind). If the lookup fails, the server reads the
 // kind from the link itself.
-async function sourceToSave(): Promise<{ link: string, kind?: SourceKind } | null> {
+async function sourceToSave(): Promise<SourceInput | null> {
   const target = sourceLink.value
   if (!target) return null
   if (linkUnchanged.value && props.dish.source) return { ...props.dish.source }
@@ -215,7 +224,7 @@ async function save() {
       <p
         role="status"
         class="text-small text-text-muted empty:hidden"
-      >{{ reload === 'found' ? t.detail.reloadFound : reload === 'nothing' ? t.detail.reloadNothingFound : reload === 'failed' ? t.detail.reloadFailed : '' }}</p>
+      >{{ reloadMessage }}</p>
     </div>
 
     <div class="flex flex-col gap-2">

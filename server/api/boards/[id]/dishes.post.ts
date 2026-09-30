@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../../../shared/placeholders'
 import { isMember } from '../../../utils/boards'
-import { dishNote, dishTitle, sourceInput, sourceOf, webLink } from '../../../utils/dish-input'
+import { dishNote, dishTitle, sourceInput, sourceOf, webLinkInput } from '../../../utils/dish-input'
 import { addDish, type SavedDish } from '../../../utils/dishes'
 import { storeFoundImage } from '../../../utils/image-store'
 
@@ -13,7 +13,7 @@ const body = z.object({
   source: sourceInput.nullish(),
   // The Source image Source Lookup found (third-party) and the Image Ticket it
   // came with; copied on save, but only with a valid ticket.
-  imageUrl: webLink.nullish(),
+  imageUrl: webLinkInput.nullish(),
   imageTicket: z.string().max(200).nullish(),
 })
 

@@ -44,3 +44,8 @@ html {
 .source-dot[data-source="youtube"] { background: #FF0033; }
 .source-dot[data-source="pinterest"] { background: #E60023; }
 .source-dot[data-source="web"] { background: #8E8A83; }
+
+/* The scrim behind every modal (AppSheet, the Dish detail) fades in. */
+@keyframes scrim-in {
+  from { opacity: 0; }
+}

@@ -92,13 +92,17 @@ function toView({ columnId: _, sourceLink, sourceKind, adderId, adderName, adder
 // they are. `imageUrl` must already be a stored image, never a third-party link.
 export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'imageUrl' | 'placeholder'>>
 
+// The Dish, if it is on a Board the user is a Member of.
+function onMembersBoard(dishId: string, userId: string) {
+  return and(
+    eq(dish.id, dishId),
+    inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+  )
+}
+
 // Whether the Dish exists on a Board the user is a Member of.
 export async function isDishMember(dishId: string, userId: string): Promise<boolean> {
-  const [found] = await db
-    .select({ id: dish.id })
-    .from(dish)
-    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
-    .where(eq(dish.id, dishId))
+  const [found] = await db.select({ id: dish.id }).from(dish).where(onMembersBoard(dishId, userId))
   return found !== undefined
 }
 
@@ -109,16 +113,13 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
     ...rest,
     ...source !== undefined && { sourceLink: source?.link ?? null, sourceKind: source?.kind ?? null },
   }
-  const onMembersBoard = and(
-    eq(dish.id, dishId),
-    inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
-  )
+  const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
-    const updated = await db.update(dish).set(values).where(onMembersBoard).returning({ id: dish.id })
+    const updated = await db.update(dish).set(values).where(target).returning({ id: dish.id })
     if (updated.length === 0) return null
   }
 
-  const [row] = await selectDishes().where(onMembersBoard)
+  const [row] = await selectDishes().where(target)
   return row ? toView(row) : null
 }
 
