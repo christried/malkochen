@@ -20,6 +20,10 @@ test('every page links a manifest that makes malkochen installable', async ({ pa
   const manifest = await (await page.request.get(href!)).json()
 
   expect(manifest).toMatchObject({ name: 'malkochen', short_name: 'malkochen', start_url: '/', display: 'standalone', lang: 'de' })
+  // Dishes, never recipes (CONTEXT.md).
+  expect(manifest.description).toBe('Gerichte sammeln. Zusammen kochen.')
+  // One colour only, no media queries: the splash defaults to dark.
+  expect(manifest).toMatchObject({ background_color: '#131211', theme_color: '#131211' })
   type Icon = { src: string, sizes: string, type: string, purpose: string }
   const icons = manifest.icons as Icon[]
   for (const purpose of ['any', 'maskable']) {

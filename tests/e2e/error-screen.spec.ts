@@ -26,6 +26,7 @@ test('an unexpected error shows the error screen, and "Nochmal versuchen" tries 
   await page.getByRole('link', { name: 'Zurück zum Board' }).click()
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Da ist was angebrannt.')
+  await expect(page.getByText('Das liegt an uns, nicht an dir.')).toBeVisible()
   await expect(page.getByText('boom')).toHaveCount(0)
 
   await page.unroute('**/api/boards/*')

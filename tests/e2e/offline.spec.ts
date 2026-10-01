@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page, type Route } from '@playwright/test'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
 
@@ -34,6 +34,31 @@ test('opening malkochen offline shows the Offline page, which carries on once ba
   await expect(page).toHaveURL(/\/b\//)
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('Du bist offline.')
 })
+
+// The device is online but malkochen doesn't answer: say it's on our side.
+// context.route sees the service worker's own requests.
+for (const [what, outage] of [
+  ['no answer at all', (route: Route) => route.abort('connectionrefused')],
+  ['a Vercel platform error', (route: Route) => route.fulfill({ status: 502, headers: { 'x-vercel-error': 'NO_RESPONSE_FROM_FUNCTION' }, body: 'An error occurred' })],
+] as const) {
+  test(`when malkochen is down (${what}), the page says so and that it isn't the user's connection`, async ({ page, context }) => {
+    await signIn(page)
+    await gotoHydrated(page, '/')
+    await serviceWorkerInControl(page)
+
+    const landing = (url: URL) => url.pathname === '/'
+    await context.route(landing, outage)
+    await page.goto('/')
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('malkochen ist gerade nicht erreichbar.')
+    await expect(page.getByText('Das liegt an uns, nicht an dir.')).toBeVisible()
+    await expect(page.locator('img[src="/illustrations/topfbert-oops.svg"]')).toBeVisible()
+
+    await context.unroute(landing)
+    await page.getByRole('button', { name: 'Nochmal versuchen' }).click()
+    await expect(page).toHaveURL(/\/b\//)
+  })
+}
 
 test('losing the connection with the app open shows the Offline screen until it is back', async ({ page, context }) => {
   await signIn(page)

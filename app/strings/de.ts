@@ -269,16 +269,19 @@ export const de = {
     deleteForGood: 'Endgültig löschen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
   },
-  // public/offline.html repeats these, for the service worker.
+  // public/offline.html repeats these, for the service worker. It also has
+  // the only copy of "malkochen ist gerade nicht erreichbar", which only it
+  // shows.
   offline: {
     headline: 'Du bist offline.',
     body: 'Sobald du wieder Netz hast, geht’s hier weiter.',
     retry: 'Nochmal versuchen',
   },
-  // The error screen: a page that isn't there, or anything unexpected.
+  // The error screen: a page that isn't there, or anything unexpected --
+  // which is on malkochen's side, and it says so.
   error: {
     headline: 'Da ist was angebrannt.',
-    body: 'Etwas ist schiefgelaufen. Versuch es gleich noch mal.',
+    body: 'Das liegt an uns, nicht an dir. Versuch es gleich noch mal.',
     retry: 'Nochmal versuchen',
     notFoundHeadline: 'Das gibt’s hier nicht.',
     notFoundBody: 'Diese Seite gibt es nicht, oder du bist dort nicht (mehr) dabei.',
