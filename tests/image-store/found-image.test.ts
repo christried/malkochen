@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { createFoundImageStore } from '../../server/image-store/found-image'
 import { createImageTickets } from '../../server/image-store/tickets'
 
-// Storing a found image for a Dish: what creating and editing a Dish both do
+// Seam 3: storing a found image for a Dish, what creating and editing a Dish do
 // with the image Source Lookup found. Membership is faked and the Image Store
 // is a recorder; the Image Store itself is covered in image-store.test.ts.
 
@@ -10,14 +10,14 @@ const SECRET = 'test-secret-test-secret-test-secret-0123'
 const COVER = 'https://p16-sign.tiktokcdn-eu.com/obj/cover.jpeg?x-expires=1700000000'
 const STORED = 'https://store.example/dishes/cover.jpg'
 
-function storeFor(members: [boardId: string, userId: string][], copyAnswers: string | null = STORED) {
+function storeFor(members: [boardId: string, userId: string][], copyResult: string | null = STORED) {
   const tickets = createImageTickets(SECRET)
   const copied: string[] = []
   const store = createFoundImageStore({
     isMember: async (boardId, userId) => members.some(([b, u]) => b === boardId && u === userId),
     copyImage: async (imageUrl) => {
       copied.push(imageUrl)
-      return copyAnswers
+      return copyResult
     },
     tickets,
   })
