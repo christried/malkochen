@@ -21,20 +21,23 @@ The first render downloads Chrome Headless Shell (~110 MB) once.
 ## Commands
 
 ```bash
-npm run dev               # Remotion Studio: check every loop by eye before rendering
-npm run render            # render all Placeholder Image loops into public/placeholders/
-npm run render -- pasta   # only the named dishes
-npm test                  # loop maths: every animated layer fits, moves, and loops seamlessly
-npm run lint              # ESLint + tsc
+npm run dev                       # Remotion Studio: check every clip by eye before rendering
+npm run render                    # render everything into public/placeholders/ and public/clips/
+npm run render -- pasta offline   # only the named dishes and clips
+npm test                          # timelines: seamless loops, no jumps, the briefs' key moments
+npm run lint                      # ESLint + tsc
 ```
 
-`npm run render` writes, per dish and theme, next to the existing SVG stills:
+`npm run render` writes, per video and theme:
 
 | File | What |
 |---|---|
-| `public/placeholders/<dish>-<theme>.mp4` | H.264, plays everywhere |
-| `public/placeholders/<dish>-<theme>.webm` | VP9, smaller where supported |
-| `public/placeholders/<dish>-<theme>.png` | Poster: frame 0, the reduced-motion still |
+| `public/placeholders/<dish>-<theme>.{mp4,webm,png}` | The 16 Placeholder Image loops, next to the SVG stills |
+| `public/clips/<clip>-<theme>.{mp4,webm,png}` | The 15 state, system and celebration clips |
+
+`.mp4` is H.264 and plays everywhere, `.webm` is VP9 and smaller where it is
+supported, and `.png` is the poster: the reduced-motion still (frame 0 for a
+placeholder, the brief's "still" frame for a clip).
 
 Commit the rendered files; the app serves them as they are.
 
@@ -55,6 +58,28 @@ Commit the rendered files; the app serves them as they are.
   dish's ground tint. Pivots are relative to each layer's own bounding box
   (`transform-box: fill-box`).
 - One composition per dish and theme: `placeholder-<dish>-<theme>`.
+
+### The state, system and celebration clips
+
+- **`src/clips/<clip>.tsx`**, one per brief, each with a pure timeline,
+  `poses(frame)` (the pose of every moving part at any frame, which is what
+  `clips.test.ts` checks) and a `Scene` that draws it. `registry.ts` lists them.
+- Canvas, length, loop, background and poster frame come from the brief
+  (`clipBrief` in `src/briefs.ts`).
+- **`topfbert.tsx`** stacks Topfbert's mood layers and gives him his own
+  motions from `assets/topfbert/layers.json` (bob, hat, steam, blink, sparks,
+  drop, z's), retimed to whole fractions of each clip so the loops stay
+  seamless.
+- Layouts follow the app's existing Vue stills where there is one
+  (`EmptyBoard.vue`, `OfflineIllustration.vue`, the login and invite pages, …),
+  so a still can be swapped for its clip without a jump. Where a clip's
+  background is the blob's own tint (empty-board, invite), the blob is the
+  video's frame, masked in Vue, rather than drawn.
+- Text is real text in the app's fonts (`@remotion/google-fonts`): the
+  "Gleich!" sign, the z's, "10×" and the wordmark.
+- Not here: the Board's emoji (board-created, invite pebble) and the Member
+  avatars are Vue overlays; `gekocht-topfbert` and the particle effects are
+  built in Vue.
 
 ## License
 

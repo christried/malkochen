@@ -27,7 +27,7 @@ export type Pose = {
 export const REST: Pose = { x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 };
 
 // `ease` overrides the loop's easing for the segment that starts here.
-type Keyframe = { at: number; ease?: string } & Partial<Pose>;
+export type Keyframe = { at: number; ease?: string } & Partial<Pose>;
 
 const uniformScale = (scale: number) => ({ scaleX: scale, scaleY: scale });
 
@@ -230,25 +230,24 @@ const easingFor = (easing: string, seconds: number) => {
   return Easing.bezier(...points);
 };
 
-// Like CSS, the easing applies to each keyframe segment, not the whole loop.
-export const poseAt = (spec: string, frame: number, fps: number): Pose => {
-  const { animation, durationS, easing, delayS } = parseLoop(spec);
-  const keyframes = ANIMATIONS[animation];
-  if (!keyframes) throw new Error(`No keyframes for animation "${animation}"`);
-
-  // Work in frames so that whole-frame delays give exact phases.
-  const period = durationS * fps;
-  const shifted = (((frame - delayS * fps) % period) + period) % period;
-  const phase = shifted / period;
-
-  const next = keyframes.findIndex((k) => k.at > phase);
+// The pose at `t` along keyframes ordered by `at`, held before the first and
+// after the last. `secondsPerUnit` converts a segment's span to seconds for
+// spring easings. Like CSS, the easing applies to each keyframe segment, not
+// the whole run.
+export const interpolateKeyframes = (
+  keyframes: Keyframe[],
+  t: number,
+  easing: string,
+  secondsPerUnit: number,
+): Pose => {
+  const next = keyframes.findIndex((k) => k.at > t);
   const from = keyframes[Math.max(0, next - 1)];
   const to = keyframes[next === -1 ? keyframes.length - 1 : next];
   const span = to.at - from.at;
   const progress =
     span === 0
       ? 0
-      : easingFor(from.ease ?? easing, span * durationS)((phase - from.at) / span);
+      : easingFor(from.ease ?? easing, span * secondsPerUnit)((t - from.at) / span);
 
   const pose = { ...REST };
   for (const key of Object.keys(REST) as (keyof Pose)[]) {
@@ -257,6 +256,17 @@ export const poseAt = (spec: string, frame: number, fps: number): Pose => {
     pose[key] = a + (b - a) * progress;
   }
   return pose;
+};
+
+export const poseAt = (spec: string, frame: number, fps: number): Pose => {
+  const { animation, durationS, easing, delayS } = parseLoop(spec);
+  const keyframes = ANIMATIONS[animation];
+  if (!keyframes) throw new Error(`No keyframes for animation "${animation}"`);
+
+  // Work in frames so that whole-frame delays give exact phases.
+  const period = durationS * fps;
+  const shifted = (((frame - delayS * fps) % period) + period) % period;
+  return interpolateKeyframes(keyframes, shifted / period, easing, durationS);
 };
 
 const invisible = (pose: Pose) =>

@@ -8,6 +8,7 @@ import {
 import type { Placeholder as Dish, PlaceholderTheme } from "../../shared/placeholders";
 import { placeholderBrief } from "./briefs";
 import { type Pose, poseAt } from "./motion";
+import { innerMarkup } from "./svg";
 
 // One Placeholder Image loop: the dish's full-canvas layers stacked by z in the
 // shared 120×120 viewBox, drawn into the centred 800×800 safe square of the
@@ -35,13 +36,6 @@ type LayerSpec = {
   loop: string | null;
   pivot: string | null;
 };
-
-// A layer file's drawing, without its <svg> wrapper and provenance metadata.
-const innerMarkup = (svg: string) =>
-  svg
-    .replace(/<metadata>[\s\S]*?<\/metadata>/g, "")
-    .replace(/^[\s\S]*?<svg[^>]*>/, "")
-    .replace(/<\/svg>\s*$/, "");
 
 export const calculatePlaceholderMetadata: CalculateMetadataFunction<
   PlaceholderProps

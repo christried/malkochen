@@ -1,0 +1,63 @@
+import { cycle, keys, type Clip } from "./clip";
+import { Place, Stage } from "./draw";
+import { Topfbert, topfbertHeight, topfbertPoses } from "./topfbert";
+
+// A Board with no Dishes: Topfbert happy with four veggies in his pot, which
+// hop out and flip one at a time. Laid out like EmptyBoard.vue. The clip's
+// background is the butter blob's tint, so the blob is the video's own frame
+// (masked in Vue) rather than drawn here.
+
+const FRAMES = 72;
+// Each veggie's slot: it hops in the first 18 frames after its start.
+const SLOT = 18;
+const VEGGIES = ["veggies/carrot.svg", "veggies/pea.svg", "veggies/pepper.svg", "veggies/pea.svg"];
+// Where each sits in the pot, in Topfbert's viewBox: clear of the hat.
+const SPOTS = [64, 80, 96, 112];
+const VEGGIE_SIZE = 24;
+
+// Up and flipped 150° at the apex, a full turn by the landing. Veggie units.
+const hop = (frame: number, start: number) =>
+  keys(cycle(frame, FRAMES, start), [
+    { at: 0, ease: "ease-out" },
+    { at: 9, y: -64, rotate: 150, ease: "ease-in" },
+    { at: 16, rotate: 360 },
+    { at: SLOT, rotate: 360 },
+  ]);
+
+export const emptyBoard: Clip = {
+  id: "empty-board",
+  art: { svgs: ["veggies/carrot.svg", "veggies/pea.svg", "veggies/pepper.svg"], topfbert: ["happy"] },
+  poses: (frame) => {
+    const poses = topfbertPoses("happy", frame, { period: FRAMES, blink: FRAMES });
+    VEGGIES.forEach((_, i) => {
+      // A full turn looks like none, so a landed veggie is at rest.
+      const pose = hop(frame, i * SLOT);
+      poses[`veggie.${i + 1}`] = { ...pose, rotate: pose.rotate % 360 };
+    });
+    return poses;
+  },
+  Scene: ({ background, poses, art, width, height }) => {
+    const topfbertWidth = 0.62 * width;
+    return (
+      <Stage width={width} height={height} background={background}>
+        <Topfbert
+          layers={art.topfbert.happy!}
+          poses={poses}
+          x={(width - topfbertWidth) / 2}
+          y={height - 0.04 * height - topfbertHeight(topfbertWidth)}
+          width={topfbertWidth}
+          inPot={VEGGIES.map((path, i) => (
+            <Place
+              key={i}
+              svg={art.svgs[path]}
+              x={SPOTS[i] - VEGGIE_SIZE / 2}
+              y={22}
+              width={VEGGIE_SIZE}
+              pose={poses[`veggie.${i + 1}`]}
+            />
+          ))}
+        />
+      </Stage>
+    );
+  },
+};
