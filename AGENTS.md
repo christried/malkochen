@@ -15,3 +15,7 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Implementation order
+
+When asked to implement without a ticket number (e.g. a bare `/implement`, or "next ticket"), pick the next ticket from `docs/agents/implementation-order.md`. Follow its order, not just the issues' blocking edges.
