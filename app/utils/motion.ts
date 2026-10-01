@@ -13,3 +13,13 @@ export function motionMs(token: string): number {
 
 // How a Placeholder Image plays its loop: on and on, once through, or not.
 export type ClipMotion = 'loop' | 'once' | null
+
+// "Wrong input" (handoff Dialog): the field shakes sideways once, ±5px over
+// 500ms. Reduced motion: it doesn't.
+export function shake(el: Element) {
+  if (prefersReducedMotion()) return
+  el.animate(
+    [{ translate: '0' }, { translate: '-5px' }, { translate: '5px' }, { translate: '-5px' }, { translate: '5px' }, { translate: '0' }],
+    { duration: 500, easing: 'ease-in-out' },
+  )
+}

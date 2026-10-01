@@ -32,8 +32,16 @@ html {
 :root {
   --dur-cook-hold: 300ms;
 }
+/* A sheet moving out (handoff "Sheet open / close": 320ms ease-in, the
+   scrim 240ms). Script waits for it before the next thing moves. */
+:root {
+  --dur-sheet-out: 320ms;
+  --dur-scrim-out: 240ms;
+}
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --dur-sheet-out: 0ms;
+    --dur-scrim-out: 0ms;
     --dur-cook-hold: 0ms;
     --dur-drop-settle: 0ms;
     --dur-drop-swallow: 0ms;

@@ -276,6 +276,7 @@ watch(confirmingDeleteBoard, () => {
 const nameTyped = computed(() => typedName.value.trim() === saved.value.name)
 function deleteBoard() {
   if (!nameTyped.value) return
+  hapticReject()
   confirmingDeleteBoard.value = false
   return goOffBoard(() => $fetch<null>(`/api/boards/${id.value}`, { method: 'DELETE' }))
 }
@@ -581,6 +582,7 @@ function confirmDelete() {
           type="text"
           autocomplete="off"
           class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          @keydown.enter="nameTyped || shake($event.target as Element)"
         >
         <DangerButton
           type="submit"
