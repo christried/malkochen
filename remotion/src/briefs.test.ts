@@ -27,6 +27,18 @@ describe("clipBrief", () => {
   it("takes another clip's frame for a still that names one", () => {
     expect(clipBrief("invite-intro").poster).toEqual({ clip: "invite-loop", frame: 0 });
   });
+
+  it("bakes in the colour the app shows a clip on, where that isn't the brief's", () => {
+    const surfaceMuted = { light: "#EFEDE8", dark: "#2A2825" };
+    const bg = { light: "#F7F6F2", dark: "#131211" };
+    // The Column panel.
+    expect(clipBrief("empty-board").background).toEqual(surfaceMuted);
+    expect(clipBrief("empty-column").background).toEqual(surfaceMuted);
+    // The Dish detail and the invite page.
+    expect(clipBrief("never-cooked").background).toEqual(bg);
+    expect(clipBrief("invite-intro").background).toEqual(bg);
+    expect(clipBrief("invite-loop").background).toEqual(bg);
+  });
 });
 
 describe("CLIP_IDS", () => {

@@ -1,14 +1,14 @@
 import { clipBrief } from "../briefs";
 import { REST } from "../motion";
 import { type Clip, cycle, defineClip, type Poses, type SceneProps } from "./clip";
-import { palette, Place, Stage } from "./draw";
+import { ACCENT, Blob, mix, palette, Place, Stage } from "./draw";
 import { Pebble } from "./pebble";
 import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
 // The invite landing, after the intro: the Board's pebble bobs, Topfbert
 // bobs at the bottom left, and six veggies circle the pebble once per loop,
-// staying upright. Laid out like the still on the invite page. The clip's
-// background is the butter blob's tint, so the blob is the video's frame.
+// staying upright, round a butter blob. Laid out like the still on the invite
+// page, on the page's colour (briefs.ts).
 // The Board's emoji and the Member avatars are Vue overlays.
 
 export const INVITE_LOOP_FRAMES = 420;
@@ -60,7 +60,12 @@ export const InviteScene: React.FC<SceneProps<InvitePart>> = ({
 }) => {
   const topfbertWidth = 0.4 * width;
   return (
-    <Stage width={width} height={height} background={background}>
+    <Stage
+      width={width}
+      height={height}
+      background={background}
+      under={<Blob inset={6} background={mix(ACCENT.butter, 22, palette(theme).bg)} />}
+    >
       {Array.from({ length: RING_SIZE }, (_, i) => {
         const { x, y, ...pose } = poses[`veggie.${i + 1}`];
         return (

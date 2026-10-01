@@ -1,5 +1,6 @@
 import briefs from "../../docs/design handoff/remotion-briefs.json";
 import type { Placeholder, PlaceholderTheme } from "../../shared/placeholders";
+import { palette } from "./clips/draw";
 
 // The handoff's remotion-briefs.json is the source of truth for each clip's
 // canvas, length, frame rate and baked-in background. Only the fields used
@@ -94,12 +95,27 @@ const posterOf = (id: ClipId, still: string, frames: number): Poster => {
   return { clip, frame: Number(match[2]) };
 };
 
+// Where the app shows a clip on another colour than its brief's, the clip is
+// rendered on that colour so it blends in, and draws its tint as a blob
+// instead: the Column panel (surface-muted), the Dish detail and the invite
+// page (bg).
+const IN_APP_BACKGROUND: Partial<Record<ClipId, "surfaceMuted" | "bg">> = {
+  "empty-board": "surfaceMuted",
+  "empty-column": "surfaceMuted",
+  "never-cooked": "bg",
+  "invite-intro": "bg",
+  "invite-loop": "bg",
+};
+
 export const clipBrief = (id: ClipId): ClipBrief => {
   const { brief, video } = videoBrief(id);
+  const inApp = IN_APP_BACKGROUND[id];
   return {
     video,
     loop: brief.loop,
-    background: { light: brief.background.light, dark: brief.background.dark },
+    background: inApp
+      ? { light: palette("light")[inApp], dark: palette("dark")[inApp] }
+      : { light: brief.background.light, dark: brief.background.dark },
     poster: posterOf(id, brief.still, video.durationInFrames),
   };
 };
