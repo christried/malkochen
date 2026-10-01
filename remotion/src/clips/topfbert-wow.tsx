@@ -1,13 +1,13 @@
-import type { Clip } from "./clip";
+import { defineClip } from "./clip";
 import { Stage } from "./draw";
-import { Topfbert, topfbertHeight, topfbertPoses } from "./topfbert";
+import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
 // The sign-in hero's centre: Topfbert wow, bobbing, with three sparkles. The
 // ring of Placeholder tiles around him is Vue.
 
 const FRAMES = 84;
 
-export const topfbertWow: Clip = {
+export const topfbertWow = defineClip<TopfbertPart>({
   id: "topfbert-wow",
   art: { topfbert: ["wow"] },
   poses: (frame) => topfbertPoses("wow", frame, { period: FRAMES }),
@@ -20,10 +20,10 @@ export const topfbertWow: Clip = {
           layers={art.topfbert.wow!}
           poses={poses}
           x={(width - topfbertWidth) / 2}
-          y={height - 0.06 * height - topfbertHeight(topfbertWidth)}
+          bottom={0.94 * height}
           width={topfbertWidth}
         />
       </Stage>
     );
   },
-};
+});

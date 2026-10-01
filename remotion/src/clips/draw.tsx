@@ -112,10 +112,10 @@ export const Place: React.FC<{
 };
 
 // One <g id="…"> of a handoff SVG (the Wi-Fi sign's arcs, say), on its own.
+// The handoff's groups don't nest, so the first </g> closes it.
 export const piece = (svg: Svg, id: string): Svg => {
   const start = svg.markup.indexOf(`<g id="${id}"`);
-  const end = svg.markup.indexOf("</g>", start);
-  const match = start === -1 ? null : [svg.markup.slice(start, end + "</g>".length)];
-  if (!match) throw new Error(`No <g id="${id}">`);
-  return { ...svg, markup: match[0] };
+  if (start === -1) throw new Error(`No <g id="${id}">`);
+  const end = svg.markup.indexOf("</g>", start) + "</g>".length;
+  return { ...svg, markup: svg.markup.slice(start, end) };
 };

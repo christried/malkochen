@@ -1,3 +1,4 @@
+import { CLIP_IDS, type ClipId } from "../briefs";
 import type { Clip } from "./clip";
 import { boardCreated } from "./board-created";
 import { emptyBoard } from "./empty-board";
@@ -15,27 +16,26 @@ import { searchEmpty } from "./search-empty";
 import { splash } from "./splash";
 import { topfbertWow } from "./topfbert-wow";
 
-// Every state, system and celebration clip, in the briefs' order.
-export const CLIPS: Clip[] = [
-  emptyBoard,
-  emptyColumn,
-  searchEmpty,
-  lookupStir,
-  lookupFailed,
-  neverCooked,
-  milestone10x,
-  boardCreated,
-  inviteIntro,
-  inviteLoop,
+// One clip per brief: leaving one out is a type error.
+const BY_ID: Record<ClipId, Clip> = {
+  "empty-board": emptyBoard,
+  "empty-column": emptyColumn,
+  "search-empty": searchEmpty,
+  "lookup-stir": lookupStir,
+  "lookup-failed": lookupFailed,
+  "never-cooked": neverCooked,
+  "milestone-10x": milestone10x,
+  "board-created": boardCreated,
+  "invite-intro": inviteIntro,
+  "invite-loop": inviteLoop,
   splash,
-  topfbertWow,
-  notUnlocked,
+  "topfbert-wow": topfbertWow,
+  "not-unlocked": notUnlocked,
   offline,
   error,
-];
-
-export const clipById = (id: string): Clip => {
-  const clip = CLIPS.find((c) => c.id === id);
-  if (!clip) throw new Error(`No clip ${id}`);
-  return clip;
 };
+
+// Every state, system and celebration clip, in the briefs' order.
+export const CLIPS: Clip[] = CLIP_IDS.map((id) => BY_ID[id]);
+
+export const clipById = (id: ClipId): Clip => BY_ID[id];

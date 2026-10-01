@@ -1,7 +1,7 @@
 import { REST } from "../motion";
-import { cycle, keys, type Clip } from "./clip";
+import { cycle, defineClip, keys } from "./clip";
 import { ACCENT, Blob, mix, palette, piece, Place, Stage } from "./draw";
-import { Topfbert, topfbertHeight, topfbertPoses } from "./topfbert";
+import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
 // Offline: Topfbert asleep, desaturated, on a sky blob beside a Wi-Fi sign
 // whose outer two arcs fade out one after the other and come back. Laid out
@@ -19,7 +19,7 @@ const fade = (frame: number, start: number) =>
     { at: FRAMES },
   ]);
 
-export const offline: Clip = {
+export const offline = defineClip<TopfbertPart | "wifi.outer" | "wifi.inner">({
   id: "offline",
   art: { svgs: [WIFI], topfbert: ["sleep"] },
   poses: (frame) => ({
@@ -43,7 +43,7 @@ export const offline: Clip = {
           layers={art.topfbert.sleep!}
           poses={poses}
           x={0.12 * width}
-          y={height - 0.04 * height - topfbertHeight(topfbertWidth)}
+          bottom={0.96 * height}
           width={topfbertWidth}
           filter="saturate(.4)"
         />
@@ -54,4 +54,4 @@ export const offline: Clip = {
       </Stage>
     );
   },
-};
+});

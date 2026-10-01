@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CLIP_IDS, clipBrief } from "../briefs";
+import { CLIP_IDS, type ClipId, clipBrief } from "../briefs";
 import { looksSame, type Pose, REST } from "../motion";
 import { CLIPS, clipById } from "./registry";
 
@@ -8,7 +8,7 @@ import { CLIPS, clipById } from "./registry";
 // on screen, and the moments the briefs pin down happen.
 
 const clip = clipById;
-const pose = (id: string, part: string, frame: number): Pose => {
+const pose = (id: ClipId, part: string, frame: number): Pose => {
   const p = clip(id).poses(frame)[part];
   if (!p) throw new Error(`${id} has no part ${part}`);
   return p;
@@ -151,7 +151,8 @@ describe("empty-board", () => {
   });
 
   it("blinks at f66–70", () => {
-    expect(pose("empty-board", "topfbert.eyes", 69).scaleY).toBeLessThan(0.5);
+    expect(pose("empty-board", "topfbert.eyes", 68).scaleY).toBeLessThan(0.5);
+    expect(pose("empty-board", "topfbert.eyes", 70).scaleY).toBeCloseTo(1);
     expect(pose("empty-board", "topfbert.eyes", 60).scaleY).toBeCloseTo(1);
   });
 });
@@ -163,11 +164,14 @@ describe("lookup-stir", () => {
     expect(pose("lookup-stir", "topfbert.spoon", 36).rotate).toBeCloseTo(-20);
   });
 
-  it("orbits carrot, pea and pepper once per 48f, a third of a lap apart", () => {
-    expect(pose("lookup-stir", "orbit.1", 48)).toEqual(pose("lookup-stir", "orbit.1", 0));
-    expect(looksSame(pose("lookup-stir", "orbit.1", 24), pose("lookup-stir", "orbit.1", 0))).toBe(false);
-    expect(pose("lookup-stir", "orbit.2", 0)).toEqual(pose("lookup-stir", "orbit.1", 32));
-    expect(pose("lookup-stir", "orbit.3", 0)).toEqual(pose("lookup-stir", "orbit.1", 64));
+  // A 48f pass is one side-to-side sweep, so a lap is 96f, which 144 can't
+  // hold; the nearest seamless lap is 72f (two per loop), with the briefed
+  // thirds-of-a-lap phases scaled to match.
+  it("orbits carrot, pea and pepper once per 72f, a third of a lap apart", () => {
+    expect(pose("lookup-stir", "orbit.1", 72)).toEqual(pose("lookup-stir", "orbit.1", 0));
+    expect(looksSame(pose("lookup-stir", "orbit.1", 36), pose("lookup-stir", "orbit.1", 0))).toBe(false);
+    expect(pose("lookup-stir", "orbit.2", 0)).toEqual(pose("lookup-stir", "orbit.1", 24));
+    expect(pose("lookup-stir", "orbit.3", 0)).toEqual(pose("lookup-stir", "orbit.1", 48));
   });
 });
 
@@ -192,12 +196,13 @@ describe("search-empty", () => {
     expect(right.rotate).toBeCloseTo(10);
   });
 
-  it("keeps the pea behind the plate until it peeks at f54–80, and ducks around f90", () => {
+  it("keeps the pea behind the plate until it peeks at f54–80, and has it ducked by f90", () => {
     expect(pose("search-empty", "pea", 0).y).toBe(0);
     expect(pose("search-empty", "pea", 54).y).toBe(0);
     expect(pose("search-empty", "pea", 70).y).toBeLessThan(0);
     expect(pose("search-empty", "pea", 80).y).toBeLessThan(0);
-    expect(pose("search-empty", "pea", 96).y).toBe(0);
+    expect(pose("search-empty", "pea", 85).y).toBeGreaterThan(pose("search-empty", "pea", 80).y);
+    expect(pose("search-empty", "pea", 90).y).toBe(0);
   });
 });
 
@@ -233,9 +238,13 @@ describe("milestone-10x", () => {
 });
 
 describe("board-created", () => {
+  const confetti = Array.from({ length: 10 }, (_, i) => `confetti.${i + 1}`);
+  const distance = (p: Pose) => Math.hypot(p.x, p.y);
+
   it("starts empty", () => {
-    expect(invisible(pose("board-created", "pebble", 0))).toBe(true);
-    expect(invisible(pose("board-created", "confetti", 0))).toBe(true);
+    for (const part of ["pebble", ...confetti]) {
+      expect(invisible(pose("board-created", part, 0)), part).toBe(true);
+    }
   });
 
   it("pops the pebble at f3 from −30°, past +8° at f9, upright at f13", () => {
@@ -244,23 +253,41 @@ describe("board-created", () => {
     expect(looksSame(pose("board-created", "pebble", 13), REST)).toBe(true);
   });
 
-  it("bursts the confetti radially from f3, gone by f18", () => {
-    expect(invisible(pose("board-created", "confetti", 10))).toBe(false);
-    expect(pose("board-created", "confetti", 12).x).toBeGreaterThan(pose("board-created", "confetti", 6).x);
-    expect(invisible(pose("board-created", "confetti", 18))).toBe(true);
+  it("bursts ten pieces of confetti radially from f3, gone by f18", () => {
+    const directions = confetti.map((part) => {
+      const p = pose("board-created", part, 12);
+      return Math.round((Math.atan2(p.y, p.x) * 180) / Math.PI + 360) % 360;
+    });
+    expect(new Set(directions).size).toBe(10);
+    for (const part of confetti) {
+      expect(invisible(pose("board-created", part, 10)), part).toBe(false);
+      expect(distance(pose("board-created", part, 12))).toBeGreaterThan(
+        distance(pose("board-created", part, 6)),
+      );
+      expect(invisible(pose("board-created", part, 18)), part).toBe(true);
+    }
   });
 
   it("ends holding the pebble", () => {
     const last = clip("board-created").poses(35);
     expect(looksSame(last.pebble, REST)).toBe(true);
-    expect(invisible(last.confetti)).toBe(true);
+    for (const part of confetti) expect(invisible(last[part]), part).toBe(true);
   });
 });
 
 describe("invite-loop", () => {
-  it("turns the veggie ring half-way by f210 and all the way by f420", () => {
-    expect(pose("invite-loop", "ring", 0).rotate).toBeCloseTo(0);
-    expect(pose("invite-loop", "ring", 210).rotate).toBeCloseTo(180);
+  it("circles six upright veggies round the pebble, half-way by f210", () => {
+    for (let i = 1; i <= 6; i++) {
+      const start = pose("invite-loop", `veggie.${i}`, 0);
+      const halfway = pose("invite-loop", `veggie.${i}`, 210);
+      expect(halfway.x).toBeCloseTo(-start.x);
+      expect(halfway.y).toBeCloseTo(-start.y);
+      expect(halfway.rotate).toBe(0);
+    }
+    // veggie.1 starts at the top, the others a sixth of a lap apart.
+    expect(pose("invite-loop", "veggie.1", 0).x).toBeCloseTo(0);
+    expect(pose("invite-loop", "veggie.1", 0).y).toBeLessThan(0);
+    expect(pose("invite-loop", "veggie.2", 0)).toEqual(pose("invite-loop", "veggie.1", 70));
   });
 
   it("bobs the pebble ±8 on an 84f cycle (90f would not loop in 420) and Topfbert on 84f", () => {
@@ -309,11 +336,12 @@ describe("splash", () => {
     expect(looksSame(pose("splash", "lid", 16), REST)).toBe(true);
   });
 
-  it("raises the wordmark and pops its dot from f13, both in place by f17", () => {
+  // In place by the f16 still (the storyboard's "to f17", a frame early).
+  it("raises the wordmark and pops its dot from f13, both in place by f16", () => {
     expect(pose("splash", "wordmark", 13).opacity).toBeCloseTo(0);
     expect(invisible(pose("splash", "dot", 13))).toBe(true);
-    expect(looksSame(pose("splash", "wordmark", 17), REST)).toBe(true);
-    expect(looksSame(pose("splash", "dot", 17), REST)).toBe(true);
+    expect(looksSame(pose("splash", "wordmark", 16), REST)).toBe(true);
+    expect(looksSame(pose("splash", "dot", 16), REST)).toBe(true);
   });
 
   it("zooms the icon 1.9× as it fades from f29, gone at f33 for Vue's cross-fade", () => {

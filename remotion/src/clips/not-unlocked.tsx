@@ -1,14 +1,14 @@
 import { REST } from "../motion";
-import { swing, type Clip } from "./clip";
+import { defineClip, swing } from "./clip";
 import { ACCENT, Blob, Place, Stage } from "./draw";
-import { Topfbert, topfbertHeight, topfbertPoses } from "./topfbert";
+import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
 // Account not unlocked: Topfbert happy beside his "Gleich!" sign, which sways
 // −8° ↔ +8° on its post. Laid out like the still on the login page.
 
 const FRAMES = 84;
 
-export const notUnlocked: Clip = {
+export const notUnlocked = defineClip<TopfbertPart | "sign">({
   id: "not-unlocked",
   art: { svgs: ["shapes/sign.svg"], topfbert: ["happy"] },
   poses: (frame) => ({
@@ -30,7 +30,7 @@ export const notUnlocked: Clip = {
           layers={art.topfbert.happy!}
           poses={poses}
           x={0.08 * width}
-          y={height - topfbertHeight(topfbertWidth)}
+          bottom={height}
           width={topfbertWidth}
         />
         <Place
@@ -45,4 +45,4 @@ export const notUnlocked: Clip = {
       </Stage>
     );
   },
-};
+});

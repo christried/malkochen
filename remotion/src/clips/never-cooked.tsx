@@ -1,7 +1,7 @@
 import { REST } from "../motion";
-import { swing, type Clip } from "./clip";
+import { defineClip, swing } from "./clip";
 import { ACCENT, Blob, mix, Place, Stage } from "./draw";
-import { Topfbert, topfbertHeight, topfbertPoses } from "./topfbert";
+import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
 // A Dish never cooked yet (empty Cooking History): Topfbert happy resting on
 // a sage blob while a pea rolls back and forth at his feet.
@@ -12,7 +12,7 @@ const PEA = "characters/pea.svg";
 const ROLL = 16;
 const PEA_RADIUS = 16;
 
-export const neverCooked: Clip = {
+export const neverCooked = defineClip<TopfbertPart | "pea">({
   id: "never-cooked",
   art: { svgs: [PEA], topfbert: ["happy"] },
   poses: (frame) => {
@@ -38,7 +38,7 @@ export const neverCooked: Clip = {
           layers={art.topfbert.happy!}
           poses={poses}
           x={0.56 * width - topfbertWidth / 2}
-          y={bottom - topfbertHeight(topfbertWidth)}
+          bottom={bottom}
           width={topfbertWidth}
         />
         <Place
@@ -53,4 +53,4 @@ export const neverCooked: Clip = {
       </Stage>
     );
   },
-};
+});

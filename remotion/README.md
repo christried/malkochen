@@ -37,7 +37,8 @@ npm run lint                      # ESLint + tsc
 
 `.mp4` is H.264 and plays everywhere, `.webm` is VP9 and smaller where it is
 supported, and `.png` is the poster: the reduced-motion still (frame 0 for a
-placeholder, the brief's "still" frame for a clip).
+placeholder, the brief's "still" for a clip; invite-intro's is invite-loop's
+frame 0, where it hands off).
 
 Commit the rendered files; the app serves them as they are.
 
@@ -63,9 +64,14 @@ Commit the rendered files; the app serves them as they are.
 
 - **`src/clips/<clip>.tsx`**, one per brief, each with a pure timeline,
   `poses(frame)` (the pose of every moving part at any frame, which is what
-  `clips.test.ts` checks) and a `Scene` that draws it. `registry.ts` lists them.
-- Canvas, length, loop, background and poster frame come from the brief
-  (`clipBrief` in `src/briefs.ts`).
+  `clips.test.ts` checks) and a `Scene` that draws it. Each names its moving
+  parts (`defineClip<"sign" | …>`), so a misspelt part is a type error, and
+  `registry.ts` has one clip per id in `CLIP_IDS`. Timelines count frames,
+  never seconds.
+- Canvas, length, loop, background and poster come from the brief
+  (`clipBrief` in `src/briefs.ts`). Where a briefed timing can't loop
+  seamlessly, the nearest one that does is used, and the clip says so
+  (invite-loop's 84f pebble bob, lookup-stir's 72f orbit).
 - **`topfbert.tsx`** stacks Topfbert's mood layers and gives him his own
   motions from `assets/topfbert/layers.json` (bob, hat, steam, blink, sparks,
   drop, z's), retimed to whole fractions of each clip so the loops stay

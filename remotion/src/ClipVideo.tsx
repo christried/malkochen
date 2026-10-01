@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { clipBrief } from "./briefs";
+import { type ClipId, clipBrief, type Poster } from "./briefs";
 import type { Art, Mood, Theme } from "./clips/clip";
 import { clipById } from "./clips/registry";
 import { innerMarkup, viewBoxOf } from "./svg";
@@ -20,10 +20,10 @@ loadHankenGrotesk("normal", { weights: ["700"], subsets: ["latin"] });
 loadNewsreader("normal", { weights: ["400"], subsets: ["latin"] });
 
 export type ClipProps = {
-  clip: string;
+  clip: ClipId;
   theme: Theme;
   // The brief's still, for scripts/render.ts, which can't read the briefs.
-  posterFrame: number;
+  poster: Poster;
   // Filled in by calculateMetadata.
   art: Art;
 };

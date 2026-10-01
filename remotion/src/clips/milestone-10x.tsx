@@ -1,4 +1,5 @@
-import { keys, type Clip } from "./clip";
+import { uniformScale } from "../motion";
+import { defineClip, keys } from "./clip";
 import { palette, Place, poseTransform, Stage } from "./draw";
 import { Pebble } from "./pebble";
 
@@ -9,29 +10,28 @@ import { Pebble } from "./pebble";
 const PEBBLE = "shapes/pebble.svg";
 const BURST = "shapes/burst-pebbles.svg";
 
-const gone = { scaleX: 0, scaleY: 0, opacity: 0 };
-const size = (scale: number) => ({ scaleX: scale, scaleY: scale });
+const gone = { ...uniformScale(0), opacity: 0 };
 
-export const milestone10x: Clip = {
+export const milestone10x = defineClip<"pebble" | "burst" | "ring">({
   id: "milestone-10x",
   art: { svgs: [PEBBLE, BURST] },
   poses: (frame) => ({
     pebble: keys(frame, [
-      { at: 4, ...size(0), rotate: -20, ease: "ease-out" },
-      { at: 18, ...size(1.12), rotate: -3 },
+      { at: 4, ...uniformScale(0), rotate: -20, ease: "ease-out" },
+      { at: 18, ...uniformScale(1.12), rotate: -3 },
       { at: 26 },
     ]),
     // From inside the pebble out past where burst-pebbles.svg draws them.
     burst: keys(frame, [
       { at: 8, ...gone },
-      { at: 9, ...size(0.3), ease: "ease-out" },
-      { at: 22, ...size(1.2) },
-      { at: 35, ...size(1.5), opacity: 0 },
+      { at: 9, ...uniformScale(0.3), ease: "ease-out" },
+      { at: 22, ...uniformScale(1.2) },
+      { at: 35, ...uniformScale(1.5), opacity: 0 },
     ]),
     ring: keys(frame, [
-      { at: 15, ...size(0.9), opacity: 0 },
-      { at: 18, ...size(1), opacity: 0.7, ease: "ease-out" },
-      { at: 42, ...size(1.9), opacity: 0 },
+      { at: 15, ...uniformScale(0.9), opacity: 0 },
+      { at: 18, ...uniformScale(1), opacity: 0.7, ease: "ease-out" },
+      { at: 42, ...uniformScale(1.9), opacity: 0 },
     ]),
   }),
   Scene: ({ theme, background, poses, art, width, height }) => {
@@ -67,4 +67,4 @@ export const milestone10x: Clip = {
       </Stage>
     );
   },
-};
+});

@@ -1,5 +1,5 @@
 import { REST } from "../motion";
-import { swing, type Clip } from "./clip";
+import { defineClip, swing } from "./clip";
 import { palette, Place, Stage } from "./draw";
 
 // A Column with no Dishes: a pea rolls from side to side in a dashed bowl,
@@ -13,7 +13,7 @@ const BOWL = "shapes/bowl-outline.svg";
 const REACH = 44;
 const RIDE_UP = 8;
 
-export const emptyColumn: Clip = {
+export const emptyColumn = defineClip<"pea">({
   id: "empty-column",
   art: { svgs: [PEA, BOWL] },
   poses: (frame) => {
@@ -40,4 +40,4 @@ export const emptyColumn: Clip = {
       </Stage>
     );
   },
-};
+});

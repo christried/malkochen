@@ -1,16 +1,17 @@
 import type React from "react";
 import type { PlaceholderTheme } from "../../../shared/placeholders";
+import type { ClipId } from "../briefs";
 import { interpolateKeyframes, type Keyframe, type Pose } from "../motion";
 
 // A state, system or celebration clip (REMOTION.md). Its timeline,
 // poses(frame), is pure: the pose of every moving part at any frame, which is
 // what the tests check. Its Scene draws those poses with the handoff's art.
+// Timelines count in frames, never seconds, so they don't depend on the fps.
 
 export type Theme = PlaceholderTheme;
-export type Poses = Record<string, Pose>;
 
-// Every brief is 30 fps.
-export const FPS = 30;
+// Each clip names its moving parts, so a misspelt part is a type error.
+export type Poses<Part extends string = string> = Record<Part, Pose>;
 
 // A handoff SVG's drawing, without its <svg> wrapper.
 export type Svg = { viewBox: [number, number, number, number]; markup: string };
@@ -25,27 +26,31 @@ export type Art = {
   topfbert: Partial<Record<Mood, MoodLayer[]>>;
 };
 
-export type SceneProps = {
+export type SceneProps<Part extends string = string> = {
   theme: Theme;
   // The brief's baked-in background for this theme.
   background: string;
-  poses: Poses;
+  poses: Poses<Part>;
   art: Art;
   width: number;
   height: number;
 };
 
-export type Clip = {
-  id: string;
-  poses: (frame: number) => Poses;
+export type Clip<Part extends string = string> = {
+  id: ClipId;
+  poses: (frame: number) => Poses<Part>;
   art: { svgs?: string[]; topfbert?: Mood[] };
-  Scene: React.FC<SceneProps>;
+  Scene: React.FC<SceneProps<Part>>;
 };
+
+// A clip typed by its own parts, for the registry, which only passes each
+// clip's poses back to its own Scene.
+export const defineClip = <Part extends string>(clip: Clip<Part>): Clip => clip as unknown as Clip;
 
 // The pose at `t` frames along keyframes whose `at` is in frames, held before
 // the first and after the last.
 export const keys = (t: number, keyframes: Keyframe[], easing = "ease-in-out"): Pose =>
-  interpolateKeyframes(keyframes, t, easing, 1 / FPS);
+  interpolateKeyframes(keyframes, t, easing);
 
 // Where `frame` falls in a cycle of `period` frames that starts at `start`.
 export const cycle = (frame: number, period: number, start = 0) =>

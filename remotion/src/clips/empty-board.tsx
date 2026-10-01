@@ -1,6 +1,6 @@
-import { cycle, keys, type Clip } from "./clip";
+import { cycle, defineClip, keys, type Poses } from "./clip";
 import { Place, Stage } from "./draw";
-import { Topfbert, topfbertHeight, topfbertPoses } from "./topfbert";
+import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
 // A Board with no Dishes: Topfbert happy with four veggies in his pot, which
 // hop out and flip one at a time. Laid out like EmptyBoard.vue. The clip's
@@ -24,11 +24,13 @@ const hop = (frame: number, start: number) =>
     { at: SLOT, rotate: 360 },
   ]);
 
-export const emptyBoard: Clip = {
+type Part = TopfbertPart | `veggie.${number}`;
+
+export const emptyBoard = defineClip<Part>({
   id: "empty-board",
   art: { svgs: ["veggies/carrot.svg", "veggies/pea.svg", "veggies/pepper.svg"], topfbert: ["happy"] },
   poses: (frame) => {
-    const poses = topfbertPoses("happy", frame, { period: FRAMES, blink: FRAMES });
+    const poses: Poses<Part> = topfbertPoses("happy", frame, { period: FRAMES, blink: FRAMES });
     VEGGIES.forEach((_, i) => {
       // A full turn looks like none, so a landed veggie is at rest.
       const pose = hop(frame, i * SLOT);
@@ -44,7 +46,7 @@ export const emptyBoard: Clip = {
           layers={art.topfbert.happy!}
           poses={poses}
           x={(width - topfbertWidth) / 2}
-          y={height - 0.04 * height - topfbertHeight(topfbertWidth)}
+          bottom={0.96 * height}
           width={topfbertWidth}
           inPot={VEGGIES.map((path, i) => (
             <Place
@@ -60,4 +62,4 @@ export const emptyBoard: Clip = {
       </Stage>
     );
   },
-};
+});

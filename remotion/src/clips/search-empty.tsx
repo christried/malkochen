@@ -1,5 +1,5 @@
 import { REST } from "../motion";
-import { cycle, keys, swing, type Clip } from "./clip";
+import { cycle, defineClip, keys, swing } from "./clip";
 import { Place, Stage, themed } from "./draw";
 
 // A search with no results: the magnifier sweeps over an empty plate, and
@@ -14,7 +14,7 @@ const MAGNIFIER = "shapes/magnifier.svg";
 const UNIT = 5;
 const SWEEP = 24;
 
-export const searchEmpty: Clip = {
+export const searchEmpty = defineClip<"magnifier" | "pea">({
   id: "search-empty",
   art: { svgs: [PEA, PLATE, MAGNIFIER] },
   poses: (frame) => ({
@@ -27,8 +27,8 @@ export const searchEmpty: Clip = {
       { at: 0 },
       { at: 54, ease: "ease-out" },
       { at: 62, y: -20 },
-      { at: 86, y: -20, ease: "ease-in" },
-      { at: 94 },
+      { at: 80, y: -20, ease: "ease-in" },
+      { at: 90 },
       { at: FRAMES },
     ]),
   }),
@@ -51,4 +51,4 @@ export const searchEmpty: Clip = {
       </Stage>
     );
   },
-};
+});

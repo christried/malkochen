@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import briefs from "../../docs/design handoff/remotion-briefs.json";
 import { CLIP_IDS, clipBrief } from "./briefs";
 
 describe("clipBrief", () => {
@@ -7,45 +8,33 @@ describe("clipBrief", () => {
       video: { width: 660, height: 600, durationInFrames: 72, fps: 30 },
       loop: true,
       background: { light: "#F7F6F2", dark: "#131211" },
-      posterFrame: 40,
+      poster: { clip: "offline", frame: 40 },
     });
   });
 
   it("takes the poster from the brief's 'frame N' still", () => {
-    expect(clipBrief("empty-column").posterFrame).toBe(33);
-    expect(clipBrief("not-unlocked").posterFrame).toBe(21);
-    expect(clipBrief("splash").posterFrame).toBe(16);
-    expect(clipBrief("error").posterFrame).toBe(0);
+    expect(clipBrief("empty-column").poster.frame).toBe(33);
+    expect(clipBrief("not-unlocked").poster.frame).toBe(21);
+    expect(clipBrief("splash").poster.frame).toBe(16);
+    expect(clipBrief("error").poster.frame).toBe(0);
   });
 
   it("takes the last frame for a still that is the last frame", () => {
-    expect(clipBrief("milestone-10x").posterFrame).toBe(53);
-    expect(clipBrief("board-created").posterFrame).toBe(35);
+    expect(clipBrief("milestone-10x").poster).toEqual({ clip: "milestone-10x", frame: 53 });
+    expect(clipBrief("board-created").poster.frame).toBe(35);
   });
 
-  it("takes invite-intro's last frame, where it hands off to invite-loop frame 0", () => {
-    expect(clipBrief("invite-intro").posterFrame).toBe(44);
+  it("takes another clip's frame for a still that names one", () => {
+    expect(clipBrief("invite-intro").poster).toEqual({ clip: "invite-loop", frame: 0 });
   });
 });
 
 describe("CLIP_IDS", () => {
-  it("lists the 15 state, system and celebration clips: no placeholders, nothing transparent", () => {
-    expect(CLIP_IDS).toEqual([
-      "empty-board",
-      "empty-column",
-      "search-empty",
-      "lookup-stir",
-      "lookup-failed",
-      "never-cooked",
-      "milestone-10x",
-      "board-created",
-      "invite-intro",
-      "invite-loop",
-      "splash",
-      "topfbert-wow",
-      "not-unlocked",
-      "offline",
-      "error",
-    ]);
+  it("lists every video brief that is not a Placeholder Image or transparent, in order", () => {
+    const fromHandoff = (briefs as { id: string; transparent: boolean }[])
+      .filter((b) => !b.id.startsWith("placeholder-") && !b.transparent)
+      .map((b) => b.id);
+    expect(fromHandoff).toHaveLength(15);
+    expect(CLIP_IDS).toEqual(fromHandoff);
   });
 });

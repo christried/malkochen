@@ -29,7 +29,7 @@ export const REST: Pose = { x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity
 // `ease` overrides the loop's easing for the segment that starts here.
 export type Keyframe = { at: number; ease?: string } & Partial<Pose>;
 
-const uniformScale = (scale: number) => ({ scaleX: scale, scaleY: scale });
+export const uniformScale = (scale: number) => ({ scaleX: scale, scaleY: scale });
 
 const ANIMATIONS: Record<string, Keyframe[]> = {
   // pasta fork: translateY −10 · rotate −10°, 0 / 50 / 100%
@@ -219,9 +219,12 @@ const springEasing = (dampingRatio: number, stiffness: number, seconds: number) 
   return (t: number) => at(t) / end;
 };
 
-const easingFor = (easing: string, seconds: number) => {
+const easingFor = (easing: string, seconds: number | undefined) => {
   const spring = easing.match(/^spring\(([\d.]+),\s*([\d.]+)\)$/);
-  if (spring) return springEasing(Number(spring[1]), Number(spring[2]), seconds);
+  if (spring) {
+    if (seconds === undefined) throw new Error(`${easing} needs the segment's length in seconds`);
+    return springEasing(Number(spring[1]), Number(spring[2]), seconds);
+  }
   const custom = easing.match(/^cubic-bezier\(([^)]*)\)$/);
   const points = custom
     ? (custom[1].split(",").map(Number) as [number, number, number, number])
@@ -231,14 +234,14 @@ const easingFor = (easing: string, seconds: number) => {
 };
 
 // The pose at `t` along keyframes ordered by `at`, held before the first and
-// after the last. `secondsPerUnit` converts a segment's span to seconds for
-// spring easings. Like CSS, the easing applies to each keyframe segment, not
-// the whole run.
+// after the last. `secondsPerUnit` converts a segment's span to seconds, which
+// only spring easings need. Like CSS, the easing applies to each keyframe
+// segment, not the whole run.
 export const interpolateKeyframes = (
   keyframes: Keyframe[],
   t: number,
   easing: string,
-  secondsPerUnit: number,
+  secondsPerUnit?: number,
 ): Pose => {
   const next = keyframes.findIndex((k) => k.at > t);
   const from = keyframes[Math.max(0, next - 1)];
@@ -247,7 +250,10 @@ export const interpolateKeyframes = (
   const progress =
     span === 0
       ? 0
-      : easingFor(from.ease ?? easing, span * secondsPerUnit)((t - from.at) / span);
+      : easingFor(
+          from.ease ?? easing,
+          secondsPerUnit === undefined ? undefined : span * secondsPerUnit,
+        )((t - from.at) / span);
 
   const pose = { ...REST };
   for (const key of Object.keys(REST) as (keyof Pose)[]) {

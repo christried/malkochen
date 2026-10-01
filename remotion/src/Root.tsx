@@ -36,7 +36,7 @@ export const RemotionRoot: React.FC = () => {
               defaultProps={{
                 clip: id,
                 theme,
-                posterFrame: clipBrief(id).posterFrame,
+                poster: clipBrief(id).poster,
                 art: { svgs: {}, topfbert: {} },
               }}
               calculateMetadata={calculateClipMetadata}

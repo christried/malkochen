@@ -5,7 +5,7 @@
 //   .mp4   H.264, what every browser plays
 //   .webm  VP9, smaller where supported
 //   .png   poster: the reduced-motion still (frame 0 for a placeholder, the
-//          brief's still frame for a clip)
+//          brief's still for a clip, which for invite-intro is invite-loop's)
 //
 //   npm run render                   everything, light and dark
 //   npm run render -- pasta offline  only the named dishes and clips
@@ -23,15 +23,20 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "../public");
 const only = process.argv.slice(2);
 
-// Where a composition's files go and which frame is its poster.
+// Where a composition's files go, and the composition and frame of its poster.
 const output = (props: PlaceholderProps | ClipProps) =>
   "dish" in props
-    ? { name: props.dish, dir: "placeholders", file: `${props.dish}-${props.theme}`, posterFrame: 0 }
+    ? {
+        name: props.dish,
+        dir: "placeholders",
+        file: `${props.dish}-${props.theme}`,
+        poster: { id: `placeholder-${props.dish}-${props.theme}`, frame: 0 },
+      }
     : {
         name: props.clip,
         dir: "clips",
         file: `${props.clip}-${props.theme}`,
-        posterFrame: props.posterFrame,
+        poster: { id: `${props.poster.clip}-${props.theme}`, frame: props.poster.frame },
       };
 
 const serveUrl = await bundle({
@@ -40,19 +45,29 @@ const serveUrl = await bundle({
   rspack: RSPACK,
 });
 
-const compositions = (await getCompositions(serveUrl)).filter((c) => {
+const all = await getCompositions(serveUrl);
+const compositions = all.filter((c) => {
   const { name } = output(c.props as PlaceholderProps | ClipProps);
   return only.length === 0 || only.includes(name);
 });
 if (compositions.length === 0) throw new Error(`Nothing matches ${only.join(", ")}`);
 
 for (const composition of compositions) {
-  const { dir, file, posterFrame } = output(composition.props as PlaceholderProps | ClipProps);
+  const { dir, file, poster } = output(composition.props as PlaceholderProps | ClipProps);
   mkdirSync(join(publicDir, dir), { recursive: true });
   const name = join(publicDir, dir, file);
   const common = { composition, serveUrl, inputProps: composition.props };
 
-  await renderStill({ ...common, frame: posterFrame, output: `${name}.png`, imageFormat: "png" });
+  const posterComposition = all.find((c) => c.id === poster.id);
+  if (!posterComposition) throw new Error(`No composition ${poster.id} for ${file}'s poster`);
+  await renderStill({
+    composition: posterComposition,
+    serveUrl,
+    inputProps: posterComposition.props,
+    frame: poster.frame,
+    output: `${name}.png`,
+    imageFormat: "png",
+  });
   for (const [codec, extension] of [["h264", "mp4"], ["vp9", "webm"]] as const) {
     await renderMedia({
       ...common,

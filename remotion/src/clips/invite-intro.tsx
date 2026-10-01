@@ -1,5 +1,6 @@
-import { keys, stack, type Clip } from "./clip";
-import { INVITE_ART, InviteScene, inviteLoopPoses, RING_SIZE } from "./invite-loop";
+import { uniformScale } from "../motion";
+import { defineClip, keys, stack } from "./clip";
+import { INVITE_ART, type InvitePart, InviteScene, inviteLoopPoses, RING_SIZE } from "./invite-loop";
 
 // The invite landing's first 1.5s: on the empty butter blob the Board's
 // pebble pops in, Topfbert rises from the bottom left, and the veggies pop
@@ -9,17 +10,15 @@ import { INVITE_ART, InviteScene, inviteLoopPoses, RING_SIZE } from "./invite-lo
 
 const FRAMES = 45;
 
-const size = (scale: number) => ({ scaleX: scale, scaleY: scale });
-
-export const inviteIntro: Clip = {
+export const inviteIntro = defineClip<InvitePart>({
   id: "invite-intro",
   art: INVITE_ART,
   poses: (frame) => {
     const poses = inviteLoopPoses(frame - FRAMES);
     poses.pebble = stack(
       keys(frame, [
-        { at: 6, ...size(0), rotate: -12, ease: "ease-out" },
-        { at: 18, ...size(1.1), rotate: 4 },
+        { at: 6, ...uniformScale(0), rotate: -12, ease: "ease-out" },
+        { at: 18, ...uniformScale(1.1), rotate: 4 },
         { at: 27 },
       ]),
       poses.pebble,
@@ -37,8 +36,8 @@ export const inviteIntro: Clip = {
       const start = 24 + 2 * i;
       poses[`veggie.${i}`] = stack(
         keys(frame, [
-          { at: start, ...size(0), ease: "ease-out" },
-          { at: start + 5, ...size(1.15) },
+          { at: start, ...uniformScale(0), ease: "ease-out" },
+          { at: start + 5, ...uniformScale(1.15) },
           { at: start + 8 },
         ]),
         poses[`veggie.${i}`],
@@ -47,4 +46,4 @@ export const inviteIntro: Clip = {
     return poses;
   },
   Scene: InviteScene,
-};
+});
