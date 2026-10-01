@@ -243,6 +243,10 @@ test('a clip takes its still\'s place without moving the layout', async ({ page 
 
   const detail = await openDetail(page, 'Tacos')
   await expect.poll(() => playing(detail)).toHaveLength(1)
+  // Measured once the detail has finished moving in.
+  await detail.evaluate(el => Promise.all(el.getAnimations({ subtree: true })
+    .filter(a => a.effect?.getTiming().iterations !== Infinity)
+    .map(a => a.finished)))
 
   const still = await detail.locator('img[src="/placeholders/tacos-light.svg"]').boundingBox()
   expect(await detail.locator('video').boundingBox()).toEqual(still)
