@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { InviteView } from '~~/server/utils/invites'
 import { boardLabel } from '~~/shared/board'
+import type { Placeholder } from '~~/shared/placeholders'
 
 // Sign-in, and the "Not unlocked" screen for a refused one: Better Auth sends
 // a refused Google sign-in back here as /login?error=not_allowed
-// (server/utils/auth.ts). Both are the handoff's stills for now; their motion
-// graphics (topfbert-wow, not-unlocked) are wired in a later ticket.
+// (server/utils/auth.ts). Each loops its clip (topfbert-wow, not-unlocked).
 const t = useStrings()
 const { signInWithGoogle } = useAuth()
 
@@ -35,25 +35,21 @@ const notUnlockedBody = computed(() => invite.value
   ? t.notUnlocked.invitedBody(invite.value.owner.name, boardLabel(invite.value.board))
   : t.notUnlocked.body)
 
-// The sign-in hero's ring of Placeholder Images around Topfbert.
-const HERO_PLACEHOLDERS = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake']
+// The sign-in hero (handoff motion.json "Sign-in orbit"): a ring of
+// Placeholder Images around Topfbert. The tiles pop in one after another,
+// then the ring turns once every 40s, the tiles staying upright, and every
+// second tile loops its Placeholder.
+const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake']
 </script>
 
 <template>
   <main class="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-10 text-center text-text">
     <template v-if="notUnlocked">
-      <div class="relative w-[min(80vw,330px)] aspect-[22/21]">
-        <div class="absolute inset-[12%] rounded-blob bg-sky opacity-40" />
-        <img
-          src="/illustrations/topfbert-happy.svg"
-          alt=""
-          class="absolute bottom-0 left-[8%] w-[62%]"
-        >
-        <img
-          src="/illustrations/sign.svg"
-          alt=""
-          class="absolute right-[2%] top-[6%] w-[42%]"
-        >
+      <div class="aspect-[22/21] w-[min(80vw,330px)]">
+        <MotionClip
+          src="/clips/not-unlocked"
+          play
+        />
       </div>
       <h1 class="mt-8 font-display text-display-m tablet:text-display-l">
         {{ t.notUnlocked.headline }}
@@ -73,21 +69,35 @@ const HERO_PLACEHOLDERS = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 
     </template>
 
     <template v-else>
-      <div class="relative w-[min(88vw,360px)] aspect-square">
-        <img
-          v-for="(placeholder, i) in HERO_PLACEHOLDERS"
-          :key="placeholder"
-          :src="`/placeholders/${placeholder}-light.svg`"
-          alt=""
-          class="absolute left-1/2 top-1/2 -ml-[11%] -mt-[11%] w-[22%] rounded-thumb shadow-card"
-          :style="{ transform: `rotate(${i * 45}deg) translateY(-205%) rotate(${-i * 45}deg)` }"
+      <div class="relative aspect-square w-[min(88vw,360px)]">
+        <div
+          class="hero-orbit absolute inset-0"
+          data-testid="hero-ring"
         >
-        <div class="absolute inset-[27%] rounded-full bg-[color-mix(in_srgb,var(--color-butter)_22%,var(--color-bg))]">
-          <img
-            src="/illustrations/topfbert-wow.svg"
-            alt=""
-            class="h-full w-full p-[12%]"
+          <div
+            v-for="(placeholder, i) in HERO_PLACEHOLDERS"
+            :key="placeholder"
+            class="absolute left-1/2 top-1/2 -ml-[11%] -mt-[11%] aspect-square w-[22%]"
+            :style="{ transform: `rotate(${i * 45}deg) translateY(-205%) rotate(${-i * 45}deg)` }"
           >
+            <div class="hero-orbit hero-upright h-full w-full">
+              <div
+                class="hero-pop h-full w-full overflow-hidden rounded-thumb shadow-card"
+                :style="{ '--i': i }"
+              >
+                <PlaceholderClip
+                  :placeholder="placeholder"
+                  :motion="i % 2 === 0 ? 'loop' : null"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="absolute inset-[27%] overflow-hidden rounded-full">
+          <MotionClip
+            src="/clips/topfbert-wow"
+            play
+          />
         </div>
       </div>
       <p class="mt-8 text-overline uppercase text-text-muted">
@@ -118,3 +128,28 @@ const HERO_PLACEHOLDERS = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 
     </template>
   </main>
 </template>
+
+<style scoped>
+/* The ring turns once every 40s; each tile turns back as much, so it stays
+   upright. Reduced motion (main.css) leaves it still. */
+.hero-orbit {
+  animation: hero-orbit 40s linear infinite;
+}
+.hero-upright {
+  animation-direction: reverse;
+}
+@keyframes hero-orbit {
+  to {
+    rotate: 360deg;
+  }
+}
+/* The tiles pop in around Topfbert, one after another. */
+.hero-pop {
+  animation: hero-pop var(--dur-pop) var(--ease-pop) calc(var(--i) * var(--dur-stagger)) both;
+}
+@keyframes hero-pop {
+  from {
+    scale: 0;
+  }
+}
+</style>

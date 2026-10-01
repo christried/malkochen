@@ -102,9 +102,9 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   drop: dropDish,
   landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
 })
-// The one Placeholder loop playing on the Board: the lifted card's, the
-// hovered card's, or one where the Board comes to rest. None while the Dish
-// detail or a sheet covers it.
+// The one loop playing on the Board: the lifted card's Placeholder, the
+// hovered card's, or one where the Board comes to rest, else an empty
+// state's. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
   covered: () => !!route.params.dishId || adding.value || menuOpen.value || !!noting.value,
@@ -160,6 +160,9 @@ function titleMotion(index: number) {
 }
 const tint = computed(() => accentAt(clampProgress(progress.value, board.value?.columns.length ?? 1)))
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
+// A Column emptied or filled changes which empty state may loop.
+const emptyColumnIds = computed(() => board.value?.columns.filter(c => !listOf(c).some(e => e.state !== 'gone')).map(c => c.id).join() ?? '')
+watch(emptyColumnIds, () => boardLoop.playWhenAtRest())
 
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
 // phones its Column comes to the front, so closing it lands there (in the
@@ -432,8 +435,16 @@ async function deleteFromMenu() {
             </li>
           </TransitionGroup>
           <template v-if="!listOf(column).some(e => e.state !== 'gone')">
-            <EmptyBoard v-if="isEmpty && index === 0" />
-            <EmptyColumn v-else />
+            <EmptyBoard
+              v-if="isEmpty && index === 0"
+              :play="!!boardLoop.motionOf(`empty:${column.id}`)"
+              :data-empty-clip="`empty:${column.id}`"
+            />
+            <EmptyColumn
+              v-else
+              :play="!!boardLoop.motionOf(`empty:${column.id}`)"
+              :data-empty-clip="`empty:${column.id}`"
+            />
           </template>
         </section>
       </div>

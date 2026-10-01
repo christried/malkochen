@@ -1,7 +1,6 @@
 <script setup lang="ts">
-// The layout of the Offline and error screens: an illustration on a blob,
-// a headline, a line of text and an action. Stills for now; their loops come
-// with the motion clips (#23).
+// The layout of the Offline and error screens: their clip, a headline, a
+// line of text and an action.
 defineProps<{
   headline: string
   body: string

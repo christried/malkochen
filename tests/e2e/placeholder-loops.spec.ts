@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { PLACEHOLDERS } from '../../shared/placeholders'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import * as clips from './clips'
 import { gotoHydrated } from './hydration'
 import { removeStoredImages, resetBoard, seedDish, storedImage } from './seed'
 
@@ -14,25 +15,10 @@ test.describe.configure({ mode: 'serial' })
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
-// The clips playing inside `scope`, by the file they play.
-function playing(scope: Page | Locator) {
-  return scope.locator('video').evaluateAll(videos => (videos as HTMLVideoElement[])
-    .filter(v => !v.paused && !v.ended && v.currentTime > 0)
-    .map(v => new URL(v.currentSrc).pathname))
-}
-
-// Keeps count, in the page, of the most clips ever playing at once.
-async function countPeakPlaying(page: Page) {
-  await page.addInitScript(() => {
-    const w = window as unknown as { peakPlaying: number }
-    w.peakPlaying = 0
-    document.addEventListener('playing', () => {
-      const now = [...document.querySelectorAll('video')].filter(v => !v.paused).length
-      w.peakPlaying = Math.max(w.peakPlaying, now)
-    }, true)
-  })
-  return () => page.evaluate(() => (window as unknown as { peakPlaying: number }).peakPlaying)
-}
+// The Placeholder loops only: empty Columns and the Cooking History have
+// clips of their own (state-clips.spec.ts).
+const playing = (scope: Page | Locator) => clips.playing(scope, '/placeholders/')
+const countPeakPlaying = (page: Page) => clips.countPeakPlaying(page, '/placeholders/')
 
 // A Board of Placeholder Dishes, each with its own Placeholder, in Ideen:
 // the first `count` Placeholders, the last one seeded on top.
@@ -249,7 +235,7 @@ test('a clip takes its still\'s place without moving the layout', async ({ page 
     .map(a => a.finished)))
 
   const still = await detail.locator('img[src="/placeholders/tacos-light.svg"]').boundingBox()
-  expect(await detail.locator('video').boundingBox()).toEqual(still)
+  expect(await detail.locator('[data-placeholder-clip] video').boundingBox()).toEqual(still)
   expect(await page.evaluate(() => (window as unknown as { layoutShift: number }).layoutShift)).toBe(0)
 })
 

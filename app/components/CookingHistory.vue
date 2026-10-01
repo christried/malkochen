@@ -5,7 +5,8 @@ import type { DishView } from '~~/server/utils/dishes'
 // A Dish's Cooking History in its detail (PRD stories 48, 53–55): "3×
 // gekocht · zuletzt 12. Sept.", "Gekocht ✓", and each Cooking (the handoff's
 // CookingHistoryEntry) with its date, note and who recorded it, a way to add
-// or change the note and to delete it. A Cooking still being recorded
+// or change the note and to delete it. Never cooked, it loops the handoff's
+// "never-cooked" clip instead. A Cooking still being recorded
 // shows, but can't be changed yet.
 const props = defineProps<{ dish: DishView }>()
 defineEmits<{ cook: [], note: [cooking: CookingView], delete: [cooking: CookingView] }>()
@@ -59,6 +60,16 @@ function keyOf(cooking: CookingView): number {
       >
         {{ t.dish.cook }}
       </button>
+    </div>
+
+    <div
+      v-if="!dish.cookings.length"
+      class="mx-auto aspect-[510/354] w-[min(60vw,220px)]"
+    >
+      <MotionClip
+        src="/clips/never-cooked"
+        play
+      />
     </div>
 
     <TransitionGroup

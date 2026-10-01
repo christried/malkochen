@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { signIn } from './auth'
+import { playing } from './clips'
 import { gotoHydrated } from './hydration'
 
 // The Offline screen (PRD story 8). Opening malkochen without a connection
@@ -25,7 +26,8 @@ test('opening malkochen offline shows the Offline page, which carries on once ba
   await page.goto('/')
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
-  await expect(page.locator('img[src="/illustrations/topfbert-sleep.svg"]')).toBeVisible()
+  // The service worker keeps the offline clip, so it plays with no connection.
+  await expect.poll(() => playing(page)).toEqual(['/clips/offline-light.webm'])
 
   await expect(page.getByRole('button', { name: 'Nochmal versuchen' })).toBeVisible()
 
@@ -63,12 +65,13 @@ for (const [what, outage] of [
 test('losing the connection with the app open shows the Offline screen until it is back', async ({ page, context }) => {
   await signIn(page)
   await gotoHydrated(page, '/')
+  await serviceWorkerInControl(page)
   const offline = page.getByRole('alertdialog', { name: 'Du bist offline.' })
   await expect(offline).toHaveCount(0)
 
   await context.setOffline(true)
   await expect(offline).toBeVisible()
-  await expect(offline.locator('img[src="/illustrations/topfbert-sleep.svg"]')).toBeVisible()
+  await expect.poll(() => playing(offline)).toEqual(['/clips/offline-light.webm'])
   // The app underneath is out of reach until the connection is back.
   await expect(offline.getByRole('button', { name: 'Nochmal versuchen' })).toBeFocused()
   await page.keyboard.press('Tab')

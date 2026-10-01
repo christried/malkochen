@@ -5,9 +5,12 @@
 // erreichbar", our side). Nothing else is cached: Boards and Dishes always
 // come from the network. Bump VERSION when offline.html or what it shows
 // changes.
-const VERSION = 'offline-v2'
+const VERSION = 'offline-v3'
 const FALLBACK_PAGE = '/offline.html'
-const PRECACHED = [FALLBACK_PAGE, '/illustrations/topfbert-sleep.svg', '/illustrations/topfbert-oops.svg']
+// The offline clip (still and video, both themes) plays on the Offline page
+// and the app's Offline screen, which both show only without a connection.
+const OFFLINE_CLIP = ['light', 'dark'].flatMap(theme => ['png', 'webm', 'mp4'].map(ext => `/clips/offline-${theme}.${ext}`))
+const PRECACHED = [FALLBACK_PAGE, '/illustrations/topfbert-oops.svg', ...OFFLINE_CLIP]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(PRECACHED)).then(() => self.skipWaiting()))

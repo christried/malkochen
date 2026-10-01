@@ -1,14 +1,17 @@
 import type { ClipMotion } from '~/utils/motion'
 
-// The one Placeholder loop the Board plays at a time (PRD story 83; handoff
-// illustrations.json "rules"). Most important first:
+// The one loop the Board plays at a time (PRD story 83; handoff
+// illustrations.json "rules"; REMOTION.md). Most important first:
 //
 // - the lifted card (long-press or mouse drag) loops while it is held,
 // - the Placeholder card under the mouse loops, on `pointer: fine` devices,
 // - when the Board first shows, and whenever it comes to rest (scrolling
 //   stops, or on phones a Column swipe settles: the phone's way of scrolling
 //   across the lanes), the Placeholder card nearest the middle of the screen
-//   plays its loop once.
+//   plays its loop once,
+// - otherwise, an empty state's clip loops (found as the Board comes to
+//   rest): the empty Board's when it is on screen, else the empty Column's
+//   nearest the middle of the screen.
 //
 // Nothing plays while the Board is `covered` (by the Dish detail, which loops
 // the Dish itself, or a sheet). Cards with a stored image never play;
@@ -17,6 +20,9 @@ import type { ClipMotion } from '~/utils/motion'
 const REST_MS = 200
 
 const PLACEHOLDER_CARD = '[data-dish-id]:has([data-placeholder-clip])'
+// An empty state's clip, by its id: `empty:<column id>`.
+const EMPTY_CLIP = '[data-empty-clip]'
+const EMPTY_BOARD_CLIP = '[data-empty-clip][data-empty="board"]'
 
 export function useBoardLoop(
   surface: Readonly<Ref<HTMLElement | null>>,
@@ -27,18 +33,22 @@ export function useBoardLoop(
 ) {
   const hoveredDishId = ref<string | null>(null)
   const restingDishId = ref<string | null>(null)
+  const restingEmptyId = ref<string | null>(null)
 
-  const current = computed<{ dishId: string, motion: ClipMotion } | null>(() => {
+  // `id` is a Dish's, or an empty state's.
+  const current = computed<{ id: string, motion: ClipMotion } | null>(() => {
     if (options.covered()) return null
     const lifted = options.liftedDishId()
-    if (lifted) return { dishId: lifted, motion: 'loop' }
-    if (hoveredDishId.value) return { dishId: hoveredDishId.value, motion: 'loop' }
-    if (restingDishId.value) return { dishId: restingDishId.value, motion: 'once' }
+    if (lifted) return { id: lifted, motion: 'loop' }
+    if (hoveredDishId.value) return { id: hoveredDishId.value, motion: 'loop' }
+    if (restingDishId.value) return { id: restingDishId.value, motion: 'once' }
+    if (restingEmptyId.value) return { id: restingEmptyId.value, motion: 'loop' }
     return null
   })
 
-  function motionOf(dishId: string): ClipMotion {
-    return current.value?.dishId === dishId ? current.value.motion : null
+  // How a Dish's Placeholder, or an empty state's clip, plays.
+  function motionOf(id: string): ClipMotion {
+    return current.value?.id === id ? current.value.motion : null
   }
 
   // A card's loop played through (or couldn't play): the Board is still.
@@ -46,23 +56,29 @@ export function useBoardLoop(
     if (restingDishId.value === dishId) restingDishId.value = null
   }
 
-  // The Placeholder card nearest the middle of the screen, among those on it.
-  function playNearest() {
+  // Of the elements matching `selector` on screen, the one nearest its middle.
+  function nearest(selector: string): HTMLElement | null {
     const middleX = innerWidth / 2
     const middleY = innerHeight / 2
-    let nearest: { dishId: string, distance: number } | null = null
-    for (const card of surface.value?.querySelectorAll<HTMLElement>(PLACEHOLDER_CARD) ?? []) {
-      const box = card.getBoundingClientRect()
+    let found: { el: HTMLElement, distance: number } | null = null
+    for (const el of surface.value?.querySelectorAll<HTMLElement>(selector) ?? []) {
+      const box = el.getBoundingClientRect()
       if (!box.width || box.bottom <= 0 || box.top >= innerHeight || box.right <= 0 || box.left >= innerWidth) continue
       const distance = Math.hypot(box.left + box.width / 2 - middleX, box.top + box.height / 2 - middleY)
-      if (!nearest || distance < nearest.distance) nearest = { dishId: card.dataset.dishId!, distance }
+      if (!found || distance < found.distance) found = { el, distance }
     }
-    restingDishId.value = nearest?.dishId ?? null
+    return found?.el ?? null
+  }
+
+  function playNearest() {
+    restingDishId.value = nearest(PLACEHOLDER_CARD)?.dataset.dishId ?? null
+    restingEmptyId.value = (nearest(EMPTY_BOARD_CLIP) ?? nearest(EMPTY_CLIP))?.dataset.emptyClip ?? null
   }
 
   let restTimer: ReturnType<typeof setTimeout> | undefined
   function playWhenAtRest(afterMs = 0) {
     restingDishId.value = null
+    restingEmptyId.value = null
     clearTimeout(restTimer)
     restTimer = setTimeout(playNearest, REST_MS + afterMs)
   }
