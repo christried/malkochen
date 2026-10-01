@@ -10,3 +10,6 @@ export function motionMs(token: string): number {
   const value = getComputedStyle(document.documentElement).getPropertyValue(`--dur-${token}`).trim()
   return value.endsWith('ms') ? Number.parseFloat(value) : Number.parseFloat(value) * 1000 || 0
 }
+
+// How a Placeholder Image plays its loop: on and on, once through, or not.
+export type ClipMotion = 'loop' | 'once' | null

@@ -196,7 +196,7 @@ async function save() {
           v-else
           :image-url="image.kind === 'placeholder' ? null : dish.imageUrl"
           :placeholder="placeholder"
-          motion="loop"
+          :motion="choosingImage ? null : 'loop'"
         />
       </div>
       <!-- A row of image actions, with room for a future "eigenes Foto". -->

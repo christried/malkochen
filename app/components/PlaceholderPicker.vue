@@ -47,12 +47,10 @@ function move(step: number) {
       :class="selected === placeholder ? '-rotate-[1.5deg] scale-105 ring-[3px] ring-inverse' : 'active:scale-95'"
       @click="selected = placeholder"
     >
-      <MotionClip
-        :src="`/placeholders/${placeholder}`"
-        :play="selected === placeholder"
-      >
-        <PlaceholderStill :placeholder="placeholder" />
-      </MotionClip>
+      <PlaceholderClip
+        :placeholder="placeholder"
+        :motion="selected === placeholder ? 'loop' : null"
+      />
       <span
         v-if="selected === placeholder"
         aria-hidden="true"

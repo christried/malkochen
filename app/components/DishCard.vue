@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DishView } from '~~/server/utils/dishes'
-import type { DishMotion } from '~/composables/useBoardLoop'
+import type { ClipMotion } from '~/utils/motion'
 
 // The handoff's compact DishCard: 86px thumb + text, 128px high. The thumb
 // crops any image, portrait (TikTok, Reels, Shorts) or landscape (blogs), to
@@ -13,7 +13,7 @@ const props = defineProps<{
   // Shown before (the dragged copy of a card): no pop-in, no ring.
   seen?: boolean
   // The Placeholder's loop, when the Board lets this card play it.
-  motion?: DishMotion
+  motion?: ClipMotion
 }>()
 defineEmits<{ motionEnded: [] }>()
 const t = useStrings()

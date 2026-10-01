@@ -104,10 +104,10 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
 })
 // The one Placeholder loop playing on the Board: the lifted card's, the
 // hovered card's, or one where the Board comes to rest. None while the Dish
-// detail is open over it.
+// detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
-  lifted: () => drag.value?.dish.id ?? null,
-  quiet: () => !!route.params.dishId,
+  liftedDishId: () => drag.value?.dish.id ?? null,
+  covered: () => !!route.params.dishId || adding.value || menuOpen.value || !!noting.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
 useBoardSync(() => id.value, board, () => dragging.value)

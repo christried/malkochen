@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Placeholder } from '~~/shared/placeholders'
-import type { DishMotion } from '~/composables/useBoardLoop'
+import type { ClipMotion } from '~/utils/motion'
 
 // A Dish's image, filling its frame: the stored copy of the Source image, or
 // the Placeholder Image. A stored image that fails to load falls back to the
@@ -12,7 +12,7 @@ const props = defineProps<{
   imageUrl: string | null
   placeholder: Placeholder
   lazy?: boolean
-  motion?: DishMotion
+  motion?: ClipMotion
 }>()
 defineEmits<{ ended: [] }>()
 
@@ -35,14 +35,10 @@ onMounted(() => {
     data-dish-image
     @error="imageBroken = true"
   >
-  <MotionClip
+  <PlaceholderClip
     v-else
-    :src="`/placeholders/${placeholder}`"
-    :play="!!motion"
-    :loop="motion !== 'once'"
-    data-placeholder-clip
+    :placeholder="placeholder"
+    :motion="motion"
     @ended="$emit('ended')"
-  >
-    <PlaceholderStill :placeholder="placeholder" />
-  </MotionClip>
+  />
 </template>
