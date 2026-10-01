@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import type { BoardChanges, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
+import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
 import { boardLabel } from '~~/shared/board'
 
-// Board settings (PRD stories 57–60, 62), for any Member: the Board's name
-// and emoji, and its Columns. Its own page, not a child of the Board: any
-// page under b/[id]/ opens over the Board (a route group doesn't help, it is
-// nested all the same), so it lives here and sets its path. Later tickets add
-// Members and "Board verlassen" below. Every change saves at
-// once; one that fails is put back and a notice says so.
+// Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
+// and emoji, its Columns, its Members, the Invite Link and leaving; for the
+// Owner also removing Members, handing over ownership and deleting the Board.
+// Its own page, not a child of the Board: any page under b/[id]/ opens over
+// the Board (a route group doesn't help, it is nested all the same), so it
+// lives here and sets its path. Every change saves at once; one that fails
+// is put back and a notice says so.
 definePageMeta({ path: '/b/:id/settings' })
 
 const t = useStrings()
@@ -197,6 +198,88 @@ async function resetLink() {
   }
 }
 
+// Members (PRD stories 67–71). The Owner picks a Member to hand ownership to
+// or remove, then confirms; the list is fetched afresh either way, so it
+// also shows what other Members changed meanwhile.
+const members = computed(() => board.value?.members ?? [])
+const selectedMember = ref<BoardMemberView | null>(null)
+const memberAction = ref<'hand-over' | 'remove' | null>(null)
+const memberSheetOpen = computed({
+  get: () => selectedMember.value !== null,
+  set: (open) => {
+    if (!open) selectedMember.value = null
+  },
+})
+// The Member's name, until the Owner picks what to do; then the question.
+const memberSheetTitle = computed(() => {
+  const name = selectedMember.value?.name ?? ''
+  if (memberAction.value === 'hand-over') return t.settings.handOverConfirm(name)
+  if (memberAction.value === 'remove') return t.settings.removeConfirm(name)
+  return name
+})
+function manage(member: BoardMemberView) {
+  memberAction.value = null
+  selectedMember.value = member
+}
+
+async function changeMembers(request: () => Promise<unknown>, done: string) {
+  selectedMember.value = null
+  try {
+    await request()
+    toast.value = { text: done, duration: NOTICE_MS }
+  }
+  catch {
+    failed()
+  }
+  await refresh()
+}
+function handOver(member: BoardMemberView) {
+  return changeMembers(
+    () => $fetch<null>(`/api/boards/${id.value}/owner`, { method: 'POST', body: { userId: member.id } }),
+    t.settings.handedOver(member.name),
+  )
+}
+function removeMember(member: BoardMemberView) {
+  return changeMembers(
+    () => $fetch<null>(`/api/boards/${id.value}/members/${encodeURIComponent(member.id)}`, { method: 'DELETE' }),
+    t.settings.removed(member.name),
+  )
+}
+
+// Leaving (any Member but the Owner) and deleting (the Owner, after typing
+// the Board's name) both end on the Board used last -- or a new "Meine
+// Küche" for someone left on no Board at all.
+async function goOffBoard(request: () => Promise<unknown>) {
+  try {
+    await request()
+  }
+  catch {
+    failed()
+    return
+  }
+  await navigateTo('/', { replace: true })
+}
+
+const confirmingLeave = ref(false)
+function leave() {
+  confirmingLeave.value = false
+  const me = members.value.find(m => m.isYou)
+  if (!me) return
+  return goOffBoard(() => $fetch<null>(`/api/boards/${id.value}/members/${encodeURIComponent(me.id)}`, { method: 'DELETE' }))
+}
+
+const confirmingDeleteBoard = ref(false)
+const typedName = ref('')
+watch(confirmingDeleteBoard, () => {
+  typedName.value = ''
+})
+const nameTyped = computed(() => typedName.value.trim() === saved.value.name)
+function deleteBoard() {
+  if (!nameTyped.value) return
+  confirmingDeleteBoard.value = false
+  return goOffBoard(() => $fetch<null>(`/api/boards/${id.value}`, { method: 'DELETE' }))
+}
+
 function confirmDelete() {
   const column = deleting.value
   const target = columns.value.find(c => c.id === moveTo.value)
@@ -314,6 +397,23 @@ function confirmDelete() {
 
       <section
         class="flex flex-col gap-3"
+        aria-labelledby="settings-members"
+      >
+        <h2
+          id="settings-members"
+          class="px-1 text-overline uppercase text-text-muted"
+        >
+          {{ t.settings.members }}
+        </h2>
+        <MemberSettingsList
+          :members="members"
+          :is-owner="board.isOwner"
+          @manage="manage"
+        />
+      </section>
+
+      <section
+        class="flex flex-col gap-3"
         aria-labelledby="settings-invite"
       >
         <h2
@@ -368,7 +468,136 @@ function confirmDelete() {
           </DangerButton>
         </div>
       </section>
+
+      <div class="flex flex-col items-start gap-3 border-t border-line pt-6">
+        <template v-if="board.isOwner">
+          <p class="px-1 text-small text-text-muted">
+            {{ members.length > 1 ? t.settings.ownerLeaveHint : t.settings.aloneHint }}
+          </p>
+          <DangerButton @click="confirmingDeleteBoard = true">
+            {{ t.settings.deleteBoard }}
+          </DangerButton>
+        </template>
+        <DangerButton
+          v-else
+          @click="confirmingLeave = true"
+        >
+          {{ t.settings.leave }}
+        </DangerButton>
+      </div>
     </div>
+
+    <AppSheet
+      v-model:open="memberSheetOpen"
+      :title="memberSheetTitle"
+      :close-label="t.settings.close"
+    >
+      <template v-if="selectedMember">
+        <p
+          v-if="memberAction"
+          class="mt-3 text-body text-text-muted"
+        >
+          {{ memberAction === 'hand-over' ? t.settings.handOverBody(selectedMember.name) : t.settings.removeBody(selectedMember.name) }}
+        </p>
+        <div class="mt-5 flex flex-col gap-2">
+          <template v-if="!memberAction">
+            <button
+              type="button"
+              class="rounded-pill bg-surface-muted px-5 py-3.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              @click="memberAction = 'hand-over'"
+            >
+              {{ t.settings.handOver }}
+            </button>
+            <DangerButton @click="memberAction = 'remove'">
+              {{ t.settings.removeMember }}
+            </DangerButton>
+          </template>
+          <button
+            v-else-if="memberAction === 'hand-over'"
+            type="button"
+            class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            @click="handOver(selectedMember)"
+          >
+            {{ t.settings.handOver }}
+          </button>
+          <DangerButton
+            v-else
+            @click="removeMember(selectedMember)"
+          >
+            {{ t.settings.removeMember }}
+          </DangerButton>
+          <button
+            type="button"
+            class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+            @click="selectedMember = null"
+          >
+            {{ t.settings.cancel }}
+          </button>
+        </div>
+      </template>
+    </AppSheet>
+
+    <AppSheet
+      v-model:open="confirmingLeave"
+      :title="t.settings.leaveConfirm"
+      :close-label="t.settings.close"
+    >
+      <p class="mt-3 text-body text-text-muted">
+        {{ t.settings.leaveBody }}
+      </p>
+      <div class="mt-5 flex flex-col gap-2">
+        <DangerButton @click="leave">
+          {{ t.settings.leave }}
+        </DangerButton>
+        <button
+          type="button"
+          class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+          @click="confirmingLeave = false"
+        >
+          {{ t.settings.cancel }}
+        </button>
+      </div>
+    </AppSheet>
+
+    <AppSheet
+      v-model:open="confirmingDeleteBoard"
+      :title="t.settings.deleteConfirm"
+      :close-label="t.settings.close"
+    >
+      <form
+        class="mt-3 flex flex-col gap-2"
+        @submit.prevent="deleteBoard"
+      >
+        <p class="text-body text-text-muted">
+          {{ t.settings.deleteBody(boardLabel(saved)) }}
+        </p>
+        <label
+          for="settings-delete-name"
+          class="mt-3 text-label"
+        >{{ t.settings.deleteTypeName(saved.name) }}</label>
+        <input
+          id="settings-delete-name"
+          v-model="typedName"
+          type="text"
+          autocomplete="off"
+          class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        >
+        <DangerButton
+          type="submit"
+          class="mt-3 disabled:opacity-50"
+          :disabled="!nameTyped"
+        >
+          {{ t.settings.deleteForGood }}
+        </DangerButton>
+        <button
+          type="button"
+          class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+          @click="confirmingDeleteBoard = false"
+        >
+          {{ t.settings.cancel }}
+        </button>
+      </form>
+    </AppSheet>
 
     <AppSheet
       v-model:open="confirmingReset"
