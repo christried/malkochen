@@ -281,3 +281,34 @@ test('a new link is saved as what it really is, looked up like in Add Dish', asy
   await expect(detail.getByText('Web')).toBeVisible()
   await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveAttribute('href', blog)
 })
+
+test('without View Transitions, the card’s image still morphs into the detail and back', async ({ page }) => {
+  await page.addInitScript(() => {
+    delete (Document.prototype as { startViewTransition?: unknown }).startViewTransition
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const card = page.getByRole('link', { name: 'Pfeiltasten' })
+  const thumb = (await card.locator('[data-thumb]').boundingBox())!
+
+  await card.click()
+
+  // Frozen at its start, the detail's image sits where the card's was.
+  const detail = page.getByRole('dialog', { name: 'Pfeiltasten' })
+  const image = detail.locator('[data-detail-image]')
+  await expect.poll(() => image.evaluate(el => el.getAnimations().length)).toBeGreaterThan(0)
+  await image.evaluate((el) => {
+    for (const animation of el.getAnimations()) {
+      animation.pause()
+      animation.currentTime = 0
+    }
+  })
+  const start = (await image.boundingBox())!
+  for (const key of ['x', 'y', 'width', 'height'] as const) expect(start[key]).toBeCloseTo(thumb[key], 0)
+  await image.evaluate(el => el.getAnimations().forEach(a => a.play()))
+
+  await detail.getByRole('button', { name: 'Schließen' }).click()
+  await expect(detail).toBeHidden()
+  await expect(card).toBeFocused()
+})

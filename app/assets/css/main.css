@@ -81,3 +81,22 @@ html {
 @keyframes scrim-in {
   from { opacity: 0; }
 }
+
+/* The card → detail morph with the View Transitions API (utils/dish-morph.ts,
+   handoff "Card → detail morph"): the image moves between the card and the
+   detail in 600ms (swoosh), cropped like both ends (each brings its own
+   corners); everything else cross-fades. */
+::view-transition-group(dish-image) {
+  animation-duration: var(--dur-swoosh);
+  animation-timing-function: var(--ease-swoosh);
+  overflow: clip;
+}
+::view-transition-old(dish-image),
+::view-transition-new(dish-image) {
+  height: 100%;
+  object-fit: cover;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+}

@@ -27,7 +27,10 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
     <div class="relative">
       <!-- Portrait (TikTok, Reels, Shorts) and landscape (blogs) both fill
            the frame; a tall image is cropped to at most 60% of the screen. -->
-      <div class="aspect-[4/3] max-h-[60dvh] w-full overflow-hidden bg-surface-muted">
+      <div
+        class="detail-image aspect-[4/3] max-h-[60dvh] w-full overflow-hidden bg-surface-muted"
+        data-detail-image
+      >
         <DishImage
           :image-url="dish.imageUrl"
           :placeholder="dish.placeholder"
@@ -54,7 +57,10 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
       </div>
     </div>
 
-    <div class="flex flex-1 flex-col gap-5 px-5 pb-10 pt-6 tablet:px-7">
+    <div
+      class="flex flex-1 flex-col gap-5 px-5 pb-10 pt-6 tablet:px-7"
+      data-detail-body
+    >
       <div class="flex flex-col gap-2">
         <p class="text-small text-text-muted">
           <span aria-hidden="true">{{ board.emoji }}</span> {{ t.detail.placement(board.name, columnName) }}
@@ -120,3 +126,11 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
     </div>
   </div>
 </template>
+
+<style scoped>
+/* The far end of the card → detail morph with View Transitions (utils/
+   dish-morph.ts): only one detail shows at a time, so the name is unique. */
+.detail-image {
+  view-transition-name: dish-image;
+}
+</style>

@@ -121,6 +121,19 @@ function onFlightLanded() {
   landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }
 }
 
+// Tapping a card morphs it into its detail (utils/dish-morph.ts). Clicks
+// for a new tab or window are left to the link; so is one swallowed after a
+// drag, which never gets here.
+function openDish(event: MouseEvent, dishId: string) {
+  const onLink = (event.target as Element).closest('.card-link')
+  if (!onLink || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  const path = `/b/${id.value}/d/${dishId}`
+  morphOpen(cardThumb(dishId), path, async () => {
+    await navigateTo(path)
+  })
+}
+
 // The Dish detail's cooking actions, for the Dish it shows.
 function detailDish(dishId: string) {
   return board.value && dishOnBoard(board.value, dishId)?.dish
@@ -426,6 +439,7 @@ async function deleteFromMenu() {
               :data-dish-id="dish?.id"
               :data-drag-state="state"
               :data-drop-slot="!dish || undefined"
+              @click.capture="dish && openDish($event, dish.id)"
             >
               <template v-if="dish">
                 <NuxtLink
