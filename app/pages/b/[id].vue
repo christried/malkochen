@@ -72,12 +72,53 @@ const { deleteDish, focusCard } = useDishDelete(board, showToast)
 const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, addNote)
 const { deleteCooking } = useCookingDelete(showToast)
 
-// "Gekocht ✓" on a card: it leaves for the Gekocht Column (or stays, if it
-// is there), and focus goes to what took its place.
-async function cookFromCard(dishId: string) {
-  const focusId = cookDish(dishId)
+// "Gekocht ✓" on a card (handoff "Gekocht celebration + toast"): the button
+// springs first; 300ms on, the card swooshes out for the Gekocht Column (or
+// stays, if it is there) and the Gekocht toast celebrates, with confetti
+// from the button. On phones, from another Column, a pebble flies to the
+// Gekocht tab, which bursts as it lands. Focus goes to what took its place.
+const holding = new Set<string>()
+const swooshing = new Set<string>()
+async function cookFromCard(dishId: string, origin: Point) {
+  if (holding.has(dishId)) return
+  holding.add(dishId)
+  await new Promise(resolve => setTimeout(resolve, motionMs('cook-hold')))
+  holding.delete(dishId)
+  const leaves = board.value && !dishOnBoard(board.value, dishId)?.column.isGekocht
+  swooshing.add(dishId)
+  const focusId = cookDish(dishId, origin)
+  if (leaves) flyToGekochtTab(origin)
   await nextTick()
+  swooshing.delete(dishId)
   if (focusId) document.getElementById(focusId)?.focus()
+}
+// A card leaving its Column swooshes if it was cooked, else it shrinks. It
+// is taken out of the flow (so the list closes up at once) where it was: in
+// a flex list, `position: absolute` alone would put it at the top.
+function onCardLeave(el: Element) {
+  if (!(el instanceof HTMLElement)) return
+  el.style.top = `${el.offsetTop}px`
+  if (swooshing.has(el.dataset.dishId ?? '')) el.classList.add('cooked')
+}
+
+// The pebble flying to the Gekocht tab (phones; not with reduced motion).
+const flight = ref<{ from: Point, to: Point, columnId: string, accent: string, key: number } | null>(null)
+let flights = 0
+function flyToGekochtTab(from: Point) {
+  const index = board.value?.columns.findIndex(c => c.isGekocht) ?? -1
+  const columnId = board.value?.columns[index]?.id
+  if (!columnId || !isPhoneLayout() || prefersReducedMotion()) return
+  const tab = tabBar.value?.$el.querySelector(`[data-tab-column-id="${columnId}"]`)
+  if (!(tab instanceof HTMLElement)) return
+  const box = tab.getBoundingClientRect()
+  flight.value = { from, to: { x: box.left + box.width / 2, y: box.top + box.height / 2 }, columnId, accent: columnAccent(index), key: ++flights }
+}
+function onFlightLanded() {
+  const columnId = flight.value?.columnId
+  flight.value = null
+  if (!columnId) return
+  hapticClockTick()
+  landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }
 }
 
 // The Dish detail's cooking actions, for the Dish it shows.
@@ -93,13 +134,14 @@ function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
   if (dish) deleteCooking(dish, cooking)
 }
 
-// A Dish dropped into a Column tab makes the tab squash and burst.
+// A Dish dropped into a Column tab (or the Gekocht pebble landing on one)
+// makes the tab squash and burst.
 const landing = ref<{ columnId: string, n: number } | null>(null)
 const { drag, dragging, entries } = useDishDrag(columnsEl, {
   board: () => board.value,
   activeColumnId: () => activeColumnId.value,
   tabBar: () => tabBar.value?.$el ?? null,
-  drop: dropDish,
+  drop: (dishId, place, origin) => dropDish(dishId, place, { origin }),
   landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
 })
 // The one loop playing on the Board: the lifted card's Placeholder, the
@@ -374,6 +416,7 @@ async function deleteFromMenu() {
             class="relative flex flex-col gap-3"
             :class="{ 'mt-3': listOf(column).length }"
             data-dish-list
+            @before-leave="onCardLeave"
           >
             <li
               v-for="{ key, dish, state } in listOf(column)"
@@ -425,16 +468,13 @@ async function deleteFromMenu() {
                     r="2"
                   /></svg>
                 </button>
-                <button
-                  type="button"
-                  class="absolute bottom-2.5 right-2.5 rounded-pill px-3.5 py-2 text-button transition duration-tap ease-tap active:scale-[.94] focus-visible:outline-2 focus-visible:outline-focus"
-                  :class="dish.cookings.length ? 'bg-sage text-sage-ink' : 'bg-surface-muted text-text'"
-                  :aria-label="t.dish.cookLabel(dish.title)"
+                <CookButton
+                  class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
+                  :cooked="dish.cookings.length > 0"
+                  :label="t.dish.cookLabel(dish.title)"
                   data-cook
-                  @click="cookFromCard(dish.id)"
-                >
-                  {{ t.dish.cook }}
-                </button>
+                  @cook="origin => cookFromCard(dish.id, origin)"
+                />
               </template>
             </li>
           </TransitionGroup>
@@ -479,6 +519,15 @@ async function deleteFromMenu() {
         />
       </div>
     </div>
+
+    <FlyToTab
+      v-if="flight"
+      :key="flight.key"
+      :from="flight.from"
+      :to="flight.to"
+      :accent="flight.accent"
+      @landed="onFlightLanded"
+    />
 
     <button
       type="button"
@@ -672,6 +721,25 @@ async function deleteFromMenu() {
   .card-leave-to,
   .card-enter-from {
     scale: none;
+  }
+}
+/* A card cooked with "Gekocht ✓" (handoff "Card leaves Column") swooshes
+   out sideways instead, tilting, in 360ms. Reduced motion: it only fades. */
+.card-leave-active.cooked {
+  transition: translate 360ms var(--ease-swoosh), rotate 360ms var(--ease-swoosh), opacity 360ms var(--ease-fade);
+}
+.card-leave-to.cooked {
+  translate: 440px 0;
+  rotate: 8deg;
+  scale: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-leave-active.cooked {
+    transition: opacity var(--dur-fade) var(--ease-fade);
+  }
+  .card-leave-to.cooked {
+    translate: none;
+    rotate: none;
   }
 }
 /* Dragging a Dish (handoff "Drag lift"). The card lifts under the pointer:

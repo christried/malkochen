@@ -18,7 +18,7 @@ const emit = defineEmits<{
   edited: [dish: SavedDish]
   delete: [dishId: string]
   move: [dishId: string, columnId: string, toBoard: BoardListing | null]
-  cook: [dishId: string]
+  cook: [dishId: string, origin: Point]
   note: [dishId: string, cooking: CookingView]
   deleteCooking: [dishId: string, cooking: CookingView]
 }>()
@@ -130,7 +130,7 @@ watch(editing, async (isEditing) => {
         @edit="editing = true"
         @move="moving = true"
         @delete="onDelete"
-        @cook="emit('cook', located.dish.id)"
+        @cook="origin => located && emit('cook', located.dish.id, origin)"
         @note="cooking => located && emit('note', located.dish.id, cooking)"
         @delete-cooking="cooking => located && emit('deleteCooking', located.dish.id, cooking)"
       />

@@ -84,7 +84,11 @@ export const de = {
     thisBoard: 'Dieses Board',
     moveFailed: (title: string) => `„${title}“ ließ sich nicht verschieben. Versuch es gleich noch mal.`,
     cook: 'Gekocht ✓',
+    // "Gekocht ✓" on its button, where the check is drawn (CookButton).
+    cookWord: 'Gekocht',
     cookLabel: (title: string) => `Gekocht ✓: „${title}“`,
+    // Topfbert's speech bubble in the Gekocht celebration.
+    cheer: 'Mmh!',
     cookedCount: (count: number) => `${count}× gekocht`,
     addNote: 'Notiz hinzufügen',
     cookFailed: (title: string) => `„${title}“ ließ sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,

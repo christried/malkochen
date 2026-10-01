@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, titles } from './board'
+import { confetti, topfbert } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { seedDish } from './seed'
 
@@ -114,4 +115,37 @@ test('in the detail: add a note later, delete a Cooking with undo, and cook agai
   await expect(entries).toHaveCount(2)
   await expect(entries.nth(1)).toContainText('mit Feta besser')
   await expect(detail).not.toContainText('doppelt Knoblauch')
+})
+
+test('"Gekocht ✓" celebrates: veggie confetti, then Topfbert behind the toast until it goes', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[6])
+  await seedDish(page, { title: 'Ramen', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await gotoHydrated(page, '/')
+  await expect(confetti(page)).toHaveCount(0)
+  await expect(topfbert(page)).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Gekocht ✓: „Ramen“' }).click()
+
+  // 14 pieces fly up from the button and fall off the screen, once.
+  await expect(confetti(page)).toHaveCount(14)
+  await expect(topfbert(page)).toBeVisible()
+  await expect(topfbert(page)).toContainText('Mmh!')
+  await expect(confetti(page)).toHaveCount(0)
+  // Topfbert stays with the toast and leaves with it.
+  await expect(topfbert(page)).toBeVisible()
+  await gekochtToast(page).getByRole('button', { name: 'Rückgängig' }).click()
+  await expect(topfbert(page)).toHaveCount(0)
+  await expect(titles(page, 'Ideen')).toContainText(['Ramen'])
+})
+
+test('"Gekocht ✓" in the Dish detail celebrates there', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[6])
+  await gotoHydrated(page, '/')
+  await page.getByRole('link', { name: 'Ramen' }).click()
+  const detail = page.getByRole('dialog', { name: 'Ramen' })
+
+  await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
+
+  await expect(confetti(detail)).toHaveCount(14)
+  await expect(topfbert(detail)).toContainText('Mmh!')
 })

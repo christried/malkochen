@@ -9,7 +9,7 @@ import type { DishView } from '~~/server/utils/dishes'
 // "never-cooked" clip instead. A Cooking still being recorded
 // shows, but can't be changed yet.
 const props = defineProps<{ dish: DishView }>()
-defineEmits<{ cook: [], note: [cooking: CookingView], delete: [cooking: CookingView] }>()
+defineEmits<{ cook: [origin: Point], note: [cooking: CookingView], delete: [cooking: CookingView] }>()
 const t = useStrings()
 const headingId = useId()
 
@@ -52,14 +52,11 @@ function keyOf(cooking: CookingView): number {
           {{ summary }}
         </p>
       </div>
-      <button
-        type="button"
-        class="shrink-0 rounded-pill px-4 py-2.5 text-button transition duration-tap ease-tap active:scale-[.94] focus-visible:outline-2 focus-visible:outline-focus"
-        :class="dish.cookings.length ? 'bg-sage text-sage-ink' : 'bg-surface-muted text-text'"
-        @click="$emit('cook')"
-      >
-        {{ t.dish.cook }}
-      </button>
+      <CookButton
+        class="shrink-0 px-4 py-2.5"
+        :cooked="dish.cookings.length > 0"
+        @cook="origin => $emit('cook', origin)"
+      />
     </div>
 
     <div

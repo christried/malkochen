@@ -13,7 +13,7 @@ defineEmits<{
   edit: []
   move: []
   delete: []
-  cook: []
+  cook: [origin: Point]
   note: [cooking: CookingView]
   deleteCooking: [cooking: CookingView]
 }>()
@@ -98,7 +98,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
 
       <CookingHistory
         :dish="dish"
-        @cook="$emit('cook')"
+        @cook="origin => $emit('cook', origin)"
         @note="cooking => $emit('note', cooking)"
         @delete="cooking => $emit('deleteCooking', cooking)"
       />

@@ -27,8 +27,14 @@ html {
 :root {
   --dur-cooking-collapse: 280ms;
 }
+/* "Gekocht ✓" on a card: the button springs this long before the card
+   leaves (handoff "Gekocht celebration + toast": +300ms). */
+:root {
+  --dur-cook-hold: 300ms;
+}
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --dur-cook-hold: 0ms;
     --dur-drop-settle: 0ms;
     --dur-drop-swallow: 0ms;
     --dur-drop-shrink: 0ms;
