@@ -1,4 +1,4 @@
-import { and, eq, exists, inArray, not, sql, type SQL } from 'drizzle-orm'
+import { and, eq, exists, not, sql, type SQL } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
 import { board, membership } from '../db/schema'
 import { membershipOf } from './boards'
@@ -42,29 +42,35 @@ export async function handOver(boardId: string, userId: string, memberId: string
   if (!found.isOwner) return 'forbidden'
   if (memberId === userId) return 'self'
 
-  // Two steps, since the one-Owner index is checked row by row: the Owner
-  // steps down, then the Member steps up. The first only goes ahead while the
-  // user is still the Owner and the Member still on the Board, and it locks
-  // both rows so neither can change before the second; the second only while
-  // the Board has no Owner. So the Board never ends up with none, or two.
+  // Three steps, in one transaction. First the Member's row is locked, so
+  // they can't leave or be removed until it is done (a leave already under
+  // way finishes first, and then there is no row). Then the Owner steps down,
+  // only if still the Owner and the Member is still on the Board; then the
+  // Member steps up, only if the Board has no Owner -- so of two hand-overs
+  // at once, the second changes nothing. Stepping down before up, since the
+  // one-Owner index is checked row by row. The Board never has none, or two.
+  const ownerFree = sql`not exists (select 1 from ${membership} m where m.board_id = ${boardId} and m.is_owner)`
   await runAtomic(d => [
+    d.update(membership)
+      .set({ isOwner: false })
+      .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), not(membership.isOwner))),
     d.update(membership)
       .set({ isOwner: false })
       .where(and(
         eq(membership.boardId, boardId),
-        inArray(membership.userId, [userId, memberId]),
-        sql`(select count(*) from ${membership} m where m.board_id = ${boardId} and ((m.user_id = ${userId} and m.is_owner) or (m.user_id = ${memberId} and not m.is_owner))) = 2`,
+        eq(membership.userId, userId),
+        membership.isOwner,
+        exists(d.select({ userId: membership.userId }).from(membership).where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId)))),
       )),
     d.update(membership)
       .set({ isOwner: true })
-      .where(and(
-        eq(membership.boardId, boardId),
-        eq(membership.userId, memberId),
-        sql`not exists (select 1 from ${membership} m where m.board_id = ${boardId} and m.is_owner)`,
-      )),
+      .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), ownerFree)),
   ])
   const [owner] = await ownerOf(boardId, memberId)
-  return owner ? 'handed-over' : 'not-member'
+  if (owner) return 'handed-over'
+  // Nothing changed: someone else handed over first, or the Member is gone.
+  const [stillOwner] = await ownerOf(boardId, userId)
+  return stillOwner ? 'not-member' : 'forbidden'
 }
 
 // The Owner deletes the Board, with its Columns, Dishes and Cookings, for

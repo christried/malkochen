@@ -102,6 +102,19 @@ test('only the Owner removes a Member, who then loses the Board', async () => {
   expect((await removeMember(await frances(), board.id, 'nobody')).status).toBe(404)
 })
 
+test('a removed Member can rejoin with the Invite Link until the Owner resets it', async () => {
+  const member = await sophie()
+  const board = await francesBoard('Wiedersehen', member)
+  await removeMember(await frances(), board.id, memberId(board, 'sophie'))
+
+  expect((await member.fetch(`/api/invites/${board.inviteToken}/join`, { method: 'POST' })).status).toBe(200)
+  expect(await boardIds(member)).toContain(board.id)
+
+  await removeMember(await frances(), board.id, memberId(board, 'sophie'))
+  await (await frances()).fetch(`/api/boards/${board.id}/invite/reset`, { method: 'POST' })
+  expect((await member.fetch(`/api/invites/${board.inviteToken}/join`, { method: 'POST' })).status).toBe(404)
+})
+
 test('the Owner can’t leave, and nobody off the Board can remove anyone', async () => {
   const member = await sophie()
   const board = await francesBoard('Nudelrunde', member)
@@ -111,6 +124,9 @@ test('the Owner can’t leave, and nobody off the Board can remove anyone', asyn
   expect((await removeMember(await linus(), board.id, memberId(board, 'frances'))).status).toBe(404)
   expect((await getBoard(await frances(), board.id)).members).toHaveLength(2)
 })
+
+// DELETE /api/boards/:id, answered as is.
+const deleteBoard = (caller: Caller, boardId: string) => caller.fetch(`/api/boards/${boardId}`, { method: 'DELETE' })
 
 // POST /api/boards/:id/owner, answered as is.
 const handOver = (caller: Caller, boardId: string, userId: string) =>
@@ -129,8 +145,11 @@ test('the Owner hands ownership to a Member, and can then leave', async () => {
   expect(handed).toMatchObject({ isOwner: true })
   expect(owners(handed)).toEqual(['sophie'])
   expect(await getBoard(await frances(), board.id)).toMatchObject({ isOwner: false })
-  // The new Owner has the Owner's say; the old one leaves like any Member.
+  // The new Owner has the Owner's say, the old one no longer; they leave like any Member.
   expect((await member.fetch(`/api/boards/${board.id}/invite/reset`, { method: 'POST' })).status).toBe(200)
+  expect((await removeMember(await frances(), board.id, memberId(board, 'sophie'))).status).toBe(403)
+  expect((await handOver(await frances(), board.id, memberId(board, 'frances'))).status).toBe(403)
+  expect((await deleteBoard(await frances(), board.id)).status).toBe(403)
   expect((await removeMember(await frances(), board.id, memberId(board, 'frances'))).status).toBe(204)
   expect(owners(await getBoard(member, board.id))).toEqual(['sophie'])
 })
@@ -150,8 +169,6 @@ test('only the Owner hands over, and only to another Member; there is always exa
 
   expect(owners(await getBoard(owner, board.id))).toEqual(['frances'])
 })
-
-const deleteBoard = (caller: Caller, boardId: string) => caller.fetch(`/api/boards/${boardId}`, { method: 'DELETE' })
 
 test('only the Owner deletes the Board, with its Dishes, for every Member', async () => {
   const member = await sophie()

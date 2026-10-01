@@ -202,21 +202,28 @@ async function resetLink() {
 // or remove, then confirms; the list is fetched afresh either way, so it
 // also shows what other Members changed meanwhile.
 const members = computed(() => board.value?.members ?? [])
-const managing = ref<BoardMemberView | null>(null)
-const managingAction = ref<'hand-over' | 'remove' | null>(null)
-const managingOpen = computed({
-  get: () => managing.value !== null,
+const selectedMember = ref<BoardMemberView | null>(null)
+const memberAction = ref<'hand-over' | 'remove' | null>(null)
+const memberSheetOpen = computed({
+  get: () => selectedMember.value !== null,
   set: (open) => {
-    if (!open) managing.value = null
+    if (!open) selectedMember.value = null
   },
 })
+// The Member's name, until the Owner picks what to do; then the question.
+const memberSheetTitle = computed(() => {
+  const name = selectedMember.value?.name ?? ''
+  if (memberAction.value === 'hand-over') return t.settings.handOverConfirm(name)
+  if (memberAction.value === 'remove') return t.settings.removeConfirm(name)
+  return name
+})
 function manage(member: BoardMemberView) {
-  managingAction.value = null
-  managing.value = member
+  memberAction.value = null
+  selectedMember.value = member
 }
 
 async function changeMembers(request: () => Promise<unknown>, done: string) {
-  managing.value = null
+  selectedMember.value = null
   try {
     await request()
     toast.value = { text: done, duration: NOTICE_MS }
@@ -242,12 +249,9 @@ function removeMember(member: BoardMemberView) {
 // Leaving (any Member but the Owner) and deleting (the Owner, after typing
 // the Board's name) both end on the Board used last -- or a new "Meine
 // Küche" for someone left on no Board at all.
-const confirmingLeave = ref(false)
-async function leave() {
-  confirmingLeave.value = false
-  const me = members.value.find(m => m.isYou)
+async function goOffBoard(request: () => Promise<unknown>) {
   try {
-    await $fetch<null>(`/api/boards/${id.value}/members/${encodeURIComponent(me?.id ?? '')}`, { method: 'DELETE' })
+    await request()
   }
   catch {
     failed()
@@ -256,23 +260,24 @@ async function leave() {
   await navigateTo('/', { replace: true })
 }
 
+const confirmingLeave = ref(false)
+function leave() {
+  confirmingLeave.value = false
+  const me = members.value.find(m => m.isYou)
+  if (!me) return
+  return goOffBoard(() => $fetch<null>(`/api/boards/${id.value}/members/${encodeURIComponent(me.id)}`, { method: 'DELETE' }))
+}
+
 const confirmingDeleteBoard = ref(false)
 const typedName = ref('')
 watch(confirmingDeleteBoard, () => {
   typedName.value = ''
 })
 const nameTyped = computed(() => typedName.value.trim() === saved.value.name)
-async function deleteBoard() {
+function deleteBoard() {
   if (!nameTyped.value) return
   confirmingDeleteBoard.value = false
-  try {
-    await $fetch<null>(`/api/boards/${id.value}`, { method: 'DELETE' })
-  }
-  catch {
-    failed()
-    return
-  }
-  await navigateTo('/', { replace: true })
+  return goOffBoard(() => $fetch<null>(`/api/boards/${id.value}`, { method: 'DELETE' }))
 }
 
 function confirmDelete() {
@@ -483,48 +488,48 @@ function confirmDelete() {
     </div>
 
     <AppSheet
-      v-model:open="managingOpen"
-      :title="managing ? (managingAction === 'hand-over' ? t.settings.handOverConfirm(managing.name) : managingAction === 'remove' ? t.settings.removeConfirm(managing.name) : managing.name) : ''"
+      v-model:open="memberSheetOpen"
+      :title="memberSheetTitle"
       :close-label="t.settings.close"
     >
-      <template v-if="managing">
+      <template v-if="selectedMember">
         <p
-          v-if="managingAction"
+          v-if="memberAction"
           class="mt-3 text-body text-text-muted"
         >
-          {{ managingAction === 'hand-over' ? t.settings.handOverBody(managing.name) : t.settings.removeBody(managing.name) }}
+          {{ memberAction === 'hand-over' ? t.settings.handOverBody(selectedMember.name) : t.settings.removeBody(selectedMember.name) }}
         </p>
         <div class="mt-5 flex flex-col gap-2">
-          <template v-if="!managingAction">
+          <template v-if="!memberAction">
             <button
               type="button"
               class="rounded-pill bg-surface-muted px-5 py-3.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-              @click="managingAction = 'hand-over'"
+              @click="memberAction = 'hand-over'"
             >
               {{ t.settings.handOver }}
             </button>
-            <DangerButton @click="managingAction = 'remove'">
+            <DangerButton @click="memberAction = 'remove'">
               {{ t.settings.removeMember }}
             </DangerButton>
           </template>
           <button
-            v-else-if="managingAction === 'hand-over'"
+            v-else-if="memberAction === 'hand-over'"
             type="button"
             class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            @click="handOver(managing)"
+            @click="handOver(selectedMember)"
           >
             {{ t.settings.handOver }}
           </button>
           <DangerButton
             v-else
-            @click="removeMember(managing)"
+            @click="removeMember(selectedMember)"
           >
             {{ t.settings.removeMember }}
           </DangerButton>
           <button
             type="button"
             class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
-            @click="managing = null"
+            @click="selectedMember = null"
           >
             {{ t.settings.cancel }}
           </button>

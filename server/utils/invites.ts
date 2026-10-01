@@ -1,8 +1,8 @@
-import { asc, desc, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { db } from '../db'
-import { board, membership, user } from '../db/schema'
-import { membershipOf, type BoardMember, type BoardNameAndEmoji } from './boards'
+import { board, membership } from '../db/schema'
+import { boardMembers, membershipOf, type BoardMember, type BoardNameAndEmoji } from './boards'
 
 // Invite Links (CONTEXT.md): /invite/<token> lets a signed-in user on the
 // Allowlist become a Member of the Board. The token is the Board's
@@ -49,13 +49,7 @@ export async function inviteView(token: string): Promise<InviteView | null> {
   const found = await boardOf(token)
   if (!found) return null
 
-  const members = await db
-    .select({ id: user.id, name: user.name, image: user.image, isOwner: membership.isOwner })
-    .from(membership)
-    .innerJoin(user, eq(user.id, membership.userId))
-    .where(eq(membership.boardId, found.id))
-    .orderBy(desc(membership.isOwner), asc(membership.joinedAt))
-    .limit(LANDING_MEMBERS)
+  const members = await boardMembers(found.id).limit(LANDING_MEMBERS)
   const [owner] = members
   if (!owner?.isOwner) return null
   const strip = ({ isOwner: _, ...m }: typeof owner): BoardMember => m

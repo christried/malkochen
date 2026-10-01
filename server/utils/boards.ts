@@ -173,12 +173,7 @@ export async function getBoard(boardId: string, userId: string): Promise<BoardVi
     .orderBy(asc(boardColumn.position))
   const [dishes, members] = await Promise.all([
     dishesByColumn(columns.map(c => c.id)),
-    db
-      .select({ id: user.id, name: user.name, image: user.image, isOwner: membership.isOwner })
-      .from(membership)
-      .innerJoin(user, eq(user.id, membership.userId))
-      .where(eq(membership.boardId, boardId))
-      .orderBy(desc(membership.isOwner), asc(membership.joinedAt)),
+    boardMembers(boardId),
   ])
   return {
     ...found,
@@ -207,6 +202,16 @@ export async function editBoard(boardId: string, userId: string, changes: BoardC
     .where(and(eq(board.id, boardId), exists(membershipOf(boardId, userId))))
     .returning({ id: board.id, name: board.name, emoji: board.emoji })
   return edited ?? null
+}
+
+// The Board's Members, the Owner first, then in the order they joined.
+export function boardMembers(boardId: string) {
+  return db
+    .select({ id: user.id, name: user.name, image: user.image, isOwner: membership.isOwner })
+    .from(membership)
+    .innerJoin(user, eq(user.id, membership.userId))
+    .where(eq(membership.boardId, boardId))
+    .orderBy(desc(membership.isOwner), asc(membership.joinedAt))
 }
 
 // The user's membership of the Board, if any, and whether they are its Owner.
