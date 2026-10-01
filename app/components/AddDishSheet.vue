@@ -11,15 +11,17 @@ import { webLink } from '~/utils/web-link'
 // "Ohne Link hinzufügen": a title, a note and a Placeholder Image. Either way
 // the Member picks the Board (the one they are on) and saves. If the link is
 // already on that Board, a warning names the Dish and its Column: open it, or
-// save anyway.
+// save anyway. Saved, it says where the image showed, for the Dish to fly
+// onto the Board from there.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{ boardId: string }>()
-const emit = defineEmits<{ added: [dish: SavedDish, boardId: string] }>()
+const emit = defineEmits<{ added: [dish: SavedDish, boardId: string, from: DOMRect | null] }>()
 const t = useStrings()
 
 // "bowl" is the handoff's fallback Placeholder (illustrations.json autoPick).
 const DEFAULT_PLACEHOLDER: Placeholder = 'bowl'
 
+const form = useTemplateRef<HTMLFormElement>('form')
 const withoutLink = ref(false)
 const link = ref('')
 // GET /api/source-lookup: what Source Lookup found, and the Image Ticket
@@ -204,7 +206,8 @@ async function save() {
         imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
       },
     }))
-    emit('added', dish, target)
+    const image = form.value?.querySelector('[data-source-image], [role="radio"][aria-checked="true"]')
+    emit('added', dish, target, image?.getBoundingClientRect() ?? null)
     open.value = false
   }
   catch {
@@ -223,6 +226,7 @@ async function save() {
     :close-label="t.addDish.close"
   >
     <form
+      ref="form"
       class="mt-5 flex flex-col gap-5"
       novalidate
       @submit.prevent="save"
@@ -237,7 +241,7 @@ async function save() {
             <span
               v-if="result"
               aria-hidden="true"
-              class="source-dot h-2.5 w-2.5 shrink-0 rounded-full"
+              class="source-dot found-pop h-2.5 w-2.5 shrink-0 rounded-full"
               :data-source="badgeKind(result.kind)"
             />
             <input
@@ -344,7 +348,7 @@ async function save() {
             :src="sourceImage!"
             :alt="t.addDish.sourceImage"
             referrerpolicy="no-referrer"
-            class="aspect-[4/3] w-full object-cover"
+            class="bloom aspect-[4/3] w-full object-cover"
             data-source-image
             @error="sourceImageBroken = true"
           >
@@ -496,6 +500,25 @@ async function save() {
    decision. */
 .duplicate-panel {
   background: color-mix(in oklch, var(--color-butter) 38%, var(--color-surface-muted));
+}
+/* What the lookup found comes in (handoff "Image bloom", SourceBadge
+   "found"): the image settles from 1.08 as it fades in (1.2s, swoosh), and
+   the Source's dot pops from nothing a third of the way in. Reduced
+   motion: they are just there. */
+.bloom {
+  animation: bloom 1.2s var(--ease-swoosh);
+}
+@keyframes bloom {
+  from {
+    scale: 1.08;
+    opacity: 0;
+  }
+}
+.found-pop {
+  animation: found-pop var(--dur-pop) var(--ease-pop) 408ms backwards;
+}
+@keyframes found-pop {
+  from { scale: 0; }
 }
 /* Input "required/prompt": a butter glow that breathes, never red. Reduced
    motion (main.css) stops it after one pass. */

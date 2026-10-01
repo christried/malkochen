@@ -13,7 +13,7 @@ defineEmits<{
   edit: []
   move: []
   delete: []
-  cook: []
+  cook: [origin: Point]
   note: [cooking: CookingView]
   deleteCooking: [cooking: CookingView]
 }>()
@@ -27,14 +27,20 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
     <div class="relative">
       <!-- Portrait (TikTok, Reels, Shorts) and landscape (blogs) both fill
            the frame; a tall image is cropped to at most 60% of the screen. -->
-      <div class="aspect-[4/3] max-h-[60dvh] w-full overflow-hidden bg-surface-muted">
+      <div
+        class="detail-image aspect-[4/3] max-h-[60dvh] w-full overflow-hidden bg-surface-muted"
+        data-detail-image
+      >
         <DishImage
           :image-url="dish.imageUrl"
           :placeholder="dish.placeholder"
           motion="loop"
         />
       </div>
-      <div class="absolute inset-x-0 top-0 flex justify-between p-4">
+      <div
+        class="absolute inset-x-0 top-0 flex justify-between p-4"
+        data-detail-actions
+      >
         <button
           type="button"
           class="flex h-11 w-11 items-center justify-center rounded-full bg-glass text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
@@ -54,7 +60,10 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
       </div>
     </div>
 
-    <div class="flex flex-1 flex-col gap-5 px-5 pb-10 pt-6 tablet:px-7">
+    <div
+      class="flex flex-1 flex-col gap-5 px-5 pb-10 pt-6 tablet:px-7"
+      data-detail-body
+    >
       <div class="flex flex-col gap-2">
         <p class="text-small text-text-muted">
           <span aria-hidden="true">{{ board.emoji }}</span> {{ t.detail.placement(board.name, columnName) }}
@@ -98,7 +107,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
 
       <CookingHistory
         :dish="dish"
-        @cook="$emit('cook')"
+        @cook="origin => $emit('cook', origin)"
         @note="cooking => $emit('note', cooking)"
         @delete="cooking => $emit('deleteCooking', cooking)"
       />
@@ -120,3 +129,11 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
     </div>
   </div>
 </template>
+
+<style scoped>
+/* The far end of the card → detail morph with View Transitions (utils/
+   dish-morph.ts): only one detail shows at a time, so the name is unique. */
+.detail-image {
+  view-transition-name: dish-image;
+}
+</style>

@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { tab, titles } from './board'
+import { confetti, topfbert } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { seedDish } from './seed'
 
@@ -188,4 +189,29 @@ test('a failed drop puts the card back and says so', async ({ page }) => {
 
   await expect(page.locator('[data-toast]')).toHaveText('„Bowl“ ließ sich nicht verschieben. Versuch es gleich noch mal.')
   await expect(titles(page, 'Diese Woche')).toHaveText(['Bowl', 'Tacos', 'Kürbissuppe', 'Curry'])
+})
+
+test('phone: a Dish dropped on the Gekocht tab is cooked, and that celebrates', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await signIn(page, ALLOWLISTED[5])
+  await gotoHydrated(page, '/')
+
+  await touchDrag(page, card(page, 'Ramen'), await center(tab(page, 'Gekocht 0')))
+
+  await expect(tab(page, 'Gekocht 1')).toBeVisible()
+  await expect(confetti(page)).toHaveCount(14)
+  await expect(topfbert(page)).toContainText('Mmh!')
+})
+
+test('desktop: a Dish dropped in the Gekocht Column is cooked, and that celebrates', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, ALLOWLISTED[5])
+  await gotoHydrated(page, '/')
+
+  const ramen = await center(card(page, 'Ramen'))
+  await mouseDrag(page, card(page, 'Bowl'), { x: ramen.x, y: ramen.box.y + ramen.box.height + 40 })
+
+  await expect(titles(page, 'Gekocht')).toHaveText(['Ramen', 'Bowl'])
+  await expect(confetti(page)).toHaveCount(14)
+  await expect(topfbert(page)).toContainText('Mmh!')
 })

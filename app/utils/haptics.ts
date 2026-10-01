@@ -27,3 +27,14 @@ export function hapticActivate() {
 export function hapticConfirm() {
   vibrate([10, 50, 20])
 }
+
+// The Gekocht celebration: CONFIRM, then two light ticks as the confetti
+// bursts. One pattern, as each vibration cancels the one before.
+export function hapticCelebrate() {
+  vibrate([10, 50, 20, 90, 8, 60, 8])
+}
+
+// CLOCK_TICK: the lightest tick, e.g. a pebble landing on a Column tab.
+export function hapticClockTick() {
+  vibrate(5)
+}

@@ -27,8 +27,39 @@ html {
 :root {
   --dur-cooking-collapse: 280ms;
 }
+/* The Gekocht celebration (handoff "Gekocht celebration + toast"): the
+   button springs this long before the card leaves (+300ms) in 360ms; the
+   toast comes 200ms after that (+500ms), and the Gekocht tab bumps
+   (460ms); on phones a pebble flies to it (640ms, "fly-to-tab-pebble"). */
+:root {
+  --dur-cook-hold: 300ms;
+  --dur-cook-leave: 360ms;
+  --dur-toast-delay: 200ms;
+  --dur-tab-bump: 460ms;
+  --dur-fly-to-tab: 640ms;
+}
+/* A saved Dish flying onto the Board (handoff "Saved → card flies to
+   Board": 900ms). */
+:root {
+  --dur-saved-flight: 900ms;
+}
+/* A sheet moving out (handoff "Sheet open / close": 320ms ease-in, the
+   scrim 240ms). Script waits for it before the next thing moves. */
+:root {
+  --dur-sheet-out: 320ms;
+  --ease-sheet-out: cubic-bezier(.4, 0, 1, 1);
+  --dur-scrim-out: 240ms;
+}
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --dur-sheet-out: 0ms;
+    --dur-scrim-out: 0ms;
+    --dur-cook-hold: 0ms;
+    --dur-cook-leave: 0ms;
+    --dur-toast-delay: 0ms;
+    --dur-tab-bump: 0ms;
+    --dur-fly-to-tab: 0ms;
+    --dur-saved-flight: 0ms;
     --dur-drop-settle: 0ms;
     --dur-drop-swallow: 0ms;
     --dur-drop-shrink: 0ms;
@@ -41,12 +72,14 @@ html {
 /* Global reduced-motion rule. Durations already collapse via the --dur-*
    tokens in tokens.css (fades keep their 200ms, per the handoff's
    reducedMotion notes), so transitions must use the tokens. This rule catches
-   everything else: keyframe animations stop after one instant pass, and
+   everything else: keyframe animations stop after one instant pass with no
+   delay (a delay with backwards fill would hide what waits for it), and
    smooth scrolling jumps. JS-driven motion checks
    `matchMedia('(prefers-reduced-motion: reduce)')` itself. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
@@ -74,4 +107,102 @@ html {
 /* The scrim behind every modal (AppSheet, the Dish detail) fades in. */
 @keyframes scrim-in {
   from { opacity: 0; }
+}
+
+/* The card → detail morph with the View Transitions API (utils/dish-morph.ts,
+   handoff "Card → detail morph"): the image moves between the card and the
+   detail in 600ms (swoosh), cropped like both ends (each brings its own
+   corners); everything else cross-fades. */
+::view-transition-group(dish-image) {
+  animation-duration: var(--dur-swoosh);
+  animation-timing-function: var(--ease-swoosh);
+  overflow: clip;
+}
+::view-transition-old(dish-image),
+::view-transition-new(dish-image) {
+  height: 100%;
+  object-fit: cover;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+}
+/* Phones: the Board recedes to .94 behind the detail as it opens, and comes
+   back as it closes. On the transition's pictures of the Board, not the
+   Board itself, which would carry the Toast and the FAB along. */
+@media (max-width: 767.98px) {
+  html[data-morph]::view-transition-old(root),
+  html[data-morph]::view-transition-new(root) {
+    mix-blend-mode: normal;
+  }
+  html[data-morph="open"]::view-transition-old(root) {
+    animation: board-recede var(--dur-swoosh) var(--ease-swoosh) both;
+  }
+  html[data-morph="open"]::view-transition-new(root) {
+    animation: morph-fade-in calc(var(--dur-swoosh) * .3) var(--ease-fade) both;
+  }
+  html[data-morph="close"]::view-transition-new(root) {
+    animation: board-return var(--dur-swoosh) var(--ease-swoosh) both;
+  }
+  html[data-morph="close"]::view-transition-old(root) {
+    animation: morph-fade-out calc(var(--dur-swoosh) * .5) var(--ease-fade) both;
+    z-index: 1;
+  }
+}
+@keyframes board-recede {
+  to { scale: .94; }
+}
+@keyframes board-return {
+  from { scale: .94; }
+}
+@keyframes morph-fade-in {
+  from { opacity: 0; }
+}
+@keyframes morph-fade-out {
+  to { opacity: 0; }
+}
+
+/* Under a mouse (handoff "Desktop hover", gated on `pointer: fine`, not on
+   width; 280ms, pop):
+   - A Board card's shadow deepens and, with motion, it lifts 4px and tilts
+     a little, its image zooming to 1.08. Not while dragging. The lift has
+     zero specificity (:where), so the card's move, enter and leave
+     transitions (TransitionGroup classes on the same <li>) win over it, and
+     a card swooshing out isn't held back by the mouse still over it.
+   - With motion, a pill or round button grows to 1.04 (the primary, ink one
+     tilts −1°), but not while pressed: then it shrinks (tap).
+   Reduced motion: the shadow only. */
+@media (hover: hover) and (pointer: fine) {
+  [data-dish-list] > li article {
+    transition: box-shadow 280ms var(--ease-fade);
+  }
+  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover article {
+    box-shadow: var(--shadow-lift);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  :where([data-dish-list] > li) {
+    transition: translate 280ms var(--ease-pop), rotate 280ms var(--ease-pop);
+  }
+  :where(.board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover) {
+    translate: 0 -4px;
+    rotate: -.6deg;
+  }
+  [data-dish-list] > li [data-thumb] > * {
+    transition: scale 280ms var(--ease-pop);
+  }
+  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover [data-thumb] > * {
+    scale: 1.08;
+  }
+  :where(button, a):where(.rounded-pill, .rounded-full):not(:disabled, :active):hover {
+    scale: 1.04;
+  }
+  :where(button, a).rounded-pill.bg-inverse:not(:disabled, :active):hover {
+    rotate: -1deg;
+  }
+}
+
+/* A field's focus ring comes in over 180ms (handoff Input "focus ring"). */
+:where(input, textarea, select) {
+  transition: box-shadow 180ms var(--ease-fade), border-color 180ms var(--ease-fade);
 }

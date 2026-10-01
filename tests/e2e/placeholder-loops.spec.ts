@@ -127,6 +127,7 @@ test('on desktop the hovered and the lifted card loop, one at a time', async ({ 
   await expect.poll(() => playing(page)).toEqual([])
 
   // Picked up with the mouse: the lifted card loops until it is let go.
+  await curry.scrollIntoViewIfNeeded()
   const box = (await curry.boundingBox())!
   await page.mouse.move(box.x + 30, box.y + 30)
   await page.mouse.down()

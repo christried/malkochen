@@ -35,42 +35,56 @@ function act(action: ToastAction) {
     <Transition name="toast">
       <div
         v-if="toast"
-        class="pointer-events-auto relative flex max-w-md items-center gap-4 overflow-hidden rounded-pill bg-inverse py-3 pl-5 text-small text-on-inverse shadow-fab"
-        :class="toast.actions?.length ? 'pr-2' : 'pr-5'"
-        data-toast
+        class="relative max-w-md"
+        :class="{ celebrating: toast.celebrate }"
       >
-        <!-- Beside two actions (the Gekocht toast) there's only room for a
-             short text, kept on one line. -->
-        <p
-          class="min-w-0"
-          :class="{ 'shrink-0 whitespace-nowrap': (toast.actions?.length ?? 0) > 1 }"
-        >
-          {{ toast.text }}
-        </p>
-        <button
-          v-for="action in toast.actions"
-          :key="action.label"
-          type="button"
-          class="shrink-0 rounded-pill px-3 py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          @click="act(action)"
-        >
-          {{ action.label }}
-        </button>
-        <span
-          ref="bar"
-          aria-hidden="true"
-          class="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-on-inverse/40"
-          :class="{ invisible: !toast.actions?.length }"
+        <!-- Topfbert peeks out from behind the toast, over its left half. -->
+        <TopfbertCheer
+          v-if="toast.celebrate"
+          class="absolute bottom-[calc(100%-22px)] left-6 w-[84px]"
         />
+        <div
+          class="pointer-events-auto relative flex items-center gap-4 overflow-hidden rounded-pill bg-inverse py-3 pl-5 text-small text-on-inverse shadow-fab"
+          :class="toast.actions?.length ? 'pr-2' : 'pr-5'"
+          data-toast
+        >
+          <!-- Beside two actions (the Gekocht toast) there's only room for a
+               short text, kept on one line. -->
+          <p
+            class="min-w-0"
+            :class="{ 'shrink-0 whitespace-nowrap': (toast.actions?.length ?? 0) > 1 }"
+          >
+            {{ toast.text }}
+          </p>
+          <button
+            v-for="action in toast.actions"
+            :key="action.label"
+            type="button"
+            class="shrink-0 rounded-pill px-3 py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            @click="act(action)"
+          >
+            {{ action.label }}
+          </button>
+          <span
+            ref="bar"
+            aria-hidden="true"
+            class="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-on-inverse/40"
+            :class="{ invisible: !toast.actions?.length }"
+          />
+        </div>
       </div>
     </Transition>
   </div>
 </template>
 
 <style scoped>
-/* In: up from below, 380ms with a little overshoot (sheet). Out: down, 300ms. */
+/* In: up from below, 380ms with a little overshoot (sheet); the Gekocht
+   toast a moment after its confetti. Out: down, 300ms. */
 .toast-enter-active {
   transition: translate 380ms var(--ease-sheet), opacity var(--dur-fade) var(--ease-fade);
+}
+.toast-enter-active.celebrating {
+  transition-delay: var(--dur-toast-delay);
 }
 .toast-leave-active {
   transition: translate 300ms var(--ease-swoosh), opacity 300ms var(--ease-fade);

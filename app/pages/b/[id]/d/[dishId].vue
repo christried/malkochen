@@ -18,7 +18,7 @@ const emit = defineEmits<{
   edited: [dish: SavedDish]
   delete: [dishId: string]
   move: [dishId: string, columnId: string, toBoard: BoardListing | null]
-  cook: [dishId: string]
+  cook: [dishId: string, origin: Point]
   note: [dishId: string, cooking: CookingView]
   deleteCooking: [dishId: string, cooking: CookingView]
 }>()
@@ -35,17 +35,45 @@ useHead({ title: () => located.value ? `${located.value.dish.title} · ${t.app.n
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const editing = ref(false)
-onMounted(() => dialog.value?.showModal())
+// Opened from its card, the card morphs into it (utils/dish-morph.ts): it
+// doesn't move in itself then.
+const morphed = !!morphArrival()
+// A sheet opened over it (moving the Dish, choosing an image), it steps back.
+const covered = useModalStack(() => true)
+const headerImage = () => dialog.value?.querySelector<HTMLElement>('[data-detail-image]') ?? null
+onMounted(() => {
+  dialog.value?.showModal()
+  morphArrived(headerImage())
+})
 
 // Back to the Board: the way it came if it came from there, so the history
-// doesn't grow; a deep link replaces itself with the Board.
+// doesn't grow; a deep link replaces itself with the Board. The image
+// morphs back into the Dish's card, unless it is being edited or the Dish
+// is no longer on the Board.
 const boardPath = computed(() => `/b/${props.board.id}`)
 let leaving = false
 async function close() {
   if (leaving) return
   leaving = true
-  if (router.options.history.state.back === boardPath.value) router.back()
-  else await navigateTo(boardPath.value, { replace: true })
+  const dishId = located.value?.dish.id
+  const image = dishId && !editing.value ? headerImage() : null
+  await morphClose(image, dishId ?? '', boardPath.value, leave)
+}
+// Resolves once the Board shows without the detail.
+async function leave() {
+  if (router.options.history.state.back === boardPath.value) {
+    await new Promise<void>((resolve) => {
+      const stop = router.afterEach(() => {
+        stop()
+        resolve()
+      })
+      router.back()
+    })
+  }
+  else {
+    await navigateTo(boardPath.value, { replace: true })
+  }
+  await nextTick()
 }
 
 // While editing, Escape leaves edit mode and tapping the dimmed Board does
@@ -109,8 +137,11 @@ watch(editing, async (isEditing) => {
   <dialog
     ref="dialog"
     class="detail bg-bg p-0 text-text tablet:shadow-sheet"
+    :class="{ morphed }"
+    :data-covered="covered || undefined"
     :aria-label="located?.dish.title"
     @keydown.esc="onEscape"
+    @cancel.prevent="close"
     @close="close"
     @click.self="onBackdrop"
   >
@@ -130,7 +161,7 @@ watch(editing, async (isEditing) => {
         @edit="editing = true"
         @move="moving = true"
         @delete="onDelete"
-        @cook="emit('cook', located.dish.id)"
+        @cook="origin => located && emit('cook', located.dish.id, origin)"
         @note="cooking => located && emit('note', located.dish.id, cooking)"
         @delete-cooking="cooking => located && emit('deleteCooking', located.dish.id, cooking)"
       />
@@ -148,6 +179,7 @@ watch(editing, async (isEditing) => {
         @move="onMove"
       />
     </AppSheet>
+    <VeggieConfetti />
     <AppToast v-model="toast" />
   </dialog>
 </template>
@@ -194,6 +226,81 @@ watch(editing, async (isEditing) => {
 
 @keyframes detail-rise {
   from { transform: translateY(90px); opacity: 0; }
+}
+
+/* Covered by a sheet over it: it scales to .96 and dims 20%. Reduced
+   motion: it cross-fades in (200ms), and covered it only dims. */
+.detail {
+  transition: scale var(--dur-sheet) var(--ease-sheet);
+}
+.detail::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) var(--ease-fade);
+}
+.detail[data-covered] {
+  scale: .96;
+}
+.detail[data-covered]::after {
+  opacity: .2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail[open] {
+    transition: opacity var(--dur-fade) var(--ease-fade);
+  }
+  @starting-style {
+    .detail[open] {
+      opacity: 0;
+    }
+  }
+  .detail[data-covered] {
+    scale: none;
+  }
+}
+
+/* Arriving by the card → detail morph (handoff: phone and side panel): the
+   image comes from the card; the background fades in under it, and the
+   rest rises from +90px from 30% of the morph (420ms, settle). */
+.detail.morphed[open] {
+  animation: detail-fill 180ms var(--ease-fade);
+}
+.detail.morphed[open] :deep([data-detail-body]) {
+  animation: detail-body-rise 420ms var(--ease-settle) 180ms backwards;
+}
+/* Its buttons (close, "Bearbeiten") pop in at 80% of the morph. */
+.detail.morphed[open] :deep([data-detail-actions] > *) {
+  animation: actions-pop var(--dur-pop) var(--ease-pop) calc(var(--dur-swoosh) * .8) backwards;
+}
+@keyframes actions-pop {
+  from { scale: .6; opacity: 0; }
+}
+@keyframes detail-fill {
+  from { background-color: transparent; }
+}
+@keyframes detail-body-rise {
+  from { translate: 0 90px; opacity: 0; }
+}
+/* The FLIP morph (no View Transitions) moves the image beyond the side
+   panel, and back into the card fades the rest of the detail out. */
+.detail[data-morphing] {
+  overflow: visible;
+}
+.detail[data-morph-closing] {
+  background-color: transparent;
+  transition: background-color var(--dur-fade) var(--ease-fade);
+}
+.detail[data-morph-closing]::backdrop {
+  opacity: 0;
+  transition: opacity var(--dur-fade) var(--ease-fade);
+}
+.detail[data-morph-closing] :deep([data-detail-body]),
+.detail[data-morph-closing] :deep([data-detail-image] ~ *) {
+  opacity: 0;
+  transition: opacity var(--dur-fade) var(--ease-fade);
 }
 @keyframes detail-slide {
   from { transform: translateX(100%); }

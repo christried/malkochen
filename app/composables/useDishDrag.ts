@@ -69,7 +69,8 @@ export function useDishDrag(
     // Phones: the Column shown.
     activeColumnId: () => string | undefined
     tabBar: () => HTMLElement | null
-    drop: (dishId: string, place: DropPlace) => void
+    // `at`: the centre of where it landed (a Gekocht drop celebrates there).
+    drop: (dishId: string, place: DropPlace, at: Point) => void
     // A card went into a Column tab (phones), for the tab to react.
     landed: (columnId: string) => void
   },
@@ -344,7 +345,7 @@ export function useDishDrag(
       current.y = box.top
     }
     const ms = box ? motionMs('drop-settle') : 0
-    setTimeout(() => land(current, current.over), ms)
+    setTimeout(() => land(current, current.over, box), ms)
   }
 
   // Phones: the card shrinks into the Column tab, spinning, and goes to the
@@ -359,16 +360,21 @@ export function useDishDrag(
       current.y = box.top + box.height / 2 - current.grabY
     }
     const ms = prefersReducedMotion() ? motionMs('fade') : motionMs('drop-swallow')
+    // Into the Gekocht Column the celebration has its own haptics, which
+    // would cut this one off.
+    const cooks = options.board()?.columns.find(c => c.id === columnId)?.isGekocht
     setTimeout(() => {
-      hapticConfirm()
+      if (!cooks) hapticConfirm()
       options.landed(columnId)
-      land(current, { columnId, index: 0 })
+      land(current, { columnId, index: 0 }, box)
     }, ms)
   }
 
-  function land(current: DishDrag, place: DropPlace) {
+  // Without its slot or tab to measure, it lands where the card is.
+  function land(current: DishDrag, place: DropPlace, box: DOMRect | undefined) {
     if (drag.value !== current) return
-    options.drop(current.dish.id, place)
+    const at = box ? centreOf(box) : { x: current.x + current.width / 2, y: current.y + current.grabY }
+    options.drop(current.dish.id, place, at)
     drag.value = null
   }
 

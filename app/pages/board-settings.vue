@@ -158,10 +158,21 @@ const origin = useRequestURL().origin
 // Read from the Board itself, so a refetch never shows an old link.
 const inviteLink = computed(() => `${origin}/invite/${board.value?.inviteToken ?? ''}`)
 
+// Copied, the button says so for a moment (handoff Button "success flip":
+// its label rolls up and out, "Kopiert ✓" pops in, five pebbles burst),
+// and the Toast says it for screen readers too.
+const COPIED_MS = 1600
+const { shot: copied, fire: flipCopied, clear: unflipCopied } = useOneShot<true>()
+let copiedEnd: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(copiedEnd))
 async function copyLink() {
   try {
     await navigator.clipboard.writeText(inviteLink.value)
     toast.value = { text: t.settings.copied, duration: NOTICE_MS }
+    hapticConfirm()
+    flipCopied(true)
+    clearTimeout(copiedEnd)
+    copiedEnd = setTimeout(unflipCopied, COPIED_MS)
   }
   catch {
     failed()
@@ -276,6 +287,7 @@ watch(confirmingDeleteBoard, () => {
 const nameTyped = computed(() => typedName.value.trim() === saved.value.name)
 function deleteBoard() {
   if (!nameTyped.value) return
+  hapticReject()
   confirmingDeleteBoard.value = false
   return goOffBoard(() => $fetch<null>(`/api/boards/${id.value}`, { method: 'DELETE' }))
 }
@@ -454,11 +466,24 @@ function confirmDelete() {
           </button>
           <button
             type="button"
-            class="rounded-pill px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            class="relative rounded-pill px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             :class="canShare ? 'bg-surface-muted text-text' : 'bg-inverse text-on-inverse'"
+            :aria-label="t.settings.copyLink"
             @click="copyLink"
           >
-            {{ t.settings.copyLink }}
+            <span class="relative inline-grid overflow-hidden">
+              <Transition name="flip">
+                <span
+                  :key="copied ? 'copied' : 'copy'"
+                  class="[grid-area:1/1]"
+                >{{ copied ? t.settings.copiedShort : t.settings.copyLink }}</span>
+              </Transition>
+            </span>
+            <PebbleBurst
+              v-if="copied"
+              :key="copied.key"
+              color="var(--color-sage)"
+            />
           </button>
           <DangerButton
             v-if="board.isOwner"
@@ -489,6 +514,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="memberSheetOpen"
+      variant="dialog"
       :title="memberSheetTitle"
       :close-label="t.settings.close"
     >
@@ -539,6 +565,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="confirmingLeave"
+      variant="dialog"
       :title="t.settings.leaveConfirm"
       :close-label="t.settings.close"
     >
@@ -561,6 +588,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="confirmingDeleteBoard"
+      variant="dialog"
       :title="t.settings.deleteConfirm"
       :close-label="t.settings.close"
     >
@@ -581,6 +609,7 @@ function confirmDelete() {
           type="text"
           autocomplete="off"
           class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          @keydown.enter="nameTyped || shake($event.target as Element)"
         >
         <DangerButton
           type="submit"
@@ -601,6 +630,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="confirmingReset"
+      variant="dialog"
       :title="t.settings.resetConfirm"
       :close-label="t.settings.close"
     >
@@ -635,6 +665,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="deletingOpen"
+      variant="dialog"
       :title="deleting ? t.settings.moveDishes(deleting.count, deleting.name) : ''"
       :close-label="t.settings.close"
     >
@@ -680,5 +711,21 @@ function confirmDelete() {
 /* The Board's emoji sits in a pebble, like the Board switcher's rows. */
 .emoji-pebble {
   border-radius: var(--radius-blob);
+}
+/* A label flipping to another: the old one rolls up and out, the new one
+   pops up from below. Reduced motion: it just swaps. */
+.flip-enter-active {
+  transition: translate var(--dur-pop) var(--ease-pop), opacity var(--dur-pop) var(--ease-fade);
+}
+.flip-leave-active {
+  transition: translate 200ms var(--ease-swoosh), opacity 200ms var(--ease-fade);
+}
+.flip-enter-from {
+  translate: 0 100%;
+  opacity: 0;
+}
+.flip-leave-to {
+  translate: 0 -100%;
+  opacity: 0;
 }
 </style>

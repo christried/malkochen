@@ -5,6 +5,9 @@ export interface Toast {
   actions?: ToastAction[]
   // How long it stays, in ms.
   duration: number
+  // The Gekocht toast: it comes a moment after the Cooking's confetti
+  // (useConfetti), and Topfbert pops up behind it while it shows.
+  celebrate?: boolean
 }
 
 export interface ToastAction {

@@ -72,12 +72,31 @@ const { deleteDish, focusCard } = useDishDelete(board, showToast)
 const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, addNote)
 const { deleteCooking } = useCookingDelete(showToast)
 
-// "Gekocht ✓" on a card: it leaves for the Gekocht Column (or stays, if it
-// is there), and focus goes to what took its place.
-async function cookFromCard(dishId: string) {
-  const focusId = cookDish(dishId)
-  await nextTick()
-  if (focusId) document.getElementById(focusId)?.focus()
+// A Column's tab, or its name beside the others, reacting to a Dish coming
+// in (ColumnCue): dropped on the tab, cooked, the Gekocht pebble landing.
+const { shot: columnCue, fire: cueColumn } = useOneShot<ColumnCue>()
+
+// "Gekocht ✓" on a card: the celebration, timed (useGekochtCelebration).
+// The Gekocht Column's count shows on its tab on phones, else by its name.
+const { cookFromCard, onCardLeave, flight, onFlightLanded } = useGekochtCelebration(board, {
+  cookDish,
+  target: columnId => isPhoneLayout()
+    ? tabBar.value?.$el.querySelector(`[data-tab-column-id="${columnId}"]`) ?? null
+    : document.querySelector<HTMLElement>(`#column-${CSS.escape(columnId)} .column-name`),
+  cue: cueColumn,
+})
+
+// Tapping a card morphs it into its detail (utils/dish-morph.ts). Clicks
+// for a new tab or window are left to the link; so is one swallowed after a
+// drag, which never gets here.
+function openDish(event: MouseEvent, dishId: string) {
+  const onLink = (event.target as Element).closest('.card-link')
+  if (!onLink || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  const path = `/b/${id.value}/d/${dishId}`
+  morphOpen(cardThumb(dishId), path, async () => {
+    await navigateTo(path)
+  })
 }
 
 // The Dish detail's cooking actions, for the Dish it shows.
@@ -93,14 +112,12 @@ function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
   if (dish) deleteCooking(dish, cooking)
 }
 
-// A Dish dropped into a Column tab makes the tab squash and burst.
-const landing = ref<{ columnId: string, n: number } | null>(null)
 const { drag, dragging, entries } = useDishDrag(columnsEl, {
   board: () => board.value,
   activeColumnId: () => activeColumnId.value,
   tabBar: () => tabBar.value?.$el ?? null,
-  drop: dropDish,
-  landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
+  drop: (dishId, place, origin) => dropDish(dishId, place, { origin }),
+  landed: columnId => cueColumn({ columnId, kind: 'drop' }),
 })
 // The one loop playing on the Board: the lifted card's Placeholder, the
 // hovered card's, or one where the Board comes to rest, else an empty
@@ -153,6 +170,32 @@ watch(activeIndex, () => {
 })
 const parked = (index: number) => index !== activeIndex.value && !following.value && !sliding.value
 
+// Cards rise in (handoff DishCard "enter", "Board load"): 48px up and
+// fading in, 80ms apart (from the 8th on, all at once), as the Board opens
+// and as a tapped tab brings its Column in. Not after a swipe: the finger
+// already brought those cards in. Reduced motion: they are just there.
+const RISE_MS = 640 + 8 * 80
+const risingColumnIds = ref(new Set(board.value?.columns.map(c => c.id)))
+let riseEnd: ReturnType<typeof setTimeout> | undefined
+function rise(columnIds: string[]) {
+  clearTimeout(riseEnd)
+  risingColumnIds.value = new Set()
+  // A frame without, so the animation starts again.
+  requestAnimationFrame(() => {
+    risingColumnIds.value = new Set(columnIds)
+    riseEnd = setTimeout(() => (risingColumnIds.value = new Set()), RISE_MS)
+  })
+}
+onMounted(() => {
+  riseEnd = setTimeout(() => (risingColumnIds.value = new Set()), RISE_MS)
+})
+onBeforeUnmount(() => clearTimeout(riseEnd))
+function selectTab(index: number) {
+  const column = board.value?.columns[index]
+  if (column && column.id !== activeColumnId.value) rise([column.id])
+  showColumn(index)
+}
+
 // Headline parallax: a Column's name drifts and fades as it slides away.
 function titleMotion(index: number) {
   const offset = index - progress.value
@@ -201,14 +244,18 @@ async function closeSearch() {
 
 // A Dish saved to another Board doesn't show here. If a Source image
 // couldn't be stored, a notice says which image the Dish has instead.
-function onAdded(saved: SavedDish, boardId: string) {
+function onAdded(saved: SavedDish, boardId: string, from: DOMRect | null) {
   if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
   const first = board.value?.columns.find(c => !c.isGekocht)
   if (!first || boardId !== board.value?.id) return
+  const slides = isPhoneLayout() && activeColumnId.value !== first.id
   first.dishes.unshift(dish)
   activeColumnId.value = first.id
+  if (from) flyIn(dish.id, from, { slides })
 }
+// A saved Dish flies in from Add Dish (useSavedDishFlight).
+const { arrivingId, flyIn } = useSavedDishFlight(columnsEl)
 
 function onEdited(saved: SavedDish) {
   if (saved.imageNotStored) showNotice(t.detail.imageNotStored(saved.title))
@@ -334,8 +381,8 @@ async function deleteFromMenu() {
       :progress="progress"
       :following="following"
       :drop-target="drag?.tabColumnId"
-      :landing="landing"
-      @select="showColumn"
+      :cue="columnCue"
+      @select="selectTab"
     />
 
     <div
@@ -366,23 +413,37 @@ async function deleteFromMenu() {
           :data-gekocht="column.isGekocht || undefined"
         >
           <h2 class="column-title px-1 font-display text-title-s">
-            {{ column.name }}
+            <span
+              :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"
+              class="column-name relative inline-block"
+              :class="columnCue?.value.columnId === column.id && `cue-${columnCue.value.kind}`"
+            >
+              {{ column.name }}
+              <PebbleBurst
+                v-if="columnCue?.value.columnId === column.id && columnCue.value.kind !== 'bump'"
+                class="name-burst"
+                :color="columnAccent(index)"
+              />
+            </span>
           </h2>
           <TransitionGroup
             tag="ol"
             name="card"
             class="relative flex flex-col gap-3"
-            :class="{ 'mt-3': listOf(column).length }"
+            :class="{ 'mt-3': listOf(column).length, 'rising': risingColumnIds.has(column.id) }"
             data-dish-list
+            @before-leave="onCardLeave"
           >
             <li
-              v-for="{ key, dish, state } in listOf(column)"
+              v-for="({ key, dish, state }, i) in listOf(column)"
               :key="key"
+              :style="{ '--i': i }"
               class="relative"
-              :class="{ 'drop-slot h-32 rounded-card': !dish }"
+              :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
               :data-dish-id="dish?.id"
               :data-drag-state="state"
               :data-drop-slot="!dish || undefined"
+              @click.capture="dish && openDish($event, dish.id)"
             >
               <template v-if="dish">
                 <NuxtLink
@@ -425,16 +486,13 @@ async function deleteFromMenu() {
                     r="2"
                   /></svg>
                 </button>
-                <button
-                  type="button"
-                  class="absolute bottom-2.5 right-2.5 rounded-pill px-3.5 py-2 text-button transition duration-tap ease-tap active:scale-[.94] focus-visible:outline-2 focus-visible:outline-focus"
-                  :class="dish.cookings.length ? 'bg-sage text-sage-ink' : 'bg-surface-muted text-text'"
-                  :aria-label="t.dish.cookLabel(dish.title)"
+                <CookButton
+                  class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
+                  :cooked="dish.cookings.length > 0"
+                  :label="t.dish.cookLabel(dish.title)"
                   data-cook
-                  @click="cookFromCard(dish.id)"
-                >
-                  {{ t.dish.cook }}
-                </button>
+                  @cook="origin => cookFromCard(dish.id, origin)"
+                />
               </template>
             </li>
           </TransitionGroup>
@@ -480,9 +538,18 @@ async function deleteFromMenu() {
       </div>
     </div>
 
+    <FlyToTab
+      v-if="flight"
+      :key="flight.key"
+      :from="flight.value.from"
+      :to="flight.value.to"
+      :accent="flight.value.accent"
+      @landed="onFlightLanded"
+    />
+
     <button
       type="button"
-      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center bg-inverse text-on-inverse shadow-fab active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
+      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
       :aria-label="t.addDish.open"
       @click="adding = true"
@@ -499,6 +566,7 @@ async function deleteFromMenu() {
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
 
+    <VeggieConfetti v-if="!route.params.dishId" />
     <AppToast
       v-if="!route.params.dishId"
       v-model="toast"
@@ -635,11 +703,31 @@ async function deleteFromMenu() {
     opacity: 0;
   }
 }
-/* The FAB is a pebble, not a circle (handoff Button "FAB"). While a Toast
+/* The FAB is a pebble, not a circle (handoff Button "FAB"), slowly changing
+   its shape (8s) and breathing gently (3.6s). Only the pebble painted behind
+   it moves: the button itself keeps still, so it is always a steady target. While a Toast
    shows, it moves up out of its way. */
 .fab {
+  isolation: isolate;
   border-radius: var(--radius-blob);
   transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+}
+.fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-inverse);
+  box-shadow: var(--shadow-fab);
+  animation: fab-breathe 3.6s var(--ease-idle) infinite, fab-morph 8s var(--ease-idle) infinite alternate;
+}
+@keyframes fab-breathe {
+  50% { scale: 1.04; }
+}
+@keyframes fab-morph {
+  50% { border-radius: 58% 42% 50% 50% / 46% 56% 44% 54%; }
+  100% { border-radius: 44% 56% 46% 54% / 56% 44% 58% 42%; }
 }
 .fab-lifted {
   translate: 0 -76px;
@@ -648,6 +736,16 @@ async function deleteFromMenu() {
    around it. Reduced motion (main.css) stops it after one pass. */
 .fab-prompt {
   animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
+}
+/* Cards rising in (see `rise`). */
+.rising > li {
+  animation: card-rise 640ms var(--ease-settle) calc(min(var(--i), 8) * 80ms) backwards;
+}
+@keyframes card-rise {
+  from {
+    translate: 0 48px;
+    opacity: 0;
+  }
 }
 /* Deleting a Dish (handoff "Delete collapse + undo"): its card shrinks and
    fades while the list closes up; "Rückgängig" brings it back with a little
@@ -672,6 +770,28 @@ async function deleteFromMenu() {
   .card-leave-to,
   .card-enter-from {
     scale: none;
+  }
+  .card-enter-active {
+    transition: opacity var(--dur-fade) var(--ease-fade);
+  }
+}
+/* A card cooked with "Gekocht ✓" (handoff "Card leaves Column") swooshes
+   out sideways instead, tilting, in 360ms. Reduced motion: it only fades. */
+.card-leave-active.cooked {
+  transition: translate var(--dur-cook-leave) var(--ease-swoosh), rotate var(--dur-cook-leave) var(--ease-swoosh), opacity var(--dur-cook-leave) var(--ease-fade);
+}
+.card-leave-to.cooked {
+  translate: 440px 0;
+  rotate: 8deg;
+  scale: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-leave-active.cooked {
+    transition: opacity var(--dur-fade) var(--ease-fade);
+  }
+  .card-leave-to.cooked {
+    translate: none;
+    rotate: none;
   }
 }
 /* Dragging a Dish (handoff "Drag lift"). The card lifts under the pointer:
@@ -828,6 +948,22 @@ async function deleteFromMenu() {
   .column.lane-dimmed {
     opacity: .6;
   }
+}
+/* With the Columns side by side there are no tabs, so a Column's name
+   reacts to a Dish coming in (ColumnCue) instead: cooked, it bumps to 1.22;
+   the Gekocht pebble bursts on it. On phones the tabs do it. */
+@media (min-width: 768px) {
+  .column-name.cue-bump {
+    animation: name-bump var(--dur-tab-bump) var(--ease-pop);
+  }
+}
+@media (max-width: 767.98px) {
+  .name-burst {
+    display: none;
+  }
+}
+@keyframes name-bump {
+  40% { scale: 1.22; }
 }
 @keyframes lane-wiggle {
   25% { rotate: -.3deg; }

@@ -53,7 +53,10 @@ onBeforeUnmount(() => {
       :class="{ 'neu-pop': !seen, 'neu-pulsing': pulsing }"
       data-neu
     >{{ t.dish.new }}</span>
-    <div class="relative w-[86px] shrink-0 overflow-hidden rounded-thumb bg-surface-muted">
+    <div
+      class="relative w-[86px] shrink-0 overflow-hidden rounded-thumb bg-surface-muted"
+      data-thumb
+    >
       <DishImage
         :image-url="dish.imageUrl"
         :placeholder="dish.placeholder"

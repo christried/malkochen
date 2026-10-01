@@ -3,7 +3,9 @@
 // count. The accent pebble behind the active tab follows a swipe as it
 // happens (`progress` is the Column index, fractional mid-swipe) and springs
 // into place on release. While a Dish is dragged up to them, the tab under
-// it is a drop target; a Dish dropped in makes it squash and burst.
+// it is a drop target. A Dish coming in (`cue`) makes a tab react: dropped
+// in, it squashes and bursts; cooked, the Gekocht tab bumps; the Gekocht
+// pebble bursts as it lands.
 const props = defineProps<{
   columns: { id: string, name: string, count: number }[]
   active: number
@@ -12,9 +14,8 @@ const props = defineProps<{
   following: boolean
   // The Column whose tab a dragged Dish is over, if any.
   dropTarget?: string | null
-  // A Dish just dropped into this Column's tab; `n` counts drops, so the
-  // same tab reacts again.
-  landing?: { columnId: string, n: number } | null
+  // The latest cue; its key changes every time, so a tab reacts again.
+  cue?: { value: ColumnCue, key: number } | null
 }>()
 const emit = defineEmits<{ select: [index: number] }>()
 
@@ -57,18 +58,18 @@ const pebble = computed(() => {
   }
 })
 
-// The tab a Dish was just dropped into, while it squashes and bursts.
-const bursting = ref<string | null>(null)
-let burstEnd: ReturnType<typeof setTimeout> | undefined
-watch(() => props.landing, async (landing) => {
-  bursting.value = null
-  clearTimeout(burstEnd)
-  if (!landing) return
+// The tab reacting, while it does.
+const reacting = ref<ColumnCue | null>(null)
+let reactionEnd: ReturnType<typeof setTimeout> | undefined
+watch(() => props.cue, async (cue) => {
+  reacting.value = null
+  clearTimeout(reactionEnd)
+  if (!cue) return
   await nextTick()
-  bursting.value = landing.columnId
-  burstEnd = setTimeout(() => (bursting.value = null), motionMs('drop-burst'))
+  reacting.value = cue.value
+  reactionEnd = setTimeout(() => (reacting.value = null), motionMs(cue.value.kind === 'bump' ? 'tab-bump' : 'drop-burst'))
 })
-onBeforeUnmount(() => clearTimeout(burstEnd))
+onBeforeUnmount(() => clearTimeout(reactionEnd))
 
 // Keep the active tab in view when the row is wider than the phone.
 watch(() => props.active, index => tabs[index]?.scrollIntoView({
@@ -102,22 +103,15 @@ watch(() => props.active, index => tabs[index]?.scrollIntoView({
       :class="[
         active === index ? 'is-active text-on-accent' : 'text-text',
         dropTarget && (dropTarget === column.id ? 'is-drop-target text-on-accent' : 'is-dimmed'),
+        reacting?.columnId === column.id && `cue-${reacting.kind}`,
       ]"
       :style="{ borderRadius: tabRadius(index), '--accent': columnAccent(index) }"
       @click="emit('select', index)"
     >
-      <span
-        v-if="bursting === column.id"
-        aria-hidden="true"
-        class="landed absolute inset-0"
-      >
-        <span
-          v-for="n in 5"
-          :key="n"
-          class="burst-pebble"
-          :style="{ '--angle': `${n * 72 - 90}deg` }"
-        />
-      </span>
+      <PebbleBurst
+        v-if="reacting?.columnId === column.id && reacting.kind !== 'bump'"
+        color="var(--accent)"
+      />
       {{ column.name }}
       <span class="relative inline-block overflow-hidden align-bottom opacity-60">
         <Transition name="count">
@@ -200,32 +194,20 @@ nav {
   }
 }
 /* A Dish dropped in: the tab squashes (1.32/.84, then .9/1.1, then back)
-   and five pebbles burst out of it. Reduced motion (main.css) skips both. */
-.landed {
-  pointer-events: none;
-}
-.tab:has(> .landed) {
+   and five pebbles burst out of it. Cooked: it bumps to 1.22 (pop). The
+   pebble landing: the burst alone. Reduced motion (main.css) skips them. */
+.tab.cue-drop {
   animation: tab-squash var(--dur-drop-swallow) var(--ease-settle);
+}
+.tab.cue-bump {
+  animation: tab-bump var(--dur-tab-bump) var(--ease-pop);
 }
 @keyframes tab-squash {
   30% { scale: 1.32 .84; }
   65% { scale: .9 1.1; }
 }
-.burst-pebble {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  margin: -4px;
-  border-radius: var(--radius-tab-1);
-  background: var(--accent);
-  opacity: 0;
-  animation: burst var(--dur-drop-burst) var(--ease-settle);
-}
-@keyframes burst {
-  0% { opacity: 1; transform: rotate(var(--angle)) translateX(0) scale(1); }
-  100% { opacity: 0; transform: rotate(var(--angle)) translateX(34px) scale(.4); }
+@keyframes tab-bump {
+  40% { scale: 1.22; }
 }
 /* A count that changes rolls 16px up: the new number pops in from below as
    the old one leaves above (handoff: count change · pop). Reduced motion:
