@@ -21,3 +21,8 @@ export const PLACEHOLDERS = [
 ] as const
 
 export type Placeholder = typeof PLACEHOLDERS[number]
+
+// Every Placeholder Image file exists once per theme.
+export const PLACEHOLDER_THEMES = ['light', 'dark'] as const
+
+export type PlaceholderTheme = typeof PLACEHOLDER_THEMES[number]

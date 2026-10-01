@@ -106,4 +106,19 @@ on the migrated schema until the new one is promoted.
   and a global rule in `main.css` stops keyframe animations.
 - UI text: all of it lives in `app/strings/de.ts`, read through `useStrings()`.
 - Public assets: `public/icons/` (app icons and manifest) and
-  `public/placeholders/<dish>-{light,dark}.svg` (Placeholder Image stills).
+  `public/placeholders/<dish>-{light,dark}.svg` (Placeholder Image stills),
+  next to their rendered loops `<dish>-{light,dark}.{mp4,webm}` and posters
+  `<dish>-{light,dark}.png`.
+
+## Motion graphics (Remotion)
+
+The pre-made clips are rendered by a separate Remotion project in
+[`remotion/`](remotion/README.md), outside the pnpm workspace; the app build
+never installs or imports it. To re-render after changing a loop:
+
+```bash
+cd remotion
+npm install
+npm run dev      # Remotion Studio, to check the loops by eye
+npm run render   # writes public/placeholders/*.{mp4,webm,png}
+```
