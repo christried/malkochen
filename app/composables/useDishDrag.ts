@@ -93,15 +93,13 @@ export function useDishDrag(
   let moved = false
   let frame = 0
 
-  const finePointer = () => matchMedia('(pointer: fine)').matches
-
   function onDown(event: PointerEvent) {
     if (drag.value || pending || !event.isPrimary || event.button !== 0) return
     const target = event.target as Element | null
     if (!target || target.closest('button')) return
     const card = target.closest<HTMLElement>('[data-dish-id]')
     if (!card?.dataset.dishId) return
-    const mouse = event.pointerType === 'mouse' && finePointer()
+    const mouse = event.pointerType === 'mouse' && isFinePointer()
     pending = { pointerId: event.pointerId, dishId: card.dataset.dishId, card, mouse, startX: event.clientX, startY: event.clientY }
     pointer = { x: event.clientX, y: event.clientY, id: event.pointerId }
     if (!mouse) pending.timer = setTimeout(() => lift(), LONG_PRESS_MS)
