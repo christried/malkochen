@@ -23,7 +23,7 @@ export function useCookingDelete(showToast: (toast: Toast) => void) {
 
     // Whether it is deleted on the server. One already gone there (another
     // Member deleted it) counts as deleted; undo can still bring it back.
-    const deleting = $fetch(`/api/cookings/${cooking.id}`, { method: 'DELETE' }).then(() => true, (error: { statusCode?: number }) => {
+    const deleting = trackWrite($fetch<unknown>(`/api/cookings/${cooking.id}`, { method: 'DELETE' })).then(() => true, (error: { statusCode?: number }) => {
       if (error.statusCode === 404) return true
       putBack()
       showToast({ text: t.cooking.deleteFailed, duration: NOTICE_MS })
@@ -34,7 +34,7 @@ export function useCookingDelete(showToast: (toast: Toast) => void) {
     async function undo() {
       if (!await deleting) return // Never deleted, and already back.
       putBack()
-      await $fetch(`/api/cookings/${cooking.id}/restore`, { method: 'POST' }).catch(() => {
+      await trackWrite($fetch<unknown>(`/api/cookings/${cooking.id}/restore`, { method: 'POST' })).catch(() => {
         const at = dish.cookings.indexOf(cooking)
         if (at !== -1) dish.cookings.splice(at, 1)
         showToast({ text: t.cooking.restoreFailed, duration: NOTICE_MS })

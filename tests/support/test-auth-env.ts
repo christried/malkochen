@@ -5,7 +5,7 @@ export const E2E_ORIGIN = 'http://localhost:3100'
 // whatever .env holds: a fixed Allowlist, the dev sign-in bypass, and dummy
 // Google credentials (Google itself is never called in tests).
 // The test Allowlist; any other email is refused.
-export const ALLOWLISTED = ['ada@example.com', 'grace@example.com', 'linus@example.com', 'margaret@example.com', 'barbara@example.com', 'katherine@example.com', 'hedy@example.com', 'mary@example.com', 'ida@example.com', 'annie@example.com', 'joan@example.com', 'radia@example.com', 'frances@example.com', 'sophie@example.com', 'evelyn@example.com'] as const
+export const ALLOWLISTED = ['ada@example.com', 'grace@example.com', 'linus@example.com', 'margaret@example.com', 'barbara@example.com', 'katherine@example.com', 'hedy@example.com', 'mary@example.com', 'ida@example.com', 'annie@example.com', 'joan@example.com', 'radia@example.com', 'frances@example.com', 'sophie@example.com', 'evelyn@example.com', 'alan@example.com', 'dorothy@example.com'] as const
 
 export function testAuthEnv(baseUrl: string): Record<string, string> {
   return {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, desc, eq, exists, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, gt, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 import { db, runAtomic, type Db } from '../db'
 import { board, boardColumn, dish, membership, user } from '../db/schema'
 import type { ColumnView } from './columns'
@@ -35,6 +35,8 @@ export interface BoardView extends BoardSummary {
   // Everyone on it, the Owner first, as Board settings lists them.
   members: BoardMemberView[]
   columns: { id: string, name: string, isGekocht: boolean, dishes: DishView[] }[]
+  // Its New Dishes for the user looking (PRD story 37), marked "Neu".
+  newDishIds: string[]
 }
 
 // A Board as the Board switcher lists it: how many Dishes it holds, its
@@ -160,33 +162,53 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: Omit<Bo
 // The Board with its Columns and their Dishes, or null unless the user is one of its Members.
 export async function getBoard(boardId: string, userId: string): Promise<BoardView | null> {
   const [found] = await db
-    .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, inviteToken: board.inviteToken })
+    .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, inviteToken: board.inviteToken, newSince: membership.newSince })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
   if (!found) return null
+  const { newSince, ...view } = found
 
   const columns = await db
     .select({ id: boardColumn.id, name: boardColumn.name, isGekocht: boardColumn.isGekocht })
     .from(boardColumn)
     .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))
-  const [dishes, members] = await Promise.all([
+  const [dishes, members, newDishIds] = await Promise.all([
     dishesByColumn(columns.map(c => c.id)),
     boardMembers(boardId),
+    newSince ? newDishesSince(boardId, userId, newSince) : [],
   ])
   return {
-    ...found,
+    ...view,
     members: members.map(m => ({ ...m, isYou: m.id === userId })),
     columns: columns.map(c => ({ ...c, dishes: dishes.get(c.id) ?? [] })),
+    newDishIds,
   }
 }
 
-// Records that the user just opened the Board. False unless they are a Member.
+// The ids of the Board's Dishes that Members other than the user added after `since`.
+async function newDishesSince(boardId: string, userId: string, since: Date): Promise<string[]> {
+  const rows = await db
+    .select({ id: dish.id })
+    .from(dish)
+    .where(and(
+      eq(dish.boardId, boardId),
+      isNull(dish.deletedAt),
+      gt(dish.createdAt, since),
+      sql`${dish.addedBy} is distinct from ${userId}`,
+    ))
+  return rows.map(r => r.id)
+}
+
+// Records that the user just opened the Board, which moves on what counts
+// as New Dishes for them. False unless they are a Member.
 export async function markOpened(boardId: string, userId: string): Promise<boolean> {
   const updated = await db
     .update(membership)
-    .set({ lastOpenedAt: new Date() })
+    // The right-hand sides read the row as it was. Never opened before,
+    // everything others added since joining is new.
+    .set({ newSince: sql`coalesce(${membership.lastOpenedAt}, ${membership.joinedAt})`, lastOpenedAt: new Date() })
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
     .returning({ boardId: membership.boardId })
   return updated.length > 0

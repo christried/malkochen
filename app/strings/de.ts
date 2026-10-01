@@ -69,6 +69,8 @@ export const de = {
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
     hasNote: 'Mit Notiz',
+    // The marker on a New Dish (CONTEXT.md).
+    new: 'Neu',
     menu: (title: string) => `Mehr zu „${title}“`,
     closeMenu: 'Schließen',
     delete: 'Löschen',

@@ -49,7 +49,7 @@ The title proposed from the Source when a Dish is being added, which the user ca
 _Avoid_: Inferred title, auto title
 
 **New Dish**:
-A Dish another Member added to a Board since you last opened that Board. Marked "Neu" until then.
+A Dish another Member added to a Board since you last opened that Board (or joined it, if you never opened it), including ones added while you have it open. Marked "Neu" until you open the Board again; coming back to the app after half an hour or more away counts as opening it.
 _Avoid_: Unread, notification
 
 **Placeholder Image**:

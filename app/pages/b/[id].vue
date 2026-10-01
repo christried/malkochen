@@ -15,12 +15,16 @@ const { signOut } = useAuth()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
-// Deep: adding and editing Dishes change the Board in place.
-const { data: board, error } = await useFetch<BoardView>(() => `/api/boards/${id.value}`, { deep: true })
+// Opening the Board first remembers it as the one to reopen next time and
+// moves on what is marked "Neu" (PRD story 37); the Board then comes with
+// its New Dishes. Deep: adding and editing Dishes change it in place.
+const request = useFetchPassingCookies()
+const { data: board, error } = await useAsyncData(() => `board-${id.value}`, async () => {
+  await request(`/api/boards/${id.value}/open`, { method: 'POST' })
+  return request<BoardView>(`/api/boards/${id.value}`)
+}, { deep: true })
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
-
-// Remember this as the Board to reopen next time.
-onMounted(() => $fetch(`/api/boards/${id.value}/open`, { method: 'POST' }))
+const newDishIds = computed(() => new Set(board.value?.newDishIds))
 
 useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
 
@@ -95,6 +99,8 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   drop: dropDish,
   landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
 })
+// Others' changes, while the Board is open; not mid-drag.
+useBoardSync(() => id.value, board, () => dragging.value)
 // Each Column's cards as they show, with the slot while a Dish is dragged.
 const lists = computed(() => new Map(board.value?.columns.map(c => [c.id, entries(c)])))
 const listOf = (column: { id: string }) => lists.value.get(column.id) ?? []
@@ -365,7 +371,10 @@ async function deleteFromMenu() {
                   :aria-label="dish.title"
                   class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
-                  <DishCard :dish="dish" />
+                  <DishCard
+                    :dish="dish"
+                    :is-new="newDishIds.has(dish.id)"
+                  />
                 </NuxtLink>
                 <button
                   type="button"
@@ -432,7 +441,11 @@ async function deleteFromMenu() {
       data-testid="drag-card"
     >
       <div class="drag-card-lift rounded-card">
-        <DishCard :dish="drag.dish" />
+        <DishCard
+          :dish="drag.dish"
+          :is-new="newDishIds.has(drag.dish.id)"
+          seen
+        />
       </div>
     </div>
 

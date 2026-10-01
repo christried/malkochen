@@ -50,6 +50,13 @@
       "when": 1790798028408,
       "tag": "0006_invite_token",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790834457046,
+      "tag": "0007_new_since",
+      "breakpoints": true
     }
   ]
 }

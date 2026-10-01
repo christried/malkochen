@@ -78,8 +78,12 @@ export const membership = pgTable('membership', {
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   isOwner: boolean('is_owner').notNull().default(false),
   // When this Member last opened the Board: picks the Board a returning user
-  // lands on, and later marks New Dishes.
+  // lands on.
   lastOpenedAt: timestamp('last_opened_at', { withTimezone: true }),
+  // When they opened it the time before (or joined it, if that was their
+  // first open): Dishes other Members added since are New Dishes. It stays put while the Board is open, so Dishes added
+  // meanwhile are New too, until the next open moves it on.
+  newSince: timestamp('new_since', { withTimezone: true }),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => [
   primaryKey({ columns: [t.boardId, t.userId] }),
