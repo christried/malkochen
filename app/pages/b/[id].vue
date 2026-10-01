@@ -102,6 +102,13 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   drop: dropDish,
   landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
 })
+// The one Placeholder loop playing on the Board: the lifted card's, the
+// hovered card's, or one where the Board comes to rest. None while the Dish
+// detail is open over it.
+const boardLoop = useBoardLoop(columnsEl, {
+  lifted: () => drag.value?.dish.id ?? null,
+  quiet: () => !!route.params.dishId,
+})
 // Others' changes, while the Board is open; not mid-drag.
 useBoardSync(() => id.value, board, () => dragging.value)
 // Each Column's cards as they show, with the slot while a Dish is dragged.
@@ -142,6 +149,7 @@ watch(activeIndex, () => {
   const top = columnsEl.value.getBoundingClientRect().top + window.scrollY - (tabBar.value?.$el.offsetHeight ?? 0)
   if (window.scrollY > top) window.scrollTo({ top })
   slide()
+  boardLoop.playWhenAtRest(motionMs('settle'))
 })
 const parked = (index: number) => index !== activeIndex.value && !following.value && !sliding.value
 
@@ -379,6 +387,8 @@ async function deleteFromMenu() {
                   <DishCard
                     :dish="dish"
                     :is-new="newDishIds.has(dish.id)"
+                    :motion="state === 'card' ? boardLoop.motionOf(dish.id) : null"
+                    @motion-ended="boardLoop.ended(dish.id)"
                   />
                 </NuxtLink>
                 <button
@@ -449,6 +459,7 @@ async function deleteFromMenu() {
         <DishCard
           :dish="drag.dish"
           :is-new="newDishIds.has(drag.dish.id)"
+          :motion="boardLoop.motionOf(drag.dish.id)"
           seen
         />
       </div>

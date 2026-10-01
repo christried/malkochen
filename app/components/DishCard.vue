@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DishView } from '~~/server/utils/dishes'
+import type { DishMotion } from '~/composables/useBoardLoop'
 
 // The handoff's compact DishCard: 86px thumb + text, 128px high. The thumb
 // crops any image, portrait (TikTok, Reels, Shorts) or landscape (blogs), to
@@ -11,7 +12,10 @@ const props = defineProps<{
   isNew?: boolean
   // Shown before (the dragged copy of a card): no pop-in, no ring.
   seen?: boolean
+  // The Placeholder's loop, when the Board lets this card play it.
+  motion?: DishMotion
 }>()
+defineEmits<{ motionEnded: [] }>()
 const t = useStrings()
 
 // The "Neu" pebble (handoff "Neu pebble") pops in as the card enters, and a
@@ -53,7 +57,9 @@ onBeforeUnmount(() => {
       <DishImage
         :image-url="dish.imageUrl"
         :placeholder="dish.placeholder"
+        :motion="motion"
         lazy
+        @ended="$emit('motionEnded')"
       />
       <SourceBadge
         v-if="dish.source"

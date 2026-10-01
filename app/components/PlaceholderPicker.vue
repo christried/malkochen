@@ -2,8 +2,9 @@
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 
 // A grid of Placeholder Images with the current one selected (handoff
-// PlaceholderPicker, stills only until the loops land): all 16 by default, or
-// the few the inline variant passes in.
+// PlaceholderPicker): all 16 by default, or the few the inline variant
+// passes in. The selected one loops (handoff illustrations.json "picker
+// selection"); the rest stay still.
 const selected = defineModel<Placeholder>({ required: true })
 const props = withDefaults(defineProps<{
   label: string
@@ -46,7 +47,12 @@ function move(step: number) {
       :class="selected === placeholder ? '-rotate-[1.5deg] scale-105 ring-[3px] ring-inverse' : 'active:scale-95'"
       @click="selected = placeholder"
     >
-      <PlaceholderStill :placeholder="placeholder" />
+      <MotionClip
+        :src="`/placeholders/${placeholder}`"
+        :play="selected === placeholder"
+      >
+        <PlaceholderStill :placeholder="placeholder" />
+      </MotionClip>
       <span
         v-if="selected === placeholder"
         aria-hidden="true"

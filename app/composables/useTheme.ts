@@ -27,6 +27,16 @@ export function useTheme() {
   return { preference, themes: THEMES }
 }
 
+// The theme actually shown: the preference, or the device's for "system".
+// For what CSS can't switch by itself, like which clip file to play.
+export function useResolvedTheme() {
+  const { preference } = useTheme()
+  const deviceDark = useMediaQuery('(prefers-color-scheme: dark)')
+  return computed<'light' | 'dark'>(() => preference.value === 'system'
+    ? (deviceDark.value ? 'dark' : 'light')
+    : preference.value)
+}
+
 // Called once, from app.vue: reflects the preference on <html>.
 export function useThemeAttribute() {
   const { preference } = useTheme()

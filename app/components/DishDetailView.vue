@@ -31,6 +31,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
         <DishImage
           :image-url="dish.imageUrl"
           :placeholder="dish.placeholder"
+          motion="loop"
         />
       </div>
       <div class="absolute inset-x-0 top-0 flex justify-between p-4">

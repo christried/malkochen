@@ -192,14 +192,11 @@ async function save() {
           data-reloaded-image
           @error="image = { kind: 'placeholder' }; reload = 'nothing'"
         >
-        <PlaceholderStill
-          v-else-if="image.kind === 'placeholder'"
-          :placeholder="placeholder"
-        />
         <DishImage
           v-else
-          :image-url="dish.imageUrl"
+          :image-url="image.kind === 'placeholder' ? null : dish.imageUrl"
           :placeholder="placeholder"
+          motion="loop"
         />
       </div>
       <!-- A row of image actions, with room for a future "eigenes Foto". -->
