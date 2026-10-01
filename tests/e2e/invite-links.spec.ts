@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Page } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
+import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
@@ -21,7 +22,7 @@ async function ownersLink(page: Page, name: string, emoji: string): Promise<{ bo
 
 // A second person's browser, signed out.
 async function secondBrowser(browser: Browser): Promise<Page> {
-  return (await browser.newContext({ baseURL: test.info().project.use.baseURL })).newPage()
+  return newTab(browser)
 }
 
 test('a first-time user opens the Invite Link, signs in, and lands on the Board without a "Meine Küche"', async ({ page, browser }) => {

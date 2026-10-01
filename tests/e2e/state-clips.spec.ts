@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { clipStill, countPeakPlaying, playing } from './clips'
@@ -164,7 +165,7 @@ test('the invite landing plays its intro, then hands over to the loop without a 
   await gotoHydrated(page, `/b/${boardId}/settings`)
   const link = await page.getByLabel('Einladungslink').inputValue()
 
-  const invited = await (await browser.newContext({ baseURL: test.info().project.use.baseURL, colorScheme: 'light' })).newPage()
+  const invited = await newTab(browser, { colorScheme: 'light' })
   const flashed = await watchForFlash(invited)
   // A slow still, as on a slow connection: the hand-over must not wait on it.
   await invited.route('**/clips/invite-loop-*.png', async (route) => {

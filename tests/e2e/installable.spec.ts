@@ -1,4 +1,5 @@
-import { expect, test, type APIRequestContext } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { gotoHydrated } from './hydration'
 
 // Installing malkochen on a home screen (PRD story 7): what the browser's
@@ -22,8 +23,9 @@ test('every page links a manifest that makes malkochen installable', async ({ pa
   expect(manifest).toMatchObject({ name: 'malkochen', short_name: 'malkochen', start_url: '/', display: 'standalone', lang: 'de' })
   // Dishes, never recipes (CONTEXT.md).
   expect(manifest.description).toBe('Gerichte sammeln. Zusammen kochen.')
-  // One colour only, no media queries: the splash defaults to dark.
-  expect(manifest).toMatchObject({ background_color: '#131211', theme_color: '#131211' })
+  // One colour each, no media queries. Android's native splash is butter,
+  // the first frame of the web splash that follows it.
+  expect(manifest).toMatchObject({ background_color: '#FCD980', theme_color: '#131211' })
   type Icon = { src: string, sizes: string, type: string, purpose: string }
   const icons = manifest.icons as Icon[]
   for (const purpose of ['any', 'maskable']) {

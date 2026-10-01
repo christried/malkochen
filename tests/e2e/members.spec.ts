@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Page } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
+import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
@@ -18,7 +19,7 @@ async function sharedBoard(page: Page, browser: Browser, name: string): Promise<
   const { id: boardId } = await res.json() as { id: string }
   const { inviteToken } = await (await page.request.get(`/api/boards/${boardId}`)).json() as { inviteToken: string }
 
-  const radia = await (await browser.newContext({ baseURL: test.info().project.use.baseURL })).newPage()
+  const radia = await newTab(browser)
   await signIn(radia, RADIA)
   expect((await radia.request.post(`/api/invites/${inviteToken}/join`)).status()).toBe(200)
   return { boardId, radia }

@@ -6,4 +6,5 @@ useThemeAttribute()
   <OfflineScreen>
     <NuxtPage />
   </OfflineScreen>
+  <SplashScreen />
 </template>

@@ -2,15 +2,19 @@
 // that can't be loaded gets offline.html instead of the browser's own error,
 // and that page tells apart the two reasons: the device has no connection
 // ("Du bist offline"), or it has one but malkochen doesn't answer ("nicht
-// erreichbar", our side). Nothing else is cached: Boards and Dishes always
-// come from the network. Bump VERSION when offline.html or what it shows
-// changes.
-const VERSION = 'offline-v3'
+// erreichbar", our side). Besides, the splash's two stills, so a cold
+// launch paints them at once. Nothing else is cached: Boards and Dishes always
+// come from the network. Bump VERSION when offline.html, what it shows, or a
+// splash still changes.
+const VERSION = 'offline-v4'
 const FALLBACK_PAGE = '/offline.html'
 // The offline clip (still and video, both themes) plays on the Offline page
 // and the app's Offline screen, which both show only without a connection.
 const OFFLINE_CLIP = ['light', 'dark'].flatMap(theme => ['png', 'webm', 'mp4'].map(ext => `/clips/offline-${theme}.${ext}`))
-const PRECACHED = [FALLBACK_PAGE, '/illustrations/topfbert-oops.svg', ...OFFLINE_CLIP]
+// The splash's poster (frame 10) and reduced-motion still (frame 16): from
+// the cache first, as they show over the very first paint.
+const SPLASH_STILLS = ['/clips/splash-poster.webp', '/clips/splash-still.webp']
+const PRECACHED = [FALLBACK_PAGE, '/illustrations/topfbert-oops.svg', ...OFFLINE_CLIP, ...SPLASH_STILLS]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(PRECACHED)).then(() => self.skipWaiting()))
@@ -65,9 +69,14 @@ self.addEventListener('fetch', (event) => {
     )
     return
   }
-  // What the fallback page itself shows: the network first, so it stays fresh.
   const { origin, pathname } = new URL(request.url)
-  if (origin === self.location.origin && PRECACHED.includes(pathname)) {
+  if (origin !== self.location.origin) return
+  if (SPLASH_STILLS.includes(pathname)) {
+    event.respondWith(caches.match(pathname).then(cached => cached ?? fetch(request)))
+    return
+  }
+  // What the fallback page itself shows: the network first, so it stays fresh.
+  if (PRECACHED.includes(pathname)) {
     event.respondWith(fetch(request).catch(() => cachedPart(request, pathname)))
   }
 })
