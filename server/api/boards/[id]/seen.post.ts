@@ -1,0 +1,14 @@
+import { getBoard, markSeen } from '../../../utils/boards'
+
+// POST /api/boards/:id/seen — what an open Board asks every few seconds (PRD
+// story 38): records that the user has seen it up to now, then answers the
+// Board. Recording first: a Dish added in between comes back and still
+// counts as New next time, never the other way round.
+export default defineEventHandler(async (event) => {
+  const boardId = boardIdParam(event)
+  const userId = requireUser(event).id
+  if (!await markSeen(boardId, userId)) throw boardNotFound()
+  const found = await getBoard(boardId, userId)
+  if (!found) throw boardNotFound()
+  return found
+})

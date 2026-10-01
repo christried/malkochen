@@ -1,0 +1,1 @@
+ALTER TABLE "membership" ADD COLUMN "new_since" timestamp with time zone;

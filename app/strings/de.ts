@@ -69,6 +69,8 @@ export const de = {
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
     hasNote: 'Mit Notiz',
+    // The marker on a New Dish (CONTEXT.md).
+    new: 'Neu',
     menu: (title: string) => `Mehr zu „${title}“`,
     closeMenu: 'Schließen',
     delete: 'Löschen',
@@ -110,6 +112,7 @@ export const de = {
   },
   detail: {
     close: 'Schließen',
+    goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',
     noSource: 'Ohne Link',
     placement: (board: string, column: string) => `${board} · ${column}`,

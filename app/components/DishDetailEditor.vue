@@ -140,7 +140,7 @@ async function save() {
   const choice = image.value
   try {
     const source = await sourceToSave()
-    const saved = await $fetch<SavedDish>(`/api/dishes/${props.dish.id}`, {
+    const saved = await trackWrite($fetch<SavedDish>(`/api/dishes/${props.dish.id}`, {
       method: 'PATCH',
       body: {
         title: title.value,
@@ -150,7 +150,7 @@ async function save() {
         ...choice.kind === 'placeholder' && { imageUrl: null },
         ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
       },
-    })
+    }))
     emit('saved', saved)
   }
   catch {

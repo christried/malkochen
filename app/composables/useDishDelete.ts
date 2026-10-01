@@ -44,7 +44,7 @@ export function useDishDelete(board: Ref<BoardView | undefined>, showToast: (toa
 
     // Whether it is deleted on the server. One already gone there (another
     // Member deleted it) counts as deleted; undo can still bring it back.
-    const deleting = $fetch(`/api/dishes/${dishId}`, { method: 'DELETE' }).then(() => true, (error: { statusCode?: number }) => {
+    const deleting = trackWrite($fetch<unknown>(`/api/dishes/${dishId}`, { method: 'DELETE' })).then(() => true, (error: { statusCode?: number }) => {
       if (error.statusCode === 404) return true
       putBack()
       showToast({ text: t.dish.deleteFailed(dish.title), duration: NOTICE_MS })
@@ -57,7 +57,7 @@ export function useDishDelete(board: Ref<BoardView | undefined>, showToast: (toa
       putBack()
       await nextTick()
       focusCard(dishId)
-      await $fetch(`/api/dishes/${dishId}/restore`, { method: 'POST' }).catch(() => {
+      await trackWrite($fetch<unknown>(`/api/dishes/${dishId}/restore`, { method: 'POST' })).catch(() => {
         takeOut()
         showToast({ text: t.dish.restoreFailed(dish.title), duration: NOTICE_MS })
       })

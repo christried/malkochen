@@ -34,7 +34,7 @@ async function save() {
   saving.value = true
   failed.value = false
   try {
-    const saved = await $fetch<CookingView>(`/api/cookings/${shown.id}`, { method: 'PATCH', body: { note: note.value } })
+    const saved = await trackWrite($fetch<CookingView>(`/api/cookings/${shown.id}`, { method: 'PATCH', body: { note: note.value } }))
     shown.note = saved.note
     if (cooking.value === shown) cooking.value = null
   }

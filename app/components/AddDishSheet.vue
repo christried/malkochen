@@ -193,7 +193,7 @@ async function save() {
       ? { link: result.value.canonicalLink, kind: result.value.kind }
       : { link: link.value.trim() }
   try {
-    const dish = await $fetch<SavedDish>(`/api/boards/${target}/dishes`, {
+    const dish = await trackWrite($fetch<SavedDish>(`/api/boards/${target}/dishes`, {
       method: 'POST',
       body: {
         title: title.value,
@@ -203,7 +203,7 @@ async function save() {
         imageUrl: usingSourceImage.value ? sourceImage.value : null,
         imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
       },
-    })
+    }))
     emit('added', dish, target)
     open.value = false
   }

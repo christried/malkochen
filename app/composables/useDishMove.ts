@@ -57,9 +57,9 @@ export function useDishMove(
       column.dishes.splice(Math.min(from, column.dishes.length), 0, dish)
     }
 
-    const request = cook
+    const request = trackWrite(cook
       ? $fetch<MovedDish>(`/api/dishes/${dishId}/cook`, { method: 'POST' })
-      : $fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId, index } })
+      : $fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId, index } }))
     // The Cooking recorded, once it is.
     const recorded = request.then((moved) => {
       if (!pending) return null
@@ -111,7 +111,7 @@ export function useDishMove(
     takeBack()
     await nextTick()
     document.getElementById(`dish-${dish.id}`)?.focus()
-    await $fetch(`/api/cookings/${cooking.id}/undo`, { method: 'POST', body: { columnId: column.id, index: from } }).catch((error: { statusCode?: number }) => {
+    await trackWrite($fetch<unknown>(`/api/cookings/${cooking.id}/undo`, { method: 'POST', body: { columnId: column.id, index: from } })).catch((error: { statusCode?: number }) => {
       // Back to where the move put it, with its Cooking unless that is gone
       // (deleted from the Cooking History meanwhile).
       if (error.statusCode !== 404) dish.cookings.unshift(cooking)
@@ -149,7 +149,7 @@ export function useDishMove(
     column.dishes.splice(from, 1)
     showToast({ text: t.dish.movedToBoard(dish.title, boardLabel(toBoard), target.name), duration: NOTICE_MS })
 
-    $fetch(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId } }).catch((error: { statusCode?: number }) => {
+    trackWrite($fetch<unknown>(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId } })).catch((error: { statusCode?: number }) => {
       // Gone meanwhile (another Member deleted it): it stays gone.
       if (error.statusCode === 404) return
       const now = board.value?.columns.find(c => c.id === column.id)

@@ -82,6 +82,15 @@ watch(moving, async (isMoving) => {
   dialog.value?.querySelector<HTMLElement>('[data-move]')?.focus()
 })
 
+// Gone from the Board while shown, as another Member deleted it or moved
+// it to another Board (PRD story 38): the detail closes and says so. Its
+// own "Löschen" and moves close it first.
+watch(located, (now, before) => {
+  if (now || !before || leaving) return
+  toast.value = { text: t.detail.goneMeanwhile(before.dish.title), duration: NOTICE_MS }
+  close()
+})
+
 function onSaved(dish: SavedDish) {
   emit('edited', dish)
   editing.value = false
