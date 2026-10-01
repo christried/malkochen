@@ -277,11 +277,12 @@ async function save() {
           class="lookup-panel flex flex-col items-center gap-3 rounded-panel px-4 py-6"
           data-lookup="looking"
         >
-          <img
-            src="/illustrations/topfbert-stir.svg"
-            alt=""
-            class="w-28"
-          >
+          <div class="aspect-[59/50] w-44">
+            <MotionClip
+              src="/clips/lookup-stir"
+              play
+            />
+          </div>
           <span class="text-body">{{ t.addDish.lookingUp }}</span>
         </div>
 
@@ -291,11 +292,12 @@ async function save() {
           class="flex items-center gap-3 rounded-panel bg-surface-muted p-3"
           data-lookup="failed"
         >
-          <img
-            src="/illustrations/topfbert-oops.svg"
-            alt=""
-            class="w-16 shrink-0"
-          >
+          <div class="aspect-[276/256] w-[72px] shrink-0">
+            <MotionClip
+              src="/clips/lookup-failed"
+              play
+            />
+          </div>
           <span class="text-small">{{ t.addDish.lookupFailed }}</span>
         </div>
       </template>
@@ -485,7 +487,8 @@ async function save() {
 </template>
 
 <style scoped>
-/* remotion-briefs.json lookup-stir: butter 22% into surface-muted. */
+/* remotion-briefs.json lookup-stir: butter 22% into surface-muted, the
+   clip's own background, so it sits in the panel without an edge. */
 .lookup-panel {
   background: color-mix(in oklch, var(--color-butter) 22%, var(--color-surface-muted));
 }

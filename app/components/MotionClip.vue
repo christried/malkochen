@@ -9,7 +9,8 @@
 //
 // `src` is the clip's files without the theme: '/placeholders/pasta' plays
 // /placeholders/pasta-dark.webm (or .mp4) in dark. The still is the default
-// slot, or else the clip's poster PNGs.
+// slot, or else the clip's poster PNGs. A new `src` plays in a new video,
+// over the same still.
 const props = withDefaults(defineProps<{
   src: string
   play?: boolean
@@ -64,12 +65,17 @@ function ended() {
   shown.value = false
   emit('ended')
 }
+
+// Where the clip is, in seconds, for Vue drawn over it in step: null while
+// the still shows.
+defineExpose({ time: (): number | null => (shown.value && video.value ? video.value.currentTime : null) })
 </script>
 
 <template>
   <div
     ref="root"
     class="relative h-full w-full"
+    :data-clip="src"
   >
     <slot>
       <img
@@ -88,7 +94,7 @@ function ended() {
     <video
       v-if="loaded"
       ref="video"
-      :key="theme"
+      :key="`${src}-${theme}`"
       class="absolute inset-0 h-full w-full object-cover"
       :class="{ 'opacity-0': !shown }"
       :loop="loop"

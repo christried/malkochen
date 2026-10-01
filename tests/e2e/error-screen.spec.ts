@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { signIn } from './auth'
+import { clipStill } from './clips'
 import { gotoHydrated } from './hydration'
 
 // The error screen: for a page that isn't there, and for anything that goes
@@ -10,7 +11,7 @@ test('a Board that doesn\'t exist shows the error screen, with a way back', asyn
   await gotoHydrated(page, '/b/00000000-0000-4000-8000-000000000000')
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Das gibt’s hier nicht.')
-  await expect(page.locator('img[src="/illustrations/topfbert-oops.svg"]')).toBeVisible()
+  await expect(clipStill(page, 'error')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Nochmal versuchen' })).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Zu malkochen' }).click()

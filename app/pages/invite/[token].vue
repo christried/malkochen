@@ -6,8 +6,7 @@ import { boardLabel } from '~~/shared/board'
 // eingeladen", then sign-in, then the Board. A signed-in user joins at once
 // and lands on the Board; a Member just lands there. Signing in from here
 // first remembers the invite (server/utils/invites.ts), so a refused sign-in
-// can name the Owner and a later one still joins. The handoff's still for
-// now; its clips (invite-intro, invite-loop) are wired in a later ticket.
+// can name the Owner and a later one still joins. Over its clip (InviteClip).
 const t = useStrings()
 const route = useRoute()
 const token = String(route.params.token)
@@ -58,44 +57,7 @@ async function startGoogleSignIn() {
 <template>
   <main class="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-10 text-center text-text">
     <template v-if="invite">
-      <div class="relative w-[min(84vw,360px)] aspect-[26/25]">
-        <div class="absolute inset-[6%] rounded-blob bg-[color-mix(in_srgb,var(--color-butter)_22%,var(--color-bg))]" />
-        <div class="board-pebble absolute left-1/2 top-[14%] flex h-[42%] w-[42%] -translate-x-1/2 items-center justify-center bg-surface text-[64px] shadow-card">
-          {{ invite.board.emoji }}
-        </div>
-        <img
-          src="/illustrations/topfbert-happy.svg"
-          alt=""
-          class="absolute bottom-[4%] left-[4%] w-[40%]"
-        >
-        <img
-          src="/illustrations/veggie-carrot.svg"
-          alt=""
-          class="absolute right-[10%] top-[8%] w-[12%]"
-        >
-        <img
-          src="/illustrations/veggie-pepper.svg"
-          alt=""
-          class="absolute bottom-[14%] right-[8%] w-[13%]"
-        >
-        <ul
-          class="absolute bottom-[10%] left-1/2 flex -translate-x-[10%]"
-          :aria-label="t.invite.members"
-        >
-          <li
-            v-for="member in invite.members.slice(0, 4)"
-            :key="member.id"
-            class="-ml-2 rounded-full ring-[2.5px] ring-bg first:ml-0"
-          >
-            <UserAvatar
-              :name="member.name"
-              :image="member.image"
-              :size="36"
-            />
-            <span class="sr-only">{{ member.name }}</span>
-          </li>
-        </ul>
-      </div>
+      <InviteClip :invite="invite" />
       <h1 class="mt-8 max-w-md font-display text-display-m tablet:text-display-l">
         {{ t.invite.headline(invitedTo) }}
       </h1>
@@ -141,10 +103,3 @@ async function startGoogleSignIn() {
     </template>
   </main>
 </template>
-
-<style scoped>
-/* The Board's emoji in a pebble, like Board settings and the switcher. */
-.board-pebble {
-  border-radius: var(--radius-blob);
-}
-</style>

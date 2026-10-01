@@ -1,11 +1,10 @@
 import { cycle, defineClip, keys, type Poses } from "./clip";
-import { Place, Stage } from "./draw";
+import { ACCENT, Blob, mix, palette, Place, Stage } from "./draw";
 import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
 // A Board with no Dishes: Topfbert happy with four veggies in his pot, which
-// hop out and flip one at a time. Laid out like EmptyBoard.vue. The clip's
-// background is the butter blob's tint, so the blob is the video's own frame
-// (masked in Vue) rather than drawn here.
+// hop out and flip one at a time, on a butter blob. Laid out like
+// EmptyBoard.vue, on the Column panel's colour (briefs.ts).
 
 const FRAMES = 72;
 // Each veggie's slot: it hops in the first 18 frames after its start.
@@ -38,10 +37,15 @@ export const emptyBoard = defineClip<Part>({
     });
     return poses;
   },
-  Scene: ({ background, poses, art, width, height }) => {
+  Scene: ({ theme, background, poses, art, width, height }) => {
     const topfbertWidth = 0.62 * width;
     return (
-      <Stage width={width} height={height} background={background}>
+      <Stage
+        width={width}
+        height={height}
+        background={background}
+        under={<Blob inset={6} background={mix(ACCENT.butter, 24, palette(theme).bg)} />}
+      >
         <Topfbert
           layers={art.topfbert.happy!}
           poses={poses}

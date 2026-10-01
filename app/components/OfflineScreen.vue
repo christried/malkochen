@@ -3,7 +3,8 @@
 // gone again once it's back: what's on screen is still there underneath,
 // inert meanwhile, so focus can't wander into it. "Nochmal versuchen"
 // reloads; still offline, the service worker answers with
-// public/offline.html. Opening malkochen offline gets that page too.
+// public/offline.html. Opening malkochen offline gets that page too. Both
+// play the handoff's "offline" clip, which the service worker keeps.
 const t = useStrings()
 const online = useOnline()
 const retryButton = useTemplateRef<HTMLButtonElement>('retryButton')
@@ -36,7 +37,10 @@ function retry() {
       :body="t.offline.body"
     >
       <template #illustration>
-        <OfflineIllustration />
+        <MotionClip
+          src="/clips/offline"
+          play
+        />
       </template>
       <template #actions>
         <button
