@@ -7,6 +7,13 @@ export const E2E_ORIGIN = 'http://localhost:3100'
 // The test Allowlist; any other email is refused.
 export const ALLOWLISTED = ['ada@example.com', 'grace@example.com', 'linus@example.com', 'margaret@example.com', 'barbara@example.com', 'katherine@example.com', 'hedy@example.com', 'mary@example.com', 'ida@example.com', 'annie@example.com', 'joan@example.com', 'radia@example.com', 'frances@example.com', 'sophie@example.com', 'evelyn@example.com', 'alan@example.com', 'dorothy@example.com', 'ruth@example.com', 'jean@example.com'] as const
 
+// A first sign-in's name and Google photo, as Google would send them; later
+// sign-ins keep the first. The dev sign-in takes them for the tests.
+export interface Profile {
+  name?: string
+  image?: string
+}
+
 export function testAuthEnv(baseUrl: string): Record<string, string> {
   return {
     BETTER_AUTH_URL: baseUrl,

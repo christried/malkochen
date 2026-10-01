@@ -3,6 +3,7 @@ useThemeAttribute()
 </script>
 
 <template>
-  <NuxtPage />
-  <OfflineScreen />
+  <OfflineScreen>
+    <NuxtPage />
+  </OfflineScreen>
 </template>

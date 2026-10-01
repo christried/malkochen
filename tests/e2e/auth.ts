@@ -1,12 +1,5 @@
 import type { Page } from '@playwright/test'
-import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
-
-// A first sign-in's name and Google photo, as Google would send them; later
-// sign-ins keep the first.
-export interface Profile {
-  name?: string
-  image?: string
-}
+import { ALLOWLISTED, E2E_ORIGIN, type Profile } from '../support/test-auth-env'
 
 // Signs the browser in through the dev bypass (tests/support/test-auth-env.ts
 // turns it on). page.request shares the page's cookies, so the session cookie

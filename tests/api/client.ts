@@ -1,4 +1,5 @@
 import { inject } from 'vitest'
+import type { Profile } from '../support/test-auth-env'
 
 // A signed-in (or anonymous) caller of the API, carrying its session cookie
 // like a browser would.
@@ -54,12 +55,6 @@ export function browser(): Browser {
     signIn: email => fetchKeeping('/api/auth/dev/sign-in', devSignInInit(email)),
     cookie: name => jar.get(name),
   }
-}
-
-// A first sign-in's name and Google photo; later sign-ins keep the first.
-export interface Profile {
-  name?: string
-  image?: string
 }
 
 function devSignInInit(email: string, profile?: Profile): RequestInit {

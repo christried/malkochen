@@ -44,6 +44,10 @@ test('losing the connection with the app open shows the Offline screen until it 
   await context.setOffline(true)
   await expect(offline).toBeVisible()
   await expect(offline.locator('img[src="/illustrations/topfbert-sleep.svg"]')).toBeVisible()
+  // The app underneath is out of reach until the connection is back.
+  await expect(offline.getByRole('button', { name: 'Nochmal versuchen' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  expect(await page.evaluate(() => document.activeElement?.closest('main') ?? null)).toBeNull()
 
   await context.setOffline(false)
   await expect(offline).toHaveCount(0)

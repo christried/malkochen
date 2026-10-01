@@ -23,12 +23,12 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_PAGE)))
+    event.respondWith(fetch(request).catch(async () => (await caches.match(OFFLINE_PAGE)) ?? Response.error()))
     return
   }
   // What the Offline page itself shows: the network first, so it stays fresh.
   const { origin, pathname } = new URL(request.url)
   if (origin === self.location.origin && PRECACHED.includes(pathname)) {
-    event.respondWith(fetch(request).catch(() => caches.match(pathname)))
+    event.respondWith(fetch(request).catch(async () => (await caches.match(pathname)) ?? Response.error()))
   }
 })
