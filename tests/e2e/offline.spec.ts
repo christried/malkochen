@@ -1,4 +1,5 @@
-import { expect, test, type Page, type Route } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { signIn } from './auth'
 import { clipStill, playing } from './clips'
 import { gotoHydrated } from './hydration'
@@ -35,6 +36,17 @@ test('opening malkochen offline shows the Offline page, which carries on once ba
   await context.setOffline(false)
   await expect(page).toHaveURL(/\/b\//)
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('Du bist offline.')
+})
+
+test('the service worker keeps the splash stills, so a cold launch paints them without the network', async ({ page, context }) => {
+  await gotoHydrated(page, '/login')
+  await serviceWorkerInControl(page)
+
+  await context.setOffline(true)
+  for (const still of ['/clips/splash-poster.webp', '/clips/splash-still.webp']) {
+    const type = await page.evaluate(async url => (await fetch(url)).headers.get('content-type'), still)
+    expect(type, still).toBe('image/webp')
+  }
 })
 
 // The device is online but malkochen doesn't answer: say it's on our side.

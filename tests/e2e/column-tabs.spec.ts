@@ -1,4 +1,5 @@
-import { expect, test, type Locator } from '@playwright/test'
+import type { Locator } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, tab, titles } from './board'

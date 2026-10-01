@@ -7,6 +7,12 @@
 //   .png   poster: the reduced-motion still (frame 0 for a placeholder, the
 //          brief's still for a clip, which for invite-intro is invite-loop's)
 //
+// The splash has no PNGs: from frame 10 on the butter covers the Board's
+// background, so its stills are one WebP each for both themes, small enough
+// for the service worker to precache (public/clips/splash-<still>.webp):
+//   splash-poster.webp  frame 10, what shows until the clip has a frame
+//   splash-still.webp   frame 16, the reduced-motion still
+//
 //   npm run render                   everything, light and dark
 //   npm run render -- pasta offline  only the named dishes and clips
 
@@ -22,6 +28,14 @@ import { HANDOFF_DIR, RSPACK, VIDEO_IMAGE_FORMAT } from "../src/render-settings.
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "../public");
 const only = process.argv.slice(2);
+
+// Clips whose stills are theme-independent WebPs in place of the PNG poster.
+const WEBP_STILLS: Record<string, { file: string; frame: number }[]> = {
+  splash: [
+    { file: "splash-poster", frame: 10 },
+    { file: "splash-still", frame: 16 },
+  ],
+};
 
 // Where a composition's files go, and the composition and frame of its poster.
 const output = (props: PlaceholderProps | ClipProps) =>
@@ -60,14 +74,28 @@ for (const composition of compositions) {
 
   const posterComposition = all.find((c) => c.id === poster.id);
   if (!posterComposition) throw new Error(`No composition ${poster.id} for ${file}'s poster`);
-  await renderStill({
-    composition: posterComposition,
-    serveUrl,
-    inputProps: posterComposition.props,
-    frame: poster.frame,
-    output: `${name}.png`,
-    imageFormat: "png",
-  });
+  const webpStills = "clip" in composition.props ? WEBP_STILLS[composition.props.clip as string] : undefined;
+  if (!webpStills) {
+    await renderStill({
+      composition: posterComposition,
+      serveUrl,
+      inputProps: posterComposition.props,
+      frame: poster.frame,
+      output: `${name}.png`,
+      imageFormat: "png",
+    });
+  } else if ((composition.props as ClipProps).theme === "light") {
+    for (const still of webpStills) {
+      await renderStill({
+        composition,
+        serveUrl,
+        inputProps: composition.props,
+        frame: still.frame,
+        output: join(publicDir, dir, `${still.file}.webp`),
+        imageFormat: "webp",
+      });
+    }
+  }
   for (const [codec, extension] of [["h264", "mp4"], ["vp9", "webm"]] as const) {
     await renderMedia({
       ...common,
