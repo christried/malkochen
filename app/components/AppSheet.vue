@@ -192,4 +192,11 @@ function onHandleUp(event: PointerEvent) {
 @keyframes body-rise {
   from { translate: 0 14px; opacity: 0; }
 }
+/* Reduced motion: its contents are there at once (main.css shortens the
+   rise, but not its delay). */
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] .sheet-body {
+    animation: none;
+  }
+}
 </style>

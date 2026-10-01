@@ -290,6 +290,8 @@ test('without View Transitions, the card’s image still morphs into the detail 
   await signIn(page, ALLOWLISTED[0])
   await gotoHydrated(page, '/')
   const card = page.getByRole('link', { name: 'Pfeiltasten' })
+  // Once the card has risen into its place.
+  await card.evaluate(el => Promise.all(el.closest('li')!.getAnimations().map(a => a.finished)))
   const thumb = (await card.locator('[data-thumb]').boundingBox())!
 
   await card.click()

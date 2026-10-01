@@ -65,6 +65,14 @@ const still = prefersReducedMotion()
 @keyframes bubble-pop {
   from { scale: 0; rotate: -10deg; }
 }
+/* His still and bubble are there at once (main.css shortens animations,
+   but not their delays). */
+@media (prefers-reduced-motion: reduce) {
+  .cheer,
+  .bubble {
+    animation: none;
+  }
+}
 /* Idle (layers.json → happy). Steam rises and fades, the second puff .9s
    behind; the hat (authored upright, worn at −14°) bobs; he blinks every 4s. */
 .layer-steam_1,

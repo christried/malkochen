@@ -208,6 +208,32 @@ watch(activeIndex, () => {
 })
 const parked = (index: number) => index !== activeIndex.value && !following.value && !sliding.value
 
+// Cards rise in (handoff DishCard "enter", "Board load"): 48px up and
+// fading in, 80ms apart (from the 8th on, all at once), as the Board opens
+// and as a tapped tab brings its Column in. Not after a swipe: the finger
+// already brought those cards in. Reduced motion: they are just there.
+const RISE_MS = 640 + 8 * 80
+const risingColumnIds = ref(new Set(board.value?.columns.map(c => c.id)))
+let riseEnd: ReturnType<typeof setTimeout> | undefined
+function rise(columnIds: string[]) {
+  clearTimeout(riseEnd)
+  risingColumnIds.value = new Set()
+  // A frame without, so the animation starts again.
+  requestAnimationFrame(() => {
+    risingColumnIds.value = new Set(columnIds)
+    riseEnd = setTimeout(() => (risingColumnIds.value = new Set()), RISE_MS)
+  })
+}
+onMounted(() => {
+  riseEnd = setTimeout(() => (risingColumnIds.value = new Set()), RISE_MS)
+})
+onBeforeUnmount(() => clearTimeout(riseEnd))
+function selectTab(index: number) {
+  const column = board.value?.columns[index]
+  if (column && column.id !== activeColumnId.value) rise([column.id])
+  showColumn(index)
+}
+
 // Headline parallax: a Column's name drifts and fades as it slides away.
 function titleMotion(index: number) {
   const offset = index - progress.value
@@ -429,7 +455,7 @@ async function deleteFromMenu() {
       :following="following"
       :drop-target="drag?.tabColumnId"
       :landing="landing"
-      @select="showColumn"
+      @select="selectTab"
     />
 
     <div
@@ -466,13 +492,14 @@ async function deleteFromMenu() {
             tag="ol"
             name="card"
             class="relative flex flex-col gap-3"
-            :class="{ 'mt-3': listOf(column).length }"
+            :class="{ 'mt-3': listOf(column).length, 'rising': risingColumnIds.has(column.id) }"
             data-dish-list
             @before-leave="onCardLeave"
           >
             <li
-              v-for="{ key, dish, state } in listOf(column)"
+              v-for="({ key, dish, state }, i) in listOf(column)"
               :key="key"
+              :style="{ '--i': i }"
               class="relative"
               :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
               :data-dish-id="dish?.id"
@@ -584,7 +611,7 @@ async function deleteFromMenu() {
 
     <button
       type="button"
-      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center bg-inverse text-on-inverse shadow-fab active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
+      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
       :aria-label="t.addDish.open"
       @click="adding = true"
@@ -737,11 +764,27 @@ async function deleteFromMenu() {
     opacity: 0;
   }
 }
-/* The FAB is a pebble, not a circle (handoff Button "FAB"). While a Toast
+/* The FAB is a pebble, not a circle (handoff Button "FAB"), breathing
+   gently (3.6s). Only the pebble painted behind it breathes: the button
+   itself keeps still, so it is always a steady target. While a Toast
    shows, it moves up out of its way. */
 .fab {
+  isolation: isolate;
   border-radius: var(--radius-blob);
   transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+}
+.fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-inverse);
+  box-shadow: var(--shadow-fab);
+  animation: fab-breathe 3.6s var(--ease-idle) infinite;
+}
+@keyframes fab-breathe {
+  50% { scale: 1.04; }
 }
 .fab-lifted {
   translate: 0 -76px;
@@ -750,6 +793,22 @@ async function deleteFromMenu() {
    around it. Reduced motion (main.css) stops it after one pass. */
 .fab-prompt {
   animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
+}
+/* Cards rising in (see `rise`). */
+.rising > li {
+  animation: card-rise 640ms var(--ease-settle) calc(min(var(--i), 8) * 80ms) backwards;
+}
+@keyframes card-rise {
+  from {
+    translate: 0 48px;
+    opacity: 0;
+  }
+}
+/* Not just shortened by main.css: its delay would still hide them. */
+@media (prefers-reduced-motion: reduce) {
+  .rising > li {
+    animation: none;
+  }
 }
 /* Deleting a Dish (handoff "Delete collapse + undo"): its card shrinks and
    fades while the list closes up; "Rückgängig" brings it back with a little

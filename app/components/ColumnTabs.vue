@@ -106,18 +106,11 @@ watch(() => props.active, index => tabs[index]?.scrollIntoView({
       :style="{ borderRadius: tabRadius(index), '--accent': columnAccent(index) }"
       @click="emit('select', index)"
     >
-      <span
+      <PebbleBurst
         v-if="bursting === column.id"
-        aria-hidden="true"
-        class="landed absolute inset-0"
-      >
-        <span
-          v-for="n in 5"
-          :key="n"
-          class="burst-pebble"
-          :style="{ '--angle': `${n * 72 - 90}deg` }"
-        />
-      </span>
+        class="landed"
+        color="var(--accent)"
+      />
       {{ column.name }}
       <span class="relative inline-block overflow-hidden align-bottom opacity-60">
         <Transition name="count">
@@ -201,31 +194,12 @@ nav {
 }
 /* A Dish dropped in: the tab squashes (1.32/.84, then .9/1.1, then back)
    and five pebbles burst out of it. Reduced motion (main.css) skips both. */
-.landed {
-  pointer-events: none;
-}
 .tab:has(> .landed) {
   animation: tab-squash var(--dur-drop-swallow) var(--ease-settle);
 }
 @keyframes tab-squash {
   30% { scale: 1.32 .84; }
   65% { scale: .9 1.1; }
-}
-.burst-pebble {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  margin: -4px;
-  border-radius: var(--radius-tab-1);
-  background: var(--accent);
-  opacity: 0;
-  animation: burst var(--dur-drop-burst) var(--ease-settle);
-}
-@keyframes burst {
-  0% { opacity: 1; transform: rotate(var(--angle)) translateX(0) scale(1); }
-  100% { opacity: 0; transform: rotate(var(--angle)) translateX(34px) scale(.4); }
 }
 /* A count that changes rolls 16px up: the new number pops in from below as
    the old one leaves above (handoff: count change · pop). Reduced motion:

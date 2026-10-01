@@ -68,4 +68,9 @@ function onClick() {
 @keyframes check-draw {
   from { stroke-dashoffset: 20; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .draw {
+    animation: none;
+  }
+}
 </style>

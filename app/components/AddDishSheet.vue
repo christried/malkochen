@@ -241,7 +241,7 @@ async function save() {
             <span
               v-if="result"
               aria-hidden="true"
-              class="source-dot h-2.5 w-2.5 shrink-0 rounded-full"
+              class="source-dot found-pop h-2.5 w-2.5 shrink-0 rounded-full"
               :data-source="badgeKind(result.kind)"
             />
             <input
@@ -348,7 +348,7 @@ async function save() {
             :src="sourceImage!"
             :alt="t.addDish.sourceImage"
             referrerpolicy="no-referrer"
-            class="aspect-[4/3] w-full object-cover"
+            class="bloom aspect-[4/3] w-full object-cover"
             data-source-image
             @error="sourceImageBroken = true"
           >
@@ -500,6 +500,31 @@ async function save() {
    decision. */
 .duplicate-panel {
   background: color-mix(in oklch, var(--color-butter) 38%, var(--color-surface-muted));
+}
+/* What the lookup found comes in (handoff "Image bloom", SourceBadge
+   "found"): the image settles from 1.08 as it fades in (1.2s, swoosh), and
+   the Source's dot pops from nothing a third of the way in. Reduced
+   motion: they are just there. */
+.bloom {
+  animation: bloom 1.2s var(--ease-swoosh);
+}
+@keyframes bloom {
+  from {
+    scale: 1.08;
+    opacity: 0;
+  }
+}
+.found-pop {
+  animation: found-pop var(--dur-pop) var(--ease-pop) 408ms backwards;
+}
+@keyframes found-pop {
+  from { scale: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bloom,
+  .found-pop {
+    animation: none;
+  }
 }
 /* Input "required/prompt": a butter glow that breathes, never red. Reduced
    motion (main.css) stops it after one pass. */

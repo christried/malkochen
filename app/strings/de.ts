@@ -243,6 +243,8 @@ export const de = {
     inviteHint: 'Wer den Link öffnet und für malkochen freigeschaltet ist, kommt auf dieses Board.',
     copyLink: 'Link kopieren',
     copied: 'Link kopiert',
+    // On the button, for a moment after copying.
+    copiedShort: 'Kopiert ✓',
     shareLink: 'Link teilen',
     shareText: (board: string) => `Komm auf unser Board ${board} bei malkochen!`,
     resetLink: 'Link zurücksetzen',

@@ -107,7 +107,7 @@ function keyOf(cooking: CookingView): number {
           <button
             type="button"
             class="flex h-9 items-center justify-center rounded-pill px-2.5 text-label text-text-muted transition-transform duration-tap ease-tap hover:bg-surface active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-focus"
-            :class="{ 'w-9 px-0': cooking.note }"
+            :class="{ 'w-9 px-0': cooking.note, 'note-glow relative': !cooking.note && isFresh(cooking) }"
             :aria-label="(cooking.note ? t.cooking.editNoteLabel : t.cooking.addNoteLabel)(new Date(cooking.cookedAt))"
             :disabled="!cooking.id"
             @click="$emit('note', cooking)"
@@ -180,7 +180,26 @@ function keyOf(cooking: CookingView): number {
 .cooking-move {
   transition: transform var(--dur-settle) var(--ease-settle);
 }
+/* "+ Notiz" on a fresh Cooking without a note glows three times: a butter
+   ring swells out of it and fades. Reduced motion: no glow. */
+.note-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--color-focus);
+  opacity: 0;
+  pointer-events: none;
+  animation: note-glow 1.2s var(--ease-fade) 600ms 3;
+}
+@keyframes note-glow {
+  0% { opacity: .9; scale: 1; }
+  100% { opacity: 0; scale: 1.25; }
+}
 @media (prefers-reduced-motion: reduce) {
+  .note-glow::after {
+    animation: none;
+  }
   .cooking-enter-active {
     transition: opacity var(--dur-fade) var(--ease-fade);
   }
