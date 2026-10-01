@@ -5,8 +5,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import type { Placeholder as Dish } from "../../shared/placeholders";
-import { placeholderBrief, type Theme } from "./briefs";
+import type { Placeholder as Dish, PlaceholderTheme } from "../../shared/placeholders";
+import { placeholderBrief } from "./briefs";
 import { type Pose, poseAt } from "./motion";
 
 // One Placeholder Image loop: the dish's full-canvas layers stacked by z in the
@@ -23,7 +23,7 @@ type Layer = {
 
 export type PlaceholderProps = {
   dish: Dish;
-  theme: Theme;
+  theme: PlaceholderTheme;
   // Filled in by calculateMetadata from the handoff's assets.
   layers: Layer[];
 };
@@ -56,13 +56,7 @@ export const calculatePlaceholderMetadata: CalculateMetadataFunction<
       pivot: layer.pivot,
     })),
   );
-  const { frames, canvas } = placeholderBrief(props.dish);
-  return {
-    durationInFrames: frames,
-    width: canvas[0],
-    height: canvas[1],
-    props: { ...props, layers },
-  };
+  return { ...placeholderBrief(props.dish).video, props: { ...props, layers } };
 };
 
 const transform = (pose: Pose) =>

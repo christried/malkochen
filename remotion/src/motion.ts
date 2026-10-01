@@ -9,6 +9,11 @@ import { Easing } from "remotion";
 // Seamless by construction: the pose depends only on the phase within the
 // loop, a delay is a phase offset, and every animation ends looking the way it
 // starts.
+//
+// Frame 0 is the still (the SVG), so every layer must be at rest at frame 0.
+// A delayed layer is at phase −delay/duration then, so staggered layers (the
+// three steam wisps at phases 0, ⅓ and ⅔, say) animate inside a rest window
+// short enough to leave all their frame-0 phases at rest.
 
 export type Pose = {
   x: number;
@@ -19,52 +24,62 @@ export type Pose = {
   opacity: number;
 };
 
-const REST: Pose = { x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 };
+export const REST: Pose = { x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 };
 
-type Keyframe = { at: number } & Partial<Pose>;
+// `ease` overrides the loop's easing for the segment that starts here.
+type Keyframe = { at: number; ease?: string } & Partial<Pose>;
 
-// Uniform scale, for keyframes.
-const s = (scale: number) => ({ scaleX: scale, scaleY: scale });
+const uniformScale = (scale: number) => ({ scaleX: scale, scaleY: scale });
 
 const ANIMATIONS: Record<string, Keyframe[]> = {
   // pasta fork: translateY −10 · rotate −10°, 0 / 50 / 100%
   twirl: [{ at: 0 }, { at: 0.5, y: -10, rotate: -10 }, { at: 1 }],
-  // ramen, dumplings, bread: alpha 0→.85→0 · y +6→−14
+  // ramen, dumplings (phases 0, ⅓, ⅔), bread (0, ½): each wisp rises to −14
+  // and fades out, comes back in from +6, and rests for the rest of the loop.
   steam: [
-    { at: 0, opacity: 0, y: 6 },
-    { at: 0.35, opacity: 0.85, y: -2 },
-    { at: 1, opacity: 0, y: -14 },
+    { at: 0 },
+    { at: 0.2, y: -14, opacity: 0 },
+    { at: 0.21, y: 6, opacity: 0 },
+    { at: 0.32 },
+    { at: 1 },
   ],
-  // curry: scale .2→1→1.35 · alpha
+  // curry (phases 0, ⅓, ⅔): each bubble swells to 1.35 and pops, grows back
+  // from .2, and rests.
   bub: [
-    { at: 0, opacity: 0, ...s(0.2) },
-    { at: 0.35, opacity: 1, ...s(1) },
-    { at: 1, opacity: 0, ...s(1.35) },
+    { at: 0 },
+    { at: 0.15, opacity: 0, ...uniformScale(1.35) },
+    { at: 0.16, opacity: 0, ...uniformScale(0.2) },
+    { at: 0.32 },
+    { at: 1 },
   ],
-  // bowl: y −7, then squash 1.08/.92 on landing
+  // bowl (phases 0, 11/12, ⅚): y −7 at the brief's apex (50%), squash
+  // 1.08/.92 on landing, at rest again before ⅚.
   hop: [
     { at: 0 },
-    { at: 0.35, y: -7, scaleX: 0.96, scaleY: 1.05 },
-    { at: 0.6, scaleX: 1.08, scaleY: 0.92 },
-    { at: 0.75 },
+    { at: 0.5, y: -7 },
+    { at: 0.68, scaleX: 1.08, scaleY: 0.92 },
+    { at: 0.8 },
     { at: 1 },
   ],
   // salad: y −4 · rotate −5°, 0 / 50 / 100%
   sway: [{ at: 0 }, { at: 0.5, y: -4, rotate: -5 }, { at: 1 }],
-  // burger bun: y −14 · rotate −5° → squash, 0/35/60/72/82%
+  // burger bun: y −14 · rotate −5°, lands squashed at 60% and springs back
+  // (spring(0.6, 400): damping ratio .6, stiffness 400), settled by 82%.
   lid: [
     { at: 0 },
     { at: 0.35, y: -14, rotate: -5 },
-    { at: 0.6, scaleX: 1.08, scaleY: 0.92 },
-    { at: 0.72, scaleX: 0.97, scaleY: 1.03 },
+    { at: 0.6, scaleX: 1.08, scaleY: 0.92, ease: "spring(0.6, 400)" },
     { at: 0.82 },
     { at: 1 },
   ],
-  // tacos: rotate ±7° about the bottom, a pendulum
+  // tacos (phases 0, ½): rotate ±7° about the bottom, upright at 0 and ½.
+  // Out-then-in easing per quarter makes a smooth swing through upright.
   wig: [
-    { at: 0, rotate: -7 },
-    { at: 0.5, rotate: 7 },
-    { at: 1, rotate: -7 },
+    { at: 0, ease: "ease-out" },
+    { at: 0.25, rotate: 7, ease: "ease-in" },
+    { at: 0.5, ease: "ease-out" },
+    { at: 0.75, rotate: -7, ease: "ease-in" },
+    { at: 1 },
   ],
   // pizza slice: x +10 · y −14 · rotate −8°, held 45–65%
   slice: [
@@ -75,8 +90,13 @@ const ANIMATIONS: Record<string, Keyframe[]> = {
   ],
   // wok pan: rotate −6°
   pan: [{ at: 0 }, { at: 0.5, rotate: -6 }, { at: 1 }],
-  // wok veg: y −26 and a full turn
-  toss: [{ at: 0 }, { at: 0.5, y: -26, rotate: 180 }, { at: 1, rotate: 360 }],
+  // wok veg (phases 0 to .93): y −26 and a full turn, back in the pan by 90%
+  toss: [
+    { at: 0 },
+    { at: 0.45, y: -26, rotate: 180 },
+    { at: 0.9, rotate: 360 },
+    { at: 1, rotate: 360 },
+  ],
   // porridge drop: falls y +34, vanishes on impact at 45%, fades back in on top
   fall: [
     { at: 0 },
@@ -85,12 +105,16 @@ const ANIMATIONS: Record<string, Keyframe[]> = {
     { at: 0.8, opacity: 0 },
     { at: 1 },
   ],
-  // porridge ripple: scale .3→1.4 from the impact at 45%
+  // porridge ripple: the still's ripple fades, then spreads .3→1.4 from the
+  // impact at 45% and settles back into place.
   ripple: [
-    { at: 0, opacity: 0, ...s(0.3) },
-    { at: 0.45, opacity: 0, ...s(0.3) },
-    { at: 0.5, opacity: 1, ...s(0.6) },
-    { at: 1, opacity: 0, ...s(1.4) },
+    { at: 0 },
+    { at: 0.2, opacity: 0 },
+    { at: 0.45, opacity: 0, ...uniformScale(0.3) },
+    { at: 0.5, ...uniformScale(0.6) },
+    { at: 0.8, opacity: 0, ...uniformScale(1.4) },
+    { at: 0.85, opacity: 0 },
+    { at: 1 },
   ],
   // bread loaf: scale 1.04 × 1.10 about the bottom
   rise: [{ at: 0 }, { at: 0.5, scaleX: 1.04, scaleY: 1.1 }, { at: 1 }],
@@ -102,50 +126,50 @@ const ANIMATIONS: Record<string, Keyframe[]> = {
     { at: 0.8 },
     { at: 1 },
   ],
-  // cake sparks: scale 0→1 and back, with a twinkle turn
-  spark: [
-    { at: 0, ...s(0) },
-    { at: 0.25, rotate: 45, ...s(1) },
-    { at: 0.5, rotate: 90, ...s(0) },
-    { at: 1, rotate: 90, ...s(0) },
-  ],
-  // wrap sheet: scaleX .08↔1 about the left edge, rolled 0–15 / 85–100%
+  // cake sparks (phases 0, ½): wink out, then scale 0→1 back in
+  spark: [{ at: 0 }, { at: 0.15, ...uniformScale(0) }, { at: 0.35 }, { at: 1 }],
+  // wrap sheet: scaleX .08↔1 about the left edge. Open in the still, so the
+  // brief's rolled 0–15 / 85–100% moves half a loop on, to 35–65%.
   roll: [
-    { at: 0, scaleX: 0.08 },
-    { at: 0.15, scaleX: 0.08 },
-    { at: 0.5 },
-    { at: 0.85, scaleX: 0.08 },
-    { at: 1, scaleX: 0.08 },
-  ],
-  // wrap roll: fat (1.12) while rolled, 1 while the sheet is out
-  rollc: [
-    { at: 0, ...s(1.12) },
-    { at: 0.15, ...s(1.12) },
-    { at: 0.5 },
-    { at: 0.85, ...s(1.12) },
-    { at: 1, ...s(1.12) },
-  ],
-  // smoothie bubbles: y 0→−38 · alpha
-  up: [
-    { at: 0, opacity: 0 },
-    { at: 0.2, opacity: 1, y: -7.6 },
-    { at: 1, opacity: 0, y: -38 },
-  ],
-  // eintopf lid: y −3 · rotate ±4° twice, rattle 0–32%, then rest
-  rattle: [
     { at: 0 },
-    { at: 0.08, y: -3, rotate: 4 },
-    { at: 0.16, rotate: -4 },
-    { at: 0.24, y: -3, rotate: 4 },
+    { at: 0.35, scaleX: 0.08 },
+    { at: 0.65, scaleX: 0.08 },
+    { at: 1 },
+  ],
+  // wrap roll: 1.12 while rolled, 1 while the sheet is out
+  rollc: [
+    { at: 0 },
+    { at: 0.35, ...uniformScale(1.12) },
+    { at: 0.65, ...uniformScale(1.12) },
+    { at: 1 },
+  ],
+  // smoothie (phases 0, ⅓, ⅔): each bubble rises y 0→−38 and fades, fades
+  // back in where it started, and rests.
+  up: [
+    { at: 0 },
+    { at: 0.22, y: -38, opacity: 0 },
+    { at: 0.23, opacity: 0 },
     { at: 0.32 },
     { at: 1 },
   ],
-  // eintopf steam puffs: scale + alpha
+  // eintopf lid: lifted y −3, rotate ±4° twice, rattle 0–32%, then rest
+  rattle: [
+    { at: 0 },
+    { at: 0.04, y: -3, rotate: 4 },
+    { at: 0.12, y: -3, rotate: -4 },
+    { at: 0.2, y: -3, rotate: 4 },
+    { at: 0.28, y: -3, rotate: -4 },
+    { at: 0.32 },
+    { at: 1 },
+  ],
+  // eintopf puffs (phases 0, .84): each grows to 1.3 and fades, comes back
+  // from .4, and rests.
   puff: [
-    { at: 0, opacity: 0, ...s(0.4) },
-    { at: 0.15, opacity: 0.9, ...s(0.8) },
-    { at: 0.45, opacity: 0, ...s(1.3) },
-    { at: 1, opacity: 0, ...s(1.3) },
+    { at: 0 },
+    { at: 0.3, opacity: 0, ...uniformScale(1.3) },
+    { at: 0.31, opacity: 0, ...uniformScale(0.4) },
+    { at: 0.6 },
+    { at: 1 },
   ],
 };
 
@@ -177,7 +201,27 @@ const BEZIERS: Record<string, [number, number, number, number]> = {
   "ease-in-out": [0.42, 0, 0.58, 1],
 };
 
-const easingFor = (easing: string) => {
+// A damped spring released at 0 and settling on 1 over a segment lasting
+// `seconds`, scaled to end exactly on 1.
+const springEasing = (dampingRatio: number, stiffness: number, seconds: number) => {
+  const natural = Math.sqrt(stiffness);
+  const damped = natural * Math.sqrt(1 - dampingRatio * dampingRatio);
+  const at = (t: number) => {
+    const time = t * seconds;
+    return (
+      1 -
+      Math.exp(-dampingRatio * natural * time) *
+        (Math.cos(damped * time) +
+          ((dampingRatio * natural) / damped) * Math.sin(damped * time))
+    );
+  };
+  const end = at(1);
+  return (t: number) => at(t) / end;
+};
+
+const easingFor = (easing: string, seconds: number) => {
+  const spring = easing.match(/^spring\(([\d.]+),\s*([\d.]+)\)$/);
+  if (spring) return springEasing(Number(spring[1]), Number(spring[2]), seconds);
   const custom = easing.match(/^cubic-bezier\(([^)]*)\)$/);
   const points = custom
     ? (custom[1].split(",").map(Number) as [number, number, number, number])
@@ -200,8 +244,11 @@ export const poseAt = (spec: string, frame: number, fps: number): Pose => {
   const next = keyframes.findIndex((k) => k.at > phase);
   const from = keyframes[Math.max(0, next - 1)];
   const to = keyframes[next === -1 ? keyframes.length - 1 : next];
+  const span = to.at - from.at;
   const progress =
-    to.at === from.at ? 0 : easingFor(easing)((phase - from.at) / (to.at - from.at));
+    span === 0
+      ? 0
+      : easingFor(from.ease ?? easing, span * durationS)((phase - from.at) / span);
 
   const pose = { ...REST };
   for (const key of Object.keys(REST) as (keyof Pose)[]) {

@@ -2,17 +2,21 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PLACEHOLDERS } from "../../shared/placeholders";
-import { FPS, placeholderBrief } from "./briefs";
-import { looksSame, parseLoop, poseAt } from "./motion";
+import { placeholderBrief } from "./briefs";
+import { looksSame, parseLoop, poseAt, REST } from "./motion";
 
 // Motion is checked by eye in Remotion Studio (spec). What can be checked here
 // is the loop maths: every animated layer the handoff lists has a motion, fits
-// its clip length exactly, actually moves, and comes back to frame 0 seamlessly.
+// its clip length exactly, rests at frame 0 so the poster is the SVG still,
+// actually moves, and comes back to frame 0 seamlessly.
 
 const ILLUSTRATIONS = join(
   __dirname,
   "../../docs/design handoff/assets/illustrations",
 );
+
+// For the hand-checked poses; the per-dish checks use each brief's own fps.
+const FPS = 30;
 
 type LayerSpec = { name: string; animated: boolean; loop: string | null };
 
@@ -54,6 +58,13 @@ describe("poseAt", () => {
     expect(apex.rotate).toBeCloseTo(-10);
   });
 
+  it("springs the burger bun back past rest after it lands", () => {
+    const loop = "lid 2.8s ease-in-out infinite";
+    const landed = 0.6 * 84;
+    const after = Array.from({ length: 18 }, (_, i) => poseAt(loop, landed + i, FPS));
+    expect(after.some((pose) => pose.scaleX < 1)).toBe(true);
+  });
+
   it("turns a delay into a phase offset", () => {
     expect(poseAt("steam 2.7s ease-out .9s infinite", 27, FPS)).toEqual(
       poseAt("steam 2.7s ease-out infinite", 0, FPS),
@@ -80,7 +91,7 @@ describe("looksSame", () => {
 });
 
 describe.each(PLACEHOLDERS)("placeholder-%s", (dish) => {
-  const { frames } = placeholderBrief(dish);
+  const { durationInFrames: frames, fps } = placeholderBrief(dish).video;
   const layers = animatedLayers(dish);
 
   it("has at least one animated layer", () => {
@@ -88,21 +99,22 @@ describe.each(PLACEHOLDERS)("placeholder-%s", (dish) => {
   });
 
   it.each(layers.map((l) => [l.name, l.loop!]))(
-    "%s fits the clip length, moves, and loops seamlessly",
+    "%s fits the clip length, starts at the still, moves, and loops seamlessly",
     (_name, loop) => {
       const { durationS } = parseLoop(loop);
-      expect(durationS * FPS).toBeCloseTo(frames);
+      expect(durationS * fps).toBeCloseTo(frames);
 
-      const start = poseAt(loop, 0, FPS);
-      expect(looksSame(poseAt(loop, frames, FPS), start)).toBe(true);
+      const start = poseAt(loop, 0, fps);
+      expect(looksSame(start, REST)).toBe(true);
+      expect(looksSame(poseAt(loop, frames, fps), start)).toBe(true);
 
       // Continuity across the animation's own wrap-around point, which for a
       // delayed layer is not frame 0.
       const { delayS } = parseLoop(loop);
-      const wrap = delayS * FPS + frames;
-      expect(looksSame(poseAt(loop, wrap - 1e-6, FPS), poseAt(loop, wrap, FPS))).toBe(true);
+      const wrap = delayS * fps + frames;
+      expect(looksSame(poseAt(loop, wrap - 1e-6, fps), poseAt(loop, wrap, fps))).toBe(true);
 
-      const moves = Array.from({ length: frames }, (_, f) => poseAt(loop, f, FPS)).some(
+      const moves = Array.from({ length: frames }, (_, f) => poseAt(loop, f, fps)).some(
         (pose) => !looksSame(pose, start),
       );
       expect(moves).toBe(true);

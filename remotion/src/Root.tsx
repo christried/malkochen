@@ -1,30 +1,25 @@
 import { Composition, Folder } from "remotion";
-import { PLACEHOLDERS } from "../../shared/placeholders";
-import { FPS, placeholderBrief, THEMES } from "./briefs";
+import { PLACEHOLDER_THEMES, PLACEHOLDERS } from "../../shared/placeholders";
+import { placeholderBrief } from "./briefs";
 import { calculatePlaceholderMetadata, Placeholder } from "./Placeholder";
 
-// One composition per Placeholder Image and theme, named like the files the
-// app serves: placeholder-pasta-light renders to public/placeholders/pasta-light.*
+// One composition per Placeholder Image and theme. scripts/render.ts names the
+// output files from the props (public/placeholders/<dish>-<theme>.*), so the
+// id is only for Studio.
 export const RemotionRoot: React.FC = () => {
   return (
     <Folder name="placeholders">
       {PLACEHOLDERS.flatMap((dish) =>
-        THEMES.map((theme) => {
-          const { frames, canvas } = placeholderBrief(dish);
-          return (
-            <Composition
-              key={`${dish}-${theme}`}
-              id={`placeholder-${dish}-${theme}`}
-              component={Placeholder}
-              durationInFrames={frames}
-              fps={FPS}
-              width={canvas[0]}
-              height={canvas[1]}
-              defaultProps={{ dish, theme, layers: [] }}
-              calculateMetadata={calculatePlaceholderMetadata}
-            />
-          );
-        }),
+        PLACEHOLDER_THEMES.map((theme) => (
+          <Composition
+            key={`${dish}-${theme}`}
+            id={`placeholder-${dish}-${theme}`}
+            component={Placeholder}
+            {...placeholderBrief(dish).video}
+            defaultProps={{ dish, theme, layers: [] }}
+            calculateMetadata={calculatePlaceholderMetadata}
+          />
+        )),
       )}
     </Folder>
   );
