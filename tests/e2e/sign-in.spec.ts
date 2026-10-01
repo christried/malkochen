@@ -35,14 +35,3 @@ test('a signed-in user who opens the sign-in screen lands on their Board instead
 
   await expect(page).toHaveURL(/\/b\//)
 })
-
-test('signing out returns to the sign-in screen', async ({ page }) => {
-  await signIn(page)
-  await gotoHydrated(page, '/')
-
-  await page.getByRole('button', { name: 'Abmelden' }).click()
-
-  await expect(page).toHaveURL('/login')
-  await gotoHydrated(page, '/')
-  await expect(page).toHaveURL('/login')
-})

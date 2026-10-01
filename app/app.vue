@@ -4,4 +4,5 @@ useThemeAttribute()
 
 <template>
   <NuxtPage />
+  <OfflineScreen />
 </template>

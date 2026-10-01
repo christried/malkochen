@@ -73,12 +73,14 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
 
 test('in the dark theme the card shows the dark still', async ({ page }) => {
   await signIn(page, ALLOWLISTED[1])
-  await gotoHydrated(page, '/')
+  await gotoHydrated(page, '/settings')
   await page.getByRole('radio', { name: 'Dunkel' }).click()
+  await gotoHydrated(page, '/')
 
   const card = page.getByRole('article', { name: 'Omas Linsensuppe' })
   await expect(card.locator('img[src="/placeholders/eintopf-dark.svg"]')).toBeVisible()
   await expect(card.locator('img[src="/placeholders/eintopf-light.svg"]')).toBeHidden()
+  await gotoHydrated(page, '/settings')
   await page.getByRole('radio', { name: 'Hell' }).click()
 })
 
