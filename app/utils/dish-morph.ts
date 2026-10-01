@@ -8,8 +8,6 @@
 // Reduced motion: no morph; the detail just shows.
 
 const NAME = 'dish-image'
-const MORPH_MS = 600
-const EASE = 'cubic-bezier(.45,0,.2,1)'
 // The detail must show within this, or the morph is given up.
 const ARRIVAL_MS = 1500
 
@@ -46,7 +44,7 @@ export async function morphOpen(thumb: HTMLElement | null, path: string, go: () 
   })
   if (supportsViewTransitions()) {
     pending = { arrival: { kind: 'view-transition' }, arrived }
-    await navigateInTransition(path, go, {
+    await navigateInTransition(path, 'open', go, {
       start: () => (thumb.style.viewTransitionName = NAME),
       update: async () => {
         thumb.style.viewTransitionName = ''
@@ -92,7 +90,7 @@ export async function morphClose(image: HTMLElement | null, dishId: string, path
   if (supportsViewTransitions()) {
     let gone!: () => void
     const left = new Promise<void>(resolve => (gone = resolve))
-    await navigateInTransition(path, () => go().finally(gone), {
+    await navigateInTransition(path, 'close', () => go().finally(gone), {
       update: async () => {
         await left
         const thumb = cardThumb(dishId)
@@ -116,13 +114,15 @@ export async function morphClose(image: HTMLElement | null, dishId: string, path
 // look while waiting for the network. `start` runs just before the old look
 // is captured, `update` once it is; the transition plays when `update`
 // resolves. A navigation that ends elsewhere (a redirect) has none.
-async function navigateInTransition(path: string, go: () => Promise<unknown>, { start, update }: { start?: () => void, update: () => Promise<void> }) {
+// `<html data-morph>` says which way it goes meanwhile (main.css).
+async function navigateInTransition(path: string, way: 'open' | 'close', go: () => Promise<unknown>, { start, update }: { start?: () => void, update: () => Promise<void> }) {
   let transition: ViewTransition | undefined
   const stop = useRouter().beforeResolve((to) => {
     if (to.path !== path) return
     stop()
     return new Promise<void>((captured) => {
       start?.()
+      document.documentElement.dataset.morph = way
       transition = document.startViewTransition(() => {
         captured()
         return update()
@@ -136,6 +136,7 @@ async function navigateInTransition(path: string, go: () => Promise<unknown>, { 
     stop()
   }
   await transition?.finished.catch(() => {})
+  delete document.documentElement.dataset.morph
 }
 
 // Moves `el` (at `at`) as if it came from `from`, or, going back, to it:
@@ -152,8 +153,8 @@ function flip(el: HTMLElement, from: DOMRect, at: DOMRect, { back = false } = {}
   const dialog = el.closest('dialog')
   dialog?.setAttribute('data-morphing', '')
   const animation = el.animate(back ? [own, card] : [card, own], {
-    duration: MORPH_MS,
-    easing: EASE,
+    duration: motionMs('swoosh'),
+    easing: motionEase('swoosh'),
     fill: back ? 'forwards' : 'none',
   })
   const done = () => dialog?.removeAttribute('data-morphing')

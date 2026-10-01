@@ -72,54 +72,19 @@ const { deleteDish, focusCard } = useDishDelete(board, showToast)
 const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, addNote)
 const { deleteCooking } = useCookingDelete(showToast)
 
-// "Gekocht ✓" on a card (handoff "Gekocht celebration + toast"): the button
-// springs first; 300ms on, the card swooshes out for the Gekocht Column (or
-// stays, if it is there) and the Gekocht toast celebrates, with confetti
-// from the button. On phones, from another Column, a pebble flies to the
-// Gekocht tab, which bursts as it lands. Focus goes to what took its place.
-const holding = new Set<string>()
-const swooshing = new Set<string>()
-async function cookFromCard(dishId: string, origin: Point) {
-  if (holding.has(dishId)) return
-  holding.add(dishId)
-  await new Promise(resolve => setTimeout(resolve, motionMs('cook-hold')))
-  holding.delete(dishId)
-  const leaves = board.value && !dishOnBoard(board.value, dishId)?.column.isGekocht
-  swooshing.add(dishId)
-  const focusId = cookDish(dishId, origin)
-  if (leaves) flyToGekochtTab(origin)
-  await nextTick()
-  swooshing.delete(dishId)
-  if (focusId) document.getElementById(focusId)?.focus()
-}
-// A card leaving its Column swooshes if it was cooked, else it shrinks. It
-// is taken out of the flow (so the list closes up at once) where it was: in
-// a flex list, `position: absolute` alone would put it at the top.
-function onCardLeave(el: Element) {
-  if (!(el instanceof HTMLElement)) return
-  el.style.top = `${el.offsetTop}px`
-  if (swooshing.has(el.dataset.dishId ?? '')) el.classList.add('cooked')
-}
+// A Column's tab, or its name beside the others, reacting to a Dish coming
+// in (ColumnCue): dropped on the tab, cooked, the Gekocht pebble landing.
+const { shot: columnCue, fire: cueColumn } = useOneShot<ColumnCue>()
 
-// The pebble flying to the Gekocht tab (phones; not with reduced motion).
-const flight = ref<{ from: Point, to: Point, columnId: string, accent: string, key: number } | null>(null)
-let flights = 0
-function flyToGekochtTab(from: Point) {
-  const index = board.value?.columns.findIndex(c => c.isGekocht) ?? -1
-  const columnId = board.value?.columns[index]?.id
-  if (!columnId || !isPhoneLayout() || prefersReducedMotion()) return
-  const tab = tabBar.value?.$el.querySelector(`[data-tab-column-id="${columnId}"]`)
-  if (!(tab instanceof HTMLElement)) return
-  const box = tab.getBoundingClientRect()
-  flight.value = { from, to: { x: box.left + box.width / 2, y: box.top + box.height / 2 }, columnId, accent: columnAccent(index), key: ++flights }
-}
-function onFlightLanded() {
-  const columnId = flight.value?.columnId
-  flight.value = null
-  if (!columnId) return
-  hapticClockTick()
-  landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }
-}
+// "Gekocht ✓" on a card: the celebration, timed (useGekochtCelebration).
+// The Gekocht Column's count shows on its tab on phones, else by its name.
+const { cookFromCard, onCardLeave, flight, onFlightLanded } = useGekochtCelebration(board, {
+  cookDish,
+  target: columnId => isPhoneLayout()
+    ? tabBar.value?.$el.querySelector(`[data-tab-column-id="${columnId}"]`) ?? null
+    : document.querySelector<HTMLElement>(`#column-${CSS.escape(columnId)} .column-name`),
+  cue: cueColumn,
+})
 
 // Tapping a card morphs it into its detail (utils/dish-morph.ts). Clicks
 // for a new tab or window are left to the link; so is one swallowed after a
@@ -147,15 +112,12 @@ function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
   if (dish) deleteCooking(dish, cooking)
 }
 
-// A Dish dropped into a Column tab (or the Gekocht pebble landing on one)
-// makes the tab squash and burst.
-const landing = ref<{ columnId: string, n: number } | null>(null)
 const { drag, dragging, entries } = useDishDrag(columnsEl, {
   board: () => board.value,
   activeColumnId: () => activeColumnId.value,
   tabBar: () => tabBar.value?.$el ?? null,
   drop: (dishId, place, origin) => dropDish(dishId, place, { origin }),
-  landed: columnId => (landing.value = { columnId, n: (landing.value?.n ?? 0) + 1 }),
+  landed: columnId => cueColumn({ columnId, kind: 'drop' }),
 })
 // The one loop playing on the Board: the lifted card's Placeholder, the
 // hovered card's, or one where the Board comes to rest, else an empty
@@ -290,45 +252,10 @@ function onAdded(saved: SavedDish, boardId: string, from: DOMRect | null) {
   const slides = isPhoneLayout() && activeColumnId.value !== first.id
   first.dishes.unshift(dish)
   activeColumnId.value = first.id
-  if (from) flyIn(dish.id, from, slides)
+  if (from) flyIn(dish.id, from, { slides })
 }
-
-// A saved Dish flies onto the Board (handoff "Saved → card flies to
-// Board"): once the sheet has moved out (and on phones the Board has slid to
-// its Column), a copy of its card flies from where its image showed in the
-// sheet into its place (900ms, swoosh), and lands with CONFIRM; the card
-// itself is hidden till then. A copy, fixed to the screen, as the lanes
-// would clip the card. Reduced motion: the card just fades in.
-const arrivingId = ref<string | null>(null)
-async function flyIn(dishId: string, from: DOMRect, slides: boolean) {
-  if (prefersReducedMotion()) return
-  arrivingId.value = dishId
-  await new Promise(resolve => setTimeout(resolve, Math.max(motionMs('sheet-out'), slides ? motionMs('settle') : 0)))
-  const card = columnsEl.value?.querySelector<HTMLElement>(`[data-dish-id="${CSS.escape(dishId)}"] article`)
-  if (!card) {
-    arrivingId.value = null
-    return
-  }
-  const to = card.getBoundingClientRect()
-  const copy = card.cloneNode(true) as HTMLElement
-  copy.setAttribute('aria-hidden', 'true')
-  copy.classList.add('z-drag', 'pointer-events-none')
-  Object.assign(copy.style, { position: 'fixed', left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px`, margin: '0' })
-  document.body.append(copy)
-  // From the image's size and place, uniformly scaled so it isn't squashed.
-  const scale = Math.min(from.width / to.width, from.height / to.height)
-  const dx = from.left + from.width / 2 - (to.left + to.width / 2)
-  const dy = from.top + from.height / 2 - (to.top + to.height / 2)
-  const flight = copy.animate([
-    { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: .4 },
-    { opacity: 1, offset: .3 },
-    { transform: 'none', opacity: 1 },
-  ], { duration: 900, easing: 'cubic-bezier(.45,0,.2,1)' })
-  await flight.finished.catch(() => {})
-  copy.remove()
-  if (arrivingId.value === dishId) arrivingId.value = null
-  hapticConfirm()
-}
+// A saved Dish flies in from Add Dish (useSavedDishFlight).
+const { arrivingId, flyIn } = useSavedDishFlight(columnsEl)
 
 function onEdited(saved: SavedDish) {
   if (saved.imageNotStored) showNotice(t.detail.imageNotStored(saved.title))
@@ -454,7 +381,7 @@ async function deleteFromMenu() {
       :progress="progress"
       :following="following"
       :drop-target="drag?.tabColumnId"
-      :landing="landing"
+      :cue="columnCue"
       @select="selectTab"
     />
 
@@ -486,7 +413,18 @@ async function deleteFromMenu() {
           :data-gekocht="column.isGekocht || undefined"
         >
           <h2 class="column-title px-1 font-display text-title-s">
-            {{ column.name }}
+            <span
+              :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"
+              class="column-name relative inline-block"
+              :class="columnCue?.value.columnId === column.id && `cue-${columnCue.value.kind}`"
+            >
+              {{ column.name }}
+              <PebbleBurst
+                v-if="columnCue?.value.columnId === column.id && columnCue.value.kind !== 'bump'"
+                class="name-burst"
+                :color="columnAccent(index)"
+              />
+            </span>
           </h2>
           <TransitionGroup
             tag="ol"
@@ -603,9 +541,9 @@ async function deleteFromMenu() {
     <FlyToTab
       v-if="flight"
       :key="flight.key"
-      :from="flight.from"
-      :to="flight.to"
-      :accent="flight.accent"
+      :from="flight.value.from"
+      :to="flight.value.to"
+      :accent="flight.value.accent"
       @landed="onFlightLanded"
     />
 
@@ -628,6 +566,7 @@ async function deleteFromMenu() {
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
 
+    <VeggieConfetti v-if="!route.params.dishId" />
     <AppToast
       v-if="!route.params.dishId"
       v-model="toast"
@@ -764,9 +703,9 @@ async function deleteFromMenu() {
     opacity: 0;
   }
 }
-/* The FAB is a pebble, not a circle (handoff Button "FAB"), breathing
-   gently (3.6s). Only the pebble painted behind it breathes: the button
-   itself keeps still, so it is always a steady target. While a Toast
+/* The FAB is a pebble, not a circle (handoff Button "FAB"), slowly changing
+   its shape (8s) and breathing gently (3.6s). Only the pebble painted behind
+   it moves: the button itself keeps still, so it is always a steady target. While a Toast
    shows, it moves up out of its way. */
 .fab {
   isolation: isolate;
@@ -781,10 +720,14 @@ async function deleteFromMenu() {
   border-radius: inherit;
   background: var(--color-inverse);
   box-shadow: var(--shadow-fab);
-  animation: fab-breathe 3.6s var(--ease-idle) infinite;
+  animation: fab-breathe 3.6s var(--ease-idle) infinite, fab-morph 8s var(--ease-idle) infinite alternate;
 }
 @keyframes fab-breathe {
   50% { scale: 1.04; }
+}
+@keyframes fab-morph {
+  50% { border-radius: 58% 42% 50% 50% / 46% 56% 44% 54%; }
+  100% { border-radius: 44% 56% 46% 54% / 56% 44% 58% 42%; }
 }
 .fab-lifted {
   translate: 0 -76px;
@@ -802,12 +745,6 @@ async function deleteFromMenu() {
   from {
     translate: 0 48px;
     opacity: 0;
-  }
-}
-/* Not just shortened by main.css: its delay would still hide them. */
-@media (prefers-reduced-motion: reduce) {
-  .rising > li {
-    animation: none;
   }
 }
 /* Deleting a Dish (handoff "Delete collapse + undo"): its card shrinks and
@@ -834,11 +771,14 @@ async function deleteFromMenu() {
   .card-enter-from {
     scale: none;
   }
+  .card-enter-active {
+    transition: opacity var(--dur-fade) var(--ease-fade);
+  }
 }
 /* A card cooked with "Gekocht ✓" (handoff "Card leaves Column") swooshes
    out sideways instead, tilting, in 360ms. Reduced motion: it only fades. */
 .card-leave-active.cooked {
-  transition: translate 360ms var(--ease-swoosh), rotate 360ms var(--ease-swoosh), opacity 360ms var(--ease-fade);
+  transition: translate var(--dur-cook-leave) var(--ease-swoosh), rotate var(--dur-cook-leave) var(--ease-swoosh), opacity var(--dur-cook-leave) var(--ease-fade);
 }
 .card-leave-to.cooked {
   translate: 440px 0;
@@ -1008,6 +948,22 @@ async function deleteFromMenu() {
   .column.lane-dimmed {
     opacity: .6;
   }
+}
+/* With the Columns side by side there are no tabs, so a Column's name
+   reacts to a Dish coming in (ColumnCue) instead: cooked, it bumps to 1.22;
+   the Gekocht pebble bursts on it. On phones the tabs do it. */
+@media (min-width: 768px) {
+  .column-name.cue-bump {
+    animation: name-bump var(--dur-tab-bump) var(--ease-pop);
+  }
+}
+@media (max-width: 767.98px) {
+  .name-burst {
+    display: none;
+  }
+}
+@keyframes name-bump {
+  40% { scale: 1.22; }
 }
 @keyframes lane-wiggle {
   25% { rotate: -.3deg; }

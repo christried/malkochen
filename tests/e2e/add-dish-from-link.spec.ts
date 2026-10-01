@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import { cardAtRest } from './board'
 import { gotoHydrated } from './hydration'
 import { removeStoredImages, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
@@ -214,6 +215,7 @@ test('portrait and landscape images both fill the card\'s image', async ({ page 
     const image = card.locator('[data-dish-image]')
     await expect(image).toHaveAttribute('src', src)
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0)
+    await cardAtRest(card)
     const [box, frame] = [await image.boundingBox(), await image.locator('..').boundingBox()]
     expect(box).toEqual(frame)
     expect(await image.evaluate(img => getComputedStyle(img).objectFit)).toBe('cover')

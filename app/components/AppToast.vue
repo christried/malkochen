@@ -20,14 +20,6 @@ watch([toast, bar], ([, el]) => {
 }, { flush: 'post' })
 onBeforeUnmount(() => timer?.cancel())
 
-// The Gekocht toast's confetti, from where the celebration started. It
-// outlives the toast if that is replaced or closed early.
-const burst = ref<{ origin: Point, key: number } | null>(null)
-let bursts = 0
-watch(toast, (shown) => {
-  if (shown?.celebrate) burst.value = { origin: shown.celebrate, key: ++bursts }
-})
-
 function act(action: ToastAction) {
   toast.value = null
   action.run()
@@ -40,17 +32,11 @@ function act(action: ToastAction) {
     role="status"
     class="pointer-events-none fixed inset-x-4 bottom-6 z-toast flex justify-center tablet:bottom-8"
   >
-    <!-- Outside the toast, which moves: fixed to the screen, not to it. -->
-    <VeggieConfetti
-      v-if="burst"
-      :key="burst.key"
-      :origin="burst.origin"
-      @done="burst = null"
-    />
     <Transition name="toast">
       <div
         v-if="toast"
         class="relative max-w-md"
+        :class="{ celebrating: toast.celebrate }"
       >
         <!-- Topfbert peeks out from behind the toast, over its left half. -->
         <TopfbertCheer
@@ -92,9 +78,13 @@ function act(action: ToastAction) {
 </template>
 
 <style scoped>
-/* In: up from below, 380ms with a little overshoot (sheet). Out: down, 300ms. */
+/* In: up from below, 380ms with a little overshoot (sheet); the Gekocht
+   toast a moment after its confetti. Out: down, 300ms. */
 .toast-enter-active {
   transition: translate 380ms var(--ease-sheet), opacity var(--dur-fade) var(--ease-fade);
+}
+.toast-enter-active.celebrating {
+  transition-delay: var(--dur-toast-delay);
 }
 .toast-leave-active {
   transition: translate 300ms var(--ease-swoosh), opacity 300ms var(--ease-fade);

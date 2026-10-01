@@ -1,13 +1,12 @@
 <script setup lang="ts">
-// The handoff's "fly-to-tab-pebble" (part of the Gekocht celebration on
-// phones): a pebble in the Gekocht Column's accent flies in an arc from the
-// "Gekocht ✓" button to that Column's tab, shrinking, in 640ms (swoosh), and
-// says `landed` there. Native, not a clip. The Board skips it with reduced
-// motion (the tab's count just changes).
+// The handoff's "fly-to-tab-pebble" (part of the Gekocht celebration): a
+// pebble in the Gekocht Column's accent flies in an arc from the
+// "Gekocht ✓" button to that Column's tab (or its name, with the Columns
+// side by side), shrinking, in 640ms (swoosh), and says `landed` there.
+// Native, not a clip. Skipped with reduced motion (the count just changes).
 const props = defineProps<{ from: Point, to: Point, accent: string }>()
 const emit = defineEmits<{ landed: [] }>()
 
-const FLIGHT_MS = 640
 const pebble = useTemplateRef<HTMLElement>('pebble')
 let flight: Animation | undefined
 onMounted(() => {
@@ -18,7 +17,7 @@ onMounted(() => {
     { translate: `${from.x}px ${from.y}px`, scale: 1 },
     { translate: `${(from.x + to.x) / 2}px ${lift}px`, scale: .9, offset: .45 },
     { translate: `${to.x}px ${to.y}px`, scale: .5 },
-  ], { duration: FLIGHT_MS, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' })
+  ], { duration: motionMs('fly-to-tab'), easing: motionEase('swoosh'), fill: 'forwards' })
   flight?.finished.then(() => emit('landed'), () => {})
 })
 onBeforeUnmount(() => flight?.cancel())

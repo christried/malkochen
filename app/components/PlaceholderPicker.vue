@@ -4,14 +4,17 @@ import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 // A grid of Placeholder Images with the current one selected (handoff
 // PlaceholderPicker): all 16 by default, or the few the inline variant
 // passes in. The selected one loops (handoff illustrations.json "picker
-// selection"); the rest stay still. Its tiles pop in 40ms apart as it
-// appears, and the selected one's check pops (handoff PlaceholderPicker).
+// selection"); the rest stay still. As it appears its grid unrolls from the
+// top (520ms) while its tiles pop in 40ms apart; the selected one's check
+// pops. The full picker has Topfbert over it, hopping at each pick (handoff
+// PlaceholderPicker).
 const selected = defineModel<Placeholder>({ required: true })
 const props = withDefaults(defineProps<{
   label: string
   options?: readonly Placeholder[]
 }>(), { options: () => PLACEHOLDERS })
 const t = useStrings()
+const full = computed(() => props.options.length === PLACEHOLDERS.length)
 
 // Radio-group keyboard behaviour: arrows move the selection, one tab stop.
 // With the selection outside `options`, the first tile takes the tab stop.
@@ -26,10 +29,19 @@ function move(step: number) {
 </script>
 
 <template>
-  <div
-    role="radiogroup"
-    :aria-label="label"
-    class="grid grid-cols-4 gap-2.5"
+  <div>
+    <img
+      v-if="full"
+      :key="selected"
+      src="/illustrations/topfbert-happy.svg"
+      alt=""
+      aria-hidden="true"
+      class="hop mx-auto mb-3 h-16 w-16"
+    >
+    <div
+      role="radiogroup"
+      :aria-label="label"
+      class="unroll grid grid-cols-4 gap-2.5"
     @keydown.right.prevent="move(1)"
     @keydown.down.prevent="move(4)"
     @keydown.left.prevent="move(-1)"
@@ -70,10 +82,24 @@ function move(step: number) {
         ><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
       </span>
     </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.unroll {
+  animation: unroll 520ms var(--ease-settle);
+}
+@keyframes unroll {
+  from { clip-path: inset(0 0 100% 0); }
+}
+.hop {
+  transform-origin: 50% 100%;
+  animation: hop var(--dur-pop) var(--ease-pop);
+}
+@keyframes hop {
+  40% { translate: 0 -10px; scale: 1.04 .96; }
+}
 .tile {
   animation: tile-pop var(--dur-pop) var(--ease-pop) calc(var(--i) * 40ms) backwards;
 }
@@ -88,12 +114,5 @@ function move(step: number) {
 }
 @keyframes check-pop {
   from { scale: 0; }
-}
-/* Not just shortened by main.css: the delays would still hide the tiles. */
-@media (prefers-reduced-motion: reduce) {
-  .tile,
-  .check {
-    animation: none;
-  }
 }
 </style>

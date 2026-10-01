@@ -38,6 +38,8 @@ const editing = ref(false)
 // Opened from its card, the card morphs into it (utils/dish-morph.ts): it
 // doesn't move in itself then.
 const morphed = !!morphArrival()
+// A sheet opened over it (moving the Dish, choosing an image), it steps back.
+const covered = useModalStack(() => true)
 const headerImage = () => dialog.value?.querySelector<HTMLElement>('[data-detail-image]') ?? null
 onMounted(() => {
   dialog.value?.showModal()
@@ -136,6 +138,7 @@ watch(editing, async (isEditing) => {
     ref="dialog"
     class="detail bg-bg p-0 text-text tablet:shadow-sheet"
     :class="{ morphed }"
+    :data-covered="covered || undefined"
     :aria-label="located?.dish.title"
     @keydown.esc="onEscape"
     @cancel.prevent="close"
@@ -176,6 +179,7 @@ watch(editing, async (isEditing) => {
         @move="onMove"
       />
     </AppSheet>
+    <VeggieConfetti />
     <AppToast v-model="toast" />
   </dialog>
 </template>
@@ -224,6 +228,40 @@ watch(editing, async (isEditing) => {
   from { transform: translateY(90px); opacity: 0; }
 }
 
+/* Covered by a sheet over it: it scales to .96 and dims 20%. Reduced
+   motion: it cross-fades in (200ms), and covered it only dims. */
+.detail {
+  transition: scale var(--dur-sheet) var(--ease-sheet);
+}
+.detail::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) var(--ease-fade);
+}
+.detail[data-covered] {
+  scale: .96;
+}
+.detail[data-covered]::after {
+  opacity: .2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail[open] {
+    transition: opacity var(--dur-fade) var(--ease-fade);
+  }
+  @starting-style {
+    .detail[open] {
+      opacity: 0;
+    }
+  }
+  .detail[data-covered] {
+    scale: none;
+  }
+}
+
 /* Arriving by the card → detail morph (handoff: phone and side panel): the
    image comes from the card; the background fades in under it, and the
    rest rises from +90px from 30% of the morph (420ms, settle). */
@@ -232,6 +270,13 @@ watch(editing, async (isEditing) => {
 }
 .detail.morphed[open] :deep([data-detail-body]) {
   animation: detail-body-rise 420ms var(--ease-settle) 180ms backwards;
+}
+/* Its buttons (close, "Bearbeiten") pop in at 80% of the morph. */
+.detail.morphed[open] :deep([data-detail-actions] > *) {
+  animation: actions-pop var(--dur-pop) var(--ease-pop) calc(var(--dur-swoosh) * .8) backwards;
+}
+@keyframes actions-pop {
+  from { scale: .6; opacity: 0; }
 }
 @keyframes detail-fill {
   from { background-color: transparent; }
@@ -246,16 +291,16 @@ watch(editing, async (isEditing) => {
 }
 .detail[data-morph-closing] {
   background-color: transparent;
-  transition: background-color 300ms var(--ease-fade);
+  transition: background-color var(--dur-fade) var(--ease-fade);
 }
 .detail[data-morph-closing]::backdrop {
   opacity: 0;
-  transition: opacity 300ms var(--ease-fade);
+  transition: opacity var(--dur-fade) var(--ease-fade);
 }
 .detail[data-morph-closing] :deep([data-detail-body]),
 .detail[data-morph-closing] :deep([data-detail-image] ~ *) {
   opacity: 0;
-  transition: opacity 200ms var(--ease-fade);
+  transition: opacity var(--dur-fade) var(--ease-fade);
 }
 @keyframes detail-slide {
   from { transform: translateX(100%); }

@@ -27,15 +27,27 @@ html {
 :root {
   --dur-cooking-collapse: 280ms;
 }
-/* "Gekocht ✓" on a card: the button springs this long before the card
-   leaves (handoff "Gekocht celebration + toast": +300ms). */
+/* The Gekocht celebration (handoff "Gekocht celebration + toast"): the
+   button springs this long before the card leaves (+300ms) in 360ms; the
+   toast comes 200ms after that (+500ms), and the Gekocht tab bumps
+   (460ms); on phones a pebble flies to it (640ms, "fly-to-tab-pebble"). */
 :root {
   --dur-cook-hold: 300ms;
+  --dur-cook-leave: 360ms;
+  --dur-toast-delay: 200ms;
+  --dur-tab-bump: 460ms;
+  --dur-fly-to-tab: 640ms;
+}
+/* A saved Dish flying onto the Board (handoff "Saved → card flies to
+   Board": 900ms). */
+:root {
+  --dur-saved-flight: 900ms;
 }
 /* A sheet moving out (handoff "Sheet open / close": 320ms ease-in, the
    scrim 240ms). Script waits for it before the next thing moves. */
 :root {
   --dur-sheet-out: 320ms;
+  --ease-sheet-out: cubic-bezier(.4, 0, 1, 1);
   --dur-scrim-out: 240ms;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -43,6 +55,11 @@ html {
     --dur-sheet-out: 0ms;
     --dur-scrim-out: 0ms;
     --dur-cook-hold: 0ms;
+    --dur-cook-leave: 0ms;
+    --dur-toast-delay: 0ms;
+    --dur-tab-bump: 0ms;
+    --dur-fly-to-tab: 0ms;
+    --dur-saved-flight: 0ms;
     --dur-drop-settle: 0ms;
     --dur-drop-swallow: 0ms;
     --dur-drop-shrink: 0ms;
@@ -55,12 +72,14 @@ html {
 /* Global reduced-motion rule. Durations already collapse via the --dur-*
    tokens in tokens.css (fades keep their 200ms, per the handoff's
    reducedMotion notes), so transitions must use the tokens. This rule catches
-   everything else: keyframe animations stop after one instant pass, and
+   everything else: keyframe animations stop after one instant pass with no
+   delay (a delay with backwards fill would hide what waits for it), and
    smooth scrolling jumps. JS-driven motion checks
    `matchMedia('(prefers-reduced-motion: reduce)')` itself. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
@@ -107,6 +126,40 @@ html {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 300ms;
+}
+/* Phones: the Board recedes to .94 behind the detail as it opens, and comes
+   back as it closes. On the transition's pictures of the Board, not the
+   Board itself, which would carry the Toast and the FAB along. */
+@media (max-width: 767.98px) {
+  html[data-morph]::view-transition-old(root),
+  html[data-morph]::view-transition-new(root) {
+    mix-blend-mode: normal;
+  }
+  html[data-morph="open"]::view-transition-old(root) {
+    animation: board-recede var(--dur-swoosh) var(--ease-swoosh) both;
+  }
+  html[data-morph="open"]::view-transition-new(root) {
+    animation: morph-fade-in calc(var(--dur-swoosh) * .3) var(--ease-fade) both;
+  }
+  html[data-morph="close"]::view-transition-new(root) {
+    animation: board-return var(--dur-swoosh) var(--ease-swoosh) both;
+  }
+  html[data-morph="close"]::view-transition-old(root) {
+    animation: morph-fade-out calc(var(--dur-swoosh) * .5) var(--ease-fade) both;
+    z-index: 1;
+  }
+}
+@keyframes board-recede {
+  to { scale: .94; }
+}
+@keyframes board-return {
+  from { scale: .94; }
+}
+@keyframes morph-fade-in {
+  from { opacity: 0; }
+}
+@keyframes morph-fade-out {
+  to { opacity: 0; }
 }
 
 /* Under a mouse (handoff "Desktop hover", gated on `pointer: fine`, not on

@@ -44,10 +44,10 @@ const still = prefersReducedMotion()
 /* remotion-briefs.json → gekocht-topfbert, 36 frames at 30fps (1.2s): from
    below the toast at .6, up past his place at 1.06 (f8), settle (f12),
    wiggle −4° / +3° (f18), "Mmh!" pops (f20), hold. He comes 100ms after the
-   toast. Pivot: the bottom of his pot. */
+   toast (which waits --dur-toast-delay). Pivot: the bottom of his pot. */
 .cheer {
   transform-origin: 50% 100%;
-  animation: cheer-pop 1200ms var(--ease-settle) 100ms both;
+  animation: cheer-pop 1200ms var(--ease-settle) calc(var(--dur-toast-delay) + 100ms) both;
 }
 @keyframes cheer-pop {
   0% { translate: 0 46px; scale: .6; rotate: 0deg; }
@@ -60,18 +60,10 @@ const still = prefersReducedMotion()
 .bubble {
   transform-origin: 0% 100%;
   rotate: 6deg;
-  animation: bubble-pop var(--dur-pop) var(--ease-pop) 767ms both;
+  animation: bubble-pop var(--dur-pop) var(--ease-pop) calc(var(--dur-toast-delay) + 767ms) both;
 }
 @keyframes bubble-pop {
   from { scale: 0; rotate: -10deg; }
-}
-/* His still and bubble are there at once (main.css shortens animations,
-   but not their delays). */
-@media (prefers-reduced-motion: reduce) {
-  .cheer,
-  .bubble {
-    animation: none;
-  }
 }
 /* Idle (layers.json → happy). Steam rises and fades, the second puff .9s
    behind; the hat (authored upright, worn at −14°) bobs; he blinks every 4s. */

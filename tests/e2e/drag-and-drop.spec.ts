@@ -203,7 +203,7 @@ test('phone: a Dish dropped on the Gekocht tab is cooked, and that celebrates', 
   await expect(topfbert(page)).toContainText('Mmh!')
 })
 
-test('desktop: a Dish dropped in the Gekocht lane is cooked, and that celebrates', async ({ page }) => {
+test('desktop: a Dish dropped in the Gekocht Column is cooked, and that celebrates', async ({ page }) => {
   await page.setViewportSize(DESKTOP)
   await signIn(page, ALLOWLISTED[5])
   await gotoHydrated(page, '/')

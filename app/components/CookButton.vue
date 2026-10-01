@@ -18,15 +18,14 @@ onBeforeUnmount(() => clearTimeout(springEnd))
 function onClick() {
   const el = button.value
   if (!el) return
-  const box = el.getBoundingClientRect()
   taps.value++
   springing.value = true
   clearTimeout(springEnd)
   const ms = motionMs('pop')
   // A Web Animation, so it runs over the press's own scale.
-  if (ms) el.animate([{ scale: 1.12 }, { scale: 1 }], { duration: ms, easing: 'cubic-bezier(.34,1.56,.64,1)' })
+  if (ms) el.animate([{ scale: 1.12 }, { scale: 1 }], { duration: ms, easing: motionEase('pop') })
   springEnd = setTimeout(() => (springing.value = false), Math.max(ms, motionMs('fade')))
-  emit('cook', { x: box.left + box.width / 2, y: box.top + box.height / 2 })
+  emit('cook', centreOf(el.getBoundingClientRect()))
 }
 </script>
 
@@ -67,10 +66,5 @@ function onClick() {
 }
 @keyframes check-draw {
   from { stroke-dashoffset: 20; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .draw {
-    animation: none;
-  }
 }
 </style>

@@ -162,7 +162,7 @@ const inviteLink = computed(() => `${origin}/invite/${board.value?.inviteToken ?
 // its label rolls up and out, "Kopiert ✓" pops in, five pebbles burst),
 // and the Toast says it for screen readers too.
 const COPIED_MS = 1600
-const copied = ref(0)
+const { shot: copied, fire: flipCopied, clear: unflipCopied } = useOneShot<true>()
 let copiedEnd: ReturnType<typeof setTimeout> | undefined
 onBeforeUnmount(() => clearTimeout(copiedEnd))
 async function copyLink() {
@@ -170,9 +170,9 @@ async function copyLink() {
     await navigator.clipboard.writeText(inviteLink.value)
     toast.value = { text: t.settings.copied, duration: NOTICE_MS }
     hapticConfirm()
-    copied.value++
+    flipCopied(true)
     clearTimeout(copiedEnd)
-    copiedEnd = setTimeout(() => (copied.value = 0), COPIED_MS)
+    copiedEnd = setTimeout(unflipCopied, COPIED_MS)
   }
   catch {
     failed()
@@ -481,7 +481,7 @@ function confirmDelete() {
             </span>
             <PebbleBurst
               v-if="copied"
-              :key="copied"
+              :key="copied.key"
               color="var(--color-sage)"
             />
           </button>
@@ -514,6 +514,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="memberSheetOpen"
+      variant="dialog"
       :title="memberSheetTitle"
       :close-label="t.settings.close"
     >
@@ -564,6 +565,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="confirmingLeave"
+      variant="dialog"
       :title="t.settings.leaveConfirm"
       :close-label="t.settings.close"
     >
@@ -586,6 +588,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="confirmingDeleteBoard"
+      variant="dialog"
       :title="t.settings.deleteConfirm"
       :close-label="t.settings.close"
     >
@@ -627,6 +630,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="confirmingReset"
+      variant="dialog"
       :title="t.settings.resetConfirm"
       :close-label="t.settings.close"
     >
@@ -661,6 +665,7 @@ function confirmDelete() {
 
     <AppSheet
       v-model:open="deletingOpen"
+      variant="dialog"
       :title="deleting ? t.settings.moveDishes(deleting.count, deleting.name) : ''"
       :close-label="t.settings.close"
     >

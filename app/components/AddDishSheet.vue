@@ -520,12 +520,6 @@ async function save() {
 @keyframes found-pop {
   from { scale: 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .bloom,
-  .found-pop {
-    animation: none;
-  }
-}
 /* Input "required/prompt": a butter glow that breathes, never red. Reduced
    motion (main.css) stops it after one pass. */
 .title-prompt {

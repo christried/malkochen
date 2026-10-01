@@ -37,7 +37,10 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
           motion="loop"
         />
       </div>
-      <div class="absolute inset-x-0 top-0 flex justify-between p-4">
+      <div
+        class="absolute inset-x-0 top-0 flex justify-between p-4"
+        data-detail-actions
+      >
         <button
           type="button"
           class="flex h-11 w-11 items-center justify-center rounded-full bg-glass text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"

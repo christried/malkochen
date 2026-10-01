@@ -197,9 +197,6 @@ function keyOf(cooking: CookingView): number {
   100% { opacity: 0; scale: 1.25; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .note-glow::after {
-    animation: none;
-  }
   .cooking-enter-active {
     transition: opacity var(--dur-fade) var(--ease-fade);
   }

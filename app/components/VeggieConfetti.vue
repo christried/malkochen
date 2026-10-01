@@ -1,10 +1,11 @@
 <script setup lang="ts">
 // The handoff's "veggie-confetti" (part of the Gekocht celebration): 14
-// pieces, veggies and pebbles in the Column accents, burst up from `origin`,
-// spin over the top of their arc and fall off the screen, once. Native CSS
-// particles over the live UI, not a clip. Reduced motion: none at all.
-const props = defineProps<{ origin: Point }>()
-const emit = defineEmits<{ done: [] }>()
+// pieces, veggies and pebbles in the Column accents, burst up from where
+// the Cooking started (useConfetti), spin over the top of their arc and fall
+// off the screen, once. Native CSS particles over the live UI, not a clip.
+// Put it where it shows above everything: the Board, the Dish detail.
+// Reduced motion: none at all.
+const { burst, clear } = useConfetti()
 
 // remotion-briefs.json → veggie-confetti: 48 frames at 30fps.
 const LIFE_MS = 1600
@@ -13,28 +14,32 @@ const COUNT = 14
 
 const between = (min: number, max: number) => min + Math.random() * (max - min)
 // Launch dx ±90–170px, up 110–200px, then fall 140–300px below the start.
-const pieces = prefersReducedMotion()
-  ? []
-  : Array.from({ length: COUNT }, (_, i) => ({
-      veggie: i % 7 < 4 ? VEGGIES[i % VEGGIES.length] : null,
-      style: {
-        '--dx': `${(i % 2 ? 1 : -1) * between(90, 170)}px`,
-        '--up': `${-between(110, 200)}px`,
-        '--fall': `${between(140, 300)}px`,
-        '--spin': `${(i % 2 ? 1 : -1) * between(180, 540)}deg`,
-        '--accent': columnAccent(i),
-      },
-    }))
+function launch() {
+  return Array.from({ length: COUNT }, (_, i) => ({
+    veggie: i % 7 < 4 ? VEGGIES[i % VEGGIES.length] : null,
+    style: {
+      '--dx': `${(i % 2 ? 1 : -1) * between(90, 170)}px`,
+      '--up': `${-between(110, 200)}px`,
+      '--fall': `${between(140, 300)}px`,
+      '--spin': `${(i % 2 ? 1 : -1) * between(180, 540)}deg`,
+      '--accent': columnAccent(i),
+    },
+  }))
+}
+const pieces = computed(() => burst.value && !prefersReducedMotion() ? launch() : [])
 
 let timer: ReturnType<typeof setTimeout> | undefined
-onMounted(() => {
-  timer = setTimeout(() => emit('done'), pieces.length ? LIFE_MS : 0)
+watch(burst, (shown) => {
+  clearTimeout(timer)
+  if (shown) timer = setTimeout(clear, pieces.value.length ? LIFE_MS : 0)
 })
 onBeforeUnmount(() => clearTimeout(timer))
 </script>
 
 <template>
   <div
+    v-if="burst && pieces.length"
+    :key="burst.key"
     aria-hidden="true"
     class="pointer-events-none fixed inset-0 z-toast overflow-hidden"
     data-confetti
@@ -43,7 +48,7 @@ onBeforeUnmount(() => clearTimeout(timer))
       v-for="(piece, i) in pieces"
       :key="i"
       class="piece"
-      :style="{ left: `${props.origin.x}px`, top: `${props.origin.y}px`, ...piece.style }"
+      :style="{ left: `${burst.origin.x}px`, top: `${burst.origin.y}px`, ...piece.style }"
       data-confetti-piece
     >
       <img

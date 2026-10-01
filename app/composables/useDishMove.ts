@@ -19,16 +19,18 @@ export function useDishMove(
   addNote: (dish: DishView, cooking: CookingView) => void,
 ) {
   const t = useStrings()
+  const confetti = useConfetti()
 
   // Puts the Dish at `index` among the target Column's other Dishes (as
   // dragged, in any Column), or without one at the top of another Column.
   // `cook` ("Gekocht ✓") records a Cooking even if the Dish already is in
-  // the Gekocht Column, where it then stays. A Cooking celebrates, with
-  // confetti from `origin` (or from the toast, without one). Answers where
+  // the Gekocht Column, where it then stays. A Cooking celebrates: confetti
+  // from `origin` (from the toast's place without one; none if `null`, as
+  // the caller set it off already), then the Gekocht toast. Answers where
   // it went and the id of the element to focus instead of its card (the
   // card now in its place, or its Column if that is empty), or null if it
   // didn't move.
-  function dropDish(dishId: string, { columnId, index }: { columnId: string, index?: number }, { cook = false, origin }: { cook?: boolean, origin?: Point } = {}) {
+  function dropDish(dishId: string, { columnId, index }: { columnId: string, index?: number }, { cook = false, origin }: { cook?: boolean, origin?: Point | null } = {}) {
     const found = board.value && dishOnBoard(board.value, dishId)
     const target = board.value?.columns.find(c => c.id === columnId)
     if (!found || !target) return null
@@ -84,10 +86,11 @@ export function useDishMove(
 
     if (pending) {
       hapticCelebrate()
+      if (origin !== null) confetti.fire(origin ?? { x: innerWidth / 2, y: innerHeight - 48 })
       showToast({
         text: t.dish.cook,
         duration: UNDO_WINDOW_MS,
-        celebrate: origin ?? { x: innerWidth / 2, y: innerHeight - 48 },
+        celebrate: true,
         actions: [
           { label: t.dish.addNote, run: async () => {
             const cooking = await recorded
@@ -163,10 +166,10 @@ export function useDishMove(
   }
 
   // "Gekocht ✓" on a card or in the Dish detail: to the top of the Gekocht
-  // Column, or where it is if it is there already; the celebration starts
-  // from `origin`, the button. Answers the id of the element to focus
-  // instead of the Dish's card.
-  function cookDish(dishId: string, origin?: Point): string | null {
+  // Column, or where it is if it is there already; its confetti bursts from
+  // `origin`, the button (`null`: the caller set it off already). Answers
+  // the id of the element to focus instead of the Dish's card.
+  function cookDish(dishId: string, origin?: Point | null): string | null {
     const gekocht = board.value?.columns.find(c => c.isGekocht)
     if (!gekocht) return null
     return dropDish(dishId, { columnId: gekocht.id }, { cook: true, origin })?.focusId ?? null

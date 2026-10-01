@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import { cardAtRest } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { removeStoredImages, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
@@ -290,8 +291,7 @@ test('without View Transitions, the card’s image still morphs into the detail 
   await signIn(page, ALLOWLISTED[0])
   await gotoHydrated(page, '/')
   const card = page.getByRole('link', { name: 'Pfeiltasten' })
-  // Once the card has risen into its place.
-  await card.evaluate(el => Promise.all(el.closest('li')!.getAnimations().map(a => a.finished)))
+  await cardAtRest(card)
   const thumb = (await card.locator('[data-thumb]').boundingBox())!
 
   await card.click()

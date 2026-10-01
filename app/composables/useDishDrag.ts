@@ -360,8 +360,11 @@ export function useDishDrag(
       current.y = box.top + box.height / 2 - current.grabY
     }
     const ms = prefersReducedMotion() ? motionMs('fade') : motionMs('drop-swallow')
+    // Into the Gekocht Column the celebration has its own haptics, which
+    // would cut this one off.
+    const cooks = options.board()?.columns.find(c => c.id === columnId)?.isGekocht
     setTimeout(() => {
-      hapticConfirm()
+      if (!cooks) hapticConfirm()
       options.landed(columnId)
       land(current, { columnId, index: 0 }, box)
     }, ms)
@@ -370,9 +373,7 @@ export function useDishDrag(
   // Without its slot or tab to measure, it lands where the card is.
   function land(current: DishDrag, place: DropPlace, box: DOMRect | undefined) {
     if (drag.value !== current) return
-    const at = box
-      ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
-      : { x: current.x + current.width / 2, y: current.y + current.grabY }
+    const at = box ? centreOf(box) : { x: current.x + current.width / 2, y: current.y + current.grabY }
     options.drop(current.dish.id, place, at)
     drag.value = null
   }

@@ -32,3 +32,11 @@ export function tabRadius(index: number): string {
 export function isPhoneLayout(): boolean {
   return matchMedia('(max-width: 767.98px)').matches
 }
+
+// How a Column's tab (phones) or title (lanes) reacts to a Dish coming in:
+// a dropped Dish makes it squash and burst, a Cooking bumps it, the Gekocht
+// pebble bursts as it lands.
+export interface ColumnCue {
+  columnId: string
+  kind: 'drop' | 'bump' | 'pebble'
+}

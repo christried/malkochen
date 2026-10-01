@@ -5,15 +5,9 @@ export interface Toast {
   actions?: ToastAction[]
   // How long it stays, in ms.
   duration: number
-  // The Gekocht toast celebrates: veggie confetti bursts from this point (in
-  // viewport px, e.g. the "Gekocht ✓" button's centre), and Topfbert pops up
-  // behind the toast while it shows.
-  celebrate?: Point
-}
-
-export interface Point {
-  x: number
-  y: number
+  // The Gekocht toast: it comes a moment after the Cooking's confetti
+  // (useConfetti), and Topfbert pops up behind it while it shows.
+  celebrate?: boolean
 }
 
 export interface ToastAction {
