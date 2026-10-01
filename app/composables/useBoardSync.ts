@@ -15,15 +15,15 @@ const REOPEN_AFTER_MS = 30 * 60_000
 export function useBoardSync(boardId: () => string, board: Ref<BoardView | undefined>, paused: () => boolean) {
   let timer: ReturnType<typeof setTimeout> | undefined
   let asking = false
-  // Asked for while a poll was out, to run once it is back.
-  let again: { reopen: boolean } | null = null
+  // A sync asked for while a poll was out, to run once it is back.
+  let queued: { reopen: boolean } | null = null
   let hiddenSince: number | null = null
   // Once the Board page is gone, a poll still out schedules no other.
   let stopped = false
 
   async function sync({ reopen = false } = {}) {
     if (asking) {
-      again = { reopen: reopen || (again?.reopen ?? false) }
+      queued = { reopen: reopen || (queued?.reopen ?? false) }
       return
     }
     asking = true
@@ -32,7 +32,8 @@ export function useBoardSync(boardId: () => string, board: Ref<BoardView | undef
     try {
       if (reopen) await $fetch(`/api/boards/${id}/open`, { method: 'POST' })
       const mark = writeMark()
-      const fresh = await $fetch<BoardView>(`/api/boards/${id}`)
+      // Polling also records what the user has seen (so it isn't "Neu" next time).
+      const fresh = await $fetch<BoardView>(`/api/boards/${id}/seen`, { method: 'POST' })
       if (board.value && id === boardId() && !paused() && !writesSince(mark)) mergeBoard(board.value, fresh)
     }
     catch {
@@ -40,8 +41,8 @@ export function useBoardSync(boardId: () => string, board: Ref<BoardView | undef
     }
     finally {
       asking = false
-      const next = again
-      again = null
+      const next = queued
+      queued = null
       if (next && !stopped) sync(next)
       else schedule()
     }

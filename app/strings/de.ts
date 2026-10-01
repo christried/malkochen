@@ -112,6 +112,7 @@ export const de = {
   },
   detail: {
     close: 'Schließen',
+    goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',
     noSource: 'Ohne Link',
     placement: (board: string, column: string) => `${board} · ${column}`,

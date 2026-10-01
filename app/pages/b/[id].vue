@@ -18,10 +18,10 @@ const id = computed(() => String(route.params.id))
 // Opening the Board first remembers it as the one to reopen next time and
 // moves on what is marked "Neu" (PRD story 37); the Board then comes with
 // its New Dishes. Deep: adding and editing Dishes change it in place.
-const request = useFetchPassingCookies()
+const fetchPassingCookies = useFetchPassingCookies()
 const { data: board, error } = await useAsyncData(() => `board-${id.value}`, async () => {
-  await request(`/api/boards/${id.value}/open`, { method: 'POST' })
-  return request<BoardView>(`/api/boards/${id.value}`)
+  await fetchPassingCookies(`/api/boards/${id.value}/open`, { method: 'POST' })
+  return fetchPassingCookies<BoardView>(`/api/boards/${id.value}`)
 }, { deep: true })
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
 const newDishIds = computed(() => new Set(board.value?.newDishIds))

@@ -214,6 +214,18 @@ export async function markOpened(boardId: string, userId: string): Promise<boole
   return updated.length > 0
 }
 
+// Records that the user still has the Board open and has seen it up to now,
+// so what they saw while it was open isn't New next time. False unless they
+// are a Member.
+export async function markSeen(boardId: string, userId: string): Promise<boolean> {
+  const updated = await db
+    .update(membership)
+    .set({ lastOpenedAt: new Date() })
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+    .returning({ boardId: membership.boardId })
+  return updated.length > 0
+}
+
 // Renames the Board or changes its emoji (PRD story 62); fields left out stay
 // as they are. Null unless the user is a Member.
 export async function editBoard(boardId: string, userId: string, changes: BoardChanges): Promise<BoardNameAndEmoji | null> {

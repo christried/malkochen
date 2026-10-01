@@ -13,12 +13,13 @@ export function trackWrite<T>(request: Promise<T>): Promise<T> {
   return request.finally(() => underWay--)
 }
 
-// A mark to ask writesSince() about later.
-export function writeMark(): number {
-  return started
+// A mark to ask writesSince() about later; null if a change is under way
+// already, as the server may answer before it has it.
+export function writeMark(): number | null {
+  return underWay > 0 ? null : started
 }
 
-// Whether a change is under way or started since `mark`.
-export function writesSince(mark: number): boolean {
-  return underWay > 0 || started !== mark
+// Whether a change was under way at `mark`, is now, or started since.
+export function writesSince(mark: number | null): boolean {
+  return mark === null || underWay > 0 || started !== mark
 }

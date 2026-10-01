@@ -4,7 +4,8 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 
 // New Dishes (PRD story 37): Dishes another Member added since you last
 // opened a Board are marked "Neu" until you open it again. Alan owns the
-// Boards made here and Dorothy joins them; both are used by this file only.
+// Boards made here and Dorothy joins them; among the API tests, both are
+// used by this file only (tests/e2e/sync.spec.ts has its own database).
 
 interface Board {
   id: string
@@ -23,6 +24,13 @@ function getBoard(caller: Caller, id: string): Promise<Board> {
 
 async function open(caller: Caller, id: string) {
   expect((await caller.fetch(`/api/boards/${id}/open`, { method: 'POST' })).status).toBe(204)
+}
+
+// What the open Board asks every few seconds: the Board, recording it as seen.
+async function poll(caller: Caller, id: string): Promise<Board> {
+  const res = await caller.fetch(`/api/boards/${id}/seen`, { method: 'POST' })
+  expect(res.status).toBe(200)
+  return res.json()
 }
 
 async function addDish(caller: Caller, boardId: string, title: string): Promise<string> {
@@ -55,20 +63,21 @@ test('a Dish another Member added since I last opened the Board is New; my own i
   expect((await getBoard(owner, id)).newDishIds).toEqual([theirs])
 })
 
-test('New Dishes stay New while the Board is open, Dishes added meanwhile too, until I open it again', async () => {
+test('New Dishes stay New while the Board is open, Dishes added meanwhile too; once seen, the next open clears them', async () => {
   const { id, owner, member } = await sharedBoard('Pastaabend')
   const before = await addDish(member, id, 'Pesto')
   await open(owner, id)
   const meanwhile = await addDish(member, id, 'Carbonara')
 
-  // What polling asks while the Board is open.
-  expect((await getBoard(owner, id)).newDishIds.toSorted()).toEqual([before, meanwhile].toSorted())
-  expect((await getBoard(owner, id)).newDishIds.toSorted()).toEqual([before, meanwhile].toSorted())
+  // Two polls while the Board is open: both see the same New Dishes.
+  for (const _ of [1, 2]) {
+    expect((await poll(owner, id)).newDishIds.toSorted()).toEqual([before, meanwhile].toSorted())
+  }
+  // Added after the last poll: not yet seen.
+  const unseen = await addDish(member, id, 'Arrabbiata')
 
   await open(owner, id)
-  expect((await getBoard(owner, id)).newDishIds).toEqual([meanwhile])
-  await open(owner, id)
-  expect((await getBoard(owner, id)).newDishIds).toEqual([])
+  expect((await getBoard(owner, id)).newDishIds).toEqual([unseen])
 })
 
 test('Dishes that were on a Board before I joined it are not New', async () => {
