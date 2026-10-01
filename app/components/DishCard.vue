@@ -49,7 +49,7 @@ onBeforeUnmount(() => {
   >
     <span
       v-if="isNew"
-      class="neu absolute -left-1.5 -top-1.5 z-[1] px-2.5 py-1 text-overline uppercase text-[#5a3300]"
+      class="neu absolute -left-1.5 -top-1.5 z-[1] px-2.5 py-1 text-overline uppercase text-neu-ink"
       :class="{ 'neu-pop': !seen, 'neu-pulsing': pulsing }"
       data-neu
     >{{ t.dish.new }}</span>
@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 2px solid #F29B32;
+  border: 2px solid var(--color-neu-accent);
   animation: neu-ring 3.2s var(--ease-fade) 1.2s infinite backwards;
 }
 @keyframes neu-pop {

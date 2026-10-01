@@ -67,3 +67,11 @@ _Avoid_: Done, finished, completed
 **Cooking**:
 One occasion a Dish was cooked, with a date, an optional note and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. A Dish's Cookings form its Cooking History, which is kept when it moves out again.
 _Avoid_: Done entry, log entry
+
+**Achievement Level**:
+How established a Dish is, by its number of Cookings: Ausprobiert (1), Wird Liebling (3), Stammgericht (5), Klassiker (10). It goes down again when Cookings are deleted.
+_Avoid_: Badge, rank, streak
+
+**Klassiker**:
+A Dish with 10 or more Cookings, the top Achievement Level. Its 10th Cooking is celebrated once.
+_Avoid_: Milestone (except for the celebration's clip), favourite

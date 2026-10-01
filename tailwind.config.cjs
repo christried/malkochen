@@ -6,5 +6,13 @@ module.exports = {
   presets: [require('./tailwind.preset.cjs')],
   theme: {
     screens: { tablet: '768px', desktop: '1200px' },
+    // Colours the app adds to the handoff's (main.css): the "Neu" pebble's
+    // ink and orange, which the achievement badge shares.
+    extend: {
+      colors: {
+        'neu-ink': 'var(--color-neu-ink)',
+        'neu-accent': 'var(--color-neu-accent)',
+      },
+    },
   },
 }

@@ -27,6 +27,27 @@ export async function seedDish(page: Page, dish: { title: string, imageUrl?: str
   }
 }
 
+// Gives the Dish titled `title` on the signed-in user's landing Board `count`
+// Cookings, one a day back from yesterday: a Cooking History the UI would
+// take many taps to build.
+export async function seedCookings(page: Page, title: string, count: number) {
+  const { boardId } = await (await page.request.get('/api/boards/landing')).json() as { boardId: string }
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    await client.query(
+      `insert into cooking (dish_id, cooked_at)
+       select d.id, now() - make_interval(days => n)
+       from dish d, generate_series(1, $3::int) n
+       where d.board_id = $1 and d.title = $2`,
+      [boardId, title, count],
+    )
+  }
+  finally {
+    await client.end()
+  }
+}
+
 // Puts the signed-in user's landing Board back as a new Board starts: named
 // "Meine Küche" 🍳, with the default Columns and no Dishes. For files whose
 // tests each need that start, whatever the test before them left.

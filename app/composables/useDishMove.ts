@@ -12,11 +12,16 @@ import { boardLabel, dishOnBoard, focusAfterLeaving } from '~~/shared/board'
 // Moving a Dish into the Gekocht Column records a Cooking (stories 49–55):
 // it shows in its Cooking History at once, and the Gekocht toast offers
 // "Notiz hinzufügen" (`addNote`) and "Rückgängig", which puts the Dish back
-// where it was and removes that Cooking.
+// where it was and removes that Cooking. The Cooking that makes it a
+// Klassiker (the 10th) also asks to `celebrateMilestone`, with the Cooking
+// once it is recorded (null if it never is).
 export function useDishMove(
   board: Ref<BoardView | undefined>,
   showToast: (toast: Toast) => void,
-  addNote: (dish: DishView, cooking: CookingView) => void,
+  { addNote, celebrateMilestone }: {
+    addNote: (dish: DishView, cooking: CookingView) => void
+    celebrateMilestone: (dish: DishView, recorded: Promise<CookingView | null>) => void
+  },
 ) {
   const t = useStrings()
   const confetti = useConfetti()
@@ -99,6 +104,7 @@ export function useDishMove(
           { label: t.dish.undo, run: () => undoCooking(dish, recorded, { column, from, takeBack }) },
         ],
       })
+      if (dish.cookings.length === MILESTONE_COOKINGS) celebrateMilestone(dish, recorded)
     }
     return { dish, target, focusId }
   }

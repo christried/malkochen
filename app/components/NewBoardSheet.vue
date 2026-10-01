@@ -2,7 +2,8 @@
 import type { BoardSummary } from '~~/server/utils/boards'
 
 // "Neues Board" (PRD story 61): a name and an emoji. The Board starts with
-// the default Columns, owned by whoever creates it, and opens straight away.
+// the default Columns, owned by whoever creates it, and opens straight away,
+// celebrating (BoardCreatedCelebration).
 const open = defineModel<boolean>('open', { required: true })
 const t = useStrings()
 
@@ -11,6 +12,7 @@ const emoji = ref('🍜')
 const saving = ref(false)
 const failed = ref(false)
 const nameId = useId()
+const justCreated = useJustCreatedBoard()
 
 // Every opening starts from an empty form.
 watch(open, (isOpen) => {
@@ -28,6 +30,7 @@ async function create() {
   try {
     const created = await $fetch<BoardSummary>('/api/boards', { method: 'POST', body: { name: trimmed, emoji: emoji.value } })
     open.value = false
+    justCreated.value = created.id
     await navigateTo(`/b/${created.id}`)
   }
   catch {

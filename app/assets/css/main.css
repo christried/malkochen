@@ -30,13 +30,53 @@ html {
 /* The Gekocht celebration (handoff "Gekocht celebration + toast"): the
    button springs this long before the card leaves (+300ms) in 360ms; the
    toast comes 200ms after that (+500ms), and the Gekocht tab bumps
-   (460ms); on phones a pebble flies to it (640ms, "fly-to-tab-pebble"). */
+   (460ms); on phones a pebble flies to it (640ms, "fly-to-tab-pebble").
+   A 10th Cooking's celebration (milestone-10x) comes 420ms after the toast
+   is in: 200ms (--dur-toast-delay) + 380ms (it moving in) + 420ms = 1000ms. */
 :root {
   --dur-cook-hold: 300ms;
   --dur-cook-leave: 360ms;
   --dur-toast-delay: 200ms;
   --dur-tab-bump: 460ms;
   --dur-fly-to-tab: 640ms;
+  --dur-milestone-delay: 1000ms;
+}
+/* Celebrating repeat cooking and new Boards (issue #25). The achievement
+   badge counts up 170ms a step and springs to a new level's size in 420ms
+   (handoff AchievementBadge). milestone-10x: its text rises 40% into the
+   1.8s clip and it goes by itself at 3.4s (motion.json "10× milestone").
+   board-created: the Board's Columns rise from 14% of its 2.4s, 10% apart,
+   the text at 46% and the button at 56% (motion.json "Board created
+   build-in"). */
+:root {
+  --dur-badge-step: 170ms;
+  --dur-badge-grow: 420ms;
+  --dur-milestone-text: 720ms;
+  --dur-milestone-stay: 3400ms;
+  --dur-board-created-columns: 336ms;
+  --dur-board-created-column-gap: 240ms;
+  --dur-board-created-text: 1104ms;
+  --dur-board-created-actions: 1344ms;
+}
+/* The colours around them: the "Neu" pebble's ink and orange (its gradient
+   is --gradient-neu), and each celebration's wash, its clip's background
+   (REMOTION.md), so the clip sits in it without an edge. Same theme rules
+   as tokens.css. */
+:root {
+  --color-neu-ink: #5a3300;
+  --color-neu-accent: #F29B32;
+  --wash-milestone-10x: #D1DAC5;
+  --wash-board-created: #F3E9CB;
+}
+[data-theme="dark"] {
+  --wash-milestone-10x: #686B59;
+  --wash-board-created: #483723;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wash-milestone-10x: #686B59;
+    --wash-board-created: #483723;
+  }
 }
 /* A saved Dish flying onto the Board (handoff "Saved → card flies to
    Board": 900ms). */
@@ -59,6 +99,15 @@ html {
     --dur-toast-delay: 0ms;
     --dur-tab-bump: 0ms;
     --dur-fly-to-tab: 0ms;
+    --dur-milestone-delay: 0ms;
+    --dur-badge-step: 0ms;
+    --dur-badge-grow: 0ms;
+    --dur-milestone-text: 0ms;
+    --dur-milestone-stay: 0ms;
+    --dur-board-created-columns: 0ms;
+    --dur-board-created-column-gap: 0ms;
+    --dur-board-created-text: 0ms;
+    --dur-board-created-actions: 0ms;
     --dur-saved-flight: 0ms;
     --dur-drop-settle: 0ms;
     --dur-drop-swallow: 0ms;
