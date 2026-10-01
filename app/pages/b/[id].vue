@@ -69,8 +69,27 @@ function addNote(dish: DishView, cooking: CookingView) {
 }
 
 const { deleteDish, focusCard } = useDishDelete(board, showToast)
-const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, addNote)
+const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, addNote, celebrateMilestone)
 const { deleteCooking } = useCookingDelete(showToast)
+
+// Just made with "Neues Board", the Board celebrates as it opens.
+const justCreated = useJustCreatedBoard()
+const celebratingBoard = ref(false)
+onMounted(() => watch(id, () => {
+  if (justCreated.value !== id.value) return
+  justCreated.value = null
+  celebratingBoard.value = true
+}, { immediate: true }))
+
+// A Dish's 10th Cooking (milestone-10x): once per Dish on this device, a
+// moment after the Gekocht toast is in, over the Board or the Dish detail.
+const milestone = ref({ open: false, title: '' })
+async function celebrateMilestone(dish: DishView) {
+  if (!claimMilestone(dish.id)) return
+  await wait(motionMs('milestone-delay'))
+  milestone.value = { open: true, title: dish.title }
+  hapticMilestone()
+}
 
 // A Column's tab, or its name beside the others, reacting to a Dish coming
 // in (ColumnCue): dropped on the tab, cooked, the Gekocht pebble landing.
@@ -635,6 +654,20 @@ async function deleteFromMenu() {
         </template>
       </div>
     </AppSheet>
+
+    <BoardCreatedCelebration
+      v-model:open="celebratingBoard"
+      :board="board"
+    />
+    <CelebrationDialog
+      v-model:open="milestone.open"
+      clip="milestone-10x"
+      :headline="t.milestone.headline"
+      :body="t.milestone.body(milestone.title)"
+      :close-label="t.milestone.close"
+      :text-delay="720"
+      :close-after="3400"
+    />
 
     <NuxtPage
       v-model:toast="toast"

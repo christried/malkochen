@@ -1,6 +1,7 @@
 // Every piece of UI text lives here. Components read it through useStrings(),
 // so adding English later means adding an `en.ts` of type `Strings` and
 // choosing between them in useStrings() -- no component changes.
+import type { AchievementLevel } from '~/utils/achievement'
 import type { Placeholder } from '~~/shared/placeholders'
 import type { SourceBadgeKind } from '~~/shared/source-badge'
 
@@ -112,6 +113,28 @@ export const de = {
     deleted: (date: Date) => `Kochen am ${addedDate(date)} gelöscht`,
     deleteFailed: 'Das Löschen hat nicht geklappt. Versuch es gleich noch mal.',
     restoreFailed: 'Das Zurückholen hat nicht geklappt.',
+  },
+  achievement: {
+    level: {
+      tried: 'Ausprobiert',
+      favourite: 'Wird Liebling',
+      regular: 'Stammgericht',
+      classic: 'Klassiker',
+    } satisfies Record<AchievementLevel, string>,
+    count: (count: number) => `${count}×`,
+    // "Wird Liebling: 4× gekocht, noch 1× bis Stammgericht".
+    label: (level: string, count: number, next: { level: string, left: number } | null) =>
+      `${level}: ${count}× gekocht${next ? `, noch ${next.left}× bis ${next.level}` : ''}`,
+  },
+  milestone: {
+    headline: 'Klassiker!',
+    body: (title: string) => `${title} ist jetzt ein Klassiker: 10× gekocht.`,
+    close: 'Schließen',
+  },
+  boardCreated: {
+    headline: (emoji: string, name: string) => `${emoji} ${name} ist bereit`,
+    body: 'Sammle hier, was du kochen willst, und lade andere ein.',
+    start: 'Los geht’s',
   },
   detail: {
     close: 'Schließen',

@@ -4,7 +4,7 @@ import { signIn } from './auth'
 import { confetti, topfbert } from './celebration'
 import { clipStill, countVideos } from './clips'
 import { gotoHydrated } from './hydration'
-import { resetBoard } from './seed'
+import { resetBoard, seedCookings, seedDish } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
 
 // With reduced motion (PRD story 84): the main flows still work, every motion
@@ -92,6 +92,51 @@ test('Not unlocked, the invite landing and the error screen show stills only', a
   await signIn(page, LISE)
   await gotoHydrated(page, '/b/00000000-0000-4000-8000-000000000000')
   await expect(clipStill(page, 'error')).toBeVisible()
+
+  await page.waitForLoadState('networkidle')
+  expect(await videos()).toBe(0)
+})
+
+test('the achievement badge shows its count at once; both celebrations show their stills and stay until closed', async ({ page }) => {
+  const videos = await countVideos(page)
+  await signIn(page, LISE)
+  await resetBoard(page)
+  await seedDish(page, { title: 'Ramen', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedCookings(page, 'Ramen', 8)
+  await gotoHydrated(page, '/')
+
+  // No count-up: the final number as the detail opens, and after cooking.
+  await page.getByRole('link', { name: 'Ramen' }).click()
+  const detail = page.getByRole('dialog', { name: 'Ramen' })
+  const badge = detail.getByTestId('achievement-badge')
+  await expect(badge).toBeVisible()
+  expect(await badge.innerText()).toContain('8×')
+  await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
+  await expect(badge).toHaveAccessibleName('Stammgericht: 9× gekocht, noch 1× bis Klassiker')
+  expect(await badge.innerText()).toContain('9×')
+  await detail.getByRole('button', { name: 'Schließen' }).click()
+  await expect(detail).toBeHidden()
+
+  // The 10th Cooking: the milestone's still, until it is closed.
+  await page.getByRole('region', { name: 'Gekocht' }).getByRole('button', { name: 'Gekocht ✓: „Ramen“' }).click()
+  const milestone = page.getByRole('dialog', { name: 'Klassiker!' })
+  await expect(clipStill(milestone, 'milestone-10x')).toBeVisible()
+  await page.waitForTimeout(4000)
+  await expect(milestone).toBeVisible()
+  await milestone.getByRole('button', { name: 'Schließen' }).click()
+  await expect(milestone).toBeHidden()
+
+  // A new Board: its still, with the emoji resting on the pebble.
+  await page.getByRole('heading', { level: 1 }).getByRole('button').click()
+  await page.getByRole('navigation', { name: 'Deine Boards' }).getByRole('button', { name: 'Neues Board' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Neues Board' })
+  await sheet.getByLabel('Name').fill('Leise')
+  await sheet.getByRole('button', { name: 'Board erstellen' }).click()
+  const created = page.getByRole('dialog', { name: '🍜 Leise ist bereit' })
+  await expect(clipStill(created, 'board-created')).toBeVisible()
+  await expect(created.getByTestId('board-created-emoji')).toBeVisible()
+  await created.getByRole('button', { name: 'Los geht’s' }).click()
+  await expect(created).toBeHidden()
 
   await page.waitForLoadState('networkidle')
   expect(await videos()).toBe(0)

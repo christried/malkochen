@@ -37,6 +37,8 @@ test('a Member creates a Board from the switcher, switches between Boards, and t
   await sheet.getByRole('radio', { name: '🥟' }).click()
   await sheet.getByRole('button', { name: 'Board erstellen' }).click()
 
+  // The new Board celebrates first (achievements.spec.ts).
+  await page.getByRole('dialog', { name: '🥟 Kochclub ist bereit' }).getByRole('button', { name: 'Los geht’s' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🥟 Kochclub')
   await expect(page.getByRole('navigation', { name: 'Spalten' }).getByRole('button')).toHaveText([/Ideen/, /Diese Woche/, /Gekocht/])
 

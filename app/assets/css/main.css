@@ -30,13 +30,16 @@ html {
 /* The Gekocht celebration (handoff "Gekocht celebration + toast"): the
    button springs this long before the card leaves (+300ms) in 360ms; the
    toast comes 200ms after that (+500ms), and the Gekocht tab bumps
-   (460ms); on phones a pebble flies to it (640ms, "fly-to-tab-pebble"). */
+   (460ms); on phones a pebble flies to it (640ms, "fly-to-tab-pebble").
+   A 10th Cooking's celebration (milestone-10x) comes 420ms after the toast
+   is in (200ms + 380ms). */
 :root {
   --dur-cook-hold: 300ms;
   --dur-cook-leave: 360ms;
   --dur-toast-delay: 200ms;
   --dur-tab-bump: 460ms;
   --dur-fly-to-tab: 640ms;
+  --dur-milestone-delay: 1000ms;
 }
 /* A saved Dish flying onto the Board (handoff "Saved → card flies to
    Board": 900ms). */
@@ -59,6 +62,7 @@ html {
     --dur-toast-delay: 0ms;
     --dur-tab-bump: 0ms;
     --dur-fly-to-tab: 0ms;
+    --dur-milestone-delay: 0ms;
     --dur-saved-flight: 0ms;
     --dur-drop-settle: 0ms;
     --dur-drop-swallow: 0ms;

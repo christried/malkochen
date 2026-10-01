@@ -34,6 +34,11 @@ export function hapticCelebrate() {
   vibrate([10, 50, 20, 90, 8, 60, 8])
 }
 
+// A Dish becoming a Klassiker (milestone-10x): CONFIRM, strong, 3 pulses.
+export function hapticMilestone() {
+  vibrate([30, 60, 30, 60, 30])
+}
+
 // CLOCK_TICK: the lightest tick, e.g. a pebble landing on a Column tab.
 export function hapticClockTick() {
   vibrate(5)
