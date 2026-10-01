@@ -47,7 +47,7 @@ function pop(el: HTMLElement, keyframes: ({ at: number } & Keyframe)[]): Pop {
   return { animation, end }
 }
 
-let frame = 0
+let followRequest = 0
 onMounted(() => {
   const period = ms(BOB_FRAMES)
   const bob = bobbing.value!.animate(
@@ -80,11 +80,12 @@ onMounted(() => {
     const loopMs = time === null ? 0 : time * 1000 - (intro ? ms(INTRO_FRAMES) : 0)
     bob.currentTime = ((loopMs % period) + period) % period
     for (const { animation, end } of pops) animation.currentTime = intro ? time * 1000 : end
-    frame = requestAnimationFrame(follow)
+    // With reduced motion the clip never plays: the overlays just rest.
+    if (!prefersReducedMotion()) followRequest = requestAnimationFrame(follow)
   }
   follow()
 })
-onBeforeUnmount(() => cancelAnimationFrame(frame))
+onBeforeUnmount(() => cancelAnimationFrame(followRequest))
 </script>
 
 <template>

@@ -1,7 +1,7 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { clipStill } from './clips'
+import { clipStill, countVideos } from './clips'
 import { gotoHydrated } from './hydration'
 import { resetBoard } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
@@ -14,28 +14,14 @@ test.use({ reducedMotion: 'reduce' })
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const LISE = ALLOWLISTED[20]
 
-// Counts, in the page, every video that ever comes into it.
-async function countVideos(page: Page) {
-  await page.addInitScript(() => {
-    const w = window as unknown as { videos: number }
-    w.videos = 0
-    new MutationObserver(records => {
-      for (const record of records) {
-        for (const node of record.addedNodes) {
-          if (node instanceof Element) w.videos += node.matches('video') ? 1 : node.querySelectorAll('video').length
-        }
-      }
-    }).observe(document, { childList: true, subtree: true })
-  })
-  return () => page.evaluate(() => (window as unknown as { videos: number }).videos)
-}
-
 test('signing in, adding a Dish from a link, cooking it and searching show stills only', async ({ page }) => {
   const videos = await countVideos(page)
 
   await gotoHydrated(page, '/login')
   await expect(clipStill(page, 'topfbert-wow')).toBeVisible()
   await expect(page.locator('img[src="/placeholders/pasta-light.svg"]')).toBeVisible()
+  // The ring around Topfbert stays where it is.
+  expect(await page.getByTestId('hero-ring').evaluate(el => getComputedStyle(el).rotate)).toBe('none')
 
   await signIn(page, LISE)
   await resetBoard(page)
@@ -43,6 +29,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await stubSourceLookup(page, { kind: 'tiktok', canonicalLink: TIKTOK, suggestedTitle: 'Crispy Tofu Bowl', imageUrl: null, imageTicket: null }, new Promise(r => answer = r))
   await gotoHydrated(page, '/')
   await expect(clipStill(page, 'empty-board')).toBeVisible()
+  await expect(clipStill(page, 'empty-column').first()).toBeVisible()
 
   // Add a Dish from a link: the lookup shows Topfbert's still.
   await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
@@ -68,6 +55,13 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await page.getByRole('button', { name: 'Gerichte suchen' }).click()
   await page.getByRole('searchbox', { name: 'Gerichte suchen' }).fill('Pizza')
   await expect(clipStill(page.getByTestId('search-results'), 'search-empty')).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Gerichte suchen' }).press('Escape')
+
+  // A link whose lookup fails.
+  await stubSourceLookup(page, 'fail')
+  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
+  await sheet.getByLabel('Link').fill(`${TIKTOK}?kaputt`)
+  await expect(clipStill(sheet, 'lookup-failed')).toBeVisible()
 
   // Whatever would load a clip has had its chance.
   await page.waitForLoadState('networkidle')

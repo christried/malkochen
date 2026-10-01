@@ -160,8 +160,12 @@ function titleMotion(index: number) {
 }
 const tint = computed(() => accentAt(clampProgress(progress.value, board.value?.columns.length ?? 1)))
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
+// A Column showing no cards shows its empty state, whose clip is the Board
+// loop's to play (useBoardLoop) by this id.
+const isColumnEmpty = (column: { id: string }) => !listOf(column).some(e => e.state !== 'gone')
+const emptyClipId = (column: { id: string }) => `empty:${column.id}`
 // A Column emptied or filled changes which empty state may loop.
-const emptyColumnIds = computed(() => board.value?.columns.filter(c => !listOf(c).some(e => e.state !== 'gone')).map(c => c.id).join() ?? '')
+const emptyColumnIds = computed(() => board.value?.columns.filter(isColumnEmpty).map(c => c.id).join() ?? '')
 watch(emptyColumnIds, () => boardLoop.playWhenAtRest())
 
 // The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
@@ -434,16 +438,16 @@ async function deleteFromMenu() {
               </template>
             </li>
           </TransitionGroup>
-          <template v-if="!listOf(column).some(e => e.state !== 'gone')">
+          <template v-if="isColumnEmpty(column)">
             <EmptyBoard
               v-if="isEmpty && index === 0"
-              :play="!!boardLoop.motionOf(`empty:${column.id}`)"
-              :data-empty-clip="`empty:${column.id}`"
+              :play="!!boardLoop.motionOf(emptyClipId(column))"
+              :data-empty-clip="emptyClipId(column)"
             />
             <EmptyColumn
               v-else
-              :play="!!boardLoop.motionOf(`empty:${column.id}`)"
-              :data-empty-clip="`empty:${column.id}`"
+              :play="!!boardLoop.motionOf(emptyClipId(column))"
+              :data-empty-clip="emptyClipId(column)"
             />
           </template>
         </section>

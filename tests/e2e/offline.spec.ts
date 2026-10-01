@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { signIn } from './auth'
-import { playing } from './clips'
+import { clipStill, playing } from './clips'
 import { gotoHydrated } from './hydration'
 
 // The Offline screen (PRD story 8). Opening malkochen without a connection
@@ -80,4 +80,22 @@ test('losing the connection with the app open shows the Offline screen until it 
   await context.setOffline(false)
   await expect(offline).toHaveCount(0)
   await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
+})
+
+test('with reduced motion the Offline screen shows its clip\'s still, and no clip plays', async ({ page, context }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await signIn(page)
+  await gotoHydrated(page, '/')
+  await serviceWorkerInControl(page)
+
+  await context.setOffline(true)
+  const offline = page.getByRole('alertdialog', { name: 'Du bist offline.' })
+  await expect(clipStill(offline, 'offline')).toBeVisible()
+  // And the Offline page the service worker serves.
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
+  await expect(clipStill(page, 'offline')).toBeVisible()
+  await expect(page.locator('video')).toBeHidden()
+  expect(await playing(page)).toEqual([])
+  await context.setOffline(false)
 })

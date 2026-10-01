@@ -30,3 +30,19 @@ export async function countPeakPlaying(page: Page, dir = '/') {
 export function clipStill(scope: Page | Locator, id: string, theme: 'light' | 'dark' = 'light') {
   return scope.locator(`img[src="/clips/${id}-${theme}.png"]`)
 }
+
+// Counts, in the page, every video that ever comes into it.
+export async function countVideos(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { videos: number }
+    w.videos = 0
+    new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node instanceof Element) w.videos += node.matches('video') ? 1 : node.querySelectorAll('video').length
+        }
+      }
+    }).observe(document, { childList: true, subtree: true })
+  })
+  return () => page.evaluate(() => (window as unknown as { videos: number }).videos)
+}

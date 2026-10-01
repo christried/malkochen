@@ -28,6 +28,27 @@ async function fallback(pathname) {
   return (await caches.match(pathname)) ?? Response.error()
 }
 
+// The cached file, or the part a Range request asks for (as video players
+// ask): Safari plays a video only from such 206 answers.
+async function cachedPart(request, pathname) {
+  const response = await fallback(pathname)
+  const range = /^bytes=(\d+)-(\d*)$/.exec(request.headers.get('range') ?? '')
+  if (!range || !response.ok) return response
+  const body = await response.arrayBuffer()
+  const start = Number(range[1])
+  const end = Math.min(range[2] ? Number(range[2]) : body.byteLength - 1, body.byteLength - 1)
+  if (start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${body.byteLength}` } })
+  return new Response(body.slice(start, end + 1), {
+    status: 206,
+    headers: {
+      'Content-Type': response.headers.get('Content-Type') ?? 'application/octet-stream',
+      'Content-Range': `bytes ${start}-${end}/${body.byteLength}`,
+      'Content-Length': String(end - start + 1),
+      'Accept-Ranges': 'bytes',
+    },
+  })
+}
+
 // Vercel's own error pages (the function crashed or timed out, the platform
 // is down) carry x-vercel-error; malkochen's error screen never does, and
 // shows itself.
@@ -47,6 +68,6 @@ self.addEventListener('fetch', (event) => {
   // What the fallback page itself shows: the network first, so it stays fresh.
   const { origin, pathname } = new URL(request.url)
   if (origin === self.location.origin && PRECACHED.includes(pathname)) {
-    event.respondWith(fetch(request).catch(() => fallback(pathname)))
+    event.respondWith(fetch(request).catch(() => cachedPart(request, pathname)))
   }
 })
