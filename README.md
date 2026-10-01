@@ -108,7 +108,8 @@ on the migrated schema until the new one is promoted.
 - Public assets: `public/icons/` (app icons and manifest) and
   `public/placeholders/<dish>-{light,dark}.svg` (Placeholder Image stills),
   next to their rendered loops `<dish>-{light,dark}.{mp4,webm}` and posters
-  `<dish>-{light,dark}.png`.
+  `<dish>-{light,dark}.png`; and `public/clips/<clip>-{light,dark}.{mp4,webm,png}`
+  (the state, system and celebration clips, with their reduced-motion posters).
 
 ## Motion graphics (Remotion)
 
@@ -119,6 +120,6 @@ never installs or imports it. To re-render after changing a loop:
 ```bash
 cd remotion
 npm install
-npm run dev      # Remotion Studio, to check the loops by eye
-npm run render   # writes public/placeholders/*.{mp4,webm,png}
+npm run dev      # Remotion Studio, to check the clips by eye
+npm run render   # writes public/placeholders/* and public/clips/*
 ```
