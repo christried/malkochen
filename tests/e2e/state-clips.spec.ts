@@ -135,7 +135,8 @@ test('Not unlocked loops its clip', async ({ page }) => {
 })
 
 // What shows of the invite clip, sampled every frame: whether a video frame
-// or the still covers it. False as soon as neither does (a flash).
+// or the still covers it. Once something first does (the still may take a
+// while to load), true as soon as neither does: a flash.
 async function watchForFlash(page: Page) {
   await page.addInitScript(() => {
     const w = window as unknown as { clipFlashed: boolean }
@@ -145,9 +146,11 @@ async function watchForFlash(page: Page) {
       if (video && getComputedStyle(video).opacity === '1' && video.readyState >= 2) return true
       return [...clip.querySelectorAll('img')].some(img => img.complete && img.naturalWidth > 0 && img.checkVisibility())
     }
+    let shown = false
     const sample = () => {
       const clip = document.querySelector('[data-invite-clip]')
-      if (clip && !covered(clip)) w.clipFlashed = true
+      if (clip && covered(clip)) shown = true
+      else if (shown) w.clipFlashed = true
       requestAnimationFrame(sample)
     }
     requestAnimationFrame(sample)
@@ -163,6 +166,11 @@ test('the invite landing plays its intro, then hands over to the loop without a 
 
   const invited = await (await browser.newContext({ baseURL: test.info().project.use.baseURL, colorScheme: 'light' })).newPage()
   const flashed = await watchForFlash(invited)
+  // A slow still, as on a slow connection: the hand-over must not wait on it.
+  await invited.route('**/clips/invite-loop-*.png', async (route) => {
+    await new Promise(resolve => setTimeout(resolve, 800))
+    await route.continue()
+  })
   await gotoHydrated(invited, link)
 
   await expect.poll(() => playing(invited), { intervals: [50] }).toEqual(['/clips/invite-intro-light.webm'])
