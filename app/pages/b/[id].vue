@@ -256,13 +256,52 @@ async function closeSearch() {
 
 // A Dish saved to another Board doesn't show here. If a Source image
 // couldn't be stored, a notice says which image the Dish has instead.
-function onAdded(saved: SavedDish, boardId: string) {
+function onAdded(saved: SavedDish, boardId: string, from: DOMRect | null) {
   if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
   const first = board.value?.columns.find(c => !c.isGekocht)
   if (!first || boardId !== board.value?.id) return
+  const slides = isPhoneLayout() && activeColumnId.value !== first.id
   first.dishes.unshift(dish)
   activeColumnId.value = first.id
+  if (from) flyIn(dish.id, from, slides)
+}
+
+// A saved Dish flies onto the Board (handoff "Saved → card flies to
+// Board"): once the sheet has moved out (and on phones the Board has slid to
+// its Column), a copy of its card flies from where its image showed in the
+// sheet into its place (900ms, swoosh), and lands with CONFIRM; the card
+// itself is hidden till then. A copy, fixed to the screen, as the lanes
+// would clip the card. Reduced motion: the card just fades in.
+const arrivingId = ref<string | null>(null)
+async function flyIn(dishId: string, from: DOMRect, slides: boolean) {
+  if (prefersReducedMotion()) return
+  arrivingId.value = dishId
+  await new Promise(resolve => setTimeout(resolve, Math.max(motionMs('sheet-out'), slides ? motionMs('settle') : 0)))
+  const card = columnsEl.value?.querySelector<HTMLElement>(`[data-dish-id="${CSS.escape(dishId)}"] article`)
+  if (!card) {
+    arrivingId.value = null
+    return
+  }
+  const to = card.getBoundingClientRect()
+  const copy = card.cloneNode(true) as HTMLElement
+  copy.setAttribute('aria-hidden', 'true')
+  copy.classList.add('z-drag', 'pointer-events-none')
+  Object.assign(copy.style, { position: 'fixed', left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px`, margin: '0' })
+  document.body.append(copy)
+  // From the image's size and place, uniformly scaled so it isn't squashed.
+  const scale = Math.min(from.width / to.width, from.height / to.height)
+  const dx = from.left + from.width / 2 - (to.left + to.width / 2)
+  const dy = from.top + from.height / 2 - (to.top + to.height / 2)
+  const flight = copy.animate([
+    { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: .4 },
+    { opacity: 1, offset: .3 },
+    { transform: 'none', opacity: 1 },
+  ], { duration: 900, easing: 'cubic-bezier(.45,0,.2,1)' })
+  await flight.finished.catch(() => {})
+  copy.remove()
+  if (arrivingId.value === dishId) arrivingId.value = null
+  hapticConfirm()
 }
 
 function onEdited(saved: SavedDish) {
@@ -435,7 +474,7 @@ async function deleteFromMenu() {
               v-for="{ key, dish, state } in listOf(column)"
               :key="key"
               class="relative"
-              :class="{ 'drop-slot h-32 rounded-card': !dish }"
+              :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
               :data-dish-id="dish?.id"
               :data-drag-state="state"
               :data-drop-slot="!dish || undefined"

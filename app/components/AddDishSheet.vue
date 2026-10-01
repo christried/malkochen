@@ -11,15 +11,17 @@ import { webLink } from '~/utils/web-link'
 // "Ohne Link hinzufügen": a title, a note and a Placeholder Image. Either way
 // the Member picks the Board (the one they are on) and saves. If the link is
 // already on that Board, a warning names the Dish and its Column: open it, or
-// save anyway.
+// save anyway. Saved, it says where the image showed, for the Dish to fly
+// onto the Board from there.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{ boardId: string }>()
-const emit = defineEmits<{ added: [dish: SavedDish, boardId: string] }>()
+const emit = defineEmits<{ added: [dish: SavedDish, boardId: string, from: DOMRect | null] }>()
 const t = useStrings()
 
 // "bowl" is the handoff's fallback Placeholder (illustrations.json autoPick).
 const DEFAULT_PLACEHOLDER: Placeholder = 'bowl'
 
+const form = useTemplateRef<HTMLFormElement>('form')
 const withoutLink = ref(false)
 const link = ref('')
 // GET /api/source-lookup: what Source Lookup found, and the Image Ticket
@@ -204,7 +206,8 @@ async function save() {
         imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
       },
     }))
-    emit('added', dish, target)
+    const image = form.value?.querySelector('[data-source-image], [role="radio"][aria-checked="true"]')
+    emit('added', dish, target, image?.getBoundingClientRect() ?? null)
     open.value = false
   }
   catch {
@@ -223,6 +226,7 @@ async function save() {
     :close-label="t.addDish.close"
   >
     <form
+      ref="form"
       class="mt-5 flex flex-col gap-5"
       novalidate
       @submit.prevent="save"

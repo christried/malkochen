@@ -18,7 +18,8 @@ watchEffect(() => {
 })
 
 // Closing is at once (the page behind is usable and focus goes back right
-// away); the sheet moves out after, still on top (see the styles).
+// away); the sheet moves out after, still on top (see the styles), but out
+// of reach: hidden from screen readers and inert.
 watch(open, (isOpen) => {
   const el = dialog.value
   if (!el) return
@@ -64,6 +65,8 @@ function onHandleUp(event: PointerEvent) {
     ref="dialog"
     class="sheet bg-surface p-0 text-text shadow-sheet tablet:shadow-dialog"
     :aria-labelledby="titleId"
+    :aria-hidden="!open || undefined"
+    :inert="!open"
     @cancel.prevent="open = false"
     @close="open = false"
     @click.self="open = false"
