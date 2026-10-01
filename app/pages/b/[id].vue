@@ -69,7 +69,7 @@ function addNote(dish: DishView, cooking: CookingView) {
 }
 
 const { deleteDish, focusCard } = useDishDelete(board, showToast)
-const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, addNote, celebrateMilestone)
+const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, { addNote, celebrateMilestone })
 const { deleteCooking } = useCookingDelete(showToast)
 
 // Just made with "Neues Board", the Board celebrates as it opens.
@@ -81,15 +81,26 @@ onMounted(() => watch(id, () => {
   celebratingBoard.value = true
 }, { immediate: true }))
 
-// A Dish's 10th Cooking (milestone-10x): once per Dish on this device, a
-// moment after the Gekocht toast is in, over the Board or the Dish detail.
-const milestone = ref({ open: false, title: '' })
-async function celebrateMilestone(dish: DishView) {
-  if (!claimMilestone(dish.id)) return
-  await wait(motionMs('milestone-delay'))
-  milestone.value = { open: true, title: dish.title }
+// A Dish's 10th Cooking (milestone-10x): once it is recorded, a moment
+// after the Gekocht toast is in, over the Board or the Dish detail; once per
+// Dish on this device. The toast shows over it, and undoing that Cooking
+// there ends it.
+const milestone = ref<{ dish: DishView, cooking: CookingView } | null>(null)
+const milestoneOpen = computed({
+  get: () => !!milestone.value,
+  set: (open) => {
+    if (!open) milestone.value = null
+  },
+})
+async function celebrateMilestone(dish: DishView, recorded: Promise<CookingView | null>) {
+  const [cooking] = await Promise.all([recorded, wait(motionMs('milestone-delay'))])
+  if (!cooking || !dish.cookings.includes(cooking) || !claimMilestone(dish.id)) return
+  milestone.value = { dish, cooking }
   hapticMilestone()
 }
+watch(() => milestone.value && !milestone.value.dish.cookings.includes(milestone.value.cooking), (undone) => {
+  if (undone) milestone.value = null
+})
 
 // A Column's tab, or its name beside the others, reacting to a Dish coming
 // in (ColumnCue): dropped on the tab, cooked, the Gekocht pebble landing.
@@ -660,14 +671,17 @@ async function deleteFromMenu() {
       :board="board"
     />
     <CelebrationDialog
-      v-model:open="milestone.open"
+      v-model:open="milestoneOpen"
       clip="milestone-10x"
       :headline="t.milestone.headline"
-      :body="t.milestone.body(milestone.title)"
+      :body="t.milestone.body(milestone?.dish.title ?? '', MILESTONE_COOKINGS)"
       :close-label="t.milestone.close"
-      :text-delay="720"
-      :close-after="3400"
-    />
+      close-after="milestone-stay"
+    >
+      <template #toast>
+        <AppToast v-model="toast" />
+      </template>
+    </CelebrationDialog>
 
     <NuxtPage
       v-model:toast="toast"

@@ -128,13 +128,14 @@ export const de = {
   },
   milestone: {
     headline: 'Klassiker!',
-    body: (title: string) => `${title} ist jetzt ein Klassiker: 10× gekocht.`,
+    body: (title: string, count: number) => `${title} ist jetzt ein Klassiker: ${count}× gekocht.`,
     close: 'Schließen',
   },
   boardCreated: {
     headline: (emoji: string, name: string) => `${emoji} ${name} ist bereit`,
     body: 'Sammle hier, was du kochen willst, und lade andere ein.',
     start: 'Los geht’s',
+    close: 'Schließen',
   },
   detail: {
     close: 'Schließen',

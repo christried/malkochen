@@ -1,18 +1,22 @@
 <script setup lang="ts">
 // The handoff's board-created celebration, right after "Neues Board" is
-// saved: its clip (a pebble pops in with a twist as pebble confetti bursts
-// out), with the Board's emoji drawn on the pebble here, a headline and
-// "Los geht’s", which goes to the Board.
+// saved (motion.json "Board created build-in"): its clip (a pebble pops in
+// with a twist as pebble confetti bursts out), with the Board's emoji drawn
+// on the pebble here; then its Columns rise in one after another, with a
+// light tick each, and the headline and "Los geht’s", which goes to the
+// Board. Reduced motion: the still, and everything shown at once.
 //
-// The emoji moves with the clip (remotion/src/clips/board-created.tsx): its
-// pop is set to the video's time on every frame, so it never drifts from
-// it. Showing the still, it rests as the last frame has it.
+// The emoji moves with the clip (remotion/src/clips/board-created.tsx), so
+// unlike other UI motion it is a paused Web Animation set to the video's
+// time on every frame (as InviteClip does), with Remotion's easings: it
+// never drifts from the pebble. Showing the still, it rests as the last
+// frame has it.
 const open = defineModel<boolean>('open', { required: true })
-defineProps<{ board: { emoji: string, name: string } }>()
+const props = defineProps<{ board: { emoji: string, name: string, columns: { id: string, name: string }[] } }>()
 const t = useStrings()
 
 // The pebble pops from f3 (scale 0, −30°) to f9 (1.08, +8°) and rests at
-// f13, at 30fps. Easings as Remotion's keys().
+// f13, at 30fps.
 const FPS = 30
 const ms = (frames: number) => (frames / FPS) * 1000
 const POP_END = ms(13)
@@ -21,9 +25,20 @@ const celebration = useTemplateRef<{ time: () => number | null }>('celebration')
 const emoji = useTemplateRef<HTMLElement>('emoji')
 
 let followRequest = 0
-watch(open, async (isOpen) => {
+let ticks: ReturnType<typeof setTimeout>[] = []
+function stop() {
   cancelAnimationFrame(followRequest)
+  ticks.forEach(clearTimeout)
+  ticks = []
+}
+watch(open, async (isOpen) => {
+  stop()
   if (!isOpen) return
+  // A light tick as each Column rises in.
+  const first = motionMs('board-created-columns')
+  const gap = motionMs('board-created-column-gap')
+  if (gap) ticks = props.board.columns.map((_, i) => setTimeout(hapticTick, first + i * gap))
+
   await nextTick()
   if (!emoji.value) return
   const pop = emoji.value.animate([
@@ -41,7 +56,7 @@ watch(open, async (isOpen) => {
   }
   follow()
 }, { flush: 'post' })
-onBeforeUnmount(() => cancelAnimationFrame(followRequest))
+onBeforeUnmount(stop)
 </script>
 
 <template>
@@ -51,8 +66,7 @@ onBeforeUnmount(() => cancelAnimationFrame(followRequest))
     clip="board-created"
     :headline="t.boardCreated.headline(board.emoji, board.name)"
     :body="t.boardCreated.body"
-    :close-label="t.boards.close"
-    :text-delay="400"
+    :close-label="t.boardCreated.close"
   >
     <template #clip>
       <!-- Over the clip's pebble: centred, 40% wide. -->
@@ -67,6 +81,20 @@ onBeforeUnmount(() => cancelAnimationFrame(followRequest))
         >{{ board.emoji }}</span>
       </div>
     </template>
+    <ol
+      class="mb-3 flex flex-wrap justify-center gap-2"
+      aria-hidden="true"
+    >
+      <li
+        v-for="(column, index) in board.columns"
+        :key="column.id"
+        class="column rounded-pill px-3.5 py-1.5 text-label text-text"
+        :style="{ '--accent': columnAccent(index), '--index': index }"
+        data-board-created-column
+      >
+        {{ column.name }}
+      </li>
+    </ol>
     <template #actions>
       <!-- Focused as it opens: the way on. -->
       <button
@@ -79,3 +107,16 @@ onBeforeUnmount(() => cancelAnimationFrame(followRequest))
     </template>
   </CelebrationDialog>
 </template>
+
+<style scoped>
+/* Each Column rises in with an overshoot, one after another (main.css
+   tokens). Reduced motion: they are just there. */
+.column {
+  background: color-mix(in oklch, var(--accent) 45%, var(--color-surface));
+  animation: column-rise var(--dur-settle) var(--ease-pop) backwards;
+  animation-delay: calc(var(--dur-board-created-columns) + var(--index) * var(--dur-board-created-column-gap));
+}
+@keyframes column-rise {
+  from { opacity: 0; translate: 0 24px; scale: .9; }
+}
+</style>

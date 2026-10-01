@@ -11,7 +11,6 @@
 const props = defineProps<{ count: number }>()
 const t = useStrings()
 
-const STEP_MS = 170
 const MAX_STEPS = 10
 const SIZES: Record<AchievementLevel, number> = { tried: 58, favourite: 66, regular: 74, classic: 84 }
 
@@ -34,7 +33,8 @@ const achievement = computed(() => achievementOf(shown.value))
 let timer: ReturnType<typeof setTimeout> | undefined
 function countUp(from: number) {
   clearTimeout(timer)
-  if (prefersReducedMotion() || from >= props.count) {
+  const stepMs = motionMs('badge-step')
+  if (!stepMs || from >= props.count) {
     shown.value = props.count
     counting.value = false
     return
@@ -50,7 +50,7 @@ function countUp(from: number) {
       shown.value++
       hapticClockTick()
       step()
-    }, STEP_MS)
+    }, stepMs)
   }
   step()
 }
@@ -72,8 +72,8 @@ onBeforeUnmount(() => clearTimeout(timer))
       aria-hidden="true"
     >
       <div
-        class="badge relative flex items-center justify-center font-display text-[#5a3300]"
-        :class="{ idle: !counting }"
+        class="badge relative flex items-center justify-center font-display text-neu-ink"
+        :class="counting ? 'counting' : 'idle'"
         :style="{ '--size': `${SIZES[achievement.level]}px` }"
         :data-level="achievement.level"
       >
@@ -96,7 +96,7 @@ onBeforeUnmount(() => clearTimeout(timer))
         v-for="pip in achievement.next.pips"
         :key="pip"
         class="pip h-2 w-2 rounded-full"
-        :class="pip <= achievement.next.filled ? 'bg-[#F29B32]' : 'bg-line-strong'"
+        :class="pip <= achievement.next.filled ? 'bg-neu-accent' : 'bg-line-strong'"
         data-pip
         :data-filled="pip <= achievement.next.filled || undefined"
       />
@@ -105,8 +105,8 @@ onBeforeUnmount(() => clearTimeout(timer))
 </template>
 
 <style scoped>
-/* A pebble (radius.blob) in the "Neu" gradient, sized by level; it springs
-   to a new size with the pop easing's overshoot. */
+/* A pebble (radius.blob) in the "Neu" gradient, sized by level; counting
+   up, it springs to a new size with the pop easing's overshoot. */
 .badge {
   width: var(--size);
   height: var(--size);
@@ -115,7 +115,9 @@ onBeforeUnmount(() => clearTimeout(timer))
   box-shadow: var(--shadow-neu);
   font-size: calc(var(--size) * .36);
   rotate: -4deg;
-  transition: width 420ms var(--ease-pop), height 420ms var(--ease-pop), font-size 420ms var(--ease-pop);
+}
+.badge.counting {
+  transition: width var(--dur-badge-grow) var(--ease-pop), height var(--dur-badge-grow) var(--ease-pop), font-size var(--dur-badge-grow) var(--ease-pop);
 }
 /* At rest, a thin ring sits around it. */
 .badge::after {
@@ -123,7 +125,7 @@ onBeforeUnmount(() => clearTimeout(timer))
   position: absolute;
   inset: -5px;
   border-radius: inherit;
-  border: 2px solid color-mix(in srgb, #F29B32 45%, transparent);
+  border: 2px solid color-mix(in srgb, var(--color-neu-accent) 45%, transparent);
   opacity: 0;
   transition: opacity var(--dur-fade) var(--ease-fade);
 }
@@ -132,17 +134,12 @@ onBeforeUnmount(() => clearTimeout(timer))
 }
 /* Each step of the count-up pops the number. */
 .count {
-  animation: count-pop 170ms var(--ease-pop);
+  animation: count-pop var(--dur-badge-step) var(--ease-pop);
 }
 @keyframes count-pop {
   from { scale: 1.25; }
 }
 .pip {
   transition: background-color var(--dur-fade) var(--ease-fade);
-}
-@media (prefers-reduced-motion: reduce) {
-  .badge {
-    transition: none;
-  }
 }
 </style>

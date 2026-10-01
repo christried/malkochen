@@ -13,6 +13,7 @@ export type DurationToken
     | 'drop-settle' | 'drop-swallow' | 'drop-shrink' | 'drop-collapse' | 'drop-burst'
     | 'cooking-collapse' | 'cook-hold' | 'cook-leave' | 'toast-delay' | 'tab-bump'
     | 'fly-to-tab' | 'milestone-delay' | 'saved-flight' | 'sheet-out' | 'scrim-out'
+    | 'badge-step' | 'milestone-stay' | 'board-created-columns' | 'board-created-column-gap'
 
 // The easings, from tokens.css.
 export type EasingToken = 'tap' | 'fade' | 'pop' | 'settle' | 'sheet' | 'swoosh' | 'lift' | 'idle'

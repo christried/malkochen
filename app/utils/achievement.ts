@@ -10,8 +10,9 @@ const LEVELS: { level: AchievementLevel, from: number }[] = [
   { level: 'classic', from: 10 },
 ]
 
-// The Cooking that makes a Dish a Klassiker, and celebrates (milestone-10x).
-export const MILESTONE_COOKINGS = 10
+// The Cooking that makes a Dish a Klassiker, the top level, and celebrates
+// (milestone-10x).
+export const MILESTONE_COOKINGS = LEVELS.at(-1)!.from
 
 export interface Achievement {
   level: AchievementLevel
