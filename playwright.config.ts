@@ -16,6 +16,9 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: E2E_ORIGIN,
+    // page.route can't see requests that pass through a service worker, and
+    // many tests stub the API that way. offline.spec.ts lets it run.
+    serviceWorkers: 'block',
   },
   webServer: {
     command: `pnpm dev --port ${PORT}`,

@@ -16,7 +16,7 @@ export function allowlistRefusal(email: string) {
 }
 
 // Local dev and tests only (AUTH_DEV_BYPASS=1, refused on Vercel production
-// and preview by server/env.ts): POST /api/auth/dev/sign-in { email, name? }
+// and preview by server/env.ts): POST /api/auth/dev/sign-in { email, name?, image? }
 // signs in without Google. It goes through the same Allowlist gate and the
 // same user and session creation as a Google sign-in; only the OAuth round
 // trip is skipped.
@@ -25,15 +25,15 @@ const devSignIn = {
   endpoints: {
     devSignIn: createAuthEndpoint('/dev/sign-in', {
       method: 'POST',
-      body: z.object({ email: z.email(), name: z.string().min(1).optional() }),
+      body: z.object({ email: z.email(), name: z.string().min(1).optional(), image: z.url().optional() }),
     }, async (ctx) => {
-      const { email, name } = ctx.body
+      const { email, name, image } = ctx.body
       const refusal = allowlistRefusal(email)
       if (refusal) throw new APIError('FORBIDDEN', { code: refusal.error, message: refusal.errorDescription })
 
       const adapter = ctx.context.internalAdapter
       const user = (await adapter.findUserByEmail(email))?.user
-        ?? await adapter.createUser({ email, name: name ?? email.split('@')[0]!, emailVerified: true }, { method: 'dev-bypass' })
+        ?? await adapter.createUser({ email, name: name ?? email.split('@')[0]!, image, emailVerified: true }, { method: 'dev-bypass' })
       const session = await adapter.createSession(user.id)
       await setSessionCookie(ctx, { session, user })
       return ctx.json({ userId: user.id })

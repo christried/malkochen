@@ -10,10 +10,24 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'de' },
       title: 'malkochen',
+      // Installable (PRD story 7): the manifest and icons are the handoff's
+      // assets/icon/. Android builds its splash from the manifest; iOS shows
+      // the background colour until the app has drawn.
       link: [
+        { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'icon', type: 'image/svg+xml', href: '/icons/icon.svg' },
+        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/icons/favicon-48.png' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/icons/favicon-32.png' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/icons/favicon-16.png' },
         { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon-180.png' },
+      ],
+      // The status bar takes the Board's background (tokens.css --color-bg).
+      meta: [
+        { name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#F7F6F2' },
+        { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#131211' },
+        { name: 'apple-mobile-web-app-title', content: 'malkochen' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
       ],
     },
   },

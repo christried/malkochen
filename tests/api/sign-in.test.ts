@@ -34,4 +34,11 @@ describe('sign-in', () => {
     expect(res.status).toBe(200)
     expect((await res.json()).email).toBe(ALLOWLISTED[0])
   })
+
+  test("/api/me also gives the user's name and Google photo, for their settings", async () => {
+    const ruth = await signIn(ALLOWLISTED[17], { name: 'Ruth', image: 'https://lh3.googleusercontent.com/a/ruth' })
+
+    const me = await (await ruth.fetch('/api/me')).json()
+    expect(me).toMatchObject({ name: 'Ruth', email: ALLOWLISTED[17], image: 'https://lh3.googleusercontent.com/a/ruth' })
+  })
 })

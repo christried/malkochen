@@ -11,7 +11,6 @@ import { boardLabel, dishOnBoard } from '~~/shared/board'
 // Column, onto a Column tab (phones) or across lanes (from 768px).
 
 const t = useStrings()
-const { signOut } = useAuth()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
@@ -25,6 +24,10 @@ const { data: board, error } = await useAsyncData(() => `board-${id.value}`, asy
 }, { deep: true })
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
 const newDishIds = computed(() => new Set(board.value?.newDishIds))
+
+// You, for your photo in the header, which opens your settings. Phones have
+// no room for it there: the Board switcher has it instead.
+const { data: me } = await useMe()
 
 useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
 
@@ -253,8 +256,8 @@ async function deleteFromMenu() {
     :class="{ following, dragging, 'drop-tinted': dropTint }"
     :style="{ '--tint': tint, '--drop-tint': dropTint }"
   >
-    <header class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
+    <header class="flex items-center justify-between gap-3">
+      <div class="flex min-w-0 items-center gap-3">
         <BoardSwitcher :board="board" />
         <RoundButton
           v-if="!searchOpen"
@@ -278,16 +281,18 @@ async function deleteFromMenu() {
           />
         </NuxtLink>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <ThemePicker />
-        <button
-          type="button"
-          class="rounded-pill px-4 py-2.5 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
-          @click="signOut"
-        >
-          {{ t.board.signOut }}
-        </button>
-      </div>
+      <NuxtLink
+        v-if="me"
+        to="/settings"
+        :aria-label="t.userSettings.open"
+        class="hidden shrink-0 rounded-full transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus tablet:block"
+      >
+        <UserAvatar
+          :name="me.name"
+          :image="me.image"
+          :size="44"
+        />
+      </NuxtLink>
     </header>
 
     <BoardSearchBar

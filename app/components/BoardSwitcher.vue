@@ -6,7 +6,8 @@ import type { BoardListing, BoardNameAndEmoji } from '~~/server/utils/boards'
 // (emoji pebble, name, Dish count, Members, a check on this one) and
 // "Neues Board". Picking a Board opens it; the Board page remembers it as the
 // one to reopen next time. The list is fetched each time it opens, so a
-// Board renamed or created meanwhile shows.
+// Board renamed or created meanwhile shows. On phones its last row opens
+// your settings, which the header has no room for there.
 const props = defineProps<{ board: BoardNameAndEmoji }>()
 const t = useStrings()
 const route = useRoute()
@@ -17,6 +18,7 @@ const creating = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const pill = useTemplateRef<HTMLButtonElement>('pill')
 const panelId = useId()
+const { data: me } = useMe()
 
 async function toggle() {
   open.value = !open.value
@@ -52,20 +54,20 @@ function newBoard() {
 <template>
   <div
     ref="root"
-    class="relative"
+    class="relative min-w-0"
     @keydown.esc="close({ refocus: true })"
   >
     <h1 class="font-display text-title-l tablet:text-display-m">
       <button
         ref="pill"
         type="button"
-        class="pill flex items-center gap-2 rounded-pill py-1 pl-1 pr-2 text-left transition-transform duration-tap ease-tap active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
+        class="pill flex max-w-full items-center gap-2 rounded-pill py-1 pl-1 pr-2 text-left transition-transform duration-tap ease-tap active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.boards.switcher(board.name)"
         :aria-expanded="open"
         :aria-controls="panelId"
         @click="toggle"
       >
-        <span aria-hidden="true">{{ board.emoji }}</span> {{ board.name }}
+        <span class="truncate"><span aria-hidden="true">{{ board.emoji }}</span> {{ board.name }}</span>
         <svg
           viewBox="0 0 24 24"
           width="20"
@@ -160,6 +162,24 @@ function newBoard() {
               >+</span>
               {{ t.boards.newBoard }}
             </button>
+          </li>
+          <li
+            v-if="me"
+            class="row mt-1 border-t border-line pt-1 tablet:hidden"
+            :style="{ '--i': shown.length + 1 }"
+          >
+            <NuxtLink
+              to="/settings"
+              class="flex items-center gap-3 rounded-field px-2 py-2 text-button transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
+              @click="close()"
+            >
+              <UserAvatar
+                :name="me.name"
+                :image="me.image"
+                :size="44"
+              />
+              {{ t.userSettings.open }}
+            </NuxtLink>
           </li>
         </ul>
       </nav>

@@ -1,13 +1,15 @@
 {
   "name": "malkochen",
   "short_name": "malkochen",
-  "description": "Rezepte sammeln. Zusammen kochen.",
+  "description": "Gerichte sammeln. Zusammen kochen.",
   "lang": "de",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#F7F6F2",
-  "theme_color": "#F7F6F2",
+  "background_color": "#131211",
+  "theme_color": "#131211",
   "icons": [
     {
       "src": "/icons/icon-192.png",
