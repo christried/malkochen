@@ -44,7 +44,8 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await expect(field).toHaveCSS('transition-duration', '0s')
   answer()
   await expect(linkFound(sheet)).toBeVisible()
-  await expect(sheet.getByLabel('Titel')).toHaveValue('Crispy Tofu Bowl')
+  // The found title doesn't type in: it is all there with the check.
+  expect(await sheet.getByLabel('Titel').inputValue()).toBe('Crispy Tofu Bowl')
   // Saving: the button's dots stand still too.
   const release = await holdRequests(page, 'POST', /\/api\/boards\/[^/]+\/dishes$/)
   const save = sheet.locator('button[type="submit"]')

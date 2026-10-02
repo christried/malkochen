@@ -112,13 +112,31 @@ const inlineOptions = computed<Placeholder[]>(() => {
   return first.includes(placeholder.value) ? first : [...first.slice(0, -1), placeholder.value]
 })
 // A new link brings its own image; what the lookup found fills the
-// Suggested Title.
+// Suggested Title. The field holds all of it at once (saving, the duplicate
+// check and the prompt go by that); what it shows types in after the image
+// blooms (handoff "Title types in"), unless the Member is in it already.
+// Focusing it, a new link, or the image going (it broke, or the Member
+// picked a Placeholder) show all of it.
+const titleTypeIn = useTypeIn(title)
+const { shown: shownTitle, typing: typingTitle } = titleTypeIn
 watch(link, () => {
   sourceImageBroken.value = false
   preferPlaceholder.value = false
+  titleTypeIn.finish()
 })
 watch(result, (found) => {
-  if (found) title.value = found.suggestedTitle.slice(0, 200)
+  if (!found) return
+  title.value = found.suggestedTitle.slice(0, 200)
+  if (document.activeElement?.id === titleId) return
+  titleTypeIn.start(usingSourceImage.value ? motionMs('image-bloom') : 0, motionMs('type'))
+})
+watch(usingSourceImage, (using) => {
+  if (!using) titleTypeIn.finish()
+})
+// No prompt while the title types in: it is coming.
+const titlePlaceholder = computed(() => {
+  if (typingTitle.value) return ''
+  return titleNeeded.value ? t.addDish.titleNeeded : t.addDish.titlePrompt
 })
 
 const canPaste = ref(false)
@@ -349,15 +367,16 @@ async function save() {
           >{{ t.addDish.title }}</label>
           <input
             :id="titleId"
-            v-model="title"
+            v-model="shownTitle"
             type="text"
             required
             maxlength="200"
             autocomplete="off"
-            :placeholder="titleNeeded ? t.addDish.titleNeeded : t.addDish.titlePrompt"
+            :placeholder="titlePlaceholder"
             :aria-describedby="titleNeeded ? titleHintId : undefined"
             class="rounded-field border border-line-strong bg-surface px-4 py-3 font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             :class="{ 'title-prompt': titleNeeded }"
+            @focus="titleTypeIn.finish()"
           >
           <span
             v-if="titleNeeded"
@@ -495,7 +514,7 @@ async function save() {
    the Source's dot and the link field's check pop from nothing a third of
    the way in. Reduced motion: they are just there. */
 .bloom {
-  animation: bloom 1.2s var(--ease-swoosh);
+  animation: bloom var(--dur-image-bloom) var(--ease-swoosh);
 }
 @keyframes bloom {
   from {
@@ -504,7 +523,7 @@ async function save() {
   }
 }
 .found-pop {
-  animation: found-pop var(--dur-pop) var(--ease-pop) 408ms backwards;
+  animation: found-pop var(--dur-pop) var(--ease-pop) calc(var(--dur-image-bloom) * .34) backwards;
 }
 @keyframes found-pop {
   from { scale: 0; }
