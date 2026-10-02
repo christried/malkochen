@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { deleteColumn, type ColumnRefusal } from '../../utils/columns'
+import type { ColumnRefusal } from '../../../shared/placement'
+import { deleteColumn } from '../../utils/columns'
 
 const query = z.object({ moveTo: z.uuid().optional() })
 
@@ -11,14 +12,15 @@ const REFUSED = {
 } satisfies Record<ColumnRefusal, string>
 
 // DELETE /api/columns/:id[?moveTo=<Column id>] — Board settings: deletes a
-// Column. One with Dishes needs `moveTo`, where its Dishes go.
+// Column. One with Dishes needs `moveTo`, where its Dishes go. A refusal
+// answers 400 with `data: { refusal }` (shared/placement.ts).
 export default defineEventHandler(async (event) => {
   const columnId = columnIdParam(event)
   const parsed = query.safeParse(getQuery(event))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: REFUSED['bad-target'] })
   const result = await deleteColumn(columnId, requireUser(event).id, parsed.data.moveTo)
   if (!result) throw columnNotFound()
-  if (result !== 'deleted') throw createError({ statusCode: 400, statusMessage: REFUSED[result] })
+  if (result !== 'deleted') throw createError({ statusCode: 400, statusMessage: REFUSED[result], data: { refusal: result } })
   setResponseStatus(event, 204)
   return null
 })

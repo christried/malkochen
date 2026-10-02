@@ -4,6 +4,7 @@ import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
+import { columnForNewDishes } from '~~/shared/placement'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
 // switched with the Column tabs or by swiping; tablet and desktop show all
@@ -277,7 +278,7 @@ async function closeSearch() {
 function onAdded(saved: SavedDish, boardId: string, from: DOMRect | null) {
   if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
   const { imageNotStored: _, ...dish } = saved
-  const first = board.value?.columns.find(c => !c.isGekocht)
+  const first = board.value && columnForNewDishes(board.value.columns)
   if (!first || boardId !== board.value?.id) return
   const slides = isPhoneLayout() && activeColumnId.value !== first.id
   first.dishes.unshift(dish)

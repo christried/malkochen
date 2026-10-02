@@ -2,6 +2,7 @@ import type { BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, MovedDish } from '~~/server/utils/dishes'
 import { boardLabel, dishOnBoard, focusAfterLeaving } from '~~/shared/board'
+import { landingIndex, recordsCooking } from '~~/shared/placement'
 
 // "Verschieben nach…" (PRD story 33), drag and drop (stories 31, 32, 34)
 // and "Gekocht ✓" (story 35): the Dish goes at once to its new place. The
@@ -32,7 +33,8 @@ export function useDishMove(
   // the Gekocht Column, where it then stays. A Cooking celebrates: confetti
   // from `origin` (from the toast's place without one; none if `null`, as
   // the caller set it off already), then the Gekocht toast. Answers where
-  // it went and the id of the element to focus instead of its card (the
+  // it went, whether it records a Cooking (`cooks`, shared/placement.ts),
+  // and the id of the element to focus instead of its card (the
   // card now in its place, or its Column if that is empty), or null if it
   // didn't move.
   function dropDish(dishId: string, { columnId, index }: { columnId: string, index?: number }, { cook = false, origin }: { cook?: boolean, origin?: Point | null } = {}) {
@@ -41,10 +43,9 @@ export function useDishMove(
     if (!found || !target) return null
     const { dish, column } = found
     const from = column.dishes.indexOf(dish)
-    const others = target === column ? column.dishes.length - 1 : target.dishes.length
-    const to = Math.min(index ?? 0, others)
-    const stays = target === column && (index === undefined || to === from)
-    const cooks = target.isGekocht && (cook || target !== column)
+    const to = landingIndex(target, dish.id, index)
+    const stays = target === column && to === from
+    const cooks = recordsCooking(column, target, { cook })
     if (stays && !cooks) return null
     const focusId = stays ? `dish-${dish.id}` : focusAfterLeaving(column, from)
     if (!stays) {
@@ -106,7 +107,7 @@ export function useDishMove(
       })
       if (dish.cookings.length === MILESTONE_COOKINGS) celebrateMilestone(dish, recorded)
     }
-    return { dish, target, focusId }
+    return { dish, target, cooks, focusId }
   }
 
   // "Rückgängig" in the Gekocht toast. It waits for the Cooking to be
@@ -142,7 +143,7 @@ export function useDishMove(
   function moveDish(dishId: string, columnId: string): string | null {
     const moved = dropDish(dishId, { columnId })
     if (!moved) return null
-    if (!moved.target.isGekocht) showToast({ text: t.dish.moved(moved.dish.title, moved.target.name), duration: NOTICE_MS })
+    if (!moved.cooks) showToast({ text: t.dish.moved(moved.dish.title, moved.target.name), duration: NOTICE_MS })
     return moved.focusId
   }
 

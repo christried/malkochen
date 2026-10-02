@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import type { ColumnView } from '~~/server/utils/columns'
+import { columnDeletion } from '~~/shared/placement'
 
 // Board settings' Columns (PRD stories 57–60): each can be renamed in place,
 // moved with ↑/↓ or dragged by its grip, and deleted, except the Gekocht
@@ -17,7 +18,9 @@ const emit = defineEmits<{
 const t = useStrings()
 const lastHintId = useId()
 
-const deletable = (column: ColumnRow) => columns.value.some(c => c !== column && !c.isGekocht)
+// Its Dishes, if it has any, go where the delete sheet says, so only being
+// the Gekocht Column or the last other one keeps a Column.
+const deletable = (column: ColumnRow) => !('refusal' in columnDeletion(columns.value, column))
 
 // A blank name puts the old one back.
 function rename(column: ColumnRow, event: Event) {

@@ -1,5 +1,6 @@
 import type { BoardView } from '~~/server/utils/boards'
 import { dishOnBoard } from '~~/shared/board'
+import { recordsCooking } from '~~/shared/placement'
 
 // "Gekocht ✓" on a card, as the handoff times it ("Gekocht celebration +
 // toast"):
@@ -35,7 +36,10 @@ export function useGekochtCelebration(
     await wait(motionMs('cook-hold'))
     waitingIds.delete(dishId)
     const gekocht = board.value?.columns.find(c => c.isGekocht)
-    const leaves = board.value && !dishOnBoard(board.value, dishId)?.column.isGekocht
+    const from = board.value && dishOnBoard(board.value, dishId)?.column
+    // Cooked from another Column, it comes into the Gekocht Column as a move
+    // there would; already in it, "Gekocht ✓" alone records the Cooking.
+    const leaves = from && gekocht && recordsCooking(from, gekocht)
     cookedLeavingIds.add(dishId)
     const focusId = options.cookDish(dishId, null)
     if (gekocht) {
