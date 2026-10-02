@@ -165,7 +165,7 @@ const boardLoop = useBoardLoop(columnsEl, {
   covered: () => !!route.params.dishId || adding.value || menuOpen.value || !!noting.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
-useBoardSync(() => id.value, board, () => dragging.value)
+useBoardSync(() => id.value, boardModule, () => dragging.value)
 // Each Column's cards as they show, with the slot while a Dish is dragged.
 const lists = computed(() => new Map(board.value?.columns.map(c => [c.id, entries(c)])))
 const listOf = (column: { id: string }) => lists.value.get(column.id) ?? []

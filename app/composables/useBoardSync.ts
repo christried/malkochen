@@ -1,3 +1,4 @@
+import type { BoardModule } from '~/board/board-module'
 import type { BoardView } from '~~/server/utils/boards'
 
 // How often an open Board asks for others' changes.
@@ -8,11 +9,11 @@ const REOPEN_AFTER_MS = 30 * 60_000
 
 // Sync between Members (PRD story 38): while the Board is visible, others'
 // changes show up within a few seconds by polling, and at once when the app
-// comes back to the front. No live connection; the server's Board wins
-// (mergeBoard). An answer is dropped while `paused` (a Dish is being
-// dragged) or if a change of the user's own was under way meanwhile
-// (trackWrite); the next poll brings it.
-export function useBoardSync(boardId: () => string, board: Ref<BoardView | undefined>, paused: () => boolean) {
+// comes back to the front. No live connection. Each poll goes through the
+// Board's module (sync), which merges what the server answers, or drops it
+// while `paused` (a Dish is being dragged) or if one of its writes was
+// under way meanwhile; the next poll brings it.
+export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean) {
   let timer: ReturnType<typeof setTimeout> | undefined
   let asking = false
   // A sync asked for while a poll was out, to run once it is back.
@@ -31,10 +32,8 @@ export function useBoardSync(boardId: () => string, board: Ref<BoardView | undef
     const id = boardId()
     try {
       if (reopen) await $fetch(`/api/boards/${id}/open`, { method: 'POST' })
-      const mark = writeMark()
       // Polling also records what the user has seen (so it isn't "Neu" next time).
-      const fresh = await $fetch<BoardView>(`/api/boards/${id}/seen`, { method: 'POST' })
-      if (board.value && id === boardId() && !paused() && !writesSince(mark)) mergeBoard(board.value, fresh)
+      await boardModule.sync(() => $fetch<BoardView>(`/api/boards/${id}/seen`, { method: 'POST' }), { paused })
     }
     catch {
       // Offline, or no longer on the Board: the next poll tries again.

@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { createBoardModule } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
 import type { DishView } from '../../server/utils/dishes'
-import { memoryTransport } from './memory-transport'
+import { memoryTransport, type MemoryTransport } from './memory-transport'
 
 // Seam 4: the client Board module, through its operations. The Board goes
 // in, operations run against the in-memory transport (a fake server), and
@@ -58,6 +58,23 @@ function setup(adjust: (board: BoardView) => void = () => {}) {
   // A Dish's Cooking ids, as its Cooking History shows them.
   const history = (dishId: string) => board.value!.columns.flatMap(c => c.dishes).find(d => d.id === dishId)!.cookings.map(c => c.id)
   return { board, fake, module, shown, history }
+}
+
+// How the module's sync asks the server for the Board: it answers at once
+// with the Board as it has it.
+function askServer(fake: MemoryTransport) {
+  return () => Promise.resolve(structuredClone(fake.server))
+}
+
+// The same, but the server answers with the Board as it read it when asked
+// only once the test says so (`answer`).
+function askServerSlowly(fake: MemoryTransport) {
+  let answer = () => {}
+  const ask = () => {
+    const read = structuredClone(fake.server)
+    return new Promise<BoardView>(resolve => (answer = () => resolve(read)))
+  }
+  return { ask, answer: () => answer() }
 }
 
 test('a delete that fails puts the Dish back where it was, with a notice', async () => {
@@ -117,13 +134,13 @@ test('an undo that fails takes the Dish off the Board again, with a notice', asy
   expect(shown().ideen).toEqual(['a', 'c'])
 })
 
-test('undo after another Member deleted the Dish’s Column puts it where the server restored it', async () => {
-  const { board, fake, module, shown } = setup()
+test('undo after a poll took away the Column another Member deleted puts the Dish where the server restored it', async () => {
+  const { fake, module, shown } = setup()
   const result = module.deleteDish('d')!
   await result.settled
-  // Another Member deletes Diese Woche; the next poll takes it off the Board.
   fake.deleteColumnElsewhere('woche')
-  board.value!.columns.splice(1, 1)
+  await module.sync(askServer(fake))
+  expect(shown()).toEqual({ ideen: ['a', 'b', 'c'], gekocht: [] })
 
   const undone = await result.undo!()
   expect(undone).not.toHaveProperty('focus')
@@ -553,4 +570,87 @@ test('a Dish moved into another Board’s Gekocht Column keeps its Cooking Histo
   expect(await result.settled).toEqual({ dish: result.dish, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 } })
   expect(result.dish.cookings.map(c => c.id)).toEqual(['sept-20', 'sept-1'])
   expect(shown().woche).toEqual([])
+})
+
+test('a poll brings other Members’ changes, keeping the Columns and Dishes still there as they were', async () => {
+  const { board, fake, module, shown } = setup()
+  const ideen = board.value!.columns[0]!
+  const a = ideen.dishes[0]!
+  fake.server.columns[0]!.dishes.unshift(dish('z'))
+  fake.server.columns[0]!.dishes[1]!.title = 'Alans Auflauf'
+  fake.deleteDishElsewhere('c')
+  fake.server.newDishIds = ['z']
+
+  await module.sync(askServer(fake))
+
+  expect(shown()).toEqual({ ideen: ['z', 'a', 'b'], woche: ['d'], gekocht: [] })
+  expect(board.value!.columns[0]).toBe(ideen)
+  expect(ideen.dishes[1]).toBe(a)
+  expect(a.title).toBe('Alans Auflauf')
+  expect(board.value!.newDishIds).toEqual(['z'])
+})
+
+test('a poll answered while a write is under way is dropped, so the Board doesn’t flicker back', async () => {
+  const { fake, module, shown } = setup()
+  const held = fake.holdNext('moveDish')
+  const result = module.moveDish('b', { columnId: 'woche' })!
+
+  await module.sync(askServer(fake))
+  expect(shown()).toMatchObject({ ideen: ['a', 'c'], woche: ['b', 'd'] })
+
+  held.succeed()
+  await result.settled
+  expect(shown()).toMatchObject({ ideen: ['a', 'c'], woche: ['b', 'd'] })
+})
+
+test('a poll asked before a write and answered after it settled is dropped, as the server read the Board before the write', async () => {
+  const { fake, module, shown } = setup()
+  const slow = askServerSlowly(fake)
+  const polled = module.sync(slow.ask)
+
+  await module.moveDish('b', { columnId: 'woche' })!.settled
+  slow.answer()
+  await polled
+
+  expect(shown()).toMatchObject({ ideen: ['a', 'c'], woche: ['b', 'd'] })
+})
+
+test('a poll between "Gekocht ✓" and its "Rückgängig" leaves the undo working', async () => {
+  const { fake, module, shown, history } = setup()
+  const cooked = module.cookDish('a')!
+  await cooked.settled
+  fake.server.columns[0]!.dishes.find(d => d.id === 'c')!.title = 'Neuer Titel'
+  await module.sync(askServer(fake))
+
+  const undone = await cooked.undo!()
+
+  expect(await undone.settled).toMatchObject({ placement: { columnId: 'ideen', index: 0 } })
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], gekocht: [] })
+  expect(history('a')).toEqual([])
+  expect(fake.server.columns[2]!.dishes).toEqual([])
+})
+
+test('a poll during an undo still under way is dropped, and the undo settles as the server has it', async () => {
+  const { fake, module, shown, history } = setup()
+  const cooked = module.cookDish('a')!
+  await cooked.settled
+  const held = fake.holdNext('undoCooking')
+  const undone = await cooked.undo!()
+
+  await module.sync(askServer(fake))
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], gekocht: [] })
+  expect(history('a')).toEqual([])
+
+  held.succeed()
+  expect(await undone.settled).toMatchObject({ placement: { columnId: 'ideen', index: 0 } })
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], gekocht: [] })
+})
+
+test('a poll answered while a Dish is being dragged is dropped', async () => {
+  const { fake, module, shown } = setup()
+  fake.deleteDishElsewhere('c')
+
+  await module.sync(askServer(fake), { paused: () => true })
+
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
 })
