@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { SourceLookupResult } from '~~/server/source-lookup'
 import type { BoardSummary } from '~~/server/utils/boards'
 import type { DuplicateDish, SavedDish } from '~~/server/utils/dishes'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
@@ -24,15 +23,10 @@ const DEFAULT_PLACEHOLDER: Placeholder = 'bowl'
 const form = useTemplateRef<HTMLFormElement>('form')
 const withoutLink = ref(false)
 const link = ref('')
-// GET /api/source-lookup: what Source Lookup found, and the Image Ticket
-// saving needs to copy the image.
-type LookupAnswer = SourceLookupResult & { imageTicket: string | null }
-type Lookup
-  = | { status: 'idle' }
-    | { status: 'looking' }
-    | { status: 'found', result: LookupAnswer }
-    | { status: 'failed' }
-const lookup = ref<Lookup>({ status: 'idle' })
+// Looks the link up as soon as it is one: at once when pasted, after a short
+// pause while typing. Only the latest lookup's answer counts.
+const lookup = useLinkLookup(link)
+const { status: lookupStatus, result } = lookup
 
 const title = ref('')
 const note = ref('')
@@ -46,8 +40,7 @@ const choosingImage = ref(false)
 const saving = ref(false)
 const failed = ref(false)
 
-const result = computed(() => lookup.value.status === 'found' ? lookup.value.result : null)
-const showForm = computed(() => withoutLink.value || lookup.value.status === 'found' || lookup.value.status === 'failed')
+const showForm = computed(() => withoutLink.value || lookupStatus.value === 'found' || lookupStatus.value === 'failed')
 
 // The Source image, unless the Member swapped it for a Placeholder or it
 // doesn't load in the browser either.
@@ -63,7 +56,7 @@ const titleNeeded = computed(() => result.value !== null && result.value.suggest
 const sourceLink = computed(() => {
   if (withoutLink.value) return null
   if (result.value) return result.value.canonicalLink
-  return lookup.value.status === 'failed' ? webLink(link.value) : null
+  return lookupStatus.value === 'failed' ? webLink(link.value) : null
 })
 
 // A Dish with this Source already on the chosen Board (PRD story 24), asked
@@ -115,67 +108,31 @@ const inlineOptions = computed<Placeholder[]>(() => {
   const first = PLACEHOLDERS.slice(0, INLINE_COUNT)
   return first.includes(placeholder.value) ? first : [...first.slice(0, -1), placeholder.value]
 })
-// In the full picker, arrow keys move the selection; tapping a tile (or
-// Enter/Space on it) also closes the picker. Picking one replaces the Source image.
-function closeOnTile(event: MouseEvent) {
-  if ((event.target as Element).closest('[role="radio"]')) {
-    choosingImage.value = false
-    preferPlaceholder.value = true
-  }
-}
-
-// Looks the link up as soon as it is one: at once when pasted, after a short
-// pause while typing. The loading state shows immediately either way. Only
-// the latest lookup's answer counts.
-let lookupRun = 0
-let lookupTimer: ReturnType<typeof setTimeout> | undefined
-let pasted = false
-watch(link, (value) => {
-  clearTimeout(lookupTimer)
-  const run = ++lookupRun
-  const target = webLink(value)
+// A new link brings its own image; what the lookup found fills the
+// Suggested Title.
+watch(link, () => {
   sourceImageBroken.value = false
   preferPlaceholder.value = false
-  if (!target) {
-    lookup.value = { status: 'idle' }
-    return
-  }
-  lookup.value = { status: 'looking' }
-  lookupTimer = setTimeout(async () => {
-    try {
-      const found = await $fetch<LookupAnswer>('/api/source-lookup', { query: { link: target } })
-      if (run !== lookupRun) return
-      title.value = found.suggestedTitle.slice(0, 200)
-      lookup.value = { status: 'found', result: found }
-    }
-    catch {
-      if (run === lookupRun) lookup.value = { status: 'failed' }
-    }
-  }, pasted ? 0 : 300)
-  pasted = false
 })
-
-function onPaste() {
-  pasted = true
-}
+watch(result, (found) => {
+  if (found) title.value = found.suggestedTitle.slice(0, 200)
+})
 
 const canPaste = ref(false)
 onMounted(() => canPaste.value = typeof navigator.clipboard?.readText === 'function')
 async function pasteFromClipboard() {
   const text = await navigator.clipboard.readText().catch(() => '')
   if (!text.trim()) return
-  pasted = true
+  lookup.pasted()
   link.value = text.trim()
 }
 
 // Every opening starts from an empty form, on the Board the Member is on.
+// Clearing the link drops any lookup still under way.
 watch(open, async (isOpen) => {
   if (!isOpen) return
-  clearTimeout(lookupTimer)
-  lookupRun++
   withoutLink.value = false
   link.value = ''
-  lookup.value = { status: 'idle' }
   title.value = ''
   note.value = ''
   placeholder.value = DEFAULT_PLACEHOLDER
@@ -253,7 +210,7 @@ async function save() {
               maxlength="2048"
               :placeholder="t.addDish.linkPrompt"
               class="min-w-0 flex-1 bg-transparent py-1.5 text-body text-text placeholder:text-text-muted focus:outline-none"
-              @paste="onPaste"
+              @paste="lookup.pasted()"
             >
             <button
               v-if="canPaste"
@@ -267,7 +224,7 @@ async function save() {
         </div>
 
         <button
-          v-if="lookup.status === 'idle'"
+          v-if="lookupStatus === 'idle'"
           type="button"
           class="self-start rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           @click="withoutLink = true"
@@ -276,7 +233,7 @@ async function save() {
         </button>
 
         <div
-          v-if="lookup.status === 'looking'"
+          v-if="lookupStatus === 'looking'"
           role="status"
           class="lookup-panel flex flex-col items-center gap-3 rounded-panel px-4 py-6"
           data-lookup="looking"
@@ -291,7 +248,7 @@ async function save() {
         </div>
 
         <div
-          v-else-if="lookup.status === 'failed'"
+          v-else-if="lookupStatus === 'failed'"
           role="status"
           class="flex items-center gap-3 rounded-panel bg-surface-muted p-3"
           data-lookup="failed"
@@ -480,11 +437,13 @@ async function save() {
       :title="t.addDish.chooseImage"
       :close-label="t.addDish.close"
     >
+      <!-- Picking a tile here replaces the Source image. -->
       <PlaceholderPicker
         v-model="placeholder"
+        v-model:open="choosingImage"
         class="mt-5"
         :label="t.addDish.chooseImage"
-        @click="closeOnTile"
+        @pick="preferPlaceholder = true"
       />
     </AppSheet>
   </AppSheet>
