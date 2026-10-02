@@ -90,8 +90,14 @@ html {
   --ease-sheet-out: cubic-bezier(.4, 0, 1, 1);
   --dur-scrim-out: 240ms;
 }
+/* What a Source Lookup found blooms in (handoff "Image bloom": 1.2s); a
+   found Suggested Title types in after it. */
+:root {
+  --dur-image-bloom: 1200ms;
+}
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --dur-image-bloom: 0ms;
     --dur-sheet-out: 0ms;
     --dur-scrim-out: 0ms;
     --dur-cook-hold: 0ms;

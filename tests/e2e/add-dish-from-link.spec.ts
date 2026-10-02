@@ -95,6 +95,55 @@ test('a pasted link shows a loading state, then a preview with image and editabl
   await expect(page.locator('[data-toast]')).toHaveText('Das Bild vom Link ließ sich nicht speichern. „Knusprige Tofu-Bowl“ hat jetzt ein Platzhalterbild.')
 })
 
+// Long enough to still be typing in (30ms a character) when the test looks.
+const LONG_TITLE = 'Ofengemüse mit Kichererbsen, Tahini-Zitronen-Dressing und Granatapfel'
+
+async function findLongTitle(page: Page) {
+  await stubSourceLookup(page, { kind: 'tiktok', canonicalLink: TIKTOK, suggestedTitle: LONG_TITLE, imageUrl: PORTRAIT, imageTicket: 'fixture-ticket' })
+  await stubImage(page, PORTRAIT, 90, 160)
+  const sheet = await openAddDish(page)
+  await sheet.getByLabel('Link').fill(TIKTOK)
+  await expect(sheet.getByRole('img', { name: 'Bild vom Link' })).toBeVisible()
+  return sheet
+}
+
+test('a found title types in after the image blooms', async ({ page }) => {
+  const sheet = await findLongTitle(page)
+  const title = sheet.getByLabel('Titel')
+
+  // Empty while the image blooms, then a growing start of the title.
+  expect(await title.inputValue()).toBe('')
+  await expect.poll(async () => {
+    const shown = await title.inputValue()
+    return shown !== '' && shown !== LONG_TITLE && LONG_TITLE.startsWith(shown)
+  }, { intervals: [20] }).toBe(true)
+  await expect(title).toHaveValue(LONG_TITLE)
+})
+
+test('typing into the title while it types in shows all of it, and keeps what was typed', async ({ page }) => {
+  const sheet = await findLongTitle(page)
+  const title = sheet.getByLabel('Titel')
+  expect(await title.inputValue()).not.toBe(LONG_TITLE)
+
+  await title.pressSequentially(' – lecker')
+
+  expect(await title.inputValue()).toBe(`${LONG_TITLE} – lecker`)
+  const body = savedBody(page)
+  await sheet.getByRole('button', { name: 'Speichern' }).click()
+  expect(await body).toMatchObject({ title: `${LONG_TITLE} – lecker` })
+})
+
+test('saving while the title types in saves all of it', async ({ page }) => {
+  const sheet = await findLongTitle(page)
+  expect(await sheet.getByLabel('Titel').inputValue()).not.toBe(LONG_TITLE)
+
+  const body = savedBody(page)
+  await sheet.getByRole('button', { name: 'Speichern' }).click()
+
+  expect(await body).toMatchObject({ title: LONG_TITLE })
+  await expect(page.getByRole('region', { name: 'Ideen' }).getByRole('article').first()).toHaveAccessibleName(LONG_TITLE)
+})
+
 test('image only (Pinterest): a friendly prompt asks for the title, which is required', async ({ page }) => {
   const pin = 'https://www.pinterest.com/pin/123456789/'
   await stubSourceLookup(page, { kind: 'pinterest-pin', canonicalLink: pin, suggestedTitle: '', imageUrl: LANDSCAPE, imageTicket: 'fixture-ticket' })

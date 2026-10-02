@@ -112,13 +112,21 @@ const inlineOptions = computed<Placeholder[]>(() => {
   return first.includes(placeholder.value) ? first : [...first.slice(0, -1), placeholder.value]
 })
 // A new link brings its own image; what the lookup found fills the
-// Suggested Title.
+// Suggested Title. The field holds all of it at once (saving, the duplicate
+// check and the prompt go by that); what it shows types in after the image
+// blooms (handoff "Title types in"), unless the Member is in it already.
+// Focusing it shows all of it.
+const typedTitle = useTypeIn(title)
+const { shown: shownTitle, typing: typingTitle } = typedTitle
 watch(link, () => {
   sourceImageBroken.value = false
   preferPlaceholder.value = false
 })
 watch(result, (found) => {
-  if (found) title.value = found.suggestedTitle.slice(0, 200)
+  if (!found) return
+  title.value = found.suggestedTitle.slice(0, 200)
+  if (document.activeElement?.id === titleId) return
+  typedTitle.start(usingSourceImage.value ? motionMs('image-bloom') : 0, motionMs('type'))
 })
 
 const canPaste = ref(false)
@@ -349,15 +357,16 @@ async function save() {
           >{{ t.addDish.title }}</label>
           <input
             :id="titleId"
-            v-model="title"
+            v-model="shownTitle"
             type="text"
             required
             maxlength="200"
             autocomplete="off"
-            :placeholder="titleNeeded ? t.addDish.titleNeeded : t.addDish.titlePrompt"
+            :placeholder="typingTitle ? '' : titleNeeded ? t.addDish.titleNeeded : t.addDish.titlePrompt"
             :aria-describedby="titleNeeded ? titleHintId : undefined"
             class="rounded-field border border-line-strong bg-surface px-4 py-3 font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             :class="{ 'title-prompt': titleNeeded }"
+            @focus="typedTitle.finish()"
           >
           <span
             v-if="titleNeeded"
@@ -495,7 +504,7 @@ async function save() {
    the Source's dot and the link field's check pop from nothing a third of
    the way in. Reduced motion: they are just there. */
 .bloom {
-  animation: bloom 1.2s var(--ease-swoosh);
+  animation: bloom var(--dur-image-bloom) var(--ease-swoosh);
 }
 @keyframes bloom {
   from {
