@@ -28,6 +28,14 @@ export default defineConfig({
           include: ['tests/image-store/**/*.test.ts'],
         },
       },
+      {
+        test: {
+          // Seam 4: the client Board module, through its operations with an
+          // in-memory transport. Node only: no browser, no Nuxt, no server.
+          name: 'client',
+          include: ['tests/client/**/*.test.ts'],
+        },
+      },
     ],
   },
 })

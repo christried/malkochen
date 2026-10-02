@@ -1,7 +1,8 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, MovedDish } from '~~/server/utils/dishes'
-import { boardLabel, dishOnBoard, focusAfterLeaving } from '~~/shared/board'
+import { focusAfterLeaving } from '~/board/board-module'
+import { boardLabel, dishOnBoard } from '~~/shared/board'
 import { landingIndex, recordsCooking } from '~~/shared/placement'
 
 // "Verschieben nach…" (PRD story 33), drag and drop (stories 31, 32, 34)
@@ -47,7 +48,7 @@ export function useDishMove(
     const stays = target === column && to === from
     const cooks = recordsCooking(column, target, { cook })
     if (stays && !cooks) return null
-    const focusId = stays ? `dish-${dish.id}` : focusAfterLeaving(column, from)
+    const focusId = stays ? `dish-${dish.id}` : focusTargetId(focusAfterLeaving(column, from))
     if (!stays) {
       column.dishes.splice(from, 1)
       target.dishes.splice(to, 0, dish)
@@ -158,7 +159,7 @@ export function useDishMove(
     if (!found || !target) return null
     const { dish, column } = found
     const from = column.dishes.indexOf(dish)
-    const focusId = focusAfterLeaving(column, from)
+    const focusId = focusTargetId(focusAfterLeaving(column, from))
     column.dishes.splice(from, 1)
     showToast({ text: t.dish.movedToBoard(dish.title, boardLabel(toBoard), target.name), duration: NOTICE_MS })
 
