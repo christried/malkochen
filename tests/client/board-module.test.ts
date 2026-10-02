@@ -40,7 +40,9 @@ function setup(adjust: (board: BoardView) => void = () => {}) {
   const module = createBoardModule(board, fake.transport)
   // Each Column's Dish ids, as the Board shows them.
   const shown = () => Object.fromEntries(board.value!.columns.map(c => [c.id, c.dishes.map(d => d.id)]))
-  return { board, fake, module, shown }
+  // A Dish's Cooking ids, as its Cooking History shows them.
+  const history = (dishId: string) => board.value!.columns.flatMap(c => c.dishes).find(d => d.id === dishId)!.cookings.map(c => c.id)
+  return { board, fake, module, shown, history }
 }
 
 test('a delete that fails puts the Dish back where it was, with a notice', async () => {
@@ -274,51 +276,46 @@ function cookedTwice(board: BoardView) {
   ]
 }
 
-// Dish d's Cooking ids, as its Cooking History shows them.
-function historyOfD(board: { value: BoardView | undefined }) {
-  return board.value!.columns.flatMap(c => c.dishes).find(d => d.id === 'd')!.cookings.map(c => c.id)
-}
-
 test('deleting a Cooking takes it out of the Cooking History at once; if that fails, it is back with a notice', async () => {
-  const { board, fake, module } = setup(cookedTwice)
+  const { fake, module, history } = setup(cookedTwice)
   fake.failNext('deleteCooking', 500)
 
   const result = module.deleteCooking('d', 'sept-20')!
   expect(result).toMatchObject({ notice: 'cookingDeleted', cooking: { id: 'sept-20' } })
-  expect(historyOfD(board)).toEqual(['sept-1'])
+  expect(history('d')).toEqual(['sept-1'])
 
   expect(await result.settled).toMatchObject({ notice: 'cookingDeleteFailed' })
-  expect(historyOfD(board)).toEqual(['sept-20', 'sept-1'])
+  expect(history('d')).toEqual(['sept-20', 'sept-1'])
 })
 
 test('a Cooking another Member deleted already (404) counts as deleted, and undo still brings it back', async () => {
-  const { board, fake, module } = setup(cookedTwice)
+  const { fake, module, history } = setup(cookedTwice)
   fake.deleteCookingElsewhere('sept-20')
 
   const result = module.deleteCooking('d', 'sept-20')!
 
   expect(await result.settled).not.toHaveProperty('notice')
-  expect(historyOfD(board)).toEqual(['sept-1'])
+  expect(history('d')).toEqual(['sept-1'])
   const undone = await result.undo!()
   expect(await undone.settled).not.toHaveProperty('notice')
-  expect(historyOfD(board)).toEqual(['sept-20', 'sept-1'])
+  expect(history('d')).toEqual(['sept-20', 'sept-1'])
   expect(fake.sent).toEqual(['deleteCooking sept-20', 'restoreCooking sept-20'])
 })
 
 test('undo pressed while the Cooking’s delete is still under way waits for it, then puts the Cooking back', async () => {
-  const { board, fake, module } = setup(cookedTwice)
+  const { fake, module, history } = setup(cookedTwice)
   const deleting = fake.holdNext('deleteCooking')
   const result = module.deleteCooking('d', 'sept-20')!
 
   const undone = result.undo!()
   await Promise.resolve()
   expect(fake.sent).toEqual(['deleteCooking sept-20'])
-  expect(historyOfD(board)).toEqual(['sept-1'])
+  expect(history('d')).toEqual(['sept-1'])
 
   const restoring = fake.holdNext('restoreCooking')
   deleting.succeed()
   const back = await undone
-  expect(historyOfD(board)).toEqual(['sept-20', 'sept-1'])
+  expect(history('d')).toEqual(['sept-20', 'sept-1'])
 
   restoring.succeed()
   expect(await back.settled).not.toHaveProperty('notice')
@@ -327,20 +324,20 @@ test('undo pressed while the Cooking’s delete is still under way waits for it,
 })
 
 test('an undo of a Cooking’s delete that fails takes it out of the Cooking History again, with a notice', async () => {
-  const { board, fake, module } = setup(cookedTwice)
+  const { fake, module, history } = setup(cookedTwice)
   const result = module.deleteCooking('d', 'sept-20')!
   await result.settled
   fake.failNext('restoreCooking', 500)
 
   const undone = await result.undo!()
-  expect(historyOfD(board)).toEqual(['sept-20', 'sept-1'])
+  expect(history('d')).toEqual(['sept-20', 'sept-1'])
 
   expect(await undone.settled).toMatchObject({ notice: 'cookingRestoreFailed' })
-  expect(historyOfD(board)).toEqual(['sept-1'])
+  expect(history('d')).toEqual(['sept-1'])
 })
 
 test('undo puts a Cooking back in date order after another was added, though its Dish moved to another Column meanwhile', async () => {
-  const { board, module, shown } = setup(cookedTwice)
+  const { module, shown, history } = setup(cookedTwice)
   const result = module.deleteCooking('d', 'sept-20')!
   await result.settled
   // "Gekocht ✓" meanwhile: d goes to the Gekocht Column with a new Cooking.
@@ -348,5 +345,5 @@ test('undo puts a Cooking back in date order after another was added, though its
   expect(shown().gekocht).toEqual(['d'])
 
   await (await result.undo!()).settled
-  expect(historyOfD(board)).toEqual([recorded.id, 'sept-20', 'sept-1'])
+  expect(history('d')).toEqual([recorded.id, 'sept-20', 'sept-1'])
 })
