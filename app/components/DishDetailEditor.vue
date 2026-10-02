@@ -37,13 +37,13 @@ const image = ref<ImageChoice>({ kind: 'keep' })
 
 // "Bild neu laden" was tapped for the link as it is now: the link's lookup is
 // then the reload's (looking, failed, or found with or without an image).
-const reloading = ref(false)
+const reloadAsked = ref(false)
 // The image it found doesn't load in the browser either.
 const foundImageBroken = ref(false)
 type Reload = 'idle' | 'looking' | 'found' | 'nothing' | 'failed'
 const reload = computed<Reload>(() => {
   const status = lookup.status.value
-  if (!reloading.value || status === 'idle') return 'idle'
+  if (!reloadAsked.value || status === 'idle') return 'idle'
   if (status !== 'found') return status
   return lookup.result.value?.imageUrl && !foundImageBroken.value ? 'found' : 'nothing'
 })
@@ -62,8 +62,7 @@ const linkInvalid = computed(() => link.value.trim() !== '' && sourceLink.value 
 const linkUnchanged = computed(() => link.value.trim() === props.dish.source?.link)
 
 function reloadImage() {
-  if (!sourceLink.value) return
-  reloading.value = true
+  reloadAsked.value = true
   foundImageBroken.value = false
   lookup.lookUpNow()
 }
@@ -77,8 +76,8 @@ watch(reload, (state) => {
 // Changing the link drops what an earlier reload found, since that image
 // belongs to the other link.
 watch(link, () => {
-  if (!reloading.value) return
-  reloading.value = false
+  if (!reloadAsked.value) return
+  reloadAsked.value = false
   if (image.value.kind === 'found' || image.value.kind === 'placeholder') image.value = { kind: 'keep' }
 })
 
@@ -87,7 +86,7 @@ watch(link, () => {
 const choosingImage = ref(false)
 watch(placeholder, () => {
   image.value = { kind: 'placeholder' }
-  reloading.value = false
+  reloadAsked.value = false
 })
 
 // The Source as saved: the Dish's own, or what Source Lookup says the new
@@ -110,6 +109,9 @@ async function save() {
   saving.value = true
   failed.value = false
   const choice = image.value
+  // A failed reload is over: saving looks the link up again, and what that
+  // finds mustn't become the image.
+  if (reload.value === 'failed') reloadAsked.value = false
   try {
     const source = await sourceToSave()
     const saved = await trackWrite($fetch<SavedDish>(`/api/dishes/${props.dish.id}`, {

@@ -161,3 +161,16 @@ test('asked for its answer now without a link, it answers with nothing', async (
   expect(await lookup.lookUpNow()).toBeNull()
   expect(asked).toEqual([])
 })
+
+test('an answer asked for now, for a link changed since, is not the new link\'s', async () => {
+  const { link, lookup, asked } = setup()
+  link.value = 'https://koch.example/dal'
+  const now = lookup.lookUpNow()
+  link.value = 'https://koch.example/curry'
+
+  asked[0]!.answer()
+  expect(await now).toEqual(answer('https://koch.example/dal'))
+
+  expect(lookup.status.value).toBe('looking')
+  expect(lookup.result.value).toBeNull()
+})

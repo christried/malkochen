@@ -78,10 +78,10 @@ export function useLinkLookup(link: Ref<string>, lookUp: LookUp = sourceLookup) 
     status: computed(() => state.value.status),
     result,
     canonicalLink: computed(() => result.value?.canonicalLink ?? null),
-    // The link's answer, for saving and "Bild neu laden": the one found, or
-    // the one under way, else looked up at once (still in its typing pause,
-    // failed, or the link the field started with). Null without a link or if
-    // the lookup fails.
+    // The link's answer: the one found, or the one under way, else looked up
+    // at once (still in its typing pause, failed, or the link the field
+    // started with). Null without a link or if the lookup fails. The answer
+    // is for the link as it was when asked, even if it changes meanwhile.
     lookUpNow(): Promise<LookupAnswer | null> {
       const target = webLink(link.value)
       if (!target) return Promise.resolve(null)
