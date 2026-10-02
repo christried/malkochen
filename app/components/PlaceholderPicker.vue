@@ -9,12 +9,22 @@ import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 // pops. The full picker has Topfbert over it, hopping at each pick (handoff
 // PlaceholderPicker).
 const selected = defineModel<Placeholder>({ required: true })
+// Bound in a sheet, the picker closes it when a tile is picked: tapped, or
+// Enter/Space on it. Arrow keys only move the selection.
+const open = defineModel<boolean>('open')
 const props = withDefaults(defineProps<{
   label: string
   options?: readonly Placeholder[]
 }>(), { options: () => PLACEHOLDERS })
+const emit = defineEmits<{ pick: [] }>()
 const t = useStrings()
 const full = computed(() => props.options.length === PLACEHOLDERS.length)
+
+function pick(placeholder: Placeholder) {
+  selected.value = placeholder
+  open.value = false
+  emit('pick')
+}
 
 // Radio-group keyboard behaviour: arrows move the selection, one tab stop.
 // With the selection outside `options`, the first tile takes the tab stop.
@@ -59,7 +69,7 @@ function move(step: number) {
       class="tile relative aspect-square overflow-hidden rounded-thumb bg-surface-muted transition-transform duration-pop ease-pop focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       :style="{ '--i': i }"
       :class="selected === placeholder ? '-rotate-[1.5deg] scale-105 ring-[3px] ring-inverse' : 'active:scale-95'"
-      @click="selected = placeholder"
+      @click="pick(placeholder)"
     >
       <PlaceholderClip
         :placeholder="placeholder"

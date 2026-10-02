@@ -30,8 +30,10 @@ export default defineConfig({
       },
       {
         test: {
-          // Seam 4: the client Board module, through its operations with an
-          // in-memory transport. Node only: no browser, no Nuxt, no server.
+          // Seam 4: client modules, with their I/O faked: the Board module
+          // through its operations with an in-memory transport, the link
+          // lookup module with fake timers and a fake Source Lookup. Node
+          // only: no browser, no Nuxt, no server.
           name: 'client',
           include: ['tests/client/**/*.test.ts'],
         },

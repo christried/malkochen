@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SourceLookupResult } from '~~/server/source-lookup'
+import type { LookupAnswer } from '~/composables/useLinkLookup'
 import type { SourceInput } from '~~/server/utils/dish-input'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import type { Placeholder } from '~~/shared/placeholders'
@@ -36,7 +36,6 @@ const image = ref<ImageChoice>({ kind: 'keep' })
 // GET /api/source-lookup, once per link: when the link changes (at once when
 // pasted, after a short pause while typing), on "Bild neu laden", and before
 // saving a new link. A failed lookup is forgotten, so the next one retries.
-type LookupAnswer = SourceLookupResult & { imageTicket: string | null }
 const lookups = new Map<string, Promise<LookupAnswer | null>>()
 function lookUp(target: string): Promise<LookupAnswer | null> {
   let answer = lookups.get(target)
