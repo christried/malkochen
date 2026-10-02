@@ -44,8 +44,8 @@ onMounted(() => {
 
 // Back to the Board: the way it came if it came from there, so the history
 // doesn't grow; a deep link replaces itself with the Board. The image
-// morphs back into the Dish's card, unless it is being edited or the Dish
-// is no longer on the Board.
+// morphs back into the Dish's card, unless it is being edited, has scrolled
+// away under the compact bar, or the Dish is no longer on the Board.
 const boardPath = computed(() => `/b/${props.board.id}`)
 let leaving = false
 async function close() {
@@ -53,7 +53,8 @@ async function close() {
   leaving = true
   const dishId = located.value?.dish.id
   finishFieldMorph(dialog.value)
-  const image = dishId && !editing.value ? headerImage() : null
+  const scrolledAway = !!dialog.value?.querySelector('[data-detail-bar][data-shown]')
+  const image = dishId && !editing.value && !scrolledAway ? headerImage() : null
   await morphClose(image, dishId ?? '', boardPath.value, leave)
 }
 // Resolves once the Board shows without the detail.

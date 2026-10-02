@@ -28,8 +28,9 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
 <template>
   <div class="flex min-h-full flex-col">
     <!-- The compact bar sticks to the top of the detail, taking no room.
-         Hidden, it is out of reach, so close and "Bearbeiten" are only ever
-         the header's or the bar's. -->
+         Hidden, it is out of reach; shown, its close and "Bearbeiten" are
+         the ones in view, the header's having scrolled away with the
+         image. -->
     <div class="sticky top-0 z-[1] h-0">
       <div
         ref="bar"
@@ -39,14 +40,12 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
         :inert="!barShown"
         :aria-hidden="!barShown || undefined"
       >
-        <button
-          type="button"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        <RoundButton
           :aria-label="t.detail.close"
           @click="$emit('close')"
         >
           <AppIcon name="close" />
-        </button>
+        </RoundButton>
         <p class="min-w-0 flex-1 truncate font-display text-title-s">
           {{ dish.title }}
         </p>
@@ -199,23 +198,37 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
 /* Detail parallax (handoff motion.json "Detail parallax + bar"): from the
    top until the image has scrolled away, it moves half as fast as the
    content, fades to 60% and grows by 8%. Scroll-driven where the browser
-   can; elsewhere from `--parallax` (useDetailScroll). Reduced motion: no
-   parallax. */
-@media (prefers-reduced-motion: no-preference) {
-  .parallax {
-    translate: 0 calc(var(--parallax, 0) * 50%);
-    scale: calc(1 + var(--parallax, 0) * .08);
-    opacity: calc(1 - var(--parallax, 0) * .4);
-  }
-  [data-scroll-driven] .parallax {
-    animation: detail-parallax linear both;
-    animation-timeline: --detail-image;
-    animation-range: exit;
-  }
+   can; elsewhere from `--parallax` (useDetailScroll). */
+.parallax {
+  --parallax-drift: 50%;
+  --parallax-fade: .4;
+  --parallax-grow: .08;
+  translate: 0 calc(var(--parallax, 0) * var(--parallax-drift));
+  scale: calc(1 + var(--parallax, 0) * var(--parallax-grow));
+  opacity: calc(1 - var(--parallax, 0) * var(--parallax-fade));
+}
+[data-scroll-driven] .parallax {
+  animation: detail-parallax linear both;
+  animation-timeline: --detail-image;
+  animation-range: exit;
 }
 @keyframes detail-parallax {
   from { translate: 0 0; scale: 1; opacity: 1; }
-  to { translate: 0 50%; scale: 1.08; opacity: .6; }
+  to {
+    translate: 0 var(--parallax-drift);
+    scale: calc(1 + var(--parallax-grow));
+    opacity: calc(1 - var(--parallax-fade));
+  }
+}
+/* Reduced motion: no parallax. */
+@media (prefers-reduced-motion: reduce) {
+  .parallax,
+  [data-scroll-driven] .parallax {
+    translate: none;
+    scale: none;
+    opacity: 1;
+    animation: none;
+  }
 }
 
 /* The compact bar settles in from above (settle), and goes back up. Reduced
