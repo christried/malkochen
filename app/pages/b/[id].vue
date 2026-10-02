@@ -3,6 +3,8 @@ import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
+import { createBoardModule, type BoardResult } from '~/board/board-module'
+import { httpTransport } from '~/board/http-transport'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 import { columnForNewDishes } from '~~/shared/placement'
 
@@ -69,7 +71,9 @@ function addNote(dish: DishView, cooking: CookingView) {
   noting.value = { dish, cooking }
 }
 
-const { deleteDish, focusCard } = useDishDelete(board, showToast)
+// The client Board module: deleting a Dish goes through it, and the page
+// turns what it answers into Toasts, haptics and focus (showResult).
+const boardModule = createBoardModule(board, httpTransport())
 const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, { addNote, celebrateMilestone })
 const { deleteCooking } = useCookingDelete(showToast)
 
@@ -255,8 +259,7 @@ watch(() => route.params.dishId, async (dishId, closedId) => {
   const focusId = focusAfterDetail.value
   focusAfterDetail.value = null
   await nextTick()
-  if (focusId) document.getElementById(focusId)?.focus()
-  else focusCard(closedId)
+  document.getElementById(focusId ?? focusTargetId({ dish: closedId }))?.focus()
 }, { immediate: true })
 
 const adding = ref(false)
@@ -332,13 +335,39 @@ async function moveAndFocus(dishId: string, columnId: string, toBoard: BoardList
   await nextTick()
   if (focusId) document.getElementById(focusId)?.focus()
 }
-async function deleteFromMenu() {
+function deleteFromMenu() {
   const dishId = menuDish.value?.id
   menuDish.value = null
-  if (!dishId) return
-  deleteDish(dishId)
+  if (dishId) deleteDish(dishId)
+}
+
+// Deleting a Dish (PRD story 47), from the card's menu or the Dish detail:
+// its card goes, and a Toast offers "Rückgängig". From the Dish detail, the
+// Board is inert until the detail closes, so focus goes to what took the
+// card's place then.
+function deleteDish(dishId: string) {
+  const result = boardModule.deleteDish(dishId)
+  if (!result) return
+  hapticReject()
+  if (route.params.dishId && result.focus) focusAfterDetail.value = focusTargetId(result.focus)
+  void showResult(result)
+}
+
+// Shows what an operation of the Board module answered: its notice, as a
+// Toast offering "Rückgängig" if it comes with an undo (whose result shows
+// the same way); then what its write ended in, once settled; and focus
+// where it says, unless the Dish detail makes the Board inert.
+async function showResult({ dish, notice, undo, focus, settled }: BoardResult) {
+  if (notice) {
+    const text = t.dish[notice](dish.title)
+    showToast(undo
+      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(showResult) }] }
+      : { text, duration: NOTICE_MS })
+  }
+  void settled?.then(showResult)
+  if (!focus || route.params.dishId) return
   await nextTick()
-  focusCard(dishId)
+  document.getElementById(focusTargetId(focus))?.focus()
 }
 </script>
 

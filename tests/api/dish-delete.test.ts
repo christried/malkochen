@@ -12,7 +12,7 @@ interface Dish {
 }
 interface Board {
   id: string
-  columns: { id: string, dishes: Dish[] }[]
+  columns: { id: string, isGekocht: boolean, dishes: Dish[] }[]
 }
 
 const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
@@ -63,6 +63,50 @@ test('undo puts a deleted Dish back in its Column, at the position it had', asyn
   expect(res.status).toBe(200)
   expect(await res.json()).toMatchObject({ id: middle.id, title: 'Käsekuchen' })
   expect(await firstColumnIds(ada)).toEqual([added.id, ...before])
+})
+
+test('undo answers where the Dish is back: its Board, its Column and its index in Board order', async () => {
+  const ada = await signIn(ALLOWLISTED[0])
+  const board = await landingBoard(ada)
+  await addDish(ada, 'Ofengemüse')
+  const middle = await addDish(ada, 'Gnocchi')
+  await addDish(ada, 'Ramen')
+  await deleteDish(ada, middle.id)
+
+  const restored = await (await restoreDish(ada, middle.id)).json()
+
+  const ids = await firstColumnIds(ada)
+  expect(restored).toMatchObject({ id: middle.id, placement: { boardId: board.id, columnId: board.columns[0]!.id } })
+  expect(restored.placement.index).toBe(ids.indexOf(middle.id))
+  expect(restored.placement.index).toBe(1)
+})
+
+// Works on a Board of its own, so as Emmy: among the API tests, she is used
+// here only.
+test('undo after the Dish’s Column was deleted answers the Column it went to instead', async () => {
+  const emmy = await signIn(ALLOWLISTED[19])
+  const created = await (await emmy.fetch('/api/boards', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Spalten', emoji: '🗂️' }),
+  })).json() as { id: string }
+  const [ideen, dieseWoche] = (await emmy.fetch(`/api/boards/${created.id}`).then(r => r.json()) as Board).columns
+  const kept = await postDish(emmy, created.id, { title: 'Bleibt', placeholder: 'curry' }).then(r => r.json()) as Dish
+  const moved = await postDish(emmy, created.id, { title: 'Wandert', placeholder: 'curry' }).then(r => r.json()) as Dish
+  await emmy.fetch(`/api/dishes/${moved.id}/move`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ columnId: dieseWoche!.id }),
+  })
+  await deleteDish(emmy, moved.id)
+  expect((await emmy.fetch(`/api/columns/${dieseWoche!.id}`, { method: 'DELETE' })).status).toBe(204)
+
+  const restored = await (await restoreDish(emmy, moved.id)).json()
+
+  const after = await emmy.fetch(`/api/boards/${created.id}`).then(r => r.json()) as Board
+  const ids = after.columns.find(c => c.id === ideen!.id)!.dishes.map(d => d.id)
+  expect(ids).toEqual([moved.id, kept.id])
+  expect(restored.placement).toEqual({ boardId: created.id, columnId: ideen!.id, index: 0 })
 })
 
 test('restoring a Dish that is not deleted changes nothing', async () => {

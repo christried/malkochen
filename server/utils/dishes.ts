@@ -39,6 +39,18 @@ export interface DishView {
 // asked for could not be stored (the Dish then shows its Placeholder).
 export type SavedDish = DishView & { imageNotStored?: true }
 
+// Where a Dish is: its Board, its Column, and its index among that Column's
+// Dishes in Board order.
+export interface DishPlacement {
+  boardId: string
+  columnId: string
+  index: number
+}
+
+// What a Dish write answers with (a "placed Dish"): the Dish and where it now
+// is, so the app settles to where the server put it.
+export type PlacedDish = DishView & { placement: DishPlacement }
+
 export interface NewDish {
   title: string
   note: string | null
@@ -48,15 +60,18 @@ export interface NewDish {
   placeholder: Placeholder
 }
 
-// The Dishes of the given Columns, grouped by Column and in Board order: by
-// position, and a tie (two Dishes added at the same moment) newest first.
+// Board order within a Column: by position, and a tie (two Dishes added at
+// the same moment) newest first.
+const BOARD_ORDER = [asc(dish.position), desc(dish.createdAt), desc(dish.id)]
+
+// The Dishes of the given Columns, grouped by Column and in Board order.
 export async function dishesByColumn(columnIds: string[]): Promise<Map<string, DishView[]>> {
   const byColumn = new Map<string, DishView[]>(columnIds.map(id => [id, []]))
   if (columnIds.length === 0) return byColumn
 
   const rows = await selectDishes()
     .where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt)))
-    .orderBy(asc(dish.position), desc(dish.createdAt), desc(dish.id))
+    .orderBy(...BOARD_ORDER)
   const views = await toViews(rows)
   rows.forEach((row, i) => byColumn.get(row.columnId)?.push(views[i]!))
   return byColumn
@@ -105,6 +120,17 @@ async function toViews(rows: DishRow[]): Promise<DishView[]> {
 async function findDish(where: SQL | undefined): Promise<DishView | null> {
   const [view] = await toViews(await selectDishes().where(where))
   return view ?? null
+}
+
+// The Dish with where it now is (DishPlacement); null if it is deleted,
+// also if that happened between the two reads.
+async function withPlacement(view: DishView | null): Promise<PlacedDish | null> {
+  if (!view) return null
+  const [location] = await db.select({ boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(and(eq(dish.id, view.id), isNull(dish.deletedAt)))
+  if (!location) return null
+  const order = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, location.columnId), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)
+  const index = order.findIndex(d => d.id === view.id)
+  return index === -1 ? null : { ...view, placement: { ...location, index } }
 }
 
 // What editing a Dish may change (PRD story 43); fields left out stay as
@@ -160,11 +186,13 @@ export async function deleteDish(dishId: string, userId: string): Promise<boolea
 }
 
 // Undoes deleting a Dish. It kept its Column and position, so it is back
-// where it was. Null unless it is on a Board the user is a Member of.
-export async function restoreDish(dishId: string, userId: string): Promise<DishView | null> {
+// where it was (or, if its Column was deleted meanwhile, where that
+// Column's Dishes went). Answers it placed; null unless it is on a Board the
+// user is a Member of.
+export async function restoreDish(dishId: string, userId: string): Promise<PlacedDish | null> {
   const target = onMembersBoardIncludingDeleted(dishId, userId)
   await db.update(dish).set({ deletedAt: null }).where(target)
-  return findDish(target)
+  return withPlacement(await findDish(target))
 }
 
 // What moving a Dish answers: the Dish, and the Cooking the move recorded, if any.
