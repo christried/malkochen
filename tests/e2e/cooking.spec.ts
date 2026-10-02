@@ -5,6 +5,7 @@ import { signIn } from './auth'
 import { column, titles } from './board'
 import { confetti, topfbert } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
+import { expectSaving, holdRequests, layoutWidth } from './saving'
 import { seedDish } from './seed'
 
 // Cooking (PRD stories 35, 48–55): "Gekocht ✓" on a card, the Gekocht toast
@@ -56,7 +57,12 @@ test('a note from the toast shows in the Cooking History; cooking again counts',
   const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
   await expect(sheet.getByLabel('Notiz')).toBeFocused()
   await sheet.getByLabel('Notiz').fill('mit Feta besser')
-  await sheet.getByRole('button', { name: 'Speichern' }).click()
+  const release = await holdRequests(page, 'PATCH', /\/api\/cookings\/[^/]+$/)
+  const save = sheet.locator('button[type="submit"]')
+  const width = await layoutWidth(save)
+  await save.click()
+  await expectSaving(save, 'Speichert …', width)
+  release()
   await expect(sheet).toBeHidden()
 
   // Out of Gekocht and back in, from the menu: the history stays and grows.

@@ -265,10 +265,14 @@ async function save() {
     <button
       type="submit"
       class="mt-auto rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-      :disabled="!canSave"
+      :disabled="!canSave && !saving"
       :aria-busy="saving"
     >
-      {{ saving ? t.detail.saving : t.detail.save }}
+      <ButtonLabel
+        :label="t.detail.save"
+        :busy-label="t.detail.saving"
+        :busy="saving"
+      />
     </button>
 
     <AppSheet

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The line icons buttons share: a 24-unit grid, drawn in the text colour.
-withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip', size?: number }>(), { size: 18 })
+withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip' | 'check', size?: number }>(), { size: 18 })
 </script>
 
 <template>
@@ -42,6 +42,10 @@ withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up'
     <path
       v-else-if="name === 'down'"
       d="M6 9l6 6 6-6"
+    />
+    <path
+      v-else-if="name === 'check'"
+      d="M5 12.5l4.5 4.5L19 7.5"
     />
     <path
       v-else-if="name === 'grip'"

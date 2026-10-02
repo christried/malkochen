@@ -85,9 +85,14 @@ async function create() {
       <button
         type="submit"
         class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        :disabled="!name.trim() || saving"
+        :disabled="!name.trim()"
+        :aria-busy="saving"
       >
-        {{ saving ? t.boards.creating : t.boards.create }}
+        <ButtonLabel
+          :label="t.boards.create"
+          :busy-label="t.boards.creating"
+          :busy="saving"
+        />
       </button>
     </form>
   </AppSheet>
