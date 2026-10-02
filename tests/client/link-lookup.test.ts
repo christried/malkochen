@@ -18,12 +18,12 @@ function answer(link: string): LookupAnswer {
   return { kind: 'blog', canonicalLink: `${link}/kanonisch`, suggestedTitle: 'Linsen-Dal', imageUrl: 'https://bilder.example/dal.jpg', imageTicket: 'ticket' }
 }
 
-function setup() {
+function setup(start = '') {
   const asked: { link: string, answer: () => void, fail: () => void }[] = []
   const lookUp = (link: string) => new Promise<LookupAnswer>((resolve, reject) => {
     asked.push({ link, answer: () => resolve(answer(link)), fail: () => reject(new Error('Lookup failed')) })
   })
-  const link = ref('')
+  const link = ref(start)
   const lookup = useLinkLookup(link, lookUp)
   return { link, lookup, asked }
 }
@@ -97,5 +97,80 @@ test('a lookup that fails gives "failed"', async () => {
   await vi.advanceTimersByTimeAsync(0)
 
   expect(lookup.status.value).toBe('failed')
+  expect(lookup.result.value).toBeNull()
+})
+
+test('asked for its answer now, a link still in its typing pause is looked up at once', async () => {
+  const { link, lookup, asked } = setup()
+  link.value = 'https://koch.example/dal'
+
+  const now = lookup.lookUpNow()
+  expect(asked.map(a => a.link)).toEqual(['https://koch.example/dal'])
+  asked[0]!.answer()
+
+  expect(await now).toEqual(answer('https://koch.example/dal'))
+  expect(lookup.status.value).toBe('found')
+  await vi.advanceTimersByTimeAsync(300)
+  expect(asked).toHaveLength(1)
+})
+
+test('asked for its answer now, a link already found or under way is not looked up again', async () => {
+  const { link, lookup, asked } = setup()
+  lookup.pasted()
+  link.value = 'https://koch.example/dal'
+
+  const underWay = lookup.lookUpNow()
+  asked[0]!.answer()
+  expect(await underWay).toEqual(answer('https://koch.example/dal'))
+  expect(await lookup.lookUpNow()).toEqual(answer('https://koch.example/dal'))
+
+  expect(asked).toHaveLength(1)
+})
+
+test('asked for its answer now, a link whose lookup failed is looked up again', async () => {
+  const { link, lookup, asked } = setup()
+  lookup.pasted()
+  link.value = 'https://koch.example/dal'
+  asked[0]!.fail()
+  await vi.advanceTimersByTimeAsync(0)
+
+  const again = lookup.lookUpNow()
+  expect(lookup.status.value).toBe('looking')
+  asked[1]!.answer()
+
+  expect(await again).toEqual(answer('https://koch.example/dal'))
+  expect(lookup.status.value).toBe('found')
+})
+
+test('the link it starts with is looked up only when asked for its answer', async () => {
+  const { lookup, asked } = setup('https://koch.example/dal')
+  await vi.advanceTimersByTimeAsync(300)
+  expect(lookup.status.value).toBe('idle')
+  expect(asked).toEqual([])
+
+  const now = lookup.lookUpNow()
+  asked[0]!.answer()
+
+  expect(await now).toEqual(answer('https://koch.example/dal'))
+})
+
+test('asked for its answer now without a link, it answers with nothing', async () => {
+  const { link, lookup, asked } = setup()
+  link.value = 'kein Link'
+
+  expect(await lookup.lookUpNow()).toBeNull()
+  expect(asked).toEqual([])
+})
+
+test('an answer asked for now, for a link changed since, is not the new link\'s', async () => {
+  const { link, lookup, asked } = setup()
+  link.value = 'https://koch.example/dal'
+  const now = lookup.lookUpNow()
+  link.value = 'https://koch.example/curry'
+
+  asked[0]!.answer()
+  expect(await now).toEqual(answer('https://koch.example/dal'))
+
+  expect(lookup.status.value).toBe('looking')
   expect(lookup.result.value).toBeNull()
 })

@@ -37,16 +37,23 @@ export function useLinkLookup(link: Ref<string>, lookUp: LookUp = sourceLookup) 
   let wasPasted = false
   // Counts the link's changes; only the latest one's answer counts.
   let latest = 0
+  // The lookup under way for the latest change, if any.
+  let underWay: Promise<LookupAnswer | null> | undefined
 
-  async function run(target: string, change: number) {
-    const answer: State = await lookUp(target)
-      .then(result => ({ status: 'found' as const, result }), () => ({ status: 'failed' as const }))
-    if (change === latest) state.value = answer
+  // Asks Source Lookup, and answers with what it found (null if it failed).
+  function run(target: string, change: number): Promise<LookupAnswer | null> {
+    const asking = lookUp(target).catch(() => null).then((answer) => {
+      if (change === latest) state.value = answer ? { status: 'found', result: answer } : { status: 'failed' }
+      return answer
+    })
+    underWay = asking
+    return asking
   }
 
   // Sync, so "looking" is there the moment the link is one.
   watch(link, (value) => {
     clearTimeout(timer)
+    underWay = undefined
     const change = ++latest
     const pasted = wasPasted
     wasPasted = false
@@ -71,6 +78,19 @@ export function useLinkLookup(link: Ref<string>, lookUp: LookUp = sourceLookup) 
     status: computed(() => state.value.status),
     result,
     canonicalLink: computed(() => result.value?.canonicalLink ?? null),
+    // The link's answer: the one found, or the one under way, else looked up
+    // at once (still in its typing pause, failed, or the link the field
+    // started with). Null without a link or if the lookup fails. The answer
+    // is for the link as it was when asked, even if it changes meanwhile.
+    lookUpNow(): Promise<LookupAnswer | null> {
+      const target = webLink(link.value)
+      if (!target) return Promise.resolve(null)
+      if (state.value.status === 'found') return Promise.resolve(state.value.result)
+      if (state.value.status === 'looking' && underWay) return underWay
+      clearTimeout(timer)
+      state.value = { status: 'looking' }
+      return run(target, latest)
+    },
     // The link's next change is a paste: it is looked up without the pause.
     pasted() {
       wasPasted = true

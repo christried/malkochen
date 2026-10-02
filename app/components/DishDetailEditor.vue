@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { LookupAnswer } from '~/composables/useLinkLookup'
 import type { SourceInput } from '~~/server/utils/dish-input'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
 import type { Placeholder } from '~~/shared/placeholders'
@@ -19,6 +18,9 @@ const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
 onMounted(() => titleInput.value?.focus())
 const note = ref(props.dish.note ?? '')
 const link = ref(props.dish.source?.link ?? '')
+// Looks a new link up as in Add Dish: at once when pasted, after a short
+// pause while typing. Only the latest lookup's answer counts.
+const lookup = useLinkLookup(link)
 const placeholder = ref<Placeholder>(props.dish.placeholder)
 const titleId = useId()
 const noteId = useId()
@@ -33,24 +35,18 @@ type ImageChoice
     | { kind: 'found', url: string, ticket: string | null }
 const image = ref<ImageChoice>({ kind: 'keep' })
 
-// GET /api/source-lookup, once per link: when the link changes (at once when
-// pasted, after a short pause while typing), on "Bild neu laden", and before
-// saving a new link. A failed lookup is forgotten, so the next one retries.
-const lookups = new Map<string, Promise<LookupAnswer | null>>()
-function lookUp(target: string): Promise<LookupAnswer | null> {
-  let answer = lookups.get(target)
-  if (!answer) {
-    answer = $fetch<LookupAnswer>('/api/source-lookup', { query: { link: target } }).catch(() => {
-      lookups.delete(target)
-      return null
-    })
-    lookups.set(target, answer)
-  }
-  return answer
-}
-
+// "Bild neu laden" was tapped for the link as it is now: the link's lookup is
+// then the reload's (looking, failed, or found with or without an image).
+const reloadAsked = ref(false)
+// The image it found doesn't load in the browser either.
+const foundImageBroken = ref(false)
 type Reload = 'idle' | 'looking' | 'found' | 'nothing' | 'failed'
-const reload = ref<Reload>('idle')
+const reload = computed<Reload>(() => {
+  const status = lookup.status.value
+  if (!reloadAsked.value || status === 'idle') return 'idle'
+  if (status !== 'found') return status
+  return lookup.result.value?.imageUrl && !foundImageBroken.value ? 'found' : 'nothing'
+})
 // What the status line under the image says in each state.
 const reloadMessage = computed(() => ({
   idle: '',
@@ -65,56 +61,32 @@ const linkInvalid = computed(() => link.value.trim() !== '' && sourceLink.value 
 // Whether the link is the Dish's own Source, whose kind is already known.
 const linkUnchanged = computed(() => link.value.trim() === props.dish.source?.link)
 
-// Only the latest "Bild neu laden" counts; changing the link drops what an
-// earlier one found, since that image belongs to the other link.
-let reloadRun = 0
-async function reloadImage() {
-  const target = sourceLink.value
-  if (!target) return
-  const run = ++reloadRun
-  reload.value = 'looking'
-  const result = await lookUp(target)
-  if (run !== reloadRun) return
-  if (!result) {
-    reload.value = 'failed'
-  }
-  else if (result.imageUrl) {
-    image.value = { kind: 'found', url: result.imageUrl, ticket: result.imageTicket }
-    reload.value = 'found'
-  }
-  else {
-    image.value = { kind: 'placeholder' }
-    reload.value = 'nothing'
-  }
+function reloadImage() {
+  reloadAsked.value = true
+  foundImageBroken.value = false
+  lookup.lookUpNow()
 }
-
-let lookupTimer: ReturnType<typeof setTimeout> | undefined
-let pasted = false
+// What the reload found becomes the image: the Source's, or the Placeholder
+// if there was none.
+watch(reload, (state) => {
+  const found = lookup.result.value
+  if (state === 'found' && found?.imageUrl) image.value = { kind: 'found', url: found.imageUrl, ticket: found.imageTicket }
+  else if (state === 'nothing') image.value = { kind: 'placeholder' }
+})
+// Changing the link drops what an earlier reload found, since that image
+// belongs to the other link.
 watch(link, () => {
-  clearTimeout(lookupTimer)
-  const target = sourceLink.value
-  if (target && !linkUnchanged.value) lookupTimer = setTimeout(() => lookUp(target), pasted ? 0 : 300)
-  pasted = false
-
-  if (reload.value === 'idle') return
-  reloadRun++
-  reload.value = 'idle'
+  if (!reloadAsked.value) return
+  reloadAsked.value = false
   if (image.value.kind === 'found' || image.value.kind === 'placeholder') image.value = { kind: 'keep' }
 })
-onBeforeUnmount(() => clearTimeout(lookupTimer))
-function onPaste() {
-  pasted = true
-}
 
+// The full picker closes itself when a tile is picked. Picked either way,
+// with arrow keys too, the Placeholder becomes the image.
 const choosingImage = ref(false)
-// Tapping a tile (or Enter/Space on it) closes the picker; arrow keys only
-// move the selection. Either way the chosen Placeholder becomes the image.
-function closeOnTile(event: MouseEvent) {
-  if ((event.target as Element).closest('[role="radio"]')) choosingImage.value = false
-}
 watch(placeholder, () => {
   image.value = { kind: 'placeholder' }
-  reload.value = 'idle'
+  reloadAsked.value = false
 })
 
 // The Source as saved: the Dish's own, or what Source Lookup says the new
@@ -124,7 +96,7 @@ async function sourceToSave(): Promise<SourceInput | null> {
   const target = sourceLink.value
   if (!target) return null
   if (linkUnchanged.value && props.dish.source) return { ...props.dish.source }
-  const result = await lookUp(target)
+  const result = await lookup.lookUpNow()
   return result ? { link: result.canonicalLink, kind: result.kind } : { link: target }
 }
 
@@ -137,6 +109,9 @@ async function save() {
   saving.value = true
   failed.value = false
   const choice = image.value
+  // A failed reload is over: saving looks the link up again, and what that
+  // finds mustn't become the image.
+  if (reload.value === 'failed') reloadAsked.value = false
   try {
     const source = await sourceToSave()
     const saved = await trackWrite($fetch<SavedDish>(`/api/dishes/${props.dish.id}`, {
@@ -189,7 +164,7 @@ async function save() {
           referrerpolicy="no-referrer"
           class="h-full w-full object-cover"
           data-reloaded-image
-          @error="image = { kind: 'placeholder' }; reload = 'nothing'"
+          @error="foundImageBroken = true"
         >
         <DishImage
           v-else
@@ -271,7 +246,7 @@ async function save() {
         :aria-describedby="linkHintId"
         :aria-invalid="linkInvalid || undefined"
         class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-        @paste="onPaste"
+        @paste="lookup.pasted()"
       >
       <span
         :id="linkHintId"
@@ -303,9 +278,9 @@ async function save() {
     >
       <PlaceholderPicker
         v-model="placeholder"
+        v-model:open="choosingImage"
         class="mt-5"
         :label="t.detail.chooseImage"
-        @click="closeOnTile"
       />
     </AppSheet>
   </form>
