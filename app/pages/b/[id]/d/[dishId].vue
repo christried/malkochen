@@ -327,6 +327,7 @@ watch(editing, async (isEditing) => {
   transition: opacity var(--dur-fade) var(--ease-fade);
 }
 .detail[data-morph-closing] :deep([data-detail-body]),
+.detail[data-morph-closing] :deep([data-detail-bar]),
 .detail[data-morph-closing] :deep([data-detail-image] ~ *) {
   opacity: 0;
   transition: opacity var(--dur-fade) var(--ease-fade);

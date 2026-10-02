@@ -6,7 +6,8 @@ import type { DishView } from '~~/server/utils/dishes'
 // The Dish detail's contents: a large image, the title and note, the Source
 // with "Original öffnen", where the Dish is (Board and Column), who added it
 // and when, its Cooking History with "Gekocht ✓", "Verschieben nach…" and
-// "Löschen".
+// "Löschen". Scrolled past its image, a compact bar at the top keeps close,
+// the title and "Bearbeiten" at hand (useDetailScroll).
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
 defineEmits<{
   close: []
@@ -20,23 +21,65 @@ defineEmits<{
 const t = useStrings()
 
 const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, new Date(props.dish.createdAt)))
+
+const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useTemplateRef('bar'))
 </script>
 
 <template>
   <div class="flex min-h-full flex-col">
+    <!-- The compact bar sticks to the top of the detail, taking no room.
+         Hidden, it is out of reach, so close and "Bearbeiten" are only ever
+         the header's or the bar's. -->
+    <div class="sticky top-0 z-[1] h-0">
+      <div
+        ref="bar"
+        class="detail-bar absolute inset-x-0 top-0 flex items-center gap-3 bg-glass px-4 py-2 shadow-card backdrop-blur-md"
+        data-detail-bar
+        :data-shown="barShown || undefined"
+        :inert="!barShown"
+        :aria-hidden="!barShown || undefined"
+      >
+        <button
+          type="button"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          :aria-label="t.detail.close"
+          @click="$emit('close')"
+        >
+          <AppIcon name="close" />
+        </button>
+        <p class="min-w-0 flex-1 truncate font-display text-title-s">
+          {{ dish.title }}
+        </p>
+        <button
+          type="button"
+          class="shrink-0 rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          @click="$emit('edit')"
+        >
+          {{ t.detail.edit }}
+        </button>
+      </div>
+    </div>
+
     <div class="relative">
       <!-- Portrait (TikTok, Reels, Shorts) and landscape (blogs) both fill
            the frame; a tall image is cropped to at most 60% of the screen. -->
       <div
+        ref="frame"
         class="detail-image aspect-[4/3] max-h-[60dvh] w-full overflow-hidden bg-surface-muted"
+        :data-scroll-driven="scrollDriven || undefined"
         data-detail-image
         data-morph-field="image"
       >
-        <DishImage
-          :image-url="dish.imageUrl"
-          :placeholder="dish.placeholder"
-          motion="loop"
-        />
+        <div
+          class="parallax h-full w-full"
+          data-parallax
+        >
+          <DishImage
+            :image-url="dish.imageUrl"
+            :placeholder="dish.placeholder"
+            motion="loop"
+          />
+        </div>
       </div>
       <div
         class="absolute inset-x-0 top-0 flex justify-between p-4"
@@ -146,8 +189,52 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
 
 <style scoped>
 /* The far end of the card → detail morph with View Transitions (utils/
-   dish-morph.ts): only one detail shows at a time, so the name is unique. */
+   dish-morph.ts): only one detail shows at a time, so the name is unique.
+   The parallax follows it scrolling away (its view timeline). */
 .detail-image {
   view-transition-name: dish-image;
+  view-timeline: --detail-image block;
+}
+
+/* Detail parallax (handoff motion.json "Detail parallax + bar"): from the
+   top until the image has scrolled away, it moves half as fast as the
+   content, fades to 60% and grows by 8%. Scroll-driven where the browser
+   can; elsewhere from `--parallax` (useDetailScroll). Reduced motion: no
+   parallax. */
+@media (prefers-reduced-motion: no-preference) {
+  .parallax {
+    translate: 0 calc(var(--parallax, 0) * 50%);
+    scale: calc(1 + var(--parallax, 0) * .08);
+    opacity: calc(1 - var(--parallax, 0) * .4);
+  }
+  [data-scroll-driven] .parallax {
+    animation: detail-parallax linear both;
+    animation-timeline: --detail-image;
+    animation-range: exit;
+  }
+}
+@keyframes detail-parallax {
+  from { translate: 0 0; scale: 1; opacity: 1; }
+  to { translate: 0 50%; scale: 1.08; opacity: .6; }
+}
+
+/* The compact bar settles in from above (settle), and goes back up. Reduced
+   motion: it fades in and out. */
+.detail-bar {
+  translate: 0 -100%;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    translate var(--dur-settle) var(--ease-settle),
+    opacity var(--dur-fade) var(--ease-fade),
+    visibility 0s linear var(--dur-fade);
+}
+.detail-bar[data-shown] {
+  translate: none;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    translate var(--dur-settle) var(--ease-settle),
+    opacity var(--dur-fade) var(--ease-fade);
 }
 </style>
