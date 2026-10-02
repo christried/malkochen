@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
+import { editMorph } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
@@ -234,6 +235,35 @@ test('focus follows the detail: into edit mode, back out, and back to the card',
   await detail.getByRole('button', { name: 'Schließen' }).click()
   await expect(detail).toBeHidden()
   await expect(page.getByRole('link', { name: 'Pfeiltasten' })).toBeFocused()
+})
+
+// The handoff's settle easing (tokens.css --ease-settle), as Web Animations
+// give it back.
+const SETTLE = 'cubic-bezier(0.3, 1.3, 0.5, 1)'
+
+test('the read-only Dish morphs into its fields one after another, and back', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Pfeiltasten')
+
+  // 380ms a field, each 60ms after the one before; the title moves from
+  // where the heading was.
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  const entering = await editMorph(detail)
+  expect(entering.length).toBeGreaterThan(3)
+  expect(entering.map(({ delay, duration, easing }) => ({ delay, duration, easing })))
+    .toEqual(entering.map((_, i) => ({ delay: i * 60, duration: 380, easing: SETTLE })))
+  expect(entering.filter(field => field.moves).length).toBeGreaterThan(3)
+  await expect(detail.getByLabel('Titel')).toBeFocused()
+
+  // Leaving reverses it: the fields morph back into the read-only Dish.
+  await page.keyboard.press('Escape')
+  const leaving = await editMorph(detail)
+  expect(leaving.length).toBeGreaterThan(3)
+  expect(leaving.map(({ delay, duration, easing }) => ({ delay, duration, easing })))
+    .toEqual(leaving.map((_, i) => ({ delay: i * 60, duration: 380, easing: SETTLE })))
+  expect(leaving.filter(field => field.moves).length).toBeGreaterThan(3)
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
 })
 
 test('beside the Board, tapping the dimmed Board or Escape closes the detail but never discards edits', async ({ page }) => {

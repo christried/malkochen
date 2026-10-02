@@ -135,12 +135,18 @@ const notingCooking = computed({
   },
 })
 
-// Leaving edit mode puts focus back on "Bearbeiten" (edit mode focuses its
-// title itself), so it never falls to the page behind.
+// Entering and leaving edit mode morphs one side's fields into the other's
+// (utils/edit-morph.ts), measured before the swap. Once edited, the card
+// morph's arrival doesn't play again as the read-only Dish comes back.
+// Leaving puts focus back on "Bearbeiten" (edit mode focuses its title
+// itself), so it never falls to the page behind.
+const edited = ref(false)
 watch(editing, async (isEditing) => {
-  if (isEditing) return
+  edited.value = true
+  const places = measureFields(dialog.value)
   await nextTick()
-  dialog.value?.querySelector<HTMLElement>('[data-edit]')?.focus()
+  morphFields(dialog.value, places)
+  if (!isEditing) dialog.value?.querySelector<HTMLElement>('[data-edit]')?.focus()
 })
 </script>
 
@@ -151,6 +157,7 @@ watch(editing, async (isEditing) => {
       class="detail bg-bg p-0 text-text tablet:shadow-sheet"
       :class="{ morphed }"
       :data-covered="covered || undefined"
+      :data-edited="edited || undefined"
       :aria-label="located?.dish.title"
       @keydown.esc="onEscape"
       @cancel.prevent="close"
@@ -283,15 +290,16 @@ watch(editing, async (isEditing) => {
 
 /* Arriving by the card → detail morph (handoff: phone and side panel): the
    image comes from the card; the background fades in under it, and the
-   rest rises from +90px from 30% of the morph (420ms, settle). */
+   rest rises from +90px from 30% of the morph (420ms, settle). Back from
+   edit mode, the edit mode morph moves it instead. */
 .detail.morphed[open] {
   animation: detail-fill 180ms var(--ease-fade);
 }
-.detail.morphed[open] :deep([data-detail-body]) {
+.detail.morphed[open]:not([data-edited]) :deep([data-detail-body]) {
   animation: detail-body-rise 420ms var(--ease-settle) 180ms backwards;
 }
 /* Its buttons (close, "Bearbeiten") pop in at 80% of the morph. */
-.detail.morphed[open] :deep([data-detail-actions] > *) {
+.detail.morphed[open]:not([data-edited]) :deep([data-detail-actions] > *) {
   animation: actions-pop var(--dur-pop) var(--ease-pop) calc(var(--dur-swoosh) * .8) backwards;
 }
 @keyframes actions-pop {

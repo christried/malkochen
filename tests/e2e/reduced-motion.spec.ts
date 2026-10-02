@@ -3,6 +3,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { confetti, topfbert } from './celebration'
 import { clipStill, countVideos } from './clips'
+import { editMorph, slowAnimations } from './edit-morph'
 import { gotoHydrated } from './hydration'
 import { dotsMoving, holdRequests, linkField, linkFound } from './loading'
 import { resetBoard, seedCookings, seedDish } from './seed'
@@ -57,6 +58,16 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   // The Dish is on the Board; in its detail, never cooked, then cooked.
   await page.getByRole('link', { name: 'Crispy Tofu Bowl' }).click()
   const detail = page.getByRole('dialog', { name: 'Crispy Tofu Bowl' })
+  // Into edit mode and back, the fields swap with a 150ms fade and don't move.
+  const normalSpeed = await slowAnimations(page)
+  for (const button of ['Bearbeiten', 'Abbrechen']) {
+    await detail.getByRole('button', { name: button }).click()
+    const morph = await editMorph(detail)
+    expect(morph.length).toBeGreaterThan(3)
+    for (const field of morph) expect(field).toMatchObject({ delay: 0, duration: 150, moves: false })
+  }
+  await normalSpeed()
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
   const history = detail.getByRole('region', { name: 'Gekocht' })
   await expect(clipStill(history, 'never-cooked')).toBeVisible()
   await history.getByRole('button', { name: 'Gekocht ✓' }).click()

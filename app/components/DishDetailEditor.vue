@@ -142,7 +142,10 @@ async function save() {
     novalidate
     @submit.prevent="save"
   >
-    <div class="flex items-center justify-between gap-4">
+    <div
+      class="flex items-center justify-between gap-4"
+      data-morph-field="actions"
+    >
       <h1 class="font-display text-title-m">
         {{ t.detail.editing }}
       </h1>
@@ -155,7 +158,10 @@ async function save() {
       </button>
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div
+      class="flex flex-col gap-3"
+      data-morph-field="image"
+    >
       <div class="aspect-[4/3] max-h-[45dvh] w-full overflow-hidden rounded-thumb bg-surface-muted">
         <img
           v-if="image.kind === 'found'"
@@ -198,7 +204,10 @@ async function save() {
       >{{ reloadMessage }}</p>
     </div>
 
-    <div class="flex flex-col gap-2">
+    <div
+      class="flex flex-col gap-2"
+      data-morph-field="title"
+    >
       <label
         :for="titleId"
         class="text-label"
@@ -215,7 +224,10 @@ async function save() {
       >
     </div>
 
-    <div class="flex flex-col gap-2">
+    <div
+      class="flex flex-col gap-2"
+      data-morph-field="note"
+    >
       <label
         :for="noteId"
         class="text-label"
@@ -230,7 +242,10 @@ async function save() {
       />
     </div>
 
-    <div class="flex flex-col gap-2">
+    <div
+      class="flex flex-col gap-2"
+      data-morph-field="source"
+    >
       <label
         :for="linkId"
         class="text-label"
@@ -269,6 +284,7 @@ async function save() {
       class="mt-auto rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       :disabled="!canSave && !saving"
       :aria-busy="saving"
+      data-morph-field="buttons"
     >
       <BusyLabel
         :label="t.detail.save"

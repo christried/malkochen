@@ -95,9 +95,15 @@ html {
 :root {
   --dur-image-bloom: 1200ms;
 }
+/* Each field of the Dish detail's edit mode morph (handoff "Edit mode
+   morph": 380ms + 60ms a field). */
+:root {
+  --dur-edit-morph: 380ms;
+}
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-image-bloom: 0ms;
+    --dur-edit-morph: 0ms;
     --dur-sheet-out: 0ms;
     --dur-scrim-out: 0ms;
     --dur-cook-hold: 0ms;
