@@ -115,18 +115,28 @@ const inlineOptions = computed<Placeholder[]>(() => {
 // Suggested Title. The field holds all of it at once (saving, the duplicate
 // check and the prompt go by that); what it shows types in after the image
 // blooms (handoff "Title types in"), unless the Member is in it already.
-// Focusing it shows all of it.
-const typedTitle = useTypeIn(title)
-const { shown: shownTitle, typing: typingTitle } = typedTitle
+// Focusing it, a new link, or the image going (it broke, or the Member
+// picked a Placeholder) show all of it.
+const titleTypeIn = useTypeIn(title)
+const { shown: shownTitle, typing: typingTitle } = titleTypeIn
 watch(link, () => {
   sourceImageBroken.value = false
   preferPlaceholder.value = false
+  titleTypeIn.finish()
 })
 watch(result, (found) => {
   if (!found) return
   title.value = found.suggestedTitle.slice(0, 200)
   if (document.activeElement?.id === titleId) return
-  typedTitle.start(usingSourceImage.value ? motionMs('image-bloom') : 0, motionMs('type'))
+  titleTypeIn.start(usingSourceImage.value ? motionMs('image-bloom') : 0, motionMs('type'))
+})
+watch(usingSourceImage, (using) => {
+  if (!using) titleTypeIn.finish()
+})
+// No prompt while the title types in: it is coming.
+const titlePlaceholder = computed(() => {
+  if (typingTitle.value) return ''
+  return titleNeeded.value ? t.addDish.titleNeeded : t.addDish.titlePrompt
 })
 
 const canPaste = ref(false)
@@ -362,11 +372,11 @@ async function save() {
             required
             maxlength="200"
             autocomplete="off"
-            :placeholder="typingTitle ? '' : titleNeeded ? t.addDish.titleNeeded : t.addDish.titlePrompt"
+            :placeholder="titlePlaceholder"
             :aria-describedby="titleNeeded ? titleHintId : undefined"
             class="rounded-field border border-line-strong bg-surface px-4 py-3 font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             :class="{ 'title-prompt': titleNeeded }"
-            @focus="typedTitle.finish()"
+            @focus="titleTypeIn.finish()"
           >
           <span
             v-if="titleNeeded"
@@ -513,7 +523,7 @@ async function save() {
   }
 }
 .found-pop {
-  animation: found-pop var(--dur-pop) var(--ease-pop) 408ms backwards;
+  animation: found-pop var(--dur-pop) var(--ease-pop) calc(var(--dur-image-bloom) * .34) backwards;
 }
 @keyframes found-pop {
   from { scale: 0; }

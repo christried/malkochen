@@ -3,9 +3,9 @@
 // another. Any change to the text, typing into the field included, and
 // `finish()` show all of it at once.
 export function useTypeIn(text: Ref<string>) {
-  // The characters (graphemes, so an emoji never shows half) while it
-  // types in, and how many of them show; null when all of the text does.
-  let characters: string[] = []
+  // The characters while it types in, and how many of them show; null when
+  // all of the text does.
+  const characters = shallowRef<string[]>([])
   const count = ref<number | null>(null)
   let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -19,13 +19,16 @@ export function useTypeIn(text: Ref<string>) {
   // it shows at once.
   function start(delayMs: number, perCharMs: number) {
     finish()
-    characters = Array.from(new Intl.Segmenter().segment(text.value), part => part.segment)
-    if (perCharMs <= 0 || characters.length === 0) return
+    characters.value = graphemes(text.value)
+    const total = characters.value.length
+    if (perCharMs <= 0 || total === 0) return
+    let shown = 0
     count.value = 0
     const step = () => {
-      count.value = count.value! + 1
-      if (count.value >= characters.length) finish()
-      else timer = setTimeout(step, perCharMs)
+      shown += 1
+      if (shown >= total) return finish()
+      count.value = shown
+      timer = setTimeout(step, perCharMs)
     }
     timer = setTimeout(step, delayMs + perCharMs)
   }
@@ -35,9 +38,16 @@ export function useTypeIn(text: Ref<string>) {
   onScopeDispose(finish)
 
   const shown = computed({
-    get: () => count.value === null ? text.value : characters.slice(0, count.value).join(''),
+    get: () => count.value === null ? text.value : characters.value.slice(0, count.value).join(''),
     set: (value: string) => (text.value = value),
   })
   const typing = computed(() => count.value !== null)
   return { shown, typing, finish, start }
+}
+
+// What a reader counts as characters, so an emoji (👩‍🍳) never shows in
+// half. Browsers without Intl.Segmenter split by code point.
+function graphemes(text: string): string[] {
+  if (typeof Intl.Segmenter !== 'function') return Array.from(text)
+  return Array.from(new Intl.Segmenter().segment(text), part => part.segment)
 }
