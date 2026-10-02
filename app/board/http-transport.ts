@@ -1,5 +1,5 @@
 import type { CookingView } from '~~/server/utils/cookings'
-import type { MovedDish, PlacedDish } from '~~/server/utils/dishes'
+import type { CreatedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import { WriteFailed, type BoardTransport } from './board-module'
 
 // The client Board module's writes over HTTP, for the app. Each is counted
@@ -7,6 +7,8 @@ import { WriteFailed, type BoardTransport } from './board-module'
 // it for a moment. A failed request rejects with WriteFailed and its status.
 export function httpTransport(): BoardTransport {
   return {
+    addDish: (boardId, dish) => tracked($fetch<CreatedDish>(`/api/boards/${boardId}/dishes`, { method: 'POST', body: dish })),
+    editDish: (dishId, changes) => tracked($fetch<SavedDish>(`/api/dishes/${dishId}`, { method: 'PATCH', body: changes })),
     deleteDish: dishId => tracked($fetch<unknown>(`/api/dishes/${dishId}`, { method: 'DELETE' })).then(() => undefined),
     restoreDish: dishId => tracked($fetch<PlacedDish>(`/api/dishes/${dishId}/restore`, { method: 'POST' })),
     moveDish: (dishId, to) => tracked($fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: to })),
@@ -14,6 +16,7 @@ export function httpTransport(): BoardTransport {
     undoCooking: (cookingId, to) => tracked($fetch<PlacedDish>(`/api/cookings/${cookingId}/undo`, { method: 'POST', body: to })),
     deleteCooking: cookingId => tracked($fetch<unknown>(`/api/cookings/${cookingId}`, { method: 'DELETE' })).then(() => undefined),
     restoreCooking: cookingId => tracked($fetch<CookingView>(`/api/cookings/${cookingId}/restore`, { method: 'POST' })),
+    noteCooking: (cookingId, note) => tracked($fetch<CookingView>(`/api/cookings/${cookingId}`, { method: 'PATCH', body: { note } })),
   }
 }
 

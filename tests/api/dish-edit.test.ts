@@ -26,7 +26,9 @@ async function addDish(caller: Caller, body: Record<string, unknown>): Promise<D
   const board = await landingBoard(caller)
   const res = await postDish(caller, board.id, { title: 'Dal', placeholder: 'curry', ...body })
   expect(res.status).toBe(201)
-  return res.json()
+  // Without where it was placed, as the Board shows it.
+  const { placement: _, ...dish } = await res.json() as Dish & { placement: unknown }
+  return dish
 }
 
 function editDish(caller: Caller, dishId: string, body: unknown) {

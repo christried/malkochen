@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import type { SourceInput } from '~~/server/utils/dish-input'
-import type { DishView, SavedDish } from '~~/server/utils/dishes'
+import type { DishView } from '~~/server/utils/dishes'
 import type { Placeholder } from '~~/shared/placeholders'
+import type { BoardResult } from '~/board/board-module'
 import { webLink } from '~/utils/web-link'
 
 // The Dish detail's edit mode (PRD stories 43–45): title, note, image and
 // Source. A new link is looked up (Source Lookup, as in Add Dish) so it is
 // saved as what it really is, but that never changes the image: only "Bild
 // neu laden" does, and the image it finds (or the Placeholder, if none) is
-// shown here and stored on Speichern. Nothing changes until then.
+// shown here and stored on Speichern, through the client Board module.
+// Nothing changes until then.
 const props = defineProps<{ dish: DishView }>()
-const emit = defineEmits<{ saved: [dish: SavedDish], cancel: [] }>()
+const emit = defineEmits<{ saved: [result: BoardResult], cancel: [] }>()
 const t = useStrings()
+const boardModule = useBoardModule()
 
 const title = ref(props.dish.title)
 const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
@@ -114,17 +117,14 @@ async function save() {
   if (reload.value === 'failed') reloadAsked.value = false
   try {
     const source = await sourceToSave()
-    const saved = await trackWrite($fetch<SavedDish>(`/api/dishes/${props.dish.id}`, {
-      method: 'PATCH',
-      body: {
-        title: title.value,
-        note: note.value,
-        source,
-        placeholder: placeholder.value,
-        ...choice.kind === 'placeholder' && { imageUrl: null },
-        ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
-      },
-    }))
+    const saved = await boardModule.editDish(props.dish.id, {
+      title: title.value,
+      note: note.value,
+      source,
+      placeholder: placeholder.value,
+      ...choice.kind === 'placeholder' && { imageUrl: null },
+      ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
+    })
     emit('saved', saved)
   }
   catch {

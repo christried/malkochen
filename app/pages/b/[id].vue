@@ -2,11 +2,10 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
-import type { DishView, SavedDish } from '~~/server/utils/dishes'
-import { createBoardModule, type BoardResult, type Notice } from '~/board/board-module'
+import type { DishView } from '~~/server/utils/dishes'
+import { boardModuleKey, createBoardModule, type BoardResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
-import { columnForNewDishes } from '~~/shared/placement'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
 // switched with the Column tabs or by swiping; tablet and desktop show all
@@ -19,7 +18,7 @@ const id = computed(() => String(route.params.id))
 
 // Opening the Board first remembers it as the one to reopen next time and
 // moves on what is marked "Neu" (PRD story 37); the Board then comes with
-// its New Dishes. Deep: adding and editing Dishes change it in place.
+// its New Dishes. Deep: the client Board module changes it in place.
 const fetchPassingCookies = useFetchPassingCookies()
 const { data: board, error } = await useAsyncData(() => `board-${id.value}`, async () => {
   await fetchPassingCookies(`/api/boards/${id.value}/open`, { method: 'POST' })
@@ -71,10 +70,12 @@ function addNote(dish: DishView, cooking: CookingView) {
   noting.value = { dish, cooking }
 }
 
-// The client Board module: moving, cooking and deleting a Dish, and
-// deleting a Cooking, go through it, and the page turns what it answers
-// into Toasts, the Gekocht celebration, haptics and focus (showResult).
+// The client Board module: adding, editing, moving, cooking and deleting a
+// Dish, and a Cooking's note and delete, go through it, and the page turns
+// what it answers into Toasts, the Gekocht celebration, haptics and focus
+// (showResult). The forms under the page get it injected (useBoardModule).
 const boardModule = createBoardModule(board, httpTransport())
+provide(boardModuleKey, boardModule)
 const { moveToBoard } = useDishMove(board, showToast)
 const confetti = useConfetti()
 
@@ -298,27 +299,21 @@ async function closeSearch() {
   searchButton.value?.$el.focus()
 }
 
-// A Dish saved to another Board doesn't show here. If a Source image
-// couldn't be stored, a notice says which image the Dish has instead.
-function onAdded(saved: SavedDish, boardId: string, from: DOMRect | null) {
-  if (saved.imageNotStored) showNotice(t.addDish.imageNotStored(saved.title))
-  const { imageNotStored: _, ...dish } = saved
-  const first = board.value && columnForNewDishes(board.value.columns)
-  if (!first || boardId !== board.value?.id) return
-  const slides = isPhoneLayout() && activeColumnId.value !== first.id
-  first.dishes.unshift(dish)
-  activeColumnId.value = first.id
-  if (from) flyIn(dish.id, from, { slides })
+// A Dish saved here shows where the server put it (the Board module put
+// it there), and its Column comes into view as it flies in from Add Dish;
+// one saved to another Board doesn't show. If a Source image couldn't be
+// stored, a notice says which image the Dish has instead.
+function onAdded(result: BoardResult, from: DOMRect | null) {
+  void showResult(result)
+  const shown = board.value && dishOnBoard(board.value, result.dish.id)
+  if (!shown) return
+  const slides = isPhoneLayout() && activeColumnId.value !== shown.column.id
+  activeColumnId.value = shown.column.id
+  if (from) flyIn(shown.dish.id, from, { slides })
 }
 // A saved Dish flies in from Add Dish (useSavedDishFlight).
 const { arrivingId, flyIn } = useSavedDishFlight(columnsEl)
 
-function onEdited(saved: SavedDish) {
-  if (saved.imageNotStored) showNotice(t.detail.imageNotStored(saved.title))
-  const { imageNotStored: _, ...dish } = saved
-  const edited = board.value && dishOnBoard(board.value, dish.id)
-  if (edited) Object.assign(edited.dish, dish)
-}
 
 // The card's "…" menu: "Verschieben nach…", which lists the Board's other
 // Columns and the user's other Boards in the same sheet, and "Löschen".
@@ -413,6 +408,8 @@ function noticeText(notice: Exclude<Notice, 'cook'>, { dish, cooking }: BoardRes
     case 'cookingDeleted': return t.cooking.deleted(new Date(cooking!.cookedAt))
     case 'cookingDeleteFailed': return t.cooking.deleteFailed
     case 'cookingRestoreFailed': return t.cooking.restoreFailed
+    case 'imageNotStored': return t.addDish.imageNotStored(dish.title)
+    case 'imageNotReplaced': return t.detail.imageNotStored(dish.title)
     default: return t.dish[notice](dish.title)
   }
 }
@@ -705,7 +702,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 
     <CookingNoteSheet
       v-model:cooking="notingCooking"
-      :dish-title="noting?.dish.title ?? ''"
+      :dish="noting?.dish ?? null"
     />
 
     <AddDishSheet
@@ -787,7 +784,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <NuxtPage
       v-model:toast="toast"
       :board="board"
-      @edited="onEdited"
+      @edited="showResult"
       @delete="deleteDish"
       @move="moveAndFocus"
       @cook="cookDish"

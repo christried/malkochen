@@ -17,6 +17,8 @@ interface Board {
   id: string
   columns: { id: string, name: string, dishes: Dish[] }[]
 }
+// What adding a Dish answers: the Dish, and where it was placed.
+type Placed = Dish & { placement: { boardId: string, columnId: string, index: number } }
 
 const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
 
@@ -29,11 +31,12 @@ test('a Dish added without a Source lands at the top of the first Column', async
   const res = await addDish(ada, board.id, { title: '  Omas Linsensuppe ', note: 'mit Räuchertofu statt Speck', placeholder: 'eintopf' })
 
   expect(res.status).toBe(201)
-  const created = await res.json() as Dish
+  const { placement, ...created } = await res.json() as Placed
   expect(created).toMatchObject({ title: 'Omas Linsensuppe', note: 'mit Räuchertofu statt Speck', placeholder: 'eintopf', imageUrl: null, source: null })
 
   const after = await landingBoard(ada)
   expect(after.columns[0]!.dishes[0]).toEqual(created)
+  expect(placement).toEqual({ boardId: board.id, columnId: after.columns[0]!.id, index: 0 })
   expect(created.addedBy).toMatchObject({ name: expect.any(String) })
   expect(after.columns.slice(1).flatMap(c => c.dishes)).toEqual([])
 })
@@ -93,7 +96,7 @@ test('a Dish from a link keeps its Source: the canonical link and its kind', asy
   })
 
   expect(res.status).toBe(201)
-  const created = await res.json() as Dish
+  const { placement: _, ...created } = await res.json() as Placed
   expect(created.source).toEqual({ link: TIKTOK, kind: 'tiktok' })
   // No image was asked for, so none failed to be stored.
   expect(created).not.toHaveProperty('imageNotStored')
@@ -133,9 +136,10 @@ test('if the image cannot be copied, the Dish is saved with its Placeholder Imag
   })
 
   expect(res.status).toBe(201)
-  const created = await res.json()
-  expect(created).toMatchObject({ title: 'Ramen', placeholder: 'ramen', imageUrl: null, source: { kind: 'tiktok' }, imageNotStored: true })
-  expect((await landingBoard(ada)).columns[0]!.dishes[0]).toEqual({ ...created, imageNotStored: undefined })
+  const { placement: _, imageNotStored, ...created } = await res.json() as Placed & { imageNotStored?: true }
+  expect(imageNotStored).toBe(true)
+  expect(created).toMatchObject({ title: 'Ramen', placeholder: 'ramen', imageUrl: null, source: { kind: 'tiktok' } })
+  expect((await landingBoard(ada)).columns[0]!.dishes[0]).toEqual(created)
 })
 
 test.each([

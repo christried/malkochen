@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PLACEHOLDERS } from '../../shared/placeholders'
 import { guessSource, SOURCE_KINDS } from '../source-lookup'
 import type { DishSource } from './dishes'
 
@@ -21,3 +22,32 @@ export function sourceOf(input: SourceInput): DishSource {
   const isBlog = guess.kind === 'other' && input.kind === 'blog'
   return { link: guess.canonicalLink, kind: isBlog ? 'blog' : guess.kind }
 }
+
+// A new Dish (POST /api/boards/:id/dishes).
+export const newDishBody = z.object({
+  title: dishTitle,
+  note: dishNote,
+  // The fallback image, and the image if there is no Source image.
+  placeholder: z.enum(PLACEHOLDERS),
+  source: sourceInput.nullish(),
+  // The Source image Source Lookup found (third-party) and the Image Ticket it
+  // came with; copied on save, but only with a valid ticket.
+  imageUrl: webLinkInput.nullish(),
+  imageTicket: z.string().max(200).nullish(),
+})
+export type NewDishBody = z.input<typeof newDishBody>
+
+// Changes to a Dish (PATCH /api/dishes/:id); only the fields sent change.
+export const dishEditBody = z.object({
+  title: dishTitle.optional(),
+  note: dishNote.optional(),
+  // Null removes the Source. Changing it never changes the image.
+  source: sourceInput.nullable().optional(),
+  placeholder: z.enum(PLACEHOLDERS).optional(),
+  // Null drops the stored image, so the Dish shows its Placeholder. A link is
+  // the image "Bild neu laden" found (third-party) and needs the Image Ticket
+  // it came with, as when adding a Dish.
+  imageUrl: webLinkInput.nullable().optional(),
+  imageTicket: z.string().max(200).nullish(),
+})
+export type DishEditBody = z.input<typeof dishEditBody>

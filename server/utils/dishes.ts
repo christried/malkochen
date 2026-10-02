@@ -51,6 +51,10 @@ export interface DishPlacement {
 // is, so the app settles to where the server put it.
 export type PlacedDish = DishView & { placement: DishPlacement }
 
+// What adding a Dish answers: the Dish placed, and whether its Source image
+// could not be stored, as for SavedDish.
+export type CreatedDish = PlacedDish & { imageNotStored?: true }
+
 export interface NewDish {
   title: string
   note: string | null
@@ -367,12 +371,13 @@ function escapeLike(text: string): string {
 }
 
 // Adds a Dish at the top of the Column that takes new Dishes (PRD story 13;
-// shared/placement.ts). Null unless the user is a Member of the Board.
+// shared/placement.ts). Answers it placed; null unless the user is a Member
+// of the Board, or if another Member deleted it already.
 export async function addDish(
   boardId: string,
   adder: Omit<DishAdder, 'image'> & { image?: string | null },
   input: NewDish,
-): Promise<DishView | null> {
+): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
     .from(boardColumn)
@@ -399,7 +404,7 @@ export async function addDish(
     .returning({ id: dish.id, createdAt: dish.createdAt })
   if (!created) throw new Error(`Dish was not added to Board ${boardId}`)
 
-  return {
+  return withPlacement({
     id: created.id,
     title: input.title,
     note: input.note,
@@ -409,5 +414,5 @@ export async function addDish(
     addedBy: { id: adder.id, name: adder.name, image: adder.image ?? null },
     createdAt: created.createdAt.toISOString(),
     cookings: [],
-  }
+  })
 }

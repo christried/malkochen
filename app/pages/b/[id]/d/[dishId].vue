@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
-import type { SavedDish } from '~~/server/utils/dishes'
+import type { BoardResult } from '~/board/board-module'
 import { dishOnBoard } from '~~/shared/board'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
 // on phones, a side panel over the Board from 768px (440px; 480px from
 // 1200px). A native modal <dialog>, like AppSheet: the browser traps focus,
 // makes the Board inert and closes it on Escape. The Dish comes from the
-// Board the parent page already has; edits go back to it via `edited`,
+// Board the parent page already has; an edit, saved through the client
+// Board module, passes what it answered on via `edited`,
 // "Löschen" asks it to `delete` the Dish (it offers the undo) and
 // "Verschieben nach…" to `move` it, within the Board or to another. So do the
 // Cooking History's actions: `cook`, `note` and `deleteCooking`. The Board
 // is inert behind this dialog, so its Toast shows in here.
 const props = defineProps<{ board: BoardView }>()
 const emit = defineEmits<{
-  edited: [dish: SavedDish]
+  edited: [result: BoardResult]
   delete: [dishId: string]
   move: [dishId: string, columnId: string, toBoard: BoardListing | null]
   cook: [dishId: string, origin: Point]
@@ -119,8 +120,8 @@ watch(located, (now, before) => {
   close()
 })
 
-function onSaved(dish: SavedDish) {
-  emit('edited', dish)
+function onSaved(result: BoardResult) {
+  emit('edited', result)
   editing.value = false
 }
 
