@@ -195,8 +195,9 @@ export async function restoreDish(dishId: string, userId: string): Promise<Place
   return withPlacement(await findDish(target))
 }
 
-// What moving a Dish answers: the Dish, and the Cooking the move recorded, if any.
-export type MovedDish = DishView & { cooking?: CookingView }
+// What moving or cooking a Dish answers: the Dish placed (PlacedDish), and
+// the Cooking the move recorded, if any.
+export type MovedDish = PlacedDish & { cooking?: CookingView }
 
 // Moves a Dish to the top of a Column (PRD story 33), on its own Board or
 // another one the user is a Member of (story 46), where it keeps its Cooking
@@ -227,7 +228,7 @@ export async function moveDish(
     index === undefined ? toTop(d, columnId, movable) : renumberForDrop(d, dishId, columnId, index, movable),
   ])
 
-  const moved = await findDish(and(target, eq(dish.columnId, columnId)))
+  const moved = await withPlacement(await findDish(and(target, eq(dish.columnId, columnId))))
   const recorded = moved?.cookings.find(c => c.id === cookingId)
   return moved && recorded ? { ...moved, cooking: recorded } : moved
 }
@@ -245,11 +246,12 @@ export async function cookDish(dishId: string, userId: string): Promise<MovedDis
 }
 
 // "Rückgängig" after cooking (PRD story 51): removes the Cooking for good
-// and puts its Dish back at `index` in the Column it came from. Null unless
+// and puts its Dish back at `index` in the Column it came from, answering
+// it placed. Null unless
 // the Dish is still in the Gekocht Column (nobody moved it on meanwhile) and
 // that Column is on its Board. The caller has checked that the user may see
 // the Cooking (cookingDishId).
-export async function undoCooking(cookingId: string, dishId: string, userId: string, columnId: string, index: number): Promise<DishView | null> {
+export async function undoCooking(cookingId: string, dishId: string, userId: string, columnId: string, index: number): Promise<PlacedDish | null> {
   const stillCooked = inArray(dish.columnId, db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.isGekocht, true)))
   const movable = movableTo(and(onMembersBoard(dishId, userId), stillCooked), userId, columnId)
   await runAtomic(d => [
@@ -260,7 +262,7 @@ export async function undoCooking(cookingId: string, dishId: string, userId: str
     )),
     renumberForDrop(d, dishId, columnId, index, movable),
   ])
-  return findDish(and(onMembersBoard(dishId, userId), eq(dish.columnId, columnId)))
+  return withPlacement(await findDish(and(onMembersBoard(dishId, userId), eq(dish.columnId, columnId))))
 }
 
 // The Dish `target`, if the Column is on a Board the user is a Member of:

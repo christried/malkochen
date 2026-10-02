@@ -173,6 +173,22 @@ test('a Dish added after reordering still goes to the top', async () => {
   expect((await columnDishIds(barbara))[0]![0]).toBe(dish.id)
 })
 
+test('a move answers where the Dish now is: its Board, its Column and its index in Board order', async () => {
+  const barbara = await signIn(ALLOWLISTED[4])
+  const dish = await addDish(barbara, 'Spinatknödel')
+  const { id: boardId, columns: [, dieseWoche] } = await landingBoard(barbara)
+
+  const dropped = await (await moveDish(barbara, dish.id, dieseWoche!.id, 1)).json()
+  expect(dropped.placement).toEqual({ boardId, columnId: dieseWoche!.id, index: 1 })
+  expect((await columnDishIds(barbara))[1]![1]).toBe(dish.id)
+
+  // Past the end, it answers the index the server capped it to.
+  const capped = await (await moveDish(barbara, dish.id, dieseWoche!.id, 999)).json()
+  const ids = (await columnDishIds(barbara))[1]!
+  expect(capped.placement).toEqual({ boardId, columnId: dieseWoche!.id, index: ids.length - 1 })
+  expect(ids.at(-1)).toBe(dish.id)
+})
+
 test('the drop place must be a whole number from 0', async () => {
   const barbara = await signIn(ALLOWLISTED[4])
   const dish = await addDish(barbara, 'Tomatensuppe')

@@ -1,158 +1,17 @@
 import type { BoardView } from '~~/server/utils/boards'
-import type { CookingView } from '~~/server/utils/cookings'
-import type { DishView, MovedDish } from '~~/server/utils/dishes'
 import { focusAfterLeaving } from '~/board/board-module'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
-import { landingIndex, recordsCooking } from '~~/shared/placement'
 
-// "Verschieben nach…" (PRD story 33), drag and drop (stories 31, 32, 34)
-// and "Gekocht ✓" (story 35): the Dish goes at once to its new place. The
-// Board's copy is changed in place; if the server refuses, the Dish goes
-// back where it was and a Toast says so. One already gone there (another
-// Member deleted it) just goes.
-//
-// Moving a Dish into the Gekocht Column records a Cooking (stories 49–55):
-// it shows in its Cooking History at once, and the Gekocht toast offers
-// "Notiz hinzufügen" (`addNote`) and "Rückgängig", which puts the Dish back
-// where it was and removes that Cooking. The Cooking that makes it a
-// Klassiker (the 10th) also asks to `celebrateMilestone`, with the Cooking
-// once it is recorded (null if it never is).
-export function useDishMove(
-  board: Ref<BoardView | undefined>,
-  showToast: (toast: Toast) => void,
-  { addNote, celebrateMilestone }: {
-    addNote: (dish: DishView, cooking: CookingView) => void
-    celebrateMilestone: (dish: DishView, recorded: Promise<CookingView | null>) => void
-  },
-) {
+// Moving a Dish to another Board (PRD story 46). Moving within the Board
+// and cooking go through the client Board module.
+export function useDishMove(board: Ref<BoardView | undefined>, showToast: (toast: Toast) => void) {
   const t = useStrings()
-  const confetti = useConfetti()
 
-  // Puts the Dish at `index` among the target Column's other Dishes (as
-  // dragged, in any Column), or without one at the top of another Column.
-  // `cook` ("Gekocht ✓") records a Cooking even if the Dish already is in
-  // the Gekocht Column, where it then stays. A Cooking celebrates: confetti
-  // from `origin` (from the toast's place without one; none if `null`, as
-  // the caller set it off already), then the Gekocht toast. Answers where
-  // it went, whether it records a Cooking (`cooks`, shared/placement.ts),
-  // and the id of the element to focus instead of its card (the
-  // card now in its place, or its Column if that is empty), or null if it
-  // didn't move.
-  function dropDish(dishId: string, { columnId, index }: { columnId: string, index?: number }, { cook = false, origin }: { cook?: boolean, origin?: Point | null } = {}) {
-    const found = board.value && dishOnBoard(board.value, dishId)
-    const target = board.value?.columns.find(c => c.id === columnId)
-    if (!found || !target) return null
-    const { dish, column } = found
-    const from = column.dishes.indexOf(dish)
-    const to = landingIndex(target, dish.id, index)
-    const stays = target === column && to === from
-    const cooks = recordsCooking(column, target, { cook })
-    if (stays && !cooks) return null
-    const focusId = focusTargetId(stays ? { dish: dish.id } : focusAfterLeaving(column, from))
-    if (!stays) {
-      column.dishes.splice(from, 1)
-      target.dishes.splice(to, 0, dish)
-    }
-    // The Cooking as the server will record it, filled in once it has.
-    // The Board's own (reactive) copy, so filling it in shows.
-    if (cooks) dish.cookings.unshift({ id: '', cookedAt: new Date().toISOString(), note: null, recordedBy: null })
-    const pending = cooks ? dish.cookings[0]! : null
-
-    // Back where it was, from wherever it is now, without that Cooking.
-    // One no longer on the Board (deleted meanwhile) stays gone.
-    function takeBack() {
-      if (pending) removeFrom(dish.cookings, pending)
-      const now = board.value && dishOnBoard(board.value, dish.id)
-      if (stays || !now) return
-      removeFrom(now.column.dishes, dish)
-      column.dishes.splice(Math.min(from, column.dishes.length), 0, dish)
-    }
-
-    const request = trackWrite(cook
-      ? $fetch<MovedDish>(`/api/dishes/${dishId}/cook`, { method: 'POST' })
-      : $fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: { columnId, index } }))
-    // The Cooking recorded, once it is.
-    const recorded = request.then((moved) => {
-      if (!pending) return null
-      if (!moved.cooking) {
-        // Already in the Gekocht Column on the server: nothing recorded.
-        removeFrom(dish.cookings, pending)
-        return null
-      }
-      Object.assign(pending, moved.cooking)
-      return pending
-    }, (error: { statusCode?: number }) => {
-      if (error.statusCode === 404) {
-        removeFrom(target.dishes, dish)
-        return null
-      }
-      takeBack()
-      showToast({ text: (cooks ? t.dish.cookFailed : t.dish.moveFailed)(dish.title), duration: NOTICE_MS })
-      return null
-    })
-
-    if (pending) {
-      hapticCelebrate()
-      if (origin !== null) confetti.fire(origin ?? { x: innerWidth / 2, y: innerHeight - 48 })
-      showToast({
-        text: t.dish.cook,
-        duration: UNDO_WINDOW_MS,
-        celebrate: true,
-        actions: [
-          { label: t.dish.addNote, run: async () => {
-            const cooking = await recorded
-            if (cooking) addNote(dish, cooking)
-          } },
-          { label: t.dish.undo, run: () => undoCooking(dish, recorded, { column, from, takeBack }) },
-        ],
-      })
-      if (dish.cookings.length === MILESTONE_COOKINGS) celebrateMilestone(dish, recorded)
-    }
-    return { dish, target, cooks, focusId }
-  }
-
-  // "Rückgängig" in the Gekocht toast. It waits for the Cooking to be
-  // recorded, so the two never cross on the way.
-  async function undoCooking(
-    dish: DishView,
-    recorded: Promise<CookingView | null>,
-    { column, from, takeBack }: { column: { id: string }, from: number, takeBack: () => void },
-  ) {
-    const cooking = await recorded
-    if (!cooking) return // Never recorded, and already back.
-    const now = board.value && dishOnBoard(board.value, dish.id)
-    const at = now ? now.column.dishes.indexOf(now.dish) : -1
-    takeBack()
-    await nextTick()
-    document.getElementById(`dish-${dish.id}`)?.focus()
-    await trackWrite($fetch<unknown>(`/api/cookings/${cooking.id}/undo`, { method: 'POST', body: { columnId: column.id, index: from } })).catch((error: { statusCode?: number }) => {
-      // Back to where the move put it, with its Cooking unless that is gone
-      // (deleted from the Cooking History meanwhile).
-      if (error.statusCode !== 404) dish.cookings.unshift(cooking)
-      const back = board.value && dishOnBoard(board.value, dish.id)
-      if (now && back && back.column !== now.column) {
-        removeFrom(back.column.dishes, back.dish)
-        now.column.dishes.splice(Math.min(at, now.column.dishes.length), 0, dish)
-      }
-      showToast({ text: t.dish.uncookFailed(dish.title), duration: NOTICE_MS })
-    })
-  }
-
-  // From the menu: to the top of another Column, and a Toast says where
-  // (into the Gekocht Column, the Gekocht toast does). Answers the id of the
-  // element to focus instead of the Dish's card.
-  function moveDish(dishId: string, columnId: string): string | null {
-    const moved = dropDish(dishId, { columnId })
-    if (!moved) return null
-    if (!moved.cooks) showToast({ text: t.dish.moved(moved.dish.title, moved.target.name), duration: NOTICE_MS })
-    return moved.focusId
-  }
-
-  // To a Column on another Board (PRD story 46): it leaves this Board at
-  // once, keeping its Cooking History, and a Toast says where it went; into
-  // that Board's Gekocht Column it records a Cooking, but with no Gekocht
-  // toast or undo, as it is no longer here. Answers the id of the element
-  // to focus instead of the Dish's card.
+  // To a Column on another Board: it leaves this Board at once, keeping its
+  // Cooking History, and a Toast says where it went; into that Board's
+  // Gekocht Column it records a Cooking, but with no Gekocht toast or undo,
+  // as it is no longer here. If the server refuses, it comes back with a
+  // notice. Answers the id of the element to focus instead of the Dish's card.
   function moveToBoard(dishId: string, columnId: string, toBoard: { emoji: string, name: string, columns: { id: string, name: string }[] }): string | null {
     const found = board.value && dishOnBoard(board.value, dishId)
     const target = toBoard.columns.find(c => c.id === columnId)
@@ -173,23 +32,5 @@ export function useDishMove(
     return focusId
   }
 
-  // "Gekocht ✓" on a card or in the Dish detail: to the top of the Gekocht
-  // Column, or where it is if it is there already; its confetti bursts from
-  // `origin`, the button (`null`: the caller set it off already). Answers
-  // the id of the element to focus instead of the Dish's card.
-  function cookDish(dishId: string, origin?: Point | null): string | null {
-    const gekocht = board.value?.columns.find(c => c.isGekocht)
-    if (!gekocht) return null
-    return dropDish(dishId, { columnId: gekocht.id }, { cook: true, origin })?.focusId ?? null
-  }
-
-  return { moveDish, moveToBoard, dropDish, cookDish }
-}
-
-// Takes `item` out of `list`; false if it wasn't in it.
-function removeFrom<T>(list: T[], item: T): boolean {
-  const at = list.indexOf(item)
-  if (at === -1) return false
-  list.splice(at, 1)
-  return true
+  return { moveToBoard }
 }
