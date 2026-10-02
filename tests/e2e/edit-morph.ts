@@ -29,3 +29,17 @@ export async function editMorph(detail: Locator) {
   await expect.poll(async () => (await morph()).length).toBeGreaterThan(0)
   return morph()
 }
+
+// The handoff's settle easing (tokens.css --ease-settle), as Web Animations
+// give it back.
+const SETTLE = 'cubic-bezier(0.3, 1.3, 0.5, 1)'
+
+// Expects the morph running in `detail` to move its fields one after
+// another: 380ms a field with settle, each 60ms after the one before.
+export async function expectFieldsMorphing(detail: Locator) {
+  const morph = await editMorph(detail)
+  expect(morph.length).toBeGreaterThan(3)
+  expect(morph.map(({ delay, duration, easing }) => ({ delay, duration, easing })))
+    .toEqual(morph.map((_, i) => ({ delay: i * 60, duration: 380, easing: SETTLE })))
+  expect(morph.filter(field => field.moves).length).toBeGreaterThan(3)
+}

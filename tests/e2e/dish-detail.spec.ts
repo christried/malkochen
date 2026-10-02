@@ -3,7 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
-import { editMorph } from './edit-morph'
+import { editMorph, expectFieldsMorphing, slowAnimations } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
@@ -237,32 +237,43 @@ test('focus follows the detail: into edit mode, back out, and back to the card',
   await expect(page.getByRole('link', { name: 'Pfeiltasten' })).toBeFocused()
 })
 
-// The handoff's settle easing (tokens.css --ease-settle), as Web Animations
-// give it back.
-const SETTLE = 'cubic-bezier(0.3, 1.3, 0.5, 1)'
-
 test('the read-only Dish morphs into its fields one after another, and back', async ({ page }) => {
   await signIn(page, ALLOWLISTED[0])
   await gotoHydrated(page, '/')
   const detail = await openDetail(page, 'Pfeiltasten')
 
-  // 380ms a field, each 60ms after the one before; the title moves from
-  // where the heading was.
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
-  const entering = await editMorph(detail)
-  expect(entering.length).toBeGreaterThan(3)
-  expect(entering.map(({ delay, duration, easing }) => ({ delay, duration, easing })))
-    .toEqual(entering.map((_, i) => ({ delay: i * 60, duration: 380, easing: SETTLE })))
-  expect(entering.filter(field => field.moves).length).toBeGreaterThan(3)
+  await expectFieldsMorphing(detail)
   await expect(detail.getByLabel('Titel')).toBeFocused()
 
   // Leaving reverses it: the fields morph back into the read-only Dish.
   await page.keyboard.press('Escape')
-  const leaving = await editMorph(detail)
-  expect(leaving.length).toBeGreaterThan(3)
-  expect(leaving.map(({ delay, duration, easing }) => ({ delay, duration, easing })))
-    .toEqual(leaving.map((_, i) => ({ delay: i * 60, duration: 380, easing: SETTLE })))
-  expect(leaving.filter(field => field.moves).length).toBeGreaterThan(3)
+  await expectFieldsMorphing(detail)
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
+})
+
+test('leaving edit mode scrolled down, the title starts where its field was', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 })
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Pfeiltasten')
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished)))
+  await detail.evaluate(el => el.scrollTo(0, el.scrollHeight))
+  expect(await detail.evaluate(el => el.scrollTop)).toBeGreaterThan(0)
+  const title = detail.locator('[data-morph-field="title"]')
+  const field = (await title.boundingBox())!
+
+  // Slowed, the title is still waiting at its start when the test looks,
+  // though "Bearbeiten" taking focus has scrolled the detail back up.
+  const normalSpeed = await slowAnimations(page)
+  await page.keyboard.press('Escape')
+  await editMorph(detail)
+  const start = (await title.boundingBox())!
+  await normalSpeed()
+
+  expect(Math.abs(start.y - field.y)).toBeLessThan(1)
+  expect(Math.abs(start.x - field.x)).toBeLessThan(1)
   await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
 })
 

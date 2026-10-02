@@ -52,6 +52,7 @@ async function close() {
   if (leaving) return
   leaving = true
   const dishId = located.value?.dish.id
+  finishFieldMorph(dialog.value)
   const image = dishId && !editing.value ? headerImage() : null
   await morphClose(image, dishId ?? '', boardPath.value, leave)
 }
@@ -136,17 +137,18 @@ const notingCooking = computed({
 })
 
 // Entering and leaving edit mode morphs one side's fields into the other's
-// (utils/edit-morph.ts), measured before the swap. Once edited, the card
-// morph's arrival doesn't play again as the read-only Dish comes back.
-// Leaving puts focus back on "Bearbeiten" (edit mode focuses its title
-// itself), so it never falls to the page behind.
-const edited = ref(false)
+// (utils/edit-morph.ts), measured before the swap. Once edit mode has
+// opened, the card morph's arrival doesn't play again as the read-only Dish
+// comes back. Leaving puts focus back on "Bearbeiten" (edit mode focuses its
+// title itself), so it never falls to the page behind; first, as focusing
+// may scroll the detail, which the morph must start from.
+const editedOnce = ref(false)
 watch(editing, async (isEditing) => {
-  edited.value = true
+  editedOnce.value = true
   const places = measureFields(dialog.value)
   await nextTick()
-  morphFields(dialog.value, places)
   if (!isEditing) dialog.value?.querySelector<HTMLElement>('[data-edit]')?.focus()
+  morphFields(dialog.value, places)
 })
 </script>
 
@@ -157,7 +159,7 @@ watch(editing, async (isEditing) => {
       class="detail bg-bg p-0 text-text tablet:shadow-sheet"
       :class="{ morphed }"
       :data-covered="covered || undefined"
-      :data-edited="edited || undefined"
+      :data-edited="editedOnce || undefined"
       :aria-label="located?.dish.title"
       @keydown.esc="onEscape"
       @cancel.prevent="close"
