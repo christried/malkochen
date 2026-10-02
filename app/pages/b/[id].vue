@@ -58,7 +58,7 @@ function showNotice(text: string) {
   showToast({ text, duration: NOTICE_MS })
 }
 
-// The Cooking note sheet, from the Gekocht toast or the Cooking History.
+// The Cooking note sheet, from the Gekocht toast.
 const noting = ref<{ dish: DishView, cooking: CookingView } | null>(null)
 const notingCooking = computed({
   get: () => noting.value?.cooking ?? null,
@@ -139,30 +139,11 @@ function openDish(event: MouseEvent, dishId: string) {
   })
 }
 
-// The Dish detail's cooking actions, for the Dish it shows.
-function detailDish(dishId: string) {
-  return board.value && dishOnBoard(board.value, dishId)?.dish
-}
-function noteFromDetail(dishId: string, cooking: CookingView) {
-  const dish = detailDish(dishId)
-  if (dish) addNote(dish, cooking)
-}
-// Deleting a Cooking (PRD story 48): it goes, and a Toast offers "Rückgängig".
-function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
-  const result = boardModule.deleteCooking(dishId, cooking.id)
-  if (!result) return
-  hapticReject()
-  void showResult(result)
-}
-
 // "Gekocht ✓" on a card (useGekochtCelebration, which set its confetti off
-// already: `origin` null) or in the Dish detail, from its button. Answers
-// the id of the element to focus instead of the Dish's card.
-function cookDish(dishId: string, origin: Point | null): string | null {
+// already).
+function cookDish(dishId: string) {
   const result = boardModule.cookDish(dishId)
-  if (!result) return null
-  void showResult(result, { origin, moveFocus: false })
-  return result.focus ? focusTargetId(result.focus) : null
+  if (result) void showResult(result, { origin: null })
 }
 
 const { drag, dragging, entries } = useDishDrag(columnsEl, {
@@ -272,16 +253,13 @@ watch(emptyColumnIds, () => boardLoop.playWhenAtRest())
 // phones its Column comes to the front, so closing it lands there (in the
 // Column it was moved to, if it was). Closing it puts focus back on the
 // Dish's card (or, if it was deleted or moved to another Board, on what
-// took its place).
-const focusAfterDetail = ref<string | null>(null)
-watch(() => route.params.dishId, async (dishId, closedId) => {
+// took its place), as the Board module says.
+watch(() => route.params.dishId, (dishId, closedId) => {
   const shown = board.value && dishOnBoard(board.value, dishId ?? closedId)
   if (shown) activeColumnId.value = shown.column.id
   if (dishId || typeof closedId !== 'string') return
-  const focusId = focusAfterDetail.value
-  focusAfterDetail.value = null
-  await nextTick()
-  document.getElementById(focusId ?? focusTargetId({ dish: closedId }))?.focus()
+  const focus = boardModule.focusAfterDetail(closedId)
+  if (focus) void focusOn(focus)
 }, { immediate: true })
 
 const adding = ref(false)
@@ -332,65 +310,34 @@ async function chooseColumn(choosing: boolean) {
   menuSteps.value?.querySelector('button')?.focus()
 }
 const menuColumnId = computed(() => board.value && menuDish.value && dishOnBoard(board.value, menuDish.value.id)?.column.id)
-async function moveFromMenu(columnId: string, toBoard: BoardListing | null) {
+function moveFromMenu(columnId: string, toBoard: BoardListing | null) {
   const dishId = menuDish.value?.id
   menuDish.value = null
-  if (dishId) await moveAndFocus(dishId, columnId, toBoard)
-}
-
-// "Verschieben nach…", from the card's menu or the Dish detail: within this
-// Board, to the top of the Column, and a Toast says where (into the Gekocht
-// Column, the Gekocht toast does); or to another Board, and a Toast says
-// which and where. Focus goes to what took the card's place. From the Dish
-// detail, the Board is inert until the detail closes, so a Dish gone to
-// another Board has focus put on what took its place then.
-async function moveAndFocus(dishId: string, columnId: string, toBoard: BoardListing | null) {
-  if (!toBoard) {
-    const result = boardModule.moveDish(dishId, { columnId })
-    if (!result) return
-    const column = board.value?.columns.find(c => c.id === columnId)
-    if (!result.notice && column) showNotice(t.dish.moved(result.dish.title, column.name))
-    return showResult(result)
-  }
-  const result = boardModule.moveToBoard(dishId, { boardId: toBoard.id, columnId })
-  if (!result) return
-  const column = toBoard.columns.find(c => c.id === result.placement?.columnId)
-  if (column) showNotice(t.dish.movedToBoard(result.dish.title, boardLabel(toBoard), column.name))
-  focusWhenDetailCloses(result)
-  return showResult(result)
+  const result = dishId && moveToPicked(boardModule, dishId, columnId, toBoard)
+  if (result) void showResult(result, { moved: { toBoard } })
 }
 function deleteFromMenu() {
   const dishId = menuDish.value?.id
   menuDish.value = null
-  if (dishId) deleteDish(dishId)
+  const result = dishId && boardModule.deleteDish(dishId)
+  if (result) void showResult(result)
 }
 
-// Deleting a Dish (PRD story 47), from the card's menu or the Dish detail:
-// its card goes, and a Toast offers "Rückgängig". From the Dish detail, the
-// Board is inert until the detail closes, so focus goes to what took the
-// card's place then.
-function deleteDish(dishId: string) {
-  const result = boardModule.deleteDish(dishId)
-  if (!result) return
-  hapticReject()
-  focusWhenDetailCloses(result)
-  void showResult(result)
-}
-
-// From the Dish detail, the Board is inert until the detail closes, so a
-// Dish gone from the Board has focus put on what took its place then.
-function focusWhenDetailCloses(result: BoardResult) {
-  if (route.params.dishId && result.focus) focusAfterDetail.value = focusTargetId(result.focus)
-}
-
-// Shows what an operation of the Board module answered: its notice, as a
-// Toast offering "Rückgängig" if it comes with an undo (whose result shows
-// the same way), or for a Cooking recorded the Gekocht celebration (its
+// Shows what an operation of the Board module answered, from a card or the
+// Dish detail: haptics for a Dish or Cooking deleted; for a Dish moved with
+// "Verschieben nach…", a Toast saying where to; its notice, as a Toast
+// offering "Rückgängig" if it comes with an undo (whose result shows the
+// same way), or for a Cooking recorded the Gekocht celebration (its
 // confetti from `origin`); then what its write ended in, once settled; and
-// focus where it says, unless the caller moves focus itself (`moveFocus:
-// false`) or the Dish detail makes the Board inert.
-async function showResult(result: BoardResult, { origin, moveFocus = true }: { origin?: Point | null, moveFocus?: boolean } = {}) {
+// focus where it says, unless dragging moved it (`moveFocus: false`) or the
+// Dish detail makes the Board inert (focus goes back as it closes).
+async function showResult(result: BoardResult, { origin, moved, moveFocus = true }: ResultContext & { moveFocus?: boolean } = {}) {
   const { notice, undo, settled } = result
+  if (notice === 'deleted' || notice === 'cookingDeleted') hapticReject()
+  if (moved && !notice) {
+    const text = movedText(result, moved.toBoard)
+    if (text) showNotice(text)
+  }
   if (notice === 'cook') {
     celebrateCooking(result, origin)
   }
@@ -401,9 +348,15 @@ async function showResult(result: BoardResult, { origin, moveFocus = true }: { o
       : { text, duration: NOTICE_MS })
   }
   void settled?.then(r => showResult(r))
-  if (!moveFocus || !result.focus || route.params.dishId) return
-  await nextTick()
-  document.getElementById(focusTargetId(result.focus))?.focus()
+  if (moveFocus && result.focus && !route.params.dishId) await focusOn(result.focus)
+}
+
+// Where "Verschieben nach…" moved a Dish to: a Column of this Board (into
+// the Gekocht Column, the Gekocht toast says so instead), or of `toBoard`.
+function movedText({ dish, placement }: BoardResult, toBoard: BoardListing | null) {
+  const column = (toBoard ?? board.value)?.columns.find(c => c.id === placement?.columnId)
+  if (!column) return null
+  return toBoard ? t.dish.movedToBoard(dish.title, boardLabel(toBoard), column.name) : t.dish.moved(dish.title, column.name)
 }
 
 // A notice's text in the UI strings: about the result's Cooking, or its Dish.
@@ -788,12 +741,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <NuxtPage
       v-model:toast="toast"
       :board="board"
-      @edited="showResult"
-      @delete="deleteDish"
-      @move="moveAndFocus"
-      @cook="cookDish"
-      @note="noteFromDetail"
-      @delete-cooking="deleteCookingFromDetail"
+      @result="showResult"
     />
   </main>
 </template>

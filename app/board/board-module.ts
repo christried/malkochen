@@ -162,6 +162,17 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return back
   }
 
+  // Where focus went when a Dish left the Board (deleted, moved to another
+  // Board), for focusAfterDetail.
+  const focusWhenGone = new Map<string, FocusTarget>()
+
+  // Where focus goes once the Dish detail of a Dish closes: its card, if it
+  // is on the Board; else where it went when the Dish left it. Null if
+  // another Member took it off the Board.
+  function focusAfterDetail(dishId: string): FocusTarget | null {
+    return find(dishId) ? { dish: dishId } : focusWhenGone.get(dishId) ?? null
+  }
+
   function find(dishId: string) {
     return board.value ? dishOnBoard(board.value, dishId) : null
   }
@@ -258,6 +269,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     if (!found) return null
     const { dish } = found
     const { origin: place, focus } = leave(dish, found.column)
+    focusWhenGone.set(dishId, focus)
 
     const deleted = queued(dishId, () => transport.deleteDish(dishId)).then(() => true, (error: unknown) => {
       if (isGone(error)) return true
@@ -409,6 +421,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     if (!found) return null
     const { dish } = found
     const { origin, focus } = leave(dish, found.column)
+    focusWhenGone.set(dishId, focus)
 
     const settled = queued(dishId, async (latest): Promise<BoardResult> => {
       try {
@@ -491,7 +504,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return { dish, cooking: cooking ?? saved }
   }
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, focusAfterDetail }
 }
 
 export type BoardModule = ReturnType<typeof createBoardModule>
