@@ -3,9 +3,16 @@
 // an ink thumb behind the chosen one that slides over when another is
 // chosen (420ms, with a little overshoot). Reduced motion: it moves at once.
 // The segments aren't `rounded-pill`, so they don't grow under the mouse.
+// The new theme is revealed from the chosen segment (utils/theme-reveal.ts).
 const t = useStrings()
 const { preference, themes } = useTheme()
 const chosen = computed(() => Math.max(0, themes.indexOf(preference.value)))
+
+function choose(theme: ThemePreference, option: HTMLElement) {
+  if (theme === preference.value) return
+  const changes = themeShownFor(theme) !== themeShownFor(preference.value)
+  revealTheme(option, changes, () => (preference.value = theme))
+}
 </script>
 
 <template>
@@ -27,7 +34,7 @@ const chosen = computed(() => Math.max(0, themes.indexOf(preference.value)))
       :aria-checked="preference === theme"
       class="relative rounded-[var(--radius-pill)] px-4 py-2.5 text-button transition-colors duration-fade ease-fade focus-visible:outline-2 focus-visible:outline-focus"
       :class="preference === theme ? 'text-on-inverse' : 'text-text'"
-      @click="preference = theme"
+      @click="choose(theme, $event.currentTarget as HTMLElement)"
     >
       {{ t.theme[theme] }}
     </button>

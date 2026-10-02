@@ -198,6 +198,23 @@ html {
     z-index: 1;
   }
 }
+/* The Theme reveal (utils/theme-reveal.ts): with View Transitions, the new
+   theme's picture is clipped to a growing circle over the old one, which
+   stays as it is; without them, or with reduced motion, the colours
+   cross-fade (fade: 200ms with reduced motion). */
+html[data-theme-reveal="spread"]::view-transition-old(root),
+html[data-theme-reveal="spread"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-theme-reveal="fade"],
+html[data-theme-reveal="fade"] *,
+html[data-theme-reveal="fade"] *::before,
+html[data-theme-reveal="fade"] *::after {
+  transition-property: background-color, color, border-color, outline-color, fill, stroke, box-shadow;
+  transition-duration: var(--dur-fade);
+  transition-timing-function: var(--ease-fade);
+}
 @keyframes board-recede {
   to { scale: .94; }
 }
