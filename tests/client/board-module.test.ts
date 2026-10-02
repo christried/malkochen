@@ -463,7 +463,7 @@ test('a move to another Board that fails puts the Dish back exactly where it was
   fake.failNext('moveDish', 500)
 
   const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
-  // Deleting a meanwhile moves c up to b's old index: b still goes back above c.
+  // Deleting Dish a meanwhile moves c up to b's old index: b still goes back above c.
   module.deleteDish('a')
 
   expect(await result.settled).toEqual({ dish: result.dish, notice: 'moveFailed' })

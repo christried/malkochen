@@ -146,6 +146,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // the Dish's writes are all settled, or one succeeds.
   const rolledBackTo = new Map<string, Place>()
 
+  // Where a Dish whose move failed goes back to: where it came from
+  // (`origin`), unless a write before this one failed too. Remembered for
+  // the Dish's writes after it.
+  function rollBackTo(dishId: string, origin: Place): Place {
+    const back = rolledBackTo.get(dishId) ?? origin
+    rolledBackTo.set(dishId, back)
+    return back
+  }
+
   function find(dishId: string) {
     return board.value ? dishOnBoard(board.value, dishId) : null
   }
@@ -328,11 +337,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
           takeOut(dishId)
           return { dish }
         }
-        // Back where the server still has it: where it came from, unless a
-        // write before this one failed too. A later write moves it on, or
+        // Back where the server still has it. A later write moves it on, or
         // goes back there in turn.
-        const back = rolledBackTo.get(dishId) ?? origin
-        rolledBackTo.set(dishId, back)
+        const back = rollBackTo(dishId, origin)
         removeFrom(dish.cookings, pending)
         // Undone already, it is back, and nothing is left to tell.
         if (undone) return { dish }
@@ -401,10 +408,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
       }
       catch (error) {
         if (isGone(error)) return { dish }
-        // Back where the server still has it: where it came from, unless a
-        // write before this one failed too.
-        const back = rolledBackTo.get(dishId) ?? origin
-        rolledBackTo.set(dishId, back)
+        // Back where the server still has it.
+        const back = rollBackTo(dishId, origin)
         if (latest()) moveBack(dish, back)
         return { dish, notice: 'moveFailed' }
       }

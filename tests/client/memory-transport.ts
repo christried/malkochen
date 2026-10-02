@@ -67,8 +67,9 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // there. Null for a Dish the server doesn't have.
   function moveOnServer(dishId: string, columnId: string | undefined, index: number | undefined, cook: boolean): MovedDish | null {
     const found = located(d => d.id === dishId)
-    const onto = [server, ...others].find(b => b.columns.some(c => columnId === undefined ? c.isGekocht : c.id === columnId))
-    const target = onto?.columns.find(c => columnId === undefined ? c.isGekocht : c.id === columnId)
+    const isTarget = (c: BoardView['columns'][number]) => columnId === undefined ? c.isGekocht : c.id === columnId
+    const onto = [server, ...others].find(b => b.columns.some(isTarget))
+    const target = onto?.columns.find(isTarget)
     if (!found) return null
     if (!onto || !target) throw new WriteFailed(400)
     const to = landingIndex(target, dishId, index)
