@@ -91,6 +91,13 @@ export interface Destination {
   index?: number
 }
 
+// Where a Dish moved to another Board is asked to go: to the top of a
+// Column there.
+export interface BoardDestination {
+  boardId: string
+  columnId: string
+}
+
 // Where a Dish was in its Column, to put it back there (putBack): its index,
 // and the Dishes above and below it then.
 interface Place {
@@ -146,6 +153,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // the Dish's writes are all settled, or one succeeds.
   const rolledBackTo = new Map<string, Place>()
 
+  // Where a Dish whose move failed goes back to: where it came from
+  // (`origin`), unless a write before this one failed too. Remembered for
+  // the Dish's writes after it.
+  function rollBackTo(dishId: string, origin: Place): Place {
+    const back = rolledBackTo.get(dishId) ?? origin
+    rolledBackTo.set(dishId, back)
+    return back
+  }
+
   function find(dishId: string) {
     return board.value ? dishOnBoard(board.value, dishId) : null
   }
@@ -168,6 +184,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     const aboveAt = into.dishes.findIndex(d => d.id === place.above)
     insert(into, belowAt !== -1 ? belowAt : aboveAt !== -1 ? aboveAt + 1 : place.index, dish)
     return true
+  }
+
+  // Takes a Dish out of its Column, answering where it was, to put it back
+  // there, and where focus goes instead of its card.
+  function leave(dish: DishView, from: BoardColumn): { origin: Place, focus: FocusTarget } {
+    const index = from.dishes.indexOf(dish)
+    const left = { origin: placeOf(from, index), focus: focusAfterLeaving(from, index) }
+    from.dishes.splice(index, 1)
+    return left
   }
 
   // Takes a Dish off the Board and puts it back at `place`.
@@ -231,11 +256,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   function deleteDish(dishId: string): BoardResult | null {
     const found = find(dishId)
     if (!found) return null
-    const { dish, column: from } = found
-    const index = from.dishes.indexOf(dish)
-    const place = placeOf(from, index)
-    const focus = focusAfterLeaving(from, index)
-    from.dishes.splice(index, 1)
+    const { dish } = found
+    const { origin: place, focus } = leave(dish, found.column)
 
     const deleted = queued(dishId, () => transport.deleteDish(dishId)).then(() => true, (error: unknown) => {
       if (isGone(error)) return true
@@ -295,9 +317,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     const stays = target === from && landing === index
     const cooks = recordsCooking(from, target, { cook })
     if (stays && !cooks) return null
-    const origin = placeOf(from, index)
-    const focus = stays ? { dish: dishId } : focusAfterLeaving(from, index)
-    from.dishes.splice(index, 1)
+    const left = leave(dish, from)
+    const { origin } = left
+    const focus = stays ? { dish: dishId } : left.focus
     insert(target, landing, dish)
     const placement = { boardId: board.value.id, columnId: target.id, index: landing }
     // The Cooking as the server will record it, filled in once it has. The
@@ -328,11 +350,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
           takeOut(dishId)
           return { dish }
         }
-        // Back where the server still has it: where it came from, unless a
-        // write before this one failed too. A later write moves it on, or
+        // Back where the server still has it. A later write moves it on, or
         // goes back there in turn.
-        const back = rolledBackTo.get(dishId) ?? origin
-        rolledBackTo.set(dishId, back)
+        const back = rollBackTo(dishId, origin)
         removeFrom(dish.cookings, pending)
         // Undone already, it is back, and nothing is left to tell.
         if (undone) return { dish }
@@ -375,6 +395,37 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     }
 
     return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo } }
+  }
+
+  // Moving a Dish to a Column on another of the Member's Boards (PRD story
+  // 46): it leaves this Board at once, for the top of that Column, keeping
+  // its Cooking History; into that Board's Gekocht Column the server
+  // records a Cooking, but there is no Gekocht toast or undo, as the Dish
+  // is no longer here. If the move fails, it comes back exactly where it
+  // was, with a notice; one the server no longer has (another Member
+  // deleted it) stays gone. Null if it isn't on this Board.
+  function moveToBoard(dishId: string, to: BoardDestination): BoardResult | null {
+    const found = find(dishId)
+    if (!found) return null
+    const { dish } = found
+    const { origin, focus } = leave(dish, found.column)
+
+    const settled = queued(dishId, async (latest): Promise<BoardResult> => {
+      try {
+        const moved = await transport.moveDish(dishId, { columnId: to.columnId })
+        rolledBackTo.delete(dishId)
+        return { dish, placement: moved.placement }
+      }
+      catch (error) {
+        if (isGone(error)) return { dish }
+        // Back where the server still has it.
+        const back = rollBackTo(dishId, origin)
+        if (latest()) moveBack(dish, back)
+        return { dish, notice: 'moveFailed' }
+      }
+    })
+
+    return { dish, placement: { ...to, index: 0 }, focus, settled }
   }
 
   // Puts a Cooking back into its Dish's Cooking History, found by the
@@ -440,7 +491,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return { dish, cooking: cooking ?? saved }
   }
 
-  return { addDish, editDish, deleteDish, moveDish, cookDish, deleteCooking, noteCooking }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking }
 }
 
 export type BoardModule = ReturnType<typeof createBoardModule>

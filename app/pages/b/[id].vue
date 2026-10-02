@@ -76,7 +76,6 @@ function addNote(dish: DishView, cooking: CookingView) {
 // (showResult). The forms under the page get it injected (useBoardModule).
 const boardModule = createBoardModule(board, httpTransport())
 provide(boardModuleKey, boardModule)
-const { moveToBoard } = useDishMove(board, showToast)
 const confetti = useConfetti()
 
 // Just made with "Neues Board", the Board celebrates as it opens.
@@ -341,10 +340,10 @@ async function moveFromMenu(columnId: string, toBoard: BoardListing | null) {
 
 // "Verschieben nach…", from the card's menu or the Dish detail: within this
 // Board, to the top of the Column, and a Toast says where (into the Gekocht
-// Column, the Gekocht toast does); or to another Board. Focus goes to what
-// took the card's place. From the Dish detail, the Board is inert until
-// the detail closes, so a Dish gone to another Board has focus put on what
-// took its place then.
+// Column, the Gekocht toast does); or to another Board, and a Toast says
+// which and where. Focus goes to what took the card's place. From the Dish
+// detail, the Board is inert until the detail closes, so a Dish gone to
+// another Board has focus put on what took its place then.
 async function moveAndFocus(dishId: string, columnId: string, toBoard: BoardListing | null) {
   if (!toBoard) {
     const result = boardModule.moveDish(dishId, { columnId })
@@ -353,13 +352,12 @@ async function moveAndFocus(dishId: string, columnId: string, toBoard: BoardList
     if (!result.notice && column) showNotice(t.dish.moved(result.dish.title, column.name))
     return showResult(result)
   }
-  const focusId = moveToBoard(dishId, columnId, toBoard)
-  if (route.params.dishId) {
-    focusAfterDetail.value = focusId
-    return
-  }
-  await nextTick()
-  if (focusId) document.getElementById(focusId)?.focus()
+  const result = boardModule.moveToBoard(dishId, { boardId: toBoard.id, columnId })
+  if (!result) return
+  const column = toBoard.columns.find(c => c.id === result.placement?.columnId)
+  if (column) showNotice(t.dish.movedToBoard(result.dish.title, boardLabel(toBoard), column.name))
+  focusWhenDetailCloses(result)
+  return showResult(result)
 }
 function deleteFromMenu() {
   const dishId = menuDish.value?.id
@@ -375,8 +373,14 @@ function deleteDish(dishId: string) {
   const result = boardModule.deleteDish(dishId)
   if (!result) return
   hapticReject()
-  if (route.params.dishId && result.focus) focusAfterDetail.value = focusTargetId(result.focus)
+  focusWhenDetailCloses(result)
   void showResult(result)
+}
+
+// From the Dish detail, the Board is inert until the detail closes, so a
+// Dish gone from the Board has focus put on what took its place then.
+function focusWhenDetailCloses(result: BoardResult) {
+  if (route.params.dishId && result.focus) focusAfterDetail.value = focusTargetId(result.focus)
 }
 
 // Shows what an operation of the Board module answered: its notice, as a

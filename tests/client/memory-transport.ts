@@ -7,7 +7,8 @@ import type { AddedDish, DishView, MovedDish, PlacedDish, SavedDish } from '../.
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
 // The in-memory transport for the client Board module's tests: a small fake
-// of the server, holding its own copy of the Board. Tests change that copy
+// of the server, holding its own copy of the Board, and of the Member's
+// other Boards a Dish can be moved to. Tests change that copy
 // as another Member would (deleting a Dish or a Column elsewhere), and can
 // tell the next call of a write to fail with a status or to stay pending
 // until they settle it.
@@ -39,8 +40,9 @@ export interface MemoryTransport {
   deleteCookingElsewhere: (cookingId: string) => void
 }
 
-export function memoryTransport(board: BoardView): MemoryTransport {
+export function memoryTransport(board: BoardView, otherBoards: BoardView[] = []): MemoryTransport {
   const server = structuredClone(board)
+  const others = structuredClone(otherBoards)
   const sent: string[] = []
   const replies = new Map<Write, Reply[]>()
   // Deleted Dishes keep their Column and index, so restoring puts them back.
@@ -61,16 +63,19 @@ export function memoryTransport(board: BoardView): MemoryTransport {
 
   // Moves a Dish as the server does (shared/placement.ts), recording a
   // Cooking where the rules say so; without a Column, to the Gekocht Column
-  // ("Gekocht ✓"). Null for a Dish the server doesn't have.
+  // ("Gekocht ✓"). A Column on another of the Member's Boards takes it
+  // there. Null for a Dish the server doesn't have.
   function moveOnServer(dishId: string, columnId: string | undefined, index: number | undefined, cook: boolean): MovedDish | null {
     const found = located(d => d.id === dishId)
-    const target = server.columns.find(c => columnId === undefined ? c.isGekocht : c.id === columnId)
+    const isTarget = (c: BoardView['columns'][number]) => columnId === undefined ? c.isGekocht : c.id === columnId
+    const onto = [server, ...others].find(b => b.columns.some(isTarget))
+    const target = onto?.columns.find(isTarget)
     if (!found) return null
-    if (!target) throw new WriteFailed(400)
+    if (!onto || !target) throw new WriteFailed(400)
     const to = landingIndex(target, dishId, index)
     found.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
     target.dishes.splice(to, 0, found.dish)
-    const placed = { ...structuredClone(found.dish), placement: { boardId: server.id, columnId: target.id, index: to } }
+    const placed = { ...structuredClone(found.dish), placement: { boardId: onto.id, columnId: target.id, index: to } }
     if (!recordsCooking(found.column, target, { cook })) return placed
     const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), note: null, recordedBy: null }
     found.dish.cookings.unshift(cooking)

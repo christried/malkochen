@@ -31,12 +31,27 @@ function boardFixture(): BoardView {
   }
 }
 
+// Another of the Member's Boards: Feierabend, with Ideen (e) and Gekocht
+// (empty).
+function otherBoardFixture(): BoardView {
+  return {
+    ...boardFixture(),
+    id: 'feierabend',
+    name: 'Feierabend',
+    emoji: '🌙',
+    columns: [
+      { id: 'f-ideen', name: 'Ideen', isGekocht: false, dishes: [dish('e')] },
+      { id: 'f-gekocht', name: 'Gekocht', isGekocht: true, dishes: [] },
+    ],
+  }
+}
+
 // `adjust` changes the fixture before the Board and the server get it.
 function setup(adjust: (board: BoardView) => void = () => {}) {
   const fixture = boardFixture()
   adjust(fixture)
   const board = ref<BoardView | undefined>(structuredClone(fixture))
-  const fake = memoryTransport(fixture)
+  const fake = memoryTransport(fixture, [otherBoardFixture()])
   const module = createBoardModule(board, fake.transport)
   // Each Column's Dish ids, as the Board shows them.
   const shown = () => Object.fromEntries(board.value!.columns.map(c => [c.id, c.dishes.map(d => d.id)]))
@@ -429,4 +444,65 @@ test('a move under way when an edit is saved still settles where the server put 
   expect(await moved.settled).toMatchObject({ placement: { columnId: 'woche', index: 0 } })
   expect(shown().woche).toEqual(['a', 'd'])
   expect((await edited).dish.title).toBe('Neu')
+})
+
+test('a Dish moved to another Board leaves this one at once, and settles where the server put it there', async () => {
+  const { fake, module, shown } = setup()
+
+  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+
+  expect(shown().ideen).toEqual(['a', 'c'])
+  expect(result).toMatchObject({ dish: { id: 'b' }, placement: { boardId: 'feierabend', columnId: 'f-ideen', index: 0 }, focus: { dish: 'c' } })
+  expect(await result.settled).toEqual({ dish: result.dish, placement: { boardId: 'feierabend', columnId: 'f-ideen', index: 0 } })
+  expect(shown().ideen).toEqual(['a', 'c'])
+  expect(fake.sent).toEqual(['moveDish b f-ideen'])
+})
+
+test('a move to another Board that fails puts the Dish back exactly where it was, with a notice', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('moveDish', 500)
+
+  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+  // Deleting Dish a meanwhile moves c up to b's old index: b still goes back above c.
+  module.deleteDish('a')
+
+  expect(await result.settled).toEqual({ dish: result.dish, notice: 'moveFailed' })
+  expect(shown().ideen).toEqual(['b', 'c'])
+})
+
+test('a Dish another Member deleted already (404) stays gone when moved to another Board, without a notice', async () => {
+  const { fake, module, shown } = setup()
+  fake.deleteDishElsewhere('b')
+
+  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+
+  expect(await result.settled).toEqual({ dish: result.dish })
+  expect(shown().ideen).toEqual(['a', 'c'])
+})
+
+test('a move then a move to another Board that both fail leave the Dish where it was before either', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('moveDish', 500)
+  fake.failNext('moveDish', 500)
+
+  const moved = module.moveDish('b', { columnId: 'woche' })!
+  const movedAway = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+
+  expect(await moved.settled).toMatchObject({ notice: 'moveFailed' })
+  expect(await movedAway.settled).toMatchObject({ notice: 'moveFailed' })
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
+  expect(fake.sent).toEqual(['moveDish b woche', 'moveDish b f-ideen'])
+})
+
+test('a Dish moved into another Board’s Gekocht Column keeps its Cooking History here, with no Gekocht toast or undo', async () => {
+  const { module, shown } = setup(cookedTwice)
+
+  const result = module.moveToBoard('d', { boardId: 'feierabend', columnId: 'f-gekocht' })!
+
+  expect(result).not.toHaveProperty('notice')
+  expect(result).not.toHaveProperty('undo')
+  expect(result).not.toHaveProperty('cooking')
+  expect(await result.settled).toEqual({ dish: result.dish, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 } })
+  expect(result.dish.cookings.map(c => c.id)).toEqual(['sept-20', 'sept-1'])
+  expect(shown().woche).toEqual([])
 })
