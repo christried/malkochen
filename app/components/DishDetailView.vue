@@ -30,6 +30,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
       <div
         class="detail-image aspect-[4/3] max-h-[60dvh] w-full overflow-hidden bg-surface-muted"
         data-detail-image
+        data-morph-field="image"
       >
         <DishImage
           :image-url="dish.imageUrl"
@@ -40,6 +41,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
       <div
         class="absolute inset-x-0 top-0 flex justify-between p-4"
         data-detail-actions
+        data-morph-field="actions"
       >
         <button
           type="button"
@@ -64,7 +66,10 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
       class="flex flex-1 flex-col gap-5 px-5 pb-10 pt-6 tablet:px-7"
       data-detail-body
     >
-      <div class="flex flex-col gap-2">
+      <div
+        class="flex flex-col gap-2"
+        data-morph-field="title"
+      >
         <p class="text-small text-text-muted">
           <span aria-hidden="true">{{ board.emoji }}</span> {{ t.detail.placement(board.name, columnName) }}
         </p>
@@ -77,6 +82,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
       <p
         v-if="dish.note"
         class="whitespace-pre-line text-body"
+        data-morph-field="note"
       >
         {{ dish.note }}
       </p>
@@ -84,6 +90,7 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
       <div
         v-if="dish.source"
         class="flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-muted p-3 pl-4"
+        data-morph-field="source"
       >
         <SourceBadge :kind="dish.source.kind" />
         <a
@@ -96,7 +103,10 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
         </a>
       </div>
 
-      <p class="flex items-center gap-2 text-small text-text-muted">
+      <p
+        class="flex items-center gap-2 text-small text-text-muted"
+        data-morph-field="added"
+      >
         <UserAvatar
           v-if="dish.addedBy"
           :name="dish.addedBy.name"
@@ -107,12 +117,16 @@ const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, ne
 
       <CookingHistory
         :dish="dish"
+        data-morph-field="history"
         @cook="origin => $emit('cook', origin)"
         @note="cooking => $emit('note', cooking)"
         @delete="cooking => $emit('deleteCooking', cooking)"
       />
 
-      <div class="mt-auto flex flex-wrap gap-3">
+      <div
+        class="mt-auto flex flex-wrap gap-3"
+        data-morph-field="buttons"
+      >
         <button
           type="button"
           class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"

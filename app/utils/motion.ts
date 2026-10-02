@@ -15,7 +15,7 @@ export function supportsViewTransitions(): boolean {
 // collapses to 0 with reduced motion, except `fade`.
 export type DurationToken
   = | 'tap' | 'fade' | 'pop' | 'settle' | 'sheet' | 'swoosh' | 'lift' | 'stagger' | 'type' | 'celebrate' | 'idle'
-    | 'image-bloom' | 'drop-settle' | 'drop-swallow' | 'drop-shrink' | 'drop-collapse' | 'drop-burst'
+    | 'image-bloom' | 'edit-morph' | 'drop-settle' | 'drop-swallow' | 'drop-shrink' | 'drop-collapse' | 'drop-burst'
     | 'cooking-collapse' | 'cook-hold' | 'cook-leave' | 'toast-delay' | 'tab-bump'
     | 'fly-to-tab' | 'milestone-delay' | 'saved-flight' | 'sheet-out' | 'scrim-out'
     | 'badge-step' | 'milestone-stay' | 'board-created-columns' | 'board-created-column-gap'

@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
+import { editMorph, expectFieldsMorphing, slowAnimations } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
@@ -234,6 +235,46 @@ test('focus follows the detail: into edit mode, back out, and back to the card',
   await detail.getByRole('button', { name: 'Schließen' }).click()
   await expect(detail).toBeHidden()
   await expect(page.getByRole('link', { name: 'Pfeiltasten' })).toBeFocused()
+})
+
+test('the read-only Dish morphs into its fields one after another, and back', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Pfeiltasten')
+
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await expectFieldsMorphing(detail)
+  await expect(detail.getByLabel('Titel')).toBeFocused()
+
+  // Leaving reverses it: the fields morph back into the read-only Dish.
+  await page.keyboard.press('Escape')
+  await expectFieldsMorphing(detail)
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
+})
+
+test('leaving edit mode scrolled down, the title starts where its field was', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 })
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Pfeiltasten')
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished)))
+  await detail.evaluate(el => el.scrollTo(0, el.scrollHeight))
+  expect(await detail.evaluate(el => el.scrollTop)).toBeGreaterThan(0)
+  const title = detail.locator('[data-morph-field="title"]')
+  const field = (await title.boundingBox())!
+
+  // Slowed, the title is still waiting at its start when the test looks,
+  // though "Bearbeiten" taking focus has scrolled the detail back up.
+  const normalSpeed = await slowAnimations(page)
+  await page.keyboard.press('Escape')
+  await editMorph(detail)
+  const start = (await title.boundingBox())!
+  await normalSpeed()
+
+  expect(Math.abs(start.y - field.y)).toBeLessThan(1)
+  expect(Math.abs(start.x - field.x)).toBeLessThan(1)
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
 })
 
 test('beside the Board, tapping the dimmed Board or Escape closes the detail but never discards edits', async ({ page }) => {
