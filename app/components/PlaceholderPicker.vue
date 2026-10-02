@@ -16,14 +16,14 @@ const props = withDefaults(defineProps<{
   label: string
   options?: readonly Placeholder[]
 }>(), { options: () => PLACEHOLDERS })
-const emit = defineEmits<{ pick: [placeholder: Placeholder] }>()
+const emit = defineEmits<{ pick: [] }>()
 const t = useStrings()
 const full = computed(() => props.options.length === PLACEHOLDERS.length)
 
 function pick(placeholder: Placeholder) {
   selected.value = placeholder
   open.value = false
-  emit('pick', placeholder)
+  emit('pick')
 }
 
 // Radio-group keyboard behaviour: arrows move the selection, one tab stop.

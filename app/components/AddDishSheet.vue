@@ -26,7 +26,7 @@ const link = ref('')
 // Looks the link up as soon as it is one: at once when pasted, after a short
 // pause while typing. Only the latest lookup's answer counts.
 const lookup = useLinkLookup(link)
-const { status: lookupStatus, result } = lookup
+const { status: lookupStatus, result, canonicalLink } = lookup
 
 const title = ref('')
 const note = ref('')
@@ -55,7 +55,7 @@ const titleNeeded = computed(() => result.value !== null && result.value.suggest
 // found it, else the link as pasted. None without a link, or before either.
 const sourceLink = computed(() => {
   if (withoutLink.value) return null
-  if (result.value) return result.value.canonicalLink
+  if (canonicalLink.value) return canonicalLink.value
   return lookupStatus.value === 'failed' ? webLink(link.value) : null
 })
 

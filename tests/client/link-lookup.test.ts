@@ -2,10 +2,10 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { ref } from 'vue'
 import { useLinkLookup, type LookupAnswer } from '../../app/composables/useLinkLookup'
 
-// The link lookup module: a link goes in as the Member types or pastes it,
-// and the tests look at its status and result, and at the lookups the fake
-// Source Lookup was asked for. Each fake lookup answers only when the test
-// says so.
+// Seam 4: the client link lookup module. A link goes in as the Member types
+// or pastes it, and the tests look at its status and result, and at the
+// lookups the fake Source Lookup was asked for. Each fake lookup answers only
+// when the test says so.
 
 beforeEach(() => {
   vi.useFakeTimers()

@@ -6,8 +6,9 @@ import { webLink } from '../utils/web-link'
 
 // The client link lookup module (spec #62): one link field's Source Lookup.
 // It looks the link up as soon as it is one, after a short pause while
-// typing. The loading state shows immediately. Plain Vue reactivity, no Nuxt
-// and no DOM, so it runs in Node under test.
+// typing. The loading state shows immediately. Plain Vue reactivity and no
+// DOM; the only Nuxt piece is the default lookup (`$fetch`), which the tests
+// replace with a fake, so it runs in Node under test.
 
 // GET /api/source-lookup: what Source Lookup found, and the Image Ticket
 // saving needs to copy the image.
@@ -58,9 +59,12 @@ export function useLinkLookup(link: Ref<string>, lookUp: LookUp = sourceLookup) 
     if (pasted) run(target, change)
     else timer = setTimeout(() => run(target, change), TYPING_PAUSE)
   }, { flush: 'sync' })
-  // A pending lookup ends with the component using it (silently in tests,
-  // which have no component).
-  onScopeDispose(() => clearTimeout(timer), true)
+  // A pending lookup ends with the component using it, and one under way is
+  // ignored (silently in tests, which have no component).
+  onScopeDispose(() => {
+    clearTimeout(timer)
+    latest++
+  }, true)
 
   const result = computed(() => state.value.status === 'found' ? state.value.result : null)
   return {
