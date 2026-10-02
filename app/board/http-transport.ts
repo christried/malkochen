@@ -1,5 +1,5 @@
 import type { CookingView } from '~~/server/utils/cookings'
-import type { CreatedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
+import type { AddedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import { WriteFailed, type BoardTransport } from './board-module'
 
 // The client Board module's writes over HTTP, for the app. Each is counted
@@ -7,7 +7,7 @@ import { WriteFailed, type BoardTransport } from './board-module'
 // it for a moment. A failed request rejects with WriteFailed and its status.
 export function httpTransport(): BoardTransport {
   return {
-    addDish: (boardId, dish) => tracked($fetch<CreatedDish>(`/api/boards/${boardId}/dishes`, { method: 'POST', body: dish })),
+    addDish: (boardId, dish) => tracked($fetch<AddedDish>(`/api/boards/${boardId}/dishes`, { method: 'POST', body: dish })),
     editDish: (dishId, changes) => tracked($fetch<SavedDish>(`/api/dishes/${dishId}`, { method: 'PATCH', body: changes })),
     deleteDish: dishId => tracked($fetch<unknown>(`/api/dishes/${dishId}`, { method: 'DELETE' })).then(() => undefined),
     restoreDish: dishId => tracked($fetch<PlacedDish>(`/api/dishes/${dishId}/restore`, { method: 'POST' })),

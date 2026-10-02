@@ -1,15 +1,16 @@
-import { newDishBody, sourceOf } from '../../../utils/dish-input'
-import { addDish, type CreatedDish } from '../../../utils/dishes'
+import { addDishBody, sourceOf } from '../../../utils/dish-input'
+import { addDish, type AddedDish } from '../../../utils/dishes'
 import { storeFoundImage } from '../../../utils/image-store'
 
 // POST /api/boards/:id/dishes — adds a Dish at the top of the Board's first
 // Column: from a link (Source and Source image), or without one ("Ohne Link
-// hinzufügen"). Answers it placed (CreatedDish). The Source image is copied into the Image Store; if that
-// fails (or its Image Ticket is not valid), the Dish keeps its Placeholder
-// Image and the answer carries `imageNotStored: true`, so the Member is told.
-export default defineEventHandler(async (event): Promise<CreatedDish> => {
+// hinzufügen"), and answers it placed (AddedDish). The Source image is
+// copied into the Image Store; if that fails (or its Image Ticket is not
+// valid), the Dish keeps its Placeholder Image and the answer carries
+// `imageNotStored: true`, so the Member is told.
+export default defineEventHandler(async (event): Promise<AddedDish> => {
   const boardId = boardIdParam(event)
-  const parsed = newDishBody.safeParse(await readBody(event).catch(() => null))
+  const parsed = addDishBody.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A title and a Placeholder Image are required' })
   const user = requireUser(event)
   const { source, imageUrl, imageTicket, ...rest } = parsed.data

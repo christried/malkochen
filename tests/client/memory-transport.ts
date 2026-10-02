@@ -2,8 +2,8 @@ import type { BoardTransport } from '../../app/board/board-module'
 import { WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
 import type { CookingView } from '../../server/utils/cookings'
-import type { DishEditBody, NewDishBody } from '../../server/utils/dish-input'
-import type { CreatedDish, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
+import type { AddedDish, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
 // The in-memory transport for the client Board module's tests: a small fake
@@ -90,7 +90,7 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   // Adds a Dish as the server does: at the top of the Column that takes new
   // Dishes. One for another Board just answers it placed there. A Source
   // image without its Image Ticket isn't stored, as on the server.
-  function addOnServer(boardId: string, input: NewDishBody): CreatedDish {
+  function addOnServer(boardId: string, input: AddDishBody): AddedDish {
     const dish: DishView = {
       id: `added-${++added}`,
       title: input.title,

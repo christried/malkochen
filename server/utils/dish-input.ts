@@ -23,11 +23,11 @@ export function sourceOf(input: SourceInput): DishSource {
   return { link: guess.canonicalLink, kind: isBlog ? 'blog' : guess.kind }
 }
 
-// A new Dish (POST /api/boards/:id/dishes).
-export const newDishBody = z.object({
+// Adding a Dish (POST /api/boards/:id/dishes).
+export const addDishBody = z.object({
   title: dishTitle,
   note: dishNote,
-  // The fallback image, and the image if there is no Source image.
+  // Its Placeholder Image, shown if there is no Source image.
   placeholder: z.enum(PLACEHOLDERS),
   source: sourceInput.nullish(),
   // The Source image Source Lookup found (third-party) and the Image Ticket it
@@ -35,7 +35,7 @@ export const newDishBody = z.object({
   imageUrl: webLinkInput.nullish(),
   imageTicket: z.string().max(200).nullish(),
 })
-export type NewDishBody = z.input<typeof newDishBody>
+export type AddDishBody = z.input<typeof addDishBody>
 
 // Changes to a Dish (PATCH /api/dishes/:id); only the fields sent change.
 export const dishEditBody = z.object({

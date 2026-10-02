@@ -348,7 +348,7 @@ test('undo puts a Cooking back in date order after another was added, though its
   expect(history('d')).toEqual([recorded.id, 'sept-20', 'sept-1'])
 })
 
-test('a created Dish appears where the server placed it, though the Board would have put it elsewhere', async () => {
+test('an added Dish appears where the server placed it, though the Board would have put it elsewhere', async () => {
   const { fake, module, shown } = setup()
   // Another Member put Diese Woche first; the Board doesn't show that yet.
   fake.server.columns.unshift(...fake.server.columns.splice(1, 1))
@@ -360,7 +360,7 @@ test('a created Dish appears where the server placed it, though the Board would 
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: [result.dish.id, 'd'] })
 })
 
-test('a Dish created on another Board doesn’t show on this one, and the result says its image couldn’t be stored', async () => {
+test('a Dish added to another Board doesn’t show on this one, and the result says its image couldn’t be stored', async () => {
   const { board, module, shown } = setup()
   const before = shown()
 
@@ -403,4 +403,30 @@ test('a saved Cooking note shows in the Dish’s Cooking History as the server s
 
   await module.noteCooking('d', 'sept-20', '   ')
   expect(cookingsOf()).toMatchObject([{ id: 'sept-20', note: null }, { id: 'sept-1', note: 'mit Reis' }])
+})
+
+test('an edit saved while "Gekocht ✓" is under way still lets a failed cook put the Dish back, and keeps its new title', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('cookDish', 500)
+
+  const cooked = module.cookDish('b')!
+  const edited = module.editDish('b', { title: 'Neu' })
+
+  expect(await cooked.settled).toMatchObject({ notice: 'cookFailed' })
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], gekocht: [] })
+  expect((await edited).dish.title).toBe('Neu')
+  expect(fake.sent).toEqual(['cookDish b', 'editDish b'])
+})
+
+test('a move under way when an edit is saved still settles where the server put the Dish', async () => {
+  const { fake, module, shown } = setup()
+  // Another Member deleted d; the Board still shows it until the next poll.
+  fake.deleteDishElsewhere('d')
+
+  const moved = module.moveDish('a', { columnId: 'woche', index: 1 })!
+  const edited = module.editDish('a', { title: 'Neu' })
+
+  expect(await moved.settled).toMatchObject({ placement: { columnId: 'woche', index: 0 } })
+  expect(shown().woche).toEqual(['a', 'd'])
+  expect((await edited).dish.title).toBe('Neu')
 })

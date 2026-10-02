@@ -53,7 +53,7 @@ export type PlacedDish = DishView & { placement: DishPlacement }
 
 // What adding a Dish answers: the Dish placed, and whether its Source image
 // could not be stored, as for SavedDish.
-export type CreatedDish = PlacedDish & { imageNotStored?: true }
+export type AddedDish = PlacedDish & { imageNotStored?: true }
 
 export interface NewDish {
   title: string
