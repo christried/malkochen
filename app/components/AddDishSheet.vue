@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardSummary } from '~~/server/utils/boards'
-import type { DuplicateDish, SavedDish } from '~~/server/utils/dishes'
+import type { DuplicateDish } from '~~/server/utils/dishes'
+import type { BoardResult } from '~/board/board-module'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
 import { webLink } from '~/utils/web-link'
@@ -8,14 +9,16 @@ import { webLink } from '~/utils/web-link'
 // Add Dish. First a link: pasting one looks it up right away (Source Lookup)
 // and shows a preview with the image and an editable Suggested Title. Or
 // "Ohne Link hinzufügen": a title, a note and a Placeholder Image. Either way
-// the Member picks the Board (the one they are on) and saves. If the link is
-// already on that Board, a warning names the Dish and its Column: open it, or
-// save anyway. Saved, it says where the image showed, for the Dish to fly
-// onto the Board from there.
+// the Member picks the Board (the one they are on) and saves, through the
+// client Board module. If the link is already on that Board, a warning names
+// the Dish and its Column: open it, or save anyway. Saved, it passes on what
+// the module answered and where the image showed, for the Dish to fly onto
+// the Board from there.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{ boardId: string }>()
-const emit = defineEmits<{ added: [dish: SavedDish, boardId: string, from: DOMRect | null] }>()
+const emit = defineEmits<{ added: [result: BoardResult, from: DOMRect | null] }>()
 const t = useStrings()
+const boardModule = useBoardModule()
 
 // "bowl" is the handoff's fallback Placeholder (illustrations.json autoPick).
 const DEFAULT_PLACEHOLDER: Placeholder = 'bowl'
@@ -152,19 +155,16 @@ async function save() {
       ? { link: result.value.canonicalLink, kind: result.value.kind }
       : { link: link.value.trim() }
   try {
-    const dish = await trackWrite($fetch<SavedDish>(`/api/boards/${target}/dishes`, {
-      method: 'POST',
-      body: {
-        title: title.value,
-        note: note.value,
-        placeholder: placeholder.value,
-        source,
-        imageUrl: usingSourceImage.value ? sourceImage.value : null,
-        imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
-      },
-    }))
+    const added = await boardModule.addDish(target, {
+      title: title.value,
+      note: note.value,
+      placeholder: placeholder.value,
+      source,
+      imageUrl: usingSourceImage.value ? sourceImage.value : null,
+      imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
+    })
     const image = form.value?.querySelector('[data-source-image], [role="radio"][aria-checked="true"]')
-    emit('added', dish, target, image?.getBoundingClientRect() ?? null)
+    emit('added', added, image?.getBoundingClientRect() ?? null)
     open.value = false
   }
   catch {

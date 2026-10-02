@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { CookingView } from '~~/server/utils/cookings'
+import type { DishView } from '~~/server/utils/dishes'
 
 // The small Cooking note sheet (PRD story 53), opened from the Gekocht
-// toast or the Cooking History. A note is never required: an empty one
-// removes it. The Cooking (the Board's copy) takes the saved note.
+// toast or the Cooking History, for a Cooking of `dish`. A note is never
+// required: an empty one removes it. Saved through the client Board module,
+// so the Cooking History shows it.
 const cooking = defineModel<CookingView | null>('cooking', { required: true })
-defineProps<{ dishTitle: string }>()
+const props = defineProps<{ dish: DishView | null }>()
 const t = useStrings()
+const boardModule = useBoardModule()
 const noteId = useId()
 
 const open = computed({
@@ -30,12 +33,11 @@ watch(cooking, async (shown) => {
 
 async function save() {
   const shown = cooking.value
-  if (!shown || saving.value) return
+  if (!shown || !props.dish || saving.value) return
   saving.value = true
   failed.value = false
   try {
-    const saved = await trackWrite($fetch<CookingView>(`/api/cookings/${shown.id}`, { method: 'PATCH', body: { note: note.value } }))
-    shown.note = saved.note
+    await boardModule.noteCooking(props.dish.id, shown.id, note.value)
     if (cooking.value === shown) cooking.value = null
   }
   catch {
@@ -54,7 +56,7 @@ async function save() {
     :close-label="t.cooking.close"
   >
     <p class="mt-1 text-small text-text-muted">
-      {{ dishTitle }}
+      {{ dish?.title }}
     </p>
     <form
       class="mt-5 flex flex-col gap-4"

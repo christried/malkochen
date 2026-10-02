@@ -52,18 +52,26 @@ async function addDish(caller: Caller, boardId: string, title = 'Linsensuppe'): 
   return (await res.json() as { id: string }).id
 }
 
-// Adds a Dish and answers the Column it went to.
+// Adds a Dish and answers the Column it went to, checking that the answer
+// places it there too: at the top, index 0.
 async function columnOfNewDish(caller: Caller, boardId: string): Promise<string | undefined> {
-  const id = await addDish(caller, boardId)
-  return (await boardOf(caller, boardId)).columns.find(c => c.dishes.some(d => d.id === id))?.id
+  const res = await postDish(caller, boardId, { title: 'Linsensuppe', placeholder: 'eintopf' })
+  expect(res.status).toBe(201)
+  const created = await res.json() as { id: string, placement: unknown }
+  const column = (await boardOf(caller, boardId)).columns.find(c => c.dishes.some(d => d.id === created.id))
+  expect(column?.dishes[0]?.id).toBe(created.id)
+  expect(created.placement).toEqual({ boardId, columnId: column?.id, index: 0 })
+  return column?.id
 }
 
-test('new Dishes go to the Column the rule names, also once the Gekocht Column comes first', async () => {
+test('new Dishes go to the top of the Column the rule names, also once the Gekocht Column comes first, and the answer says so', async () => {
   const caller = await jean()
   const board = await newBoard(caller)
   const [ideen, dieseWoche, gekocht] = board.columns
 
   expect(columnForNewDishes(board.columns)?.id).toBe(ideen!.id)
+  expect(await columnOfNewDish(caller, board.id)).toBe(ideen!.id)
+  // On top of the one there already.
   expect(await columnOfNewDish(caller, board.id)).toBe(ideen!.id)
 
   await reorder(caller, board.id, [gekocht!.id, dieseWoche!.id, ideen!.id])

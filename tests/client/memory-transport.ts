@@ -2,7 +2,8 @@ import type { BoardTransport } from '../../app/board/board-module'
 import { WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
 import type { CookingView } from '../../server/utils/cookings'
-import type { DishView, MovedDish, PlacedDish } from '../../server/utils/dishes'
+import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
+import type { AddedDish, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
 // The in-memory transport for the client Board module's tests: a small fake
@@ -47,6 +48,7 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   // Deleted Cookings keep their Dish, so restoring puts them back.
   const deletedCookings = new Map<string, { cooking: CookingView, dishId: string }>()
   let cookings = 0
+  let added = 0
 
   // The Dish on the server that `matches`, and its Column.
   function located(matches: (dish: DishView) => boolean) {
@@ -83,6 +85,43 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     if (!found.column.isGekocht) throw new WriteFailed(400)
     found.dish.cookings = found.dish.cookings.filter(c => c.id !== cookingId)
     return moveOnServer(found.dish.id, columnId, index, false)
+  }
+
+  // Adds a Dish as the server does: at the top of the Column that takes new
+  // Dishes. One for another Board just answers it placed there. A Source
+  // image without its Image Ticket isn't stored, as on the server.
+  function addOnServer(boardId: string, input: AddDishBody): AddedDish {
+    const dish: DishView = {
+      id: `added-${++added}`,
+      title: input.title,
+      note: input.note || null,
+      source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,
+      imageUrl: input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
+      placeholder: input.placeholder,
+      addedBy: null,
+      createdAt: new Date().toISOString(),
+      cookings: [],
+    }
+    const column = boardId === server.id ? columnForNewDishes(server.columns)! : { id: 'elsewhere', dishes: [] as DishView[] }
+    column.dishes.unshift(dish)
+    const placed = { ...structuredClone(dish), placement: { boardId, columnId: column.id, index: 0 } }
+    return input.imageUrl && !input.imageTicket ? { ...placed, imageNotStored: true } : placed
+  }
+
+  // Saves the fields sent, as the server reads them (trimmed; a blank note
+  // is none). A new image without its Image Ticket isn't stored: the Dish
+  // keeps the one it had. Null for a Dish the server doesn't have.
+  function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
+    const dish = located(d => d.id === dishId)?.dish
+    if (!dish) return null
+    const { title, note, source, placeholder, imageUrl, imageTicket } = changes
+    if (title !== undefined) dish.title = title.trim()
+    if (note !== undefined) dish.note = note?.trim() || null
+    if (source !== undefined) dish.source = source && { link: source.link, kind: source.kind ?? 'other' }
+    if (placeholder !== undefined) dish.placeholder = placeholder
+    if (imageUrl === null || (imageUrl && imageTicket)) dish.imageUrl = imageUrl && `/images/${dishId}-${Date.now()}.jpg`
+    const saved = structuredClone(dish)
+    return imageUrl && !imageTicket ? { ...saved, imageNotStored: true } : saved
   }
 
   function deleteOnServer(dishId: string): boolean {
@@ -127,6 +166,15 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     return structuredClone(gone.cooking)
   }
 
+  // Saves a Cooking's note, trimmed; a blank one is none. Null for a Cooking
+  // the server doesn't have.
+  function noteOnServer(cookingId: string, note: string): CookingView | null {
+    const cooking = located(dish => dish.cookings.some(c => c.id === cookingId))?.dish.cookings.find(c => c.id === cookingId)
+    if (!cooking) return null
+    cooking.note = note.trim() || null
+    return structuredClone(cooking)
+  }
+
   // Answers a write as scripted, else runs it on the server: `run` answers
   // null for a Dish the server doesn't have (404), or throws WriteFailed.
   function answer<T>(write: Write, args: string, run: () => T | null): Promise<T> {
@@ -155,6 +203,8 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   }
 
   const transport: BoardTransport = {
+    addDish: (boardId, input) => answer('addDish', `${boardId} ${input.title}`, () => addOnServer(boardId, input)),
+    editDish: (dishId, changes) => answer('editDish', dishId, () => editOnServer(dishId, changes)),
     deleteDish: dishId => answer('deleteDish', dishId, () => deleteOnServer(dishId) || null).then(() => undefined),
     restoreDish: dishId => answer('restoreDish', dishId, () => restoreOnServer(dishId)),
     moveDish: (dishId, { columnId, index }) => answer('moveDish', `${dishId} ${columnId} ${index ?? ''}`, () => moveOnServer(dishId, columnId, index, false)),
@@ -162,6 +212,7 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     undoCooking: (cookingId, { columnId, index }) => answer('undoCooking', `${cookingId} ${columnId} ${index}`, () => undoOnServer(cookingId, columnId, index)),
     deleteCooking: cookingId => answer('deleteCooking', cookingId, () => deleteCookingOnServer(cookingId) || null).then(() => undefined),
     restoreCooking: cookingId => answer('restoreCooking', cookingId, () => restoreCookingOnServer(cookingId)),
+    noteCooking: (cookingId, note) => answer('noteCooking', cookingId, () => noteOnServer(cookingId, note)),
   }
 
   return {

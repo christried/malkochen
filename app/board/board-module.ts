@@ -1,9 +1,10 @@
-import type { Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
 // Relative imports, not `~~`: the module's tests run in plain Node (the
 // "client" Vitest project), which knows no Nuxt aliases.
 import type { BoardView } from '../../server/utils/boards'
 import type { CookingView } from '../../server/utils/cookings'
-import type { DishPlacement, DishView, MovedDish, PlacedDish } from '../../server/utils/dishes'
+import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
+import type { AddedDish, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
 import { landingIndex, recordsCooking } from '../../shared/placement'
 
@@ -26,11 +27,16 @@ export function focusAfterLeaving(column: { id: string, dishes: { id: string }[]
   return next ? { dish: next.id } : { column: column.id }
 }
 
-// What the page tells the Member, as a key into the UI strings' `dish`
-// section (each takes the Dish's title, except `cook`: the Gekocht toast);
-// those starting with `cooking` are about a Cooking, and come with it.
+// What the page tells the Member, as a key the page looks up in the UI
+// strings: mostly in their `dish` section (each takes the Dish's title,
+// except `cook`: the Gekocht toast); those starting with `cooking` are about
+// a Cooking, and come with it. `imageNotStored`: an added Dish's Source
+// image couldn't be stored, so it has its Placeholder Image;
+// `imageNotReplaced`: an edited Dish's new image couldn't be, so it keeps
+// the one it had.
 export type Notice = 'deleted' | 'deleteFailed' | 'restoreFailed' | 'moveFailed' | 'cookFailed' | 'uncookFailed' | 'cook'
   | 'cookingDeleted' | 'cookingDeleteFailed' | 'cookingRestoreFailed'
+  | 'imageNotStored' | 'imageNotReplaced'
 
 // What an operation answers: the Dish it was about, where it now is, the
 // Cooking it recorded or deleted, a notice to show, an undo to offer with it, where
@@ -64,6 +70,8 @@ function isGone(error: unknown) {
 // (http-transport.ts), in memory under test. A failed write rejects with
 // WriteFailed.
 export interface BoardTransport {
+  addDish: (boardId: string, dish: AddDishBody) => Promise<AddedDish>
+  editDish: (dishId: string, changes: DishEditBody) => Promise<SavedDish>
   deleteDish: (dishId: string) => Promise<void>
   restoreDish: (dishId: string) => Promise<PlacedDish>
   moveDish: (dishId: string, to: Destination) => Promise<MovedDish>
@@ -71,6 +79,7 @@ export interface BoardTransport {
   undoCooking: (cookingId: string, to: { columnId: string, index: number }) => Promise<PlacedDish>
   deleteCooking: (cookingId: string) => Promise<void>
   restoreCooking: (cookingId: string) => Promise<CookingView>
+  noteCooking: (cookingId: string, note: string) => Promise<CookingView>
 }
 
 type BoardColumn = BoardView['columns'][number]
@@ -105,22 +114,27 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // Each Dish's writes, in the order they were made: one starts once the
   // one before it has settled, so they never cross on the way. With none
   // before it, it starts at once. A write is told whether it is still the
-  // Dish's latest (`latest`): if not, a later one has changed the Dish on
-  // the Board since, and settles it in turn. A Cooking's delete and restore
-  // queue by the Cooking's id instead (`key`): they never move its Dish, so
-  // they mustn't keep a move of it from settling.
+  // latest to move the Dish (`latest`): if not, a later one has changed
+  // where it is on the Board since, and settles it in turn. One that never
+  // moves it (an edit: `moves: false`) waits its turn, but leaves that to
+  // the one before it. A Cooking's delete and restore queue by the
+  // Cooking's id instead (`key`): they never move its Dish, so they mustn't
+  // keep a move of it from settling.
   const queues = new Map<string, { settled: Promise<unknown> }>()
-  function queued<T>(key: string, write: (latest: () => boolean) => Promise<T>): Promise<T> {
+  const latestMoves = new Map<string, object>()
+  function queued<T>(key: string, write: (latest: () => boolean) => Promise<T>, { moves = true } = {}): Promise<T> {
     const before = queues.get(key)?.settled
     // In the queue before the write can start, so it is the latest at once.
     const entry = { settled: Promise.resolve() as Promise<unknown> }
     queues.set(key, entry)
-    const run = () => write(() => queues.get(key) === entry)
+    if (moves) latestMoves.set(key, entry)
+    const run = () => write(() => latestMoves.get(key) === entry)
     // A write that throws rather than rejecting fails like one that rejects.
     const next = before ? before.then(run, run) : new Promise<T>(resolve => resolve(run()))
     entry.settled = next.catch(() => {}).then(() => {
       if (queues.get(key) !== entry) return
       queues.delete(key)
+      latestMoves.delete(key)
       rolledBackTo.delete(key)
     })
     return next
@@ -178,6 +192,37 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     if (!into) return
     takeOut(dish.id)
     insert(into, placement.index, dish)
+  }
+
+  // Adding a Dish (PRD story 13), from Add Dish, which waits for it: nothing
+  // shows before the server has it. Saved to this Board, it shows where the
+  // server put it, at the top of the Column that takes new Dishes as the
+  // server has the Columns; saved to another Board, it doesn't show here.
+  // A failed write rejects with WriteFailed, for the form to say so.
+  async function addDish(boardId: string, input: AddDishBody): Promise<BoardResult> {
+    const { imageNotStored, placement, ...fields } = await transport.addDish(boardId, input)
+    // Another Board's Column isn't on this one.
+    const into = column(placement.columnId)
+    if (into && !find(fields.id)) insert(into, placement.index, fields)
+    // The Board's own copy, once it shows.
+    const dish = find(fields.id)?.dish ?? fields
+    return { dish, placement, ...imageNotStored && { notice: 'imageNotStored' } }
+  }
+
+  // Editing a Dish (PRD stories 43–45), from the Dish detail, which waits
+  // for it: once saved, its card and the detail show the Dish as the server
+  // saved it. It waits for the Dish's writes before it, so their answers
+  // can't bring back what it changed. The Cooking History stays the Board's own: an edit never
+  // changes it, and a Cooking still being recorded shows there. A failed
+  // write rejects with WriteFailed, for the form to say so.
+  async function editDish(dishId: string, changes: DishEditBody): Promise<BoardResult> {
+    const { imageNotStored, ...saved } = await queued(dishId, () => transport.editDish(dishId, changes), { moves: false })
+    const shown = find(dishId)?.dish
+    if (shown) {
+      const { cookings: _, ...fields } = saved
+      Object.assign(shown, fields)
+    }
+    return { dish: shown ?? saved, ...imageNotStored && { notice: 'imageNotReplaced' } }
   }
 
   // Deleting a Dish (PRD story 47): its card goes at once. If the delete
@@ -381,5 +426,24 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return { dish, cooking, notice: 'cookingDeleted', undo, settled }
   }
 
-  return { deleteDish, moveDish, cookDish, deleteCooking }
+  // A Cooking's note (PRD story 53), from the Cooking note sheet, which
+  // waits for it: once saved, the Cooking shows it in its Dish's Cooking
+  // History, found by the Dish's id wherever it is now. A blank note removes
+  // it. Null if the Dish isn't on the Board any more. A failed write rejects
+  // with WriteFailed, for the form to say so.
+  async function noteCooking(dishId: string, cookingId: string, note: string): Promise<BoardResult | null> {
+    const saved = await queued(cookingId, () => transport.noteCooking(cookingId, note))
+    const dish = find(dishId)?.dish
+    if (!dish) return null
+    const cooking = dish.cookings.find(c => c.id === cookingId)
+    if (cooking) Object.assign(cooking, saved)
+    return { dish, cooking: cooking ?? saved }
+  }
+
+  return { addDish, editDish, deleteDish, moveDish, cookDish, deleteCooking, noteCooking }
 }
+
+export type BoardModule = ReturnType<typeof createBoardModule>
+
+// How the Board page hands its module to the forms under it (useBoardModule).
+export const boardModuleKey: InjectionKey<BoardModule> = Symbol('board module')
