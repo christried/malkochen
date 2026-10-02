@@ -76,8 +76,8 @@ test('in the dark theme the card shows the dark still', async ({ page }) => {
   await signIn(page, ALLOWLISTED[1])
   await gotoHydrated(page, '/settings')
   await page.getByRole('radio', { name: 'Dunkel' }).click()
-  // The Theme reveal stores the choice a frame after the tap; navigating
-  // before then renders the Board in the old theme.
+  // The Theme reveal stores the choice only once it has pictured the old
+  // theme; navigating before then renders the Board in the old theme.
   await expect(page.getByRole('radio', { name: 'Dunkel' })).toHaveAttribute('aria-checked', 'true')
   await gotoHydrated(page, '/')
 
