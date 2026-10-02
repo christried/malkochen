@@ -60,15 +60,15 @@ function setup(adjust: (board: BoardView) => void = () => {}) {
   return { board, fake, module, shown, history }
 }
 
-// A poll of the Board, for the module's sync: the server answers at once
+// How the module's sync asks the server for the Board: it answers at once
 // with the Board as it has it.
-function poll(fake: MemoryTransport) {
+function askServer(fake: MemoryTransport) {
   return () => Promise.resolve(structuredClone(fake.server))
 }
 
-// A poll the server reads the Board for when asked, but answers only when
-// the test says so.
-function slowPoll(fake: MemoryTransport) {
+// The same, but the server answers with the Board as it read it when asked
+// only once the test says so (`answer`).
+function askServerSlowly(fake: MemoryTransport) {
   let answer = () => {}
   const ask = () => {
     const read = structuredClone(fake.server)
@@ -139,7 +139,7 @@ test('undo after a poll took away the Column another Member deleted puts the Dis
   const result = module.deleteDish('d')!
   await result.settled
   fake.deleteColumnElsewhere('woche')
-  await module.sync(poll(fake))
+  await module.sync(askServer(fake))
   expect(shown()).toEqual({ ideen: ['a', 'b', 'c'], gekocht: [] })
 
   const undone = await result.undo!()
@@ -581,7 +581,7 @@ test('a poll brings other Members’ changes, keeping the Columns and Dishes sti
   fake.deleteDishElsewhere('c')
   fake.server.newDishIds = ['z']
 
-  await module.sync(poll(fake))
+  await module.sync(askServer(fake))
 
   expect(shown()).toEqual({ ideen: ['z', 'a', 'b'], woche: ['d'], gekocht: [] })
   expect(board.value!.columns[0]).toBe(ideen)
@@ -595,7 +595,7 @@ test('a poll answered while a write is under way is dropped, so the Board doesn�
   const held = fake.holdNext('moveDish')
   const result = module.moveDish('b', { columnId: 'woche' })!
 
-  await module.sync(poll(fake))
+  await module.sync(askServer(fake))
   expect(shown()).toMatchObject({ ideen: ['a', 'c'], woche: ['b', 'd'] })
 
   held.succeed()
@@ -605,7 +605,7 @@ test('a poll answered while a write is under way is dropped, so the Board doesn�
 
 test('a poll asked before a write and answered after it settled is dropped, as the server read the Board before the write', async () => {
   const { fake, module, shown } = setup()
-  const slow = slowPoll(fake)
+  const slow = askServerSlowly(fake)
   const polled = module.sync(slow.ask)
 
   await module.moveDish('b', { columnId: 'woche' })!.settled
@@ -620,7 +620,7 @@ test('a poll between "Gekocht ✓" and its "Rückgängig" leaves the undo workin
   const cooked = module.cookDish('a')!
   await cooked.settled
   fake.server.columns[0]!.dishes.find(d => d.id === 'c')!.title = 'Neuer Titel'
-  await module.sync(poll(fake))
+  await module.sync(askServer(fake))
 
   const undone = await cooked.undo!()
 
@@ -637,7 +637,7 @@ test('a poll during an undo still under way is dropped, and the undo settles as 
   const held = fake.holdNext('undoCooking')
   const undone = await cooked.undo!()
 
-  await module.sync(poll(fake))
+  await module.sync(askServer(fake))
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], gekocht: [] })
   expect(history('a')).toEqual([])
 
@@ -650,7 +650,7 @@ test('a poll answered while a Dish is being dragged is dropped', async () => {
   const { fake, module, shown } = setup()
   fake.deleteDishElsewhere('c')
 
-  await module.sync(poll(fake), { paused: () => true })
+  await module.sync(askServer(fake), { paused: () => true })
 
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
 })

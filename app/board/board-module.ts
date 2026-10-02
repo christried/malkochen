@@ -117,17 +117,9 @@ function removeFrom<T>(list: T[], item: T | undefined) {
   if (at !== -1) list.splice(at, 1)
 }
 
-export function createBoardModule(board: Ref<BoardView | undefined>, sends: BoardTransport) {
-  // How many of the module's writes are under way, and have started: a
-  // poll's answer is dropped if one was under way when it asked, or started
-  // since (sync). Every write is counted, as every one goes through
-  // `transport`.
-  let underWay = 0
-  let started = 0
-  const transport = counted(sends, {
-    start: () => (underWay++, started++),
-    end: () => underWay--,
-  })
+export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: BoardTransport) {
+  // Every write goes through `transport`, so each is counted for sync.
+  const { transport, mark, writesSince } = counted(uncounted)
 
   // Each Dish's writes, in the order they were made: one starts once the
   // one before it has settled, so they never cross on the way. With none
@@ -524,27 +516,36 @@ export function createBoardModule(board: Ref<BoardView | undefined>, sends: Boar
   // a moment. Dropped too while `paused` (a Dish is being dragged), or once
   // the page shows another Board. The next poll brings what was dropped.
   async function sync(ask: () => Promise<BoardView>, { paused = () => false }: { paused?: () => boolean } = {}) {
-    const quiet = underWay === 0
-    const before = started
+    const asked = mark()
     const fresh = await ask()
-    if (quiet && started === before && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
+    if (!writesSince(asked) && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
   }
 
   return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, sync, focusAfterDetail }
 }
 
-// `transport` with `start` told as each write starts and `end` once it has
-// settled, whether it succeeded or failed.
-function counted(transport: BoardTransport, { start, end }: { start: () => void, end: () => void }): BoardTransport {
+// `uncounted`, counting its writes while under way and as they start, for
+// sync to tell whether one was under way when a poll asked (`mark`), or
+// started since (`writesSince`).
+function counted(uncounted: BoardTransport) {
+  let underWay = 0
+  let started = 0
   const writes: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
-  for (const [name, write] of Object.entries(transport) as [string, (...args: unknown[]) => Promise<unknown>][]) {
+  for (const [name, write] of Object.entries(uncounted) as [string, (...args: unknown[]) => Promise<unknown>][]) {
     writes[name] = (...args) => {
-      start()
+      underWay++
+      started++
       // One that throws rather than rejecting ends like one that rejects.
-      return new Promise(resolve => resolve(write(...args))).finally(end)
+      return new Promise(resolve => resolve(write(...args))).finally(() => underWay--)
     }
   }
-  return writes as unknown as BoardTransport
+  return {
+    transport: writes as unknown as BoardTransport,
+    // A mark to ask writesSince() about later; null if a write is under way.
+    mark: (): number | null => underWay > 0 ? null : started,
+    // Whether a write was under way at `mark`, or started since.
+    writesSince: (mark: number | null) => mark === null || started !== mark,
+  }
 }
 
 // Brings the Board as the app shows it up to date with the Board as the
