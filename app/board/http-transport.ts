@@ -1,3 +1,4 @@
+import type { CookingView } from '~~/server/utils/cookings'
 import type { MovedDish, PlacedDish } from '~~/server/utils/dishes'
 import { WriteFailed, type BoardTransport } from './board-module'
 
@@ -11,6 +12,8 @@ export function httpTransport(): BoardTransport {
     moveDish: (dishId, to) => tracked($fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: to })),
     cookDish: dishId => tracked($fetch<MovedDish>(`/api/dishes/${dishId}/cook`, { method: 'POST' })),
     undoCooking: (cookingId, to) => tracked($fetch<PlacedDish>(`/api/cookings/${cookingId}/undo`, { method: 'POST', body: to })),
+    deleteCooking: cookingId => tracked($fetch<unknown>(`/api/cookings/${cookingId}`, { method: 'DELETE' })).then(() => undefined),
+    restoreCooking: cookingId => tracked($fetch<CookingView>(`/api/cookings/${cookingId}/restore`, { method: 'POST' })),
   }
 }
 

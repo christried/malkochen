@@ -1,6 +1,7 @@
 import type { BoardTransport } from '../../app/board/board-module'
 import { WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
+import type { CookingView } from '../../server/utils/cookings'
 import type { DishView, MovedDish, PlacedDish } from '../../server/utils/dishes'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
@@ -33,6 +34,8 @@ export interface MemoryTransport {
   // the top of the Column that takes new Dishes, as on the real server).
   deleteDishElsewhere: (dishId: string) => void
   deleteColumnElsewhere: (columnId: string) => void
+  // Another Member deletes a Cooking from its Dish's Cooking History.
+  deleteCookingElsewhere: (cookingId: string) => void
 }
 
 export function memoryTransport(board: BoardView): MemoryTransport {
@@ -41,6 +44,8 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   const replies = new Map<Write, Reply[]>()
   // Deleted Dishes keep their Column and index, so restoring puts them back.
   const deleted = new Map<string, { dish: DishView, columnId: string, index: number }>()
+  // Deleted Cookings keep their Dish, so restoring puts them back.
+  const deletedCookings = new Map<string, { cooking: CookingView, dishId: string }>()
   let cookings = 0
 
   // The Dish on the server that `matches`, and its Column.
@@ -101,6 +106,27 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     return { ...structuredClone(gone.dish), placement: { boardId: server.id, columnId: column.id, index } }
   }
 
+  function deleteCookingOnServer(cookingId: string): boolean {
+    const found = located(dish => dish.cookings.some(c => c.id === cookingId))
+    if (!found) return false
+    const cooking = found.dish.cookings.find(c => c.id === cookingId)!
+    found.dish.cookings = found.dish.cookings.filter(c => c !== cooking)
+    deletedCookings.set(cookingId, { cooking, dishId: found.dish.id })
+    return true
+  }
+
+  // Puts a deleted Cooking back into its Dish's Cooking History, newest
+  // first, as the server reads it.
+  function restoreCookingOnServer(cookingId: string): CookingView | null {
+    const gone = deletedCookings.get(cookingId)
+    const found = gone && located(dish => dish.id === gone.dishId)
+    if (!gone || !found) return null
+    deletedCookings.delete(cookingId)
+    found.dish.cookings.push(gone.cooking)
+    found.dish.cookings.sort((a, b) => b.cookedAt.localeCompare(a.cookedAt))
+    return structuredClone(gone.cooking)
+  }
+
   // Answers a write as scripted, else runs it on the server: `run` answers
   // null for a Dish the server doesn't have (404), or throws WriteFailed.
   function answer<T>(write: Write, args: string, run: () => T | null): Promise<T> {
@@ -134,6 +160,8 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     moveDish: (dishId, { columnId, index }) => answer('moveDish', `${dishId} ${columnId} ${index ?? ''}`, () => moveOnServer(dishId, columnId, index, false)),
     cookDish: dishId => answer('cookDish', dishId, () => moveOnServer(dishId, undefined, undefined, true)),
     undoCooking: (cookingId, { columnId, index }) => answer('undoCooking', `${cookingId} ${columnId} ${index}`, () => undoOnServer(cookingId, columnId, index)),
+    deleteCooking: cookingId => answer('deleteCooking', cookingId, () => deleteCookingOnServer(cookingId) || null).then(() => undefined),
+    restoreCooking: cookingId => answer('restoreCooking', cookingId, () => restoreCookingOnServer(cookingId)),
   }
 
   return {
@@ -155,5 +183,6 @@ export function memoryTransport(board: BoardView): MemoryTransport {
         if (gone.columnId === columnId) Object.assign(gone, { columnId: target.id, index: top++ })
       }
     },
+    deleteCookingElsewhere: cookingId => void deleteCookingOnServer(cookingId),
   }
 }

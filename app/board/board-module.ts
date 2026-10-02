@@ -27,8 +27,10 @@ export function focusAfterLeaving(column: { id: string, dishes: { id: string }[]
 }
 
 // What the page tells the Member, as a key into the UI strings' `dish`
-// section (each takes the Dish's title, except `cook`: the Gekocht toast).
+// section (each takes the Dish's title, except `cook`: the Gekocht toast),
+// or, starting with `cooking`, into their `cooking` section.
 export type Notice = 'deleted' | 'deleteFailed' | 'restoreFailed' | 'moveFailed' | 'cookFailed' | 'uncookFailed' | 'cook'
+  | 'cookingDeleted' | 'cookingDeleteFailed' | 'cookingRestoreFailed'
 
 // What an operation answers: the Dish it was about, where it now is, the
 // Cooking it recorded, a notice to show, an undo to offer with it, where
@@ -61,6 +63,8 @@ export interface BoardTransport {
   moveDish: (dishId: string, to: Destination) => Promise<MovedDish>
   cookDish: (dishId: string) => Promise<MovedDish>
   undoCooking: (cookingId: string, to: { columnId: string, index: number }) => Promise<PlacedDish>
+  deleteCooking: (cookingId: string) => Promise<void>
+  restoreCooking: (cookingId: string) => Promise<CookingView>
 }
 
 type BoardColumn = BoardView['columns'][number]
@@ -96,7 +100,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // one before it has settled, so they never cross on the way. With none
   // before it, it starts at once. A write is told whether it is still the
   // Dish's latest (`latest`): if not, a later one has changed the Dish on
-  // the Board since, and settles it in turn.
+  // the Board since, and settles it in turn. A Cooking's delete and restore
+  // queue by the Cooking's id instead: they never move its Dish, so they
+  // mustn't keep a move of it from settling.
   const queues = new Map<string, { settled: Promise<unknown> }>()
   function queued<T>(dishId: string, write: (latest: () => boolean) => Promise<T>): Promise<T> {
     const before = queues.get(dishId)?.settled
@@ -321,5 +327,54 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo } }
   }
 
-  return { deleteDish, moveDish, cookDish }
+  // Puts a Cooking back into its Dish's Cooking History, found by the
+  // Dish's id wherever it is now. The History is newest first, so the
+  // Cooking's date finds its place, whatever was added meanwhile.
+  function putBackCooking(dishId: string, cooking: CookingView) {
+    const dish = find(dishId)?.dish
+    if (!dish || dish.cookings.some(c => c.id === cooking.id)) return
+    const at = dish.cookings.findIndex(c => c.cookedAt < cooking.cookedAt)
+    dish.cookings.splice(at === -1 ? dish.cookings.length : at, 0, cooking)
+  }
+
+  // Deleting a Cooking from a Dish's Cooking History (PRD story 48): it
+  // goes at once. If the delete fails, it is back with a notice; one the
+  // server no longer has (another Member deleted it) counts as deleted.
+  function deleteCooking(dishId: string, cookingId: string): BoardResult | null {
+    const found = find(dishId)
+    // One still being recorded has no id yet: nothing to delete on the server.
+    const at = cookingId ? found?.dish.cookings.findIndex(c => c.id === cookingId) ?? -1 : -1
+    if (!found || at === -1) return null
+    const { dish } = found
+    const [cooking] = dish.cookings.splice(at, 1) as [CookingView]
+
+    const deleted = queued(cookingId, () => transport.deleteCooking(cookingId)).then(() => true, (error: unknown) => {
+      if (error instanceof WriteFailed && error.status === 404) return true
+      putBackCooking(dishId, cooking)
+      return false
+    })
+    const settled = deleted.then((ok): BoardResult => ok ? { dish, cooking } : { dish, cooking, notice: 'cookingDeleteFailed' })
+
+    // "Rückgängig": once the delete has settled, the Cooking is back in
+    // its Dish's Cooking History at once, and as the server restored it.
+    // If that fails, it goes again, with a notice.
+    async function undo(): Promise<BoardResult> {
+      if (!await deleted) return { dish, cooking } // Never deleted, and back already.
+      putBackCooking(dishId, cooking)
+      const restored = queued(cookingId, () => transport.restoreCooking(cookingId)).then((fields): BoardResult => {
+        const back = find(dishId)?.dish.cookings.find(c => c.id === cookingId)
+        if (back) Object.assign(back, fields)
+        return { dish, cooking: back ?? cooking }
+      }, (): BoardResult => {
+        const now = find(dishId)?.dish
+        if (now) removeFrom(now.cookings, now.cookings.find(c => c.id === cookingId))
+        return { dish, cooking, notice: 'cookingRestoreFailed' }
+      })
+      return { dish, cooking, settled: restored }
+    }
+
+    return { dish, cooking, notice: 'cookingDeleted', undo, settled }
+  }
+
+  return { deleteDish, moveDish, cookDish, deleteCooking }
 }
