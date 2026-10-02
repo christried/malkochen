@@ -117,7 +117,18 @@ function removeFrom<T>(list: T[], item: T | undefined) {
   if (at !== -1) list.splice(at, 1)
 }
 
-export function createBoardModule(board: Ref<BoardView | undefined>, transport: BoardTransport) {
+export function createBoardModule(board: Ref<BoardView | undefined>, sends: BoardTransport) {
+  // How many of the module's writes are under way, and have started: a
+  // poll's answer is dropped if one was under way when it asked, or started
+  // since (sync). Every write is counted, as every one goes through
+  // `transport`.
+  let underWay = 0
+  let started = 0
+  const transport = counted(sends, {
+    start: () => (underWay++, started++),
+    end: () => underWay--,
+  })
+
   // Each Dish's writes, in the order they were made: one starts once the
   // one before it has settled, so they never cross on the way. With none
   // before it, it starts at once. A write is told whether it is still the
@@ -505,7 +516,74 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return { dish, cooking: cooking ?? saved }
   }
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, focusAfterDetail }
+  // Others' changes (PRD story 38), from polling (useBoardSync), which asks
+  // the server for the Board with `ask`: what it answers is merged into the
+  // Board. Dropped if one of the module's writes was under way when it
+  // asked, or started since: that change shows on the Board already, and
+  // the server may have read the Board without it, which would undo it for
+  // a moment. Dropped too while `paused` (a Dish is being dragged), or once
+  // the page shows another Board. The next poll brings what was dropped.
+  async function sync(ask: () => Promise<BoardView>, { paused = () => false }: { paused?: () => boolean } = {}) {
+    const quiet = underWay === 0
+    const before = started
+    const fresh = await ask()
+    if (quiet && started === before && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
+  }
+
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, sync, focusAfterDetail }
+}
+
+// `transport` with `start` told as each write starts and `end` once it has
+// settled, whether it succeeded or failed.
+function counted(transport: BoardTransport, { start, end }: { start: () => void, end: () => void }): BoardTransport {
+  const writes: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
+  for (const [name, write] of Object.entries(transport) as [string, (...args: unknown[]) => Promise<unknown>][]) {
+    writes[name] = (...args) => {
+      start()
+      // One that throws rather than rejecting ends like one that rejects.
+      return new Promise(resolve => resolve(write(...args))).finally(end)
+    }
+  }
+  return writes as unknown as BoardTransport
+}
+
+// Brings the Board as the app shows it up to date with the Board as the
+// server has it, in place: Columns and Dishes still there stay the same
+// objects, as drag and the page keep hold of them; only what changed is
+// written, so nothing re-renders for nothing; and what is gone goes.
+// Whatever the server has wins, as the last write did there.
+function merge(shown: BoardView, fresh: BoardView) {
+  const { columns, ...board } = fresh
+  assignChanged(shown, board)
+
+  const shownColumns = new Map(shown.columns.map(c => [c.id, c]))
+  // By id across all Columns: a Dish may have moved to another one.
+  const shownDishes = new Map(shown.columns.flatMap(c => c.dishes).map(d => [d.id, d]))
+  const merged = columns.map(({ dishes, ...fields }) => {
+    const column = shownColumns.get(fields.id) ?? { ...fields, dishes: [] }
+    assignChanged(column, fields)
+    replaceChanged(column.dishes, dishes.map((dish) => {
+      const known = shownDishes.get(dish.id)
+      if (!known) return dish
+      assignChanged(known, dish)
+      return known
+    }))
+    return column
+  })
+  replaceChanged(shown.columns, merged)
+}
+
+// Copies the fields of `source` that differ onto `target`.
+function assignChanged<T extends object>(target: T, source: Partial<T>) {
+  for (const key of Object.keys(source) as (keyof T)[]) {
+    if (JSON.stringify(target[key]) !== JSON.stringify(source[key])) target[key] = source[key]!
+  }
+}
+
+// Makes `list` hold `items`, unless it already does.
+function replaceChanged<T>(list: T[], items: T[]) {
+  if (list.length === items.length && list.every((item, i) => item === items[i])) return
+  list.splice(0, list.length, ...items)
 }
 
 export type BoardModule = ReturnType<typeof createBoardModule>
