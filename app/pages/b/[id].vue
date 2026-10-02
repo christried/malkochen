@@ -3,7 +3,7 @@ import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView, SavedDish } from '~~/server/utils/dishes'
-import { createBoardModule, type BoardResult } from '~/board/board-module'
+import { createBoardModule, type BoardResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 import { columnForNewDishes } from '~~/shared/placement'
@@ -71,12 +71,11 @@ function addNote(dish: DishView, cooking: CookingView) {
   noting.value = { dish, cooking }
 }
 
-// The client Board module: moving, cooking and deleting a Dish go through
-// it, and the page turns what it answers into Toasts, the Gekocht
-// celebration, haptics and focus (showResult).
+// The client Board module: moving, cooking and deleting a Dish, and
+// deleting a Cooking, go through it, and the page turns what it answers
+// into Toasts, the Gekocht celebration, haptics and focus (showResult).
 const boardModule = createBoardModule(board, httpTransport())
 const { moveToBoard } = useDishMove(board, showToast)
-const { deleteCooking } = useCookingDelete(showToast)
 const confetti = useConfetti()
 
 // Just made with "Neues Board", the Board celebrates as it opens.
@@ -148,9 +147,12 @@ function noteFromDetail(dishId: string, cooking: CookingView) {
   const dish = detailDish(dishId)
   if (dish) addNote(dish, cooking)
 }
+// Deleting a Cooking (PRD story 48): it goes, and a Toast offers "Rückgängig".
 function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
-  const dish = detailDish(dishId)
-  if (dish) deleteCooking(dish, cooking)
+  const result = boardModule.deleteCooking(dishId, cooking.id)
+  if (!result) return
+  hapticReject()
+  void showResult(result)
 }
 
 // "Gekocht ✓" on a card (useGekochtCelebration, which set its confetti off
@@ -389,12 +391,12 @@ function deleteDish(dishId: string) {
 // focus where it says, unless the caller moves focus itself (`moveFocus:
 // false`) or the Dish detail makes the Board inert.
 async function showResult(result: BoardResult, { origin, moveFocus = true }: { origin?: Point | null, moveFocus?: boolean } = {}) {
-  const { dish, notice, undo, settled } = result
+  const { notice, undo, settled } = result
   if (notice === 'cook') {
     celebrateCooking(result, origin)
   }
   else if (notice) {
-    const text = t.dish[notice](dish.title)
+    const text = noticeText(notice, result)
     showToast(undo
       ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(r => showResult(r)) }] }
       : { text, duration: NOTICE_MS })
@@ -403,6 +405,16 @@ async function showResult(result: BoardResult, { origin, moveFocus = true }: { o
   if (!moveFocus || !result.focus || route.params.dishId) return
   await nextTick()
   document.getElementById(focusTargetId(result.focus))?.focus()
+}
+
+// A notice's text in the UI strings: about the result's Cooking, or its Dish.
+function noticeText(notice: Exclude<Notice, 'cook'>, { dish, cooking }: BoardResult) {
+  switch (notice) {
+    case 'cookingDeleted': return t.cooking.deleted(new Date(cooking!.cookedAt))
+    case 'cookingDeleteFailed': return t.cooking.deleteFailed
+    case 'cookingRestoreFailed': return t.cooking.restoreFailed
+    default: return t.dish[notice](dish.title)
+  }
 }
 
 // A Cooking recorded (PRD stories 49–55): haptics, confetti from `origin`
