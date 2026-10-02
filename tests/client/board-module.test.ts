@@ -493,3 +493,16 @@ test('a move then a move to another Board that both fail leave the Dish where it
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
   expect(fake.sent).toEqual(['moveDish b woche', 'moveDish b f-ideen'])
 })
+
+test('a Dish moved into another Board’s Gekocht Column keeps its Cooking History here, with no Gekocht toast or undo', async () => {
+  const { module, shown } = setup(cookedTwice)
+
+  const result = module.moveToBoard('d', { boardId: 'feierabend', columnId: 'f-gekocht' })!
+
+  expect(result).not.toHaveProperty('notice')
+  expect(result).not.toHaveProperty('undo')
+  expect(result).not.toHaveProperty('cooking')
+  expect(await result.settled).toEqual({ dish: result.dish, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 } })
+  expect(result.dish.cookings.map(c => c.id)).toEqual(['sept-20', 'sept-1'])
+  expect(shown().woche).toEqual([])
+})

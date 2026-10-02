@@ -91,6 +91,13 @@ export interface Destination {
   index?: number
 }
 
+// Where a Dish moved to another Board is asked to go: to the top of a
+// Column there.
+export interface BoardDestination {
+  boardId: string
+  columnId: string
+}
+
 // Where a Dish was in its Column, to put it back there (putBack): its index,
 // and the Dishes above and below it then.
 interface Place {
@@ -179,6 +186,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return true
   }
 
+  // Takes a Dish out of its Column, answering where it was, to put it back
+  // there, and where focus goes instead of its card.
+  function leave(dish: DishView, from: BoardColumn): { origin: Place, focus: FocusTarget } {
+    const index = from.dishes.indexOf(dish)
+    const left = { origin: placeOf(from, index), focus: focusAfterLeaving(from, index) }
+    from.dishes.splice(index, 1)
+    return left
+  }
+
   // Takes a Dish off the Board and puts it back at `place`.
   function moveBack(dish: DishView, place: Place) {
     takeOut(dish.id)
@@ -240,11 +256,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   function deleteDish(dishId: string): BoardResult | null {
     const found = find(dishId)
     if (!found) return null
-    const { dish, column: from } = found
-    const index = from.dishes.indexOf(dish)
-    const place = placeOf(from, index)
-    const focus = focusAfterLeaving(from, index)
-    from.dishes.splice(index, 1)
+    const { dish } = found
+    const { origin: place, focus } = leave(dish, found.column)
 
     const deleted = queued(dishId, () => transport.deleteDish(dishId)).then(() => true, (error: unknown) => {
       if (isGone(error)) return true
@@ -304,9 +317,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     const stays = target === from && landing === index
     const cooks = recordsCooking(from, target, { cook })
     if (stays && !cooks) return null
-    const origin = placeOf(from, index)
-    const focus = stays ? { dish: dishId } : focusAfterLeaving(from, index)
-    from.dishes.splice(index, 1)
+    const left = leave(dish, from)
+    const { origin } = left
+    const focus = stays ? { dish: dishId } : left.focus
     insert(target, landing, dish)
     const placement = { boardId: board.value.id, columnId: target.id, index: landing }
     // The Cooking as the server will record it, filled in once it has. The
@@ -391,14 +404,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // is no longer here. If the move fails, it comes back exactly where it
   // was, with a notice; one the server no longer has (another Member
   // deleted it) stays gone. Null if it isn't on this Board.
-  function moveToBoard(dishId: string, to: { boardId: string, columnId: string }): BoardResult | null {
+  function moveToBoard(dishId: string, to: BoardDestination): BoardResult | null {
     const found = find(dishId)
     if (!found) return null
-    const { dish, column: from } = found
-    const index = from.dishes.indexOf(dish)
-    const origin = placeOf(from, index)
-    const focus = focusAfterLeaving(from, index)
-    from.dishes.splice(index, 1)
+    const { dish } = found
+    const { origin, focus } = leave(dish, found.column)
 
     const settled = queued(dishId, async (latest): Promise<BoardResult> => {
       try {

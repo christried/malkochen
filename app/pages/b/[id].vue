@@ -352,11 +352,11 @@ async function moveAndFocus(dishId: string, columnId: string, toBoard: BoardList
     if (!result.notice && column) showNotice(t.dish.moved(result.dish.title, column.name))
     return showResult(result)
   }
-  const column = toBoard.columns.find(c => c.id === columnId)
-  const result = column ? boardModule.moveToBoard(dishId, { boardId: toBoard.id, columnId }) : null
-  if (!column || !result) return
-  showNotice(t.dish.movedToBoard(result.dish.title, boardLabel(toBoard), column.name))
-  if (route.params.dishId && result.focus) focusAfterDetail.value = focusTargetId(result.focus)
+  const result = boardModule.moveToBoard(dishId, { boardId: toBoard.id, columnId })
+  if (!result) return
+  const column = toBoard.columns.find(c => c.id === result.placement?.columnId)
+  if (column) showNotice(t.dish.movedToBoard(result.dish.title, boardLabel(toBoard), column.name))
+  focusWhenDetailCloses(result)
   return showResult(result)
 }
 function deleteFromMenu() {
@@ -373,8 +373,14 @@ function deleteDish(dishId: string) {
   const result = boardModule.deleteDish(dishId)
   if (!result) return
   hapticReject()
-  if (route.params.dishId && result.focus) focusAfterDetail.value = focusTargetId(result.focus)
+  focusWhenDetailCloses(result)
   void showResult(result)
+}
+
+// From the Dish detail, the Board is inert until the detail closes, so a
+// Dish gone from the Board has focus put on what took its place then.
+function focusWhenDetailCloses(result: BoardResult) {
+  if (route.params.dishId && result.focus) focusAfterDetail.value = focusTargetId(result.focus)
 }
 
 // Shows what an operation of the Board module answered: its notice, as a
