@@ -11,12 +11,13 @@ import { recordsCooking } from '~~/shared/placement'
 //   (+500ms, AppToast);
 // - from another Column, a pebble flies from the button to that tab or
 //   title (640ms) and bursts there, with a CLOCK_TICK.
-// Focus goes to what took the card's place. Reduced motion: no wait, no
+// `cookDish` records the Cooking and shows its result: the Gekocht toast,
+// and focus on what took the card's place. Reduced motion: no wait, no
 // flight; the toast and the count change.
 export function useGekochtCelebration(
   board: Ref<BoardView | undefined>,
   options: {
-    cookDish: (dishId: string, origin: Point | null) => string | null
+    cookDish: (dishId: string) => void
     // Where the Gekocht Column shows its count: its tab, or its title.
     target: (columnId: string) => HTMLElement | null
     // Makes that tab or title react.
@@ -41,14 +42,13 @@ export function useGekochtCelebration(
     // there would; already in it, "Gekocht ✓" alone records the Cooking.
     const leaves = from && gekocht && recordsCooking(from, gekocht)
     cookedLeavingIds.add(dishId)
-    const focusId = options.cookDish(dishId, null)
+    options.cookDish(dishId)
     if (gekocht) {
       options.cue({ columnId: gekocht.id, kind: 'bump' })
       if (leaves) fly(origin, gekocht.id)
     }
     await nextTick()
     cookedLeavingIds.delete(dishId)
-    if (focusId) document.getElementById(focusId)?.focus()
   }
 
   // A card leaving its Column swooshes if it was cooked, else it shrinks. It

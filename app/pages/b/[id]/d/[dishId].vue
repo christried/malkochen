@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
+import type { DishView } from '~~/server/utils/dishes'
 import type { BoardResult } from '~/board/board-module'
 import { dishOnBoard } from '~~/shared/board'
 
@@ -8,23 +9,16 @@ import { dishOnBoard } from '~~/shared/board'
 // on phones, a side panel over the Board from 768px (440px; 480px from
 // 1200px). A native modal <dialog>, like AppSheet: the browser traps focus,
 // makes the Board inert and closes it on Escape. The Dish comes from the
-// Board the parent page already has; an edit, saved through the client
-// Board module, passes what it answered on via `edited`,
-// "Löschen" asks it to `delete` the Dish (it offers the undo) and
-// "Verschieben nach…" to `move` it, within the Board or to another. So do the
-// Cooking History's actions: `cook`, `note` and `deleteCooking`. The Board
-// is inert behind this dialog, so its Toast shows in here.
+// Board the parent page already has. Its actions (an edit, "Gekocht ✓",
+// "Verschieben nach…", "Löschen", the Cooking History's) go through the
+// client Board module the page provides, and each result goes up as
+// `result`, for the page to show as it shows a card's. The Board is inert
+// behind this dialog, so its Toast shows in here.
 const props = defineProps<{ board: BoardView }>()
-const emit = defineEmits<{
-  edited: [result: BoardResult]
-  delete: [dishId: string]
-  move: [dishId: string, columnId: string, toBoard: BoardListing | null]
-  cook: [dishId: string, origin: Point]
-  note: [dishId: string, cooking: CookingView]
-  deleteCooking: [dishId: string, cooking: CookingView]
-}>()
+const emit = defineEmits<{ result: [result: BoardResult, context?: ResultContext] }>()
 const toast = defineModel<Toast | null>('toast', { required: true })
 const t = useStrings()
+const boardModule = useBoardModule()
 const route = useRoute()
 const router = useRouter()
 
@@ -39,7 +33,8 @@ const editing = ref(false)
 // Opened from its card, the card morphs into it (utils/dish-morph.ts): it
 // doesn't move in itself then.
 const morphed = !!morphArrival()
-// A sheet opened over it (moving the Dish, choosing an image), it steps back.
+// A sheet opened over it (moving the Dish, a Cooking's note, choosing an
+// image), it steps back.
 const covered = useModalStack(() => true)
 const headerImage = () => dialog.value?.querySelector<HTMLElement>('[data-detail-image]') ?? null
 onMounted(() => {
@@ -90,8 +85,14 @@ function onBackdrop() {
   if (!editing.value) close()
 }
 
+// The Dish's actions, through the Board module.
+function actOnDish(operation: (dishId: string) => BoardResult | null, context?: ResultContext) {
+  const result = located.value && operation(located.value.dish.id)
+  if (result) emit('result', result, context)
+}
+
 function onDelete() {
-  if (located.value) emit('delete', located.value.dish.id)
+  actOnDish(boardModule.deleteDish)
   close()
 }
 
@@ -101,8 +102,7 @@ function onDelete() {
 const moving = ref(false)
 function onMove(columnId: string, toBoard: BoardListing | null) {
   moving.value = false
-  if (!located.value) return
-  emit('move', located.value.dish.id, columnId, toBoard)
+  actOnDish(dishId => moveToPicked(boardModule, dishId, columnId, toBoard), { moved: { toBoard } })
   if (toBoard) close()
 }
 watch(moving, async (isMoving) => {
@@ -121,9 +121,19 @@ watch(located, (now, before) => {
 })
 
 function onSaved(result: BoardResult) {
-  emit('edited', result)
+  emit('result', result)
   editing.value = false
 }
+
+// The Cooking note sheet, from the Cooking History, for a Cooking of the
+// Dish shown then.
+const noting = ref<{ dish: DishView, cooking: CookingView } | null>(null)
+const notingCooking = computed({
+  get: () => noting.value?.cooking ?? null,
+  set: (cooking) => {
+    if (!cooking) noting.value = null
+  },
+})
 
 // Leaving edit mode puts focus back on "Bearbeiten" (edit mode focuses its
 // title itself), so it never falls to the page behind.
@@ -135,54 +145,62 @@ watch(editing, async (isEditing) => {
 </script>
 
 <template>
-  <dialog
-    ref="dialog"
-    class="detail bg-bg p-0 text-text tablet:shadow-sheet"
-    :class="{ morphed }"
-    :data-covered="covered || undefined"
-    :aria-label="located?.dish.title"
-    @keydown.esc="onEscape"
-    @cancel.prevent="close"
-    @close="close"
-    @click.self="onBackdrop"
-  >
-    <template v-if="located">
-      <DishDetailEditor
-        v-if="editing"
-        :dish="located.dish"
-        @saved="onSaved"
-        @cancel="editing = false"
-      />
-      <DishDetailView
-        v-else
-        :dish="located.dish"
-        :board="board"
-        :column-name="located.column.name"
-        @close="close"
-        @edit="editing = true"
-        @move="moving = true"
-        @delete="onDelete"
-        @cook="origin => located && emit('cook', located.dish.id, origin)"
-        @note="cooking => located && emit('note', located.dish.id, cooking)"
-        @delete-cooking="cooking => located && emit('deleteCooking', located.dish.id, cooking)"
-      />
-    </template>
-    <AppSheet
-      v-model:open="moving"
-      :title="t.dish.moveTo"
-      :close-label="t.dish.closeMenu"
+  <div class="contents">
+    <dialog
+      ref="dialog"
+      class="detail bg-bg p-0 text-text tablet:shadow-sheet"
+      :class="{ morphed }"
+      :data-covered="covered || undefined"
+      :aria-label="located?.dish.title"
+      @keydown.esc="onEscape"
+      @cancel.prevent="close"
+      @close="close"
+      @click.self="onBackdrop"
     >
-      <MoveTargetPicker
-        v-if="moving && located"
-        class="mt-5"
-        :board="board"
-        :from-column-id="located.column.id"
-        @move="onMove"
-      />
-    </AppSheet>
-    <VeggieConfetti />
-    <AppToast v-model="toast" />
-  </dialog>
+      <template v-if="located">
+        <DishDetailEditor
+          v-if="editing"
+          :dish="located.dish"
+          @saved="onSaved"
+          @cancel="editing = false"
+        />
+        <DishDetailView
+          v-else
+          :dish="located.dish"
+          :board="board"
+          :column-name="located.column.name"
+          @close="close"
+          @edit="editing = true"
+          @move="moving = true"
+          @delete="onDelete"
+          @cook="origin => actOnDish(boardModule.cookDish, { origin })"
+          @note="cooking => located && (noting = { dish: located.dish, cooking })"
+          @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
+        />
+      </template>
+      <AppSheet
+        v-model:open="moving"
+        :title="t.dish.moveTo"
+        :close-label="t.dish.closeMenu"
+      >
+        <MoveTargetPicker
+          v-if="moving && located"
+          class="mt-5"
+          :board="board"
+          :from-column-id="located.column.id"
+          @move="onMove"
+        />
+      </AppSheet>
+      <VeggieConfetti />
+      <AppToast v-model="toast" />
+    </dialog>
+    <!-- The Cooking note sheet sits beside the detail, not in it: the
+         detail's own fields (edit mode's "Notiz") stay the only ones there. -->
+    <CookingNoteSheet
+      v-model:cooking="notingCooking"
+      :dish="noting?.dish ?? null"
+    />
+  </div>
 </template>
 
 <style scoped>

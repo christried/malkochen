@@ -139,6 +139,54 @@ test('after a delete, focus goes to the Dish now in its place, else the one abov
   expect(module.deleteDish('d')).toMatchObject({ focus: { column: 'woche' } })
 })
 
+test('after a move away, focus goes to the Dish now in its place, else its Column', () => {
+  const { module } = setup()
+
+  expect(module.moveDish('b', { columnId: 'woche' })).toMatchObject({ focus: { dish: 'c' } })
+  expect(module.moveDish('d', { columnId: 'gekocht' })).toMatchObject({ focus: { dish: 'b' } })
+  expect(module.moveDish('b', { columnId: 'ideen' })).toMatchObject({ focus: { column: 'woche' } })
+})
+
+test('leaving the Dish detail, focus goes to its card while on the Board, else to the Dish that took its place', () => {
+  const { module } = setup()
+
+  // Moved within the Board, cooked out of its Column: its card is still there.
+  module.moveDish('a', { columnId: 'woche' })
+  expect(module.focusAfterDetail('a')).toEqual({ dish: 'a' })
+  module.cookDish('d')
+  expect(module.focusAfterDetail('d')).toEqual({ dish: 'd' })
+  // Deleted, or moved to another Board: what took its place then.
+  module.deleteDish('b')
+  expect(module.focusAfterDetail('b')).toEqual({ dish: 'c' })
+  module.moveToBoard('c', { boardId: 'feierabend', columnId: 'f-ideen' })
+  expect(module.focusAfterDetail('c')).toEqual({ column: 'ideen' })
+})
+
+test('leaving the Dish detail of a Dish whose delete was undone, or failed, focus goes to its card', async () => {
+  const { fake, module } = setup()
+
+  const deleted = module.deleteDish('b')!
+  await deleted.settled
+  await (await deleted.undo!()).settled
+  expect(module.focusAfterDetail('b')).toEqual({ dish: 'b' })
+
+  fake.failNext('deleteDish', 500)
+  await module.deleteDish('a')!.settled
+  expect(module.focusAfterDetail('a')).toEqual({ dish: 'a' })
+})
+
+test('leaving the Dish detail of a Dish another Member took off the Board, focus goes nowhere', async () => {
+  const { board, module } = setup()
+  // Deleted here and undone before, so it once had somewhere to go.
+  const deleted = module.deleteDish('b')!
+  await deleted.settled
+  await (await deleted.undo!()).settled
+  // As a poll would bring it.
+  board.value!.columns[0]!.dishes.splice(1, 1)
+
+  expect(module.focusAfterDetail('b')).toBeNull()
+})
+
 test('a move that fails puts the Dish back exactly where it was, with a notice', async () => {
   const { fake, module, shown } = setup()
   fake.failNext('moveDish', 500)
