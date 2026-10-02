@@ -6,12 +6,8 @@
 // device already showing that theme).
 // `<html data-theme-reveal>` says which is running meanwhile (main.css).
 
-// The reveal running now; an older one doesn't end a newer one's.
-let current: object | null = null
-
-function supportsViewTransitions(): boolean {
-  return typeof document.startViewTransition === 'function'
-}
+// The latest reveal, so an older one ending doesn't end a newer one's.
+let latestReveal: object | null = null
 
 // Shows the theme `apply` sets (it must change the page at once), revealed
 // from `origin` if `changes`.
@@ -20,8 +16,8 @@ export async function revealTheme(origin: HTMLElement, changes: boolean, apply: 
     apply()
     return
   }
-  const run = {}
-  current = run
+  const reveal = {}
+  latestReveal = reveal
   const html = document.documentElement
   if (prefersReducedMotion() || !supportsViewTransitions()) {
     html.dataset.themeReveal = 'fade'
@@ -44,8 +40,8 @@ export async function revealTheme(origin: HTMLElement, changes: boolean, apply: 
     ).finished).catch(() => {})
     await transition.finished.catch(() => {})
   }
-  if (current === run) {
-    current = null
+  if (latestReveal === reveal) {
+    latestReveal = null
     delete html.dataset.themeReveal
   }
 }

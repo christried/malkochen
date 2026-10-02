@@ -103,12 +103,14 @@ function reveal(page: Page): Promise<Reveal | null> {
 }
 
 // Counts the View Transitions the page starts, and every value <html
-// data-theme-reveal> takes, from now on.
+// data-theme-reveal> takes from now on, with how long <main>'s background
+// then takes to change (the cross-fade, if any).
 async function watchTransitions(page: Page) {
   await page.evaluate(() => {
-    const w = window as unknown as { transitions: number, reveals: string[] }
+    const w = window as unknown as { transitions: number, reveals: string[], fades: string[] }
     w.transitions = 0
     w.reveals = []
+    w.fades = []
     const start = document.startViewTransition?.bind(document)
     if (start) {
       document.startViewTransition = ((update?: ViewTransitionUpdateCallback) => {
@@ -118,12 +120,17 @@ async function watchTransitions(page: Page) {
     }
     new MutationObserver(() => {
       const value = document.documentElement.dataset.themeReveal
-      if (value) w.reveals.push(value)
+      if (!value) return
+      w.reveals.push(value)
+      const main = getComputedStyle(document.querySelector('main')!)
+      const i = main.transitionProperty.split(', ').indexOf('background-color')
+      w.fades.push(i < 0 ? 'none' : main.transitionDuration.split(', ')[i]!)
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme-reveal'] })
   })
   return {
     transitions: () => page.evaluate(() => (window as unknown as { transitions: number }).transitions),
     reveals: () => page.evaluate(() => (window as unknown as { reveals: string[] }).reveals),
+    fades: () => page.evaluate(() => (window as unknown as { fades: string[] }).fades),
   }
 }
 
@@ -186,6 +193,7 @@ test('without View Transitions, the theme cross-fades', async ({ page }) => {
 
   await expect(page.getByRole('main')).toHaveCSS('background-color', DARK_BG)
   expect(await watched.reveals()).toEqual(['fade'])
+  expect(await watched.fades()).toEqual(['0.24s'])
   // Over once it has faded.
   await expect(page.locator('html')).not.toHaveAttribute('data-theme-reveal')
 })
@@ -201,9 +209,8 @@ test.describe('with reduced motion', () => {
 
     await expect(page.getByRole('main')).toHaveCSS('background-color', DARK_BG)
     expect(await watched.reveals()).toEqual(['fade'])
+    expect(await watched.fades()).toEqual(['0.2s'])
     expect(await reveal(page)).toBeNull()
-    // The cross-fade lasts the reduced-motion fade, 200ms.
-    expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--dur-fade').trim())).toBe('200ms')
     await expect(page.locator('html')).not.toHaveAttribute('data-theme-reveal')
   })
 })

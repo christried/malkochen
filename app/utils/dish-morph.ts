@@ -20,10 +20,6 @@ function canMorph(): boolean {
   return !prefersReducedMotion()
 }
 
-function supportsViewTransitions(): boolean {
-  return typeof document.startViewTransition === 'function'
-}
-
 // The card's thumbnail of Dish `dishId` on the Board.
 export function cardThumb(dishId: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`#dish-${CSS.escape(dishId)} [data-thumb]`)

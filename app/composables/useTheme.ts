@@ -1,6 +1,21 @@
 export type ThemePreference = 'light' | 'dark' | 'system'
 
+// The theme a page actually shows.
+export type ShownTheme = 'light' | 'dark'
+
 const THEMES: readonly ThemePreference[] = ['light', 'dark', 'system']
+
+// The theme a preference shows on a device that is dark or not.
+function shownTheme(preference: ThemePreference, deviceDark: boolean): ShownTheme {
+  if (preference !== 'system') return preference
+  return deviceDark ? 'dark' : 'light'
+}
+
+// <html data-theme> for a preference: none for "system", so tokens.css
+// follows the device.
+function themeAttribute(preference: ThemePreference): ShownTheme | undefined {
+  return preference === 'system' ? undefined : preference
+}
 
 // Light / dark / system, stored in a cookie so the server renders the right
 // `data-theme` and the page never flashes the wrong theme. tokens.css does the
@@ -32,15 +47,14 @@ export function useTheme() {
 
 // What useThemeAttribute renders, on the page as it is.
 function showTheme(preference: ThemePreference) {
-  const html = document.documentElement
-  if (preference === 'system') delete html.dataset.theme
-  else html.dataset.theme = preference
+  const value = themeAttribute(preference)
+  if (value) document.documentElement.dataset.theme = value
+  else delete document.documentElement.dataset.theme
 }
 
 // The theme a preference shows on this device right now.
-export function themeShownFor(preference: ThemePreference): 'light' | 'dark' {
-  if (preference !== 'system') return preference
-  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+export function themeShownFor(preference: ThemePreference): ShownTheme {
+  return shownTheme(preference, matchMedia('(prefers-color-scheme: dark)').matches)
 }
 
 // The theme actually shown: the preference, or the device's for "system".
@@ -48,9 +62,7 @@ export function themeShownFor(preference: ThemePreference): 'light' | 'dark' {
 export function useResolvedTheme() {
   const { preference } = useTheme()
   const deviceDark = useMediaQuery('(prefers-color-scheme: dark)')
-  return computed<'light' | 'dark'>(() => preference.value === 'system'
-    ? (deviceDark.value ? 'dark' : 'light')
-    : preference.value)
+  return computed(() => shownTheme(preference.value, deviceDark.value))
 }
 
 // Called once, from app.vue: reflects the preference on <html>.
@@ -58,7 +70,7 @@ export function useThemeAttribute() {
   const { preference } = useTheme()
   useHead({
     htmlAttrs: {
-      'data-theme': computed(() => preference.value === 'system' ? undefined : preference.value),
+      'data-theme': computed(() => themeAttribute(preference.value)),
     },
   })
 }

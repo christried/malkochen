@@ -5,6 +5,11 @@ export function prefersReducedMotion(): boolean {
   return matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+// Whether this browser has the View Transitions API.
+export function supportsViewTransitions(): boolean {
+  return typeof document.startViewTransition === 'function'
+}
+
 // The durations script may ask for: the handoff's motion tokens
 // (tokens.css) and the timings of single interactions (main.css). Every one
 // collapses to 0 with reduced motion, except `fade`.
