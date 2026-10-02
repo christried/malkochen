@@ -246,11 +246,11 @@ export async function cookDish(dishId: string, userId: string): Promise<MovedDis
 }
 
 // "Rückgängig" after cooking (PRD story 51): removes the Cooking for good
-// and puts its Dish back at `index` in the Column it came from, answering
-// it placed. Null unless
-// the Dish is still in the Gekocht Column (nobody moved it on meanwhile) and
-// that Column is on its Board. The caller has checked that the user may see
-// the Cooking (cookingDishId).
+// and puts its Dish back at `index` in the Column it came from. Answers the
+// Dish and where it now is (PlacedDish); null unless the Dish is still in
+// the Gekocht Column (nobody moved it on meanwhile) and that Column is on
+// its Board. The caller has checked that the user may see the Cooking
+// (cookingDishId).
 export async function undoCooking(cookingId: string, dishId: string, userId: string, columnId: string, index: number): Promise<PlacedDish | null> {
   const stillCooked = inArray(dish.columnId, db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.isGekocht, true)))
   const movable = movableTo(and(onMembersBoard(dishId, userId), stillCooked), userId, columnId)

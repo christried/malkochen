@@ -142,7 +142,7 @@ test('a Dish dropped past the end of a Column the server has fewer Dishes in set
   expect(shown().woche).toEqual(['a', 'd'])
 })
 
-test('a move into Gekocht records a Cooking at once, filled in once settled; a move within Gekocht records none', async () => {
+test('a move into the Gekocht Column records a Cooking at once, filled in once settled; a move within it records none', async () => {
   const { board, module, shown } = setup()
   const cookingsOf = (id: string) => board.value!.columns.flatMap(c => c.dishes).find(d => d.id === id)!.cookings
 
@@ -178,7 +178,7 @@ test('"Gekocht ✓" on a Dish another Member deleted already records no Cooking,
   expect(board.value!.columns.flatMap(c => c.dishes).flatMap(d => d.cookings)).toEqual([])
 })
 
-test('"Gekocht ✓" on a Dish already in Gekocht records another Cooking and leaves it where it is', async () => {
+test('"Gekocht ✓" on a Dish already in the Gekocht Column records another Cooking and leaves it where it is', async () => {
   const { module, shown } = setup()
   await module.moveDish('a', { columnId: 'gekocht' })!.settled
   await module.moveDish('b', { columnId: 'gekocht' })!.settled
@@ -247,4 +247,18 @@ test('an undo of a Cooking that fails cooks the Dish again where it was, with a 
   expect(await undone.settled).toMatchObject({ notice: 'uncookFailed' })
   expect(shown()).toMatchObject({ ideen: ['a', 'c'], gekocht: ['b'] })
   expect(cooked.dish.cookings).toEqual([recorded])
+})
+
+test('"Gekocht ✓" then a move that both fail leave the Dish where it was before either', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('cookDish', 500)
+  fake.failNext('moveDish', 500)
+
+  const cooked = module.cookDish('b')!
+  const moved = module.moveDish('b', { columnId: 'woche' })!
+
+  expect(await cooked.settled).toMatchObject({ notice: 'cookFailed' })
+  expect(await moved.settled).toMatchObject({ notice: 'moveFailed' })
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: [] })
+  expect(cooked.dish.cookings).toEqual([])
 })

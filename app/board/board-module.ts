@@ -58,12 +58,32 @@ export class WriteFailed extends Error {
 export interface BoardTransport {
   deleteDish: (dishId: string) => Promise<void>
   restoreDish: (dishId: string) => Promise<PlacedDish>
-  moveDish: (dishId: string, to: { columnId: string, index?: number }) => Promise<MovedDish>
+  moveDish: (dishId: string, to: Destination) => Promise<MovedDish>
   cookDish: (dishId: string) => Promise<MovedDish>
   undoCooking: (cookingId: string, to: { columnId: string, index: number }) => Promise<PlacedDish>
 }
 
 type BoardColumn = BoardView['columns'][number]
+
+// Where a Dish is asked to go: to `index` among a Column's other Dishes, or
+// without one to its top (shared/placement.ts: landingIndex).
+export interface Destination {
+  columnId: string
+  index?: number
+}
+
+// Where a Dish was in its Column, to put it back there (putBack): its index,
+// and the Dishes above and below it then.
+interface Place {
+  columnId: string
+  index: number
+  above?: string
+  below?: string
+}
+
+function placeOf(column: BoardColumn, index: number): Place {
+  return { columnId: column.id, index, above: column.dishes[index - 1]?.id, below: column.dishes[index + 1]?.id }
+}
 
 // Takes `item` out of `list`, if it is in it.
 function removeFrom<T>(list: T[], item: T | undefined) {
@@ -77,16 +97,28 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // before it, it starts at once. A write is told whether it is still the
   // Dish's latest (`latest`): if not, a later one has changed the Dish on
   // the Board since, and settles it in turn.
-  const queues = new Map<string, Promise<unknown>>()
+  const queues = new Map<string, { settled: Promise<unknown> }>()
   function queued<T>(dishId: string, write: (latest: () => boolean) => Promise<T>): Promise<T> {
-    const before = queues.get(dishId)
-    const run = () => write(() => queues.get(dishId) === tail)
+    const before = queues.get(dishId)?.settled
+    // In the queue before the write can start, so it is the latest at once.
+    const entry = { settled: Promise.resolve() as Promise<unknown> }
+    queues.set(dishId, entry)
+    const run = () => write(() => queues.get(dishId) === entry)
     // A write that throws rather than rejecting fails like one that rejects.
     const next = before ? before.then(run, run) : new Promise<T>(resolve => resolve(run()))
-    const tail: Promise<unknown> = next.catch(() => {}).then(() => queues.get(dishId) === tail && queues.delete(dishId))
-    queues.set(dishId, tail)
+    entry.settled = next.catch(() => {}).then(() => {
+      if (queues.get(dishId) !== entry) return
+      queues.delete(dishId)
+      rolledBackTo.delete(dishId)
+    })
     return next
   }
+
+  // Where a failed write put its Dish back: where the server still has it.
+  // A later write of the same Dish that fails too goes back there, not to
+  // where the failed one had put it, which the server never had. Kept until
+  // the Dish's writes are all settled, or one succeeds.
+  const rolledBackTo = new Map<string, Place>()
 
   function find(dishId: string) {
     return board.value ? dishOnBoard(board.value, dishId) : null
@@ -103,8 +135,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // Puts a Dish back into its Column between the neighbours it had, found
   // by id, whatever changed meanwhile; else at its old index. Answers
   // whether it did: not if the Column is gone, or the Dish is back already.
-  function putBack(dish: DishView, columnId: string, place: { index: number, above?: string, below?: string }): boolean {
-    const into = column(columnId)
+  function putBack(dish: DishView, place: Place): boolean {
+    const into = column(place.columnId)
     if (!into || find(dish.id)) return false
     const belowAt = into.dishes.findIndex(d => d.id === place.below)
     const aboveAt = into.dishes.findIndex(d => d.id === place.above)
@@ -112,9 +144,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return true
   }
 
-  // Where a Dish is now, to put it back there later (putBack).
-  function placeOf(column: BoardColumn, index: number) {
-    return { columnId: column.id, index, above: column.dishes[index - 1]?.id, below: column.dishes[index + 1]?.id }
+  // Takes a Dish off the Board and puts it back at `place`.
+  function moveBack(dish: DishView, place: Place) {
+    takeOut(dish.id)
+    putBack(dish, place)
   }
 
   // Takes a Dish off the Board, wherever it is now.
@@ -143,13 +176,13 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     if (!found) return null
     const { dish, column: from } = found
     const index = from.dishes.indexOf(dish)
-    const place = { index, above: from.dishes[index - 1]?.id, below: from.dishes[index + 1]?.id }
+    const place = placeOf(from, index)
     const focus = focusAfterLeaving(from, index)
     from.dishes.splice(index, 1)
 
     const deleted = queued(dishId, () => transport.deleteDish(dishId)).then(() => true, (error: unknown) => {
       if (error instanceof WriteFailed && error.status === 404) return true
-      putBack(dish, from.id, place)
+      putBack(dish, place)
       return false
     })
     const settled = deleted.then((ok): BoardResult => ok ? { dish } : { dish, notice: 'deleteFailed' })
@@ -159,7 +192,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     // fails, it goes again, with a notice.
     async function undo(): Promise<BoardResult> {
       if (!await deleted) return { dish } // Never deleted, and back already.
-      const back = putBack(dish, from.id, place)
+      const back = putBack(dish, place)
       const restored = queued(dishId, () => transport.restoreDish(dishId)).then((placed): BoardResult => {
         settle(dish, placed)
         // Its Column was gone, so only now is it back to focus.
@@ -183,19 +216,19 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   // Into the Gekocht Column it records a Cooking (stories 49–55): it shows
   // in the Dish's Cooking History at once, and the Gekocht toast (`cook`)
   // offers "Rückgängig". Null if it wouldn't move or record one.
-  function moveDish(dishId: string, to: { columnId: string, index?: number }): BoardResult | null {
-    return place(dishId, to, () => transport.moveDish(dishId, to))
+  function moveDish(dishId: string, to: Destination): BoardResult | null {
+    return move(dishId, to, () => transport.moveDish(dishId, to))
   }
 
   // "Gekocht ✓" (PRD story 35): to the top of the Gekocht Column, or where
   // it is if it is there already, recording a Cooking either way.
   function cookDish(dishId: string): BoardResult | null {
     const gekocht = board.value?.columns.find(c => c.isGekocht)
-    return gekocht ? place(dishId, { columnId: gekocht.id }, () => transport.cookDish(dishId), { cook: true }) : null
+    return gekocht ? move(dishId, { columnId: gekocht.id }, () => transport.cookDish(dishId), { cook: true }) : null
   }
 
   // Moves a Dish as moveDish says, sending `write` for it.
-  function place(dishId: string, to: { columnId: string, index?: number }, write: () => Promise<MovedDish>, { cook = false } = {}): BoardResult | null {
+  function move(dishId: string, to: Destination, write: () => Promise<MovedDish>, { cook = false } = {}): BoardResult | null {
     const found = find(dishId)
     const target = column(to.columnId)
     if (!found || !target || !board.value) return null
@@ -205,7 +238,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     const stays = target === from && landing === index
     const cooks = recordsCooking(from, target, { cook })
     if (stays && !cooks) return null
-    const place = placeOf(from, index)
+    const origin = placeOf(from, index)
     const focus = stays ? { dish: dishId } : focusAfterLeaving(from, index)
     from.dishes.splice(index, 1)
     insert(target, landing, dish)
@@ -223,6 +256,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
       try {
         const moved = await write()
         recorded = moved.cooking
+        rolledBackTo.delete(dishId)
         if (latest()) settle(dish, moved)
         // A later write has the Dish elsewhere by now: only the Cooking
         // settles, if it still shows, or goes if none was recorded.
@@ -237,11 +271,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
           takeOut(dishId)
           return { dish }
         }
-        // Undone already, it is back where it was.
-        if (undone) return { dish }
-        takeOut(dishId)
+        // Back where the server still has it: where it came from, unless a
+        // write before this one failed too. A later write moves it on, or
+        // goes back there in turn.
+        const back = rolledBackTo.get(dishId) ?? origin
+        rolledBackTo.set(dishId, back)
         removeFrom(dish.cookings, pending)
-        putBack(dish, place.columnId, place)
+        // Undone already, it is back, and nothing is left to tell.
+        if (undone) return { dish }
+        if (latest()) moveBack(dish, back)
         return { dish, notice: cooks ? 'cookFailed' : 'moveFailed' }
       }
     })
@@ -256,12 +294,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
       if (failed) return { dish }
       undone = true
       const now = find(dishId)
-      const cookedPlace = now && placeOf(now.column, now.column.dishes.indexOf(now.dish))
-      takeOut(dishId)
-      putBack(dish, place.columnId, place)
+      const cooked = now && placeOf(now.column, now.column.dishes.indexOf(now.dish))
+      moveBack(dish, origin)
       removeFrom(dish.cookings, dish.cookings.find(c => c === pending || c.id === recorded?.id))
 
-      const back = { columnId: place.columnId, index: place.index }
+      const back = { columnId: origin.columnId, index: origin.index }
       const undoing = queued(dishId, async (latest): Promise<BoardResult> => {
         if (failed) return { dish }
         try {
@@ -274,10 +311,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
           // from the Cooking History meanwhile).
           const gone = error instanceof WriteFailed && error.status === 404
           if (recorded && !gone && !dish.cookings.some(c => c.id === recorded!.id)) dish.cookings.unshift(recorded)
-          if (cookedPlace) {
-            takeOut(dishId)
-            putBack(dish, cookedPlace.columnId, cookedPlace)
-          }
+          if (cooked) moveBack(dish, cooked)
           return { dish, notice: 'uncookFailed' }
         }
       })

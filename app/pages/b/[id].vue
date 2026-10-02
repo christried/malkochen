@@ -159,7 +159,7 @@ function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
 function cookDish(dishId: string, origin: Point | null): string | null {
   const result = boardModule.cookDish(dishId)
   if (!result) return null
-  void showResult(result, { origin, focus: false })
+  void showResult(result, { origin, moveFocus: false })
   return result.focus ? focusTargetId(result.focus) : null
 }
 
@@ -170,7 +170,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   // Into the Gekocht Column, its confetti bursts where it landed.
   drop: (dishId, place, at) => {
     const result = boardModule.moveDish(dishId, place)
-    if (result) void showResult(result, { origin: at, focus: false })
+    if (result) void showResult(result, { origin: at, moveFocus: false })
   },
   landed: columnId => cueColumn({ columnId, kind: 'drop' }),
 })
@@ -386,9 +386,9 @@ function deleteDish(dishId: string) {
 // Toast offering "Rückgängig" if it comes with an undo (whose result shows
 // the same way), or for a Cooking recorded the Gekocht celebration (its
 // confetti from `origin`); then what its write ended in, once settled; and
-// focus where it says, unless the caller moves focus itself (`focus`) or
-// the Dish detail makes the Board inert.
-async function showResult(result: BoardResult, { origin, focus = true }: { origin?: Point | null, focus?: boolean } = {}) {
+// focus where it says, unless the caller moves focus itself (`moveFocus:
+// false`) or the Dish detail makes the Board inert.
+async function showResult(result: BoardResult, { origin, moveFocus = true }: { origin?: Point | null, moveFocus?: boolean } = {}) {
   const { dish, notice, undo, settled } = result
   if (notice === 'cook') {
     celebrateCooking(result, origin)
@@ -400,7 +400,7 @@ async function showResult(result: BoardResult, { origin, focus = true }: { origi
       : { text, duration: NOTICE_MS })
   }
   void settled?.then(r => showResult(r))
-  if (!focus || !result.focus || route.params.dishId) return
+  if (!moveFocus || !result.focus || route.params.dishId) return
   await nextTick()
   document.getElementById(focusTargetId(result.focus))?.focus()
 }

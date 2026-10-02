@@ -43,44 +43,41 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   const deleted = new Map<string, { dish: DishView, columnId: string, index: number }>()
   let cookings = 0
 
-  function located(dishId: string) {
+  // The Dish on the server that `matches`, and its Column.
+  function located(matches: (dish: DishView) => boolean) {
     for (const column of server.columns) {
-      const dish = column.dishes.find(d => d.id === dishId)
+      const dish = column.dishes.find(matches)
       if (dish) return { dish, column }
     }
     return null
   }
 
-  function placed(dish: DishView, columnId: string): PlacedDish {
-    const index = server.columns.find(c => c.id === columnId)!.dishes.indexOf(dish)
-    return { ...structuredClone(dish), placement: { boardId: server.id, columnId, index } }
-  }
-
   // Moves a Dish as the server does (shared/placement.ts), recording a
-  // Cooking where the rules say so. Null for a Dish the server doesn't have.
-  function moveOnServer(dishId: string, columnId: string, index: number | undefined, cook: boolean): MovedDish | null {
-    const found = located(dishId)
-    const target = server.columns.find(c => c.id === columnId)
+  // Cooking where the rules say so; without a Column, to the Gekocht Column
+  // ("Gekocht ✓"). Null for a Dish the server doesn't have.
+  function moveOnServer(dishId: string, columnId: string | undefined, index: number | undefined, cook: boolean): MovedDish | null {
+    const found = located(d => d.id === dishId)
+    const target = server.columns.find(c => columnId === undefined ? c.isGekocht : c.id === columnId)
     if (!found) return null
     if (!target) throw new WriteFailed(400)
     const to = landingIndex(target, dishId, index)
     found.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
     target.dishes.splice(to, 0, found.dish)
-    if (!recordsCooking(found.column, target, { cook })) return placed(found.dish, columnId)
+    const placed = { ...structuredClone(found.dish), placement: { boardId: server.id, columnId: target.id, index: to } }
+    if (!recordsCooking(found.column, target, { cook })) return placed
     const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), note: null, recordedBy: null }
     found.dish.cookings.unshift(cooking)
-    return { ...placed(found.dish, columnId), cooking: structuredClone(cooking) }
+    return { ...placed, cookings: structuredClone(found.dish.cookings), cooking: structuredClone(cooking) }
   }
 
   // Removes a Cooking and puts its Dish at `index` in a Column, if it is
   // still in the Gekocht Column (400 otherwise, as on the server).
   function undoOnServer(cookingId: string, columnId: string, index: number): PlacedDish | null {
-    const found = server.columns.flatMap(c => c.dishes.map(dish => ({ dish, column: c }))).find(({ dish }) => dish.cookings.some(c => c.id === cookingId))
+    const found = located(dish => dish.cookings.some(c => c.id === cookingId))
     if (!found) return null
     if (!found.column.isGekocht) throw new WriteFailed(400)
     found.dish.cookings = found.dish.cookings.filter(c => c.id !== cookingId)
-    moveOnServer(found.dish.id, columnId, index, false)
-    return placed(found.dish, columnId)
+    return moveOnServer(found.dish.id, columnId, index, false)
   }
 
   function deleteOnServer(dishId: string): boolean {
@@ -135,7 +132,7 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     deleteDish: dishId => answer('deleteDish', dishId, () => deleteOnServer(dishId) || null).then(() => undefined),
     restoreDish: dishId => answer('restoreDish', dishId, () => restoreOnServer(dishId)),
     moveDish: (dishId, { columnId, index }) => answer('moveDish', `${dishId} ${columnId} ${index ?? ''}`, () => moveOnServer(dishId, columnId, index, false)),
-    cookDish: dishId => answer('cookDish', dishId, () => moveOnServer(dishId, server.columns.find(c => c.isGekocht)!.id, undefined, true)),
+    cookDish: dishId => answer('cookDish', dishId, () => moveOnServer(dishId, undefined, undefined, true)),
     undoCooking: (cookingId, { columnId, index }) => answer('undoCooking', `${cookingId} ${columnId} ${index}`, () => undoOnServer(cookingId, columnId, index)),
   }
 

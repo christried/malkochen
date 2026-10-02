@@ -7,9 +7,9 @@ import { isDishMember, undoCooking, type PlacedDish } from '../../../utils/dishe
 const body = z.object({ columnId: z.uuid(), index: z.int().min(0).max(100_000) })
 
 // POST /api/cookings/:id/undo — "Rückgängig" in the Gekocht toast: the
-// Cooking is removed for good and the Dish goes back where it was; the
-// answer says where that is (PlacedDish). Refused
-// (400) for a Column elsewhere, or once the Dish has left the Gekocht Column.
+// Cooking is removed for good and the Dish goes back where it was, and the
+// answer says where that is (PlacedDish). Refused (400) for a Column
+// elsewhere, or once the Dish has left the Gekocht Column.
 export default defineEventHandler(async (event): Promise<PlacedDish> => {
   const cookingId = cookingIdParam(event)
   const parsed = body.safeParse(await readBody(event).catch(() => null))
