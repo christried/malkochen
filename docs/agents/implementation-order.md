@@ -31,6 +31,7 @@ So the refactors come first and the polish goes onto code that no longer changes
 | #71 | Store a found image in one place (server) | Server only |
 | #57 | Theme reveal when changing Darstellung | Touches only `ThemePicker` / `useTheme` |
 | #59 | Device check: "Original öffnen" | `ready-for-human`: skip, the user does it |
+| #81 | Flaky browser test: dark-theme card | Test only (`add-dish.spec.ts`). Before Phase 5, so its browser runs can be trusted |
 
 ### Phase 1: client Board module foundation (#61)
 
