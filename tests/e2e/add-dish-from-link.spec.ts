@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
 import { gotoHydrated } from './hydration'
+import { clickAndExpectSaving, dotsMoving, holdRequests, linkField, linkFound, loadingDots, SAGE } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
@@ -44,8 +45,19 @@ test('a pasted link shows a loading state, then a preview with image and editabl
 
   await expect(sheet.getByRole('status')).toHaveText('Ich schau mal nach …')
   await expect(sheet.getByRole('button', { name: 'Speichern' })).toHaveCount(0)
+  // The link field shows the lookup under way: loading dots, no check yet.
+  const field = linkField(sheet)
+  await expect(loadingDots(field)).toBeVisible()
+  await expect(linkFound(sheet)).toHaveCount(0)
   answer()
 
+  // Found: a sage ring and a check, in place of the dots. The link field
+  // still shows when it has focus.
+  await expect(linkFound(sheet)).toBeVisible()
+  await expect(loadingDots(field)).toHaveCount(0)
+  await expect.poll(() => field.evaluate(el => getComputedStyle(el).boxShadow)).toContain(`${SAGE} 0px 0px 0px 2px`)
+  await sheet.getByLabel('Link').focus()
+  await expect(field).toHaveCSS('outline-style', 'solid')
   const preview = sheet.getByRole('img', { name: 'Bild vom Link' })
   await expect(preview).toBeVisible()
   await expect(preview).toHaveAttribute('src', PORTRAIT)
@@ -57,8 +69,13 @@ test('a pasted link shows a loading state, then a preview with image and editabl
   await sheet.getByLabel('Titel').fill('Knusprige Tofu-Bowl')
   await sheet.getByLabel('Notiz').fill('mit Erdnusssoße')
   const body = savedBody(page)
-  await sheet.getByRole('button', { name: 'Speichern' }).click()
+  const release = await holdRequests(page, 'POST', /\/api\/boards\/[^/]+\/dishes$/)
+  const save = sheet.locator('button[type="submit"]')
 
+  // While it saves: the three dots, moving, in place of "Speichern".
+  await clickAndExpectSaving(save, 'Speichert …')
+  expect(await dotsMoving(save)).toBe(true)
+  release()
   expect(await body).toMatchObject({
     title: 'Knusprige Tofu-Bowl',
     note: 'mit Erdnusssoße',
@@ -146,6 +163,9 @@ test('lookup failed: the Dish can still be saved with a Placeholder and a typed 
   await sheet.getByLabel('Link').fill(short)
 
   await expect(sheet.getByRole('status')).toContainText('Das Nachschauen hat nicht geklappt')
+  // Nothing recognised: neither dots nor the check stay in the link field.
+  await expect(loadingDots(linkField(sheet))).toHaveCount(0)
+  await expect(linkFound(sheet)).toHaveCount(0)
   await expect(sheet.getByRole('radiogroup', { name: 'Bild' })).toBeVisible()
   await sheet.getByLabel('Titel').fill('Gochujang-Nudeln')
   await sheet.getByRole('radiogroup', { name: 'Bild' }).getByRole('radio', { name: 'Ramen' }).click()

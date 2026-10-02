@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
+import { clickAndExpectSaving } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
@@ -271,9 +272,8 @@ test('a new link is saved as what it really is, looked up like in Add Dish', asy
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
   await detail.getByLabel('Link').fill(`${blog}?utm_source=pinterest`)
   const body = editedBody(page)
-  // Saving waits for the lookup's answer.
-  await detail.getByRole('button', { name: 'Speichern' }).click()
-  await expect(detail.getByRole('button', { name: 'Speichert …' })).toBeVisible()
+  // Saving waits for the lookup's answer, with the three dots.
+  await clickAndExpectSaving(detail.locator('button[type="submit"]'), 'Speichert …')
   release()
 
   const sent = await body

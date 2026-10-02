@@ -194,7 +194,16 @@ async function save() {
             :for="linkId"
             class="text-label"
           >{{ t.addDish.link }}</label>
-          <span class="flex items-center gap-2 rounded-field border border-line-strong bg-surface py-1.5 pl-4 pr-1.5 focus-within:ring-2 focus-within:ring-focus">
+          <!-- Input "valid" and "loading": dots while the link is looked up,
+               then, once found, a sage ring and a check. Focus then shows
+               as an outline around the ring, so neither hides the other. -->
+          <span
+            class="flex items-center gap-2 rounded-field border border-line-strong bg-surface py-1.5 pl-4 pr-1.5 transition-shadow duration-lift ease-lift"
+            :class="result
+              ? 'ring-2 ring-sage has-[input:focus]:outline-2 has-[input:focus]:outline-offset-2 has-[input:focus]:outline-focus'
+              : 'focus-within:ring-2 focus-within:ring-focus'"
+            data-link-field
+          >
             <span
               v-if="result"
               aria-hidden="true"
@@ -212,6 +221,21 @@ async function save() {
               class="min-w-0 flex-1 bg-transparent py-1.5 text-body text-text placeholder:text-text-muted focus:outline-none"
               @paste="lookup.pasted()"
             >
+            <LoadingDots
+              v-if="lookupStatus === 'looking'"
+              class="shrink-0 text-text-muted"
+            />
+            <span
+              v-else-if="result"
+              aria-hidden="true"
+              class="found-pop grid size-6 shrink-0 place-items-center rounded-full bg-sage text-sage-ink"
+              data-link-found
+            >
+              <AppIcon
+                name="check"
+                :size="14"
+              />
+            </span>
             <button
               v-if="canPaste"
               type="button"
@@ -420,14 +444,20 @@ async function save() {
           {{ t.addDish.failed }}
         </p>
 
+        <!-- Saving, it shows its dots undimmed; save() ignores a second
+             submit meanwhile. -->
         <button
           v-if="!warnDuplicate"
           type="submit"
           class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          :disabled="!canSave"
+          :disabled="!canSave && !saving"
           :aria-busy="saving"
         >
-          {{ saving ? t.addDish.saving : t.addDish.save }}
+          <BusyLabel
+            :label="t.addDish.save"
+            :busy-label="t.addDish.saving"
+            :busy="saving"
+          />
         </button>
       </template>
     </form>
@@ -462,8 +492,8 @@ async function save() {
 }
 /* What the lookup found comes in (handoff "Image bloom", SourceBadge
    "found"): the image settles from 1.08 as it fades in (1.2s, swoosh), and
-   the Source's dot pops from nothing a third of the way in. Reduced
-   motion: they are just there. */
+   the Source's dot and the link field's check pop from nothing a third of
+   the way in. Reduced motion: they are just there. */
 .bloom {
   animation: bloom 1.2s var(--ease-swoosh);
 }

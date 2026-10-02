@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, titles } from './board'
 import { gotoHydrated } from './hydration'
+import { clickAndExpectSaving, holdRequests } from './loading'
 
 // Several Boards (PRD stories 12, 39, 46, 61): the Board switcher, "Neues
 // Board", and moving a Dish to another Board. Annie is used by this file
@@ -36,7 +37,9 @@ test('a Member creates a Board from the switcher, switches between Boards, and t
   const sheet = page.getByRole('dialog', { name: 'Neues Board' })
   await sheet.getByLabel('Name').fill('Kochclub')
   await sheet.getByRole('radio', { name: '🥟' }).click()
-  await sheet.getByRole('button', { name: 'Board erstellen' }).click()
+  const release = await holdRequests(page, 'POST', /\/api\/boards$/)
+  await clickAndExpectSaving(sheet.locator('button[type="submit"]'), 'Erstellt …')
+  release()
 
   // The new Board celebrates first (achievements.spec.ts).
   await page.getByRole('dialog', { name: '🥟 Kochclub ist bereit' }).getByRole('button', { name: 'Los geht’s' }).click()
