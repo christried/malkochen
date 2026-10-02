@@ -21,10 +21,26 @@ export function useTheme() {
     set: (value) => {
       state.value = value
       cookie.value = value
+      // At once, not when the head next renders: the Theme reveal pictures
+      // the page right after (utils/theme-reveal.ts).
+      if (import.meta.client) showTheme(value)
     },
   })
 
   return { preference, themes: THEMES }
+}
+
+// What useThemeAttribute renders, on the page as it is.
+function showTheme(preference: ThemePreference) {
+  const html = document.documentElement
+  if (preference === 'system') delete html.dataset.theme
+  else html.dataset.theme = preference
+}
+
+// The theme a preference shows on this device right now.
+export function themeShownFor(preference: ThemePreference): 'light' | 'dark' {
+  if (preference !== 'system') return preference
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 // The theme actually shown: the preference, or the device's for "system".
