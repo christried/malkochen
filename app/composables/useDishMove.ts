@@ -48,7 +48,7 @@ export function useDishMove(
     const stays = target === column && to === from
     const cooks = recordsCooking(column, target, { cook })
     if (stays && !cooks) return null
-    const focusId = stays ? `dish-${dish.id}` : focusTargetId(focusAfterLeaving(column, from))
+    const focusId = focusTargetId(stays ? { dish: dish.id } : focusAfterLeaving(column, from))
     if (!stays) {
       column.dishes.splice(from, 1)
       target.dishes.splice(to, 0, dish)

@@ -259,7 +259,7 @@ watch(() => route.params.dishId, async (dishId, closedId) => {
   const focusId = focusAfterDetail.value
   focusAfterDetail.value = null
   await nextTick()
-  document.getElementById(focusId ?? `dish-${closedId}`)?.focus()
+  document.getElementById(focusId ?? focusTargetId({ dish: closedId }))?.focus()
 }, { immediate: true })
 
 const adding = ref(false)

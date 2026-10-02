@@ -122,13 +122,15 @@ async function findDish(where: SQL | undefined): Promise<DishView | null> {
   return view ?? null
 }
 
-// The Dish with where it now is (DishPlacement), if it isn't deleted.
-async function placed(view: DishView | null): Promise<PlacedDish | null> {
+// The Dish with where it now is (DishPlacement); null if it is deleted,
+// also if that happened between the two reads.
+async function withPlacement(view: DishView | null): Promise<PlacedDish | null> {
   if (!view) return null
-  const [where] = await db.select({ boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(and(eq(dish.id, view.id), isNull(dish.deletedAt)))
-  if (!where) return null
-  const order = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, where.columnId), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)
-  return { ...view, placement: { ...where, index: order.findIndex(d => d.id === view.id) } }
+  const [location] = await db.select({ boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(and(eq(dish.id, view.id), isNull(dish.deletedAt)))
+  if (!location) return null
+  const order = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, location.columnId), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)
+  const index = order.findIndex(d => d.id === view.id)
+  return index === -1 ? null : { ...view, placement: { ...location, index } }
 }
 
 // What editing a Dish may change (PRD story 43); fields left out stay as
@@ -190,7 +192,7 @@ export async function deleteDish(dishId: string, userId: string): Promise<boolea
 export async function restoreDish(dishId: string, userId: string): Promise<PlacedDish | null> {
   const target = onMembersBoardIncludingDeleted(dishId, userId)
   await db.update(dish).set({ deletedAt: null }).where(target)
-  return placed(await findDish(target))
+  return withPlacement(await findDish(target))
 }
 
 // What moving a Dish answers: the Dish, and the Cooking the move recorded, if any.

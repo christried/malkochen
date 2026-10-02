@@ -59,12 +59,13 @@ test('a Dish another Member deleted already (404) counts as deleted, and undo st
 
   expect(await result.settled).not.toHaveProperty('notice')
   expect(shown().ideen).toEqual(['a', 'c'])
-  expect(await result.undo!()).not.toHaveProperty('notice')
+  const undone = await result.undo!()
+  expect(await undone.settled).not.toHaveProperty('notice')
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
   expect(fake.sent).toEqual(['deleteDish b', 'restoreDish b'])
 })
 
-test('undo pressed while the delete is still under way waits for it, then restores', async () => {
+test('undo pressed while the delete is still under way waits for it, then puts the Dish back and focuses it at once', async () => {
   const { fake, module, shown } = setup()
   const deleting = fake.holdNext('deleteDish')
   const result = module.deleteDish('b')!
@@ -74,10 +75,15 @@ test('undo pressed while the delete is still under way waits for it, then restor
   expect(fake.sent).toEqual(['deleteDish b'])
   expect(shown().ideen).toEqual(['a', 'c'])
 
+  const restoring = fake.holdNext('restoreDish')
   deleting.succeed()
-  expect(await undone).toMatchObject({ focus: { dish: 'b' } })
-  expect(fake.sent).toEqual(['deleteDish b', 'restoreDish b'])
+  const back = await undone
+  expect(back).toMatchObject({ focus: { dish: 'b' } })
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
+
+  restoring.succeed()
+  expect(await back.settled).not.toHaveProperty('notice')
+  expect(fake.sent).toEqual(['deleteDish b', 'restoreDish b'])
   expect(fake.server.columns[0]!.dishes.map(d => d.id)).toEqual(['a', 'b', 'c'])
 })
 
@@ -87,7 +93,7 @@ test('an undo that fails takes the Dish off the Board again, with a notice', asy
   await result.settled
   fake.failNext('restoreDish', 500)
 
-  expect(await result.undo!()).toMatchObject({ notice: 'restoreFailed' })
+  expect(await (await result.undo!()).settled).toMatchObject({ notice: 'restoreFailed' })
   expect(shown().ideen).toEqual(['a', 'c'])
 })
 
@@ -99,7 +105,9 @@ test('undo after another Member deleted the Dish’s Column puts it where the se
   fake.deleteColumnElsewhere('woche')
   board.value!.columns.splice(1, 1)
 
-  expect(await result.undo!()).toMatchObject({ focus: { dish: 'd' } })
+  const undone = await result.undo!()
+  expect(undone).not.toHaveProperty('focus')
+  expect(await undone.settled).toMatchObject({ focus: { dish: 'd' } })
   expect(shown()).toEqual({ ideen: ['d', 'a', 'b', 'c'], gekocht: [] })
 })
 

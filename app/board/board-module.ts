@@ -1,4 +1,6 @@
 import type { Ref } from 'vue'
+// Relative imports, not `~~`: the module's tests run in plain Node (the
+// "client" Vitest project), which knows no Nuxt aliases.
 import type { BoardView } from '../../server/utils/boards'
 import type { DishView, PlacedDish } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
@@ -53,6 +55,8 @@ export interface BoardTransport {
   restoreDish: (dishId: string) => Promise<PlacedDish>
 }
 
+type BoardColumn = BoardView['columns'][number]
+
 export function createBoardModule(board: Ref<BoardView | undefined>, transport: BoardTransport) {
   // Each Dish's writes, in the order they were made: one starts once the
   // one before it has settled, so they never cross on the way. With none
@@ -60,48 +64,60 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   const queues = new Map<string, Promise<unknown>>()
   function queued<T>(dishId: string, write: () => Promise<T>): Promise<T> {
     const before = queues.get(dishId)
-    const next = before ? before.then(write, write) : write()
-    const settled: Promise<unknown> = next.catch(() => {}).then(() => queues.get(dishId) === settled && queues.delete(dishId))
-    queues.set(dishId, settled)
+    // A write that throws rather than rejecting fails like one that rejects.
+    const next = before ? before.then(write, write) : new Promise<T>(resolve => resolve(write()))
+    const tail: Promise<unknown> = next.catch(() => {}).then(() => queues.get(dishId) === tail && queues.delete(dishId))
+    queues.set(dishId, tail)
     return next
+  }
+
+  function find(dishId: string) {
+    return board.value ? dishOnBoard(board.value, dishId) : null
   }
 
   function column(columnId: string) {
     return board.value?.columns.find(c => c.id === columnId)
   }
 
+  function insert(into: BoardColumn, index: number, dish: DishView) {
+    into.dishes.splice(Math.min(index, into.dishes.length), 0, dish)
+  }
+
   // Puts a Dish back into its Column between the neighbours it had, found
-  // by id, whatever changed meanwhile; else at its old index.
-  function putBack(dish: DishView, columnId: string, place: { index: number, above?: string, below?: string }) {
+  // by id, whatever changed meanwhile; else at its old index. Answers
+  // whether it did: not if the Column is gone, or the Dish is back already.
+  function putBack(dish: DishView, columnId: string, place: { index: number, above?: string, below?: string }): boolean {
     const into = column(columnId)
-    if (!into || board.value && dishOnBoard(board.value, dish.id)) return
+    if (!into || find(dish.id)) return false
     const belowAt = into.dishes.findIndex(d => d.id === place.below)
     const aboveAt = into.dishes.findIndex(d => d.id === place.above)
-    const at = belowAt !== -1 ? belowAt : aboveAt !== -1 ? aboveAt + 1 : Math.min(place.index, into.dishes.length)
-    into.dishes.splice(at, 0, dish)
+    insert(into, belowAt !== -1 ? belowAt : aboveAt !== -1 ? aboveAt + 1 : place.index, dish)
+    return true
   }
 
   // Takes a Dish off the Board, wherever it is now.
   function takeOut(dishId: string) {
-    const found = board.value && dishOnBoard(board.value, dishId)
+    const found = find(dishId)
     found?.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
   }
 
   // Settles a Dish to where the server says it is: its fields as the server
-  // has them, at its index in its Column, both found by id now. A Dish the
-  // server put on another Board leaves this one.
+  // has them, at its index in its Column, both found by id now. A Column
+  // the Board doesn't show yet (another Member just added it) leaves the
+  // Dish where it is until the next poll brings that Column.
   function settle(dish: DishView, { placement, ...fields }: PlacedDish) {
-    takeOut(dish.id)
     Object.assign(dish, fields)
-    const into = placement.boardId === board.value?.id ? column(placement.columnId) : undefined
-    into?.dishes.splice(Math.min(placement.index, into.dishes.length), 0, dish)
+    const into = column(placement.columnId)
+    if (!into) return
+    takeOut(dish.id)
+    insert(into, placement.index, dish)
   }
 
   // Deleting a Dish (PRD story 47): its card goes at once. If the delete
   // fails, it comes back with a notice; one the server no longer has
   // (another Member deleted it) counts as deleted.
   function deleteDish(dishId: string): BoardResult | null {
-    const found = board.value && dishOnBoard(board.value, dishId)
+    const found = find(dishId)
     if (!found) return null
     const { dish, column: from } = found
     const index = from.dishes.indexOf(dish)
@@ -117,18 +133,20 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     const settled = deleted.then((ok): BoardResult => ok ? { dish } : { dish, notice: 'deleteFailed' })
 
     // "Rückgängig": once the delete has settled, the Dish is back at once,
-    // then where the server restored it. If that fails, it goes again.
+    // with focus on it, and then where the server restored it. If that
+    // fails, it goes again, with a notice.
     async function undo(): Promise<BoardResult> {
       if (!await deleted) return { dish } // Never deleted, and back already.
-      putBack(dish, from.id, place)
-      try {
-        settle(dish, await queued(dishId, () => transport.restoreDish(dishId)))
-        return { dish, focus: { dish: dishId } }
-      }
-      catch {
+      const back = putBack(dish, from.id, place)
+      const restored = queued(dishId, () => transport.restoreDish(dishId)).then((placed): BoardResult => {
+        settle(dish, placed)
+        // Its Column was gone, so only now is it back to focus.
+        return back ? { dish } : { dish, focus: { dish: dishId } }
+      }, (): BoardResult => {
         takeOut(dishId)
         return { dish, notice: 'restoreFailed' }
-      }
+      })
+      return { dish, ...back && { focus: { dish: dishId } }, settled: restored }
     }
 
     return { dish, notice: 'deleted', undo, focus, settled }

@@ -12,10 +12,9 @@ import { columnForNewDishes } from '../../shared/placement'
 
 type Write = keyof BoardTransport
 
-// A call held pending: it does nothing on the server until settled.
+// A call held pending: it does nothing on the server until it succeeds.
 export interface Held {
   succeed: () => void
-  fail: (status: number) => void
 }
 
 type Reply = { fail: number } | { hold: (held: Held) => void }
@@ -28,7 +27,7 @@ export interface MemoryTransport {
   sent: string[]
   // The next call of `write` fails with `status`, changing nothing.
   failNext: (write: Write, status: number) => void
-  // The next call of `write` stays pending until the answer is settled.
+  // The next call of `write` stays pending until the test lets it succeed.
   holdNext: (write: Write) => Held
   // Another Member deletes a Dish, or a Column (its deleted Dishes go to
   // the top of the Column that takes new Dishes, as on the real server).
@@ -78,7 +77,7 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     return new Promise<T>((resolve, reject) => {
       if (!reply) settle(resolve, reject)
       else if ('fail' in reply) settle(resolve, reject, reply.fail)
-      else reply.hold({ succeed: () => settle(resolve, reject), fail: status => settle(resolve, reject, status) })
+      else reply.hold({ succeed: () => settle(resolve, reject) })
     })
   }
 
@@ -99,10 +98,7 @@ export function memoryTransport(board: BoardView): MemoryTransport {
     holdNext(write) {
       let held: Held | undefined
       script(write, { hold: h => (held = h) })
-      return {
-        succeed: () => held!.succeed(),
-        fail: status => held!.fail(status),
-      }
+      return { succeed: () => held!.succeed() }
     },
     deleteDishElsewhere: dishId => void deleteOnServer(dishId),
     deleteColumnElsewhere(columnId) {
