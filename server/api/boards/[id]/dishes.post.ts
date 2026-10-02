@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../../../shared/placeholders'
-import { isMember } from '../../../utils/boards'
 import { dishNote, dishTitle, sourceInput, sourceOf, webLinkInput } from '../../../utils/dish-input'
 import { addDish, type SavedDish } from '../../../utils/dishes'
 import { storeFoundImage } from '../../../utils/image-store'
@@ -27,11 +26,9 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A title and a Placeholder Image are required' })
   const user = requireUser(event)
-  // Before copying anything: non-Members must not fill our storage.
-  if (!await isMember(boardId, user.id)) throw boardNotFound()
-
   const { source, imageUrl, imageTicket, ...rest } = parsed.data
-  const stored = imageUrl ? await storeFoundImage(user.id, imageUrl, imageTicket) : null
+  // Not stored for a non-Member, whom addDish then refuses.
+  const stored = imageUrl ? await storeFoundImage(user.id, boardId, imageUrl, imageTicket) : null
   const created = await addDish(boardId, user, {
     ...rest,
     source: source ? sourceOf(source) : null,

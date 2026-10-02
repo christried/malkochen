@@ -129,6 +129,12 @@ export async function isDishMember(dishId: string, userId: string): Promise<bool
   return found !== undefined
 }
 
+// The Board a Dish is on, Member or not; null if it is missing or deleted.
+export async function boardOfDish(dishId: string): Promise<string | null> {
+  const [found] = await db.select({ boardId: dish.boardId }).from(dish).where(and(eq(dish.id, dishId), isNull(dish.deletedAt)))
+  return found?.boardId ?? null
+}
+
 // Edits a Dish. Null unless it exists and the user is a Member of its Board.
 export async function editDish(dishId: string, userId: string, changes: DishChanges): Promise<DishView | null> {
   const { source, ...rest } = changes

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../../shared/placeholders'
 import { dishNote, dishTitle, sourceInput, sourceOf, webLinkInput } from '../../utils/dish-input'
-import { editDish, isDishMember, type SavedDish } from '../../utils/dishes'
+import { boardOfDish, editDish, type SavedDish } from '../../utils/dishes'
 import { storeFoundImage } from '../../utils/image-store'
 
 const body = z.object({
@@ -26,10 +26,9 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Dish changes' })
   const user = requireUser(event)
   const { source, imageUrl, imageTicket, ...rest } = parsed.data
-  // Before copying anything: non-Members must not fill our storage.
-  if (imageUrl && !await isDishMember(dishId, user.id)) throw dishNotFound()
-
-  const stored = imageUrl ? await storeFoundImage(user.id, imageUrl, imageTicket) : null
+  // Not stored for a non-Member or a missing Dish, which editDish then refuses.
+  const boardId = imageUrl ? await boardOfDish(dishId) : null
+  const stored = imageUrl && boardId ? await storeFoundImage(user.id, boardId, imageUrl, imageTicket) : null
   const edited = await editDish(dishId, user.id, {
     ...rest,
     ...source !== undefined && { source: source && sourceOf(source) },
