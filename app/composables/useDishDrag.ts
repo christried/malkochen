@@ -1,6 +1,7 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { DishView } from '~~/server/utils/dishes'
 import { dishOnBoard } from '~~/shared/board'
+import { landingIndex, recordsCooking } from '~~/shared/placement'
 
 // Dragging Dishes (PRD stories 31, 32, 34, 79; handoff interactions.json
 // "Drag lift" and "Drop target (tab / lane)").
@@ -360,9 +361,10 @@ export function useDishDrag(
       current.y = box.top + box.height / 2 - current.grabY
     }
     const ms = prefersReducedMotion() ? motionMs('fade') : motionMs('drop-swallow')
-    // Into the Gekocht Column the celebration has its own haptics, which
-    // would cut this one off.
-    const cooks = options.board()?.columns.find(c => c.id === columnId)?.isGekocht
+    // Recording a Cooking, the celebration has its own haptics, which would
+    // cut this one off.
+    const target = options.board()?.columns.find(c => c.id === columnId)
+    const cooks = target && recordsCooking({ id: current.fromColumnId }, target)
     setTimeout(() => {
       if (!cooks) hapticConfirm()
       options.landed(columnId)
@@ -386,13 +388,14 @@ export function useDishDrag(
     if (!current) return cards
     const others: DragEntry[] = cards.filter(e => e.dish !== current.dish)
     const here = current.over.columnId === column.id && current.phase !== 'swallowing'
+    const lands = () => landingIndex(column, current.dish.id, current.over.index)
     if (column.id === current.fromColumnId) {
       // Swallowed into a tab, it closes where its slot was.
-      const at = current.over.columnId === column.id ? current.over.index : current.fromIndex
-      others.splice(Math.min(at, others.length), 0, { key: current.dish.id, dish: current.dish, state: here ? 'slot' : 'gone' })
+      const at = current.over.columnId === column.id ? lands() : Math.min(current.fromIndex, others.length)
+      others.splice(at, 0, { key: current.dish.id, dish: current.dish, state: here ? 'slot' : 'gone' })
     }
     else if (here) {
-      others.splice(Math.min(current.over.index, others.length), 0, { key: 'drop-slot', dish: null, state: 'drop-slot' })
+      others.splice(lands(), 0, { key: 'drop-slot', dish: null, state: 'drop-slot' })
     }
     return others
   }

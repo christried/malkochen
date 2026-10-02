@@ -3,6 +3,7 @@ import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from
 import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
 import { boardLabel } from '~~/shared/board'
+import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
 // and emoji, its Columns, its Members, the Invite Link and leaving; for the
@@ -120,8 +121,9 @@ const moveTo = ref<string>()
 
 function askDelete(column: ColumnRow) {
   if (column.count === 0) return deleteColumn(column)
-  const others = columns.value.filter(c => c !== column)
-  moveTo.value = (others.find(c => !c.isGekocht) ?? others[0])?.id
+  // The Column the server would pick were it empty.
+  const planned = columnDeletion(columns.value, column, { hasDishes: false })
+  moveTo.value = 'target' in planned ? planned.target.id : undefined
   deleting.value = column
 }
 

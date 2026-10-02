@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, exists, inArray, isNull, sql } from 'drizzle-orm'
+import { columnDeletion, type ColumnRefusal } from '../../shared/placement'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, dish, membership } from '../db/schema'
 import { membershipOf } from './boards'
@@ -86,8 +87,7 @@ export async function reorderColumns(boardId: string, userId: string, columnIds:
   return applied ? columns : null
 }
 
-// Why a Column can't be deleted as asked.
-export type ColumnRefusal = 'gekocht' | 'last' | 'not-empty' | 'bad-target'
+export type { ColumnRefusal }
 
 interface DeletingColumn {
   id: string
@@ -95,19 +95,12 @@ interface DeletingColumn {
   isGekocht: boolean
 }
 
-// Where the Column's Dishes go when it is deleted, or why it can't be: to
-// `moveTo`, which must be another Column of the Board; without one, the
-// Column must have no Dishes, and Dishes deleted from it go to the first
-// Column that isn't Gekocht, so "Rückgängig" still has a Column to bring
-// them back to.
+// Where the Column's Dishes go when it is deleted, or why it can't be, as
+// the Board is now (shared/placement.ts).
 async function deleteTarget(column: DeletingColumn, moveTo?: string): Promise<{ target: string } | { refusal: ColumnRefusal }> {
-  if (column.isGekocht) return { refusal: 'gekocht' }
-  const others = (await boardColumns(column.boardId)).filter(c => c.id !== column.id)
-  const firstOther = others.find(c => !c.isGekocht)
-  if (!firstOther) return { refusal: 'last' }
-  if (moveTo !== undefined) return others.some(c => c.id === moveTo) ? { target: moveTo } : { refusal: 'bad-target' }
   const [live] = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, column.id), isNull(dish.deletedAt))).limit(1)
-  return live ? { refusal: 'not-empty' } : { target: firstOther.id }
+  const planned = columnDeletion(await boardColumns(column.boardId), column, { moveTo, hasDishes: live !== undefined })
+  return 'refusal' in planned ? planned : { target: planned.target.id }
 }
 
 // Deletes a Column (PRD stories 57–60). Its Dishes go to the top of `moveTo`,

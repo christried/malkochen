@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, ilike, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
+import { columnForNewDishes } from '../../shared/placement'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, membership, user } from '../db/schema'
@@ -335,21 +336,20 @@ function escapeLike(text: string): string {
   return text.replace(/[\\%_]/g, c => `\\${c}`)
 }
 
-// Adds a Dish at the top of the Board's first Column (PRD story 13), skipping
-// the Gekocht Column: a new Dish hasn't been cooked. Null unless the user is
-// a Member of the Board.
+// Adds a Dish at the top of the Column that takes new Dishes (PRD story 13;
+// shared/placement.ts). Null unless the user is a Member of the Board.
 export async function addDish(
   boardId: string,
   adder: Omit<DishAdder, 'image'> & { image?: string | null },
   input: NewDish,
 ): Promise<DishView | null> {
-  const [firstColumn] = await db
-    .select({ id: boardColumn.id })
+  const columns = await db
+    .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
     .from(boardColumn)
     .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, adder.id)))
-    .where(and(eq(boardColumn.boardId, boardId), eq(boardColumn.isGekocht, false)))
+    .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))
-    .limit(1)
+  const firstColumn = columnForNewDishes(columns)
   if (!firstColumn) return null
 
   const [created] = await db
