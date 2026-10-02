@@ -121,9 +121,10 @@ const moveTo = ref<string>()
 
 function askDelete(column: ColumnRow) {
   if (column.count === 0) return deleteColumn(column)
-  // The Column the server would pick were it empty.
-  const planned = columnDeletion(columns.value, column, { hasDishes: false })
-  moveTo.value = 'target' in planned ? planned.target.id : undefined
+  // The Column the server picks by default. If it can't be deleted after
+  // all (changed meanwhile), any other: the server then says why.
+  const planned = columnDeletion(columns.value, column)
+  moveTo.value = 'target' in planned ? planned.target.id : columns.value.find(c => c !== column)?.id
   deleting.value = column
 }
 

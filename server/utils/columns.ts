@@ -87,8 +87,6 @@ export async function reorderColumns(boardId: string, userId: string, columnIds:
   return applied ? columns : null
 }
 
-export type { ColumnRefusal }
-
 interface DeletingColumn {
   id: string
   boardId: string

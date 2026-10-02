@@ -1,7 +1,8 @@
 // The placement and Gekocht Column rules (CONTEXT.md: Gekocht Column,
-// Cooking), as pure functions over a Board's Columns in order. The client
-// and the server's JavaScript both decide by these; the server's atomic SQL
-// does the same on its own, and API tests check that it agrees.
+// Cooking; PRD stories 13, 31–35, 49, 55, 57–59; ADR 0003), as pure
+// functions over a Board's Columns in order. The client and the server's
+// JavaScript both decide by these; the server's atomic SQL does the same on
+// its own, and API tests check that it agrees (placement-rules.test.ts).
 
 interface RuleColumn {
   id: string
@@ -41,11 +42,13 @@ export type ColumnRefusal = 'gekocht' | 'last' | 'not-empty' | 'bad-target'
 // takes new Dishes. Its Dishes go to `moveTo`, which must be another of the
 // Board's Columns; without one it must have no Dishes, and those deleted
 // from it go to the Column that takes new Dishes once it is gone, so
-// "Rückgängig" still has a Column to bring them back to.
+// "Rückgängig" still has a Column to bring them back to. Asked about the
+// Column alone, it answers whether it can be deleted at all and, if so,
+// the Column its Dishes would go to by default.
 export function columnDeletion<C extends RuleColumn>(
   columns: C[],
   column: RuleColumn,
-  { moveTo, hasDishes }: { moveTo?: string, hasDishes: boolean },
+  { moveTo, hasDishes = false }: { moveTo?: string, hasDishes?: boolean } = {},
 ): { target: C } | { refusal: ColumnRefusal } {
   if (column.isGekocht) return { refusal: 'gekocht' }
   const others = columns.filter(c => c.id !== column.id)

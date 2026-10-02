@@ -3,10 +3,10 @@ import { columnDeletion, columnForNewDishes, landingIndex, recordsCooking } from
 import { postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 
-// Parity: the server agrees with the shared placement and Gekocht rules
-// (shared/placement.ts), including where its atomic SQL decides on its own.
-// Each test works on a Board of Jean's made for it; Jean is used by this
-// file only.
+// Parity (PRD stories 13, 31–35, 49, 55, 57–59): the server agrees with the
+// shared placement and Gekocht rules (shared/placement.ts), including where
+// its atomic SQL decides on its own. Each test works on a Board of Jean's
+// made for it; among the API tests, Jean is used by this file only.
 
 interface Column {
   id: string
@@ -45,11 +45,16 @@ async function reorder(caller: Caller, boardId: string, columnIds: string[]) {
   expect((await send(caller, 'PUT', `/api/boards/${boardId}/columns`, { columnIds })).status).toBe(200)
 }
 
+// Adds a Dish and answers its id.
+async function addDish(caller: Caller, boardId: string, title = 'Linsensuppe'): Promise<string> {
+  const res = await postDish(caller, boardId, { title, placeholder: 'eintopf' })
+  expect(res.status).toBe(201)
+  return (await res.json() as { id: string }).id
+}
+
 // Adds a Dish and answers the Column it went to.
 async function columnOfNewDish(caller: Caller, boardId: string): Promise<string | undefined> {
-  const res = await postDish(caller, boardId, { title: 'Linsensuppe', placeholder: 'eintopf' })
-  expect(res.status).toBe(201)
-  const { id } = await res.json() as { id: string }
+  const id = await addDish(caller, boardId)
   return (await boardOf(caller, boardId)).columns.find(c => c.dishes.some(d => d.id === id))?.id
 }
 
@@ -127,7 +132,7 @@ test('the server records a Cooking exactly when the rule says', async () => {
   const board = await newBoard(caller)
   const elsewhere = await newBoard(caller)
   const [ideen, dieseWoche, gekocht] = board.columns
-  const dishId = (await (await postDish(caller, board.id, { title: 'Ofengemüse', placeholder: 'salad' })).json() as { id: string }).id
+  const dishId = await addDish(caller, board.id)
 
   expect(await moveAsRuled(caller, board.id, dishId, dieseWoche!)).toBe(false)
   expect(await moveAsRuled(caller, board.id, dishId, gekocht!)).toBe(true)
@@ -156,10 +161,9 @@ async function landAsRuled(caller: Caller, boardId: string, dishId: string, name
 test('a moved Dish lands where the rule says', async () => {
   const caller = await jean()
   const board = await newBoard(caller)
-  const add = async (title: string) => (await (await postDish(caller, board.id, { title, placeholder: 'pasta' })).json() as { id: string }).id
-  const a = await add('A')
-  const b = await add('B')
-  const c = await add('C')
+  const a = await addDish(caller, board.id, 'A')
+  const b = await addDish(caller, board.id, 'B')
+  const c = await addDish(caller, board.id, 'C')
 
   // To the top of another Column.
   expect(await landAsRuled(caller, board.id, a, 'Diese Woche')).toBe(0)

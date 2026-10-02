@@ -14,7 +14,7 @@ A Cooking records an occasion someone cooked the Dish, not a change of Column (`
 - **Deleting a Column into the Gekocht Column records none.** Its Dishes move there, but nobody cooked them.
 - Moving a Dish within the Gekocht Column records none, as before.
 
-See `cookDish` in [`server/utils/dishes.ts`](../../server/utils/dishes.ts), `deleteColumn` in [`server/utils/columns.ts`](../../server/utils/columns.ts), and the tests in [`tests/api/cooking.test.ts`](../../tests/api/cooking.test.ts) and [`tests/api/board-settings.test.ts`](../../tests/api/board-settings.test.ts).
+The rule is `recordsCooking` in [`shared/placement.ts`](../../shared/placement.ts). See also `cookDish` in [`server/utils/dishes.ts`](../../server/utils/dishes.ts), `deleteColumn` in [`server/utils/columns.ts`](../../server/utils/columns.ts), and the tests in [`tests/api/cooking.test.ts`](../../tests/api/cooking.test.ts) and [`tests/api/board-settings.test.ts`](../../tests/api/board-settings.test.ts).
 
 ## Consequences
 

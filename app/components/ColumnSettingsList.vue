@@ -20,7 +20,7 @@ const lastHintId = useId()
 
 // Its Dishes, if it has any, go where the delete sheet says, so only being
 // the Gekocht Column or the last other one keeps a Column.
-const deletable = (column: ColumnRow) => !('refusal' in columnDeletion(columns.value, column, { hasDishes: false }))
+const deletable = (column: ColumnRow) => !('refusal' in columnDeletion(columns.value, column))
 
 // A blank name puts the old one back.
 function rename(column: ColumnRow, event: Event) {

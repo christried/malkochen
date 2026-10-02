@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { deleteColumn, type ColumnRefusal } from '../../utils/columns'
+import type { ColumnRefusal } from '../../../shared/placement'
+import { deleteColumn } from '../../utils/columns'
 
 const query = z.object({ moveTo: z.uuid().optional() })
 
