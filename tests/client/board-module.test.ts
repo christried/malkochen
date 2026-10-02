@@ -147,7 +147,7 @@ test('after a move away, focus goes to the Dish now in its place, else its Colum
   expect(module.moveDish('b', { columnId: 'ideen' })).toMatchObject({ focus: { column: 'woche' } })
 })
 
-test('leaving the Dish detail, focus goes to its card while on the Board, else to the Dish that took its place', async () => {
+test('leaving the Dish detail, focus goes to its card while on the Board, else to the Dish that took its place', () => {
   const { module } = setup()
 
   // Moved within the Board, cooked out of its Column: its card is still there.
@@ -175,8 +175,12 @@ test('leaving the Dish detail of a Dish whose delete was undone, or failed, focu
   expect(module.focusAfterDetail('a')).toEqual({ dish: 'a' })
 })
 
-test('leaving the Dish detail of a Dish another Member took off the Board, focus goes nowhere', () => {
+test('leaving the Dish detail of a Dish another Member took off the Board, focus goes nowhere', async () => {
   const { board, module } = setup()
+  // Deleted here and undone before, so it once had somewhere to go.
+  const deleted = module.deleteDish('b')!
+  await deleted.settled
+  await (await deleted.undo!()).settled
   // As a poll would bring it.
   board.value!.columns[0]!.dishes.splice(1, 1)
 

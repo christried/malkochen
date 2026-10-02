@@ -163,7 +163,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
   }
 
   // Where focus went when a Dish left the Board (deleted, moved to another
-  // Board), for focusAfterDetail.
+  // Board), for focusAfterDetail; forgotten once it is back (insert).
   const focusWhenGone = new Map<string, FocusTarget>()
 
   // Where focus goes once the Dish detail of a Dish closes: its card, if it
@@ -183,6 +183,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
 
   function insert(into: BoardColumn, index: number, dish: DishView) {
     into.dishes.splice(Math.min(index, into.dishes.length), 0, dish)
+    focusWhenGone.delete(dish.id)
   }
 
   // Puts a Dish back into its Column between the neighbours it had, found

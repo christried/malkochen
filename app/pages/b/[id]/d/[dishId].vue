@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
+import type { DishView } from '~~/server/utils/dishes'
 import type { BoardResult } from '~/board/board-module'
 import { dishOnBoard } from '~~/shared/board'
 
@@ -85,13 +86,13 @@ function onBackdrop() {
 }
 
 // The Dish's actions, through the Board module.
-function act(operation: (dishId: string) => BoardResult | null, context?: ResultContext) {
+function actOnDish(operation: (dishId: string) => BoardResult | null, context?: ResultContext) {
   const result = located.value && operation(located.value.dish.id)
   if (result) emit('result', result, context)
 }
 
 function onDelete() {
-  act(boardModule.deleteDish)
+  actOnDish(boardModule.deleteDish)
   close()
 }
 
@@ -101,7 +102,7 @@ function onDelete() {
 const moving = ref(false)
 function onMove(columnId: string, toBoard: BoardListing | null) {
   moving.value = false
-  act(dishId => moveToPicked(boardModule, dishId, columnId, toBoard), { moved: { toBoard } })
+  actOnDish(dishId => moveToPicked(boardModule, dishId, columnId, toBoard), { moved: { toBoard } })
   if (toBoard) close()
 }
 watch(moving, async (isMoving) => {
@@ -124,8 +125,15 @@ function onSaved(result: BoardResult) {
   editing.value = false
 }
 
-// The Cooking note sheet, from the Cooking History.
-const noting = ref<CookingView | null>(null)
+// The Cooking note sheet, from the Cooking History, for a Cooking of the
+// Dish shown then.
+const noting = ref<{ dish: DishView, cooking: CookingView } | null>(null)
+const notingCooking = computed({
+  get: () => noting.value?.cooking ?? null,
+  set: (cooking) => {
+    if (!cooking) noting.value = null
+  },
+})
 
 // Leaving edit mode puts focus back on "Bearbeiten" (edit mode focuses its
 // title itself), so it never falls to the page behind.
@@ -165,9 +173,9 @@ watch(editing, async (isEditing) => {
           @edit="editing = true"
           @move="moving = true"
           @delete="onDelete"
-          @cook="origin => act(boardModule.cookDish, { origin })"
-          @note="cooking => noting = cooking"
-          @delete-cooking="cooking => act(dishId => boardModule.deleteCooking(dishId, cooking.id))"
+          @cook="origin => actOnDish(boardModule.cookDish, { origin })"
+          @note="cooking => located && (noting = { dish: located.dish, cooking })"
+          @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
         />
       </template>
       <AppSheet
@@ -189,8 +197,8 @@ watch(editing, async (isEditing) => {
     <!-- The Cooking note sheet sits beside the detail, not in it: the
          detail's own fields (edit mode's "Notiz") stay the only ones there. -->
     <CookingNoteSheet
-      v-model:cooking="noting"
-      :dish="located?.dish ?? null"
+      v-model:cooking="notingCooking"
+      :dish="noting?.dish ?? null"
     />
   </div>
 </template>

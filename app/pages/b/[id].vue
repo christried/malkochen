@@ -324,13 +324,14 @@ function deleteFromMenu() {
 }
 
 // Shows what an operation of the Board module answered, from a card or the
-// Dish detail: haptics for a Dish or Cooking deleted; for a Dish moved with
-// "Verschieben nach…", a Toast saying where to; its notice, as a Toast
-// offering "Rückgängig" if it comes with an undo (whose result shows the
-// same way), or for a Cooking recorded the Gekocht celebration (its
-// confetti from `origin`); then what its write ended in, once settled; and
-// focus where it says, unless dragging moved it (`moveFocus: false`) or the
-// Dish detail makes the Board inert (focus goes back as it closes).
+// Dish detail: haptics for a Dish or Cooking deleted (PRD stories 47, 48);
+// for a Dish moved with "Verschieben nach…", a Toast saying where to; its
+// notice, as a Toast offering "Rückgängig" if it comes with an undo (whose
+// result shows the same way), or for a Cooking recorded the Gekocht
+// celebration (its confetti from `origin`); then what its write ended in,
+// once settled; and focus where it says, unless dragging moved it
+// (`moveFocus: false`) or the Dish detail makes the Board inert (focus goes
+// back as it closes).
 async function showResult(result: BoardResult, { origin, moved, moveFocus = true }: ResultContext & { moveFocus?: boolean } = {}) {
   const { notice, undo, settled } = result
   if (notice === 'deleted' || notice === 'cookingDeleted') hapticReject()
