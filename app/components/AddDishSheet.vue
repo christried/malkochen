@@ -195,11 +195,13 @@ async function save() {
             class="text-label"
           >{{ t.addDish.link }}</label>
           <!-- Input "valid" and "loading": dots while the link is looked up,
-               then, once found, a sage ring (in place of the focus ring, or
-               it would hide behind it) and a check. -->
+               then, once found, a sage ring and a check. Focus then shows
+               as an outline around the ring, so neither hides the other. -->
           <span
             class="flex items-center gap-2 rounded-field border border-line-strong bg-surface py-1.5 pl-4 pr-1.5 transition-shadow duration-lift ease-lift"
-            :class="result ? 'ring-2 ring-sage' : 'focus-within:ring-2 focus-within:ring-focus'"
+            :class="result
+              ? 'ring-2 ring-sage has-[input:focus]:outline-2 has-[input:focus]:outline-offset-2 has-[input:focus]:outline-focus'
+              : 'focus-within:ring-2 focus-within:ring-focus'"
             data-link-field
           >
             <span
@@ -442,6 +444,8 @@ async function save() {
           {{ t.addDish.failed }}
         </p>
 
+        <!-- Saving, it shows its dots undimmed; save() ignores a second
+             submit meanwhile. -->
         <button
           v-if="!warnDuplicate"
           type="submit"
@@ -449,7 +453,7 @@ async function save() {
           :disabled="!canSave && !saving"
           :aria-busy="saving"
         >
-          <ButtonLabel
+          <BusyLabel
             :label="t.addDish.save"
             :busy-label="t.addDish.saving"
             :busy="saving"

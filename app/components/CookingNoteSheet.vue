@@ -89,7 +89,7 @@ async function save() {
         class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         :aria-busy="saving"
       >
-        <ButtonLabel
+        <BusyLabel
           :label="t.cooking.save"
           :busy-label="t.cooking.saving"
           :busy="saving"

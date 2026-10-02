@@ -4,7 +4,7 @@ import { signIn } from './auth'
 import { confetti, topfbert } from './celebration'
 import { clipStill, countVideos } from './clips'
 import { gotoHydrated } from './hydration'
-import { dotsMoving, holdRequests } from './saving'
+import { dotsMoving, holdRequests, linkField, linkFound } from './loading'
 import { resetBoard, seedCookings, seedDish } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
 
@@ -39,11 +39,11 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await sheet.getByLabel('Link').fill(TIKTOK)
   await expect(clipStill(sheet, 'lookup-stir')).toBeVisible()
   // The link field's dots stand still; its sage ring and check simply appear.
-  const field = sheet.locator('[data-link-field]')
+  const field = linkField(sheet)
   await expect.poll(() => dotsMoving(field)).toBe(false)
   await expect(field).toHaveCSS('transition-duration', '0s')
   answer()
-  await expect(field.locator('[data-link-found]')).toBeVisible()
+  await expect(linkFound(sheet)).toBeVisible()
   await expect(sheet.getByLabel('Titel')).toHaveValue('Crispy Tofu Bowl')
   // Saving: the button's dots stand still too.
   const release = await holdRequests(page, 'POST', /\/api\/boards\/[^/]+\/dishes$/)

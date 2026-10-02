@@ -82,13 +82,15 @@ async function create() {
       >
         {{ t.boards.failed }}
       </p>
+      <!-- Creating, it shows its dots undimmed; create() ignores a second
+           submit meanwhile. -->
       <button
         type="submit"
         class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        :disabled="!name.trim()"
+        :disabled="!name.trim() && !saving"
         :aria-busy="saving"
       >
-        <ButtonLabel
+        <BusyLabel
           :label="t.boards.create"
           :busy-label="t.boards.creating"
           :busy="saving"

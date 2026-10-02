@@ -4,8 +4,8 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
+import { clickAndExpectSaving } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
-import { expectSaving, layoutWidth } from './saving'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // The Dish detail (PRD stories 41–45): tapping a card opens it, full-screen
@@ -273,10 +273,7 @@ test('a new link is saved as what it really is, looked up like in Add Dish', asy
   await detail.getByLabel('Link').fill(`${blog}?utm_source=pinterest`)
   const body = editedBody(page)
   // Saving waits for the lookup's answer, with the three dots.
-  const save = detail.locator('button[type="submit"]')
-  const width = await layoutWidth(save)
-  await save.click()
-  await expectSaving(save, 'Speichert …', width)
+  await clickAndExpectSaving(detail.locator('button[type="submit"]'), 'Speichert …')
   release()
 
   const sent = await body

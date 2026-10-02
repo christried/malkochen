@@ -1,11 +1,11 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
 import { gotoHydrated } from './hydration'
+import { clickAndExpectSaving, dotsMoving, holdRequests, linkField, linkFound, loadingDots, SAGE } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
-import { dotsMoving, expectSaving, holdRequests, layoutWidth, loadingDots } from './saving'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // Linus's Board is used by this file only. Source Lookup is stubbed with
@@ -22,12 +22,6 @@ async function openAddDish(page: Page) {
   await gotoHydrated(page, '/')
   await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
   return page.getByRole('dialog', { name: 'Gericht hinzufügen' })
-}
-
-// The link field with what sits in it: the Source's dot, the lookup's
-// state and "Einfügen".
-function linkField(sheet: Locator) {
-  return sheet.locator('[data-link-field]')
 }
 
 function savedBody(page: Page) {
@@ -54,13 +48,16 @@ test('a pasted link shows a loading state, then a preview with image and editabl
   // The link field shows the lookup under way: loading dots, no check yet.
   const field = linkField(sheet)
   await expect(loadingDots(field)).toBeVisible()
-  await expect(field.locator('[data-link-found]')).toHaveCount(0)
+  await expect(linkFound(sheet)).toHaveCount(0)
   answer()
 
-  // Found: a sage ring and a check, in place of the dots.
-  await expect(field.locator('[data-link-found]')).toBeVisible()
+  // Found: a sage ring and a check, in place of the dots. The link field
+  // still shows when it has focus.
+  await expect(linkFound(sheet)).toBeVisible()
   await expect(loadingDots(field)).toHaveCount(0)
-  await expect(field).toHaveCSS('box-shadow', /rgb\(165, 199, 174\) 0px 0px 0px 2px/)
+  await expect.poll(() => field.evaluate(el => getComputedStyle(el).boxShadow)).toContain(`${SAGE} 0px 0px 0px 2px`)
+  await sheet.getByLabel('Link').focus()
+  await expect(field).toHaveCSS('outline-style', 'solid')
   const preview = sheet.getByRole('img', { name: 'Bild vom Link' })
   await expect(preview).toBeVisible()
   await expect(preview).toHaveAttribute('src', PORTRAIT)
@@ -74,11 +71,9 @@ test('a pasted link shows a loading state, then a preview with image and editabl
   const body = savedBody(page)
   const release = await holdRequests(page, 'POST', /\/api\/boards\/[^/]+\/dishes$/)
   const save = sheet.locator('button[type="submit"]')
-  const width = await layoutWidth(save)
-  await save.click()
 
   // While it saves: the three dots, moving, in place of "Speichern".
-  await expectSaving(save, 'Speichert …', width)
+  await clickAndExpectSaving(save, 'Speichert …')
   expect(await dotsMoving(save)).toBe(true)
   release()
   expect(await body).toMatchObject({
@@ -170,7 +165,7 @@ test('lookup failed: the Dish can still be saved with a Placeholder and a typed 
   await expect(sheet.getByRole('status')).toContainText('Das Nachschauen hat nicht geklappt')
   // Nothing recognised: neither dots nor the check stay in the link field.
   await expect(loadingDots(linkField(sheet))).toHaveCount(0)
-  await expect(linkField(sheet).locator('[data-link-found]')).toHaveCount(0)
+  await expect(linkFound(sheet)).toHaveCount(0)
   await expect(sheet.getByRole('radiogroup', { name: 'Bild' })).toBeVisible()
   await sheet.getByLabel('Titel').fill('Gochujang-Nudeln')
   await sheet.getByRole('radiogroup', { name: 'Bild' }).getByRole('radio', { name: 'Ramen' }).click()

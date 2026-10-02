@@ -5,7 +5,7 @@ import { signIn } from './auth'
 import { column, titles } from './board'
 import { confetti, topfbert } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { expectSaving, holdRequests, layoutWidth } from './saving'
+import { clickAndExpectSaving, holdRequests } from './loading'
 import { seedDish } from './seed'
 
 // Cooking (PRD stories 35, 48–55): "Gekocht ✓" on a card, the Gekocht toast
@@ -58,10 +58,7 @@ test('a note from the toast shows in the Cooking History; cooking again counts',
   await expect(sheet.getByLabel('Notiz')).toBeFocused()
   await sheet.getByLabel('Notiz').fill('mit Feta besser')
   const release = await holdRequests(page, 'PATCH', /\/api\/cookings\/[^/]+$/)
-  const save = sheet.locator('button[type="submit"]')
-  const width = await layoutWidth(save)
-  await save.click()
-  await expectSaving(save, 'Speichert …', width)
+  await clickAndExpectSaving(sheet.locator('button[type="submit"]'), 'Speichert …')
   release()
   await expect(sheet).toBeHidden()
 
