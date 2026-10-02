@@ -71,11 +71,13 @@ function addNote(dish: DishView, cooking: CookingView) {
   noting.value = { dish, cooking }
 }
 
-// The client Board module: deleting a Dish goes through it, and the page
-// turns what it answers into Toasts, haptics and focus (showResult).
+// The client Board module: moving, cooking and deleting a Dish go through
+// it, and the page turns what it answers into Toasts, the Gekocht
+// celebration, haptics and focus (showResult).
 const boardModule = createBoardModule(board, httpTransport())
-const { moveDish, moveToBoard, dropDish, cookDish } = useDishMove(board, showToast, { addNote, celebrateMilestone })
+const { moveToBoard } = useDishMove(board, showToast)
 const { deleteCooking } = useCookingDelete(showToast)
+const confetti = useConfetti()
 
 // Just made with "Neues Board", the Board celebrates as it opens.
 const justCreated = useJustCreatedBoard()
@@ -99,13 +101,17 @@ const milestoneOpen = computed({
 })
 async function celebrateMilestone(dish: DishView, recorded: Promise<CookingView | null>) {
   const [cooking] = await Promise.all([recorded, wait(motionMs('milestone-delay'))])
-  if (!cooking || !dish.cookings.includes(cooking) || !claimMilestone(dish.id)) return
+  if (!cooking || !hasCooking(dish, cooking) || !claimMilestone(dish.id)) return
   milestone.value = { dish, cooking }
   hapticMilestone()
 }
-watch(() => milestone.value && !milestone.value.dish.cookings.includes(milestone.value.cooking), (undone) => {
+watch(() => milestone.value && !hasCooking(milestone.value.dish, milestone.value.cooking), (undone) => {
   if (undone) milestone.value = null
 })
+// By id: settling to the server's answer brings the Cookings afresh.
+function hasCooking(dish: DishView, cooking: CookingView) {
+  return dish.cookings.some(c => c.id === cooking.id)
+}
 
 // A Column's tab, or its name beside the others, reacting to a Dish coming
 // in (ColumnCue): dropped on the tab, cooked, the Gekocht pebble landing.
@@ -147,11 +153,25 @@ function deleteCookingFromDetail(dishId: string, cooking: CookingView) {
   if (dish) deleteCooking(dish, cooking)
 }
 
+// "Gekocht ✓" on a card (useGekochtCelebration, which set its confetti off
+// already: `origin` null) or in the Dish detail, from its button. Answers
+// the id of the element to focus instead of the Dish's card.
+function cookDish(dishId: string, origin: Point | null): string | null {
+  const result = boardModule.cookDish(dishId)
+  if (!result) return null
+  void showResult(result, { origin, moveFocus: false })
+  return result.focus ? focusTargetId(result.focus) : null
+}
+
 const { drag, dragging, entries } = useDishDrag(columnsEl, {
   board: () => board.value,
   activeColumnId: () => activeColumnId.value,
   tabBar: () => tabBar.value?.$el ?? null,
-  drop: (dishId, place, origin) => dropDish(dishId, place, { origin }),
+  // Into the Gekocht Column, its confetti bursts where it landed.
+  drop: (dishId, place, at) => {
+    const result = boardModule.moveDish(dishId, place)
+    if (result) void showResult(result, { origin: at, moveFocus: false })
+  },
   landed: columnId => cueColumn({ columnId, kind: 'drop' }),
 })
 // The one loop playing on the Board: the lifted card's Placeholder, the
@@ -323,13 +343,22 @@ async function moveFromMenu(columnId: string, toBoard: BoardListing | null) {
 }
 
 // "Verschieben nach…", from the card's menu or the Dish detail: within this
-// Board, or to another one. Focus goes to what took the card's place.
-// From the Dish detail, the Board is inert until the detail closes, so a
-// Dish gone to another Board has focus put on what took its place then.
+// Board, to the top of the Column, and a Toast says where (into the Gekocht
+// Column, the Gekocht toast does); or to another Board. Focus goes to what
+// took the card's place. From the Dish detail, the Board is inert until
+// the detail closes, so a Dish gone to another Board has focus put on what
+// took its place then.
 async function moveAndFocus(dishId: string, columnId: string, toBoard: BoardListing | null) {
-  const focusId = toBoard ? moveToBoard(dishId, columnId, toBoard) : moveDish(dishId, columnId)
+  if (!toBoard) {
+    const result = boardModule.moveDish(dishId, { columnId })
+    if (!result) return
+    const column = board.value?.columns.find(c => c.id === columnId)
+    if (!result.notice && column) showNotice(t.dish.moved(result.dish.title, column.name))
+    return showResult(result)
+  }
+  const focusId = moveToBoard(dishId, columnId, toBoard)
   if (route.params.dishId) {
-    if (toBoard) focusAfterDetail.value = focusId
+    focusAfterDetail.value = focusId
     return
   }
   await nextTick()
@@ -355,19 +384,49 @@ function deleteDish(dishId: string) {
 
 // Shows what an operation of the Board module answered: its notice, as a
 // Toast offering "Rückgängig" if it comes with an undo (whose result shows
-// the same way); then what its write ended in, once settled; and focus
-// where it says, unless the Dish detail makes the Board inert.
-async function showResult({ dish, notice, undo, focus, settled }: BoardResult) {
-  if (notice) {
+// the same way), or for a Cooking recorded the Gekocht celebration (its
+// confetti from `origin`); then what its write ended in, once settled; and
+// focus where it says, unless the caller moves focus itself (`moveFocus:
+// false`) or the Dish detail makes the Board inert.
+async function showResult(result: BoardResult, { origin, moveFocus = true }: { origin?: Point | null, moveFocus?: boolean } = {}) {
+  const { dish, notice, undo, settled } = result
+  if (notice === 'cook') {
+    celebrateCooking(result, origin)
+  }
+  else if (notice) {
     const text = t.dish[notice](dish.title)
     showToast(undo
-      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(showResult) }] }
+      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(r => showResult(r)) }] }
       : { text, duration: NOTICE_MS })
   }
-  void settled?.then(showResult)
-  if (!focus || route.params.dishId) return
+  void settled?.then(r => showResult(r))
+  if (!moveFocus || !result.focus || route.params.dishId) return
   await nextTick()
-  document.getElementById(focusTargetId(focus))?.focus()
+  document.getElementById(focusTargetId(result.focus))?.focus()
+}
+
+// A Cooking recorded (PRD stories 49–55): haptics, confetti from `origin`
+// (from the toast's place without one; none if `null`, as the caller set
+// it off already), and the Gekocht toast, offering "Notiz hinzufügen" once
+// the Cooking is recorded, and "Rückgängig". The Cooking that makes the
+// Dish a Klassiker (the 10th) celebrates that too.
+function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point | null) {
+  const recorded = settled?.then(r => r.cooking ?? null) ?? Promise.resolve(null)
+  hapticCelebrate()
+  if (origin !== null) confetti.fire(origin ?? { x: innerWidth / 2, y: innerHeight - 48 })
+  showToast({
+    text: t.dish.cook,
+    duration: UNDO_WINDOW_MS,
+    celebrate: true,
+    actions: [
+      { label: t.dish.addNote, run: async () => {
+        const cooking = await recorded
+        if (cooking) addNote(dish, cooking)
+      } },
+      ...undo ? [{ label: t.dish.undo, run: () => void undo().then(r => showResult(r)) }] : [],
+    ],
+  })
+  if (dish.cookings.length === MILESTONE_COOKINGS) void celebrateMilestone(dish, recorded)
 }
 </script>
 

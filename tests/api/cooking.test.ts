@@ -244,6 +244,26 @@ test('undo needs a Column of the Dish’s Board and a place', async () => {
   expect(found.dish.cookings).toEqual([cooking])
 })
 
+test('cooking and its undo answer where the Dish now is, in Board order, with the Cooking recorded', async () => {
+  const caller = await hedy()
+  const { id: boardId } = await landingBoard(caller)
+  const { gekocht } = await columnsOf(caller)
+  const dish = await addDish(caller, 'Linsendal')
+  const before = await located(caller, dish.id)
+
+  const cooked = await (await cookDish(caller, dish.id)).json()
+  expect(cooked.placement).toEqual({ boardId, columnId: gekocht.id, index: 0 })
+  expect(cooked.cookings).toEqual([cooked.cooking])
+  const dropped = await (await moveDish(caller, dish.id, gekocht.id, 1)).json()
+  expect(dropped.cooking).toBeUndefined()
+  expect(dropped.placement).toEqual({ boardId, columnId: gekocht.id, index: (await located(caller, dish.id)).index })
+
+  const undone = await (await undoCooking(caller, cooked.cooking.id, before.column.id, before.index)).json()
+  expect(undone.placement).toEqual({ boardId, columnId: before.column.id, index: before.index })
+  expect(undone.cookings).toEqual([])
+  expect((await located(caller, dish.id)).index).toBe(before.index)
+})
+
 test('a note can be added to a Cooking, changed and removed', async () => {
   const caller = await hedy()
   const dish = await addDish(caller, 'Ofengemüse')

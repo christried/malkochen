@@ -1,4 +1,4 @@
-import type { PlacedDish } from '~~/server/utils/dishes'
+import type { MovedDish, PlacedDish } from '~~/server/utils/dishes'
 import { WriteFailed, type BoardTransport } from './board-module'
 
 // The client Board module's writes over HTTP, for the app. Each is counted
@@ -8,6 +8,9 @@ export function httpTransport(): BoardTransport {
   return {
     deleteDish: dishId => tracked($fetch<unknown>(`/api/dishes/${dishId}`, { method: 'DELETE' })).then(() => undefined),
     restoreDish: dishId => tracked($fetch<PlacedDish>(`/api/dishes/${dishId}/restore`, { method: 'POST' })),
+    moveDish: (dishId, to) => tracked($fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: to })),
+    cookDish: dishId => tracked($fetch<MovedDish>(`/api/dishes/${dishId}/cook`, { method: 'POST' })),
+    undoCooking: (cookingId, to) => tracked($fetch<PlacedDish>(`/api/cookings/${cookingId}/undo`, { method: 'POST', body: to })),
   }
 }
 

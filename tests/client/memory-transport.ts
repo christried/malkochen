@@ -1,8 +1,8 @@
 import type { BoardTransport } from '../../app/board/board-module'
 import { WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
-import type { DishView, PlacedDish } from '../../server/utils/dishes'
-import { columnForNewDishes } from '../../shared/placement'
+import type { DishView, MovedDish, PlacedDish } from '../../server/utils/dishes'
+import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
 // The in-memory transport for the client Board module's tests: a small fake
 // of the server, holding its own copy of the Board. Tests change that copy
@@ -23,7 +23,7 @@ export interface MemoryTransport {
   transport: BoardTransport
   // The Board as the server has it.
   server: BoardView
-  // The writes sent, in order, as "deleteDish dish-1".
+  // The writes sent, in order, as "deleteDish b" or "moveDish b woche 1".
   sent: string[]
   // The next call of `write` fails with `status`, changing nothing.
   failNext: (write: Write, status: number) => void
@@ -41,6 +41,44 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   const replies = new Map<Write, Reply[]>()
   // Deleted Dishes keep their Column and index, so restoring puts them back.
   const deleted = new Map<string, { dish: DishView, columnId: string, index: number }>()
+  let cookings = 0
+
+  // The Dish on the server that `matches`, and its Column.
+  function located(matches: (dish: DishView) => boolean) {
+    for (const column of server.columns) {
+      const dish = column.dishes.find(matches)
+      if (dish) return { dish, column }
+    }
+    return null
+  }
+
+  // Moves a Dish as the server does (shared/placement.ts), recording a
+  // Cooking where the rules say so; without a Column, to the Gekocht Column
+  // ("Gekocht ✓"). Null for a Dish the server doesn't have.
+  function moveOnServer(dishId: string, columnId: string | undefined, index: number | undefined, cook: boolean): MovedDish | null {
+    const found = located(d => d.id === dishId)
+    const target = server.columns.find(c => columnId === undefined ? c.isGekocht : c.id === columnId)
+    if (!found) return null
+    if (!target) throw new WriteFailed(400)
+    const to = landingIndex(target, dishId, index)
+    found.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
+    target.dishes.splice(to, 0, found.dish)
+    const placed = { ...structuredClone(found.dish), placement: { boardId: server.id, columnId: target.id, index: to } }
+    if (!recordsCooking(found.column, target, { cook })) return placed
+    const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), note: null, recordedBy: null }
+    found.dish.cookings.unshift(cooking)
+    return { ...placed, cookings: structuredClone(found.dish.cookings), cooking: structuredClone(cooking) }
+  }
+
+  // Removes a Cooking and puts its Dish at `index` in a Column, if it is
+  // still in the Gekocht Column (400 otherwise, as on the server).
+  function undoOnServer(cookingId: string, columnId: string, index: number): PlacedDish | null {
+    const found = located(dish => dish.cookings.some(c => c.id === cookingId))
+    if (!found) return null
+    if (!found.column.isGekocht) throw new WriteFailed(400)
+    found.dish.cookings = found.dish.cookings.filter(c => c.id !== cookingId)
+    return moveOnServer(found.dish.id, columnId, index, false)
+  }
 
   function deleteOnServer(dishId: string): boolean {
     for (const column of server.columns) {
@@ -64,14 +102,19 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   }
 
   // Answers a write as scripted, else runs it on the server: `run` answers
-  // null for a Dish the server doesn't have (404).
+  // null for a Dish the server doesn't have (404), or throws WriteFailed.
   function answer<T>(write: Write, args: string, run: () => T | null): Promise<T> {
-    sent.push(`${write} ${args}`)
+    sent.push(`${write} ${args}`.trimEnd())
     const settle = (resolve: (value: T) => void, reject: (error: unknown) => void, status?: number) => {
       if (status !== undefined) return reject(new WriteFailed(status))
-      const result = run()
-      if (result === null) reject(new WriteFailed(404))
-      else resolve(result)
+      try {
+        const result = run()
+        if (result === null) reject(new WriteFailed(404))
+        else resolve(result)
+      }
+      catch (error) {
+        reject(error)
+      }
     }
     const reply = replies.get(write)?.shift()
     return new Promise<T>((resolve, reject) => {
@@ -88,6 +131,9 @@ export function memoryTransport(board: BoardView): MemoryTransport {
   const transport: BoardTransport = {
     deleteDish: dishId => answer('deleteDish', dishId, () => deleteOnServer(dishId) || null).then(() => undefined),
     restoreDish: dishId => answer('restoreDish', dishId, () => restoreOnServer(dishId)),
+    moveDish: (dishId, { columnId, index }) => answer('moveDish', `${dishId} ${columnId} ${index ?? ''}`, () => moveOnServer(dishId, columnId, index, false)),
+    cookDish: dishId => answer('cookDish', dishId, () => moveOnServer(dishId, undefined, undefined, true)),
+    undoCooking: (cookingId, { columnId, index }) => answer('undoCooking', `${cookingId} ${columnId} ${index}`, () => undoOnServer(cookingId, columnId, index)),
   }
 
   return {
