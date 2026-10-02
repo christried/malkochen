@@ -377,6 +377,42 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo } }
   }
 
+  // Moving a Dish to a Column on another of the Member's Boards (PRD story
+  // 46): it leaves this Board at once, for the top of that Column, keeping
+  // its Cooking History; into that Board's Gekocht Column the server
+  // records a Cooking, but there is no Gekocht toast or undo, as the Dish
+  // is no longer here. If the move fails, it comes back exactly where it
+  // was, with a notice; one the server no longer has (another Member
+  // deleted it) stays gone. Null if it isn't on this Board.
+  function moveToBoard(dishId: string, to: { boardId: string, columnId: string }): BoardResult | null {
+    const found = find(dishId)
+    if (!found) return null
+    const { dish, column: from } = found
+    const index = from.dishes.indexOf(dish)
+    const origin = placeOf(from, index)
+    const focus = focusAfterLeaving(from, index)
+    from.dishes.splice(index, 1)
+
+    const settled = queued(dishId, async (latest): Promise<BoardResult> => {
+      try {
+        const moved = await transport.moveDish(dishId, { columnId: to.columnId })
+        rolledBackTo.delete(dishId)
+        return { dish, placement: moved.placement }
+      }
+      catch (error) {
+        if (isGone(error)) return { dish }
+        // Back where the server still has it: where it came from, unless a
+        // write before this one failed too.
+        const back = rolledBackTo.get(dishId) ?? origin
+        rolledBackTo.set(dishId, back)
+        if (latest()) moveBack(dish, back)
+        return { dish, notice: 'moveFailed' }
+      }
+    })
+
+    return { dish, placement: { ...to, index: 0 }, focus, settled }
+  }
+
   // Puts a Cooking back into its Dish's Cooking History, found by the
   // Dish's id wherever it is now. The History is newest first, so the
   // Cooking's date finds its place, whatever was added meanwhile.
@@ -440,7 +476,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, transport: 
     return { dish, cooking: cooking ?? saved }
   }
 
-  return { addDish, editDish, deleteDish, moveDish, cookDish, deleteCooking, noteCooking }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking }
 }
 
 export type BoardModule = ReturnType<typeof createBoardModule>
