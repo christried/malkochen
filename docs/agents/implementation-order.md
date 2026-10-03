@@ -73,6 +73,13 @@ So the refactors come first and the polish goes onto code that no longer changes
 | #55 | Dish detail: scroll parallax and compact top bar | |
 | #53 | Board loading state: skeleton shimmer | |
 
+### Phase 6: found after v1 (spec check and production smoke test, 2026-10-03)
+
+| # | Ticket | Note |
+|---|---|---|
+| #99 | Dish card: "N× gekocht" cut to "1× g…" side by side | A visible bug; changes `DishCard.vue` |
+| #98 | Browser test: copy and share the Invite Link | Test only |
+
 ## Keeping this file current
 
 When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.
