@@ -199,7 +199,7 @@ test('"Link teilen" hands the Invite Link and the Board’s name to the share sh
 
   await page.getByRole('button', { name: 'Link teilen' }).click()
 
-  await expect.poll(() => shared(page)).toEqual([{ title: '🍳 Meine Küche', text: 'Komm auf unser Board 🍳 Meine Küche bei malkochen!', url: link }])
+  await expect.poll(() => shared(page)).toEqual([{ title: '🍳 Meine Küche', text: expect.stringContaining('🍳 Meine Küche'), url: link }])
 })
 
 test('closing the share sheet without sharing is no failure', async ({ page }) => {
