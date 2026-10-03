@@ -38,6 +38,24 @@ test('opening malkochen offline shows the Offline page, which carries on once ba
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('Du bist offline.')
 })
 
+// A device often says it is back online before the connection gets
+// through (Wi-Fi joined, DNS not answering yet): the Offline page keeps
+// trying instead of stopping at its first failed try.
+test('back online before the connection gets through, the Offline page keeps trying and carries on', async ({ page, context }) => {
+  await signIn(page)
+  await gotoHydrated(page, '/')
+  await serviceWorkerInControl(page)
+  await context.setOffline(true)
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
+
+  await context.route(url => url.pathname === '/', route => route.abort('internetdisconnected'), { times: 1 })
+  await context.setOffline(false)
+
+  await expect(page).toHaveURL(/\/b\//)
+  await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('malkochen ist gerade nicht erreichbar.')
+})
+
 test('the service worker keeps the splash stills, so a cold launch paints them without the network', async ({ page, context }) => {
   await gotoHydrated(page, '/login')
   await serviceWorkerInControl(page)

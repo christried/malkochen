@@ -6,7 +6,7 @@
 // launch paints them at once. Nothing else is cached: Boards and Dishes always
 // come from the network. Bump VERSION when offline.html, what it shows, or a
 // splash still changes.
-const VERSION = 'offline-v4'
+const VERSION = 'offline-v5'
 const FALLBACK_PAGE = '/offline.html'
 // The offline clip (still and video, both themes) plays on the Offline page
 // and the app's Offline screen, which both show only without a connection.
@@ -60,6 +60,12 @@ const isPlatformError = response => response.status >= 500 && response.headers.h
 
 self.addEventListener('fetch', (event) => {
   const { request } = event
+  // offline.html asks with HEAD whether malkochen answers: through here, the
+  // way its reload will go.
+  if (request.method === 'HEAD') {
+    event.respondWith(fetch(request))
+    return
+  }
   if (request.method !== 'GET') return
   if (request.mode === 'navigate') {
     event.respondWith(

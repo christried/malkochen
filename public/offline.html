@@ -99,8 +99,27 @@
       video.play().catch(function () {})
     }
     playClip()
-    // Back online: carry on where the visit was going.
-    window.addEventListener('online', function () { location.reload() })
+    // Back online: carry on where the visit was going, once malkochen
+    // answers. A device often says it is online before the connection gets
+    // through, and reloading then would only land here again, with no
+    // second "online" to try once more. So it asks first (HEAD, through the
+    // service worker like the reload), again and again, a little longer
+    // apart each time, until the connection drops again.
+    var waiting
+    function carryOnOnceReachable(delay) {
+      clearTimeout(waiting)
+      if (!navigator.onLine) return
+      fetch(location.href, { method: 'HEAD', cache: 'no-store', redirect: 'manual' })
+        .then(function (response) {
+          // Vercel's own error pages: malkochen isn't up yet (as sw.js).
+          if (response.status >= 500 && response.headers.has('x-vercel-error')) throw new Error('platform error')
+          location.reload()
+        })
+        .catch(function () {
+          waiting = setTimeout(function () { carryOnOnceReachable(Math.min(delay * 2, 10000)) }, delay)
+        })
+    }
+    window.addEventListener('online', function () { carryOnOnceReachable(500) })
   </script>
 </body>
 </html>
