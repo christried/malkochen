@@ -1,12 +1,12 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { column, titles } from './board'
+import { cardAtRest, column, titles } from './board'
 import { confetti, topfbert } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
-import { seedDish } from './seed'
+import { seedCookings, seedDish } from './seed'
 
 // Cooking (PRD stories 35, 48–55): "Gekocht ✓" on a card, the Gekocht toast
 // with "Notiz hinzufügen" and "Rückgängig", and the Cooking History in the
@@ -152,4 +152,39 @@ test('"Gekocht ✓" in the Dish detail celebrates there', async ({ page }) => {
 
   await expect(confetti(detail)).toHaveCount(14)
   await expect(topfbert(detail)).toContainText('Mmh!')
+})
+
+// Spec story 30. The count is `truncate`d, so its text is complete in the DOM
+// even when the card shows "99× g…": only its widths tell.
+test('"99× gekocht" shows in full beside an avatar and a note, side by side and on a phone', async ({ page }) => {
+  const title = 'Ofengemüse mit Halloumi und Zitronen-Joghurt'
+  await signIn(page, ALLOWLISTED[6])
+  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Feta geht auch.', addedBy: ALLOWLISTED[6] })
+  await seedCookings(page, title, 99)
+
+  for (const viewport of [{ width: 1280, height: 800 }, { width: 360, height: 740 }]) {
+    await page.setViewportSize(viewport)
+    await gotoHydrated(page, '/')
+    const card = page.getByRole('article', { name: title })
+    const count = card.locator('[data-cooked-count]')
+    await expect(count).toHaveText('99× gekocht')
+    await cardAtRest(card)
+
+    expect(await count.evaluate(el => el.scrollWidth <= el.clientWidth), `cut at ${viewport.width}px`).toBe(true)
+    const parts: Record<string, Locator> = {
+      title: card.getByRole('heading', { name: title }),
+      avatar: card.getByTitle('Hinzugefügt von '),
+      note: card.getByTitle('Mit Notiz'),
+      count,
+      cook: page.getByRole('button', { name: `Gekocht ✓: „${title}“` }),
+    }
+    const boxes = await Promise.all(Object.entries(parts).map(async ([name, part]) => ({ name, box: (await part.boundingBox())! })))
+    for (const [i, a] of boxes.entries()) {
+      for (const b of boxes.slice(i + 1)) {
+        const apart = a.box.x + a.box.width <= b.box.x || b.box.x + b.box.width <= a.box.x
+          || a.box.y + a.box.height <= b.box.y || b.box.y + b.box.height <= a.box.y
+        expect(apart, `${a.name} overlaps ${b.name} at ${viewport.width}px`).toBe(true)
+      }
+    }
+  }
 })
