@@ -6,13 +6,19 @@ import pg from 'pg'
 import type { Placeholder } from '../../shared/placeholders'
 import { png } from './source-lookup-stub'
 
+// The Board the signed-in user lands on: the one used last.
+export async function landingBoardId(page: Page): Promise<string> {
+  const { boardId } = await (await page.request.get('/api/boards/landing')).json() as { boardId: string }
+  return boardId
+}
+
 // Puts a Dish straight into the test database: for states the UI can't reach
 // in a test, like a successfully stored image (the server can't download from
 // the fixture hosts). tests/e2e/run.ts points DATABASE_URL at the throwaway
 // database the dev server uses. `addedBy` is the email of whoever added it,
 // signed in before; without it, nobody did.
 export async function seedDish(page: Page, dish: { title: string, imageUrl?: string, sourceLink: string, sourceKind: string, column?: number, placeholder?: Placeholder, note?: string, addedBy?: string }) {
-  const { boardId } = await (await page.request.get('/api/boards/landing')).json() as { boardId: string }
+  const boardId = await landingBoardId(page)
   const board = await (await page.request.get(`/api/boards/${boardId}`)).json() as { columns: { id: string }[] }
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
   await client.connect()
@@ -34,7 +40,7 @@ export async function seedDish(page: Page, dish: { title: string, imageUrl?: str
 // Cookings, one a day back from yesterday: a Cooking History the UI would
 // take many taps to build.
 export async function seedCookings(page: Page, title: string, count: number) {
-  const { boardId } = await (await page.request.get('/api/boards/landing')).json() as { boardId: string }
+  const boardId = await landingBoardId(page)
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
   await client.connect()
   try {
@@ -55,7 +61,7 @@ export async function seedCookings(page: Page, title: string, count: number) {
 // "Meine Küche" 🍳, with the default Columns and no Dishes. For files whose
 // tests each need that start, whatever the test before them left.
 export async function resetBoard(page: Page) {
-  const { boardId } = await (await page.request.get('/api/boards/landing')).json() as { boardId: string }
+  const boardId = await landingBoardId(page)
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
   await client.connect()
   try {

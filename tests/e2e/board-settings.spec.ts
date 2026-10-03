@@ -4,7 +4,8 @@ import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { resetBoard, seedDish } from './seed'
+import { inviteToken } from './invite'
+import { landingBoardId, resetBoard, seedDish } from './seed'
 
 // Board settings (PRD stories 57–60, 62, 63): the Board's name and emoji,
 // its Columns, and copying and sharing its Invite Link. Ida's Board is used
@@ -143,11 +144,10 @@ test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page
 // The Invite Link's buttons (PRD stories 62, 63). invite-links.spec.ts reads
 // the link from its field; these click "Link kopieren" and "Link teilen".
 
-// The link the Board's own token makes, read from the API rather than the page.
-async function boardsInviteLink(page: Page): Promise<string> {
-  const boardId = new URL(page.url()).pathname.split('/')[2]
-  const { inviteToken } = await (await page.request.get(`/api/boards/${boardId}`)).json() as { inviteToken: string }
-  return `${E2E_ORIGIN}/invite/${inviteToken}`
+// The Invite Link to Ida's Board, made from its token as the API has it
+// rather than read from the page.
+async function inviteLink(page: Page): Promise<string> {
+  return `${E2E_ORIGIN}/invite/${await inviteToken(page, await landingBoardId(page))}`
 }
 
 // navigator.share, set before the page loads (settings checks for it once
@@ -178,7 +178,7 @@ function shared(page: Page): Promise<ShareData[]> {
 test('"Link kopieren" puts the Invite Link on the clipboard, and it opens the invite to this Board', async ({ page, context, browser }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await openSettings(page)
-  const link = await boardsInviteLink(page)
+  const link = await inviteLink(page)
 
   await page.getByRole('button', { name: 'Link kopieren' }).click()
 
@@ -190,12 +190,14 @@ test('"Link kopieren" puts the Invite Link on the clipboard, and it opens the in
   const invited = await newTab(browser)
   await gotoHydrated(invited, copied)
   await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🍳 Meine Küche eingeladen')
+  // Every reset Board is a "Meine Küche"; its Owner tells Ida's apart.
+  await expect(invited.getByText('ida lädt dich ein')).toBeVisible()
 })
 
 test('"Link teilen" hands the Invite Link and the Board’s name to the share sheet', async ({ page }) => {
   await stubShare(page, 'shares')
   await openSettings(page)
-  const link = await boardsInviteLink(page)
+  const link = await inviteLink(page)
 
   await page.getByRole('button', { name: 'Link teilen' }).click()
 
@@ -221,7 +223,13 @@ test('without a share sheet there is no "Link teilen", and "Link kopieren" is th
   const copy = page.getByRole('button', { name: 'Link kopieren' })
   await expect(copy).toBeVisible()
   await expect(page.getByRole('button', { name: 'Link teilen' })).toHaveCount(0)
-  // Coloured like the page's other primary button.
-  const primary = await page.getByRole('button', { name: 'Hinzufügen' }).evaluate(el => getComputedStyle(el).backgroundColor)
-  await expect(copy).toHaveCSS('background-color', primary)
+  // Filled with the primary buttons' colour, the inverse token.
+  const inverse = await page.evaluate(() => {
+    const probe = document.body.appendChild(document.createElement('div'))
+    probe.style.backgroundColor = 'var(--color-inverse)'
+    const color = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    return color
+  })
+  await expect(copy).toHaveCSS('background-color', inverse)
 })
