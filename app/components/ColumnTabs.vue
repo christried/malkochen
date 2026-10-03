@@ -5,9 +5,10 @@
 // into place on release. While a Dish is dragged up to them, the tab under
 // it is a drop target. A Dish coming in (`cue`) makes a tab react: dropped
 // in, it squashes and bursts; cooked, the Gekocht tab bumps; the Gekocht
-// pebble bursts as it lands.
+// pebble bursts as it lands. A Board still loading (BoardSkeleton) has no
+// counts yet.
 const props = defineProps<{
-  columns: { id: string, name: string, count: number }[]
+  columns: { id: string, name: string, count?: number }[]
   active: number
   progress: number
   // True while a finger drags the Board: the pebble follows without easing.
@@ -113,7 +114,10 @@ watch(() => props.active, index => tabs[index]?.scrollIntoView({
         color="var(--accent)"
       />
       {{ column.name }}
-      <span class="relative inline-block overflow-hidden align-bottom opacity-60">
+      <span
+        v-if="column.count !== undefined"
+        class="relative inline-block overflow-hidden align-bottom opacity-60"
+      >
         <Transition name="count">
           <span
             :key="column.count"

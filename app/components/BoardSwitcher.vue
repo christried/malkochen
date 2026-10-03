@@ -6,14 +6,15 @@ import type { BoardListing, BoardNameAndEmoji } from '~~/server/utils/boards'
 // (emoji pebble, name, Dish count, Members, a check on this one) and
 // "Neues Board". Picking a Board opens it; the Board page remembers it as the
 // one to reopen next time. The list is fetched each time it opens, so a
-// Board renamed or created meanwhile shows. On phones its last row opens
-// your settings, which the header has no room for there.
+// Board renamed or created meanwhile shows; the Board picked shows its name
+// and Columns from it while it opens (useBoardListings). On phones its last
+// row opens your settings, which the header has no room for there.
 const props = defineProps<{ board: BoardNameAndEmoji }>()
 const t = useStrings()
 const route = useRoute()
 
 const open = ref(false)
-const boards = ref<BoardListing[]>([])
+const boards = useBoardListings()
 const creating = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const pill = useTemplateRef<HTMLButtonElement>('pill')
@@ -40,7 +41,7 @@ onMounted(() => document.addEventListener('pointerdown', onPointerDown))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown))
 watch(() => route.params.id, () => close())
 
-// Shown at once, before the list arrives: this Board.
+// Shown at once, before the list first arrives: this Board.
 const shown = computed(() => boards.value.length
   ? boards.value
   : [{ ...props.board, isOwner: false, dishCount: null, members: [], columns: [] }])
