@@ -6,7 +6,7 @@ import { cardAtRest } from './board'
 import { editMorph, expectFieldsMorphing, slowAnimations } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
-import { removeStoredImages, seedDish, storedImage } from './seed'
+import { removeStoredImages, seedCookings, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // The Dish detail (PRD stories 41–45): tapping a card opens it, full-screen
@@ -355,4 +355,157 @@ test('without View Transitions, the card’s image still morphs into the detail 
   await detail.getByRole('button', { name: 'Schließen' }).click()
   await expect(detail).toBeHidden()
   await expect(card).toBeFocused()
+})
+
+// Scrolling the detail (handoff motion.json "Detail parallax + bar"): its
+// image moves slower than the content, and once it has scrolled away a
+// compact bar settles in at the top. A Dish with a long Cooking History, so
+// the detail scrolls well past its image.
+const LONG = 'Lange Geschichte'
+
+// Scrolls the detail to `top`, and waits for what follows the scroll.
+async function scrollDetailTo(detail: Locator, top: number) {
+  await detail.evaluate(async (el, y) => {
+    el.scrollTo(0, y)
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  }, top)
+}
+
+// Opens the long Dish's detail once it has finished moving in, scrolled to
+// the top.
+async function openLongDetail(page: Page) {
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, LONG)
+  await settledBox(detail)
+  return detail
+}
+
+// How far the image moves up on screen as the detail scrolls down half its
+// height (`by`, which the content moves), how it looks at the top and then,
+// and whether a scroll-driven animation moves it.
+async function parallax(detail: Locator) {
+  const frame = detail.locator('[data-detail-image]')
+  const image = detail.locator('[data-parallax]')
+  const centre = async () => {
+    const box = (await image.boundingBox())!
+    return box.y + box.height / 2
+  }
+  await scrollDetailTo(detail, 0)
+  const from = await centre()
+  const opacityAtTop = await image.evaluate(el => Number(getComputedStyle(el).opacity))
+  const by = (await frame.boundingBox())!.height / 2
+  await scrollDetailTo(detail, by)
+  const moved = from - await centre()
+  const look = await image.evaluate((el) => {
+    const style = getComputedStyle(el)
+    return { opacity: Number(style.opacity), scale: style.scale, scrollDriven: el.getAnimations().length > 0 }
+  })
+  return { by, moved, opacityAtTop, ...look }
+}
+
+// How far the detail scrolls until its image has gone.
+async function imageHeight(detail: Locator) {
+  return (await detail.locator('[data-detail-image]').boundingBox())!.height
+}
+
+test('once the image has scrolled away, a compact bar settles in with close, the title and "Bearbeiten"', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 })
+  await signIn(page, ALLOWLISTED[0])
+  await seedDish(page, { title: LONG, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Jeden Sonntag.\nMit viel Knoblauch.' })
+  await seedCookings(page, LONG, 12)
+  await page.addInitScript(() => {
+    const w = window as unknown as { morphs: number }
+    w.morphs = 0
+    const start = Document.prototype.startViewTransition
+    Document.prototype.startViewTransition = function (...args: Parameters<typeof start>) {
+      w.morphs++
+      return start.apply(this, args)
+    }
+  })
+  const detail = await openLongDetail(page)
+  const bar = detail.locator('[data-detail-bar]')
+  const below = await imageHeight(detail)
+
+  // At the top, and with a strip of the image still showing, there is no
+  // bar, and only the header's buttons.
+  await expect(bar).toBeHidden()
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toHaveCount(1)
+  await scrollDetailTo(detail, below - 100)
+  await expect(bar).toBeHidden()
+
+  // The image gone, the bar sits at the top with the title.
+  await scrollDetailTo(detail, below)
+  await expect(bar).toBeVisible()
+  await expect(bar).toContainText(LONG)
+  await expect.poll(async () => Math.round((await bar.boundingBox())!.y)).toBe(0)
+
+  // Back up, it goes.
+  await scrollDetailTo(detail, 0)
+  await expect(bar).toBeHidden()
+
+  // "Bearbeiten" from the bar opens edit mode; leaving it, focus goes back
+  // to the header's "Bearbeiten", up top.
+  await scrollDetailTo(detail, below)
+  await bar.getByRole('button', { name: 'Bearbeiten' }).click()
+  await expect(detail.getByLabel('Titel')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(detail.locator('[data-edit]')).toBeFocused()
+
+  // Its close button closes the detail, without morphing the image, out of
+  // view, into the card.
+  await scrollDetailTo(detail, below)
+  const morphs = () => page.evaluate(() => (window as unknown as { morphs: number }).morphs)
+  const morphsBefore = await morphs()
+  await bar.getByRole('button', { name: 'Schließen' }).click()
+  await expect(detail).toBeHidden()
+  await expect(page.getByRole('link', { name: LONG })).toBeFocused()
+  expect(await morphs()).toBe(morphsBefore)
+})
+
+for (const [width, height] of [[390, 600], [1024, 700]] as const) {
+  test(`at ${width}px, the image moves slower than the content as the detail scrolls, fading and growing slightly`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await signIn(page, ALLOWLISTED[0])
+    const detail = await openLongDetail(page)
+
+    const { by, moved, opacity, scale, scrollDriven } = await parallax(detail)
+
+    expect(scrollDriven).toBe(true)
+    expect(moved).toBeGreaterThan(by * 0.25)
+    expect(moved).toBeLessThan(by * 0.75)
+    expect(opacity).toBeLessThan(1)
+    expect(Number(scale)).toBeGreaterThan(1)
+  })
+}
+
+test('without scroll-driven animations, the image still parallaxes', async ({ page }) => {
+  await page.addInitScript(() => {
+    const supports = CSS.supports.bind(CSS) as (...args: string[]) => boolean
+    CSS.supports = (...args: string[]) => !args.join(':').includes('animation-timeline') && supports(...args)
+  })
+  await page.setViewportSize({ width: 390, height: 600 })
+  await signIn(page, ALLOWLISTED[0])
+  const detail = await openLongDetail(page)
+
+  const { by, moved, opacityAtTop, opacity, scrollDriven } = await parallax(detail)
+
+  expect(scrollDriven).toBe(false)
+  expect(opacityAtTop).toBe(1)
+  expect(moved).toBeGreaterThan(by * 0.25)
+  expect(moved).toBeLessThan(by * 0.75)
+  expect(opacity).toBeLessThan(1)
+})
+
+test('with reduced motion, the image scrolls with the content, and the bar still appears', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 600 })
+  await signIn(page, ALLOWLISTED[0])
+  const detail = await openLongDetail(page)
+
+  const { by, moved, opacity } = await parallax(detail)
+
+  expect(moved).toBeCloseTo(by, 0)
+  expect(opacity).toBe(1)
+  await scrollDetailTo(detail, await imageHeight(detail))
+  await expect(detail.locator('[data-detail-bar]')).toBeVisible()
 })
