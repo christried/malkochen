@@ -3,6 +3,7 @@ import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
+import { inviteToken } from './invite'
 
 // Members and Owner rules (PRD stories 62, 67–71) in Board settings. Evelyn
 // owns the Boards; Radia joins them. Both are used by this file only.
@@ -17,11 +18,11 @@ async function sharedBoard(page: Page, browser: Browser, name: string): Promise<
   const res = await page.request.post('/api/boards', { data: { name, emoji: '🥗' } })
   expect(res.status()).toBe(201)
   const { id: boardId } = await res.json() as { id: string }
-  const { inviteToken } = await (await page.request.get(`/api/boards/${boardId}`)).json() as { inviteToken: string }
+  const token = await inviteToken(page, boardId)
 
   const radia = await newTab(browser)
   await signIn(radia, RADIA)
-  expect((await radia.request.post(`/api/invites/${inviteToken}/join`)).status()).toBe(200)
+  expect((await radia.request.post(`/api/invites/${token}/join`)).status()).toBe(200)
   return { boardId, radia }
 }
 

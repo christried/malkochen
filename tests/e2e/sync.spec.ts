@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, titles } from './board'
 import { gotoHydrated } from './hydration'
+import { inviteToken } from './invite'
 
 // Sync between Members and "Neu" markers (PRD stories 37, 38): others'
 // changes show up while the Board is open, by polling and when the app
@@ -19,11 +20,11 @@ async function sharedBoard(page: Page, browser: Browser, name: string): Promise<
   const res = await page.request.post('/api/boards', { data: { name, emoji: '🥘' } })
   expect(res.status()).toBe(201)
   const { id: boardId } = await res.json() as { id: string }
-  const { inviteToken } = await (await page.request.get(`/api/boards/${boardId}`)).json() as { inviteToken: string }
+  const token = await inviteToken(page, boardId)
 
   const dorothy = await newTab(browser)
   await signIn(dorothy, DOROTHY)
-  expect((await dorothy.request.post(`/api/invites/${inviteToken}/join`)).status()).toBe(200)
+  expect((await dorothy.request.post(`/api/invites/${token}/join`)).status()).toBe(200)
   return { boardId, dorothy }
 }
 

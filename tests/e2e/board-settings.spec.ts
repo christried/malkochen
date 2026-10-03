@@ -1,14 +1,15 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './fixtures'
-import { ALLOWLISTED } from '../support/test-auth-env'
+import { expect, newTab, test } from './fixtures'
+import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { resetBoard, seedDish } from './seed'
+import { inviteToken } from './invite'
+import { landingBoardId, resetBoard, seedDish } from './seed'
 
-// Board settings (PRD stories 57–60, 62): the Board's name and emoji, and
-// its Columns. Ida's Board is used by this file only; each test starts it
-// afresh, as a new Board.
+// Board settings (PRD stories 57–60, 62, 63): the Board's name and emoji,
+// its Columns, and copying and sharing its Invite Link. Ida's Board is used
+// by this file only; each test starts it afresh, as a new Board.
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
@@ -138,4 +139,97 @@ test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
   await reloadHydrated(page)
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
+})
+
+// The Invite Link's buttons (PRD stories 62, 63). invite-links.spec.ts reads
+// the link from its field; these click "Link kopieren" and "Link teilen".
+
+// The Invite Link to Ida's Board, made from its token as the API has it
+// rather than read from the page.
+async function inviteLink(page: Page): Promise<string> {
+  return `${E2E_ORIGIN}/invite/${await inviteToken(page, await landingBoardId(page))}`
+}
+
+// navigator.share, set before the page loads (settings checks for it once
+// mounted): taken away, or a stand-in for the share sheet that records what
+// it was given and shares, or is closed without sharing.
+async function stubShare(page: Page, sheet: 'none' | 'shares' | 'closed') {
+  await page.addInitScript((sheet) => {
+    const w = window as unknown as { shared: ShareData[] }
+    w.shared = []
+    if (sheet === 'none') {
+      delete (Navigator.prototype as Partial<Navigator>).share
+      return
+    }
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data: ShareData) => {
+        w.shared.push(data)
+        if (sheet === 'closed') throw new DOMException('Share canceled', 'AbortError')
+      },
+    })
+  }, sheet)
+}
+
+function shared(page: Page): Promise<ShareData[]> {
+  return page.evaluate(() => (window as unknown as { shared: ShareData[] }).shared)
+}
+
+test('"Link kopieren" puts the Invite Link on the clipboard, and it opens the invite to this Board', async ({ page, context, browser }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await openSettings(page)
+  const link = await inviteLink(page)
+
+  await page.getByRole('button', { name: 'Link kopieren' }).click()
+
+  await expect(page.getByRole('status')).toHaveText('Link kopiert')
+  await expect(page.getByRole('button', { name: 'Link kopieren' })).toContainText('Kopiert ✓')
+  const copied = await page.evaluate(() => navigator.clipboard.readText())
+  expect(copied).toBe(link)
+
+  const invited = await newTab(browser)
+  await gotoHydrated(invited, copied)
+  await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🍳 Meine Küche eingeladen')
+  // Every reset Board is a "Meine Küche"; its Owner tells Ida's apart.
+  await expect(invited.getByText('ida lädt dich ein')).toBeVisible()
+})
+
+test('"Link teilen" hands the Invite Link and the Board’s name to the share sheet', async ({ page }) => {
+  await stubShare(page, 'shares')
+  await openSettings(page)
+  const link = await inviteLink(page)
+
+  await page.getByRole('button', { name: 'Link teilen' }).click()
+
+  await expect.poll(() => shared(page)).toEqual([{ title: '🍳 Meine Küche', text: expect.stringContaining('🍳 Meine Küche'), url: link }])
+})
+
+test('closing the share sheet without sharing is no failure', async ({ page }) => {
+  await stubShare(page, 'closed')
+  await openSettings(page)
+
+  await page.getByRole('button', { name: 'Link teilen' }).click()
+
+  // The sheet was opened and closed by the time it says so: a failure Toast
+  // would be up already.
+  await expect.poll(async () => (await shared(page)).length).toBe(1)
+  await expect(page.getByRole('status')).toBeEmpty()
+})
+
+test('without a share sheet there is no "Link teilen", and "Link kopieren" is the primary button', async ({ page }) => {
+  await stubShare(page, 'none')
+  await openSettings(page)
+
+  const copy = page.getByRole('button', { name: 'Link kopieren' })
+  await expect(copy).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Link teilen' })).toHaveCount(0)
+  // Filled with the primary buttons' colour, the inverse token.
+  const inverse = await page.evaluate(() => {
+    const probe = document.body.appendChild(document.createElement('div'))
+    probe.style.backgroundColor = 'var(--color-inverse)'
+    const color = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    return color
+  })
+  await expect(copy).toHaveCSS('background-color', inverse)
 })
