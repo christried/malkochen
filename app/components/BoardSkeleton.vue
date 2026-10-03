@@ -6,7 +6,7 @@ import { boardLabel } from '~~/shared/board'
 // of a DishCard (128px high, an 86px thumb), so nothing jumps when its Dishes
 // take their place and rise in. A light sweeps across them every 1.4s;
 // reduced motion: they are still, at 60% opacity. Phones show the tabs and
-// the first Column, tablet and desktop every lane. The Board's name and
+// the first Column, tablet and desktop every Column. The Board's name and
 // Columns come from the Board switcher's list (useBoardListings); a Board
 // not on it shows three nameless Columns.
 const props = defineProps<{ boardId: string }>()
@@ -14,7 +14,8 @@ const t = useStrings()
 
 const listings = useBoardListings()
 const listing = computed(() => listings.value.find(b => b.id === props.boardId) ?? null)
-const columns = computed(() => listing.value?.columns ?? [{ id: 'a', name: '' }, { id: 'b', name: '' }, { id: 'c', name: '' }])
+const NAMELESS_COLUMNS = [{ id: 'a', name: '' }, { id: 'b', name: '' }, { id: 'c', name: '' }]
+const columns = computed(() => listing.value?.columns ?? NAMELESS_COLUMNS)
 // Fewer cards further along, as Boards tend to have.
 const cardCount = (index: number) => Math.max(1, 3 - index)
 
@@ -39,7 +40,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
           v-else
           aria-hidden="true"
           class="font-display text-title-l tablet:text-display-m"
-        ><span class="bar w-48">&nbsp;</span></span>
+        ><span class="name-pebble w-48">&nbsp;</span></span>
         <span
           v-for="icon in ['search', 'settings'] as const"
           :key="icon"
@@ -60,7 +61,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
 
     <ColumnTabs
       v-if="listing"
-      class="tabs-bar -mx-4 mt-4 px-4 tablet:hidden"
+      class="-mx-4 mt-4 px-4 tablet:hidden"
       :columns="columns"
       :active="0"
       :progress="0"
@@ -94,7 +95,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
             <span
               v-else
               aria-hidden="true"
-              class="bar w-28"
+              class="name-pebble w-28"
             >&nbsp;</span>
           </h2>
           <ol
@@ -137,12 +138,12 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
   }
 }
 /* What stands in for a name not known yet: a pebble a line of text high. */
-.bar {
+.name-pebble {
   display: inline-block;
   border-radius: var(--radius-pill);
   background: var(--color-surface);
 }
-header .bar {
+header .name-pebble {
   background: var(--color-surface-muted);
 }
 /* The shimmer: a soft light sweeping across each card, all in step. */

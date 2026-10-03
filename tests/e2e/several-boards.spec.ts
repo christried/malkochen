@@ -159,13 +159,13 @@ test('switching Boards shows the new Board’s skeleton at once, shimmering, and
   expect(await card.locator('[data-thumb]').evaluate(el => (el as HTMLElement).offsetWidth)).toBe(86)
 
   release()
-  const dish = page.getByRole('region', { name: 'Ideen' }).locator('li', { has: page.getByRole('link', { name: 'Ramen' }) })
+  const dish = column(page, 'Ideen').locator('li', { has: page.getByRole('link', { name: 'Ramen' }) })
   await expect(dish).toBeVisible()
   await expect(skeleton(page)).toHaveCount(0)
   expect(await layoutBox(dish)).toEqual(placeholder)
 })
 
-test('with reduced motion the skeleton is still, at 60% opacity, in every lane', async ({ page }) => {
+test('with reduced motion the skeleton is still, at 60% opacity, in every Column side by side', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await signIn(page, ALLOWLISTED[9])
