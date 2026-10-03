@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
@@ -99,4 +99,84 @@ test('the card’s menu moves a Dish to a Column on another Board', async ({ pag
   await expect(titles(page, 'Ideen')).toHaveCount(0)
   await gotoHydrated(page, `/b/${to}`)
   await expect(titles(page, 'Ideen')).toHaveText(['Focaccia'])
+})
+
+// Opening another Board (handoff "Skeleton shimmer"): its chrome shows at
+// once, with skeleton cards in its Columns while its Dishes load.
+function skeleton(page: Page) {
+  return page.locator('[data-board-skeleton]')
+}
+// Where an element sits in the page's layout and how high it is, leaving out
+// transforms such as the cards' rise.
+function layoutBox(element: Locator) {
+  return element.evaluate((el) => {
+    let top = 0
+    for (let at = el as HTMLElement | null; at; at = at.offsetParent as HTMLElement | null) top += at.offsetTop
+    return { top, height: (el as HTMLElement).offsetHeight }
+  })
+}
+// The animations running in an element and its pseudo-elements, by their
+// timing.
+function animations(element: Locator) {
+  return element.evaluate(el => el.getAnimations({ subtree: true }).map((a) => {
+    const timing = a.effect!.getComputedTiming()
+    return { duration: timing.duration, iterations: timing.iterations, easing: (a.effect as KeyframeEffect).getKeyframes()[0]?.easing }
+  }))
+}
+// Two Boards with a Dish each, named `fromName` and `toName`: the first one
+// open, then switching to the second one, whose request is held until
+// `release`.
+async function switchingBoards(page: Page, fromName: string, toName: string) {
+  const from = await createBoard(page, fromName, '🥗')
+  const to = await createBoard(page, toName, '🌙')
+  await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Bowl', placeholder: 'salad' } })
+  await page.request.post(`/api/boards/${to}/dishes`, { data: { title: 'Ramen', placeholder: 'ramen' } })
+  await gotoHydrated(page, `/b/${from}`)
+  const release = await holdRequests(page, 'GET', new RegExp(`/api/boards/${to}$`))
+  await switcher(page).click()
+  await boardList(page).getByRole('link').filter({ hasText: toName }).click()
+  return release
+}
+
+test('switching Boards shows the new Board’s skeleton at once, shimmering, and its Dishes take the skeleton cards’ place', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await signIn(page, ALLOWLISTED[9])
+  const release = await switchingBoards(page, 'Mittags', 'Abends')
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌙 Abends')
+  await expect(page.getByRole('link', { name: 'Bowl' })).toHaveCount(0)
+  await expect(skeleton(page)).toHaveAttribute('aria-busy', 'true')
+  // Phones: the tabs, and the first Column only.
+  await expect(page.getByRole('navigation', { name: 'Spalten' }).getByRole('button')).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
+  await expect(skeleton(page).getByRole('region')).toHaveText(['Ideen'])
+  const card = skeleton(page).locator('[data-skeleton-card]').first()
+  await expect(card).toBeVisible()
+  expect(await animations(card)).toEqual([{ duration: 1400, iterations: Infinity, easing: 'ease-in-out' }])
+  // A DishCard's size: 128px high, an 86px thumb.
+  const placeholder = await layoutBox(card)
+  expect(placeholder.height).toBe(128)
+  expect(await card.locator('[data-thumb]').evaluate(el => (el as HTMLElement).offsetWidth)).toBe(86)
+
+  release()
+  const dish = page.getByRole('region', { name: 'Ideen' }).locator('li', { has: page.getByRole('link', { name: 'Ramen' }) })
+  await expect(dish).toBeVisible()
+  await expect(skeleton(page)).toHaveCount(0)
+  expect(await layoutBox(dish)).toEqual(placeholder)
+})
+
+test('with reduced motion the skeleton is still, at 60% opacity, in every lane', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await signIn(page, ALLOWLISTED[9])
+  const release = await switchingBoards(page, 'Brunch', 'Picknick')
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌙 Picknick')
+  await expect(skeleton(page).getByRole('region')).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
+  await expect(skeleton(page).locator('[data-skeleton-cards]')).toHaveCount(3)
+  await expect(skeleton(page).locator('[data-skeleton-cards]').first()).toHaveCSS('opacity', '0.6')
+  expect(await animations(skeleton(page))).toEqual([])
+
+  release()
+  await expect(page.getByRole('link', { name: 'Ramen' })).toBeVisible()
 })

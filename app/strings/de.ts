@@ -54,6 +54,7 @@ export const de = {
     emptyBoardBody: 'Füg deinen ersten Link ein!',
     emptyColumn: 'Noch nichts hier.',
     columns: 'Spalten',
+    loading: 'Board lädt …',
   },
   search: {
     open: 'Gerichte suchen',
