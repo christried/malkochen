@@ -17,11 +17,13 @@ export async function seedDish(page: Page, dish: { title: string, imageUrl?: str
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
   await client.connect()
   try {
-    await client.query(
+    const { rows: [seeded] } = await client.query<{ added_by: string | null }>(
       `insert into dish (board_id, column_id, position, title, placeholder, image_url, source_link, source_kind, note, added_by)
-       values ($1, $2, (select coalesce(min(position), 0) - 1 from dish where column_id = $2), $3, $4, $5, $6, $7, $8, (select id from "user" where email = $9))`,
+       values ($1, $2, (select coalesce(min(position), 0) - 1 from dish where column_id = $2), $3, $4, $5, $6, $7, $8, (select id from "user" where email = $9))
+       returning added_by`,
       [boardId, board.columns[dish.column ?? 0]!.id, dish.title, dish.placeholder ?? 'bowl', dish.imageUrl ?? null, dish.sourceLink, dish.sourceKind, dish.note ?? null, dish.addedBy ?? null],
     )
+    if (dish.addedBy && !seeded?.added_by) throw new Error(`seedDish: ${dish.addedBy} hasn't signed in yet`)
   }
   finally {
     await client.end()
