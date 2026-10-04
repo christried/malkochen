@@ -77,7 +77,7 @@ test('the empty Column\'s pea starts rolling from where it rests', async ({ page
     w.pea = null
     const shift = (pea: Element) => new DOMMatrix(getComputedStyle(pea).transform).e
     new MutationObserver(() => {
-      const pea = document.querySelector('[data-playing^="/clips/empty-column"] [data-loop-svg] #pea')
+      const pea = document.querySelector('[data-playing^="/clips/empty-column"] [data-loop-svg] [data-loop]')
       if (!pea || w.pea) return
       requestAnimationFrame(() => {
         w.pea = { first: shift(pea), furthest: 0 }

@@ -8,8 +8,12 @@ import type { Locator, Page } from '@playwright/test'
 export function playing(scope: Page | Locator, dir = '/') {
   return scope.locator('video, [data-svg-loop][data-playing]').evaluateAll((clips, dir) => clips
     .map((clip) => {
-      // A loop that stopped since it was found has no file any more.
-      if (!(clip instanceof HTMLVideoElement)) return clip.getAttribute('data-playing')
+      // A loop plays its file while its layers' animations run (and one that
+      // stopped since it was found has no file any more).
+      if (!(clip instanceof HTMLVideoElement)) {
+        const running = clip.getAnimations({ subtree: true }).some(a => a.playState === 'running')
+        return running ? clip.getAttribute('data-playing') : null
+      }
       return !clip.paused && !clip.ended && clip.currentTime > 0 ? new URL(clip.currentSrc).pathname : null
     })
     .filter((path): path is string => path !== null && path.startsWith(dir)), dir)

@@ -36,27 +36,71 @@ const onScreen = useOnScreen(root)
 // The file drawn in `host`, once it is.
 const drawn = ref<string | null>(null)
 const shown = computed(() => wanted.value && drawn.value === file.value)
-const run = computed(() => shown.value ? (props.loop ? 'loop' : 'once') : undefined)
+// A loop asked to stop looping goes on to the end of the round it is in,
+// as a video does, rather than snapping to rest (finishRound).
+const finishing = ref(false)
+const run = computed(() => shown.value ? (props.loop || finishing.value ? 'loop' : 'once') : undefined)
 
 watch([wanted, file, host], async () => {
-  if (!wanted.value || !host.value || drawn.value === file.value) return
+  if (!wanted.value) {
+    // Stopped: back to the still, and the drawing leaves the page.
+    host.value?.replaceChildren()
+    drawn.value = null
+    finishing.value = false
+    return
+  }
+  if (!host.value || drawn.value === file.value) return
   const wantedFile = file.value
   const svg = await animatedSvg(wantedFile)
-  if (file.value !== wantedFile || !host.value) return
+  if (!wanted.value || file.value !== wantedFile || !host.value) return
   if (!svg) {
     // Couldn't load: the still simply stays, and a play-once is over.
-    if (!props.loop) emit('ended')
+    if (!props.loop) end()
     return
   }
   host.value.replaceChildren(svg)
   drawn.value = wantedFile
 }, { immediate: true })
 
-// Played once: over when every layer's animation is.
-function onAnimationEnd() {
-  if (run.value !== 'once' || !host.value) return
-  if (host.value.getAnimations({ subtree: true }).every(a => a.playState === 'finished')) emit('ended')
+watch(() => props.loop, (loop, looped) => {
+  if (!loop && looped && shown.value) finishRound()
+  else if (loop && finishing.value) {
+    finishing.value = false
+    for (const animation of animations()) animation.effect!.updateTiming({ iterations: Infinity })
+  }
+})
+
+function finishRound() {
+  finishing.value = true
+  for (const animation of animations()) {
+    const { currentIteration } = animation.effect!.getComputedTiming()
+    animation.effect!.updateTiming({ iterations: (currentIteration ?? 0) + 1 })
+  }
 }
+
+function animations() {
+  return host.value?.getAnimations({ subtree: true }) ?? []
+}
+
+// Played once: over when every layer's round is, or at once if nothing in
+// the drawing moves. `ended` comes once per play.
+let over = false
+function end() {
+  if (over) return
+  over = true
+  emit('ended')
+}
+function endIfStill() {
+  if ((run.value === 'once' || finishing.value) && animations().every(a => a.playState === 'finished')) end()
+}
+watch(run, async (now) => {
+  over = false
+  if (now !== 'once') return
+  await nextTick()
+  requestAnimationFrame(() => {
+    if (run.value === 'once' && animations().length === 0) end()
+  })
+})
 </script>
 
 <script lang="ts">
@@ -77,6 +121,10 @@ async function prepare(file: string): Promise<SVGSVGElement | null> {
     svg.setAttribute('preserveAspectRatio', 'xMidYMid slice')
     svg.setAttribute('aria-hidden', 'true')
     svg.setAttribute('data-loop-svg', file)
+    // Drawn many times over in one page: no ids, nor the file's own
+    // data-theme, which the page's theme rules would take for theirs.
+    for (const attribute of ['data-theme', 'data-clip', 'data-dish']) svg.removeAttribute(attribute)
+    svg.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'))
     for (const layer of svg.querySelectorAll<SVGElement>('[data-loop]')) {
       const style = loopStyle(layer.dataset.loop!, layer.dataset.pivot)
       if (!style) {
@@ -133,7 +181,7 @@ async function animatedSvg(file: string): Promise<SVGSVGElement | null> {
       ref="host"
       class="absolute inset-0"
       :class="{ invisible: !shown }"
-      @animationend="onAnimationEnd"
+      @animationend="endIfStill"
     />
   </div>
 </template>

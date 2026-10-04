@@ -14,6 +14,16 @@ test('a loop names its keyframes, duration, easing and delay', () => {
     .toMatchObject({ '--loop': 'ph-toss 2.4s cubic-bezier(.3,.6,.4,1) .08s' })
 })
 
+test('played once, every layer goes round once in the loop\'s duration, ending as it started', () => {
+  // Not delayed: one round.
+  expect(loopStyle('ph-twirl 3s ease-in-out infinite', null)).toMatchObject({ '--once': 'ph-twirl 3s ease-in-out 0s 1' })
+  // Delayed by .9s of 2.7s: a delay is a phase, so it starts two thirds in
+  // (at rest) and goes on to the same phase at 2.7s.
+  expect(loopStyle('ph-steam 2.7s ease-out .9s infinite', null)).toMatchObject({ '--once': 'ph-steam 2.7s ease-out -1.8s 1.6667' })
+  // Started half way in: on round to half way again.
+  expect(loopStyle('ph-wig 1.8s ease-in-out -.9s infinite', null)).toMatchObject({ '--once': 'ph-wig 1.8s ease-in-out -0.9s 1.5' })
+})
+
 test('a pivot in viewBox units turns about that point of the drawing', () => {
   expect(loopStyle('r11-roll 4.4s linear infinite', '95 51'))
     .toMatchObject({ 'transform-box': 'view-box', 'transform-origin': '95px 51px' })

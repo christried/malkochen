@@ -3,7 +3,8 @@
    at the screen's own refresh rate and stay sharp at any size, where a 30 fps
    video looks choppy and soft on a large monitor (#111).
 
-   A loop runs while SvgLoop sets `data-run` (on and on, or `once`) and
+   A loop runs while SvgLoop sets `data-run`: on and on, or `once`, every
+   layer going round once in the loop's duration (svg-loop.ts `--once`). It
    pauses with `data-paused` (off-screen). Without `data-run` every layer
    shows its frame 0, which is the still. Reduced motion: SvgLoop never sets
    it (and main.css's global rule would stop it after one instant pass). */
@@ -11,7 +12,7 @@
   animation: var(--loop) infinite both;
 }
 [data-svg-loop][data-run="once"] [data-loop] {
-  animation-iteration-count: 1;
+  animation: var(--once) both;
 }
 [data-svg-loop][data-paused] [data-loop] {
   animation-play-state: paused;
