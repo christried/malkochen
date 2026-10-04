@@ -33,6 +33,8 @@ const { status: lookupStatus, result, canonicalLink } = lookup
 
 const title = ref('')
 const note = ref('')
+// The note field's made-up example, a new one each time the sheet opens.
+const noteExample = useNoteExample()
 const placeholder = ref<Placeholder>(DEFAULT_PLACEHOLDER)
 const boardId = ref(props.boardId)
 const boards = ref<BoardSummary[]>([])
@@ -156,6 +158,7 @@ watch(open, async (isOpen) => {
   link.value = ''
   title.value = ''
   note.value = ''
+  noteExample.pickAnother()
   placeholder.value = DEFAULT_PLACEHOLDER
   boardId.value = props.boardId
   failed.value = false
@@ -214,7 +217,9 @@ async function save() {
           >{{ t.addDish.link }}</label>
           <!-- Input "valid" and "loading": dots while the link is looked up,
                then, once found, a sage ring and a check. Focus then shows
-               as an outline around the ring, so neither hides the other. -->
+               as an outline around the ring, so neither hides the other.
+               The input pads 2px more above than below: centred in the
+               field, its letters sat a pixel high. -->
           <span
             class="flex items-center gap-2 rounded-field border border-line-strong bg-surface py-1.5 pl-4 pr-1.5 transition-shadow duration-lift ease-lift"
             :class="result
@@ -236,7 +241,7 @@ async function save() {
               autocomplete="off"
               maxlength="2048"
               :placeholder="t.addDish.linkPrompt"
-              class="min-w-0 flex-1 bg-transparent py-1.5 text-body text-text placeholder:text-text-muted focus:outline-none"
+              class="min-w-0 flex-1 bg-transparent pb-[5px] pt-[7px] text-body text-text placeholder:text-text-muted focus:outline-none"
               @paste="lookup.pasted()"
             >
             <LoadingDots
@@ -374,7 +379,7 @@ async function save() {
             autocomplete="off"
             :placeholder="titlePlaceholder"
             :aria-describedby="titleNeeded ? titleHintId : undefined"
-            class="rounded-field border border-line-strong bg-surface px-4 py-3 font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            class="rounded-field border border-line-strong bg-surface px-4 py-field-display font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             :class="{ 'title-prompt': titleNeeded }"
             @focus="titleTypeIn.finish()"
           >
@@ -431,8 +436,8 @@ async function save() {
             v-model="note"
             rows="2"
             maxlength="2000"
-            :placeholder="t.addDish.notePrompt"
-            class="resize-none rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            :placeholder="noteExample.prompt.value"
+            class="resize-none rounded-field border border-line-strong bg-surface px-4 py-field-body text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           />
         </label>
 
@@ -441,18 +446,27 @@ async function save() {
           class="flex flex-col gap-2"
         >
           <span class="text-label">{{ t.addDish.board }}</span>
-          <select
-            v-model="boardId"
-            class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-          >
-            <option
-              v-for="board in boards"
-              :key="board.id"
-              :value="board.id"
+          <!-- Our own chevron, its stroke as far in from the right as the
+               text is from the left (the icon's box has 4px of air around
+               the stroke); the browser's sat almost on the border. -->
+          <span class="relative flex">
+            <select
+              v-model="boardId"
+              class="w-full appearance-none rounded-field border border-line-strong bg-surface py-field-body pl-4 pr-11 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
-              {{ board.emoji }} {{ board.name }}
-            </option>
-          </select>
+              <option
+                v-for="board in boards"
+                :key="board.id"
+                :value="board.id"
+              >
+                {{ board.emoji }} {{ board.name }}
+              </option>
+            </select>
+            <AppIcon
+              name="down"
+              class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
+            />
+          </span>
         </label>
 
         <p

@@ -32,7 +32,8 @@ export default defineConfig({
         test: {
           // Seam 4: client modules, with their I/O faked: the Board module
           // through its operations with an in-memory transport, the link
-          // lookup module with fake timers and a fake Source Lookup. Node
+          // lookup module with fake timers and a fake Source Lookup, the
+          // Suggested Title typing in with fake timers. Node
           // only: no browser, no Nuxt, no server.
           name: 'client',
           include: ['tests/client/**/*.test.ts'],

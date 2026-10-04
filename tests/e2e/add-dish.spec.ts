@@ -28,7 +28,9 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   await expect(save).toBeDisabled()
 
   await sheet.getByLabel('Titel').fill('Omas Linsensuppe')
-  await sheet.getByLabel('Notiz').fill('mit Räuchertofu statt Speck')
+  // The note suggests one of the made-up examples (app/strings/de.ts).
+  await expect(sheet.getByLabel('Notiz')).toHaveAttribute('placeholder', /^Optional, z\. B\. „.+“$/)
+  await sheet.getByLabel('Notiz').fill('mit Räuchertofu und Frühlingszwiebeln')
   // Inline: 4×2 with the default (Bowl) selected; Eintopf is only in the full picker.
   const inline = sheet.getByRole('radiogroup', { name: 'Bild' })
   await expect(inline.getByRole('radio')).toHaveCount(8)
