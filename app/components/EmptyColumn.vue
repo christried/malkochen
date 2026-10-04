@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A Column with no Dishes: the handoff's "empty-column" clip, a pea rolling
-// in a dashed bowl, looping while `play` asks: it is the Board's one loop
-// when nothing else plays (useBoardLoop).
+// in a dashed bowl, looping while `play` asks: the Board loops one empty
+// state, whatever its cards play (useBoardLoop).
 defineProps<{ play: boolean }>()
 const t = useStrings()
 </script>

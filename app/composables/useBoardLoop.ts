@@ -1,7 +1,7 @@
 import type { ClipMotion } from '~/utils/motion'
 
-// The one loop the Board plays at a time (PRD story 83; handoff
-// illustrations.json "rules"; REMOTION.md). Most important first:
+// What the Board plays (PRD story 83; handoff illustrations.json "rules";
+// REMOTION.md): one card's Placeholder at a time, most important first,
 //
 // - the lifted card (long-press or mouse drag) loops while it is held,
 // - the Placeholder card under the mouse loops, on `pointer: fine` devices,
@@ -9,9 +9,10 @@ import type { ClipMotion } from '~/utils/motion'
 //   stops, or on phones a Column swipe settles: the phone's way of scrolling
 //   across the lanes), the Placeholder card nearest the middle of the screen
 //   plays its loop once,
-// - otherwise, an empty state's clip loops (found as the Board comes to
-//   rest): the empty Board's when it is on screen, else the empty Column's
-//   nearest the middle of the screen.
+//
+// and beside it one empty state's clip, looping (found as the Board comes to
+// rest): the empty Board's when it is on screen, else the empty Column's
+// nearest the middle of the screen. Whatever the cards do never stops it.
 //
 // Nothing plays while the Board is `covered` (by the Dish detail, which loops
 // the Dish itself, or a sheet). Cards with a stored image never play;
@@ -35,20 +36,21 @@ export function useBoardLoop(
   const restingDishId = ref<string | null>(null)
   const restingEmptyId = ref<string | null>(null)
 
-  // `id` is a Dish's, or an empty state's.
-  const current = computed<{ id: string, motion: ClipMotion } | null>(() => {
+  // The card playing, by its Dish's id.
+  const playingCard = computed<{ id: string, motion: ClipMotion } | null>(() => {
     if (options.covered()) return null
     const lifted = options.liftedDishId()
     if (lifted) return { id: lifted, motion: 'loop' }
     if (hoveredDishId.value) return { id: hoveredDishId.value, motion: 'loop' }
     if (restingDishId.value) return { id: restingDishId.value, motion: 'once' }
-    if (restingEmptyId.value) return { id: restingEmptyId.value, motion: 'loop' }
     return null
   })
+  const emptyId = computed(() => options.covered() ? null : restingEmptyId.value)
 
   // How a Dish's Placeholder, or an empty state's clip, plays.
   function motionOf(id: string): ClipMotion {
-    return current.value?.id === id ? current.value.motion : null
+    if (playingCard.value?.id === id) return playingCard.value.motion
+    return emptyId.value === id ? 'loop' : null
   }
 
   // A card's loop played through (or couldn't play): the Board is still.
@@ -84,9 +86,11 @@ export function useBoardLoop(
   }
 
   // Hover: a mouse over a Placeholder card. Touch has long-press instead.
+  // Not while a card is lifted: it loops anyway, and the Board re-rendering
+  // as the cards pass under it would restart the others making room.
   const finePointer = useMediaQuery(FINE_POINTER)
   function onPointerOver(event: PointerEvent) {
-    if (!finePointer.value || event.pointerType !== 'mouse') return
+    if (!finePointer.value || event.pointerType !== 'mouse' || options.liftedDishId()) return
     const card = (event.target as Element).closest<HTMLElement>(PLACEHOLDER_CARD)
     hoveredDishId.value = card?.dataset.dishId ?? null
   }

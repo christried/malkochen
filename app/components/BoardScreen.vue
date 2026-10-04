@@ -159,9 +159,9 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   },
   landed: columnId => cueColumn({ columnId, kind: 'drop' }),
 })
-// The one loop playing on the Board: the lifted card's Placeholder, the
-// hovered card's, or one where the Board comes to rest, else an empty
-// state's. None while the Dish detail or a sheet covers it.
+// What plays on the Board: the lifted card's Placeholder, the hovered
+// card's, or one where the Board comes to rest; and beside it an empty
+// state's loop. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
   covered: () => !!route.params.dishId || adding.value || menuOpen.value || !!noting.value,
@@ -477,7 +477,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-show="!searching"
       ref="columns"
       data-testid="columns"
-      class="columns mt-2 tablet:mt-8 tablet:snap-x tablet:snap-mandatory tablet:overflow-x-auto tablet:pb-4"
+      class="columns mt-2 tablet:-mx-4 tablet:-mb-6 tablet:mt-5 tablet:snap-x tablet:snap-mandatory tablet:scroll-px-4 tablet:overflow-x-auto tablet:px-4 tablet:pb-10 tablet:pt-3"
     >
       <div
         class="track flex items-start gap-4"
@@ -514,117 +514,102 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
               />
             </span>
           </h2>
-          <TransitionGroup
-            tag="ol"
-            name="card"
-            class="relative flex flex-col gap-3"
-            :class="{ 'mt-3': listOf(column).length, 'rising': risingColumnIds.has(column.id) }"
-            data-dish-list
-            @before-leave="onCardLeave"
-          >
-            <li
-              v-for="({ key, dish, state }, i) in listOf(column)"
-              :key="key"
-              :style="{ '--i': i }"
-              class="relative"
-              :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
-              :data-dish-id="dish?.id"
-              :data-drag-state="state"
-              :data-drop-slot="!dish || undefined"
-              @click.capture="dish && openDish($event, dish.id)"
+          <!-- Never shorter than with only the empty state in it. -->
+          <div class="min-h-[var(--height-empty-column)]">
+            <TransitionGroup
+              tag="ol"
+              name="card"
+              class="relative flex flex-col gap-3"
+              :class="{ 'mt-3': listOf(column).length, 'rising': risingColumnIds.has(column.id) }"
+              data-dish-list
+              @before-leave="onCardLeave"
             >
-              <template v-if="dish">
-                <NuxtLink
-                  :id="`dish-${dish.id}`"
-                  :to="`/b/${board.id}/d/${dish.id}`"
-                  :aria-label="dish.title"
-                  class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                >
-                  <DishCard
-                    :dish="dish"
-                    :is-new="newDishIds.has(dish.id)"
-                    :motion="state === 'card' ? boardLoop.motionOf(dish.id) : null"
-                    @motion-ended="boardLoop.ended(dish.id)"
+              <li
+                v-for="({ key, dish, state }, i) in listOf(column)"
+                :key="key"
+                :style="{ '--i': i }"
+                class="relative"
+                :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
+                :data-dish-id="dish?.id"
+                :data-drag-state="state"
+                :data-drop-slot="!dish || undefined"
+                @click.capture="dish && openDish($event, dish.id)"
+              >
+                <template v-if="dish">
+                  <NuxtLink
+                    :id="`dish-${dish.id}`"
+                    :to="`/b/${board.id}/d/${dish.id}`"
+                    :aria-label="dish.title"
+                    class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  >
+                    <DishCard
+                      :dish="dish"
+                      :is-new="newDishIds.has(dish.id)"
+                      :motion="state === 'card' ? boardLoop.motionOf(dish.id) : null"
+                      @motion-ended="boardLoop.ended(dish.id)"
+                    />
+                  </NuxtLink>
+                  <button
+                    type="button"
+                    class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                    :aria-label="t.dish.menu(dish.title)"
+                    aria-haspopup="dialog"
+                    @click="menuDish = dish"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    ><circle
+                      cx="5"
+                      cy="12"
+                      r="2"
+                    /><circle
+                      cx="12"
+                      cy="12"
+                      r="2"
+                    /><circle
+                      cx="19"
+                      cy="12"
+                      r="2"
+                    /></svg>
+                  </button>
+                  <CookButton
+                    class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
+                    :cooked="dish.cookings.length > 0"
+                    :label="t.dish.cookLabel(dish.title)"
+                    data-cook
+                    @cook="origin => cookFromCard(dish.id, origin)"
                   />
-                </NuxtLink>
-                <button
-                  type="button"
-                  class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-                  :aria-label="t.dish.menu(dish.title)"
-                  aria-haspopup="dialog"
-                  @click="menuDish = dish"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  ><circle
-                    cx="5"
-                    cy="12"
-                    r="2"
-                  /><circle
-                    cx="12"
-                    cy="12"
-                    r="2"
-                  /><circle
-                    cx="19"
-                    cy="12"
-                    r="2"
-                  /></svg>
-                </button>
-                <CookButton
-                  class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
-                  :cooked="dish.cookings.length > 0"
-                  :label="t.dish.cookLabel(dish.title)"
-                  data-cook
-                  @cook="origin => cookFromCard(dish.id, origin)"
-                />
-              </template>
-            </li>
-          </TransitionGroup>
-          <template v-if="isColumnEmpty(column)">
-            <EmptyBoard
-              v-if="isEmpty && index === 0"
-              :play="!!boardLoop.motionOf(emptyClipId(column))"
-              :data-empty-clip="emptyClipId(column)"
-            />
-            <EmptyColumn
-              v-else
-              :play="!!boardLoop.motionOf(emptyClipId(column))"
-              :data-empty-clip="emptyClipId(column)"
-            />
-          </template>
+                </template>
+              </li>
+            </TransitionGroup>
+            <template v-if="isColumnEmpty(column)">
+              <EmptyBoard
+                v-if="isEmpty && index === 0"
+                :play="!!boardLoop.motionOf(emptyClipId(column))"
+                :data-empty-clip="emptyClipId(column)"
+              />
+              <EmptyColumn
+                v-else
+                :play="!!boardLoop.motionOf(emptyClipId(column))"
+                :data-empty-clip="emptyClipId(column)"
+              />
+            </template>
+          </div>
         </section>
       </div>
     </div>
 
     <!-- The dragged card, following the pointer above everything. -->
-    <div
+    <DragCard
       v-if="drag"
-      aria-hidden="true"
-      class="drag-card pointer-events-none fixed left-0 top-0 z-drag"
-      :class="[`is-${drag.phase}`, { 'near-tabs': drag.nearTabs }]"
-      :style="{
-        'translate': `${drag.x}px ${drag.y}px`,
-        'width': `${drag.width}px`,
-        '--grab-x': `${drag.grabX}px`,
-        '--grab-y': `${drag.grabY}px`,
-        '--width': `${drag.width}px`,
-        '--tilt': `${drag.tilt}deg`,
-      }"
-      data-testid="drag-card"
-    >
-      <div class="drag-card-lift rounded-card">
-        <DishCard
-          :dish="drag.dish"
-          :is-new="newDishIds.has(drag.dish.id)"
-          :motion="boardLoop.motionOf(drag.dish.id)"
-          seen
-        />
-      </div>
-    </div>
+      :drag="drag"
+      :is-new="newDishIds.has(drag.dish.id)"
+      :motion="boardLoop.motionOf(drag.dish.id)"
+    />
 
     <FlyToTab
       v-if="flight"
@@ -894,81 +879,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     rotate: none;
   }
 }
-/* Dragging a Dish (handoff "Drag lift"). The card lifts under the pointer:
-   it grows to 1.04, tilts (-2°, then with the pointer's sideways speed) and
-   casts the lift shadow. Near the Column tabs it shrinks to half and hangs
-   just below the finger, so the tabs stay visible. Letting go, it settles
-   into its slot, upright, or on phones spins into a Column tab (--dur-drop-*
-   in main.css). Reduced motion: no scale or tilt,
-   an ink outline instead; it jumps into its slot, and fades into a tab. */
-.drag-card {
-  touch-action: none;
-}
-.drag-card-lift {
-  transform-origin: var(--grab-x) var(--grab-y);
-  scale: 1.04;
-  rotate: var(--tilt);
-  box-shadow: var(--shadow-lift);
-  transition:
-    rotate var(--dur-tap) var(--ease-tap),
-    scale var(--dur-drop-shrink) var(--ease-settle),
-    translate var(--dur-drop-shrink) var(--ease-settle),
-    box-shadow var(--dur-lift) var(--ease-lift);
-  animation: lift var(--dur-lift) var(--ease-lift);
-}
-.drag-card-lift :deep(article) {
-  box-shadow: none;
-}
-.near-tabs .drag-card-lift {
-  scale: .5;
-  translate: calc((var(--grab-x) - var(--width) / 2) / 2) calc(var(--grab-y) / 2 + 24px);
-}
-.drag-card.is-settling {
-  transition: translate var(--dur-drop-settle) var(--ease-settle);
-}
-.is-settling .drag-card-lift {
-  scale: 1;
-  rotate: 0deg;
-  box-shadow: var(--shadow-card);
-  transition-duration: var(--dur-drop-settle);
-}
-.drag-card.is-swallowing {
-  transition: translate var(--dur-drop-swallow) var(--ease-swoosh);
-}
-.is-swallowing .drag-card-lift {
-  scale: .05;
-  rotate: -40deg;
-  transition: scale var(--dur-drop-swallow) var(--ease-swoosh), rotate var(--dur-drop-swallow) var(--ease-swoosh);
-}
-@keyframes lift {
-  from {
-    scale: 1;
-    rotate: 0deg;
-    box-shadow: var(--shadow-card);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .drag-card-lift,
-  .is-swallowing .drag-card-lift {
-    scale: none;
-    rotate: none;
-    translate: none;
-    outline: 2px solid var(--color-text);
-    transition: none;
-  }
-  .near-tabs .drag-card-lift {
-    scale: none;
-    translate: 0 calc(var(--grab-y) + 24px);
-  }
-  .drag-card.is-settling,
-  .drag-card.is-swallowing {
-    transition: none;
-  }
-  .is-swallowing .drag-card-lift {
-    opacity: 0;
-    transition: opacity var(--dur-fade) var(--ease-fade);
-  }
-}
+/* Dragging a Dish: the dragged card is DragCard. */
 /* A card can't be selected or called up as a link while it may be dragged. */
 .card-link {
   -webkit-touch-callout: none;
@@ -1034,9 +945,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 }
 /* A lane a dragged Dish is over (handoff "Drop target", desktop): it grows
    a little, fills with its accent and glows, and wiggles once; the other
-   lanes dim. The background tints toward it. Reduced motion: fill and ring. */
+   lanes dim. The background tints toward it. Reduced motion: fill and ring.
+   The lanes scroll sideways, which clips them, so they have room around them
+   for the ring (12px above, 16px beside, for a long lane's wiggle, 40px
+   below), and a lane grows from its top, however long it is. */
 @media (min-width: 768px) {
   .column {
+    transform-origin: top;
     transition: scale var(--dur-fade) var(--ease-pop), opacity var(--dur-fade) var(--ease-fade), box-shadow var(--dur-fade) var(--ease-fade), background-color var(--dur-fade) var(--ease-fade);
   }
   .column.lane-target {

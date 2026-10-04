@@ -2,14 +2,16 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { tab, titles } from './board'
+import { column, tab, titles } from './board'
 import { confetti, topfbert } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { seedDish } from './seed'
+import { resetBoard, seedDish } from './seed'
 
 // Dragging Dishes (PRD stories 31, 32, 34, 79): with the mouse on desktop,
 // within a Column and across lanes; with a long-press on phones, within the
-// Column and onto a Column tab. Katherine's Board is used by this file only.
+// Column and onto a Column tab. With the mouse, Columns keep their height
+// and show their drop border in full, and the cards make room smoothly.
+// Katherine's Board is used by this file only.
 test.describe.configure({ mode: 'serial' })
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
@@ -215,4 +217,87 @@ test('desktop: a Dish dropped in the Gekocht Column is cooked, and that celebrat
   await expect(titles(page, 'Gekocht')).toHaveText(['Ramen', 'Bowl'])
   await expect(confetti(page)).toHaveCount(14)
   await expect(topfbert(page)).toContainText('Mmh!')
+})
+
+test('desktop: a Column with one Dish is at least as tall as an empty one', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, ALLOWLISTED[5])
+  await resetBoard(page)
+  await seedDish(page, { title: 'Curry', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await gotoHydrated(page, '/')
+  await expect(titles(page, 'Ideen')).toHaveText(['Curry'])
+
+  const height = async (name: string) => (await column(page, name).boundingBox())!.height
+  expect(await height('Ideen')).toBeGreaterThanOrEqual(await height('Diese Woche'))
+})
+
+test('desktop: the lane a Dish is dragged over shows its drop border in full', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, ALLOWLISTED[5])
+  await gotoHydrated(page, '/')
+
+  const start = await center(card(page, 'Curry'))
+  const lane = await center(column(page, 'Diese Woche'))
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.mouse.move(lane.x, start.y, { steps: 12 })
+  await expect(column(page, 'Diese Woche')).toHaveClass(/lane-target/)
+
+  // Grown and wiggled, its 7px ring stays inside the lanes' scroller, which
+  // would cut it off.
+  const target = column(page, 'Diese Woche')
+  await target.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+  const { ring, lanes } = await target.evaluate((el) => {
+    const box = el.getBoundingClientRect()
+    const outer = el.closest('[data-testid="columns"]')!.getBoundingClientRect()
+    return {
+      ring: { top: box.top - 7, right: box.right + 7, bottom: box.bottom + 7, left: box.left - 7 },
+      lanes: { top: outer.top, right: outer.right, bottom: outer.bottom, left: outer.left },
+    }
+  })
+  expect(ring.top).toBeGreaterThanOrEqual(lanes.top)
+  expect(ring.left).toBeGreaterThanOrEqual(lanes.left)
+  expect(ring.right).toBeLessThanOrEqual(lanes.right)
+  expect(ring.bottom).toBeLessThanOrEqual(lanes.bottom)
+
+  await page.keyboard.press('Escape')
+  await landed(page)
+})
+
+test('desktop: wiggling a Dish between two slots doesn\'t flip the gap back and forth', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, ALLOWLISTED[5])
+  await resetBoard(page)
+  for (const title of ['Curry', 'Ramen', 'Tacos']) await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await gotoHydrated(page, '/')
+  await expect(titles(page, 'Ideen')).toHaveText(['Tacos', 'Ramen', 'Curry'])
+  // Cards still rising in jump instead of making room.
+  await expect(column(page, 'Ideen').locator('[data-dish-list]')).not.toHaveClass(/rising/)
+
+  // Each time Ramen starts making room, moving up or back down.
+  await page.locator('li[data-dish-id]', { has: card(page, 'Ramen') }).evaluate((li) => {
+    const w = window as unknown as { ramenMoves: number }
+    w.ramenMoves = 0
+    new MutationObserver(records => records.forEach((r) => {
+      if (li.classList.contains('card-move') && !r.oldValue?.includes('card-move')) w.ramenMoves++
+    })).observe(li, { attributes: true, attributeFilter: ['class'], attributeOldValue: true })
+  })
+
+  // Tacos, picked up by its middle: the slot below Ramen begins where
+  // Tacos's middle was (Ramen's middle, with Tacos lifted out).
+  const tacos = await center(card(page, 'Tacos'))
+  await page.mouse.move(tacos.x, tacos.y)
+  await page.mouse.down()
+  await page.mouse.move(tacos.x + 8, tacos.y, { steps: 2 })
+  await page.mouse.move(tacos.x + 8, tacos.y + 40, { steps: 4 })
+  // Then held around that boundary, wiggling a little either side of it.
+  for (let i = 0; i < 6; i++) {
+    await page.mouse.move(tacos.x + 8, tacos.y - 12, { steps: 3 })
+    await page.mouse.move(tacos.x + 8, tacos.y + 12, { steps: 3 })
+  }
+  await page.mouse.up()
+  await landed(page)
+
+  expect(await page.evaluate(() => (window as unknown as { ramenMoves: number }).ramenMoves)).toBe(1)
+  await expect(titles(page, 'Ideen')).toHaveText(['Ramen', 'Tacos', 'Curry'])
 })
