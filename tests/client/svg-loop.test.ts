@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { loopStyle } from '../../app/utils/svg-loop'
 
@@ -33,4 +34,17 @@ test('without a pivot, a layer turns about its own centre', () => {
 test('an unreadable loop leaves the layer still', () => {
   expect(loopStyle('wobble', null)).toBeNull()
   expect(loopStyle('ph-roll fast linear infinite', '95 51')).toBeNull()
+})
+
+test('every loop the app draws has its keyframes', () => {
+  const css = readFileSync('app/assets/css/loops.css', 'utf8')
+  const keyframes = new Set([...css.matchAll(/@keyframes ([\w-]+)/g)].map(m => m[1]))
+  const files = ['public/placeholders', 'public/clips'].flatMap(dir => readdirSync(dir)
+    .filter(name => name.endsWith('.svg'))
+    .map(name => `${dir}/${name}`))
+  const loops = files.flatMap(file => [...readFileSync(file, 'utf8').matchAll(/data-loop="([^"]*)"/g)]
+    .map(([, loop]) => ({ file, loop: loopStyle(loop!, null)?.['--loop'] ?? loop! })))
+
+  expect(loops.length).toBeGreaterThan(50)
+  expect(loops.filter(({ loop }) => !keyframes.has(loop.split(' ')[0]))).toEqual([])
 })
