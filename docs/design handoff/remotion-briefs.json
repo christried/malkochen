@@ -14,25 +14,26 @@
     "loop": true,
     "background": {
       "token": "mix(butter 18%, surface-muted)",
-      "light": "#EFE5CF",
+      "light": "#F2E4CF",
       "dark": "#4A402F"
     },
     "transparent": false,
+    "r11": "new drawing",
     "storyboard": [
       [
         0,
-        "Still pose = frame 0"
+        "Still = frame 0: fork resting in the nest, strand short"
       ],
       [
-        45,
-        "Hero apex: translateY −10 · rotate −10°"
+        41,
+        "Fork lifted y −12, rotate −6°; strand stretched 1.75× (hold to f50)"
       ],
       [
         90,
-        "Back to frame 0 (seamless)"
+        "= frame 0"
       ]
     ],
-    "animate": "fork: translateY −10 · rotate −10°; easing easeInOut; 0 / 50 / 100%",
+    "animate": "fork, strand: fork y −12 · rotate −6° (pivot twirl bottom) · strand scaleY 1→1.75 (pivot nest); easing easeInOut; keyframes r11-* in assets/r11-keyframes.css",
     "assets": [
       "assets/illustrations/pasta/layers/{light,dark}/*.svg",
       "assets/illustrations/pasta/pasta-light.svg",
@@ -85,91 +86,7 @@
   },
   {
     "fps": 30,
-    "id": "placeholder-curry",
-    "group": "Placeholder illustrations",
-    "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
-    "canvas": [
-      800,
-      1000
-    ],
-    "aspect": "4:5",
-    "frames": 72,
-    "seconds": 2.4,
-    "loop": true,
-    "background": {
-      "token": "mix(carrot 18%, surface-muted)",
-      "light": "#EBDFCA",
-      "dark": "#473B2C"
-    },
-    "transparent": false,
-    "storyboard": [
-      [
-        0,
-        "Still pose = frame 0"
-      ],
-      [
-        36,
-        "Hero apex: scale .2→1→1.35 · alpha"
-      ],
-      [
-        72,
-        "Back to frame 0 (seamless)"
-      ]
-    ],
-    "animate": "bubble_1..3: scale .2→1→1.35 · alpha; easing easeOut; offset 0.8s each",
-    "assets": [
-      "assets/illustrations/curry/layers/{light,dark}/*.svg",
-      "assets/illustrations/curry/curry-light.svg",
-      "assets/illustrations/curry/curry-dark.svg"
-    ],
-    "still": "frame 0 (also exported as the SVG itself)",
-    "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
-  },
-  {
-    "fps": 30,
     "id": "placeholder-bowl",
-    "group": "Placeholder illustrations",
-    "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
-    "canvas": [
-      800,
-      1000
-    ],
-    "aspect": "4:5",
-    "frames": 90,
-    "seconds": 3,
-    "loop": true,
-    "background": {
-      "token": "mix(sage 18%, surface-muted)",
-      "light": "#E6E5DA",
-      "dark": "#434038"
-    },
-    "transparent": false,
-    "storyboard": [
-      [
-        0,
-        "Still pose = frame 0"
-      ],
-      [
-        45,
-        "Hero apex: y −7 · squash 1.08/.92"
-      ],
-      [
-        90,
-        "Back to frame 0 (seamless)"
-      ]
-    ],
-    "animate": "topping_1..3: y −7 · squash 1.08/.92; easing easeInOut; offset 0.25s each",
-    "assets": [
-      "assets/illustrations/bowl/layers/{light,dark}/*.svg",
-      "assets/illustrations/bowl/bowl-light.svg",
-      "assets/illustrations/bowl/bowl-dark.svg"
-    ],
-    "still": "frame 0 (also exported as the SVG itself)",
-    "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
-  },
-  {
-    "fps": 30,
-    "id": "placeholder-salad",
     "group": "Placeholder illustrations",
     "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
     "canvas": [
@@ -182,29 +99,93 @@
     "loop": true,
     "background": {
       "token": "mix(sage 18%, surface-muted)",
-      "light": "#E6E5DA",
-      "dark": "#434038"
+      "light": "#DDE7E0",
+      "dark": "#3B423D"
     },
     "transparent": false,
+    "r11": "new drawing",
     "storyboard": [
       [
         0,
-        "Still pose = frame 0"
+        "Still = frame 0: leaves upright, tomato resting"
       ],
       [
         48,
-        "Hero apex: y −4 · rotate −5°"
+        "Leaves at y −2, rotate −4°; tomato starts its hop"
+      ],
+      [
+        61,
+        "Tomato apex y −10"
+      ],
+      [
+        74,
+        "Tomato lands, squash 1.14 / .86, settles by f87"
       ],
       [
         96,
-        "Back to frame 0 (seamless)"
+        "= frame 0"
       ]
     ],
-    "animate": "leaves: y −4 · rotate −5°; easing easeInOut; 0 / 50 / 100%",
+    "animate": "leaves, tomato: leaves y −2 · rotate −4° (pivot bowl centre) · tomato hop y −10 → squash 1.14/.86; easing easeInOut; keyframes r11-* in assets/r11-keyframes.css",
     "assets": [
-      "assets/illustrations/salad/layers/{light,dark}/*.svg",
-      "assets/illustrations/salad/salad-light.svg",
-      "assets/illustrations/salad/salad-dark.svg"
+      "assets/illustrations/bowl/layers/{light,dark}/*.svg",
+      "assets/illustrations/bowl/bowl-light.svg",
+      "assets/illustrations/bowl/bowl-dark.svg"
+    ],
+    "still": "frame 0 (also exported as the SVG itself)",
+    "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
+  },
+  {
+    "fps": 30,
+    "id": "placeholder-breakfast",
+    "group": "Placeholder illustrations",
+    "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
+    "canvas": [
+      800,
+      1000
+    ],
+    "aspect": "4:5",
+    "frames": 90,
+    "seconds": 3,
+    "loop": true,
+    "background": {
+      "token": "mix(orchid 18%, surface-muted)",
+      "light": "#EDDBF1",
+      "dark": "#47394A"
+    },
+    "transparent": false,
+    "r11": "new drawing",
+    "storyboard": [
+      [
+        0,
+        "Still = frame 0: short drip, berry upright"
+      ],
+      [
+        11,
+        "Berry wobbles −10° → 7° → −3°, still by f41"
+      ],
+      [
+        50,
+        "Drip stretched 1.9×; drop appears at its tip"
+      ],
+      [
+        70,
+        "Drop lands on the plate, splat (scale 1.7 / .4)"
+      ],
+      [
+        83,
+        "Drop gone, drip back to 1×"
+      ],
+      [
+        90,
+        "= frame 0"
+      ]
+    ],
+    "animate": "drip, drop, berry: drip scaleY 1→1.9 (pivot top) · drop falls y +18 → splat · berry wobble ±10°; easing easeInOut; keyframes r11-* in assets/r11-keyframes.css",
+    "assets": [
+      "assets/illustrations/breakfast/layers/{light,dark}/*.svg",
+      "assets/illustrations/breakfast/breakfast-light.svg",
+      "assets/illustrations/breakfast/breakfast-dark.svg"
     ],
     "still": "frame 0 (also exported as the SVG itself)",
     "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
@@ -295,48 +276,6 @@
   },
   {
     "fps": 30,
-    "id": "placeholder-pizza",
-    "group": "Placeholder illustrations",
-    "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
-    "canvas": [
-      800,
-      1000
-    ],
-    "aspect": "4:5",
-    "frames": 108,
-    "seconds": 3.6,
-    "loop": true,
-    "background": {
-      "token": "mix(carrot 18%, surface-muted)",
-      "light": "#EBDFCA",
-      "dark": "#473B2C"
-    },
-    "transparent": false,
-    "storyboard": [
-      [
-        0,
-        "Still pose = frame 0"
-      ],
-      [
-        54,
-        "Hero apex: x +10 · y −14 · rotate −8°"
-      ],
-      [
-        108,
-        "Back to frame 0 (seamless)"
-      ]
-    ],
-    "animate": "slice: x +10 · y −14 · rotate −8°; easing easeInOut; hold 45–65%",
-    "assets": [
-      "assets/illustrations/pizza/layers/{light,dark}/*.svg",
-      "assets/illustrations/pizza/pizza-light.svg",
-      "assets/illustrations/pizza/pizza-dark.svg"
-    ],
-    "still": "frame 0 (also exported as the SVG itself)",
-    "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
-  },
-  {
-    "fps": 30,
     "id": "placeholder-wok",
     "group": "Placeholder illustrations",
     "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
@@ -373,48 +312,6 @@
       "assets/illustrations/wok/layers/{light,dark}/*.svg",
       "assets/illustrations/wok/wok-light.svg",
       "assets/illustrations/wok/wok-dark.svg"
-    ],
-    "still": "frame 0 (also exported as the SVG itself)",
-    "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
-  },
-  {
-    "fps": 30,
-    "id": "placeholder-porridge",
-    "group": "Placeholder illustrations",
-    "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
-    "canvas": [
-      800,
-      1000
-    ],
-    "aspect": "4:5",
-    "frames": 90,
-    "seconds": 3,
-    "loop": true,
-    "background": {
-      "token": "mix(orchid 18%, surface-muted)",
-      "light": "#F3DECA",
-      "dark": "#4D3A2C"
-    },
-    "transparent": false,
-    "storyboard": [
-      [
-        0,
-        "Still pose = frame 0"
-      ],
-      [
-        45,
-        "Hero apex: drop y +34 · ripple scale .3→1.4"
-      ],
-      [
-        90,
-        "Back to frame 0 (seamless)"
-      ]
-    ],
-    "animate": "drop, ripple: drop y +34 · ripple scale .3→1.4; easing easeIn / easeOut; impact at 45%",
-    "assets": [
-      "assets/illustrations/porridge/layers/{light,dark}/*.svg",
-      "assets/illustrations/porridge/porridge-light.svg",
-      "assets/illustrations/porridge/porridge-dark.svg"
     ],
     "still": "frame 0 (also exported as the SVG itself)",
     "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
@@ -541,48 +438,6 @@
       "assets/illustrations/dumplings/layers/{light,dark}/*.svg",
       "assets/illustrations/dumplings/dumplings-light.svg",
       "assets/illustrations/dumplings/dumplings-dark.svg"
-    ],
-    "still": "frame 0 (also exported as the SVG itself)",
-    "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
-  },
-  {
-    "fps": 30,
-    "id": "placeholder-wrap",
-    "group": "Placeholder illustrations",
-    "usage": "Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.",
-    "canvas": [
-      800,
-      1000
-    ],
-    "aspect": "4:5",
-    "frames": 108,
-    "seconds": 3.6,
-    "loop": true,
-    "background": {
-      "token": "mix(orchid 18%, surface-muted)",
-      "light": "#F3DECA",
-      "dark": "#4D3A2C"
-    },
-    "transparent": false,
-    "storyboard": [
-      [
-        0,
-        "Still pose = frame 0"
-      ],
-      [
-        54,
-        "Hero apex: sheet scaleX .08↔1 (pivot left) · roll scale 1.12↔1"
-      ],
-      [
-        108,
-        "Back to frame 0 (seamless)"
-      ]
-    ],
-    "animate": "sheet, roll: sheet scaleX .08↔1 (pivot left) · roll scale 1.12↔1; easing cubic(.4,0,.2,1); rolled 0–15 / 85–100%",
-    "assets": [
-      "assets/illustrations/wrap/layers/{light,dark}/*.svg",
-      "assets/illustrations/wrap/wrap-light.svg",
-      "assets/illustrations/wrap/wrap-dark.svg"
     ],
     "still": "frame 0 (also exported as the SVG itself)",
     "crops": "Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10."
@@ -726,7 +581,7 @@
     "fps": 30,
     "id": "empty-column",
     "group": "States",
-    "usage": "Column with 0 Dishes",
+    "usage": "Column with 0 Dishes. Cast by Column position: 1 pea, 2 Knobi, 3 Schoti, 4 pea … (this clip: pea)",
     "canvas": [
       570,
       450
@@ -736,30 +591,214 @@
     "seconds": 4.4,
     "loop": true,
     "background": {
-      "token": "column tint (orchid)",
-      "light": "#FBE0C8",
-      "dark": "#452C22"
+      "token": "column tint = mix(<column accent> 24%, bg); blob = mix(<column accent> 40%, surface)",
+      "light": "#F8E8CE",
+      "dark": "#413521",
+      "perAccent": {
+        "butter": {
+          "light": "#F8E8CE",
+          "dark": "#413521"
+        },
+        "orchid": {
+          "light": "#F2DCF8",
+          "dark": "#3D2C41"
+        },
+        "sage": {
+          "light": "#E0EBE3",
+          "dark": "#303832"
+        },
+        "carrot": {
+          "light": "#FADCCF",
+          "dark": "#412C23"
+        },
+        "sky": {
+          "light": "#E1E9F5",
+          "dark": "#31363E"
+        }
+      }
     },
     "transparent": false,
+    "r11": "changed: loop now starts with the pea centred, so still = frame 0 (no snap)",
     "storyboard": [
       [
         0,
-        "Pea on bowl rim, left (x −44), rotated −240°"
+        "Pea centred on the bowl rim, upright, eyes front (= still)"
+      ],
+      [
+        33,
+        "Pea right (x +40), rotated +154°"
       ],
       [
         66,
-        "Pea right (x +44), rotated +240°, eyes lead"
+        "Back through centre"
+      ],
+      [
+        99,
+        "Pea left (x −40), rotated −154°"
       ],
       [
         132,
-        "Back left = frame 0"
+        "= frame 0"
       ]
     ],
+    "animate": "pea: translateX 0 → +40 → −40 → 0 with rotate = x / r (154° at ±40), sine (0–25% sine-out, 25–75% sine-in-out, 75–100% sine-in), pivot = pea centre (95, 51); keyframes r11-* in assets/r11-keyframes.css",
     "assets": [
-      "assets/characters/pea.svg",
-      "assets/shapes/bowl-outline.svg"
+      "assets/clips/empty-column/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json)",
+      "assets/clips/empty-column/empty-column-{light,dark}.svg",
+      "assets/clips/empty-column/empty-column-<accent>-{light,dark}.svg"
     ],
-    "still": "frame 33: pea centred"
+    "still": "frame 0 (= the exported still SVG)",
+    "render": "Render once per Column accent: <id>-<accent>-light.mp4 / -dark.mp4 (5 accents × 2 themes), Remotion input prop `accent`. Equally fine to build in Vue from the layers (pure transform/opacity loops) and tint the background in CSS."
+  },
+  {
+    "fps": 30,
+    "id": "empty-column-knobi",
+    "group": "States",
+    "usage": "Column with 0 Dishes. Cast by Column position: 1 pea, 2 Knobi, 3 Schoti, 4 pea … (this clip: knobi)",
+    "canvas": [
+      570,
+      450
+    ],
+    "aspect": "19:15",
+    "frames": 132,
+    "seconds": 4.4,
+    "loop": true,
+    "background": {
+      "token": "column tint = mix(<column accent> 24%, bg); blob = mix(<column accent> 40%, surface)",
+      "light": "#F2DCF8",
+      "dark": "#3D2C41",
+      "perAccent": {
+        "butter": {
+          "light": "#F8E8CE",
+          "dark": "#413521"
+        },
+        "orchid": {
+          "light": "#F2DCF8",
+          "dark": "#3D2C41"
+        },
+        "sage": {
+          "light": "#E0EBE3",
+          "dark": "#303832"
+        },
+        "carrot": {
+          "light": "#FADCCF",
+          "dark": "#412C23"
+        },
+        "sky": {
+          "light": "#E1E9F5",
+          "dark": "#31363E"
+        }
+      }
+    },
+    "transparent": false,
+    "r11": "new",
+    "storyboard": [
+      [
+        0,
+        "Knobi upright in the bowl, bottom tucked behind the rim (= still)"
+      ],
+      [
+        33,
+        "Rocked right +9°; sprout trails −12°"
+      ],
+      [
+        63,
+        "Blink (f62–66)"
+      ],
+      [
+        99,
+        "Rocked left −9°"
+      ],
+      [
+        132,
+        "= frame 0"
+      ]
+    ],
+    "animate": "knobi: rotate 0 → +9° → −9° → 0, sine, pivot (95, 76) inside the bowl · sprout: rotate 0 → −12° → +12° → 0, same curve, lagging 0.3 s (delay −4.1 s), pivot (24, 8) in character space · eyes: scaleY 1 → .1 → 1 at 46–50%, pivot eye centre; keyframes r11-* in assets/r11-keyframes.css",
+    "assets": [
+      "assets/clips/empty-column-knobi/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json)",
+      "assets/clips/empty-column-knobi/empty-column-knobi-{light,dark}.svg",
+      "assets/clips/empty-column-knobi/empty-column-knobi-<accent>-{light,dark}.svg"
+    ],
+    "still": "frame 0 (= the exported still SVG)",
+    "render": "Render once per Column accent: <id>-<accent>-light.mp4 / -dark.mp4 (5 accents × 2 themes), Remotion input prop `accent`. Equally fine to build in Vue from the layers (pure transform/opacity loops) and tint the background in CSS."
+  },
+  {
+    "fps": 30,
+    "id": "empty-column-schoti",
+    "group": "States",
+    "usage": "Column with 0 Dishes. Cast by Column position: 1 pea, 2 Knobi, 3 Schoti, 4 pea … (this clip: schoti)",
+    "canvas": [
+      570,
+      450
+    ],
+    "aspect": "19:15",
+    "frames": 132,
+    "seconds": 4.4,
+    "loop": true,
+    "background": {
+      "token": "column tint = mix(<column accent> 24%, bg); blob = mix(<column accent> 40%, surface)",
+      "light": "#E0EBE3",
+      "dark": "#303832",
+      "perAccent": {
+        "butter": {
+          "light": "#F8E8CE",
+          "dark": "#413521"
+        },
+        "orchid": {
+          "light": "#F2DCF8",
+          "dark": "#3D2C41"
+        },
+        "sage": {
+          "light": "#E0EBE3",
+          "dark": "#303832"
+        },
+        "carrot": {
+          "light": "#FADCCF",
+          "dark": "#412C23"
+        },
+        "sky": {
+          "light": "#E1E9F5",
+          "dark": "#31363E"
+        }
+      }
+    },
+    "transparent": false,
+    "r11": "new",
+    "storyboard": [
+      [
+        0,
+        "Schoti standing on the bowl rim (= still)"
+      ],
+      [
+        3,
+        "Crouch: squash 1.07 / .93"
+      ],
+      [
+        22,
+        "Apex: y −16, stretch .96 / 1.05"
+      ],
+      [
+        37,
+        "Land: squash 1.09 / .91, settle by f53"
+      ],
+      [
+        69,
+        "Looks left (f69–84), then right (f95–114)"
+      ],
+      [
+        132,
+        "= frame 0"
+      ]
+    ],
+    "animate": "schoti: hop at 0–40% (pivot (95, 66), rim contact) then rest · eyes: translateX −1.6 / +1.6 at 52–64% / 72–86%; keyframes r11-* in assets/r11-keyframes.css",
+    "assets": [
+      "assets/clips/empty-column-schoti/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json)",
+      "assets/clips/empty-column-schoti/empty-column-schoti-{light,dark}.svg",
+      "assets/clips/empty-column-schoti/empty-column-schoti-<accent>-{light,dark}.svg"
+    ],
+    "still": "frame 0 (= the exported still SVG)",
+    "render": "Render once per Column accent: <id>-<accent>-light.mp4 / -dark.mp4 (5 accents × 2 themes), Remotion input prop `accent`. Equally fine to build in Vue from the layers (pure transform/opacity loops) and tint the background in CSS."
   },
   {
     "fps": 30,
@@ -890,42 +929,178 @@
   },
   {
     "fps": 30,
-    "id": "never-cooked",
+    "id": "never-cooked-hut",
     "group": "Dish detail",
-    "usage": "Cooking History empty",
+    "usage": "Cooking History empty (replaces never-cooked). Scene per Dish = [hut, sprung, dampf][hash(dishId) % 3]",
     "canvas": [
       510,
       354
     ],
     "aspect": "≈10:7",
-    "frames": 90,
-    "seconds": 3,
+    "frames": 144,
+    "seconds": 4.8,
     "loop": true,
     "background": {
-      "token": "surface (card)",
+      "token": "surface (card); blob = mix(sage 36%, surface)",
       "light": "#FFFFFF",
       "dark": "#1E1C1A"
     },
     "transparent": false,
+    "r11": "new",
     "storyboard": [
       [
         0,
-        "Sage blob, Topfbert happy resting, pea left at his feet"
+        "Topfbert happy, hat on, steam drifting (= still)"
       ],
       [
-        45,
-        "Topfbert up 4px (squash back at 80f); pea rolled right"
+        14,
+        "Hat tips up to −20° (pivot hat brim left), settles at −16°"
       ],
       [
-        90,
+        20,
+        "Pea pops out of the pot (y +30 → −3 → 0, squash)"
+      ],
+      [
+        36,
+        "Pea looks left (f36–52), right (f59–66); Topfbert looks up at it"
+      ],
+      [
+        77,
+        "Pea ducks back into the pot (f77–92)"
+      ],
+      [
+        92,
+        "Hat drops back with a 3° bounce, done f109"
+      ],
+      [
+        124,
+        "Topfbert blinks (f124–130)"
+      ],
+      [
+        144,
         "= frame 0"
       ]
     ],
+    "animate": "hat: hattip, pivot (15, 42) · pea: peapop, pivot (66, 41); pea_eyes: pealook · gaze: gazehut · eyes / eyes_closed: opacity swap at 86–89% · topfbert: breathe 2.4s ×2, pivot (70, 123) · steam_1/2: 2.4s, phase −1.2s; keyframes r11-* in assets/r11-keyframes.css",
     "assets": [
-      "assets/topfbert/topfbert-happy-*.svg",
-      "assets/characters/pea.svg"
+      "assets/clips/never-cooked-hut/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json)",
+      "assets/clips/never-cooked-hut/never-cooked-hut-{light,dark}.svg"
     ],
-    "still": "frame 0"
+    "still": "frame 0 (= the exported still SVG)"
+  },
+  {
+    "fps": 30,
+    "id": "never-cooked-sprung",
+    "group": "Dish detail",
+    "usage": "Cooking History empty (replaces never-cooked). Scene per Dish = [hut, sprung, dampf][hash(dishId) % 3]",
+    "canvas": [
+      510,
+      354
+    ],
+    "aspect": "≈10:7",
+    "frames": 144,
+    "seconds": 4.8,
+    "loop": true,
+    "background": {
+      "token": "surface (card); blob = mix(sage 36%, surface)",
+      "light": "#FFFFFF",
+      "dark": "#1E1C1A"
+    },
+    "transparent": false,
+    "r11": "new",
+    "storyboard": [
+      [
+        0,
+        "Schoti left of the pea, Topfbert looks at Schoti (= still)"
+      ],
+      [
+        3,
+        "Crouch"
+      ],
+      [
+        29,
+        "Apex over the pea (y −34, lean 10°); pea ducks"
+      ],
+      [
+        48,
+        "Lands right, squash; f63 turns round (scaleX → −1)"
+      ],
+      [
+        101,
+        "Apex back over the pea; pea ducks"
+      ],
+      [
+        120,
+        "Lands left; f135 turns to face right"
+      ],
+      [
+        144,
+        "= frame 0; Topfbert's eyes follow throughout"
+      ]
+    ],
+    "animate": "schoti: leapx (outer group, X) + leapy (inner group: Y, lean, squash, turn), pivot (58, 110) · pea: duck at 20% / 70%, pivot (85, 110) · gaze: gazesprung · topfbert: breathe · steam; keyframes r11-* in assets/r11-keyframes.css",
+    "assets": [
+      "assets/clips/never-cooked-sprung/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json)",
+      "assets/clips/never-cooked-sprung/never-cooked-sprung-{light,dark}.svg"
+    ],
+    "still": "frame 0 (= the exported still SVG)"
+  },
+  {
+    "fps": 30,
+    "id": "never-cooked-dampf",
+    "group": "Dish detail",
+    "usage": "Cooking History empty (replaces never-cooked). Scene per Dish = [hut, sprung, dampf][hash(dishId) % 3]",
+    "canvas": [
+      510,
+      354
+    ],
+    "aspect": "≈10:7",
+    "frames": 144,
+    "seconds": 4.8,
+    "loop": true,
+    "background": {
+      "token": "surface (card); blob = mix(sage 36%, surface)",
+      "light": "#FFFFFF",
+      "dark": "#1E1C1A"
+    },
+    "transparent": false,
+    "r11": "new",
+    "storyboard": [
+      [
+        0,
+        "Knobi sits on Topfbert's rim (= still)"
+      ],
+      [
+        7,
+        "Knobi squashes, three steam puffs rise from the pot (f8–34)"
+      ],
+      [
+        17,
+        "Puffs lift Knobi up to y −26, wobbling ±6°; sprout flutters"
+      ],
+      [
+        36,
+        "Topfbert looks up at him"
+      ],
+      [
+        89,
+        "Knobi lands back on the rim, squash, settles f124"
+      ],
+      [
+        129,
+        "Knobi blinks"
+      ],
+      [
+        144,
+        "= frame 0"
+      ]
+    ],
+    "animate": "knobi: ride, pivot (96, 41) in Topfbert space · puff_1..3: puff, phase 0 / −0.1 / −0.2 s · gaze: gazedampf · knobi sprout: wiggle 2.4s · knobi eyes: blink48 · topfbert: breathe; no steam rods (puffs replace them); keyframes r11-* in assets/r11-keyframes.css",
+    "assets": [
+      "assets/clips/never-cooked-dampf/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json)",
+      "assets/clips/never-cooked-dampf/never-cooked-dampf-{light,dark}.svg"
+    ],
+    "still": "frame 0 (= the exported still SVG)"
   },
   {
     "fps": 30,
@@ -1494,5 +1669,50 @@
       "assets/shapes/pebble.svg"
     ],
     "still": "none (skipped)"
+  },
+  {
+    "fps": 30,
+    "id": "topfbert-idle",
+    "group": "Mascot",
+    "usage": "Wherever Topfbert appears without another loop (e.g. „Schon auf dem Board“ notice). Build in Vue, not as a video.",
+    "canvas": null,
+    "frames": 180,
+    "seconds": 6,
+    "loop": true,
+    "transparent": true,
+    "needsTransparency": true,
+    "buildIn": "vue",
+    "storyboard": [
+      [
+        0,
+        "Eyes open, steam_2 half-way (= still)"
+      ],
+      [
+        45,
+        "Breath peak (scale .985 / 1.025)"
+      ],
+      [
+        60,
+        "Blink (f60–64)"
+      ],
+      [
+        90,
+        "Hat at +3°, second breath starts"
+      ],
+      [
+        150,
+        "Blink (f150–154), again f159–163"
+      ],
+      [
+        180,
+        "= frame 0"
+      ]
+    ],
+    "animate": "see assets/topfbert/layers.json → idle",
+    "assets": [
+      "assets/topfbert/topfbert-happy-*.svg",
+      "assets/topfbert/topfbert-eyes_closed.svg"
+    ],
+    "still": "frame 0"
   }
 ]

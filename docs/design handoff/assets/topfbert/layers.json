@@ -316,5 +316,68 @@
         }
       ]
     }
+  },
+  "idle": {
+    "added": "R11",
+    "loop": "6s, seamless, frame 0 = still (eyes open, steam_2 half-way)",
+    "newLayer": {
+      "file": "topfbert-eyes_closed.svg",
+      "name": "eyes_closed",
+      "z": "same z as eyes, stacked directly above it",
+      "note": "two lid arcs; opacity 0 except during a blink"
+    },
+    "keyframes": "assets/r11-keyframes.css: r11-breathe, r11-steam, r11-ihat, r11-ieo (eyes), r11-iec (eyes_closed)",
+    "layers": [
+      {
+        "name": "whole (all layers)",
+        "motion": "scale 1 → .985 / 1.025 → 1 (breathe)",
+        "timing": "3s ease-in-out, 2× per loop",
+        "pivot": [
+          70,
+          123
+        ]
+      },
+      {
+        "name": "steam_1",
+        "motion": "opacity 0 → 1 (40%) → 0 · y +6 → −14 · scaleY .8 → 1.1 (layer keeps its own .45 alpha)",
+        "timing": "3s ease-out, phase 0",
+        "pivot": "center"
+      },
+      {
+        "name": "steam_2",
+        "motion": "same as steam_1",
+        "timing": "3s ease-out, phase −1.5s",
+        "pivot": "center"
+      },
+      {
+        "name": "hat",
+        "motion": "extra rotate 0 → +3° · y −1 on top of the authored −14°",
+        "timing": "6s ease-in-out",
+        "pivot": [
+          36,
+          46
+        ]
+      },
+      {
+        "name": "eyes",
+        "motion": "opacity 1 → 0 → 1, hard cuts",
+        "timing": "closed at 2.0–2.12s, 5.0–5.12s, 5.3–5.42s"
+      },
+      {
+        "name": "eyes_closed",
+        "motion": "inverse of eyes",
+        "timing": "same"
+      }
+    ],
+    "perMood": {
+      "happy": "all",
+      "wow": "all (sparks keep their own loop)",
+      "oops": "breathe + blink; no steam; drop keeps its loop",
+      "sleep": "breathe only, 4s; no blink (eyes already closed); z_1 keeps its loop",
+      "stir": "unchanged (already animated)"
+    },
+    "small": "Rendered below 48px: breathe + blink only (no steam, no hat sway).",
+    "reducedMotion": "No loop and no blink. Show frame 0. Pause when < 50% visible, under a sheet/dialog, or in the background.",
+    "sync": "All Topfberts on screen share one clock (same animation-delay from a shared start time), so several of them never blink out of step."
   }
 }

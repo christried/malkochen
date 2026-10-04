@@ -36,18 +36,96 @@
     },
     "reducedMotion": "never play",
     "colourChoice": "applies to this Dish only; Auto = dish hue",
-    "autoPick": "match title keywords first, then URL path words; fallback bowl",
+    "autoPick": "match title keywords first (dishes.*.keywords for the new three; existing dish names for the rest), then URL path words; fallback bowl",
     "darkMode": "same formulas, theme surface + ink swap"
   },
   "dishes": {
     "pasta": {
+      "label": "Pasta",
       "hue": "butter",
       "accent": "carrot",
-      "animatedGroups": "fork",
-      "properties": "translateY −10 · rotate −10°",
+      "animatedGroups": "fork, strand",
+      "properties": "fork y −12 · rotate −6° (pivot twirl bottom) · strand scaleY 1→1.75 (pivot nest)",
       "duration": "3.0s",
       "easing": "easeInOut",
-      "keys": "0 / 50 / 100%"
+      "keys": "0 / 45–55% hold / 100%",
+      "keywords": [
+        "pasta",
+        "spaghetti",
+        "nudel",
+        "nudeln",
+        "rigatoni",
+        "penne",
+        "linguine",
+        "tagliatelle",
+        "gnocchi",
+        "lasagne",
+        "carbonara",
+        "bolognese",
+        "pesto",
+        "mac"
+      ],
+      "keyframes": "assets/r11-keyframes.css (r11-*)",
+      "r11": "new drawing"
+    },
+    "bowl": {
+      "label": "Salat / Bowl",
+      "hue": "sage",
+      "accent": "carrot",
+      "animatedGroups": "leaves, tomato",
+      "properties": "leaves y −2 · rotate −4° (pivot bowl centre) · tomato hop y −10 → squash 1.14/.86",
+      "duration": "3.2s",
+      "easing": "easeInOut",
+      "keys": "tomato hops 50–90%",
+      "keywords": [
+        "salat",
+        "salad",
+        "bowl",
+        "buddha",
+        "poke",
+        "quinoa",
+        "couscous",
+        "bulgur",
+        "tabouleh",
+        "grain",
+        "reis",
+        "rice",
+        "curry",
+        "dal",
+        "chili",
+        "falafel"
+      ],
+      "keyframes": "assets/r11-keyframes.css (r11-*)",
+      "r11": "new drawing"
+    },
+    "breakfast": {
+      "label": "Frühstück",
+      "hue": "orchid",
+      "accent": "butter",
+      "animatedGroups": "drip, drop, berry",
+      "properties": "drip scaleY 1→1.9 (pivot top) · drop falls y +18 → splat · berry wobble ±10°",
+      "duration": "3.0s",
+      "easing": "easeInOut",
+      "keys": "drip 8–55% · drop 55–92% · berry 0–46%",
+      "keywords": [
+        "pancake",
+        "pfannkuchen",
+        "frühstück",
+        "breakfast",
+        "porridge",
+        "oats",
+        "haferflocken",
+        "müsli",
+        "granola",
+        "waffel",
+        "french toast",
+        "overnight",
+        "chia",
+        "crêpe",
+        "brunch"
+      ],
+      "keyframes": "assets/r11-keyframes.css (r11-*)",
+      "r11": "new drawing"
     },
     "ramen": {
       "hue": "sky",
@@ -57,33 +135,6 @@
       "duration": "2.7s",
       "easing": "easeOut",
       "keys": "offset 0.9s each"
-    },
-    "curry": {
-      "hue": "carrot",
-      "accent": "sky",
-      "animatedGroups": "bubble_1..3",
-      "properties": "scale .2→1→1.35 · alpha",
-      "duration": "2.4s",
-      "easing": "easeOut",
-      "keys": "offset 0.8s each"
-    },
-    "bowl": {
-      "hue": "sage",
-      "accent": "carrot",
-      "animatedGroups": "topping_1..3",
-      "properties": "y −7 · squash 1.08/.92",
-      "duration": "3.0s",
-      "easing": "easeInOut",
-      "keys": "offset 0.25s each"
-    },
-    "salad": {
-      "hue": "sage",
-      "accent": "carrot",
-      "animatedGroups": "leaves",
-      "properties": "y −4 · rotate −5°",
-      "duration": "3.2s",
-      "easing": "easeInOut",
-      "keys": "0 / 50 / 100%"
     },
     "burger": {
       "hue": "butter",
@@ -103,15 +154,6 @@
       "easing": "easeInOut",
       "keys": "taco_2 phase −0.9s"
     },
-    "pizza": {
-      "hue": "carrot",
-      "accent": "butter",
-      "animatedGroups": "slice",
-      "properties": "x +10 · y −14 · rotate −8°",
-      "duration": "3.6s",
-      "easing": "easeInOut",
-      "keys": "hold 45–65%"
-    },
     "wok": {
       "hue": "sky",
       "accent": "carrot",
@@ -120,15 +162,6 @@
       "duration": "2.4s",
       "easing": "cubic(.3,.6,.4,1)",
       "keys": "veg offset 40ms"
-    },
-    "porridge": {
-      "hue": "orchid",
-      "accent": "butter",
-      "animatedGroups": "drop, ripple",
-      "properties": "drop y +34 · ripple scale .3→1.4",
-      "duration": "3.0s",
-      "easing": "easeIn / easeOut",
-      "keys": "impact at 45%"
     },
     "bread": {
       "hue": "butter",
@@ -148,24 +181,6 @@
       "easing": "easeInOut",
       "keys": "spark_2 +1.2s"
     },
-    "dumplings": {
-      "hue": "sage",
-      "accent": "carrot",
-      "animatedGroups": "steam_1..3",
-      "properties": "alpha 0→.85→0 · y +6→−14",
-      "duration": "2.7s",
-      "easing": "easeOut",
-      "keys": "offset 0.9s each"
-    },
-    "wrap": {
-      "hue": "orchid",
-      "accent": "carrot",
-      "animatedGroups": "sheet, roll",
-      "properties": "sheet scaleX .08↔1 (pivot left) · roll scale 1.12↔1",
-      "duration": "3.6s",
-      "easing": "cubic(.4,0,.2,1)",
-      "keys": "rolled 0–15 / 85–100%"
-    },
     "smoothie": {
       "hue": "orchid",
       "accent": "sage",
@@ -183,11 +198,41 @@
       "duration": "2.0s",
       "easing": "easeInOut",
       "keys": "rattle 0–32%, rest"
+    },
+    "dumplings": {
+      "hue": "sage",
+      "accent": "carrot",
+      "animatedGroups": "steam_1..3",
+      "properties": "alpha 0→.85→0 · y +6→−14",
+      "duration": "2.7s",
+      "easing": "easeOut",
+      "keys": "offset 0.9s each"
     }
   },
   "svg": {
-    "folder": "handoff/svg/{light|dark}/{dish}.svg",
+    "folder": "assets/illustrations/<dish>/ (stills + layers); legacy handoff/svg/{light|dark}/<dish>.svg kept for the 12 dishes",
     "animatedElements": "carry id (e.g. steam_1), data-loop (keyframe name, duration, easing, delay) and data-pivot",
     "colours": "resolved from the tokens with OKLCH mixing, per theme"
-  }
+  },
+  "count": 12,
+  "removedR11": [
+    "curry",
+    "salad",
+    "pizza",
+    "porridge",
+    "wrap",
+    "pasta (old drawing)",
+    "bowl (old Buddha Bowl drawing)"
+  ],
+  "migration": {
+    "note": "Existing Dishes that stored a removed placeholder key get remapped once (DB migration or on read).",
+    "curry": "bowl",
+    "salad": "bowl",
+    "pizza": "bread",
+    "porridge": "breakfast",
+    "wrap": "tacos",
+    "pasta": "pasta",
+    "bowl": "bowl"
+  },
+  "mixNote": "R11: near-neutral colours (OKLCH chroma < 0.02: every theme surface and ink) have a powerless hue, as in browsers' color-mix(). The hue of the mix is the accent hue. R11 exports (pasta, bowl, breakfast, clips) follow this rule and match the live CSS. R10 stills of sky/orchid dishes (ramen, wok, cake, smoothie) were pre-mixed without it and look slightly warmer than live CSS; re-export them if they must match pixel-exactly."
 }

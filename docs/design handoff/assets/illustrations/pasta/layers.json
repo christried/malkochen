@@ -1,7 +1,7 @@
 {
   "dish": "pasta",
   "viewBox": "0 0 120 120",
-  "note": "Every layer is a full-canvas SVG in the shared viewBox: stack by z (1 = back) at identical position. Transform origin = pivot (viewBox units) or the layer bbox centre if null.",
+  "note": "R11. Every layer is a full-canvas SVG in the shared viewBox: stack by z (1 = back). Transform origin = data-pivot (viewBox units). Keyframes: assets/r11-keyframes.css (prefix r11-). Inline style on animated elements = frame-0 state.",
   "light": [
     {
       "z": 1,
@@ -21,19 +21,41 @@
     },
     {
       "z": 3,
-      "file": "layers/light/03-base_1.svg",
-      "name": "base_1",
+      "file": "layers/light/03-plate.svg",
+      "name": "plate",
       "animated": false,
       "loop": null,
       "pivot": null
     },
     {
       "z": 4,
-      "file": "layers/light/04-fork_1.svg",
-      "name": "fork_1",
+      "file": "layers/light/04-nest.svg",
+      "name": "nest",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/light/05-strand.svg",
+      "name": "strand",
       "animated": true,
-      "loop": "twirl 3s ease-in-out infinite",
-      "pivot": "50% 100%"
+      "loop": "strand 3s ease-in-out infinite",
+      "pivot": [
+        74,
+        76
+      ]
+    },
+    {
+      "z": 6,
+      "file": "layers/light/06-fork.svg",
+      "name": "fork",
+      "animated": true,
+      "loop": "fork 3s ease-in-out infinite",
+      "pivot": [
+        74,
+        66
+      ]
     }
   ],
   "dark": [
@@ -55,19 +77,41 @@
     },
     {
       "z": 3,
-      "file": "layers/dark/03-base_1.svg",
-      "name": "base_1",
+      "file": "layers/dark/03-plate.svg",
+      "name": "plate",
       "animated": false,
       "loop": null,
       "pivot": null
     },
     {
       "z": 4,
-      "file": "layers/dark/04-fork_1.svg",
-      "name": "fork_1",
+      "file": "layers/dark/04-nest.svg",
+      "name": "nest",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/dark/05-strand.svg",
+      "name": "strand",
       "animated": true,
-      "loop": "twirl 3s ease-in-out infinite",
-      "pivot": "50% 100%"
+      "loop": "strand 3s ease-in-out infinite",
+      "pivot": [
+        74,
+        76
+      ]
+    },
+    {
+      "z": 6,
+      "file": "layers/dark/06-fork.svg",
+      "name": "fork",
+      "animated": true,
+      "loop": "fork 3s ease-in-out infinite",
+      "pivot": [
+        74,
+        66
+      ]
     }
   ]
 }

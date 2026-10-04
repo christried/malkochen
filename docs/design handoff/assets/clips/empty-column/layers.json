@@ -1,0 +1,135 @@
+{
+  "clip": "empty-column",
+  "viewBox": "0 0 190 150",
+  "canvas": [
+    570,
+    450
+  ],
+  "seconds": 4.4,
+  "note": "Layers stack by z. Animated elements carry id + data-loop (r11-keyframes.css name, duration, easing, delay) + data-pivot (viewBox units of their own <svg>; nested character/Topfbert <svg>s have their own viewBox). Inline style = frame-0 state.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-background.svg",
+      "name": "background",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-blob.svg",
+      "name": "blob",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-bowl.svg",
+      "name": "bowl",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 4,
+      "file": "layers/light/04-pea.svg",
+      "name": "pea",
+      "animated": true,
+      "elements": [
+        {
+          "id": "pea",
+          "loop": "roll 4.4s linear infinite",
+          "pivot": "95 51"
+        }
+      ]
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-background.svg",
+      "name": "background",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-blob.svg",
+      "name": "blob",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-bowl.svg",
+      "name": "bowl",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 4,
+      "file": "layers/dark/04-pea.svg",
+      "name": "pea",
+      "animated": true,
+      "elements": [
+        {
+          "id": "pea",
+          "loop": "roll 4.4s linear infinite",
+          "pivot": "95 51"
+        }
+      ]
+    }
+  ],
+  "accentVariants": "Background + blob depend on the Column accent. Stills per accent: <id>-<accent>-<theme>.svg. Default layers are rendered with butter.",
+  "backgrounds": {
+    "butter": {
+      "light": {
+        "background": "#F8E8CE",
+        "blob": "#FDE4BD"
+      },
+      "dark": {
+        "background": "#413521",
+        "blob": "#6C5631"
+      }
+    },
+    "orchid": {
+      "light": {
+        "background": "#F2DCF8",
+        "blob": "#F3D2FB"
+      },
+      "dark": {
+        "background": "#3D2C41",
+        "blob": "#63466B"
+      }
+    },
+    "sage": {
+      "light": {
+        "background": "#E0EBE3",
+        "blob": "#DBE8DE"
+      },
+      "dark": {
+        "background": "#303832",
+        "blob": "#4D5B51"
+      }
+    },
+    "carrot": {
+      "light": {
+        "background": "#FADCCF",
+        "blob": "#FDD1BF"
+      },
+      "dark": {
+        "background": "#412C23",
+        "blob": "#6B4535"
+      }
+    },
+    "sky": {
+      "light": {
+        "background": "#E1E9F5",
+        "blob": "#DCE5F4"
+      },
+      "dark": {
+        "background": "#31363E",
+        "blob": "#4F5766"
+      }
+    }
+  }
+}

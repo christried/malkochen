@@ -7,14 +7,15 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
 ## placeholder-pasta
 - **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
 - **Canvas:** 800×1000 (4:5) · **Length:** 90 frames = 3s @30fps · **Loop:** seamless
-- **Background:** mix(butter 18%, surface-muted) — light `#EFE5CF` / dark `#4A402F`
-- **Animate:** fork: translateY −10 · rotate −10°; easing easeInOut; 0 / 50 / 100%
+- **Background:** mix(butter 18%, surface-muted) — light `#F2E4CF` / dark `#4A402F`
+- **R11:** new drawing
+- **Animate:** fork, strand: fork y −12 · rotate −6° (pivot twirl bottom) · strand scaleY 1→1.75 (pivot nest); easing easeInOut; keyframes r11-* in assets/r11-keyframes.css
 - **Crops:** Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10.
 - **Storyboard:**
-  - f0: Still pose = frame 0
-  - f45: Hero apex: translateY −10 · rotate −10°
-  - f90: Back to frame 0 (seamless)
-- **Assets:** assets/illustrations/pasta/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/pasta/pasta-light.svg, assets/illustrations/pasta/pasta-dark.svg
+  - f0: Still = frame 0: fork resting in the nest, strand short
+  - f41: Fork lifted y −12, rotate −6°; strand stretched 1.75× (hold to f50)
+  - f90: = frame 0
+- **Assets:** assets/illustrations/pasta/layers/{light,dark}/*.svg, assets/illustrations/pasta/pasta-light.svg, assets/illustrations/pasta/pasta-dark.svg
 - **Reduced motion still:** frame 0 (also exported as the SVG itself)
 
 ## placeholder-ramen
@@ -30,43 +31,37 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
 - **Assets:** assets/illustrations/ramen/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/ramen/ramen-light.svg, assets/illustrations/ramen/ramen-dark.svg
 - **Reduced motion still:** frame 0 (also exported as the SVG itself)
 
-## placeholder-curry
-- **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
-- **Canvas:** 800×1000 (4:5) · **Length:** 72 frames = 2.4s @30fps · **Loop:** seamless
-- **Background:** mix(carrot 18%, surface-muted) — light `#EBDFCA` / dark `#473B2C`
-- **Animate:** bubble_1..3: scale .2→1→1.35 · alpha; easing easeOut; offset 0.8s each
-- **Crops:** Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10.
-- **Storyboard:**
-  - f0: Still pose = frame 0
-  - f36: Hero apex: scale .2→1→1.35 · alpha
-  - f72: Back to frame 0 (seamless)
-- **Assets:** assets/illustrations/curry/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/curry/curry-light.svg, assets/illustrations/curry/curry-dark.svg
-- **Reduced motion still:** frame 0 (also exported as the SVG itself)
-
 ## placeholder-bowl
 - **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
-- **Canvas:** 800×1000 (4:5) · **Length:** 90 frames = 3s @30fps · **Loop:** seamless
-- **Background:** mix(sage 18%, surface-muted) — light `#E6E5DA` / dark `#434038`
-- **Animate:** topping_1..3: y −7 · squash 1.08/.92; easing easeInOut; offset 0.25s each
+- **Canvas:** 800×1000 (4:5) · **Length:** 96 frames = 3.2s @30fps · **Loop:** seamless
+- **Background:** mix(sage 18%, surface-muted) — light `#DDE7E0` / dark `#3B423D`
+- **R11:** new drawing
+- **Animate:** leaves, tomato: leaves y −2 · rotate −4° (pivot bowl centre) · tomato hop y −10 → squash 1.14/.86; easing easeInOut; keyframes r11-* in assets/r11-keyframes.css
 - **Crops:** Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10.
 - **Storyboard:**
-  - f0: Still pose = frame 0
-  - f45: Hero apex: y −7 · squash 1.08/.92
-  - f90: Back to frame 0 (seamless)
-- **Assets:** assets/illustrations/bowl/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/bowl/bowl-light.svg, assets/illustrations/bowl/bowl-dark.svg
+  - f0: Still = frame 0: leaves upright, tomato resting
+  - f48: Leaves at y −2, rotate −4°; tomato starts its hop
+  - f61: Tomato apex y −10
+  - f74: Tomato lands, squash 1.14 / .86, settles by f87
+  - f96: = frame 0
+- **Assets:** assets/illustrations/bowl/layers/{light,dark}/*.svg, assets/illustrations/bowl/bowl-light.svg, assets/illustrations/bowl/bowl-dark.svg
 - **Reduced motion still:** frame 0 (also exported as the SVG itself)
 
-## placeholder-salad
+## placeholder-breakfast
 - **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
-- **Canvas:** 800×1000 (4:5) · **Length:** 96 frames = 3.2s @30fps · **Loop:** seamless
-- **Background:** mix(sage 18%, surface-muted) — light `#E6E5DA` / dark `#434038`
-- **Animate:** leaves: y −4 · rotate −5°; easing easeInOut; 0 / 50 / 100%
+- **Canvas:** 800×1000 (4:5) · **Length:** 90 frames = 3s @30fps · **Loop:** seamless
+- **Background:** mix(orchid 18%, surface-muted) — light `#EDDBF1` / dark `#47394A`
+- **R11:** new drawing
+- **Animate:** drip, drop, berry: drip scaleY 1→1.9 (pivot top) · drop falls y +18 → splat · berry wobble ±10°; easing easeInOut; keyframes r11-* in assets/r11-keyframes.css
 - **Crops:** Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10.
 - **Storyboard:**
-  - f0: Still pose = frame 0
-  - f48: Hero apex: y −4 · rotate −5°
-  - f96: Back to frame 0 (seamless)
-- **Assets:** assets/illustrations/salad/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/salad/salad-light.svg, assets/illustrations/salad/salad-dark.svg
+  - f0: Still = frame 0: short drip, berry upright
+  - f11: Berry wobbles −10° → 7° → −3°, still by f41
+  - f50: Drip stretched 1.9×; drop appears at its tip
+  - f70: Drop lands on the plate, splat (scale 1.7 / .4)
+  - f83: Drop gone, drip back to 1×
+  - f90: = frame 0
+- **Assets:** assets/illustrations/breakfast/layers/{light,dark}/*.svg, assets/illustrations/breakfast/breakfast-light.svg, assets/illustrations/breakfast/breakfast-dark.svg
 - **Reduced motion still:** frame 0 (also exported as the SVG itself)
 
 ## placeholder-burger
@@ -95,19 +90,6 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
 - **Assets:** assets/illustrations/tacos/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/tacos/tacos-light.svg, assets/illustrations/tacos/tacos-dark.svg
 - **Reduced motion still:** frame 0 (also exported as the SVG itself)
 
-## placeholder-pizza
-- **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
-- **Canvas:** 800×1000 (4:5) · **Length:** 108 frames = 3.6s @30fps · **Loop:** seamless
-- **Background:** mix(carrot 18%, surface-muted) — light `#EBDFCA` / dark `#473B2C`
-- **Animate:** slice: x +10 · y −14 · rotate −8°; easing easeInOut; hold 45–65%
-- **Crops:** Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10.
-- **Storyboard:**
-  - f0: Still pose = frame 0
-  - f54: Hero apex: x +10 · y −14 · rotate −8°
-  - f108: Back to frame 0 (seamless)
-- **Assets:** assets/illustrations/pizza/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/pizza/pizza-light.svg, assets/illustrations/pizza/pizza-dark.svg
-- **Reduced motion still:** frame 0 (also exported as the SVG itself)
-
 ## placeholder-wok
 - **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
 - **Canvas:** 800×1000 (4:5) · **Length:** 72 frames = 2.4s @30fps · **Loop:** seamless
@@ -119,19 +101,6 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
   - f36: Hero apex: pan rotate −6° · veg y −26 + rotate 360°
   - f72: Back to frame 0 (seamless)
 - **Assets:** assets/illustrations/wok/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/wok/wok-light.svg, assets/illustrations/wok/wok-dark.svg
-- **Reduced motion still:** frame 0 (also exported as the SVG itself)
-
-## placeholder-porridge
-- **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
-- **Canvas:** 800×1000 (4:5) · **Length:** 90 frames = 3s @30fps · **Loop:** seamless
-- **Background:** mix(orchid 18%, surface-muted) — light `#F3DECA` / dark `#4D3A2C`
-- **Animate:** drop, ripple: drop y +34 · ripple scale .3→1.4; easing easeIn / easeOut; impact at 45%
-- **Crops:** Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10.
-- **Storyboard:**
-  - f0: Still pose = frame 0
-  - f45: Hero apex: drop y +34 · ripple scale .3→1.4
-  - f90: Back to frame 0 (seamless)
-- **Assets:** assets/illustrations/porridge/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/porridge/porridge-light.svg, assets/illustrations/porridge/porridge-dark.svg
 - **Reduced motion still:** frame 0 (also exported as the SVG itself)
 
 ## placeholder-bread
@@ -171,19 +140,6 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
   - f41: Hero apex: alpha 0→.85→0 · y +6→−14
   - f81: Back to frame 0 (seamless)
 - **Assets:** assets/illustrations/dumplings/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/dumplings/dumplings-light.svg, assets/illustrations/dumplings/dumplings-dark.svg
-- **Reduced motion still:** frame 0 (also exported as the SVG itself)
-
-## placeholder-wrap
-- **Group:** Placeholder illustrations · **Usage:** Dish thumbnail/header when no photo. Plays only in focus: long-press, detail, picker, hover; once on first view and on scroll-stop.
-- **Canvas:** 800×1000 (4:5) · **Length:** 108 frames = 3.6s @30fps · **Loop:** seamless
-- **Background:** mix(orchid 18%, surface-muted) — light `#F3DECA` / dark `#4D3A2C`
-- **Animate:** sheet, roll: sheet scaleX .08↔1 (pivot left) · roll scale 1.12↔1; easing cubic(.4,0,.2,1); rolled 0–15 / 85–100%
-- **Crops:** Composition is inside the centred 800×800 safe square; the ground tint fills the rest. object-fit: cover works for 4:5, 1:1 and 16:10.
-- **Storyboard:**
-  - f0: Still pose = frame 0
-  - f54: Hero apex: sheet scaleX .08↔1 (pivot left) · roll scale 1.12↔1
-  - f108: Back to frame 0 (seamless)
-- **Assets:** assets/illustrations/wrap/layers/{light,dark}/*.svg (order + pivots in layers.json), assets/illustrations/wrap/wrap-light.svg, assets/illustrations/wrap/wrap-dark.svg
 - **Reduced motion still:** frame 0 (also exported as the SVG itself)
 
 ## placeholder-smoothie
@@ -227,15 +183,53 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
 - **Reduced motion still:** frame 0: veggies resting, eyes open
 
 ## empty-column
-- **Group:** States · **Usage:** Column with 0 Dishes
+- **Group:** States · **Usage:** Column with 0 Dishes. Cast by Column position: 1 pea, 2 Knobi, 3 Schoti, 4 pea … (this clip: pea)
 - **Canvas:** 570×450 (19:15) · **Length:** 132 frames = 4.4s @30fps · **Loop:** seamless
-- **Background:** column tint (orchid) — light `#FBE0C8` / dark `#452C22`
+- **Background:** column tint = mix(<column accent> 24%, bg); blob = mix(<column accent> 40%, surface) — light `#F8E8CE` / dark `#413521`
+- **Render:** Render once per Column accent: <id>-<accent>-light.mp4 / -dark.mp4 (5 accents × 2 themes), Remotion input prop `accent`. Equally fine to build in Vue from the layers (pure transform/opacity loops) and tint the background in CSS.
+- **R11:** changed: loop now starts with the pea centred, so still = frame 0 (no snap)
+- **Animate:** pea: translateX 0 → +40 → −40 → 0 with rotate = x / r (154° at ±40), sine (0–25% sine-out, 25–75% sine-in-out, 75–100% sine-in), pivot = pea centre (95, 51); keyframes r11-* in assets/r11-keyframes.css
 - **Storyboard:**
-  - f0: Pea on bowl rim, left (x −44), rotated −240°
-  - f66: Pea right (x +44), rotated +240°, eyes lead
-  - f132: Back left = frame 0
-- **Assets:** assets/characters/pea.svg, assets/shapes/bowl-outline.svg
-- **Reduced motion still:** frame 33: pea centred
+  - f0: Pea centred on the bowl rim, upright, eyes front (= still)
+  - f33: Pea right (x +40), rotated +154°
+  - f66: Back through centre
+  - f99: Pea left (x −40), rotated −154°
+  - f132: = frame 0
+- **Assets:** assets/clips/empty-column/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json), assets/clips/empty-column/empty-column-{light,dark}.svg, assets/clips/empty-column/empty-column-<accent>-{light,dark}.svg
+- **Reduced motion still:** frame 0 (= the exported still SVG)
+
+## empty-column-knobi
+- **Group:** States · **Usage:** Column with 0 Dishes. Cast by Column position: 1 pea, 2 Knobi, 3 Schoti, 4 pea … (this clip: knobi)
+- **Canvas:** 570×450 (19:15) · **Length:** 132 frames = 4.4s @30fps · **Loop:** seamless
+- **Background:** column tint = mix(<column accent> 24%, bg); blob = mix(<column accent> 40%, surface) — light `#F2DCF8` / dark `#3D2C41`
+- **Render:** Render once per Column accent: <id>-<accent>-light.mp4 / -dark.mp4 (5 accents × 2 themes), Remotion input prop `accent`. Equally fine to build in Vue from the layers (pure transform/opacity loops) and tint the background in CSS.
+- **R11:** new
+- **Animate:** knobi: rotate 0 → +9° → −9° → 0, sine, pivot (95, 76) inside the bowl · sprout: rotate 0 → −12° → +12° → 0, same curve, lagging 0.3 s (delay −4.1 s), pivot (24, 8) in character space · eyes: scaleY 1 → .1 → 1 at 46–50%, pivot eye centre; keyframes r11-* in assets/r11-keyframes.css
+- **Storyboard:**
+  - f0: Knobi upright in the bowl, bottom tucked behind the rim (= still)
+  - f33: Rocked right +9°; sprout trails −12°
+  - f63: Blink (f62–66)
+  - f99: Rocked left −9°
+  - f132: = frame 0
+- **Assets:** assets/clips/empty-column-knobi/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json), assets/clips/empty-column-knobi/empty-column-knobi-{light,dark}.svg, assets/clips/empty-column-knobi/empty-column-knobi-<accent>-{light,dark}.svg
+- **Reduced motion still:** frame 0 (= the exported still SVG)
+
+## empty-column-schoti
+- **Group:** States · **Usage:** Column with 0 Dishes. Cast by Column position: 1 pea, 2 Knobi, 3 Schoti, 4 pea … (this clip: schoti)
+- **Canvas:** 570×450 (19:15) · **Length:** 132 frames = 4.4s @30fps · **Loop:** seamless
+- **Background:** column tint = mix(<column accent> 24%, bg); blob = mix(<column accent> 40%, surface) — light `#E0EBE3` / dark `#303832`
+- **Render:** Render once per Column accent: <id>-<accent>-light.mp4 / -dark.mp4 (5 accents × 2 themes), Remotion input prop `accent`. Equally fine to build in Vue from the layers (pure transform/opacity loops) and tint the background in CSS.
+- **R11:** new
+- **Animate:** schoti: hop at 0–40% (pivot (95, 66), rim contact) then rest · eyes: translateX −1.6 / +1.6 at 52–64% / 72–86%; keyframes r11-* in assets/r11-keyframes.css
+- **Storyboard:**
+  - f0: Schoti standing on the bowl rim (= still)
+  - f3: Crouch: squash 1.07 / .93
+  - f22: Apex: y −16, stretch .96 / 1.05
+  - f37: Land: squash 1.09 / .91, settle by f53
+  - f69: Looks left (f69–84), then right (f95–114)
+  - f132: = frame 0
+- **Assets:** assets/clips/empty-column-schoti/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json), assets/clips/empty-column-schoti/empty-column-schoti-{light,dark}.svg, assets/clips/empty-column-schoti/empty-column-schoti-<accent>-{light,dark}.svg
+- **Reduced motion still:** frame 0 (= the exported still SVG)
 
 ## search-empty
 - **Group:** States · **Usage:** Search with no results
@@ -272,16 +266,57 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
 - **Assets:** assets/topfbert/topfbert-oops-*.svg
 - **Reduced motion still:** frame 30
 
-## never-cooked
-- **Group:** Dish detail · **Usage:** Cooking History empty
-- **Canvas:** 510×354 (≈10:7) · **Length:** 90 frames = 3s @30fps · **Loop:** seamless
-- **Background:** surface (card) — light `#FFFFFF` / dark `#1E1C1A`
+## never-cooked-hut
+- **Group:** Dish detail · **Usage:** Cooking History empty (replaces never-cooked). Scene per Dish = [hut, sprung, dampf][hash(dishId) % 3]
+- **Canvas:** 510×354 (≈10:7) · **Length:** 144 frames = 4.8s @30fps · **Loop:** seamless
+- **Background:** surface (card); blob = mix(sage 36%, surface) — light `#FFFFFF` / dark `#1E1C1A`
+- **R11:** new
+- **Animate:** hat: hattip, pivot (15, 42) · pea: peapop, pivot (66, 41); pea_eyes: pealook · gaze: gazehut · eyes / eyes_closed: opacity swap at 86–89% · topfbert: breathe 2.4s ×2, pivot (70, 123) · steam_1/2: 2.4s, phase −1.2s; keyframes r11-* in assets/r11-keyframes.css
 - **Storyboard:**
-  - f0: Sage blob, Topfbert happy resting, pea left at his feet
-  - f45: Topfbert up 4px (squash back at 80f); pea rolled right
-  - f90: = frame 0
-- **Assets:** assets/topfbert/topfbert-happy-*.svg, assets/characters/pea.svg
-- **Reduced motion still:** frame 0
+  - f0: Topfbert happy, hat on, steam drifting (= still)
+  - f14: Hat tips up to −20° (pivot hat brim left), settles at −16°
+  - f20: Pea pops out of the pot (y +30 → −3 → 0, squash)
+  - f36: Pea looks left (f36–52), right (f59–66); Topfbert looks up at it
+  - f77: Pea ducks back into the pot (f77–92)
+  - f92: Hat drops back with a 3° bounce, done f109
+  - f124: Topfbert blinks (f124–130)
+  - f144: = frame 0
+- **Assets:** assets/clips/never-cooked-hut/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json), assets/clips/never-cooked-hut/never-cooked-hut-{light,dark}.svg
+- **Reduced motion still:** frame 0 (= the exported still SVG)
+
+## never-cooked-sprung
+- **Group:** Dish detail · **Usage:** Cooking History empty (replaces never-cooked). Scene per Dish = [hut, sprung, dampf][hash(dishId) % 3]
+- **Canvas:** 510×354 (≈10:7) · **Length:** 144 frames = 4.8s @30fps · **Loop:** seamless
+- **Background:** surface (card); blob = mix(sage 36%, surface) — light `#FFFFFF` / dark `#1E1C1A`
+- **R11:** new
+- **Animate:** schoti: leapx (outer group, X) + leapy (inner group: Y, lean, squash, turn), pivot (58, 110) · pea: duck at 20% / 70%, pivot (85, 110) · gaze: gazesprung · topfbert: breathe · steam; keyframes r11-* in assets/r11-keyframes.css
+- **Storyboard:**
+  - f0: Schoti left of the pea, Topfbert looks at Schoti (= still)
+  - f3: Crouch
+  - f29: Apex over the pea (y −34, lean 10°); pea ducks
+  - f48: Lands right, squash; f63 turns round (scaleX → −1)
+  - f101: Apex back over the pea; pea ducks
+  - f120: Lands left; f135 turns to face right
+  - f144: = frame 0; Topfbert's eyes follow throughout
+- **Assets:** assets/clips/never-cooked-sprung/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json), assets/clips/never-cooked-sprung/never-cooked-sprung-{light,dark}.svg
+- **Reduced motion still:** frame 0 (= the exported still SVG)
+
+## never-cooked-dampf
+- **Group:** Dish detail · **Usage:** Cooking History empty (replaces never-cooked). Scene per Dish = [hut, sprung, dampf][hash(dishId) % 3]
+- **Canvas:** 510×354 (≈10:7) · **Length:** 144 frames = 4.8s @30fps · **Loop:** seamless
+- **Background:** surface (card); blob = mix(sage 36%, surface) — light `#FFFFFF` / dark `#1E1C1A`
+- **R11:** new
+- **Animate:** knobi: ride, pivot (96, 41) in Topfbert space · puff_1..3: puff, phase 0 / −0.1 / −0.2 s · gaze: gazedampf · knobi sprout: wiggle 2.4s · knobi eyes: blink48 · topfbert: breathe; no steam rods (puffs replace them); keyframes r11-* in assets/r11-keyframes.css
+- **Storyboard:**
+  - f0: Knobi sits on Topfbert's rim (= still)
+  - f7: Knobi squashes, three steam puffs rise from the pot (f8–34)
+  - f17: Puffs lift Knobi up to y −26, wobbling ±6°; sprout flutters
+  - f36: Topfbert looks up at him
+  - f89: Knobi lands back on the rim, squash, settles f124
+  - f129: Knobi blinks
+  - f144: = frame 0
+- **Assets:** assets/clips/never-cooked-dampf/layers/{light,dark}/*.svg (order, ids, loops, pivots in layers.json), assets/clips/never-cooked-dampf/never-cooked-dampf-{light,dark}.svg
+- **Reduced motion still:** frame 0 (= the exported still SVG)
 
 ## milestone-10x
 - **Group:** Celebrations · **Usage:** 10th cooking (after toast)
@@ -448,3 +483,17 @@ Colours are OKLCH mixes (see tokens.json). Hex values below are pre-mixed for ea
   - f19: End
 - **Assets:** assets/veggies/*.svg, assets/shapes/pebble.svg
 - **Reduced motion still:** none (skipped)
+
+## topfbert-idle
+- **Group:** Mascot · **Usage:** Wherever Topfbert appears without another loop (e.g. „Schon auf dem Board“ notice). Build in Vue, not as a video.
+- **Build in Vue** (transparent, not a video) · **Length:** 180 frames = 6s · **Loop:** seamless
+- **Animate:** see assets/topfbert/layers.json → idle
+- **Storyboard:**
+  - f0: Eyes open, steam_2 half-way (= still)
+  - f45: Breath peak (scale .985 / 1.025)
+  - f60: Blink (f60–64)
+  - f90: Hat at +3°, second breath starts
+  - f150: Blink (f150–154), again f159–163
+  - f180: = frame 0
+- **Assets:** assets/topfbert/topfbert-happy-*.svg, assets/topfbert/topfbert-eyes_closed.svg
+- **Reduced motion still:** frame 0

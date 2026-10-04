@@ -230,10 +230,14 @@
       "segmented (theme, expiry)"
     ],
     "states": [
-      "default",
-      "focus (butter ring 2px)",
-      "required/prompt (butter glow pulse)",
-      "valid (sage ring + check)",
+      "default (outline field-outline, label text-muted)",
+      "hover (outline line-strong → text 40%)",
+      "focus (outline text, label text; no outer ring)",
+      "filled (value text)",
+      "error (outline + label + helper danger)",
+      "disabled (opacity .45)",
+      "required/prompt (butter glow pulse, unchanged)",
+      "valid (sage outline + check)",
       "loading (dots)"
     ],
     "motion": [
@@ -243,8 +247,28 @@
     ],
     "tokens": [
       "radius.field",
-      "color.focus"
-    ]
+      "field.*",
+      "color.focus",
+      "color.danger"
+    ],
+    "r11": "Label style 5b: legend in the border (notched outline). Applies to text, select, textarea in sheets, dialogs and Board settings.",
+    "label": {
+      "style": "notched-outline",
+      "markup": "<div class=\"field\"> <input|select|textarea> <fieldset aria-hidden=\"true\"><legend>{label}</legend></fieldset> <label for>{label}</label> </div>",
+      "fieldset": "position:absolute; inset:-6px 0 0 0; margin:0; padding:0 8px; border:2px solid var(--field-outline); border-radius:var(--radius-field); pointer-events:none; min-width:0",
+      "legend": "padding:0 6px; font:600 12.5px/14px var(--font-ui); visibility:hidden; white-space:nowrap  (creates the gap in the border on any background)",
+      "visibleLabel": "position:absolute; left:10px; top:-6px; padding:0 6px; font:600 12.5px/14px var(--font-ui); color:var(--color-text-muted)",
+      "wrapper": "position:relative; margin-top:6px (room for the label above the border)",
+      "control": "border:0; background:transparent; height:52px; padding:13px 16px 15px; font:500 15.5px/20px var(--font-ui)  (13/15 = 1px optical lift, measured for Figtree; with Hanken Grotesk too)",
+      "select": "appearance:none; padding-right:44px; chevron 18px at right:16px, vertically centred",
+      "textarea": "min-height:104px; padding:14px 16px; line-height:22px; resize:vertical",
+      "withButton": "row = flex, align-items:center, gap 10px; button 44px round (inverse). Label is inside the border, so the button centres on the field.",
+      "helper": "below, padding:8px 0 0 16px; 12.5/16; error = danger + 14px icon"
+    },
+    "alternatives": {
+      "5a": "Label above, 13/16 600, 8px gap, indented 16px (aligned with the field text). Field filled surface-muted; focus = 2px text outline + 4px focus ring.",
+      "5c": "Pebble tab label joined to a filled field (tab radius 14px 12px 0 0, field radius 0 16px 19px 17px); focus tints tab + field butter 26%, error danger 12%."
+    }
   },
   {
     "name": "EmojiPicker",
