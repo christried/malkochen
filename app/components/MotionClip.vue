@@ -7,8 +7,8 @@
 // Lying over the still, it never moves the layout. The still is the poster:
 // the video stays transparent until it has a frame up.
 //
-// `src` is the clip's files without the theme: '/placeholders/pasta' plays
-// /placeholders/pasta-dark.webm (or .mp4) in dark. The still is the default
+// `src` is the clip's files without the theme: '/clips/offline' plays
+// /clips/offline-dark.webm (or .mp4) in dark. The still is the default
 // slot, or else the clip's poster PNGs. A new `src` plays in a new video,
 // over the same still.
 const props = withDefaults(defineProps<{
@@ -36,20 +36,14 @@ const video = useTemplateRef<HTMLVideoElement>('video')
 // Client-only, so the server never renders a video (nor guesses the theme).
 const mounted = ref(false)
 const loaded = ref(false)
-const onScreen = ref(false)
+const onScreen = useOnScreen(root)
 const shown = ref(false)
 
 watchEffect(() => {
   if (wanted.value && mounted.value) loaded.value = true
 })
 
-let observer: IntersectionObserver | undefined
-onMounted(() => {
-  mounted.value = true
-  observer = new IntersectionObserver(([entry]) => (onScreen.value = entry?.isIntersecting ?? false))
-  if (root.value) observer.observe(root.value)
-})
-onBeforeUnmount(() => observer?.disconnect())
+onMounted(() => (mounted.value = true))
 
 watchEffect(() => {
   const el = video.value
