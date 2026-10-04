@@ -61,20 +61,37 @@ async function step(column: ColumnRow, delta: -1 | 1) {
 
 // Dragging by the grip (pointer only; ↑/↓ do the same by keyboard): the row
 // lifts and follows the finger, and passing half of a neighbour swaps the two.
-const drag = ref<{ id: string, dy: number } | null>(null)
+// The drag listens on the window, not on the grip: a swap can move the
+// dragged row within the list, which takes the grip's pointer capture away,
+// and a release away from the grip then never reached it (#109).
+const drag = ref<{ id: string, dy: number, pointerId: number } | null>(null)
 let start = { y: 0, before: [] as ColumnRow[] }
+
+const DRAG_EVENTS = [['pointermove', follow], ['pointerup', drop], ['pointercancel', drop], ['blur', drop]] as const
+
+function listen(on: boolean) {
+  for (const [type, handler] of DRAG_EVENTS) {
+    if (on) window.addEventListener(type, handler as EventListener)
+    else window.removeEventListener(type, handler as EventListener)
+  }
+}
+onBeforeUnmount(() => listen(false))
 
 function lift(column: ColumnRow, event: PointerEvent) {
   if (event.button !== 0) return
+  drop()
   ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
   start = { y: event.clientY, before: [...columns.value] }
-  drag.value = { id: column.id, dy: 0 }
+  drag.value = { id: column.id, dy: 0, pointerId: event.pointerId }
+  listen(true)
   hapticTick()
 }
 
 function follow(event: PointerEvent) {
   const el = listEl()
-  if (!drag.value || !el) return
+  if (!drag.value || !el || event.pointerId !== drag.value.pointerId) return
+  // The button is already up: let go where no pointerup reached the page.
+  if (event.buttons === 0) return drop()
   const rows = [...el.querySelectorAll<HTMLElement>('[data-column-row]')]
   const index = columns.value.findIndex(c => c.id === drag.value?.id)
   let dy = event.clientY - start.y
@@ -96,7 +113,11 @@ function swap(from: number, to: number, shift: number) {
   hapticTick()
 }
 
-function drop() {
+// Also when the window loses focus mid-drag, and before a new lift, so no
+// drag outlives its pointer.
+function drop(event?: Event) {
+  if (event instanceof PointerEvent && event.pointerId !== drag.value?.pointerId) return
+  listen(false)
   if (!drag.value) return
   drag.value = null
   if (start.before.some((c, i) => c !== columns.value[i])) emit('reordered', start.before)
@@ -124,9 +145,6 @@ function drop() {
         data-grip
         class="grip flex h-11 w-8 shrink-0 cursor-grab items-center justify-center text-text-muted"
         @pointerdown="lift(column, $event)"
-        @pointermove="follow"
-        @pointerup="drop"
-        @pointercancel="drop"
       >
         <AppIcon
           name="grip"

@@ -148,6 +148,45 @@ test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
 })
 
+// A let-go Column is back in the list: not shifted, no lift shadow.
+async function expectSettled(page: Page, name: string) {
+  await expect(row(page, name)).toHaveCSS('translate', 'none')
+  await expect(row(page, name)).toHaveCSS('box-shadow', 'none')
+}
+
+test('a dragged Column settles when let go outside the list, and its new place is saved', async ({ page }) => {
+  await openSettings(page)
+  const grip = (await row(page, 'Diese Woche').locator('[data-grip]').boundingBox())!
+  const target = (await row(page, 'Ideen').boundingBox())!
+  const list = (await page.getByRole('list', { name: 'Spalten' }).boundingBox())!
+  const x = grip.x + grip.width / 2
+
+  // Up past Ideen, then off to the side, away from the grip, and let go there.
+  await page.mouse.move(x, grip.y + grip.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(x, target.y + 4, { steps: 16 })
+  await page.mouse.move(list.x + list.width + 40, target.y + 4, { steps: 8 })
+  await page.mouse.up()
+
+  await expectSettled(page, 'Diese Woche')
+  await expectColumnNames(page, ['Diese Woche', 'Ideen', 'Gekocht'])
+  await reloadHydrated(page)
+  await expectColumnNames(page, ['Diese Woche', 'Ideen', 'Gekocht'])
+})
+
+test('a Column barely dragged settles where it was', async ({ page }) => {
+  await openSettings(page)
+  const grip = (await row(page, 'Ideen').locator('[data-grip]').boundingBox())!
+
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 + 3)
+  await page.mouse.up()
+
+  await expectSettled(page, 'Ideen')
+  await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
+})
+
 // The Invite Link's buttons (PRD stories 62, 63). invite-links.spec.ts reads
 // the link from its field; these click "Link kopieren" and "Link teilen".
 
