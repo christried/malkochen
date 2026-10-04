@@ -8,12 +8,12 @@
     <rect x="28" y="52" width="64" height="15" rx="3" fill="#A45A67"></rect>
     <path d="M26 50h68v6q-4 7-8.5 0t-8.5 0-8.5 0-8.5 0-8.5 0-8.5 0-8.5 0-8.5 0z" fill="#D0C7B5"></path>
     <circle cx="46" cy="80" r="2" fill="#F798D5"></circle><circle cx="72" cy="78" r="2" fill="#F798D5"></circle><circle cx="60" cy="84" r="2" fill="#F798D5"></circle>
-    <g id="berry_1" data-loop="berry 2.4s ease-in-out infinite" data-pivot="50% 100%">
+    <g id="berry_1" data-loop="ph-berry 2.4s ease-in-out infinite" data-pivot="50% 100%">
       <circle cx="60" cy="42" r="8" fill="#F798D5"></circle>
       <ellipse cx="65" cy="33" rx="5" ry="2.4" transform="rotate(-30 65 33)" fill="#7A8C6E"></ellipse>
       <circle cx="57" cy="39" r="2" fill="#D0C7B5" opacity=".7"></circle>
     </g>
-    <path d="M86 30l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" id="spark_1" data-loop="spark 2.4s ease-in-out infinite" data-pivot="center" fill="#A37E41"></path>
-    <path d="M30 34l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6z" id="spark_2" data-loop="spark 2.4s ease-in-out 1.2s infinite" data-pivot="center" fill="#A37E41"></path>
+    <path d="M86 30l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" id="spark_1" data-loop="ph-spark 2.4s ease-in-out infinite" data-pivot="center" fill="#A37E41"></path>
+    <path d="M30 34l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6z" id="spark_2" data-loop="ph-spark 2.4s ease-in-out 1.2s infinite" data-pivot="center" fill="#A37E41"></path>
   </g>
 </svg>

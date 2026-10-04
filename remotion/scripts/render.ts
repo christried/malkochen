@@ -1,12 +1,15 @@
 // Renders every video into the app's static assets, per theme:
-//   public/placeholders/<dish>-<theme>.{mp4,webm,png}   the Placeholder Image loops
 //   public/clips/<clip>-<theme>.{mp4,webm,png}          the state, system and celebration clips
 //   public/clips/<clip>-landscape-<theme>.{mp4,webm}    a clip's 16:9 render for wide windows
 //
 //   .mp4   H.264, what every browser plays
 //   .webm  VP9, smaller where supported
-//   .png   poster: the reduced-motion still (frame 0 for a placeholder, the
-//          brief's still for a clip, which for invite-intro is invite-loop's)
+//   .png   poster: the reduced-motion still (the brief's still, which for
+//          invite-intro is invite-loop's)
+//
+// Not the loops the app draws in code from their SVGs since #111 (SvgLoop.vue:
+// sharp at any size, at the screen's refresh rate): the Placeholder Images,
+// the empty Column's and Topfbert wow's. Their compositions stay for Studio.
 //
 // The splash has no PNGs: from frame 10 on the butter covers the Board's
 // background, so its stills are one WebP each for both themes, small enough
@@ -15,7 +18,7 @@
 //   splash-still.webp   frame 16, the reduced-motion still
 //
 //   npm run render                   everything, light and dark
-//   npm run render -- pasta offline  only the named dishes and clips
+//   npm run render -- offline error  only the named clips
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -63,10 +66,15 @@ const serveUrl = await bundle({
   rspack: RSPACK,
 });
 
+// Drawn in code by the app (see the top).
+const DRAWN_IN_APP = new Set(["empty-column", "topfbert-wow"]);
+const drawnInApp = (props: PlaceholderProps | ClipProps) => "dish" in props || DRAWN_IN_APP.has(props.clip);
+
 const all = await getCompositions(serveUrl);
 const compositions = all.filter((c) => {
-  const { name } = output(c.props as PlaceholderProps | ClipProps);
-  return only.length === 0 || only.includes(name);
+  const props = c.props as PlaceholderProps | ClipProps;
+  if (drawnInApp(props)) return false;
+  return only.length === 0 || only.includes(output(props).name);
 });
 if (compositions.length === 0) throw new Error(`Nothing matches ${only.join(", ")}`);
 

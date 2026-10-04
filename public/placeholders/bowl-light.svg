@@ -5,9 +5,9 @@
     <path d="M16 66h88a44 34 0 0 1-88 0z" fill="#CCD5BF"></path>
     <ellipse cx="60" cy="66" rx="44" ry="9" fill="#8FA48C"></ellipse>
     <ellipse cx="60" cy="65" rx="39" ry="7" fill="#FCF3E0"></ellipse>
-    <g id="topping_1" data-loop="hop 3s ease-in-out infinite" data-pivot="50% 100%"><ellipse cx="40" cy="61" rx="11" ry="6" fill="#EDB688"></ellipse></g>
-    <g id="topping_2" data-loop="hop 3s ease-in-out .25s infinite" data-pivot="50% 100%"><ellipse cx="60" cy="58" rx="10" ry="6" fill="#AEC2A4"></ellipse><ellipse cx="60" cy="56" rx="4" ry="2" fill="#5C7B57"></ellipse></g>
-    <g id="topping_3" data-loop="hop 3s ease-in-out .5s infinite" data-pivot="50% 100%"><circle cx="76" cy="61" r="3.4" fill="#CB7B4C"></circle><circle cx="82" cy="63" r="3.4" fill="#CB7B4C"></circle><circle cx="79" cy="58" r="3.4" fill="#CB7B4C"></circle></g>
+    <g id="topping_1" data-loop="ph-hop 3s ease-in-out infinite" data-pivot="50% 100%"><ellipse cx="40" cy="61" rx="11" ry="6" fill="#EDB688"></ellipse></g>
+    <g id="topping_2" data-loop="ph-hop 3s ease-in-out .25s infinite" data-pivot="50% 100%"><ellipse cx="60" cy="58" rx="10" ry="6" fill="#AEC2A4"></ellipse><ellipse cx="60" cy="56" rx="4" ry="2" fill="#5C7B57"></ellipse></g>
+    <g id="topping_3" data-loop="ph-hop 3s ease-in-out .5s infinite" data-pivot="50% 100%"><circle cx="76" cy="61" r="3.4" fill="#CB7B4C"></circle><circle cx="82" cy="63" r="3.4" fill="#CB7B4C"></circle><circle cx="79" cy="58" r="3.4" fill="#CB7B4C"></circle></g>
     <circle cx="50" cy="66" r="1.2" fill="#8FA48C"></circle><circle cx="68" cy="66" r="1.2" fill="#8FA48C"></circle><circle cx="55" cy="68" r="1.2" fill="#8FA48C"></circle>
   </g>
 </svg>

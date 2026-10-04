@@ -2,7 +2,7 @@
   <rect id="ground_tint" width="120" height="120" fill="#E6E5DA"></rect>
   <ellipse id="ground_shadow" cx="60" cy="101" rx="42" ry="6" fill="#DDDECE"></ellipse>
   <g id="dish">
-    <g id="leaves_1" data-loop="sway 3.2s ease-in-out infinite" data-pivot="50% 100%">
+    <g id="leaves_1" data-loop="ph-sway 3.2s ease-in-out infinite" data-pivot="50% 100%">
       <ellipse cx="42" cy="54" rx="15" ry="7" transform="rotate(-35 42 54)" fill="#DDDECE"></ellipse>
       <ellipse cx="78" cy="52" rx="16" ry="7" transform="rotate(30 78 52)" fill="#8FA48C"></ellipse>
       <ellipse cx="60" cy="46" rx="7" ry="14" fill="#DDDECE"></ellipse>

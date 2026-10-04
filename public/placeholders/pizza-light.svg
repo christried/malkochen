@@ -8,7 +8,7 @@
     <ellipse cx="42" cy="66" rx="7" ry="4.5" fill="#F2CF8E"></ellipse><ellipse cx="58" cy="84" rx="7" ry="4.5" fill="#F2CF8E"></ellipse><ellipse cx="72" cy="62" rx="6" ry="4" fill="#F2CF8E"></ellipse>
     <circle cx="36" cy="78" r="3" fill="#7D614B"></circle><circle cx="52" cy="60" r="3" fill="#7D614B"></circle>
     <ellipse cx="46" cy="76" rx="4.5" ry="2.4" transform="rotate(-30 46 76)" fill="#AEC2A4"></ellipse>
-    <g id="slice_1" data-loop="slice 3.6s ease-in-out infinite" data-pivot="0% 50%">
+    <g id="slice_1" data-loop="ph-slice 3.6s ease-in-out infinite" data-pivot="0% 50%">
       <path d="M60 71L99.5 62A42 26 0 0 1 96.4 84Z" fill="#D2A045"></path>
       <path d="M64 71L94 64.5A36 21 0 0 1 91.5 81Z" fill="#ECBA8D"></path>
       <ellipse cx="84" cy="71" rx="5" ry="3.4" fill="#F2CF8E"></ellipse><circle cx="75" cy="74" r="2.4" fill="#7D614B"></circle>

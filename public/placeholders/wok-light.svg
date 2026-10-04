@@ -2,15 +2,15 @@
   <rect id="ground_tint" width="120" height="120" fill="#E3E6DA"></rect>
   <ellipse id="ground_shadow" cx="60" cy="101" rx="42" ry="6" fill="#D3E1D3"></ellipse>
   <g id="dish">
-    <g id="pan_1" data-loop="pan 2.4s ease-in-out infinite" data-pivot="30% 50%">
+    <g id="pan_1" data-loop="ph-pan 2.4s ease-in-out infinite" data-pivot="30% 50%">
       <rect x="84" y="60" width="30" height="7" rx="3.5" transform="rotate(-12 84 60)" fill="#7D614B"></rect>
       <path d="M14 64h76a38 22 0 0 1-76 0z" fill="#7FA4B6"></path>
       <ellipse cx="52" cy="64" rx="38" ry="7" fill="#B7D9D5"></ellipse>
     </g>
-    <g id="veg_1" data-loop="toss 2.4s cubic-bezier(.3,.6,.4,1) infinite" data-pivot="center"><rect x="34" y="54" width="11" height="8" rx="3" fill="#EDB688"></rect></g>
-    <g id="veg_2" data-loop="toss 2.4s cubic-bezier(.3,.6,.4,1) .08s infinite" data-pivot="center"><circle cx="52" cy="56" r="5.5" fill="#AEC2A4"></circle></g>
-    <g id="veg_3" data-loop="toss 2.4s cubic-bezier(.3,.6,.4,1) .16s infinite" data-pivot="center"><rect x="60" y="55" width="10" height="7" rx="3" fill="#FCF3E0"></rect></g>
-    <g id="veg_4" data-loop="toss 2.4s cubic-bezier(.3,.6,.4,1) .04s infinite" data-pivot="center"><ellipse cx="44" cy="60" rx="5" ry="3" fill="#CB7B4C"></ellipse></g>
-    <g id="veg_5" data-loop="toss 2.4s cubic-bezier(.3,.6,.4,1) .12s infinite" data-pivot="center"><ellipse cx="72" cy="60" rx="5" ry="2.6" transform="rotate(20 72 60)" fill="#5C7B57"></ellipse></g>
+    <g id="veg_1" data-loop="ph-toss 2.4s cubic-bezier(.3,.6,.4,1) infinite" data-pivot="center"><rect x="34" y="54" width="11" height="8" rx="3" fill="#EDB688"></rect></g>
+    <g id="veg_2" data-loop="ph-toss 2.4s cubic-bezier(.3,.6,.4,1) .08s infinite" data-pivot="center"><circle cx="52" cy="56" r="5.5" fill="#AEC2A4"></circle></g>
+    <g id="veg_3" data-loop="ph-toss 2.4s cubic-bezier(.3,.6,.4,1) .16s infinite" data-pivot="center"><rect x="60" y="55" width="10" height="7" rx="3" fill="#FCF3E0"></rect></g>
+    <g id="veg_4" data-loop="ph-toss 2.4s cubic-bezier(.3,.6,.4,1) .04s infinite" data-pivot="center"><ellipse cx="44" cy="60" rx="5" ry="3" fill="#CB7B4C"></ellipse></g>
+    <g id="veg_5" data-loop="ph-toss 2.4s cubic-bezier(.3,.6,.4,1) .12s infinite" data-pivot="center"><ellipse cx="72" cy="60" rx="5" ry="2.6" transform="rotate(20 72 60)" fill="#5C7B57"></ellipse></g>
   </g>
 </svg>

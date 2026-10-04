@@ -2,13 +2,13 @@
   <rect id="ground_tint" width="120" height="120" fill="#EBDFCA"></rect>
   <ellipse id="ground_shadow" cx="60" cy="101" rx="42" ry="6" fill="#EBD1B1"></ellipse>
   <g id="dish">
-    <circle cx="24" cy="50" r="5" id="puff_1" data-loop="puff 2s ease-out infinite" data-pivot="center" fill="#EBD1B1"></circle>
-    <circle cx="96" cy="50" r="5" id="puff_2" data-loop="puff 2s ease-out .32s infinite" data-pivot="center" fill="#EBD1B1"></circle>
+    <circle cx="24" cy="50" r="5" id="puff_1" data-loop="ph-puff 2s ease-out infinite" data-pivot="center" fill="#EBD1B1"></circle>
+    <circle cx="96" cy="50" r="5" id="puff_2" data-loop="ph-puff 2s ease-out .32s infinite" data-pivot="center" fill="#EBD1B1"></circle>
     <rect x="8" y="64" width="16" height="8" rx="4" fill="#C47849"></rect><rect x="96" y="64" width="16" height="8" rx="4" fill="#C47849"></rect>
     <rect x="18" y="56" width="84" height="42" rx="14" fill="#ECBA8D"></rect>
     <path d="M18 72h84" stroke="#EBD1B1" stroke-width="4" opacity=".7"></path>
     <ellipse cx="40" cy="84" rx="5" ry="3" fill="#C8D4BC" opacity=".9"></ellipse>
-    <g id="lid_1" data-loop="rattle 2s ease-in-out infinite" data-pivot="50% 100%">
+    <g id="lid_1" data-loop="ph-rattle 2s ease-in-out infinite" data-pivot="50% 100%">
       <path d="M20 57a40 15 0 0 1 80 0z" fill="#C47849"></path>
       <ellipse cx="60" cy="57" rx="42" ry="4" fill="#C47849"></ellipse>
       <rect x="54" y="36" width="12" height="8" rx="4" fill="#7D614B"></rect>

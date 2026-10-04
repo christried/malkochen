@@ -22,8 +22,8 @@ The first render downloads Chrome Headless Shell (~110 MB) once.
 
 ```bash
 npm run dev                       # Remotion Studio: check every clip by eye before rendering
-npm run render                    # render everything into public/placeholders/ and public/clips/
-npm run render -- pasta offline   # only the named dishes and clips
+npm run render                    # render every clip into public/clips/
+npm run render -- offline error   # only the named clips
 npm test                          # timelines: seamless loops, no jumps, the briefs' key moments
 npm run lint                      # ESLint + tsc
 ```
@@ -32,17 +32,20 @@ npm run lint                      # ESLint + tsc
 
 | File | What |
 |---|---|
-| `public/placeholders/<dish>-<theme>.{mp4,webm,png}` | The 16 Placeholder Image loops, next to the SVG stills |
-| `public/clips/<clip>-<theme>.{mp4,webm,png}` | The 15 state, system and celebration clips |
+| `public/clips/<clip>-<theme>.{mp4,webm,png}` | The state, system and celebration clips |
 | `public/clips/splash-landscape-<theme>.{mp4,webm}` | The splash again at 2560×1440, for wide windows |
 
 `.mp4` is H.264 and plays everywhere, `.webm` is VP9 and smaller where it is
-supported, and `.png` is the poster: the reduced-motion still (frame 0 for a
-placeholder, the brief's "still" for a clip; invite-intro's is invite-loop's
-frame 0, where it hands off). The splash's stills are WebPs instead, one per
+supported, and `.png` is the poster: the reduced-motion still (the brief's
+"still"; invite-intro's is invite-loop's frame 0, where it hands off). The splash's stills are WebPs instead, one per
 orientation for both themes: `splash[-landscape]-{poster,still}.webp`.
 
 Commit the rendered files; the app serves them as they are.
+
+Not rendered any more (#111): the Placeholder Images, `empty-column` and
+`topfbert-wow`. The app draws those loops in code from their SVGs
+(`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
+refresh rate and sharp at any size. Their compositions stay in Studio.
 
 ## How it is built
 

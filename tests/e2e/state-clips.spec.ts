@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { clipStill, countPeakPlaying, playing } from './clips'
+import { clipStill, countPeakPlaying, loopStill, playing } from './clips'
 import { gotoHydrated } from './hydration'
 import { removeStoredImages, resetBoard, seedDish, storedImage } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
@@ -30,7 +30,7 @@ test('an empty Board loops its clip in the current theme, and only that one', as
 
   await expect.poll(() => playing(page)).toEqual(['/clips/empty-board-dark.webm'])
   // The other, empty Columns show their still.
-  await expect(clipStill(page, 'empty-column', 'dark').first()).toBeVisible()
+  await expect(loopStill(page, '/clips/empty-column-orchid', 'dark')).toBeVisible()
   expect(await peak()).toBe(1)
 })
 
@@ -45,13 +45,13 @@ test('an empty Column\'s loop keeps playing while a Placeholder card is hovered 
   await gotoHydrated(page, '/')
 
   // The curry plays once on first view; an empty Column's loop goes on.
-  await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual(['/clips/empty-column-light.webm'])
+  await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual(['/clips/empty-column-orchid-light.svg'])
 
   // Hovered, the curry loops beside it, and it keeps going.
   await page.getByRole('link', { name: 'Ohne Foto' }).hover()
-  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-light.webm', '/placeholders/curry-light.webm'])
+  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/curry-light.svg'])
   await page.mouse.move(5, 5)
-  await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-light.webm'])
+  await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-orchid-light.svg'])
 
   // Lifted, the same.
   const curry = (await page.getByRole('link', { name: 'Ohne Foto' }).boundingBox())!
@@ -59,12 +59,48 @@ test('an empty Column\'s loop keeps playing while a Placeholder card is hovered 
   await page.mouse.down()
   await page.mouse.move(curry.x + curry.width / 2 + 20, curry.y + curry.height / 2, { steps: 4 })
   await expect(page.getByTestId('drag-card')).toBeVisible()
-  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-light.webm', '/placeholders/curry-light.webm'])
+  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/curry-light.svg'])
   await page.keyboard.press('Escape')
   await page.mouse.up()
   await expect(page.getByTestId('drag-card')).toHaveCount(0)
 
   expect(await peakPlaceholders()).toBe(1)
+})
+
+test('the empty Column\'s pea starts rolling from where it rests', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.emulateMedia({ colorScheme: 'light' })
+  // Where the pea is (its sideways shift, in the drawing's units) on the
+  // first frame its loop plays, and how far it goes over the next second.
+  await page.addInitScript(() => {
+    const w = window as unknown as { pea: { first: number, furthest: number } | null }
+    w.pea = null
+    const shift = (pea: Element) => new DOMMatrix(getComputedStyle(pea).transform).e
+    new MutationObserver(() => {
+      const pea = document.querySelector('[data-playing^="/clips/empty-column"] [data-loop-svg] [data-loop]')
+      if (!pea || w.pea) return
+      requestAnimationFrame(() => {
+        w.pea = { first: shift(pea), furthest: 0 }
+        const started = performance.now()
+        const sample = () => {
+          w.pea!.furthest = Math.max(w.pea!.furthest, Math.abs(shift(pea)))
+          if (performance.now() - started < 1000) requestAnimationFrame(sample)
+        }
+        requestAnimationFrame(sample)
+      })
+    }).observe(document, { subtree: true, attributeFilter: ['data-playing'] })
+  })
+  await signIn(page, EMMY)
+  await resetBoard(page)
+  await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await gotoHydrated(page, '/')
+
+  // Its still shows it in the middle, and that's where it starts.
+  await expect(loopStill(page, '/clips/empty-column-orchid')).toBeVisible()
+  await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-orchid-light.svg'])
+  const pea = () => page.evaluate(() => (window as unknown as { pea: { first: number, furthest: number } | null }).pea)
+  await expect.poll(async () => (await pea())?.furthest ?? 0).toBeGreaterThan(30)
+  expect(Math.abs((await pea())!.first)).toBeLessThan(2)
 })
 
 test('a search that finds nothing loops its clip', async ({ page }) => {
@@ -127,11 +163,11 @@ test('the sign-in hero loops Topfbert, and every second tile of its turning ring
   await gotoHydrated(page, '/login')
 
   await expect.poll(async () => (await playing(page)).sort()).toEqual([
-    '/clips/topfbert-wow-light.webm',
-    '/placeholders/curry-light.webm',
-    '/placeholders/pasta-light.webm',
-    '/placeholders/tacos-light.webm',
-    '/placeholders/wok-light.webm',
+    '/clips/topfbert-wow-light.svg',
+    '/placeholders/curry-light.svg',
+    '/placeholders/pasta-light.svg',
+    '/placeholders/tacos-light.svg',
+    '/placeholders/wok-light.svg',
   ])
   // The ring turns.
   const ring = page.getByTestId('hero-ring')

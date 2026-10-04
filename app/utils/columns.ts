@@ -3,9 +3,15 @@
 // Each Column's accent (handoff tokens.json → color.semantic.column-n):
 // butter, orchid, sage, then on through carrot and sky, round and round.
 const ACCENTS = ['butter', 'orchid', 'sage', 'carrot', 'sky'] as const
+export type ColumnAccent = typeof ACCENTS[number]
+
+// The accent's name, for art drawn once per accent (the empty Column's).
+export function columnAccentName(index: number): ColumnAccent {
+  return ACCENTS[index % ACCENTS.length]!
+}
 
 export function columnAccent(index: number): string {
-  return `var(--color-${ACCENTS[index % ACCENTS.length]})`
+  return `var(--color-${columnAccentName(index)})`
 }
 
 // A swipe's progress (a Column index, fractional mid-swipe) kept on the
