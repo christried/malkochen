@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human`. Those are the user's.
 4. Implement **one** ticket per session, on its own branch, through a PR.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -79,6 +79,88 @@ So the refactors come first and the polish goes onto code that no longer changes
 |---|---|---|
 | #99 | Dish card: "N× gekocht" cut to "1× g…" side by side | A visible bug; changes `DishCard.vue` |
 | #98 | Browser test: copy and share the Invite Link | Test only |
+
+### Phase 7: Desktop review 1 (#103)
+
+From the first desktop field test (`docs/reviews/desktop-review1.md`). Two things start at once and run in parallel with everything below: the user's Claude Design delivery (#104) and the prototype the user decides on (#105). Don't close #103 before #121's Column titles have been re-checked in the new font (#136): that's the safeguard the user asked for.
+
+**7a: start now**
+
+| # | Ticket | Note |
+|---|---|---|
+| #104 | Claude Design: Round 11 assets are in | `ready-for-human`: skip, the user does it. Blocks 7e |
+| #105 | Prototype: celebration position, card shape, user menu | Ends with the user's decisions in a comment. Blocks #129–#131 |
+
+**7b: fixes on code that stays**
+
+| # | Ticket | Note |
+|---|---|---|
+| #106 | Toast stays put when the note dialog opens from the detail | |
+| #107 | Add Dish: padding, chevron, vegan note examples, faster typing | |
+| #108 | Small fixes: cogwheel, switcher emoji, "Besitzer:in", add button, emojis, Board names | |
+| #109 | Board settings: Column drag never hangs | |
+| #110 | Board with a mouse: min height, drop border, reorder, loops on hover | `BoardScreen.vue` |
+| #111 | Motion graphics smooth and sharp, pea starts where it rests | Decides the clip frame rate for #132 and #133 |
+| #112 | Splash: landscape version | Remotion |
+| #113 | Sign-in copy | |
+| #114 | Topfbert's varied phrases | |
+| #116 | New Dishes after an absence | Test first |
+
+**7c: Dish titles, lookups and the Creator**
+
+| # | Ticket | Note |
+|---|---|---|
+| #117 | ALL-CAPS Suggested Titles | Server `title.ts` |
+| #115 | Dish card: two lines and a tooltip | Before #118, which adds a line below the title |
+| #118 | Creator | New Dish field; blocks #119 and #120 |
+| #119 | Instagram from the embed page | ADR 0005 |
+| #120 | Pinterest Suggested Title | ADR 0005 |
+
+**7d: Columns and colour**
+
+| # | Ticket | Note |
+|---|---|---|
+| #121 | Column titles and Column Subtitle (desktop) | Built in the current font; re-checked in #136 |
+| #122 | Colour on desktop | After #121: same lane header area |
+| #123 | Phone Column title | Reuses #121 |
+
+**7e: images, people and addresses**
+
+| # | Ticket | Note |
+|---|---|---|
+| #124 | "Eigenes Foto" | Uploads; blocks #125 |
+| #125 | Focus point | |
+| #126 | Profile picture upload | Same upload rules as #124 |
+| #127 | Readable Board and Dish addresses | Migration; blocks #128 |
+| #128 | Readable Invite Links | |
+
+**7f: after the prototype decisions (#105)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #129 | Celebration across Boards, and where it plays | |
+| #130 | Card shape everywhere | |
+| #131 | User menu | |
+
+**7g: after the Claude Design delivery (#104)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #132 | 12 Placeholder Images and migration | ADR 0004 |
+| #133 | Empty Columns: three illustrations | |
+| #134 | "Never cooked" animations | |
+| #135 | Topfbert idle | |
+| #136 | Fonts, and re-checking the Column titles | The safeguard for #121 |
+| #137 | Input labels | After #136 |
+
+**7h: closing**
+
+| # | Ticket | Note |
+|---|---|---|
+| #138 | Visual check against the handoff | Reports deviations; the user decides |
+| #139 | Security pass | Last on purpose: blocked by every other ticket of #103. Files findings as new tickets, added here |
+
+English and Italian UI is the next spec, not part of #103.
 
 ## Keeping this file current
 

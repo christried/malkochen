@@ -1,3 +1,7 @@
+---
+status: partly superseded by ADR 0005 (the Suggested Title); no Meta app still stands
+---
+
 # Instagram images come from the Reel's or post's page, not Meta oEmbed
 
 Deviates from spec [#1](https://github.com/christried/malkochen/issues/1) (story 15, Source Lookup → Instagram, and "Environment variables").
