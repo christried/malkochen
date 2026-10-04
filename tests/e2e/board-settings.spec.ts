@@ -133,10 +133,16 @@ test('a Column that got Dishes since settings opened asks where they go instead 
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
 })
 
+// Resolves once the Columns' new order has been saved.
+function orderSaved(page: Page) {
+  return page.waitForResponse(r => r.request().method() === 'PUT' && /\/api\/boards\/[^/]+\/columns$/.test(r.url()) && r.ok())
+}
+
 test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page }) => {
   await openSettings(page)
   const grip = (await row(page, 'Gekocht').locator('[data-grip]').boundingBox())!
   const target = (await row(page, 'Ideen').boundingBox())!
+  const saved = orderSaved(page)
 
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
   await page.mouse.down()
@@ -144,6 +150,7 @@ test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page
   await page.mouse.up()
 
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
+  await saved
   await reloadHydrated(page)
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
 })
@@ -160,6 +167,7 @@ test('a dragged Column settles when let go outside the list, and its new place i
   const target = (await row(page, 'Ideen').boundingBox())!
   const list = (await page.getByRole('list', { name: 'Spalten' }).boundingBox())!
   const x = grip.x + grip.width / 2
+  const saved = orderSaved(page)
 
   // Up past Ideen, then off to the side, away from the grip, and let go there.
   await page.mouse.move(x, grip.y + grip.height / 2)
@@ -170,6 +178,7 @@ test('a dragged Column settles when let go outside the list, and its new place i
 
   await expectSettled(page, 'Diese Woche')
   await expectColumnNames(page, ['Diese Woche', 'Ideen', 'Gekocht'])
+  await saved
   await reloadHydrated(page)
   await expectColumnNames(page, ['Diese Woche', 'Ideen', 'Gekocht'])
 })

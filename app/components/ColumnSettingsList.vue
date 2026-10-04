@@ -63,19 +63,15 @@ async function step(column: ColumnRow, delta: -1 | 1) {
 // lifts and follows the finger, and passing half of a neighbour swaps the two.
 // The drag listens on the window, not on the grip: a swap can move the
 // dragged row within the list, which takes the grip's pointer capture away,
-// and a release away from the grip then never reached it (#109).
+// and a release away from the grip then never reached it.
 const drag = ref<{ id: string, dy: number, pointerId: number } | null>(null)
 let start = { y: 0, before: [] as ColumnRow[] }
 
-const DRAG_EVENTS = [['pointermove', follow], ['pointerup', drop], ['pointercancel', drop], ['blur', drop]] as const
-
-function listen(on: boolean) {
-  for (const [type, handler] of DRAG_EVENTS) {
-    if (on) window.addEventListener(type, handler as EventListener)
-    else window.removeEventListener(type, handler as EventListener)
-  }
+const onWindow = [['pointermove', follow], ['pointerup', drop], ['pointercancel', drop], ['blur', drop]] as const
+function stopListening() {
+  for (const [type, listener] of onWindow) window.removeEventListener(type, listener as EventListener)
 }
-onBeforeUnmount(() => listen(false))
+onBeforeUnmount(stopListening)
 
 function lift(column: ColumnRow, event: PointerEvent) {
   if (event.button !== 0) return
@@ -83,7 +79,7 @@ function lift(column: ColumnRow, event: PointerEvent) {
   ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
   start = { y: event.clientY, before: [...columns.value] }
   drag.value = { id: column.id, dy: 0, pointerId: event.pointerId }
-  listen(true)
+  for (const [type, listener] of onWindow) window.addEventListener(type, listener as EventListener)
   hapticTick()
 }
 
@@ -91,7 +87,10 @@ function follow(event: PointerEvent) {
   const el = listEl()
   if (!drag.value || !el || event.pointerId !== drag.value.pointerId) return
   // The button is already up: let go where no pointerup reached the page.
-  if (event.buttons === 0) return drop()
+  if (event.buttons === 0) {
+    drop()
+    return
+  }
   const rows = [...el.querySelectorAll<HTMLElement>('[data-column-row]')]
   const index = columns.value.findIndex(c => c.id === drag.value?.id)
   let dy = event.clientY - start.y
@@ -117,7 +116,7 @@ function swap(from: number, to: number, shift: number) {
 // drag outlives its pointer.
 function drop(event?: Event) {
   if (event instanceof PointerEvent && event.pointerId !== drag.value?.pointerId) return
-  listen(false)
+  stopListening()
   if (!drag.value) return
   drag.value = null
   if (start.before.some((c, i) => c !== columns.value[i])) emit('reordered', start.before)
