@@ -149,7 +149,7 @@ test('a Dish can’t be moved to a Board its mover isn’t a Member of, nor move
   const annie = await signIn(ALLOWLISTED[9])
   const linus = await signIn(ALLOWLISTED[2])
   const annies = await createBoard(annie, 'Zuhause', '🏡')
-  const dish = await addDish(annie, annies.id, 'Shakshuka')
+  const dish = await addDish(annie, annies.id, 'Chana Masala')
   const linusBoard = await landingBoard(linus)
 
   expect((await moveDish(annie, dish.id, linusBoard.columns[0]!.id)).status).toBe(400)

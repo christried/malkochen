@@ -70,7 +70,7 @@ async function boardIds(caller: Caller): Promise<string[]> {
 test('a Member leaves; the Board is gone for them and the Dishes they added stay, with their name', async () => {
   const member = await sophie()
   const board = await francesBoard('Resteessen', member)
-  const added = await postDish(member, board.id, { title: 'Sophies Shakshuka', placeholder: 'curry' })
+  const added = await postDish(member, board.id, { title: 'Sophies Chana Masala', placeholder: 'curry' })
   expect(added.status).toBe(201)
 
   const res = await removeMember(member, board.id, memberId(board, 'sophie'))
@@ -80,7 +80,7 @@ test('a Member leaves; the Board is gone for them and the Dishes they added stay
   expect((await member.fetch(`/api/boards/${board.id}`)).status).toBe(404)
   const left = await getBoard(await frances(), board.id)
   expect(left.members.map(m => m.name)).toEqual(['frances'])
-  expect(left.columns.flatMap(c => c.dishes)).toEqual([expect.objectContaining({ title: 'Sophies Shakshuka', addedBy: expect.objectContaining({ name: 'sophie' }) })])
+  expect(left.columns.flatMap(c => c.dishes)).toEqual([expect.objectContaining({ title: 'Sophies Chana Masala', addedBy: expect.objectContaining({ name: 'sophie' }) })])
 })
 
 test('only the Owner removes a Member, who then loses the Board', async () => {

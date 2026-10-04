@@ -100,7 +100,7 @@ test('moving a Dish into Gekocht records one Cooking dated now, by whoever moved
 test('a Dish dropped into Gekocht records a Cooking; moving within Gekocht records none', async () => {
   const caller = await hedy()
   const { gekocht } = await columnsOf(caller)
-  const dish = await addDish(caller, 'Shakshuka')
+  const dish = await addDish(caller, 'Chana Masala')
 
   const dropped = await (await moveDish(caller, dish.id, gekocht.id, 1)).json() as Dish
   expect(dropped.cookings).toHaveLength(1)

@@ -39,7 +39,7 @@ async function firstColumnIds(caller: Caller): Promise<string[]> {
 
 test('a deleted Dish is gone from its Board', async () => {
   const ada = await signIn(ALLOWLISTED[0])
-  const dish = await addDish(ada, 'Shakshuka')
+  const dish = await addDish(ada, 'Chana Masala')
 
   const res = await deleteDish(ada, dish.id)
 

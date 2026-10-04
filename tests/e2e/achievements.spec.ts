@@ -30,7 +30,7 @@ test('the badge shows the level for the Dish\'s Cookings, with pips toward the n
   await resetBoard(page)
   const levels = [
     { title: 'Linsensuppe', cookings: 1, name: 'Ausprobiert: 1× gekocht, noch 2× bis Wird Liebling', pips: 2, filled: 0 },
-    { title: 'Shakshuka', cookings: 2, name: 'Ausprobiert: 2× gekocht, noch 1× bis Wird Liebling', pips: 2, filled: 1 },
+    { title: 'Chana Masala', cookings: 2, name: 'Ausprobiert: 2× gekocht, noch 1× bis Wird Liebling', pips: 2, filled: 1 },
     { title: 'Pad Thai', cookings: 3, name: 'Wird Liebling: 3× gekocht, noch 2× bis Stammgericht', pips: 2, filled: 0 },
     { title: 'Dal', cookings: 7, name: 'Stammgericht: 7× gekocht, noch 3× bis Klassiker', pips: 5, filled: 2 },
     { title: 'Ramen', cookings: 12, name: 'Klassiker: 12× gekocht', pips: 0, filled: 0 },

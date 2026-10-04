@@ -433,10 +433,10 @@ test('an added Dish appears where the server placed it, though the Board would h
   // Another Member put Diese Woche first; the Board doesn't show that yet.
   fake.server.columns.unshift(...fake.server.columns.splice(1, 1))
 
-  const result = await module.addDish('board', { title: 'Shakshuka', placeholder: 'curry' })
+  const result = await module.addDish('board', { title: 'Chana Masala', placeholder: 'curry' })
 
   expect(result.placement).toEqual({ boardId: 'board', columnId: 'woche', index: 0 })
-  expect(result.dish.title).toBe('Shakshuka')
+  expect(result.dish.title).toBe('Chana Masala')
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: [result.dish.id, 'd'] })
 })
 

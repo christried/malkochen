@@ -120,20 +120,20 @@ function droppedAt(ids: string[], dishId: string, index: number): string[] {
 
 test('a Dish dropped within its Column keeps the place it was dropped at', async () => {
   const barbara = await signIn(ALLOWLISTED[4])
-  for (const title of ['Dal', 'Pad Thai', 'Shakshuka']) await addDish(barbara, title)
+  for (const title of ['Dal', 'Pad Thai', 'Chana Masala']) await addDish(barbara, title)
   const board = await landingBoard(barbara)
   const ideen = board.columns[0]!
   const ids = ideen.dishes.map(d => d.id)
-  const shakshuka = ids[0]!
+  const chanaMasala = ids[0]!
 
-  const res = await moveDish(barbara, shakshuka, ideen.id, 2)
+  const res = await moveDish(barbara, chanaMasala, ideen.id, 2)
 
   expect(res.status).toBe(200)
-  expect(await res.json()).toMatchObject({ id: shakshuka, title: 'Shakshuka' })
-  expect((await columnDishIds(barbara))[0]).toEqual(droppedAt(ids, shakshuka, 2))
+  expect(await res.json()).toMatchObject({ id: chanaMasala, title: 'Chana Masala' })
+  expect((await columnDishIds(barbara))[0]).toEqual(droppedAt(ids, chanaMasala, 2))
 
   // And back up to the top.
-  await moveDish(barbara, shakshuka, ideen.id, 0)
+  await moveDish(barbara, chanaMasala, ideen.id, 0)
   expect((await columnDishIds(barbara))[0]).toEqual(ids)
 })
 

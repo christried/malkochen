@@ -23,28 +23,28 @@ function gekochtToast(page: Page) {
 
 test('"Gekocht ✓", then undo: the Dish goes back where it was, without a Cooking', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
-  for (const title of ['Linsensuppe', 'Shakshuka', 'Pad Thai']) {
+  for (const title of ['Linsensuppe', 'Chana Masala', 'Pad Thai']) {
     await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
   }
   await gotoHydrated(page, '/')
-  await expect(titles(page, 'Ideen')).toHaveText(['Pad Thai', 'Shakshuka', 'Linsensuppe'])
+  await expect(titles(page, 'Ideen')).toHaveText(['Pad Thai', 'Chana Masala', 'Linsensuppe'])
 
-  await page.getByRole('button', { name: 'Gekocht ✓: „Shakshuka“' }).click()
+  await page.getByRole('button', { name: 'Gekocht ✓: „Chana Masala“' }).click()
 
   await expect(titles(page, 'Ideen')).toHaveText(['Pad Thai', 'Linsensuppe'])
-  await expect(titles(page, 'Gekocht')).toHaveText(['Shakshuka'])
+  await expect(titles(page, 'Gekocht')).toHaveText(['Chana Masala'])
   await expect(column(page, 'Gekocht').getByText('1× gekocht')).toBeVisible()
   const toast = gekochtToast(page)
   await expect(toast.getByRole('button', { name: 'Notiz hinzufügen' })).toBeVisible()
 
   await toast.getByRole('button', { name: 'Rückgängig' }).click()
 
-  await expect(titles(page, 'Ideen')).toHaveText(['Pad Thai', 'Shakshuka', 'Linsensuppe'])
+  await expect(titles(page, 'Ideen')).toHaveText(['Pad Thai', 'Chana Masala', 'Linsensuppe'])
   await expect(titles(page, 'Gekocht')).toHaveText([])
   await expect(page.getByText('1× gekocht')).toBeHidden()
-  await expect(page.getByRole('link', { name: 'Shakshuka' })).toBeFocused()
+  await expect(page.getByRole('link', { name: 'Chana Masala' })).toBeFocused()
   await reloadHydrated(page)
-  await expect(titles(page, 'Ideen')).toHaveText(['Pad Thai', 'Shakshuka', 'Linsensuppe'])
+  await expect(titles(page, 'Ideen')).toHaveText(['Pad Thai', 'Chana Masala', 'Linsensuppe'])
   await expect(page.getByText('1× gekocht')).toBeHidden()
 })
 

@@ -106,9 +106,9 @@ test('a phone shows one Column at a time, a tablet shows them side by side', asy
 
   // Adding a Dish switches back to the first Column, where it lands.
   const sheet = await addWithoutLink(page)
-  await sheet.getByLabel('Titel').fill('Shakshuka')
+  await sheet.getByLabel('Titel').fill('Chana Masala')
   await sheet.getByRole('button', { name: 'Speichern' }).click()
-  await expect(ideen.getByRole('heading', { level: 3 }).first()).toHaveText('Shakshuka')
+  await expect(ideen.getByRole('heading', { level: 3 }).first()).toHaveText('Chana Masala')
 
   await page.setViewportSize({ width: 800, height: 900 })
   await expect(ideen).toBeVisible()
