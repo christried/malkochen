@@ -14,6 +14,10 @@ _Avoid_: List, workspace, personal board
 A named, ordered stage on a Board (default: Ideen, Diese Woche, Gekocht). Members can rename, add, reorder and delete Columns.
 _Avoid_: Lane, list, status
 
+**Column Subtitle**:
+A short line under a Column's name saying what it's for (default: "Worauf hast du Lust?" for Ideen, "Das steht an." for Diese Woche). Members can set or clear it; the Gekocht Column's is fixed ("Schon geschafft!"), even when it's renamed.
+_Avoid_: Description, tagline
+
 **Member**:
 A user who belongs to a Board. All Members can add, edit, move and delete Dishes and edit Columns.
 _Avoid_: Collaborator, participant
@@ -40,8 +44,12 @@ _Avoid_: Recipe, post, entry, card
 The link a Dish came from. Optional: a Dish can also be added from memory or a cookbook without one.
 _Avoid_: URL, post, origin
 
+**Creator**:
+The account, channel or blog that published a Source (e.g. a TikTok handle or a food blog's name), shown with the Dish when the Source names one. Not to be confused with the Member who added the Dish.
+_Avoid_: Uploader, author, owner
+
 **Supported Source**:
-A kind of Source malkochen fully supports, with an image reliably found: TikTok video, Instagram Reel, Instagram post, YouTube Short, Pinterest Pin, food blog page. TikTok videos, YouTube Shorts and food blog pages also yield a Suggested Title; Instagram and Pinterest don't show captions to other apps, so their Dishes are titled by hand. Any other link is still accepted, on a best-effort basis.
+A kind of Source malkochen fully supports, with an image reliably found: TikTok video, Instagram Reel, Instagram post, YouTube Short, Pinterest Pin, food blog page. Each also yields a Suggested Title and a Creator whenever the Source shows one; when it doesn't, the Dish is titled by hand. Any other link is still accepted, on a best-effort basis.
 _Avoid_: Platform, integration
 
 **Suggested Title**:

@@ -1,3 +1,7 @@
+---
+status: superseded by ADR 0004
+---
+
 # 16 Placeholder Images instead of 12
 
 Deviates from spec [#1](https://github.com/christried/malkochen/issues/1), which says "12" throughout: its overview, story 20, the Image Store, the Placeholder Image list and the placeholder picker.

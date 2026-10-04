@@ -255,3 +255,71 @@ The prompts are in English, but the **app's UI is German**: every UI string in q
 >    - its reduced-motion still frame.
 > 5. **Breakpoints**: where the phone layout switches to the multi-Column layout.
 > 6. **Assets**, exported: the 12 placeholder illustrations as separate layered assets (so Remotion can animate their parts), all other illustrations, and the app icon in the sizes a web app manifest needs.
+
+---
+
+## Round 11: Desktop review 1 (new assets)
+
+Written after the first desktop field test (`docs/reviews/desktop-review1.md`). Paste it into the **same** Claude Design project as rounds 1–10, so it knows Topfbert, the pea, the palette and the illustration style. When it's done, export the handoff into `docs/design handoff/` (new files next to the existing ones) and tell Claude Code.
+
+> We tested malkochen on desktop and need **new assets** in the existing style. Keep everything from the handoff you made (tokens, illustration formulas in `illustrations.json`, Topfbert's layers, the pea, motion tokens). Two rules hold for everything below:
+> - **Everything is vegan.** No meat, fish, eggs or dairy anywhere, not even as a hint.
+> - **Neutral audience.** Couples, friends, families, any cooking group. Nothing flat-share specific.
+>
+> ### 1. Three new Placeholder Images (12 in total)
+>
+> We're cutting the set from 16 to **12**. These nine stay exactly as they are and are the **quality bar** for the new ones: Ramen, Burger, Tacos, Wok, Brot, Kuchen, Smoothie, Eintopf (the closed pot with handles and lid), Dumplings. Pasta, Curry, Buddha Bowl, Salat, Pizza, Porridge and Wrap go away.
+>
+> Draw **three new ones from scratch**, not by touching up the old ones:
+> - **Pasta** (e.g. a twirl of spaghetti on a fork over a plate, or a bowl of rigatoni)
+> - **Salat/Bowl** (one image that reads as both a fresh salad and a grain bowl)
+> - **Frühstück** (e.g. a stack of pancakes with berries, or a porridge bowl with fruit)
+>
+> Same canvas, colour formulas and layer structure as the existing illustrations (`viewBox 120x120`, centred safe square, ground tint `p0` fills any crop). Each one needs light and dark stills, separate animatable layers, an entry in `illustrations.json` (hue, accent, animated groups, properties, duration, easing) and a brief in `remotion-briefs.json` (seamless loop, 2–4 s, still = frame 0).
+>
+> ### 2. A small cast for empty Columns and the Dish detail
+>
+> Today every empty Column shows the same clip (the pea rolling in a bowl), and a new Board starts with three empty Columns, so it looks repetitive. The Dish detail of a Dish that's never been cooked always shows the same short Topfbert loop, which feels boring.
+>
+> Create **two new characters** in the same family as Topfbert and the pea (simple shapes, soft, friendly faces, the same palette; vegan foods or kitchen things, e.g. a wooden spoon, a chili, a little garlic bulb). Then:
+> - **Two new empty-Column clips**, each with one of the new characters doing a small, calm loop (like the pea rolling in its bowl). Same canvas as `empty-column` (570×450), sitting on the Column's tint. Three Columns next to each other will show the pea, character A and character B, so the three must look good **side by side** and clearly belong together.
+> - **Three or more "never cooked" clips** for the Dish detail (replacing `never-cooked`), with Topfbert and the cast together, e.g. Topfbert peeking out of his lid, the spoon stirring, the chili hopping over the pea. More charming and lively than the current one. Same canvas as `never-cooked` (510×354), on the card surface.
+>
+> For every clip:
+> - **The still must be frame 0 of the loop.** Today the empty-Column still shows the pea in the middle, but the loop starts on the left, so it visibly snaps when it starts playing.
+> - Seamless loop, light and dark versions, solid background (no transparency), a Remotion brief in the same format as the existing ones, and the characters exported as layered SVGs.
+>
+> ### 3. Topfbert is always alive
+>
+> Wherever Topfbert appears (for example next to the "Schon auf dem Board" notice when a link is already on the Board), he should always move at least a little. Design an **idle animation** for Topfbert: subtle, calm, endlessly looping (blinking, the steam drifting, a little breathing squash). Describe it as motion on his existing layers (`assets/topfbert/layers.json`), so we can build it in code, and add any new layer it needs (e.g. closed eyes for the blink). Include the reduced-motion behaviour.
+>
+> ### 4. Typography
+>
+> We're not 100% happy with the fonts (Newsreader for display, Hanken Grotesk for UI). Propose **2–3 font pairings** that fit the playful, warm style. Requirements:
+> - free Google Fonts that we can host ourselves, variable fonts preferred,
+> - full German (ä, ö, ü, ß) and Italian (à, è, é, ì, ò, ù) support,
+> - legible at small UI sizes.
+>
+> Show each pairing in real screens, light and dark:
+> - the **desktop Board**: three Columns side by side, each with its **large display title and italic subtitle** as in your original phone design ("Ideen" / "Worauf hast du Lust?", "Diese Woche" / "Das steht an.", "Gekocht" / "Schon geschafft!"), with Dish cards below,
+> - a Dish card with a long title ("Knuspriger Sesam-Tofu mit Erdnusssoße und Frühlingszwiebeln"), cut off cleanly after 2 lines, and a small Creator line under it (e.g. "@veganschnitzel"),
+> - the sign-in headline "Was willst du malkochen?" with the word "malkochen" coloured to show it's the app's name.
+>
+> Also keep the current pairing as the first option, so we can compare.
+>
+> ### 5. Input labels
+>
+> Labels above inputs (e.g. "Name", "Neue Spalte", "Einladungslink" in Board settings) look unstyled today: they sit flush left on the input's edge, with no spacing and no styling of their own. Design **2–3 label styles**, including one where the label sits **in the input's border, like a fieldset legend**. Show each one on:
+> - a text input with a placeholder ("Wochenende"), next to an add button that's vertically centred with the input,
+> - a select with a chevron (with even padding on both sides),
+> - a textarea.
+>
+> Show the default, focus, filled and error states, in light and dark. Spell out the padding so the text sits **optically centred** (today the space above the text looks bigger than below).
+>
+> ### Delivery
+>
+> The same format as your round 10 handoff, so the coding agent can bring it straight in:
+> - layered SVGs under `assets/illustrations/<key>/`, `assets/characters/` and `assets/topfbert/`, light and dark,
+> - new entries in `illustrations.json` and `remotion-briefs.json`,
+> - the chosen fonts and the input label style as updates to `tokens.json` / `tokens.css` and `components.json`,
+> - a short README section listing what's new and what each new file is for.
