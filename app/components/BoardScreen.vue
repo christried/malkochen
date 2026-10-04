@@ -477,7 +477,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-show="!searching"
       ref="columns"
       data-testid="columns"
-      class="columns mt-2 tablet:-mx-3 tablet:-mb-6 tablet:mt-5 tablet:snap-x tablet:snap-mandatory tablet:scroll-px-3 tablet:overflow-x-auto tablet:px-3 tablet:pb-10 tablet:pt-3"
+      class="columns mt-2 tablet:-mx-4 tablet:-mb-6 tablet:mt-5 tablet:snap-x tablet:snap-mandatory tablet:scroll-px-4 tablet:overflow-x-auto tablet:px-4 tablet:pb-10 tablet:pt-3"
     >
       <div
         class="track flex items-start gap-4"
@@ -947,12 +947,12 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
    a little, fills with its accent and glows, and wiggles once; the other
    lanes dim. The background tints toward it. Reduced motion: fill and ring.
    The lanes scroll sideways, which clips them, so they have room around them
-   for the ring (12px; 40px below), and a lane grows from its top, however
-   long it is. */
+   for the ring (12px above, 16px beside, for a long lane's wiggle, 40px
+   below), and a lane grows from its top, however long it is. */
 @media (min-width: 768px) {
   .column {
     transform-origin: top;
-    transition:scale var(--dur-fade) var(--ease-pop), opacity var(--dur-fade) var(--ease-fade), box-shadow var(--dur-fade) var(--ease-fade), background-color var(--dur-fade) var(--ease-fade);
+    transition: scale var(--dur-fade) var(--ease-pop), opacity var(--dur-fade) var(--ease-fade), box-shadow var(--dur-fade) var(--ease-fade), background-color var(--dur-fade) var(--ease-fade);
   }
   .column.lane-target {
     scale: 1.012;

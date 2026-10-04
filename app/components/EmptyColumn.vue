@@ -1,14 +1,14 @@
 <script setup lang="ts">
 // A Column with no Dishes: the handoff's "empty-column" clip, a pea rolling
-// in a dashed bowl, looping while `play` asks: it is the Board's one loop
-// when nothing else plays (useBoardLoop).
+// in a dashed bowl, looping while `play` asks: the Board loops one empty
+// state, whatever its cards play (useBoardLoop).
 defineProps<{ play: boolean }>()
 const t = useStrings()
 </script>
 
 <template>
   <div
-    class="flex min-h-[var(--height-empty-column)] flex-col items-center justify-center py-6 text-center text-text-muted"
+    class="flex flex-col items-center py-6 text-center text-text-muted"
     data-empty="column"
   >
     <div class="aspect-[19/15] w-[min(50vw,150px)]">

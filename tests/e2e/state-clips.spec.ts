@@ -34,7 +34,7 @@ test('an empty Board loops its clip in the current theme, and only that one', as
   expect(await peak()).toBe(1)
 })
 
-test('an empty Column\'s loop keeps playing while a Placeholder card is hovered', async ({ page }) => {
+test('an empty Column\'s loop keeps playing while a Placeholder card is hovered or lifted', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ colorScheme: 'light' })
   const peakPlaceholders = await countPeakPlaying(page, '/placeholders/')
@@ -52,6 +52,17 @@ test('an empty Column\'s loop keeps playing while a Placeholder card is hovered'
   await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-light.webm', '/placeholders/curry-light.webm'])
   await page.mouse.move(5, 5)
   await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-light.webm'])
+
+  // Lifted, the same.
+  const curry = (await page.getByRole('link', { name: 'Ohne Foto' }).boundingBox())!
+  await page.mouse.move(curry.x + curry.width / 2, curry.y + curry.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(curry.x + curry.width / 2 + 20, curry.y + curry.height / 2, { steps: 4 })
+  await expect(page.getByTestId('drag-card')).toBeVisible()
+  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-light.webm', '/placeholders/curry-light.webm'])
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  await expect(page.getByTestId('drag-card')).toHaveCount(0)
 
   expect(await peakPlaceholders()).toBe(1)
 })

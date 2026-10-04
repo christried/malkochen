@@ -37,7 +37,7 @@ export function useBoardLoop(
   const restingEmptyId = ref<string | null>(null)
 
   // The card playing, by its Dish's id.
-  const card = computed<{ id: string, motion: ClipMotion } | null>(() => {
+  const playingCard = computed<{ id: string, motion: ClipMotion } | null>(() => {
     if (options.covered()) return null
     const lifted = options.liftedDishId()
     if (lifted) return { id: lifted, motion: 'loop' }
@@ -49,7 +49,7 @@ export function useBoardLoop(
 
   // How a Dish's Placeholder, or an empty state's clip, plays.
   function motionOf(id: string): ClipMotion {
-    if (card.value?.id === id) return card.value.motion
+    if (playingCard.value?.id === id) return playingCard.value.motion
     return emptyId.value === id ? 'loop' : null
   }
 

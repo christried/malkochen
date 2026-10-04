@@ -253,7 +253,9 @@ export function useDishDrag(
     const section = phone ? columnSection(options.activeColumnId()) : laneAt(pointer.x)
     const columnId = section?.dataset.columnId
     if (!section || !columnId) return
-    const index = indexIn(section, pointer.y - current.grabY + current.height / 2, current, columnId)
+    // Back over the Column it is in, the slot it has there holds on a little.
+    const slot = current.over.columnId === columnId ? current.over.index : null
+    const index = indexIn(section, pointer.y - current.grabY + current.height / 2, current.dish.id, slot)
     // Lanes have no haptic of their own (handoff: n/a on desktop).
     current.laneColumnId = phone || columnId === current.fromColumnId ? null : columnId
     if (columnId !== current.over.columnId || index !== current.over.index) {
@@ -271,21 +273,21 @@ export function useDishDrag(
   }
 
   // Where the dragged card, its middle at `middle`, goes among the Column's
-  // other cards (dropIndex: with a little hysteresis while it stays in this
-  // Column). Measured as the list would be without the slot, so the slot
-  // opening doesn't move the goal.
-  function indexIn(section: HTMLElement, middle: number, current: DishDrag, columnId: string): number {
+  // other cards (dropIndex, from its `slot` there if it has one). Measured as
+  // the list would be without the slot, so the slot opening doesn't move the
+  // goal.
+  function indexIn(section: HTMLElement, middle: number, draggedId: string, slot: number | null): number {
     const list = section.querySelector<HTMLElement>('[data-dish-list]')
     if (!list) return 0
     const gap = Number.parseFloat(getComputedStyle(list).rowGap) || 0
     let top = list.getBoundingClientRect().top
     const middles: number[] = []
     for (const item of list.querySelectorAll<HTMLElement>(':scope > [data-dish-id]')) {
-      if (item.dataset.dishId === current.dish.id) continue
+      if (item.dataset.dishId === draggedId) continue
       middles.push(top + item.offsetHeight / 2)
       top += item.offsetHeight + gap
     }
-    return dropIndex(middles, middle, current.over.columnId === columnId ? current.over.index : null)
+    return dropIndex(middles, middle, slot)
   }
 
   function autoScroll(current: DishDrag) {

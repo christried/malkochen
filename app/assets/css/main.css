@@ -100,9 +100,9 @@ html {
 :root {
   --dur-edit-morph: 380ms;
 }
-/* An empty Column's empty state (EmptyColumn): its 19:15 clip, 24px above
-   and below, and the line under it. A Column holding Dishes is never
-   shorter (BoardScreen). */
+/* How tall an empty Column's empty state is (EmptyColumn: its 19:15 clip,
+   24px above and below, and the line under it), so a Column holding Dishes
+   is never shorter (BoardScreen). Keep it in step with EmptyColumn. */
 :root {
   --height-empty-column: calc(min(50vw, 150px) * 15 / 19 + 3.75rem + 13.5px * 1.3);
 }
