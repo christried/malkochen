@@ -253,7 +253,7 @@ export function useDishDrag(
     const section = phone ? columnSection(options.activeColumnId()) : laneAt(pointer.x)
     const columnId = section?.dataset.columnId
     if (!section || !columnId) return
-    const index = indexIn(section, pointer.y - current.grabY + current.height / 2, current.dish.id)
+    const index = indexIn(section, pointer.y - current.grabY + current.height / 2, current, columnId)
     // Lanes have no haptic of their own (handoff: n/a on desktop).
     current.laneColumnId = phone || columnId === current.fromColumnId ? null : columnId
     if (columnId !== current.over.columnId || index !== current.over.index) {
@@ -270,21 +270,22 @@ export function useDishDrag(
     return spanning(surface.value?.querySelectorAll<HTMLElement>('[data-column-id]') ?? [], x)
   }
 
-  // Where a card whose middle is at `middle` goes among the Column's other
-  // cards: past every one whose middle it is below. Measured as the list
-  // would be without the slot, so the slot opening doesn't move the goal.
-  function indexIn(section: HTMLElement, middle: number, draggedId: string): number {
+  // Where the dragged card, its middle at `middle`, goes among the Column's
+  // other cards (dropIndex: with a little hysteresis while it stays in this
+  // Column). Measured as the list would be without the slot, so the slot
+  // opening doesn't move the goal.
+  function indexIn(section: HTMLElement, middle: number, current: DishDrag, columnId: string): number {
     const list = section.querySelector<HTMLElement>('[data-dish-list]')
     if (!list) return 0
     const gap = Number.parseFloat(getComputedStyle(list).rowGap) || 0
     let top = list.getBoundingClientRect().top
-    let index = 0
+    const middles: number[] = []
     for (const item of list.querySelectorAll<HTMLElement>(':scope > [data-dish-id]')) {
-      if (item.dataset.dishId === draggedId) continue
-      if (middle > top + item.offsetHeight / 2) index++
+      if (item.dataset.dishId === current.dish.id) continue
+      middles.push(top + item.offsetHeight / 2)
       top += item.offsetHeight + gap
     }
-    return index
+    return dropIndex(middles, middle, current.over.columnId === columnId ? current.over.index : null)
   }
 
   function autoScroll(current: DishDrag) {

@@ -8,7 +8,7 @@ const t = useStrings()
 
 <template>
   <div
-    class="flex flex-col items-center py-6 text-center text-text-muted"
+    class="flex min-h-[var(--height-empty-column)] flex-col items-center justify-center py-6 text-center text-text-muted"
     data-empty="column"
   >
     <div class="aspect-[19/15] w-[min(50vw,150px)]">

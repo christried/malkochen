@@ -10,8 +10,8 @@ import { stubSourceLookup } from './source-lookup-stub'
 // The state and system clips (PRD story 82; handoff REMOTION.md): empty
 // Board, empty Column and search, the link lookup, a Dish never cooked,
 // sign-in, Not unlocked, the invite landing, Offline (offline.spec.ts) and
-// error each play their clip in the current theme. On the Board an empty
-// state's loop is the Board's one loop. Emmy's Board is used by this file
+// error each play their clip in the current theme. On the Board one empty
+// state loops, whatever the cards play. Emmy's Board is used by this file
 // only.
 test.describe.configure({ mode: 'serial' })
 
@@ -34,25 +34,26 @@ test('an empty Board loops its clip in the current theme, and only that one', as
   expect(await peak()).toBe(1)
 })
 
-test('an empty Column\'s loop is the Board\'s one loop, and gives way to a Placeholder\'s', async ({ page }) => {
+test('an empty Column\'s loop keeps playing while a Placeholder card is hovered', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ colorScheme: 'light' })
-  const peak = await countPeakPlaying(page)
+  const peakPlaceholders = await countPeakPlaying(page, '/placeholders/')
   await signIn(page, EMMY)
   await resetBoard(page)
   await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: `${TIKTOK}?foto`, sourceKind: 'tiktok' })
   await seedDish(page, { title: 'Ohne Foto', placeholder: 'curry', sourceLink: `${TIKTOK}?curry`, sourceKind: 'tiktok' })
   await gotoHydrated(page, '/')
 
-  // The curry plays once on first view; then the Board's loop is an empty Column's.
+  // The curry plays once on first view; an empty Column's loop goes on.
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual(['/clips/empty-column-light.webm'])
 
+  // Hovered, the curry loops beside it, and it keeps going.
   await page.getByRole('link', { name: 'Ohne Foto' }).hover()
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/curry-light.webm'])
+  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-light.webm', '/placeholders/curry-light.webm'])
   await page.mouse.move(5, 5)
   await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-light.webm'])
 
-  expect(await peak()).toBe(1)
+  expect(await peakPlaceholders()).toBe(1)
 })
 
 test('a search that finds nothing loops its clip', async ({ page }) => {
