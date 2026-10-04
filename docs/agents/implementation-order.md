@@ -90,6 +90,7 @@ From the first desktop field test (`docs/reviews/desktop-review1.md`). Two thing
 |---|---|---|
 | #104 | Claude Design: Round 11 assets are in | `ready-for-human`: skip, the user does it. Blocks 7e |
 | #105 | Prototype: celebration position, card shape, user menu | Ends with the user's decisions in a comment. Blocks #129–#131 |
+| #142 | CI: skip docs-only, shard browser tests, cache, retry once | Speeds up every PR after it |
 
 **7b: fixes on code that stays**
 

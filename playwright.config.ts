@@ -13,6 +13,9 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
   workers: 1,
+  // CI retries a failed test once, so a flake doesn't cost a whole rerun; the
+  // report still marks it flaky. Locally a failure stays a failure.
+  retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: {
     baseURL: E2E_ORIGIN,
