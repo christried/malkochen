@@ -20,6 +20,18 @@ watch([toast, bar], ([, el]) => {
 }, { flush: 'post' })
 onBeforeUnmount(() => timer?.cancel())
 
+// It shows in the top layer (a manual popover), so a modal it is in (the
+// Dish detail) stepping back under a sheet opened over it (scale .96) leaves
+// it where it is, instead of taking it along. Shown once its page is in:
+// the top layer stacks in the order things show, and a modal it is in opens
+// as that modal mounts, after it. Modals opened later stay above it.
+const layer = useTemplateRef<HTMLElement>('layer')
+onMounted(async () => {
+  await nextTick()
+  const el = layer.value
+  if (el?.isConnected && !el.matches(':popover-open')) el.showPopover?.()
+})
+
 function act(action: ToastAction) {
   toast.value = null
   action.run()
@@ -27,10 +39,14 @@ function act(action: ToastAction) {
 </script>
 
 <template>
-  <!-- Always in the page, so screen readers announce what appears in it. -->
+  <!-- Always in the page, so screen readers announce what appears in it.
+       The popover's own styles are undone (the margin, size, border,
+       padding and colours it brings). -->
   <div
+    ref="layer"
+    popover="manual"
     role="status"
-    class="pointer-events-none fixed inset-x-4 bottom-6 z-toast flex justify-center tablet:bottom-8"
+    class="pointer-events-none fixed inset-x-4 bottom-6 top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-8"
   >
     <Transition name="toast">
       <div
