@@ -5,7 +5,8 @@ import type { Placeholder } from '~~/shared/placeholders'
 
 // Sign-in, and the "Not unlocked" screen for a refused one: Better Auth sends
 // a refused Google sign-in back here as /login?error=not_allowed
-// (server/utils/auth.ts). Each loops its clip (topfbert-wow, not-unlocked).
+// (server/utils/auth.ts). Each loops its clip: Topfbert wow, drawn in code
+// like the tiles' Placeholders (SvgLoop), and not-unlocked.
 const t = useStrings()
 const { signInWithGoogle } = useAuth()
 
@@ -94,7 +95,7 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'curry', 'bowl', 'ta
           </div>
         </div>
         <div class="absolute inset-[27%] overflow-hidden rounded-full">
-          <MotionClip
+          <SvgLoop
             src="/clips/topfbert-wow"
             play
           />

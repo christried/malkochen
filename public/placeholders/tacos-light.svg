@@ -2,12 +2,12 @@
   <rect id="ground_tint" width="120" height="120" fill="#EFE5CF"></rect>
   <ellipse id="ground_shadow" cx="60" cy="101" rx="42" ry="6" fill="#F0DEB8"></ellipse>
   <g id="dish">
-    <g id="taco_1" data-loop="wig 1.8s ease-in-out infinite" data-pivot="50% 100%">
+    <g id="taco_1" data-loop="ph-wig 1.8s ease-in-out infinite" data-pivot="50% 100%">
       <circle cx="28" cy="70" r="7" fill="#AEC2A4"></circle><circle cx="40" cy="63" r="7.5" fill="#EDB688"></circle><circle cx="52" cy="63" r="6" fill="#FCF3E0"></circle><circle cx="62" cy="70" r="6.5" fill="#AEC2A4"></circle>
       <path d="M18 92a27 27 0 0 1 54 0z" fill="#F2D194"></path>
       <path d="M26 90a19 19 0 0 1 38 0" fill="none" stroke="#F0DEB8" stroke-width="2.5" stroke-linecap="round"></path>
     </g>
-    <g id="taco_2" data-loop="wig 1.8s ease-in-out -.9s infinite" data-pivot="50% 100%">
+    <g id="taco_2" data-loop="ph-wig 1.8s ease-in-out -.9s infinite" data-pivot="50% 100%">
       <circle cx="58" cy="72" r="7" fill="#EDB688"></circle><circle cx="70" cy="65" r="7.5" fill="#AEC2A4"></circle><circle cx="82" cy="65" r="6" fill="#CB7B4C"></circle><circle cx="92" cy="72" r="6.5" fill="#FCF3E0"></circle>
       <path d="M48 94a27 27 0 0 1 54 0z" fill="#CB9B44"></path>
       <path d="M56 92a19 19 0 0 1 38 0" fill="none" stroke="#F2D194" stroke-width="2.5" stroke-linecap="round"></path>

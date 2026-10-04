@@ -51,7 +51,7 @@ test('the Dish detail loops its Placeholder in the current theme', async ({ page
 
   const detail = await openDetail(page, 'Spaghetti')
 
-  await expect.poll(() => playing(detail)).toEqual(['/placeholders/pasta-dark.webm'])
+  await expect.poll(() => playing(detail)).toEqual(['/placeholders/pasta-dark.svg'])
 })
 
 test('a Board full of Placeholders plays one loop on first view and one where scrolling stops', async ({ page }) => {
@@ -67,7 +67,7 @@ test('a Board full of Placeholders plays one loop on first view and one where sc
 
   // Scrolling stops with a card in the middle of the screen: it plays once.
   await page.getByRole('link', { name: 'Gericht porridge' }).evaluate(el => el.scrollIntoView({ block: 'center' }))
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/porridge-light.webm'])
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/porridge-light.svg'])
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual([])
 
   expect(await peak()).toBe(1)
@@ -81,13 +81,13 @@ test('a Board loop scrolled off-screen stops, and the card now in the middle pla
   await gotoHydrated(page, '/')
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual([])
   await page.getByRole('link', { name: 'Gericht porridge' }).evaluate(el => el.scrollIntoView({ block: 'center' }))
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/porridge-light.webm'])
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/porridge-light.svg'])
 
   // Porridge is near the top of Ideen; at the bottom it is far off-screen.
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
   await expect.poll(async () => {
     const clips = await playing(page)
-    return clips.length === 1 && !clips.includes('/placeholders/porridge-light.webm')
+    return clips.length === 1 && !clips.includes('/placeholders/porridge-light.svg')
   }).toBe(true)
 
   expect(await peak()).toBe(1)
@@ -102,10 +102,10 @@ test('hovering a card with a photo leaves the Board\'s loop to the Placeholders'
   // First view: one of pasta, ramen and curry plays once.
   await expect.poll(() => playing(page)).toHaveLength(1)
   const [firstView] = await playing(page)
-  const other = PLACEHOLDERS.slice(0, 3).find(p => firstView !== `/placeholders/${p}-light.webm`)!
+  const other = PLACEHOLDERS.slice(0, 3).find(p => firstView !== `/placeholders/${p}-light.svg`)!
 
   await page.getByRole('link', { name: `Gericht ${other}` }).hover()
-  await expect.poll(() => playing(page)).toEqual([`/placeholders/${other}-light.webm`])
+  await expect.poll(() => playing(page)).toEqual([`/placeholders/${other}-light.svg`])
   // On the photo: no Placeholder is hovered, so the first-view loop is back.
   await page.getByRole('link', { name: 'Mit Foto' }).hover()
   await expect.poll(() => playing(page)).toEqual([firstView])
@@ -121,9 +121,9 @@ test('on desktop the hovered and the lifted card loop, one at a time', async ({ 
 
   const curry = page.getByRole('link', { name: 'Gericht curry' })
   await curry.hover()
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/curry-light.webm'])
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/curry-light.svg'])
   await page.getByRole('link', { name: 'Gericht salad' }).hover()
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/salad-light.webm'])
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/salad-light.svg'])
   await page.mouse.move(5, 5)
   await expect.poll(() => playing(page)).toEqual([])
 
@@ -135,7 +135,7 @@ test('on desktop the hovered and the lifted card loop, one at a time', async ({ 
   await page.mouse.move(box.x + 40, box.y + 60, { steps: 4 })
   const lifted = page.getByTestId('drag-card')
   await expect(lifted).toBeVisible()
-  await expect.poll(() => playing(lifted)).toEqual(['/placeholders/curry-light.webm'])
+  await expect.poll(() => playing(lifted)).toEqual(['/placeholders/curry-light.svg'])
   await expect.poll(() => playing(page)).toHaveLength(1)
   await page.keyboard.press('Escape')
   await page.mouse.up()
@@ -155,8 +155,8 @@ test('with the Dish detail open beside the Board, only the detail loops', async 
 
   const detail = await openDetail(page, 'Gericht wok')
 
-  await expect.poll(() => playing(detail)).toEqual(['/placeholders/wok-light.webm'])
-  expect(await playing(page)).toEqual(['/placeholders/wok-light.webm'])
+  await expect.poll(() => playing(detail)).toEqual(['/placeholders/wok-light.svg'])
+  expect(await playing(page)).toEqual(['/placeholders/wok-light.svg'])
   expect(await peak()).toBe(1)
 })
 
@@ -172,7 +172,7 @@ test('with reduced motion no clip plays, not even in focus: stills show', async 
   // Whatever would load a clip has had its chance.
   await page.waitForLoadState('networkidle')
 
-  await expect(page.locator('video')).toHaveCount(0)
+  await expect(page.locator('video, [data-loop-svg]')).toHaveCount(0)
 })
 
 test('the picker loops its selected Placeholder only, over a quiet Board', async ({ page }) => {
@@ -188,11 +188,11 @@ test('the picker loops its selected Placeholder only, over a quiet Board', async
   await page.getByRole('dialog', { name: 'Gericht hinzufügen' }).getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
   const inline = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' }).getByRole('radiogroup', { name: 'Bild' })
 
-  await expect.poll(() => playing(inline)).toEqual(['/placeholders/bowl-light.webm'])
+  await expect.poll(() => playing(inline)).toEqual(['/placeholders/bowl-light.svg'])
   await inline.getByRole('radio', { name: 'Curry' }).click()
-  await expect.poll(() => playing(inline)).toEqual(['/placeholders/curry-light.webm'])
+  await expect.poll(() => playing(inline)).toEqual(['/placeholders/curry-light.svg'])
 
-  expect(await playing(page)).toEqual(['/placeholders/curry-light.webm'])
+  expect(await playing(page)).toEqual(['/placeholders/curry-light.svg'])
   expect(await peak()).toBe(1)
 })
 
@@ -203,13 +203,13 @@ test('editing a Dish, its picker loops instead of the image above it', async ({ 
   await gotoHydrated(page, '/')
   const detail = await openDetail(page, 'Pizza')
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
-  await expect.poll(() => playing(detail)).toEqual(['/placeholders/pizza-light.webm'])
+  await expect.poll(() => playing(detail)).toEqual(['/placeholders/pizza-light.svg'])
 
   await detail.getByRole('button', { name: 'Bild wählen' }).click()
   const picker = page.getByRole('dialog', { name: 'Bild wählen' })
-  await expect.poll(() => playing(picker)).toEqual(['/placeholders/pizza-light.webm'])
+  await expect.poll(() => playing(picker)).toEqual(['/placeholders/pizza-light.svg'])
 
-  expect(await playing(page)).toEqual(['/placeholders/pizza-light.webm'])
+  expect(await playing(page)).toEqual(['/placeholders/pizza-light.svg'])
 })
 
 test('a clip takes its still\'s place without moving the layout', async ({ page }) => {
@@ -238,7 +238,7 @@ test('a clip takes its still\'s place without moving the layout', async ({ page 
     .map(a => a.finished)))
 
   const still = await detail.locator('img[src="/placeholders/tacos-light.svg"]').boundingBox()
-  expect(await detail.locator('[data-placeholder-clip] video').boundingBox()).toEqual(still)
+  expect(await detail.locator('[data-placeholder-clip] [data-loop-svg]').boundingBox()).toEqual(still)
   expect(await page.evaluate(() => (window as unknown as { layoutShift: number }).layoutShift)).toBe(0)
 })
 

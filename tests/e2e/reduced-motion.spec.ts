@@ -2,7 +2,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { confetti, topfbert } from './celebration'
-import { clipStill, countVideos } from './clips'
+import { clipStill, countClips, loopStill } from './clips'
 import { editMorph, slowAnimations } from './edit-morph'
 import { gotoHydrated } from './hydration'
 import { dotsMoving, holdRequests, linkField, linkFound } from './loading'
@@ -18,10 +18,10 @@ const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const LISE = ALLOWLISTED[20]
 
 test('signing in, adding a Dish from a link, cooking it and searching show stills only', async ({ page }) => {
-  const videos = await countVideos(page)
+  const clips = await countClips(page)
 
   await gotoHydrated(page, '/login')
-  await expect(clipStill(page, 'topfbert-wow')).toBeVisible()
+  await expect(loopStill(page, '/clips/topfbert-wow')).toBeVisible()
   await expect(page.locator('img[src="/placeholders/pasta-light.svg"]')).toBeVisible()
   // The ring around Topfbert stays where it is.
   expect(await page.getByTestId('hero-ring').evaluate(el => getComputedStyle(el).rotate)).toBe('none')
@@ -32,7 +32,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await stubSourceLookup(page, { kind: 'tiktok', canonicalLink: TIKTOK, suggestedTitle: 'Crispy Tofu Bowl', imageUrl: null, imageTicket: null }, new Promise(r => answer = r))
   await gotoHydrated(page, '/')
   await expect(clipStill(page, 'empty-board')).toBeVisible()
-  await expect(clipStill(page, 'empty-column').first()).toBeVisible()
+  await expect(loopStill(page, '/clips/empty-column-orchid')).toBeVisible()
 
   // Add a Dish from a link: the lookup shows Topfbert's still.
   await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
@@ -93,11 +93,11 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
 
   // Whatever would load a clip has had its chance.
   await page.waitForLoadState('networkidle')
-  expect(await videos()).toBe(0)
+  expect(await clips()).toBe(0)
 })
 
 test('Not unlocked, the invite landing and the error screen show stills only', async ({ page }) => {
-  const videos = await countVideos(page)
+  const clips = await countClips(page)
 
   await gotoHydrated(page, '/login?error=not_allowed')
   await expect(clipStill(page, 'not-unlocked')).toBeVisible()
@@ -117,11 +117,11 @@ test('Not unlocked, the invite landing and the error screen show stills only', a
   await expect(clipStill(page, 'error')).toBeVisible()
 
   await page.waitForLoadState('networkidle')
-  expect(await videos()).toBe(0)
+  expect(await clips()).toBe(0)
 })
 
 test('the achievement badge shows its count at once; both celebrations show their stills and stay until closed', async ({ page }) => {
-  const videos = await countVideos(page)
+  const clips = await countClips(page)
   await signIn(page, LISE)
   await resetBoard(page)
   await seedDish(page, { title: 'Ramen', sourceLink: TIKTOK, sourceKind: 'tiktok' })
@@ -162,5 +162,5 @@ test('the achievement badge shows its count at once; both celebrations show thei
   await expect(created).toBeHidden()
 
   await page.waitForLoadState('networkidle')
-  expect(await videos()).toBe(0)
+  expect(await clips()).toBe(0)
 })

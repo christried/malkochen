@@ -7,8 +7,8 @@
     <path d="M42 46l3 44" stroke="#70473B" stroke-width="4" stroke-linecap="round" opacity=".8"></path>
     <ellipse cx="60" cy="40" rx="26" ry="5" fill="#F798D5"></ellipse>
     <ellipse cx="36" cy="38" rx="9" ry="4" transform="rotate(-30 36 38)" fill="#7A8C6E"></ellipse><circle cx="80" cy="38" r="7" fill="#B4CCB2"></circle>
-    <circle cx="52" cy="88" r="2.6" id="bubble_1" data-loop="up 2.4s ease-in infinite" fill="#D0C7B5"></circle>
-    <circle cx="62" cy="92" r="2" id="bubble_2" data-loop="up 2.4s ease-in .8s infinite" fill="#D0C7B5"></circle>
-    <circle cx="68" cy="86" r="2.4" id="bubble_3" data-loop="up 2.4s ease-in 1.6s infinite" fill="#D0C7B5"></circle>
+    <circle cx="52" cy="88" r="2.6" id="bubble_1" data-loop="ph-up 2.4s ease-in infinite" fill="#D0C7B5"></circle>
+    <circle cx="62" cy="92" r="2" id="bubble_2" data-loop="ph-up 2.4s ease-in .8s infinite" fill="#D0C7B5"></circle>
+    <circle cx="68" cy="86" r="2.4" id="bubble_3" data-loop="ph-up 2.4s ease-in 1.6s infinite" fill="#D0C7B5"></circle>
   </g>
 </svg>

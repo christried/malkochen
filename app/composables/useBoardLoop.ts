@@ -16,7 +16,7 @@ import type { ClipMotion } from '~/utils/motion'
 //
 // Nothing plays while the Board is `covered` (by the Dish detail, which loops
 // the Dish itself, or a sheet). Cards with a stored image never play;
-// MotionClip keeps off-screen ones paused and reduced motion still.
+// SvgLoop keeps off-screen ones paused and reduced motion still.
 
 const REST_MS = 200
 

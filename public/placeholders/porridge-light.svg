@@ -9,7 +9,7 @@
     <circle cx="46" cy="62" r="5" fill="#F2CF8E"></circle><circle cx="46" cy="62" r="1.6" fill="#D2A045"></circle>
     <circle cx="56" cy="64" r="5" fill="#F2CF8E"></circle><circle cx="56" cy="64" r="1.6" fill="#D2A045"></circle>
     <circle cx="72" cy="61" r="3.6" fill="#CB70AB"></circle><circle cx="78" cy="64" r="3.6" fill="#CB70AB"></circle><circle cx="68" cy="65" r="3" fill="#CB70AB"></circle>
-    <ellipse cx="62" cy="62" rx="7" ry="2.4" id="ripple_1" data-loop="ripple 3s ease-out infinite" data-pivot="center" fill="none" stroke="#D2A045" stroke-width="1.5"></ellipse>
-    <ellipse cx="62" cy="26" rx="3" ry="4" id="drop_1" data-loop="fall 3s cubic-bezier(.5,0,.9,.5) infinite" fill="#F2CF8E"></ellipse>
+    <ellipse cx="62" cy="62" rx="7" ry="2.4" id="ripple_1" data-loop="ph-ripple 3s ease-out infinite" data-pivot="center" fill="none" stroke="#D2A045" stroke-width="1.5"></ellipse>
+    <ellipse cx="62" cy="26" rx="3" ry="4" id="drop_1" data-loop="ph-fall 3s cubic-bezier(.5,0,.9,.5) infinite" fill="#F2CF8E"></ellipse>
   </g>
 </svg>

@@ -2,9 +2,9 @@
   <rect id="ground_tint" width="120" height="120" fill="#E6E5DA"></rect>
   <ellipse id="ground_shadow" cx="60" cy="101" rx="42" ry="6" fill="#DDDECE"></ellipse>
   <g id="dish">
-    <path d="M34 44q-4-6 0-12t0-12" id="steam_1" data-loop="steam 2.7s ease-out infinite" fill="none" stroke="#CCD5BF" stroke-width="3" stroke-linecap="round"></path>
-    <path d="M60 40q-4-6 0-12t0-12" id="steam_2" data-loop="steam 2.7s ease-out .9s infinite" fill="none" stroke="#CCD5BF" stroke-width="3" stroke-linecap="round"></path>
-    <path d="M86 44q-4-6 0-12t0-12" id="steam_3" data-loop="steam 2.7s ease-out 1.8s infinite" fill="none" stroke="#CCD5BF" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M34 44q-4-6 0-12t0-12" id="steam_1" data-loop="ph-steam 2.7s ease-out infinite" fill="none" stroke="#CCD5BF" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M60 40q-4-6 0-12t0-12" id="steam_2" data-loop="ph-steam 2.7s ease-out .9s infinite" fill="none" stroke="#CCD5BF" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M86 44q-4-6 0-12t0-12" id="steam_3" data-loop="ph-steam 2.7s ease-out 1.8s infinite" fill="none" stroke="#CCD5BF" stroke-width="3" stroke-linecap="round"></path>
     <rect x="14" y="68" width="92" height="28" rx="9" fill="#DDBA8A"></rect>
     <path d="M14 82h92" stroke="#7D614B" stroke-width="2.5" opacity=".35"></path>
     <ellipse cx="60" cy="68" rx="46" ry="8" fill="#8FA48C"></ellipse>

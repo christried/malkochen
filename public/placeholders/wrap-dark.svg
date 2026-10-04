@@ -3,11 +3,11 @@
   <ellipse id="ground_shadow" cx="60" cy="101" rx="42" ry="6" fill="#70473B"></ellipse>
   <g id="dish">
     <ellipse cx="60" cy="90" rx="48" ry="11" fill="#70473B"></ellipse>
-    <g id="sheet_1" data-loop="roll 3.6s cubic-bezier(.4,0,.2,1) infinite" data-pivot="0% 50%">
+    <g id="sheet_1" data-loop="ph-roll 3.6s cubic-bezier(.4,0,.2,1) infinite" data-pivot="0% 50%">
       <ellipse cx="66" cy="80" rx="38" ry="11" fill="#D0C7B5"></ellipse>
       <circle cx="52" cy="78" r="5" fill="#7A8C6E"></circle><circle cx="64" cy="81" r="5" fill="#9C673E"></circle><circle cx="76" cy="77" r="4.5" fill="#A45A67"></circle><circle cx="86" cy="81" r="4" fill="#7A8C6E"></circle>
     </g>
-    <g id="roll_1" data-loop="rollc 3.6s cubic-bezier(.4,0,.2,1) infinite" data-pivot="50% 100%">
+    <g id="roll_1" data-loop="ph-rollc 3.6s cubic-bezier(.4,0,.2,1) infinite" data-pivot="50% 100%">
       <rect x="20" y="46" width="26" height="42" rx="13" transform="rotate(-12 33 67)" fill="#AA875A"></rect>
       <ellipse cx="29" cy="48" rx="12" ry="6" transform="rotate(-12 29 48)" fill="#D0C7B5"></ellipse>
       <circle cx="25" cy="47" r="3.4" fill="#7A8C6E"></circle><circle cx="32" cy="46" r="3" fill="#9C673E"></circle><circle cx="29" cy="50" r="2.6" fill="#A45A67"></circle>

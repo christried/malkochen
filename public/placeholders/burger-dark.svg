@@ -6,7 +6,7 @@
     <rect x="23" y="69" width="74" height="13" rx="6.5" fill="#604531"></rect>
     <rect x="26" y="64" width="68" height="7" rx="3.5" fill="#9C673E"></rect>
     <path d="M22 64q6-6 12 0t12 0 12 0 12 0 12 0 12 0v4H22z" fill="#7A8C6E"></path>
-    <g id="bun_top_1" data-loop="lid 2.8s ease-in-out infinite" data-pivot="50% 100%">
+    <g id="bun_top_1" data-loop="ph-lid 2.8s ease-in-out infinite" data-pivot="50% 100%">
       <path d="M26 62a34 26 0 0 1 68 0z" fill="#9A7840"></path>
       <ellipse cx="46" cy="48" rx="2.6" ry="1.5" fill="#D0C7B5"></ellipse><ellipse cx="60" cy="44" rx="2.6" ry="1.5" fill="#D0C7B5"></ellipse><ellipse cx="72" cy="50" rx="2.6" ry="1.5" fill="#D0C7B5"></ellipse><ellipse cx="54" cy="54" rx="2.6" ry="1.5" fill="#D0C7B5"></ellipse>
     </g>

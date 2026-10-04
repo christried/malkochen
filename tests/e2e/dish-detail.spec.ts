@@ -258,7 +258,10 @@ test('leaving edit mode scrolled down, the title starts where its field was', as
   await gotoHydrated(page, '/')
   const detail = await openDetail(page, 'Pfeiltasten')
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
-  await detail.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished)))
+  // Once edit mode has settled. The picker's Placeholder loop never finishes.
+  await detail.evaluate(el => Promise.all(el.getAnimations({ subtree: true })
+    .filter(a => a.effect?.getTiming().iterations !== Infinity)
+    .map(a => a.finished)))
   await detail.evaluate(el => el.scrollTo(0, el.scrollHeight))
   expect(await detail.evaluate(el => el.scrollTop)).toBeGreaterThan(0)
   const title = detail.locator('[data-morph-field="title"]')
