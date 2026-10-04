@@ -35,6 +35,7 @@ test('a Member creates a Board from the switcher, switches between Boards, and t
   await switcher(page).click()
   await boardList(page).getByRole('button', { name: 'Neues Board' }).click()
   const sheet = page.getByRole('dialog', { name: 'Neues Board' })
+  await expect(sheet.getByLabel('Name')).toHaveAttribute('placeholder', /^z\. B\. „.+“$/)
   await sheet.getByLabel('Name').fill('Kochclub')
   await sheet.getByRole('radio', { name: '🥟' }).click()
   const release = await holdRequests(page, 'POST', /\/api\/boards$/)
