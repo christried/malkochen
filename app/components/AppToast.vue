@@ -20,16 +20,20 @@ watch([toast, bar], ([, el]) => {
 }, { flush: 'post' })
 onBeforeUnmount(() => timer?.cancel())
 
-// It shows in the top layer (a manual popover), so a modal it is in (the
-// Dish detail) stepping back under a sheet opened over it (scale .96) leaves
-// it where it is, instead of taking it along. Shown once its page is in:
-// the top layer stacks in the order things show, and a modal it is in opens
-// as that modal mounts, after it. Modals opened later stay above it.
-const layer = useTemplateRef<HTMLElement>('layer')
+// Inside a modal (the Dish detail, a celebration), the toast is lifted into
+// the top layer as a manual popover. When a sheet opens over the Dish detail,
+// the detail steps back (scale .96), and a scaled ancestor would otherwise
+// carry the toast along into the side panel. Popovers stack in the order
+// they're shown, so it's lifted a tick after mounting, once the modal it's
+// in has opened: then it's above that modal, and sheets opened later stay
+// above it. Outside a modal it stays an ordinary fixed element, so the
+// offline screen and the splash still cover it.
+const region = useTemplateRef<HTMLElement>('region')
 onMounted(async () => {
   await nextTick()
-  const el = layer.value
-  if (el?.isConnected && !el.matches(':popover-open')) el.showPopover?.()
+  // Gone already if the page it was on was left at once.
+  const el = region.value
+  if (el?.isConnected && el.closest('dialog')) el.showPopover()
 })
 
 function act(action: ToastAction) {
@@ -41,9 +45,10 @@ function act(action: ToastAction) {
 <template>
   <!-- Always in the page, so screen readers announce what appears in it.
        The popover's own styles are undone (the margin, size, border,
-       padding and colours it brings). -->
+       padding and colours it brings), and `flex` keeps it showing while it
+       isn't lifted into the top layer. -->
   <div
-    ref="layer"
+    ref="region"
     popover="manual"
     role="status"
     class="pointer-events-none fixed inset-x-4 bottom-6 top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-8"

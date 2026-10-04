@@ -154,17 +154,18 @@ test('"Gekocht ✓" in the Dish detail celebrates there', async ({ page }) => {
   await expect(topfbert(detail)).toContainText('Mmh!')
 })
 
-// The note sheet opened over the detail makes the detail step back (scale
+// The note sheet opened from the Gekocht toast makes the Dish detail step back (scale
 // .96). The toast, on its way out, stays where it was meanwhile: it doesn't
 // jump into the side panel (desktop) or shrink with the screen (phone). Its
 // way out only moves it down, so its left edge and width stay; they're
 // sampled every frame until it's gone.
-test('opening the note sheet from the toast in the detail leaves the toast where it was', async ({ page }) => {
+test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toast where it was', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
-  const viewports = [{ width: 1280, height: 800, title: 'Bibimbap' }, { width: 360, height: 740, title: 'Gyoza' }]
-  for (const { title } of viewports) await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  // A Dish for each screen size: cooked, it leaves Ideen.
+  const runs = [{ viewport: { width: 1280, height: 800 }, title: 'Bibimbap' }, { viewport: { width: 360, height: 740 }, title: 'Gyoza' }]
+  for (const { title } of runs) await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
 
-  for (const { title, ...viewport } of viewports) {
+  for (const { viewport, title } of runs) {
     await page.setViewportSize(viewport)
     await gotoHydrated(page, '/')
     await page.getByRole('link', { name: title }).click()
