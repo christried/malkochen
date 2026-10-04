@@ -105,15 +105,22 @@ on the migrated schema until the new one is promoted.
   utilities). Under `prefers-reduced-motion` they collapse (fades keep 200ms),
   and a global rule in `main.css` stops keyframe animations.
 - UI text: all of it lives in `app/strings/de.ts`, read through `useStrings()`.
-- Public assets: `public/icons/` (app icons and manifest) and
-  `public/placeholders/<dish>-{light,dark}.svg` (Placeholder Image stills),
-  next to their rendered loops `<dish>-{light,dark}.{mp4,webm}` and posters
-  `<dish>-{light,dark}.png`; and `public/clips/<clip>-{light,dark}.{mp4,webm,png}`
-  (the state, system and celebration clips, with their reduced-motion posters).
+- Public assets: `public/icons/` (app icons and manifest),
+  `public/placeholders/<dish>-{light,dark}.svg` (the Placeholder Images), and
+  `public/clips/<clip>-{light,dark}.{mp4,webm,png}` (the state, system and
+  celebration clips, with their reduced-motion posters).
+- Loops drawn in code (`SvgLoop.vue`): the Placeholder Images, the empty
+  Column's pea (`public/clips/empty-column-<accent>-{light,dark}.svg`) and the
+  sign-in's Topfbert wow (`public/clips/topfbert-wow-{light,dark}.svg`) are
+  layered SVGs whose animated layers name their CSS keyframes in `data-loop`
+  (`app/assets/css/loops.css`). The SVG is the still, and its frame 0. They
+  run at the screen's refresh rate and stay sharp at any size, so a pure
+  transform/opacity loop from the handoff (Round 11's are) belongs here, not
+  in a video (#111).
 
 ## Motion graphics (Remotion)
 
-The pre-made clips are rendered by a separate Remotion project in
+The other clips (scenes with a timeline of their own) are rendered by a separate Remotion project in
 [`remotion/`](remotion/README.md), outside the pnpm workspace; the app build
 never installs or imports it. To re-render after changing a loop:
 
@@ -121,5 +128,5 @@ never installs or imports it. To re-render after changing a loop:
 cd remotion
 npm install
 npm run dev      # Remotion Studio, to check the clips by eye
-npm run render   # writes public/placeholders/* and public/clips/*
+npm run render   # writes public/clips/*
 ```
