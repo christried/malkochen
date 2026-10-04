@@ -6,7 +6,7 @@ import type { ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
 
 // The Board a user gets on their first sign-in (PRD story 3).
-const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍳' }
+const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍲' }
 
 // Every new Board starts with these Columns; the last is the Gekocht Column.
 export const DEFAULT_COLUMNS = [

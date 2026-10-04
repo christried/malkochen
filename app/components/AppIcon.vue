@@ -23,7 +23,7 @@ withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up'
       />
       <path d="M15.5 15.5L20 20" />
     </template>
-    <!-- A cogwheel: rays around a circle read as a sun, i.e. the theme. -->
+    <!-- A cogwheel. Rays around a circle looked like a sun, so like a theme switch. -->
     <template v-else-if="name === 'settings'">
       <circle
         cx="12"

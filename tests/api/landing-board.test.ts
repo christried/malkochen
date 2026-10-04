@@ -15,7 +15,7 @@ test('the first sign-in lands on a new "Meine Küche" Board owned by the user, w
 
   const board = await landingBoard(linus)
 
-  expect(board).toMatchObject({ name: 'Meine Küche', emoji: '🍳', isOwner: true })
+  expect(board).toMatchObject({ name: 'Meine Küche', emoji: '🍲', isOwner: true })
   expect(board.columns.map((c: { name: string, isGekocht: boolean }) => [c.name, c.isGekocht])).toEqual([
     ['Ideen', false],
     ['Diese Woche', false],

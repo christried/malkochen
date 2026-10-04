@@ -58,7 +58,7 @@ export async function seedCookings(page: Page, title: string, count: number) {
 }
 
 // Puts the signed-in user's landing Board back as a new Board starts: named
-// "Meine Küche" 🍳, with the default Columns and no Dishes. For files whose
+// "Meine Küche" 🍲, with the default Columns and no Dishes. For files whose
 // tests each need that start, whatever the test before them left.
 export async function resetBoard(page: Page) {
   const boardId = await landingBoardId(page)
@@ -66,7 +66,7 @@ export async function resetBoard(page: Page) {
   await client.connect()
   try {
     await client.query('begin')
-    await client.query(`update board set name = 'Meine Küche', emoji = '🍳' where id = $1`, [boardId])
+    await client.query(`update board set name = 'Meine Küche', emoji = '🍲' where id = $1`, [boardId])
     await client.query('delete from dish where board_id = $1', [boardId])
     await client.query('delete from board_column where board_id = $1', [boardId])
     await client.query(

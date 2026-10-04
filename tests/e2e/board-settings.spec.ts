@@ -196,7 +196,7 @@ test('"Link kopieren" puts the Invite Link on the clipboard, and it opens the in
 
   const invited = await newTab(browser)
   await gotoHydrated(invited, copied)
-  await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🍳 Meine Küche eingeladen')
+  await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🍲 Meine Küche eingeladen')
   // Every reset Board is a "Meine Küche"; its Owner tells Ida's apart.
   await expect(invited.getByText('ida lädt dich ein')).toBeVisible()
 })
@@ -208,7 +208,7 @@ test('"Link teilen" hands the Invite Link and the Board’s name to the share sh
 
   await page.getByRole('button', { name: 'Link teilen' }).click()
 
-  await expect.poll(() => shared(page)).toEqual([{ title: '🍳 Meine Küche', text: expect.stringContaining('🍳 Meine Küche'), url: link }])
+  await expect.poll(() => shared(page)).toEqual([{ title: '🍲 Meine Küche', text: expect.stringContaining('🍲 Meine Küche'), url: link }])
 })
 
 test('closing the share sheet without sharing is no failure', async ({ page }) => {
