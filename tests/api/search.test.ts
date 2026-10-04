@@ -49,7 +49,7 @@ test('finds Dishes by part of their title, ignoring case, in every Column', asyn
   const idea = await addDish(caller, 'Rotes Linsen-Curry')
   const planned = await addDish(caller, 'Thai-CURRY mit Tofu')
   const cooked = await addDish(caller, 'Kichererbsencurry')
-  await addDish(caller, 'Shakshuka')
+  await addDish(caller, 'Chana Masala')
   await moveDish(caller, planned.id, board.columns[1]!.id)
   await moveDish(caller, cooked.id, board.columns[2]!.id)
 
@@ -63,7 +63,7 @@ test('finds neither deleted Dishes nor Dishes on other Boards', async () => {
   const caller = await margaret()
   const board = await landingBoard(caller)
   const kept = await addDish(caller, 'Ofengemüse vom Blech')
-  const deleted = await addDish(caller, 'Ofengemüse mit Feta')
+  const deleted = await addDish(caller, 'Ofengemüse mit Tofu')
   await caller.fetch(`/api/dishes/${deleted.id}`, { method: 'DELETE' })
   await addDish(await signIn(ALLOWLISTED[5]), 'Ofengemüse bei Katherine')
 

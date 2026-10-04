@@ -351,7 +351,7 @@ test('"Gekocht ✓" then a move that both fail leave the Dish where it was befor
 // Diese Woche's Dish d, cooked twice: on 20 and on 1 September.
 function cookedTwice(board: BoardView) {
   board.columns[1]!.dishes[0]!.cookings = [
-    { id: 'sept-20', cookedAt: '2020-09-20T18:00:00.000Z', note: 'mit Feta', recordedBy: null },
+    { id: 'sept-20', cookedAt: '2020-09-20T18:00:00.000Z', note: 'mit Tofu', recordedBy: null },
     { id: 'sept-1', cookedAt: '2020-09-01T18:00:00.000Z', note: null, recordedBy: null },
   ]
 }
@@ -433,10 +433,10 @@ test('an added Dish appears where the server placed it, though the Board would h
   // Another Member put Diese Woche first; the Board doesn't show that yet.
   fake.server.columns.unshift(...fake.server.columns.splice(1, 1))
 
-  const result = await module.addDish('board', { title: 'Shakshuka', placeholder: 'curry' })
+  const result = await module.addDish('board', { title: 'Chana Masala', placeholder: 'curry' })
 
   expect(result.placement).toEqual({ boardId: 'board', columnId: 'woche', index: 0 })
-  expect(result.dish.title).toBe('Shakshuka')
+  expect(result.dish.title).toBe('Chana Masala')
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: [result.dish.id, 'd'] })
 })
 
@@ -456,10 +456,10 @@ test('an edit replaces the Dish’s fields with what the server saved', async ()
   const { board, module, shown } = setup()
   const shownDish = () => board.value!.columns[0]!.dishes[1]!
 
-  const result = await module.editDish('b', { title: '  Ofengemüse ', note: 'mit Feta', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
+  const result = await module.editDish('b', { title: '  Ofengemüse ', note: 'mit Tofu', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
 
   expect(result).not.toHaveProperty('notice')
-  expect(shownDish()).toMatchObject({ id: 'b', title: 'Ofengemüse', note: 'mit Feta', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
+  expect(shownDish()).toMatchObject({ id: 'b', title: 'Ofengemüse', note: 'mit Tofu', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
   expect(result.dish).toBe(shownDish())
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
 })
@@ -479,7 +479,7 @@ test('a saved Cooking note shows in the Dish’s Cooking History as the server s
 
   const result = await module.noteCooking('d', 'sept-1', '  mit Reis ')
   expect(result).toMatchObject({ cooking: { id: 'sept-1', note: 'mit Reis' } })
-  expect(cookingsOf()).toMatchObject([{ id: 'sept-20', note: 'mit Feta' }, { id: 'sept-1', note: 'mit Reis' }])
+  expect(cookingsOf()).toMatchObject([{ id: 'sept-20', note: 'mit Tofu' }, { id: 'sept-1', note: 'mit Reis' }])
 
   await module.noteCooking('d', 'sept-20', '   ')
   expect(cookingsOf()).toMatchObject([{ id: 'sept-20', note: null }, { id: 'sept-1', note: 'mit Reis' }])

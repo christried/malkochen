@@ -21,7 +21,7 @@ const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
 onMounted(() => titleInput.value?.focus())
 const note = ref(props.dish.note ?? '')
 // The note field's made-up example, a new one each time editing starts.
-const noteExample = useNoteExample()
+const noteExample = useExamplePrompt(t.dishNote.examples, t.dishNote.prompt)
 onMounted(noteExample.pickAnother)
 const link = ref(props.dish.source?.link ?? '')
 // Looks a new link up as in Add Dish: at once when pasted, after a short

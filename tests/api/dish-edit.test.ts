@@ -144,7 +144,7 @@ test('only Members of its Board can edit a Dish, and a missing Dish looks the sa
 test.each([
   ['a blank title', { title: '   ' }],
   ['no title at all', { title: null }],
-  ['an unknown Placeholder Image', { placeholder: 'steak' }],
+  ['an unknown Placeholder Image', { placeholder: 'not-a-placeholder' }],
   ['a Source that is not a web link', { source: { link: 'javascript:alert(1)' } }],
   ['an image that is not a web link', { imageUrl: 'data:image/png;base64,AAAA' }],
 ])('%s is refused', async (_, changes) => {

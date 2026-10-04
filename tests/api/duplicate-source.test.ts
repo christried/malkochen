@@ -67,11 +67,11 @@ test('saving anyway adds a second Dish; the newest one is named', async () => {
   const grace = await signIn(ALLOWLISTED[1])
   const board = await landingBoardId(grace)
   const link = 'https://www.youtube.com/shorts/dupTwice00001'
-  await addDish(grace, board, 'Shakshuka', link)
+  await addDish(grace, board, 'Chana Masala', link)
 
-  const second = await addDish(grace, board, 'Shakshuka, die Zweite', `${link}?feature=share`)
+  const second = await addDish(grace, board, 'Chana Masala, die Zweite', `${link}?feature=share`)
 
-  expect(await duplicateOf(grace, board, link)).toEqual({ id: second.id, title: 'Shakshuka, die Zweite', columnName: 'Ideen' })
+  expect(await duplicateOf(grace, board, link)).toEqual({ id: second.id, title: 'Chana Masala, die Zweite', columnName: 'Ideen' })
 })
 
 test('only Members can ask, and only about web links', async () => {

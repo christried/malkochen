@@ -34,7 +34,7 @@ const { status: lookupStatus, result, canonicalLink } = lookup
 const title = ref('')
 const note = ref('')
 // The note field's made-up example, a new one each time the sheet opens.
-const noteExample = useNoteExample()
+const noteExample = useExamplePrompt(t.dishNote.examples, t.dishNote.prompt)
 const placeholder = ref<Placeholder>(DEFAULT_PLACEHOLDER)
 const boardId = ref(props.boardId)
 const boards = ref<BoardSummary[]>([])

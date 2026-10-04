@@ -60,6 +60,13 @@ test('a Member adds, renames and reorders Columns; Gekocht is marked and can’t
   await expect(page.getByRole('button', { name: 'Spalte „Gekocht“ löschen' })).toHaveCount(0)
 
   await page.getByLabel('Neue Spalte').fill('Wochenende')
+  // The add button sits centred beside the field.
+  const middle = async (box: Promise<{ y: number, height: number } | null>) => {
+    const { y, height } = (await box)!
+    return y + height / 2
+  }
+  const fieldMiddle = await middle(page.getByLabel('Neue Spalte').boundingBox())
+  expect(Math.abs(await middle(page.getByRole('button', { name: 'Hinzufügen' }).boundingBox()) - fieldMiddle)).toBeLessThanOrEqual(1)
   await page.getByRole('button', { name: 'Hinzufügen' }).click()
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht', 'Wochenende'])
 
@@ -189,7 +196,7 @@ test('"Link kopieren" puts the Invite Link on the clipboard, and it opens the in
 
   const invited = await newTab(browser)
   await gotoHydrated(invited, copied)
-  await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🍳 Meine Küche eingeladen')
+  await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🍲 Meine Küche eingeladen')
   // Every reset Board is a "Meine Küche"; its Owner tells Ida's apart.
   await expect(invited.getByText('ida lädt dich ein')).toBeVisible()
 })
@@ -201,7 +208,7 @@ test('"Link teilen" hands the Invite Link and the Board’s name to the share sh
 
   await page.getByRole('button', { name: 'Link teilen' }).click()
 
-  await expect.poll(() => shared(page)).toEqual([{ title: '🍳 Meine Küche', text: expect.stringContaining('🍳 Meine Küche'), url: link }])
+  await expect.poll(() => shared(page)).toEqual([{ title: '🍲 Meine Küche', text: expect.stringContaining('🍲 Meine Küche'), url: link }])
 })
 
 test('closing the share sheet without sharing is no failure', async ({ page }) => {

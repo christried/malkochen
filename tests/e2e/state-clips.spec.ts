@@ -60,7 +60,7 @@ test('a search that finds nothing loops its clip', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' })
   await signIn(page, EMMY)
   await resetBoard(page)
-  await seedDish(page, { title: 'Shakshuka', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedDish(page, { title: 'Chana Masala', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await gotoHydrated(page, '/')
 
   await page.getByRole('button', { name: 'Gerichte suchen' }).click()

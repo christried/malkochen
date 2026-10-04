@@ -100,7 +100,7 @@ test('moving a Dish into Gekocht records one Cooking dated now, by whoever moved
 test('a Dish dropped into Gekocht records a Cooking; moving within Gekocht records none', async () => {
   const caller = await hedy()
   const { gekocht } = await columnsOf(caller)
-  const dish = await addDish(caller, 'Shakshuka')
+  const dish = await addDish(caller, 'Chana Masala')
 
   const dropped = await (await moveDish(caller, dish.id, gekocht.id, 1)).json() as Dish
   expect(dropped.cookings).toHaveLength(1)
@@ -269,11 +269,11 @@ test('a note can be added to a Cooking, changed and removed', async () => {
   const dish = await addDish(caller, 'Ofengemüse')
   const cooking = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
 
-  const res = await noteCooking(caller, cooking.id, '  mit Feta besser  ')
+  const res = await noteCooking(caller, cooking.id, '  mit Räuchertofu besser  ')
 
   expect(res.status).toBe(200)
-  expect(await res.json()).toEqual({ ...cooking, note: 'mit Feta besser' })
-  expect((await located(caller, dish.id)).dish.cookings[0]!.note).toBe('mit Feta besser')
+  expect(await res.json()).toEqual({ ...cooking, note: 'mit Räuchertofu besser' })
+  expect((await located(caller, dish.id)).dish.cookings[0]!.note).toBe('mit Räuchertofu besser')
 
   expect(await (await noteCooking(caller, cooking.id, '   ')).json()).toMatchObject({ note: null })
   expect((await noteCooking(caller, cooking.id, 'x'.repeat(2001))).status).toBe(400)

@@ -39,7 +39,7 @@ async function firstColumnIds(caller: Caller): Promise<string[]> {
 
 test('a deleted Dish is gone from its Board', async () => {
   const ada = await signIn(ALLOWLISTED[0])
-  const dish = await addDish(ada, 'Shakshuka')
+  const dish = await addDish(ada, 'Chana Masala')
 
   const res = await deleteDish(ada, dish.id)
 
@@ -50,7 +50,7 @@ test('a deleted Dish is gone from its Board', async () => {
 test('undo puts a deleted Dish back in its Column, at the position it had', async () => {
   const ada = await signIn(ALLOWLISTED[0])
   const bottom = await addDish(ada, 'Linsensuppe')
-  const middle = await addDish(ada, 'Käsekuchen')
+  const middle = await addDish(ada, 'Apfelkuchen')
   const top = await addDish(ada, 'Pad Thai')
   const before = await firstColumnIds(ada)
   expect(before.slice(0, 3)).toEqual([top.id, middle.id, bottom.id])
@@ -61,7 +61,7 @@ test('undo puts a deleted Dish back in its Column, at the position it had', asyn
   const res = await restoreDish(ada, middle.id)
 
   expect(res.status).toBe(200)
-  expect(await res.json()).toMatchObject({ id: middle.id, title: 'Käsekuchen' })
+  expect(await res.json()).toMatchObject({ id: middle.id, title: 'Apfelkuchen' })
   expect(await firstColumnIds(ada)).toEqual([added.id, ...before])
 })
 

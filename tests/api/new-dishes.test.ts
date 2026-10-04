@@ -67,7 +67,7 @@ test('New Dishes stay New while the Board is open, Dishes added meanwhile too; o
   const { id, owner, member } = await sharedBoard('Pastaabend')
   const before = await addDish(member, id, 'Pesto')
   await open(owner, id)
-  const meanwhile = await addDish(member, id, 'Carbonara')
+  const meanwhile = await addDish(member, id, 'Pasta Arrabbiata')
 
   // Two polls while the Board is open: both see the same New Dishes.
   for (const _ of [1, 2]) {
@@ -104,7 +104,7 @@ test('on my first open of a Board, Dishes others added since I joined are New, a
   const before = await addDish(member, id, 'Maiskolben')
 
   await open(owner, id)
-  const meanwhile = await addDish(member, id, 'Halloumi')
+  const meanwhile = await addDish(member, id, 'Grillgemüse')
 
   expect((await getBoard(owner, id)).newDishIds.toSorted()).toEqual([before, meanwhile].toSorted())
 })

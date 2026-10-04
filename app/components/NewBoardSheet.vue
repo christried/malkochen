@@ -12,6 +12,8 @@ const emoji = ref('🍜')
 const saving = ref(false)
 const failed = ref(false)
 const nameId = useId()
+// The name field's made-up example, a new one each time the sheet opens.
+const nameExample = useExamplePrompt(t.boards.nameExamples, t.boards.namePrompt)
 const justCreated = useJustCreatedBoard()
 
 // Every opening starts from an empty form.
@@ -19,6 +21,7 @@ watch(open, (isOpen) => {
   if (!isOpen) return
   name.value = ''
   emoji.value = '🍜'
+  nameExample.pickAnother()
   failed.value = false
 })
 
@@ -64,7 +67,7 @@ async function create() {
           required
           maxlength="60"
           autocomplete="off"
-          :placeholder="t.boards.namePrompt"
+          :placeholder="nameExample.prompt.value"
           class="rounded-field border border-line-strong bg-surface px-4 py-field-display font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
       </div>

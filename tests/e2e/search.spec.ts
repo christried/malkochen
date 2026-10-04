@@ -17,7 +17,7 @@ test('finds Dishes from every Column, and says when there are none', async ({ pa
   await page.setViewportSize({ width: 390, height: 844 })
   await signIn(page, ALLOWLISTED[7])
   await seedDish(page, { title: 'Rotes Linsen-Curry', sourceLink: TIKTOK, sourceKind: 'tiktok' })
-  await seedDish(page, { title: 'Shakshuka', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedDish(page, { title: 'Chana Masala', sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await seedDish(page, { title: 'Thai-Curry', sourceLink: TIKTOK, sourceKind: 'tiktok', column: 2 })
   await gotoHydrated(page, '/')
 

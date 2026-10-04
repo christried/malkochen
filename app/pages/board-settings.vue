@@ -381,15 +381,16 @@ function confirmDelete() {
           @reordered="saveOrder"
           @delete="askDelete"
         />
+        <!-- The label above, then the field with its button centred beside it. -->
         <form
-          class="mt-2 flex items-end gap-3"
+          class="mt-2 flex flex-col gap-1.5"
           @submit.prevent="addColumn"
         >
-          <div class="flex flex-1 flex-col gap-1.5">
-            <label
-              for="settings-new-column"
-              class="text-label"
-            >{{ t.settings.newColumn }}</label>
+          <label
+            for="settings-new-column"
+            class="text-label"
+          >{{ t.settings.newColumn }}</label>
+          <div class="flex items-center gap-3">
             <input
               id="settings-new-column"
               v-model="newColumn"
@@ -397,16 +398,16 @@ function confirmDelete() {
               maxlength="40"
               autocomplete="off"
               :placeholder="t.settings.newColumnPrompt"
-              class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              class="min-w-0 flex-1 rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
+            <button
+              type="submit"
+              class="shrink-0 rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              :disabled="!newColumn.trim() || adding"
+            >
+              {{ t.settings.add }}
+            </button>
           </div>
-          <button
-            type="submit"
-            class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            :disabled="!newColumn.trim() || adding"
-          >
-            {{ t.settings.add }}
-          </button>
         </form>
       </section>
 

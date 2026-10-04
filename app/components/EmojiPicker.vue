@@ -1,18 +1,12 @@
 <script setup lang="ts">
 // The handoff's EmojiPicker: a grid of 7 emoji tiles to pick a Board's emoji
-// from. Native radio buttons, so arrow keys move between tiles. The emoji the
-// Board has already is offered first if it isn't one of these.
+// from (BOARD_EMOJIS). Native radio buttons, so arrow keys move between
+// tiles. The emoji the Board has already is offered first if it isn't one of
+// these, so a Board keeps an emoji that's no longer offered until it changes.
 const emoji = defineModel<string>({ required: true })
 defineProps<{ label: string }>()
 
-const EMOJIS = [
-  '🍳', '🍜', '🍝', '🍕', '🍔', '🌮', '🥗',
-  '🍲', '🍛', '🍣', '🥟', '🍱', '🥘', '🫕',
-  '🥪', '🥐', '🧀', '🥞', '🍰', '🍪', '🍦',
-  '🍓', '🍋', '🥑', '🥕', '🌶️', '🍅', '🥦',
-  '☕', '🍷', '🏠', '❤️', '⭐', '🎉', '🌱',
-]
-const shown = computed(() => EMOJIS.includes(emoji.value) ? EMOJIS : [emoji.value, ...EMOJIS])
+const shown = computed(() => BOARD_EMOJIS.includes(emoji.value) ? BOARD_EMOJIS : [emoji.value, ...BOARD_EMOJIS])
 const name = useId()
 </script>
 

@@ -68,7 +68,12 @@ function newBoard() {
         :aria-controls="panelId"
         @click="toggle"
       >
-        <span class="truncate"><span aria-hidden="true">{{ board.emoji }}</span> {{ board.name }}</span>
+        <!-- Only the name truncates: clipped to the display font's tight
+             line, a tall emoji (🍪) would lose its top and bottom. -->
+        <span
+          aria-hidden="true"
+          class="shrink-0"
+        >{{ board.emoji }}</span> <span class="truncate">{{ board.name }}</span>
         <svg
           viewBox="0 0 24 24"
           width="20"

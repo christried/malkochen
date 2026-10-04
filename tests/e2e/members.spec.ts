@@ -32,7 +32,7 @@ test('the Owner sees the Members, hands ownership over, and can then leave', asy
   const { boardId } = await sharedBoard(page, browser, 'Salatbar')
   await gotoHydrated(page, `/b/${boardId}/settings`)
 
-  await expect(memberRows(page)).toHaveText([/evelyn \(du\).*Besitz/, /radia/])
+  await expect(memberRows(page)).toHaveText([/evelyn \(du\).*Besitzer:in/, /radia/])
   await expect(page.getByText('Um das Board zu verlassen, übertrag erst den Besitz an ein anderes Mitglied.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Board verlassen' })).toHaveCount(0)
 
@@ -41,7 +41,7 @@ test('the Owner sees the Members, hands ownership over, and can then leave', asy
   await page.getByRole('dialog', { name: 'Besitz an radia übertragen?' }).getByRole('button', { name: 'Besitz übertragen' }).click()
 
   await expect(page.getByText('radia hat jetzt den Besitz.')).toBeVisible()
-  await expect(memberRows(page)).toHaveText([/radia.*Besitz/, /evelyn \(du\)/])
+  await expect(memberRows(page)).toHaveText([/radia.*Besitzer:in/, /evelyn \(du\)/])
   await expect(page.getByRole('button', { name: 'radia verwalten' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Link zurücksetzen' })).toHaveCount(0)
 

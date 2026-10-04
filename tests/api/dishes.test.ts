@@ -45,11 +45,11 @@ test('the newest Dish goes on top and the others keep their order', async () => 
   const grace = await signIn(ALLOWLISTED[1])
   const board = await landingBoard(grace)
 
-  for (const title of ['Dal', 'Pad Thai', 'Shakshuka']) {
+  for (const title of ['Dal', 'Pad Thai', 'Chana Masala']) {
     expect((await addDish(grace, board.id, { title, placeholder: 'curry' })).status).toBe(201)
   }
 
-  expect(titles(await landingBoard(grace)).slice(0, 3)).toEqual(['Shakshuka', 'Pad Thai', 'Dal'])
+  expect(titles(await landingBoard(grace)).slice(0, 3)).toEqual(['Chana Masala', 'Pad Thai', 'Dal'])
 })
 
 test('the note is optional, and a blank note is no note', async () => {
@@ -70,7 +70,7 @@ test('a Dish needs a title and a known Placeholder Image', async () => {
   expect((await addDish(linus, board.id, { placeholder: 'pasta' })).status).toBe(400)
   expect((await addDish(linus, board.id, { title: '   ', placeholder: 'pasta' })).status).toBe(400)
   expect((await addDish(linus, board.id, { title: 'Pasta' })).status).toBe(400)
-  expect((await addDish(linus, board.id, { title: 'Pasta', placeholder: 'steak' })).status).toBe(400)
+  expect((await addDish(linus, board.id, { title: 'Pasta', placeholder: 'not-a-placeholder' })).status).toBe(400)
 
   expect((await landingBoard(linus)).columns.flatMap(c => c.dishes)).toEqual([])
 })
