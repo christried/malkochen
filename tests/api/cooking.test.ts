@@ -269,11 +269,11 @@ test('a note can be added to a Cooking, changed and removed', async () => {
   const dish = await addDish(caller, 'Ofengemüse')
   const cooking = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
 
-  const res = await noteCooking(caller, cooking.id, '  mit Feta besser  ')
+  const res = await noteCooking(caller, cooking.id, '  mit Räuchertofu besser  ')
 
   expect(res.status).toBe(200)
-  expect(await res.json()).toEqual({ ...cooking, note: 'mit Feta besser' })
-  expect((await located(caller, dish.id)).dish.cookings[0]!.note).toBe('mit Feta besser')
+  expect(await res.json()).toEqual({ ...cooking, note: 'mit Räuchertofu besser' })
+  expect((await located(caller, dish.id)).dish.cookings[0]!.note).toBe('mit Räuchertofu besser')
 
   expect(await (await noteCooking(caller, cooking.id, '   ')).json()).toMatchObject({ note: null })
   expect((await noteCooking(caller, cooking.id, 'x'.repeat(2001))).status).toBe(400)

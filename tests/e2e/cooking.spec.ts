@@ -56,7 +56,7 @@ test('a note from the toast shows in the Cooking History; cooking again counts',
   await gekochtToast(page).getByRole('button', { name: 'Notiz hinzufügen' }).click()
   const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
   await expect(sheet.getByLabel('Notiz')).toBeFocused()
-  await sheet.getByLabel('Notiz').fill('mit Feta besser')
+  await sheet.getByLabel('Notiz').fill('mit Räuchertofu besser')
   const release = await holdRequests(page, 'PATCH', /\/api\/cookings\/[^/]+$/)
   await clickAndExpectSaving(sheet.locator('button[type="submit"]'), 'Speichert …')
   release()
@@ -80,7 +80,7 @@ test('a note from the toast shows in the Cooking History; cooking again counts',
   await expect(detail.locator('[data-cooking-summary]')).toContainText('2× gekocht · zuletzt')
   const entries = detail.locator('[data-cooking]')
   await expect(entries).toHaveCount(2)
-  await expect(entries.nth(1)).toContainText('mit Feta besser')
+  await expect(entries.nth(1)).toContainText('mit Räuchertofu besser')
 })
 
 test('in the detail: add a note later, delete a Cooking with undo, and cook again', async ({ page }) => {
@@ -103,7 +103,7 @@ test('in the detail: add a note later, delete a Cooking with undo, and cook agai
   await expect(detail.locator('[data-cooking-summary]')).toContainText('1× gekocht')
   await page.getByRole('status').getByRole('button', { name: 'Rückgängig' }).click()
   await expect(entries).toHaveCount(2)
-  await expect(entries.nth(1)).toContainText('mit Feta besser')
+  await expect(entries.nth(1)).toContainText('mit Räuchertofu besser')
 
   await entries.first().getByRole('button', { name: /^Kochen am .* löschen$/ }).click()
   await expect(entries).toHaveCount(1)
@@ -117,7 +117,7 @@ test('in the detail: add a note later, delete a Cooking with undo, and cook agai
 
   await reloadHydrated(page)
   await expect(entries).toHaveCount(2)
-  await expect(entries.nth(1)).toContainText('mit Feta besser')
+  await expect(entries.nth(1)).toContainText('mit Räuchertofu besser')
   await expect(detail).not.toContainText('doppelt Knoblauch')
 })
 
@@ -208,9 +208,9 @@ test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toa
 // is the narrowest side by side (tablet's is 340px), and a 360px phone is
 // about as narrow as a card gets.
 test('"99× gekocht" shows in full beside an avatar and a note, side by side and on a phone', async ({ page }) => {
-  const title = 'Ofengemüse mit Halloumi und Zitronen-Joghurt'
+  const title = 'Ofengemüse mit Räuchertofu und Zitronen-Tahini'
   await signIn(page, ALLOWLISTED[6])
-  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Feta geht auch.', addedBy: ALLOWLISTED[6] })
+  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Tofu geht auch.', addedBy: ALLOWLISTED[6] })
   await seedCookings(page, title, 99)
 
   for (const viewport of [{ width: 1280, height: 800 }, { width: 768, height: 900 }, { width: 360, height: 740 }]) {

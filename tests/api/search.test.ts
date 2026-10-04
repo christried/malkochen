@@ -63,7 +63,7 @@ test('finds neither deleted Dishes nor Dishes on other Boards', async () => {
   const caller = await margaret()
   const board = await landingBoard(caller)
   const kept = await addDish(caller, 'Ofengemüse vom Blech')
-  const deleted = await addDish(caller, 'Ofengemüse mit Feta')
+  const deleted = await addDish(caller, 'Ofengemüse mit Tofu')
   await caller.fetch(`/api/dishes/${deleted.id}`, { method: 'DELETE' })
   await addDish(await signIn(ALLOWLISTED[5]), 'Ofengemüse bei Katherine')
 

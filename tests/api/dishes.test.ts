@@ -70,7 +70,7 @@ test('a Dish needs a title and a known Placeholder Image', async () => {
   expect((await addDish(linus, board.id, { placeholder: 'pasta' })).status).toBe(400)
   expect((await addDish(linus, board.id, { title: '   ', placeholder: 'pasta' })).status).toBe(400)
   expect((await addDish(linus, board.id, { title: 'Pasta' })).status).toBe(400)
-  expect((await addDish(linus, board.id, { title: 'Pasta', placeholder: 'steak' })).status).toBe(400)
+  expect((await addDish(linus, board.id, { title: 'Pasta', placeholder: 'tofu' })).status).toBe(400)
 
   expect((await landingBoard(linus)).columns.flatMap(c => c.dishes)).toEqual([])
 })
