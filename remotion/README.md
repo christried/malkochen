@@ -34,11 +34,13 @@ npm run lint                      # ESLint + tsc
 |---|---|
 | `public/placeholders/<dish>-<theme>.{mp4,webm,png}` | The 16 Placeholder Image loops, next to the SVG stills |
 | `public/clips/<clip>-<theme>.{mp4,webm,png}` | The 15 state, system and celebration clips |
+| `public/clips/splash-landscape-<theme>.{mp4,webm}` | The splash again at 2560×1440, for wide windows |
 
 `.mp4` is H.264 and plays everywhere, `.webm` is VP9 and smaller where it is
 supported, and `.png` is the poster: the reduced-motion still (frame 0 for a
 placeholder, the brief's "still" for a clip; invite-intro's is invite-loop's
-frame 0, where it hands off).
+frame 0, where it hands off). The splash's stills are WebPs instead, one per
+orientation for both themes: `splash[-landscape]-{poster,still}.webp`.
 
 Commit the rendered files; the app serves them as they are.
 

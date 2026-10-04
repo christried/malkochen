@@ -2,18 +2,18 @@
 // that can't be loaded gets offline.html instead of the browser's own error,
 // and that page tells apart the two reasons: the device has no connection
 // ("Du bist offline"), or it has one but malkochen doesn't answer ("nicht
-// erreichbar", our side). Besides, the splash's two stills, so a cold
+// erreichbar", our side). Besides, the splash's stills, so a cold
 // launch paints them at once. Nothing else is cached: Boards and Dishes always
 // come from the network. Bump VERSION when offline.html, what it shows, or a
 // splash still changes.
-const VERSION = 'offline-v5'
+const VERSION = 'offline-v6'
 const FALLBACK_PAGE = '/offline.html'
 // The offline clip (still and video, both themes) plays on the Offline page
 // and the app's Offline screen, which both show only without a connection.
 const OFFLINE_CLIP = ['light', 'dark'].flatMap(theme => ['png', 'webm', 'mp4'].map(ext => `/clips/offline-${theme}.${ext}`))
-// The splash's poster (frame 10) and reduced-motion still (frame 16): from
-// the cache first, as they show over the very first paint.
-const SPLASH_STILLS = ['/clips/splash-poster.webp', '/clips/splash-still.webp']
+// The splash's poster (frame 10) and reduced-motion still (frame 16), upright
+// and landscape: from the cache first, as they show over the very first paint.
+const SPLASH_STILLS = ['', '-landscape'].flatMap(o => [`/clips/splash${o}-poster.webp`, `/clips/splash${o}-still.webp`])
 const PRECACHED = [FALLBACK_PAGE, '/illustrations/topfbert-oops.svg', ...OFFLINE_CLIP, ...SPLASH_STILLS]
 
 self.addEventListener('install', (event) => {

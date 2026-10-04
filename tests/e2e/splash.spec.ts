@@ -9,6 +9,14 @@ import { gotoHydrated, reloadHydrated } from './hydration'
 
 const splash = (page: Page) => page.locator('[data-splash]')
 
+// A phone held upright, and a 16:9 desktop window.
+const PHONE = { width: 412, height: 915 }
+const WIDE = { width: 1600, height: 900 }
+
+// The still the splash shows (poster or reduced-motion still).
+const stillShown = (page: Page) => () =>
+  splash(page).locator('img').evaluate((img: HTMLImageElement) => new URL(img.currentSrc).pathname)
+
 // Every splash clip file the page asks for.
 function splashVideoRequests(page: Page) {
   const urls: string[] = []
@@ -52,6 +60,7 @@ async function watchFirstPaint(page: Page) {
 }
 
 test('a fresh tab plays the splash from frame 10 over the page, then fades to the page', async ({ page }) => {
+  await page.setViewportSize(PHONE)
   await page.emulateMedia({ colorScheme: 'light' })
   const clip = await watchClip(page)
   const atFirstPaint = await watchFirstPaint(page)
@@ -60,7 +69,7 @@ test('a fresh tab plays the splash from frame 10 over the page, then fades to th
 
   // In the page as the server sends it, over everything from the first paint.
   expect(await atFirstPaint()).toBe(true)
-  await expect(splash(page).locator('img[src="/clips/splash-poster.webp"]')).toBeAttached()
+  await expect.poll(stillShown(page)).toBe('/clips/splash-poster.webp')
   await expect.poll(clip).toMatchObject({ path: '/clips/splash-light.webm' })
   expect((await clip())!.start).toBeGreaterThanOrEqual(10 / 30 - 0.01)
 
@@ -68,6 +77,20 @@ test('a fresh tab plays the splash from frame 10 over the page, then fades to th
   await expect(splash(page)).toHaveCount(0)
   expect(await clip()).toMatchObject({ ended: true })
   await expect(page.getByRole('button', { name: /Google/ })).toBeVisible()
+})
+
+// Covering a wide window, the portrait clip would be cut and blown up.
+test('a wide window gets the landscape splash, poster and clip', async ({ page }) => {
+  await page.setViewportSize(WIDE)
+  await page.emulateMedia({ colorScheme: 'dark' })
+  const clip = await watchClip(page)
+
+  await page.goto('/login')
+
+  await expect.poll(stillShown(page)).toBe('/clips/splash-landscape-poster.webp')
+  await expect.poll(clip).toMatchObject({ path: '/clips/splash-landscape-dark.webm' })
+  await expect(splash(page)).toHaveCount(0)
+  expect(await clip()).toMatchObject({ ended: true })
 })
 
 test('a reload in the same tab shows no splash, not even for a frame, nor does in-app navigation', async ({ page }) => {
@@ -88,18 +111,22 @@ test('a reload in the same tab shows no splash, not even for a frame, nor does i
   expect(requests).toEqual([])
 })
 
-test('with reduced motion no clip loads: the frame-16 still shows, then fades', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  const requests = splashVideoRequests(page)
+for (const [window, viewport, still] of [
+  ['a phone', PHONE, '/clips/splash-still.webp'],
+  ['a wide window', WIDE, '/clips/splash-landscape-still.webp'],
+] as const) {
+  test(`with reduced motion no clip loads: ${window} shows its frame-16 still, then fades`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const requests = splashVideoRequests(page)
 
-  await page.goto('/login')
+    await page.goto('/login')
 
-  const still = splash(page).locator('img')
-  await expect.poll(() => still.evaluate((img: HTMLImageElement) => new URL(img.currentSrc).pathname))
-    .toBe('/clips/splash-still.webp')
-  await expect(splash(page)).toHaveCount(0)
-  expect(requests).toEqual([])
-})
+    await expect.poll(stillShown(page)).toBe(still)
+    await expect(splash(page)).toHaveCount(0)
+    expect(requests).toEqual([])
+  })
+}
 
 test('a fresh tab that lands on the error screen shows no splash on its way back into the app', async ({ page }) => {
   await signIn(page)

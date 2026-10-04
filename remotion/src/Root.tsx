@@ -1,13 +1,13 @@
 import { Composition, Folder } from "remotion";
 import { PLACEHOLDER_THEMES, PLACEHOLDERS } from "../../shared/placeholders";
-import { clipBrief, placeholderBrief } from "./briefs";
+import { clipBrief, clipVideo, LANDSCAPE_CLIPS, placeholderBrief } from "./briefs";
 import { calculateClipMetadata, ClipVideo } from "./ClipVideo";
 import { CLIPS } from "./clips/registry";
 import { calculatePlaceholderMetadata, Placeholder } from "./Placeholder";
 
 // One composition per video and theme. scripts/render.ts names the output
 // files from the props (public/placeholders/<dish>-<theme>.*,
-// public/clips/<clip>-<theme>.*), so the id is only for Studio.
+// public/clips/<clip>[-landscape]-<theme>.*), so the id is only for Studio.
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -27,21 +27,27 @@ export const RemotionRoot: React.FC = () => {
       </Folder>
       <Folder name="clips">
         {CLIPS.flatMap(({ id }) =>
-          PLACEHOLDER_THEMES.map((theme) => (
-            <Composition
-              key={`${id}-${theme}`}
-              id={`${id}-${theme}`}
-              component={ClipVideo}
-              {...clipBrief(id).video}
-              defaultProps={{
-                clip: id,
-                theme,
-                poster: clipBrief(id).poster,
-                art: { svgs: {}, topfbert: {} },
-              }}
-              calculateMetadata={calculateClipMetadata}
-            />
-          )),
+          [false, ...(LANDSCAPE_CLIPS.includes(id) ? [true] : [])].flatMap((landscape) =>
+            PLACEHOLDER_THEMES.map((theme) => {
+              const name = `${id}${landscape ? "-landscape" : ""}-${theme}`;
+              return (
+                <Composition
+                  key={name}
+                  id={name}
+                  component={ClipVideo}
+                  {...clipVideo(id, landscape)}
+                  defaultProps={{
+                    clip: id,
+                    theme,
+                    landscape,
+                    poster: clipBrief(id).poster,
+                    art: { svgs: {}, topfbert: {} },
+                  }}
+                  calculateMetadata={calculateClipMetadata}
+                />
+              );
+            }),
+          ),
         )}
       </Folder>
     </>
