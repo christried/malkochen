@@ -71,7 +71,10 @@ Commit the rendered files; the app serves them as they are.
   `registry.ts` has one clip per id in `CLIP_IDS`. Timelines count frames,
   never seconds.
 - Canvas, length, loop, background and poster come from the brief
-  (`clipBrief` in `src/briefs.ts`). Where a briefed timing can't loop
+  (`clipBrief` in `src/briefs.ts`), except the background of clips shown on
+  another colour in the app, and the splash's landscape render: the same
+  timeline on a 2560×1440 canvas (`clipVideo`), for wide windows, where the
+  portrait one would be cut and blown up. Where a briefed timing can't loop
   seamlessly, the nearest one that does is used, and the clip says so
   (invite-loop's 84f pebble bob, lookup-stir's 72f orbit).
 - **`topfbert.tsx`** stacks Topfbert's mood layers and gives him his own

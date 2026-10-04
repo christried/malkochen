@@ -4,6 +4,7 @@ import { clipBrief, clipVideo, LANDSCAPE_CLIPS, placeholderBrief } from "./brief
 import { calculateClipMetadata, ClipVideo } from "./ClipVideo";
 import { CLIPS } from "./clips/registry";
 import { calculatePlaceholderMetadata, Placeholder } from "./Placeholder";
+import { clipName } from "./render-settings";
 
 // One composition per video and theme. scripts/render.ts names the output
 // files from the props (public/placeholders/<dish>-<theme>.*,
@@ -29,7 +30,7 @@ export const RemotionRoot: React.FC = () => {
         {CLIPS.flatMap(({ id }) =>
           [false, ...(LANDSCAPE_CLIPS.includes(id) ? [true] : [])].flatMap((landscape) =>
             PLACEHOLDER_THEMES.map((theme) => {
-              const name = `${id}${landscape ? "-landscape" : ""}-${theme}`;
+              const name = `${clipName(id, landscape)}-${theme}`;
               return (
                 <Composition
                   key={name}

@@ -24,22 +24,20 @@ import { bundle } from "@remotion/bundler";
 import { getCompositions, renderMedia, renderStill } from "@remotion/renderer";
 import type { ClipProps } from "../src/ClipVideo.tsx";
 import type { PlaceholderProps } from "../src/Placeholder.tsx";
-import { HANDOFF_DIR, RSPACK, VIDEO_IMAGE_FORMAT } from "../src/render-settings.ts";
+import { clipName, HANDOFF_DIR, RSPACK, VIDEO_IMAGE_FORMAT } from "../src/render-settings.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "../public");
 const only = process.argv.slice(2);
 
 // Clips whose stills are theme-independent WebPs in place of the PNG poster.
-// Named <clip>[-landscape]-<still>.webp.
-const WEBP_STILLS: Record<string, { still: string; frame: number }[]> = {
+// Named <clip>[-landscape]-<name>.webp.
+const WEBP_STILLS: Record<string, { name: string; frame: number }[]> = {
   splash: [
-    { still: "poster", frame: 10 },
-    { still: "still", frame: 16 },
+    { name: "poster", frame: 10 },
+    { name: "still", frame: 16 },
   ],
 };
-
-const landscape = (props: ClipProps) => (props.landscape ? "-landscape" : "");
 
 // Where a composition's files go, and the composition and frame of its poster.
 // `name` is what the command line picks it by: a clip's landscape render
@@ -55,8 +53,8 @@ const output = (props: PlaceholderProps | ClipProps) =>
     : {
         name: props.clip,
         dir: "clips",
-        file: `${props.clip}${landscape(props)}-${props.theme}`,
-        poster: { id: `${props.poster.clip}${landscape(props)}-${props.theme}`, frame: props.poster.frame },
+        file: `${clipName(props.clip, props.landscape)}-${props.theme}`,
+        poster: { id: `${clipName(props.poster.clip, props.landscape)}-${props.theme}`, frame: props.poster.frame },
       };
 
 const serveUrl = await bundle({
@@ -92,13 +90,13 @@ for (const composition of compositions) {
       imageFormat: "png",
     });
   } else if (clip?.theme === "light") {
-    for (const { still, frame } of webpStills) {
+    for (const { name: still, frame } of webpStills) {
       await renderStill({
         composition,
         serveUrl,
         inputProps: composition.props,
         frame,
-        output: join(publicDir, dir, `${clip.clip}${landscape(clip)}-${still}.webp`),
+        output: join(publicDir, dir, `${clipName(clip.clip, clip.landscape)}-${still}.webp`),
         imageFormat: "webp",
       });
     }

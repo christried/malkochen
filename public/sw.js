@@ -13,7 +13,7 @@ const FALLBACK_PAGE = '/offline.html'
 const OFFLINE_CLIP = ['light', 'dark'].flatMap(theme => ['png', 'webm', 'mp4'].map(ext => `/clips/offline-${theme}.${ext}`))
 // The splash's poster (frame 10) and reduced-motion still (frame 16), upright
 // and landscape: from the cache first, as they show over the very first paint.
-const SPLASH_STILLS = ['', '-landscape'].flatMap(o => [`/clips/splash${o}-poster.webp`, `/clips/splash${o}-still.webp`])
+const SPLASH_STILLS = ['splash', 'splash-landscape'].flatMap(name => [`/clips/${name}-poster.webp`, `/clips/${name}-still.webp`])
 const PRECACHED = [FALLBACK_PAGE, '/illustrations/topfbert-oops.svg', ...OFFLINE_CLIP, ...SPLASH_STILLS]
 
 self.addEventListener('install', (event) => {

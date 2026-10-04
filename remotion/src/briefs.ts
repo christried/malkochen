@@ -3,8 +3,9 @@ import type { Placeholder, PlaceholderTheme } from "../../shared/placeholders";
 import { palette } from "./clips/draw";
 
 // The handoff's remotion-briefs.json is the source of truth for each clip's
-// canvas, length, frame rate and baked-in background. Only the fields used
-// here are typed.
+// canvas, length, frame rate and baked-in background, except where a clip
+// is overridden below and says why (IN_APP_BACKGROUND, the landscape canvas
+// of LANDSCAPE_CLIPS). Only the fields used here are typed.
 
 // Particle effects built in Vue have no canvas or length.
 type RawBrief = {
