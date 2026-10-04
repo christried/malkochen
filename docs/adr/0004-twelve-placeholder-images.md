@@ -4,18 +4,18 @@ status: accepted (supersedes ADR 0002)
 
 # 12 Placeholder Images, and Dishes moved off the removed ones
 
-The desktop review (`docs/reviews/desktop-review1.md`) found the 16 Placeholder Images of ADR 0002 not good enough. We keep the nine that work (ramen, burger, tacos, wok, bread, cake, smoothie, eintopf, dumplings) and add three drawn fresh by Claude Design (Pasta, Salat/Bowl, Frühstück), for 12 in all.
+The desktop review (`docs/reviews/desktop-review1.md`) found the 16 Placeholder Images of ADR 0002 not good enough. We keep the nine that work (ramen, burger, tacos, wok, bread, cake, smoothie, eintopf, dumplings) and add three drawn fresh by Claude Design in round 11: Pasta and Salat/Bowl under the existing keys `pasta` and `bowl`, and Frühstück under the new key `breakfast`, for 12 in all.
 
-A Dish stores a Placeholder Image's key, so the seven removed keys can't just disappear. A one-time migration moves every Dish on a removed key to the closest one left:
+A Dish stores a Placeholder Image's key. Dishes on `pasta` and `bowl` simply get the new drawings. The five removed keys can't just disappear, so a one-time migration moves every Dish on one of them to the closest key left, as the handoff's `illustrations.json → migration` lists it:
 
 | Removed | Becomes |
 |---|---|
-| pasta | Pasta (new) |
-| salad, bowl | Salat/Bowl (new) |
-| porridge | Frühstück (new) |
-| curry | eintopf |
+| curry, salad | bowl |
+| porridge | breakfast |
 | wrap | tacos |
 | pizza | bread |
+
+Curry goes to `bowl`, not `eintopf`, because the auto-pick's keywords also send "curry", "dal" and "chili" to `bowl`: an old curry Dish and a new one end up with the same image.
 
 ## Considered Options
 
