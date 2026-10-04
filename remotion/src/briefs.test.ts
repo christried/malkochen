@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import briefs from "../../docs/design handoff/remotion-briefs.json";
-import { CLIP_IDS, clipBrief } from "./briefs";
+import { CLIP_IDS, clipBrief, clipVideo, LANDSCAPE_CLIPS } from "./briefs";
 
 describe("clipBrief", () => {
   it("reads canvas, length, loop and backgrounds from the handoff", () => {
@@ -48,5 +48,22 @@ describe("CLIP_IDS", () => {
       .map((b) => b.id);
     expect(fromHandoff).toHaveLength(15);
     expect(CLIP_IDS).toEqual(fromHandoff);
+  });
+});
+
+describe("clipVideo", () => {
+  it("is the brief's canvas, unless the clip is asked for in landscape", () => {
+    expect(clipVideo("splash", false)).toEqual(clipBrief("splash").video);
+    expect(clipVideo("offline", false)).toEqual(clipBrief("offline").video);
+  });
+
+  // Covering a wide window, the portrait splash is cut and blown up (#112).
+  it("renders the splash a second time on a 16:9 canvas sharp at 1440p, as long and as fast", () => {
+    expect(LANDSCAPE_CLIPS).toEqual(["splash"]);
+    expect(clipVideo("splash", true)).toEqual({ width: 2560, height: 1440, durationInFrames: 33, fps: 30 });
+  });
+
+  it("has no landscape render of any other clip", () => {
+    expect(() => clipVideo("offline", true)).toThrow(/offline/);
   });
 });

@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { type ClipId, clipBrief, type Poster } from "./briefs";
+import { type ClipId, clipBrief, clipVideo, type Poster } from "./briefs";
 import type { Art, Mood, Theme } from "./clips/clip";
 import { clipById } from "./clips/registry";
 import { innerMarkup, viewBoxOf } from "./svg";
@@ -22,6 +22,8 @@ loadNewsreader("normal", { weights: ["400"], subsets: ["latin"] });
 export type ClipProps = {
   clip: ClipId;
   theme: Theme;
+  // The clip's landscape render (LANDSCAPE_CLIPS), on its 16:9 canvas.
+  landscape: boolean;
   // The brief's still, for scripts/render.ts, which can't read the briefs.
   poster: Poster;
   // Filled in by calculateMetadata.
@@ -58,7 +60,7 @@ export const calculateClipMetadata: CalculateMetadataFunction<ClipProps> = async
       }),
     ),
   );
-  return { ...clipBrief(props.clip).video, props: { ...props, art: { svgs, topfbert } } };
+  return { ...clipVideo(props.clip, props.landscape), props: { ...props, art: { svgs, topfbert } } };
 };
 
 export const ClipVideo: React.FC<ClipProps> = ({ clip, theme, art }) => {

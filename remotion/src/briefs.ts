@@ -3,8 +3,9 @@ import type { Placeholder, PlaceholderTheme } from "../../shared/placeholders";
 import { palette } from "./clips/draw";
 
 // The handoff's remotion-briefs.json is the source of truth for each clip's
-// canvas, length, frame rate and baked-in background. Only the fields used
-// here are typed.
+// canvas, length, frame rate and baked-in background, except where a clip
+// is overridden below and says why (IN_APP_BACKGROUND, the landscape canvas
+// of LANDSCAPE_CLIPS). Only the fields used here are typed.
 
 // Particle effects built in Vue have no canvas or length.
 type RawBrief = {
@@ -105,6 +106,20 @@ const IN_APP_BACKGROUND: Partial<Record<ClipId, "surfaceMuted" | "bg">> = {
   "never-cooked": "bg",
   "invite-intro": "bg",
   "invite-loop": "bg",
+};
+
+// Clips rendered a second time on a 16:9 canvas, for wide windows: covering
+// one, the brief's portrait canvas is cut at top and bottom and blown up
+// past its pixels. 2560×1440 stays sharp on a 1440p monitor.
+export const LANDSCAPE_CLIPS: ClipId[] = ["splash"];
+const LANDSCAPE_CANVAS = { width: 2560, height: 1440 };
+
+// The canvas a clip is rendered on: the brief's, or its landscape one.
+export const clipVideo = (id: ClipId, landscape: boolean): Video => {
+  const { video } = videoBrief(id);
+  if (!landscape) return video;
+  if (!LANDSCAPE_CLIPS.includes(id)) throw new Error(`${id} has no landscape render`);
+  return { ...video, ...LANDSCAPE_CANVAS };
 };
 
 export const clipBrief = (id: ClipId): ClipBrief => {

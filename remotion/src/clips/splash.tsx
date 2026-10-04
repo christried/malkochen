@@ -15,6 +15,31 @@ const GRADIENT_ANGLE = (160 * Math.PI) / 180;
 // The icon's face colour.
 const DOT = "#E0891E";
 
+// The brief's canvas, which the layout's proportions are drawn on.
+const BRIEF = { width: 1080, height: 1920 };
+
+// Where the icon and the wordmark go. On the brief's portrait canvas, as the
+// brief draws them; on a wider one (the landscape render for wide windows),
+// as they sit in the middle 9:16 column of the same height, so they are as
+// large a share of the height as on the phone and stay whole however wide
+// the window. `scale` is that column against the brief's canvas, for what
+// the brief sizes in canvas px (the shadow, the wordmark's rise).
+export const splashLayout = (width: number, height: number) => {
+  const column = Math.min(width, (height * BRIEF.width) / BRIEF.height);
+  const columnHeight = (column * BRIEF.height) / BRIEF.width;
+  const top = (height - columnHeight) / 2;
+  const iconSize = 0.36 * column;
+  const cy = top + 0.44 * columnHeight;
+  return {
+    cx: width / 2,
+    cy,
+    iconSize,
+    fontSize: 0.12 * column,
+    wordmarkTop: cy + iconSize / 2 + 0.06 * columnHeight,
+    scale: column / BRIEF.width,
+  };
+};
+
 export const splash = defineClip<"bloom" | "icon" | "lid" | "wordmark" | "dot">({
   id: "splash",
   art: { svgs: [ICON, LID] },
@@ -48,10 +73,7 @@ export const splash = defineClip<"bloom" | "icon" | "lid" | "wordmark" | "dot">(
     const icon = art.svgs[ICON];
     // The icon without its lid, which pops on its own.
     const pot = { ...icon, markup: icon.markup.replace(piece(icon, "lid").markup, "") };
-    const iconSize = 0.36 * width;
-    const cx = width / 2;
-    const cy = 0.44 * height;
-    const fontSize = 0.12 * width;
+    const { cx, cy, iconSize, fontSize, wordmarkTop, scale } = splashLayout(width, height);
     // circle(100%): the radius CSS takes as 100% for a box this size.
     const bloomRadius = Math.hypot(width, height) / Math.SQRT2;
     // The CSS gradient line: through the centre at the angle, as long as the
@@ -82,7 +104,7 @@ export const splash = defineClip<"bloom" | "icon" | "lid" | "wordmark" | "dot">(
             transform={poseTransform(poses.bloom, [width / 2, height / 2])}
           />
           <g transform={poseTransform(poses.icon, [cx, cy])} opacity={poses.icon.opacity}>
-            <g style={{ filter: "drop-shadow(0 24px 40px rgba(120,60,0,.25))" }}>
+            <g style={{ filter: `drop-shadow(0 ${24 * scale}px ${40 * scale}px rgba(120,60,0,.25))` }}>
               <Place svg={pot} x={cx - iconSize / 2} y={cy - iconSize / 2} width={iconSize} />
             </g>
             <Place
@@ -97,7 +119,7 @@ export const splash = defineClip<"bloom" | "icon" | "lid" | "wordmark" | "dot">(
         <div
           style={{
             position: "absolute",
-            top: cy + iconSize / 2 + 0.06 * height,
+            top: wordmarkTop,
             width: "100%",
             display: "flex",
             justifyContent: "center",
@@ -110,7 +132,7 @@ export const splash = defineClip<"bloom" | "icon" | "lid" | "wordmark" | "dot">(
         >
           <span
             style={{
-              transform: `translateY(${poses.wordmark.y}px)`,
+              transform: `translateY(${poses.wordmark.y * scale}px)`,
               opacity: poses.wordmark.opacity,
             }}
           >

@@ -14,7 +14,13 @@ import { SPLASH_SEEN_KEY } from '~~/shared/splash'
 // otherwise. Mounted once from app.vue, so in-app navigation never shows it.
 // With reduced motion no video loads: <picture> picks the frame-16 still
 // (icon and wordmark), which holds, then fades.
+//
+// A landscape window gets the clip's landscape render (and its stills): the
+// portrait one, covering it, would be cut at top and bottom and blown up.
+// The phone, upright, keeps the portrait one that follows Android's native
+// splash. Picked once as it starts: the splash is over in about a second.
 
+const LANDSCAPE = '(orientation: landscape)'
 // Frame 10 of the 30fps clip.
 const START = 10 / 30
 // Reduced motion: how long the still holds before it fades.
@@ -37,6 +43,7 @@ useHead({
 // in the browser (after an error page's way back home) is in-app navigation.
 const state = ref<'showing' | 'leaving' | 'gone'>(import.meta.client && !useNuxtApp().isHydrating ? 'gone' : 'showing')
 const play = ref(false)
+const landscape = ref(false)
 const timers: ReturnType<typeof setTimeout>[] = []
 
 onMounted(() => {
@@ -49,6 +56,7 @@ onMounted(() => {
     timers.push(setTimeout(leave, HOLD_MS))
     return
   }
+  landscape.value = window.matchMedia(LANDSCAPE).matches
   play.value = true
   timers.push(setTimeout(leave, GIVE_UP_MS))
 })
@@ -70,7 +78,7 @@ function leave() {
     data-splash
   >
     <MotionClip
-      src="/clips/splash"
+      :src="landscape ? '/clips/splash-landscape' : '/clips/splash'"
       :play="play"
       :loop="false"
       :start="START"
@@ -79,8 +87,16 @@ function leave() {
     >
       <picture>
         <source
+          :media="`(prefers-reduced-motion: reduce) and ${LANDSCAPE}`"
+          srcset="/clips/splash-landscape-still.webp"
+        >
+        <source
           media="(prefers-reduced-motion: reduce)"
           srcset="/clips/splash-still.webp"
+        >
+        <source
+          :media="LANDSCAPE"
+          srcset="/clips/splash-landscape-poster.webp"
         >
         <img
           src="/clips/splash-poster.webp"

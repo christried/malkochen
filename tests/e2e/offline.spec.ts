@@ -61,7 +61,13 @@ test('the service worker keeps the splash stills, so a cold launch paints them w
   await serviceWorkerInControl(page)
 
   await context.setOffline(true)
-  for (const still of ['/clips/splash-poster.webp', '/clips/splash-still.webp']) {
+  const stills = [
+    '/clips/splash-poster.webp',
+    '/clips/splash-still.webp',
+    '/clips/splash-landscape-poster.webp',
+    '/clips/splash-landscape-still.webp',
+  ]
+  for (const still of stills) {
     const type = await page.evaluate(async url => (await fetch(url)).headers.get('content-type'), still)
     expect(type, still).toBe('image/webp')
   }

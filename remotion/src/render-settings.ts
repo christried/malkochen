@@ -8,5 +8,9 @@ export const HANDOFF_DIR = "../docs/design handoff";
 
 export const RSPACK = true;
 
+// A clip's name in its composition ids and file names: "<clip>", or
+// "<clip>-landscape" for its landscape render (LANDSCAPE_CLIPS).
+export const clipName = (clip: string, landscape: boolean) => (landscape ? `${clip}-landscape` : clip);
+
 // PNG frames keep the flat colours free of JPEG blocking before encoding.
 export const VIDEO_IMAGE_FORMAT = "png";

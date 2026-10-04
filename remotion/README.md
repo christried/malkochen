@@ -34,11 +34,13 @@ npm run lint                      # ESLint + tsc
 |---|---|
 | `public/placeholders/<dish>-<theme>.{mp4,webm,png}` | The 16 Placeholder Image loops, next to the SVG stills |
 | `public/clips/<clip>-<theme>.{mp4,webm,png}` | The 15 state, system and celebration clips |
+| `public/clips/splash-landscape-<theme>.{mp4,webm}` | The splash again at 2560×1440, for wide windows |
 
 `.mp4` is H.264 and plays everywhere, `.webm` is VP9 and smaller where it is
 supported, and `.png` is the poster: the reduced-motion still (frame 0 for a
 placeholder, the brief's "still" for a clip; invite-intro's is invite-loop's
-frame 0, where it hands off).
+frame 0, where it hands off). The splash's stills are WebPs instead, one per
+orientation for both themes: `splash[-landscape]-{poster,still}.webp`.
 
 Commit the rendered files; the app serves them as they are.
 
@@ -69,7 +71,10 @@ Commit the rendered files; the app serves them as they are.
   `registry.ts` has one clip per id in `CLIP_IDS`. Timelines count frames,
   never seconds.
 - Canvas, length, loop, background and poster come from the brief
-  (`clipBrief` in `src/briefs.ts`). Where a briefed timing can't loop
+  (`clipBrief` in `src/briefs.ts`), except the background of clips shown on
+  another colour in the app, and the splash's landscape render: the same
+  timeline on a 2560×1440 canvas (`clipVideo`), for wide windows, where the
+  portrait one would be cut and blown up. Where a briefed timing can't loop
   seamlessly, the nearest one that does is used, and the clip says so
   (invite-loop's 84f pebble bob, lookup-stir's 72f orbit).
 - **`topfbert.tsx`** stacks Topfbert's mood layers and gives him his own
