@@ -20,6 +20,9 @@ const title = ref(props.dish.title)
 const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
 onMounted(() => titleInput.value?.focus())
 const note = ref(props.dish.note ?? '')
+// The note field's made-up example, a new one each time editing starts.
+const noteExample = useNoteExample()
+onMounted(noteExample.pickAnother)
 const link = ref(props.dish.source?.link ?? '')
 // Looks a new link up as in Add Dish: at once when pasted, after a short
 // pause while typing. Only the latest lookup's answer counts.
@@ -220,7 +223,7 @@ async function save() {
         required
         maxlength="200"
         autocomplete="off"
-        class="rounded-field border border-line-strong bg-surface px-4 py-3 font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        class="rounded-field border border-line-strong bg-surface px-4 py-field-display font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
     </div>
 
@@ -237,7 +240,7 @@ async function save() {
         v-model="note"
         rows="3"
         maxlength="2000"
-        :placeholder="t.detail.notePrompt"
+        :placeholder="noteExample.prompt.value"
         class="resize-none rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       />
     </div>

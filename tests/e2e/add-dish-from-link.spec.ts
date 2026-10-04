@@ -95,7 +95,8 @@ test('a pasted link shows a loading state, then a preview with image and editabl
   await expect(page.locator('[data-toast]')).toHaveText('Das Bild vom Link ließ sich nicht speichern. „Knusprige Tofu-Bowl“ hat jetzt ein Platzhalterbild.')
 })
 
-// Long enough to still be typing in (30ms a character) when the test looks.
+// Long enough to still be typing in (several characters a frame, half a
+// second in all) when the test looks.
 const LONG_TITLE = 'Ofengemüse mit Kichererbsen, Tahini-Zitronen-Dressing und Granatapfel'
 
 async function findLongTitle(page: Page) {

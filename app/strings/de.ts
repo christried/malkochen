@@ -27,6 +27,26 @@ export const de = {
   app: {
     name: 'malkochen',
   },
+  // A Dish's note field suggests one of these made-up notes, a new one each
+  // time it shows. Vegan, like everything in the app.
+  dishNote: {
+    examples: [
+      'mit extra Knoblauch',
+      'Tofu vorher gut auspressen',
+      'doppelte Menge Erdnusssoße',
+      'mit Räuchertofu und Frühlingszwiebeln',
+      'Kichererbsen über Nacht einweichen',
+      'statt Reis mit Couscous',
+      'schärfer als im Video',
+      'mit Kokosmilch statt Wasser',
+      'Linsen vorher kurz anrösten',
+      'mit Hefeflocken obendrauf',
+      'reicht locker für vier',
+      'Ofen auf 200 Grad, nicht 180',
+      'zum Schluss Zitronenabrieb drüber',
+    ],
+    prompt: (example: string) => `Optional, z. B. „${example}“`,
+  },
   signIn: {
     headline: 'Was willst du mal kochen?',
     intro: 'Sammelt Essen, das ihr online findet, und plant, was ihr als Nächstes kocht.',
@@ -99,7 +119,8 @@ export const de = {
   cooking: {
     noteHeading: 'Notiz zum Kochen',
     note: 'Notiz',
-    notePrompt: 'Optional, z. B. „mit Feta besser“',
+    // About how it went this time, so not one of the Dish note examples.
+    notePrompt: 'Optional, z. B. „nächstes Mal mehr Knoblauch“',
     save: 'Speichern',
     saving: 'Speichert …',
     close: 'Schließen',
@@ -154,7 +175,6 @@ export const de = {
     editing: 'Gericht bearbeiten',
     title: 'Titel',
     note: 'Notiz',
-    notePrompt: 'Optional, z. B. „mit Räuchertofu statt Speck“',
     source: 'Link',
     sourcePrompt: 'Link von TikTok, Instagram, YouTube, Pinterest oder einem Blog',
     sourceHint: 'Ein neuer Link ändert das Bild nicht. Dafür gibt es „Bild neu laden“.',
@@ -200,7 +220,6 @@ export const de = {
     title: 'Titel',
     titlePrompt: 'Wie heißt das Gericht?',
     note: 'Notiz',
-    notePrompt: 'Optional, z. B. „mit Räuchertofu statt Speck“',
     image: 'Bild',
     chooseImage: 'Bild wählen',
     save: 'Speichern',

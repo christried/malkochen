@@ -284,3 +284,18 @@ html[data-theme-reveal="fade"] *::after {
 :where(input, textarea, select) {
   transition: box-shadow 180ms var(--ease-fade), border-color 180ms var(--ease-fade);
 }
+
+/* Bordered fields pad a little more above than below, in place of py-3, so
+   their text sits optically centred (measured from the cap tops and the
+   baseline). Set in Newsreader (font-display), whose line box puts the
+   letters about 3px above the middle (a deep descent for its caps), a
+   one-line field moves the text 3px down. A select without its native look,
+   or a textarea, set in Hanken Grotesk (text-body), sat about 1px high. */
+@utility py-field-display {
+  padding-top: 15px;
+  padding-bottom: 9px;
+}
+@utility py-field-body {
+  padding-top: 13px;
+  padding-bottom: 11px;
+}

@@ -28,11 +28,11 @@ test('a Dish added without a Source lands at the top of the first Column', async
   const ada = await signIn(ALLOWLISTED[0])
   const board = await landingBoard(ada)
 
-  const res = await addDish(ada, board.id, { title: '  Omas Linsensuppe ', note: 'mit Räuchertofu statt Speck', placeholder: 'eintopf' })
+  const res = await addDish(ada, board.id, { title: '  Omas Linsensuppe ', note: 'mit Räuchertofu und Frühlingszwiebeln', placeholder: 'eintopf' })
 
   expect(res.status).toBe(201)
   const { placement, ...created } = await res.json() as Placed
-  expect(created).toMatchObject({ title: 'Omas Linsensuppe', note: 'mit Räuchertofu statt Speck', placeholder: 'eintopf', imageUrl: null, source: null })
+  expect(created).toMatchObject({ title: 'Omas Linsensuppe', note: 'mit Räuchertofu und Frühlingszwiebeln', placeholder: 'eintopf', imageUrl: null, source: null })
 
   const after = await landingBoard(ada)
   expect(after.columns[0]!.dishes[0]).toEqual(created)
