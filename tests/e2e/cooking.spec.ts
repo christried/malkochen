@@ -154,6 +154,55 @@ test('"Gekocht ✓" in the Dish detail celebrates there', async ({ page }) => {
   await expect(topfbert(detail)).toContainText('Mmh!')
 })
 
+// The note sheet opened from the Gekocht toast makes the Dish detail step back (scale
+// .96). The toast, on its way out, stays where it was meanwhile: it doesn't
+// jump into the side panel (desktop) or shrink with the screen (phone). Its
+// way out only moves it down, so its left edge and width stay; they're
+// sampled every frame until it's gone.
+test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toast where it was', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[6])
+  // A Dish for each screen size: cooked, it leaves Ideen.
+  const runs = [{ viewport: { width: 1280, height: 800 }, title: 'Bibimbap' }, { viewport: { width: 360, height: 740 }, title: 'Gyoza' }]
+  for (const { title } of runs) await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+
+  for (const { viewport, title } of runs) {
+    await page.setViewportSize(viewport)
+    await gotoHydrated(page, '/')
+    await page.getByRole('link', { name: title }).click()
+    const detail = page.getByRole('dialog', { name: title })
+    await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
+    const pill = detail.locator('[data-toast]')
+    await expect(pill).toBeVisible()
+    await pill.evaluate(el => Promise.all(el.parentElement!.getAnimations().map(a => a.finished)))
+
+    const frames = pill.evaluate(el => new Promise<{ x: number, width: number }[]>((resolve) => {
+      const seen: { x: number, width: number }[] = []
+      const sample = () => {
+        if (!el.isConnected) return resolve(seen)
+        const { x, width } = el.getBoundingClientRect()
+        seen.push({ x, width })
+        requestAnimationFrame(sample)
+      }
+      sample()
+    }))
+    await gekochtToast(page).getByRole('button', { name: 'Notiz hinzufügen' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
+    await expect(sheet).toBeVisible()
+    await expect(detail).toHaveAttribute('data-covered')
+
+    const [first, ...rest] = await frames
+    expect(rest.length, 'sampled until it left').toBeGreaterThan(3)
+    for (const frame of rest) {
+      expect(Math.abs(frame.x - first!.x), `moved sideways at ${viewport.width}px`).toBeLessThan(1)
+      expect(Math.abs(frame.width - first!.width), `changed width at ${viewport.width}px`).toBeLessThan(1)
+    }
+    await page.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+    await page.keyboard.press('Escape')
+    await expect(detail).toBeHidden()
+  }
+})
+
 // PRD story 30. The count is `truncate`d, so its text is complete in the DOM
 // even when the card shows "99× g…": only its widths tell. The desktop Column
 // is the narrowest side by side (tablet's is 340px), and a 360px phone is
