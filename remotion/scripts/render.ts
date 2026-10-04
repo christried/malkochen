@@ -1,6 +1,7 @@
 // Renders every video into the app's static assets, per theme:
 //   public/placeholders/<dish>-<theme>.{mp4,webm,png}   the Placeholder Image loops
 //   public/clips/<clip>-<theme>.{mp4,webm,png}          the state, system and celebration clips
+//   public/clips/<clip>-landscape-<theme>.{mp4,webm}    a clip's 16:9 render for wide windows
 //
 //   .mp4   H.264, what every browser plays
 //   .webm  VP9, smaller where supported
@@ -9,7 +10,7 @@
 //
 // The splash has no PNGs: from frame 10 on the butter covers the Board's
 // background, so its stills are one WebP each for both themes, small enough
-// for the service worker to precache (public/clips/splash-<still>.webp):
+// for the service worker to precache (public/clips/splash[-landscape]-<still>.webp):
 //   splash-poster.webp  frame 10, what shows until the clip has a frame
 //   splash-still.webp   frame 16, the reduced-motion still
 //
@@ -30,14 +31,19 @@ const publicDir = join(root, "../public");
 const only = process.argv.slice(2);
 
 // Clips whose stills are theme-independent WebPs in place of the PNG poster.
-const WEBP_STILLS: Record<string, { file: string; frame: number }[]> = {
+// Named <clip>[-landscape]-<still>.webp.
+const WEBP_STILLS: Record<string, { still: string; frame: number }[]> = {
   splash: [
-    { file: "splash-poster", frame: 10 },
-    { file: "splash-still", frame: 16 },
+    { still: "poster", frame: 10 },
+    { still: "still", frame: 16 },
   ],
 };
 
+const landscape = (props: ClipProps) => (props.landscape ? "-landscape" : "");
+
 // Where a composition's files go, and the composition and frame of its poster.
+// `name` is what the command line picks it by: a clip's landscape render
+// goes with the clip.
 const output = (props: PlaceholderProps | ClipProps) =>
   "dish" in props
     ? {
@@ -49,8 +55,8 @@ const output = (props: PlaceholderProps | ClipProps) =>
     : {
         name: props.clip,
         dir: "clips",
-        file: `${props.clip}-${props.theme}`,
-        poster: { id: `${props.poster.clip}-${props.theme}`, frame: props.poster.frame },
+        file: `${props.clip}${landscape(props)}-${props.theme}`,
+        poster: { id: `${props.poster.clip}${landscape(props)}-${props.theme}`, frame: props.poster.frame },
       };
 
 const serveUrl = await bundle({
@@ -74,7 +80,8 @@ for (const composition of compositions) {
 
   const posterComposition = all.find((c) => c.id === poster.id);
   if (!posterComposition) throw new Error(`No composition ${poster.id} for ${file}'s poster`);
-  const webpStills = "clip" in composition.props ? WEBP_STILLS[composition.props.clip as string] : undefined;
+  const clip = "clip" in composition.props ? (composition.props as ClipProps) : undefined;
+  const webpStills = clip && WEBP_STILLS[clip.clip];
   if (!webpStills) {
     await renderStill({
       composition: posterComposition,
@@ -84,14 +91,14 @@ for (const composition of compositions) {
       output: `${name}.png`,
       imageFormat: "png",
     });
-  } else if ((composition.props as ClipProps).theme === "light") {
-    for (const still of webpStills) {
+  } else if (clip?.theme === "light") {
+    for (const { still, frame } of webpStills) {
       await renderStill({
         composition,
         serveUrl,
         inputProps: composition.props,
-        frame: still.frame,
-        output: join(publicDir, dir, `${still.file}.webp`),
+        frame,
+        output: join(publicDir, dir, `${clip.clip}${landscape(clip)}-${still}.webp`),
         imageFormat: "webp",
       });
     }

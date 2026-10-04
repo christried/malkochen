@@ -107,6 +107,20 @@ const IN_APP_BACKGROUND: Partial<Record<ClipId, "surfaceMuted" | "bg">> = {
   "invite-loop": "bg",
 };
 
+// Clips rendered a second time on a 16:9 canvas, for wide windows: covering
+// one, the brief's portrait canvas is cut at top and bottom and blown up
+// past its pixels. 2560×1440 stays sharp on a 1440p monitor.
+export const LANDSCAPE_CLIPS: ClipId[] = ["splash"];
+const LANDSCAPE_CANVAS = { width: 2560, height: 1440 };
+
+// The canvas a clip is rendered on: the brief's, or its landscape one.
+export const clipVideo = (id: ClipId, landscape: boolean): Video => {
+  const { video } = videoBrief(id);
+  if (!landscape) return video;
+  if (!LANDSCAPE_CLIPS.includes(id)) throw new Error(`${id} has no landscape render`);
+  return { ...video, ...LANDSCAPE_CANVAS };
+};
+
 export const clipBrief = (id: ClipId): ClipBrief => {
   const { brief, video } = videoBrief(id);
   const inApp = IN_APP_BACKGROUND[id];
