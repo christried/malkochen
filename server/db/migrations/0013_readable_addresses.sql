@@ -41,10 +41,13 @@ $$;--> statement-breakpoint
 ALTER TABLE "dish" ALTER COLUMN "code" SET DEFAULT random_dish_code();--> statement-breakpoint
 ALTER TABLE "dish" ALTER COLUMN "code" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "dish" ADD CONSTRAINT "dish_code_unique" UNIQUE("code");--> statement-breakpoint
--- Existing Boards get slugs from their names, oldest Board first, as
--- shared/address.ts makes them (umlauts as ae/oe/ue, ß as ss, accents and
--- emoji dropped, at most 60 characters; "board" if nothing is left), and
--- "-2", "-3"... where one is taken. From now on the app picks them
+-- Existing Boards get slugs from their names, oldest Board first, and
+-- "-2", "-3"... where one is taken. Much as shared/address.ts makes them
+-- (umlauts as ae/oe/ue, ß as ss, accents and emoji dropped, at most 60
+-- characters; "board" if nothing is left), but only the Latin-1 accents
+-- below lose their accent: a letter with another one is dropped here, where
+-- the app keeps the letter. The slug is unique all the same, and the next
+-- rename makes it the app's way. From now on the app picks them
 -- (server/utils/addresses.ts).
 DO $$
 DECLARE

@@ -1,6 +1,6 @@
 import { boardModuleKey } from '~/board/board-module'
 
-// The open Board's client Board module, which its page (b/[id].vue) provides
+// The open Board's client Board module, which its page (BoardScreen.vue) provides
 // to the forms under it: their writes go through it.
 export function useBoardModule() {
   const boardModule = inject(boardModuleKey)
