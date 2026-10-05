@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
-import { boolean, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
 // ./migrations. Every timestamp is `timestamptz`, so values never depend on the
@@ -131,6 +131,11 @@ export const dish = pgTable('dish', {
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),
   placeholder: text('placeholder').$type<Placeholder>().notNull(),
+  // The image's focus point (shared/image-focus.ts), in whole percent of its
+  // width and height: the part every frame that crops it shows. The centre
+  // unless a Member shifted it; a Placeholder Image doesn't use it.
+  imageFocusX: smallint('image_focus_x').notNull().default(50),
+  imageFocusY: smallint('image_focus_y').notNull().default(50),
   // Who added it; kept (as unknown) if their account is ever deleted.
   addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: createdAt(),

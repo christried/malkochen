@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, ilike, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
+import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
 import type { SourceKind } from '../source-lookup'
@@ -29,6 +30,8 @@ export interface DishView {
   creator: string | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
+  // The part of that image a frame cropping it shows (shared/image-focus.ts).
+  imageFocus: ImageFocus
   placeholder: Placeholder
   // Null once the account that added it is gone.
   addedBy: DishAdder | null
@@ -64,6 +67,9 @@ export interface NewDish {
   creator: string | null
   // Must already be a stored image (Image Store), never a third-party link.
   imageUrl: string | null
+  // Where that image is shifted to; the centre if left out. Without an
+  // image, always the centre.
+  imageFocus?: ImageFocus
   placeholder: Placeholder
 }
 
@@ -95,6 +101,8 @@ function selectDishes() {
       sourceKind: dish.sourceKind,
       creator: dish.creator,
       imageUrl: dish.imageUrl,
+      imageFocusX: dish.imageFocusX,
+      imageFocusY: dish.imageFocusY,
       placeholder: dish.placeholder,
       createdAt: dish.createdAt,
       adderId: user.id,
@@ -108,9 +116,10 @@ function selectDishes() {
 
 type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
 
-function toView({ columnId: _, sourceLink, sourceKind, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[]): DishView {
+function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[]): DishView {
   return {
     ...row,
+    imageFocus: { x: imageFocusX, y: imageFocusY },
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
     createdAt: row.createdAt.toISOString(),
@@ -142,8 +151,10 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 }
 
 // What editing a Dish may change (PRD story 43); fields left out stay as
-// they are. `imageUrl` must already be a stored image, never a third-party link.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'creator' | 'imageUrl' | 'placeholder'>>
+// they are. `imageUrl` must already be a stored image, never a third-party
+// link. A new image starts in the centre unless `imageFocus` comes with it;
+// none (the Placeholder) always does.
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'creator' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -172,10 +183,12 @@ export async function boardOfDish(dishId: string): Promise<string | null> {
 
 // Edits a Dish. Null unless it exists and the user is a Member of its Board.
 export async function editDish(dishId: string, userId: string, changes: DishChanges): Promise<DishView | null> {
-  const { source, ...rest } = changes
+  const { source, imageFocus, ...rest } = changes
+  const focus = rest.imageUrl === undefined ? imageFocus : focusOf(rest.imageUrl, imageFocus)
   const values = {
     ...rest,
     ...source !== undefined && { sourceLink: source?.link ?? null, sourceKind: source?.kind ?? null },
+    ...focus && { imageFocusX: focus.x, imageFocusY: focus.y },
   }
   const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
@@ -184,6 +197,12 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
   }
 
   return findDish(target)
+}
+
+// The focus point an image is stored with: the one given, else the centre.
+// A Dish without an image (its Placeholder) has none to shift.
+function focusOf(imageUrl: string | null, focus: ImageFocus | undefined): ImageFocus {
+  return imageUrl && focus ? focus : { ...FOCUS_CENTRE }
 }
 
 // Deletes a Dish (PRD story 47): a soft delete, so it can be restored. False
@@ -391,6 +410,7 @@ export async function addDish(
   const firstColumn = columnForNewDishes(columns)
   if (!firstColumn) return null
 
+  const focus = focusOf(input.imageUrl, input.imageFocus)
   const [created] = await db
     .insert(dish)
     .values({
@@ -403,6 +423,8 @@ export async function addDish(
       sourceKind: input.source?.kind ?? null,
       creator: input.creator,
       imageUrl: input.imageUrl,
+      imageFocusX: focus.x,
+      imageFocusY: focus.y,
       placeholder: input.placeholder,
       addedBy: adder.id,
     })
@@ -416,6 +438,7 @@ export async function addDish(
     source: input.source,
     creator: input.creator,
     imageUrl: input.imageUrl,
+    imageFocus: focus,
     placeholder: input.placeholder,
     addedBy: { id: adder.id, name: adder.name, image: adder.image ?? null },
     createdAt: created.createdAt.toISOString(),

@@ -31,6 +31,11 @@ export function sourceOf(input: SourceInput): DishSource {
 // stored it: where it went, and the photo ticket it came with.
 export const photoInput = z.object({ url: z.string().min(1).max(2048), ticket: z.string().max(200) })
 
+// Where a Source image or own photo is shifted to (shared/image-focus.ts):
+// a point within the image, kept in whole percent.
+const percent = z.number().min(0).max(100).transform(Math.round)
+export const imageFocusInput = z.object({ x: percent, y: percent })
+
 // Adding a Dish (POST /api/boards/:id/dishes).
 export const addDishBody = z.object({
   title: dishTitle,
@@ -45,6 +50,8 @@ export const addDishBody = z.object({
   imageTicket: z.string().max(200).nullish(),
   // Or the Member's own photo, used instead of any Source image.
   photo: photoInput.nullish(),
+  // Its focus point; left out, or without an image, the centre.
+  imageFocus: imageFocusInput.optional(),
 })
 export type AddDishBody = z.input<typeof addDishBody>
 
@@ -64,5 +71,8 @@ export const dishEditBody = z.object({
   imageTicket: z.string().max(200).nullish(),
   // The Member's own photo becomes the image, used instead of `imageUrl`.
   photo: photoInput.optional(),
+  // Shifts the image. A new image (or the Placeholder) starts in the centre
+  // unless this comes with it.
+  imageFocus: imageFocusInput.optional(),
 })
 export type DishEditBody = z.input<typeof dishEditBody>

@@ -78,6 +78,13 @@
       "when": 1791198514518,
       "tag": "0010_column_subtitle",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791219507997,
+      "tag": "0011_dish_image_focus",
+      "breakpoints": true
     }
   ]
 }
