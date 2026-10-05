@@ -470,7 +470,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <!-- Phones: the active Column's name and subtitle, large. -->
     <ColumnHeadline
       v-show="!searching"
-      class="-mx-4 mt-5 px-4 tablet:hidden"
+      class="-mx-4 mt-5 px-4"
       :columns="board.columns"
       :active="activeIndex"
       :progress="progress"

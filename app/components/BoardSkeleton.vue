@@ -62,7 +62,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
 
     <ColumnHeadline
       v-if="listing"
-      class="-mx-4 mt-5 px-4 tablet:hidden"
+      class="-mx-4 mt-5 px-4"
       :columns="columns"
       :active="0"
       :progress="0"

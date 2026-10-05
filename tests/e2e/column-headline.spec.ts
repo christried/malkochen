@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { swipe, tab } from './board'
+import { column, swipe, tab } from './board'
 import { gotoHydrated } from './hydration'
 import { landingBoardId, resetBoard } from './seed'
 
@@ -41,19 +41,6 @@ async function expectShown(page: Page, name: string, subtitle?: string) {
   if (subtitle !== undefined) expect((await headlineTitles(page)).find(t => t.name === name)!.subtitle).toBe(subtitle)
 }
 
-// A finger that has started swiping `dx` across the Board and is still down.
-async function swipeHeld(board: Locator, dx: number) {
-  const box = (await board.boundingBox())!
-  const x = box.x + box.width / 2
-  const at = (clientX: number) => ({ pointerId: 9, pointerType: 'touch', isPrimary: true, clientX, clientY: box.y + 80, bubbles: true })
-  await board.dispatchEvent('pointerdown', at(x))
-  for (let step = 1; step <= 6; step++) {
-    await board.page().waitForTimeout(40)
-    await board.dispatchEvent('pointermove', at(x + dx * step / 6))
-  }
-  return () => board.dispatchEvent('pointerup', at(x + dx))
-}
-
 async function renameColumns(page: Page, columns: { name: string, subtitle?: string | null }[]) {
   const board = await (await page.request.get(`/api/boards/${await landingBoardId(page)}`)).json() as { columns: { id: string }[] }
   for (const [index, change] of columns.entries()) {
@@ -90,6 +77,7 @@ test('a phone shows the active Column’s name large, with its subtitle in itali
 test('the title and subtitle change with the Column, drifting across as the Board is swiped', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await signIn(page, KATALIN)
+  await resetBoard(page)
   await gotoHydrated(page, '/')
 
   await tab(page, 'Diese Woche 0').click()
@@ -100,7 +88,7 @@ test('the title and subtitle change with the Column, drifting across as the Boar
 
   // Halfway across, the title leaving drifts and fades as the next one comes in.
   const board = page.getByTestId('columns')
-  const release = await swipeHeld(board, -160)
+  const release = await swipe(board, -160, { hold: true })
   const [, leaving, coming] = await headlineTitles(page)
   expect(leaving!.opacity).toBeGreaterThan(0)
   expect(leaving!.opacity).toBeLessThan(1)
@@ -144,6 +132,17 @@ test('on a 360px phone long names and subtitles shrink and wrap inside the scree
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(PHONE.width)
 })
 
+test('from 768px there is no headline: each lane has its own title', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 800 })
+  await signIn(page, KATALIN)
+  await resetBoard(page)
+  await gotoHydrated(page, '/')
+
+  await expect(headline(page)).toBeHidden()
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
+  for (const name of ['Ideen', 'Diese Woche', 'Gekocht']) await expect(column(page, name).getByRole('heading', { level: 2 })).toHaveText(name)
+})
+
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' })
 
@@ -162,7 +161,7 @@ test.describe('with reduced motion', () => {
     ])
 
     // Mid-swipe, the title stays as it is until the Board moves on.
-    const release = await swipeHeld(page.getByTestId('columns'), -160)
+    const release = await swipe(page.getByTestId('columns'), -160, { hold: true })
     expect((await headlineTitles(page)).map(t => t.opacity)).toEqual([0, 1, 0])
     await release()
     await expectShown(page, 'Gekocht', 'Schon geschafft!')

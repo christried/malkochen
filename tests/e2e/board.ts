@@ -28,12 +28,14 @@ export async function cardAtRest(inCard: Locator) {
 // however slow the test runner is: one Playwright round-trip per event could
 // take longer than the flick itself (useColumnSwipe wants > 0.5px/ms over
 // the last 100ms). It still takes some time: no time at all is no speed.
-export async function swipe(board: Locator, dx: number, { slow = false } = {}) {
+// `hold` keeps the finger down where a slow swipe ends, and gives back the
+// lifting of it.
+export async function swipe(board: Locator, dx: number, { slow = false, hold = false } = {}): Promise<() => Promise<void>> {
   const box = (await board.boundingBox())!
   const x = box.x + box.width / 2
   const y = box.y + 80
   const at = (clientX: number) => ({ pointerId: 7, pointerType: 'touch', isPrimary: true, clientX, clientY: y, bubbles: true })
-  if (!slow) {
+  if (!slow && !hold) {
     await board.evaluate((el, { x, y, dx }) => {
       const send = (type: string, clientX: number) => el.dispatchEvent(new PointerEvent(type, { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX, clientY: y, bubbles: true }))
       const pause = (ms: number) => {
@@ -47,12 +49,14 @@ export async function swipe(board: Locator, dx: number, { slow = false } = {}) {
       }
       send('pointerup', x + dx)
     }, { x, y, dx })
-    return
+    return async () => {}
   }
   await board.dispatchEvent('pointerdown', at(x))
   for (let step = 1; step <= 6; step++) {
     await board.page().waitForTimeout(80)
     await board.dispatchEvent('pointermove', at(x + dx * step / 6))
   }
-  await board.dispatchEvent('pointerup', at(x + dx))
+  const lift = () => board.dispatchEvent('pointerup', at(x + dx))
+  if (!hold) await lift()
+  return lift
 }

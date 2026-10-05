@@ -8,7 +8,8 @@
 // fractional mid-swipe) each title drifts 70px per Column and has faded out
 // 5/8 of the way; let go, they settle with the Board. A long name shrinks
 // to fit its line, down to display-m, and then wraps. Reduced motion: no
-// drift, the title cuts to the next Column's.
+// drift, the title cuts to the next Column's. From 768px every lane has
+// its own title, and there is no headline.
 const props = defineProps<{
   columns: { id: string, name: string, subtitle: string | null }[]
   active: number
@@ -22,7 +23,8 @@ function titleStyle(index: number, name: string) {
   return {
     '--title-x': `${offset * 70}px`,
     '--title-fade': Math.max(0, 1 - Math.abs(offset) * 1.6),
-    '--name-length': name.length,
+    // In letters, so an emoji counts once.
+    '--name-length': Array.from(name).length,
   }
 }
 </script>
@@ -48,17 +50,27 @@ function titleStyle(index: number, name: string) {
 
 <style scoped>
 /* The titles stack in one cell. Drifting off, they are clipped at the
-   screen's edges (the headline runs across the page's gutters). */
+   screen's edges (the headline runs across the page's gutters). The ones
+   out of sight can't be pressed or selected through the one that shows. */
 .headline {
   display: grid;
   container-type: inline-size;
   overflow-x: clip;
+}
+@media (min-width: 768px) {
+  .headline {
+    display: none;
+  }
 }
 .headline > * {
   grid-area: 1 / 1;
   translate: var(--title-x) 0;
   opacity: var(--title-fade);
   transition: translate var(--dur-settle) var(--ease-settle), opacity var(--dur-settle) var(--ease-fade);
+}
+.headline > :not(.active) {
+  pointer-events: none;
+  user-select: none;
 }
 .headline.following > * {
   transition: none;
@@ -68,7 +80,7 @@ function titleStyle(index: number, name: string) {
    letter is about half as wide as it is high. Long words break at their
    syllables (the page is German). */
 .headline :deep(h2) {
-  font-size: clamp(32px, (100cqi - .5rem) / (var(--name-length) * .5), 54px);
+  font-size: clamp(32px, (100cqi - .5rem) / (max(var(--name-length), 1) * .5), 54px);
   line-height: 1;
   letter-spacing: -.025em;
   hyphens: auto;
