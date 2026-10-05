@@ -500,29 +500,23 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           :data-column-id="column.id"
           :data-gekocht="column.isGekocht || undefined"
         >
-          <hgroup class="column-title px-1">
-            <h2 class="text-title-s tablet:text-display-l">
-              <span
-                :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"
-                class="column-name relative inline-block"
-                :class="columnCue?.value.columnId === column.id && `cue-${columnCue.value.kind}`"
-              >
-                {{ column.name }}
-                <PebbleBurst
-                  v-if="columnCue?.value.columnId === column.id && columnCue.value.kind !== 'bump'"
-                  class="name-burst"
-                  :color="columnAccent(index)"
-                />
-              </span>
-            </h2>
-            <p
-              v-if="column.subtitle"
-              class="mt-1 hidden text-subline italic text-text-muted tablet:block"
-              data-column-subtitle
+          <ColumnTitle
+            class="column-title"
+            :subtitle="column.subtitle"
+          >
+            <span
+              :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"
+              class="column-name relative inline-block"
+              :class="columnCue?.value.columnId === column.id && `cue-${columnCue.value.kind}`"
             >
-              {{ column.subtitle }}
-            </p>
-          </hgroup>
+              {{ column.name }}
+              <PebbleBurst
+                v-if="columnCue?.value.columnId === column.id && columnCue.value.kind !== 'bump'"
+                class="name-burst"
+                :color="columnAccent(index)"
+              />
+            </span>
+          </ColumnTitle>
           <!-- Never shorter than with only the empty state in it. -->
           <div class="min-h-[var(--height-empty-column)]">
             <TransitionGroup
@@ -745,12 +739,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 </template>
 
 <style scoped>
-/* A Column's name and its Column Subtitle (italic, from 768px) in the display
-   font, through its token: changing the font is a token change. Large enough
-   on wider screens to read like the design, yet "Diese Woche" fits a lane. */
-.column-title {
-  font-family: var(--font-display);
-}
 /* Phones: the Columns sit in a row, one screen wide each, and the row slides
    to the active one (and with the finger while swiping). At rest only the
    active Column is laid out, so a short Column doesn't leave the page as long

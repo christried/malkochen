@@ -14,7 +14,7 @@ const t = useStrings()
 
 const listings = useBoardListings()
 const listing = computed(() => listings.value.find(b => b.id === props.boardId) ?? null)
-const NAMELESS_COLUMNS = [{ id: 'a', name: '' }, { id: 'b', name: '' }, { id: 'c', name: '' }]
+const NAMELESS_COLUMNS = [{ id: 'a', name: '', subtitle: null }, { id: 'b', name: '', subtitle: null }, { id: 'c', name: '', subtitle: null }]
 const columns = computed(() => listing.value?.columns ?? NAMELESS_COLUMNS)
 // Fewer cards further along, as Boards tend to have.
 const cardCount = (index: number) => Math.max(1, 3 - index)
@@ -88,7 +88,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
           :aria-label="column.name || undefined"
           class="column w-full shrink-0 rounded-panel bg-surface-muted p-3 tablet:w-[340px] desktop:w-[330px] tablet:p-4"
         >
-          <h2 class="px-1 font-display text-title-s">
+          <ColumnTitle :subtitle="column.subtitle">
             <template v-if="column.name">
               {{ column.name }}
             </template>
@@ -97,7 +97,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
               aria-hidden="true"
               class="name-pebble w-28"
             >&nbsp;</span>
-          </h2>
+          </ColumnTitle>
           <ol
             aria-hidden="true"
             class="skeleton-cards mt-3 flex flex-col gap-3"
