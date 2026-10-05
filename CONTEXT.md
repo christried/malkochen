@@ -22,6 +22,10 @@ _Avoid_: Description, tagline
 A user who belongs to a Board. All Members can add, edit, move and delete Dishes and edit Columns.
 _Avoid_: Collaborator, participant
 
+**Profile Picture**:
+The round picture that shows who a Member is, e.g. on the Dishes they added: a picture they uploaded themselves in their settings, else their Google photo, else their initial. Signing in again never replaces one they uploaded; removing it brings the Google photo back.
+_Avoid_: Avatar (except in code), profile photo, user image
+
 **Owner**:
 The one Member of a Board who can delete it, remove Members, reset the Invite Link and hand ownership to another Member. Initially whoever created the Board.
 _Avoid_: Admin, creator
