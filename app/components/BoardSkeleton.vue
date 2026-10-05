@@ -10,11 +10,12 @@ import { boardLabel } from '~~/shared/board'
 // Column. The Board's name and Columns come from the Board switcher's list
 // (useBoardListings); a Board not on it shows three nameless Columns. Tablet and desktop colour it as the
 // Board (main.css), so a Board on that list keeps its colours as it opens.
-const props = defineProps<{ boardId: string }>()
+// `address` is the Board's part of the page's address: its slug, or its id.
+const props = defineProps<{ address: string }>()
 const t = useStrings()
 
 const listings = useBoardListings()
-const listing = computed(() => listings.value.find(b => b.id === props.boardId) ?? null)
+const listing = computed(() => listings.value.find(b => b.slug === props.address || b.id === props.address) ?? null)
 const NAMELESS_COLUMNS = [{ id: 'a', name: '', subtitle: null }, { id: 'b', name: '', subtitle: null }, { id: 'c', name: '', subtitle: null }]
 const columns = computed(() => listing.value?.columns ?? NAMELESS_COLUMNS)
 // Fewer cards further along, as Boards tend to have.

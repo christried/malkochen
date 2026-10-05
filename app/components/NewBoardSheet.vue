@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BoardSummary } from '~~/server/utils/boards'
+import { boardPath } from '~~/shared/address'
 
 // "Neues Board" (PRD story 61): a name and an emoji. The Board starts with
 // the default Columns, owned by whoever creates it, and opens straight away,
@@ -34,7 +35,7 @@ async function create() {
     const created = await $fetch<BoardSummary>('/api/boards', { method: 'POST', body: { name: trimmed, emoji: emoji.value } })
     open.value = false
     justCreated.value = created.id
-    await navigateTo(`/b/${created.id}`)
+    await navigateTo(boardPath(created))
   }
   catch {
     failed.value = true

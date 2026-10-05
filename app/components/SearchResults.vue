@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { SearchAnswer } from '~/composables/useDishSearch'
+import { dishPath } from '~~/shared/address'
 import { dishOnBoard } from '~~/shared/board'
 
 // What a search of the Board found: one list of the matching Dishes, each
@@ -59,7 +60,7 @@ const status = computed(() => {
             {{ column.name }}
           </p>
           <NuxtLink
-            :to="`/b/${board.id}/d/${dish.id}`"
+            :to="dishPath(board, dish)"
             :aria-label="`${dish.title}, ${column.name}`"
             class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >

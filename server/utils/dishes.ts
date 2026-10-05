@@ -373,6 +373,7 @@ function renumberForDrop(d: Db, dishId: string, columnId: string, index: number,
 // A Dish already on a Board with the Source being added (PRD story 24).
 export interface DuplicateDish {
   id: string
+  code: string
   title: string
   columnName: string
 }
@@ -381,7 +382,7 @@ export interface DuplicateDish {
 // Deleted Dishes don't count.
 export async function dishWithSource(boardId: string, canonicalLink: string): Promise<DuplicateDish | null> {
   const [found] = await db
-    .select({ id: dish.id, title: dish.title, columnName: boardColumn.name })
+    .select({ id: dish.id, code: dish.code, title: dish.title, columnName: boardColumn.name })
     .from(dish)
     .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
     .where(and(eq(dish.boardId, boardId), eq(dish.sourceLink, canonicalLink), isNull(dish.deletedAt)))

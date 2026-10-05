@@ -3,17 +3,21 @@ import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import type { BoardResult } from '~/board/board-module'
-import { dishOnBoard } from '~~/shared/board'
+import { boardPath as pathOfBoard, dishAt } from '~~/shared/address'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
 // on phones, a side panel over the Board from 768px (440px; 480px from
 // 1200px). A native modal <dialog>, like AppSheet: the browser traps focus,
 // makes the Board inert and closes it on Escape. The Dish comes from the
-// Board the parent page already has. Its actions (an edit, "Gekocht ✓",
+// Board the parent page already has. At /b/<Board>/<title>-<code> (its
+// Address, CONTEXT.md); its old address, /b/<Board id>/d/<Dish id>, is an
+// alias, which the Board page forwards from (useBoardAddress). Its actions (an edit, "Gekocht ✓",
 // "Verschieben nach…", "Löschen", the Cooking History's) go through the
 // client Board module the page provides, and each result goes up as
 // `result`, for the page to show as it shows a card's. The Board is inert
 // behind this dialog, so its Toast shows in here.
+definePageMeta({ alias: '/b/:board/d/:dish' })
+
 const props = defineProps<{ board: BoardView }>()
 const emit = defineEmits<{ result: [result: BoardResult, context?: ResultContext] }>()
 const toast = defineModel<Toast | null>('toast', { required: true })
@@ -23,7 +27,7 @@ const route = useRoute()
 const router = useRouter()
 
 // The Dish shown, and its Column.
-const located = computed(() => dishOnBoard(props.board, route.params.dishId))
+const located = computed(() => dishAt(props.board, route.params.dish))
 if (!located.value) throw createError({ statusCode: 404, statusMessage: 'Dish not found', fatal: true })
 
 useHead({ title: () => located.value ? `${located.value.dish.title} · ${t.app.name}` : t.app.name })
@@ -46,7 +50,7 @@ onMounted(() => {
 // doesn't grow; a deep link replaces itself with the Board. The image
 // morphs back into the Dish's card, unless it is being edited, has scrolled
 // away under the compact bar, or the Dish is no longer on the Board.
-const boardPath = computed(() => `/b/${props.board.id}`)
+const boardPath = computed(() => pathOfBoard(props.board))
 let leaving = false
 async function close() {
   if (leaving) return

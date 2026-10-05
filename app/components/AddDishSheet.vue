@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardSummary } from '~~/server/utils/boards'
 import type { DuplicateDish } from '~~/server/utils/dishes'
+import { dishPath } from '~~/shared/address'
 import { FOCUS_CENTRE, focusPosition, type ImageFocus } from '~~/shared/image-focus'
 import type { BoardResult } from '~/board/board-module'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
@@ -117,9 +118,12 @@ function saveDespiteDuplicate() {
 // it again.
 async function openDuplicate() {
   if (!duplicate.value) return
-  const dishId = duplicate.value.id
+  const found = duplicate.value
+  // Its Board's address is on the list of Boards; until that has come, its
+  // old address forwards there.
+  const on = boards.value.find(b => b.id === boardId.value)
   open.value = false
-  await navigateTo(`/b/${boardId.value}/d/${dishId}`)
+  await navigateTo(on ? dishPath(on, found) : `/b/${boardId.value}/d/${found.id}`)
 }
 
 // The inline picker (handoff: 4×2) offers the first eight Placeholders; one
