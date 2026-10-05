@@ -34,6 +34,10 @@ _Avoid_: Admin, creator
 A shareable link that lets a signed-in user on the Allowlist become a Member of a Board.
 _Avoid_: Share link, invitation
 
+**Address**:
+Where a Board or Dish opens in the app, readable instead of an id: a Board at `/b/kochclub`, made from its name (umlauts as ae/oe/ue, ß as ss, emoji dropped) and unique across all Boards (`kochclub-2`); a Dish at `/b/kochclub/omas-linsensuppe-3f9k`, its title then its short code, which alone identifies it. Renaming gives a new Address; every old one (and the old id addresses) keeps forwarding to the current one. A non-Member sees the same "not found" as for an Address no Board has.
+_Avoid_: URL, slug (except in code), permalink
+
 **Allowlist**:
 The fixed set of email addresses allowed to sign in to malkochen at all. Being on the Allowlist gives access to the app, not to any Board.
 _Avoid_: Whitelist, beta list
