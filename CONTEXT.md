@@ -61,8 +61,12 @@ A Dish another Member added to a Board since you last opened that Board (or join
 _Avoid_: Unread, notification
 
 **Placeholder Image**:
-One of a fixed set of illustrations of vegan dishes, used as a Dish's image when the Source provides no thumbnail or the user prefers one.
+One of a fixed set of illustrations of vegan dishes, used as a Dish's image when the Source provides no thumbnail or the user prefers one. Every Dish keeps one, shown whenever its other image can't be.
 _Avoid_: Default image, fallback image, stock photo
+
+**Own Photo**:
+A photo a Member uploads as a Dish's image ("Eigenes Foto"), instead of the Source's image or a Placeholder Image. Any Member can replace it again.
+_Avoid_: Upload, custom image, user image
 
 **Gekocht Column**:
 The one Column per Board that marks Dishes as Cooked. It can be renamed and moved but not deleted. A Board always keeps at least one other Column: new Dishes go to the first Column that isn't the Gekocht Column.
