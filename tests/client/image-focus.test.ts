@@ -47,19 +47,27 @@ describe('dragFocus', () => {
 })
 
 describe('nudgeFocus', () => {
+  const portrait = { x: 0, y: 200 }
+  const landscape = { x: 58, y: 0 }
+
   test('arrow keys move the focus point the way they point', () => {
-    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowDown')).toEqual({ x: 50, y: 55 })
-    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowUp')).toEqual({ x: 50, y: 45 })
-    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowRight')).toEqual({ x: 55, y: 50 })
-    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowLeft')).toEqual({ x: 45, y: 50 })
+    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowDown', portrait)).toEqual({ x: 50, y: 55 })
+    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowUp', portrait)).toEqual({ x: 50, y: 45 })
+    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowRight', landscape)).toEqual({ x: 55, y: 50 })
+    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowLeft', landscape)).toEqual({ x: 45, y: 50 })
   })
 
   test('it stays within the image', () => {
-    expect(nudgeFocus({ x: 50, y: 98 }, 'ArrowDown')).toEqual({ x: 50, y: 100 })
-    expect(nudgeFocus({ x: 2, y: 50 }, 'ArrowLeft')).toEqual({ x: 0, y: 50 })
+    expect(nudgeFocus({ x: 50, y: 98 }, 'ArrowDown', portrait)).toEqual({ x: 50, y: 100 })
+    expect(nudgeFocus({ x: 2, y: 50 }, 'ArrowLeft', landscape)).toEqual({ x: 0, y: 50 })
+  })
+
+  test('only along the axis the frame crops, as dragging', () => {
+    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowLeft', portrait)).toBeNull()
+    expect(nudgeFocus({ x: 50, y: 50 }, 'ArrowDown', landscape)).toBeNull()
   })
 
   test('other keys aren’t its', () => {
-    expect(nudgeFocus({ x: 50, y: 50 }, 'Enter')).toBeNull()
+    expect(nudgeFocus({ x: 50, y: 50 }, 'Enter', portrait)).toBeNull()
   })
 })

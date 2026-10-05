@@ -70,16 +70,18 @@ test('shifting a portrait TikTok image shows that part on the card and in the de
   const preview = await focusPreview(imageDialog(page))
   // A portrait image in the card's frame moves up and down.
   await expect(preview).toHaveAttribute('aria-orientation', 'vertical')
-  await expect(preview).toHaveAttribute('aria-valuenow', '50')
+  await expect(preview).toHaveAttribute('aria-valuetext', '50 % von links, 50 % von oben')
 
   // Dragged up, as far as it goes: its lower part shows.
   await dragImage(page, preview, -300)
-  await expect(preview).toHaveAttribute('aria-valuenow', '100')
-  // And with the keyboard, back up a little.
+  await expect(preview).toHaveAttribute('aria-valuetext', '50 % von links, 100 % von oben')
+  // And with the keyboard, the focus point back up a little.
   await preview.focus()
   await page.keyboard.press('ArrowUp')
   await page.keyboard.press('ArrowUp')
-  await expect(preview).toHaveAttribute('aria-valuenow', '90')
+  await expect(preview).toHaveAttribute('aria-valuetext', '50 % von links, 90 % von oben')
+  // Sideways there's nothing more to see.
+  await page.keyboard.press('ArrowLeft')
   await expect(preview).toHaveAttribute('aria-valuetext', '50 % von links, 90 % von oben')
   await imageDialog(page).getByRole('button', { name: 'Schließen' }).click()
   await detail.getByRole('button', { name: 'Speichern' }).click()
@@ -149,9 +151,9 @@ test('a photo shifted while adding a Dish shows that part on its card', async ({
   // Scrolling over it shifts it as a page would scroll: down shows more below.
   await preview.hover()
   await page.mouse.wheel(0, 400)
-  await expect(preview).toHaveAttribute('aria-valuenow', '100')
+  await expect(preview).toHaveAttribute('aria-valuetext', '50 % von links, 100 % von oben')
   await dragImage(page, preview, 300)
-  await expect(preview).toHaveAttribute('aria-valuenow', '0')
+  await expect(preview).toHaveAttribute('aria-valuetext', '50 % von links, 0 % von oben')
   await imageDialog(page).getByRole('button', { name: 'Schließen' }).click()
   await expect(sheet.getByRole('img', { name: 'Eigenes Foto' })).toHaveCSS('object-position', '50% 0%')
   await sheet.getByRole('button', { name: 'Speichern' }).click()

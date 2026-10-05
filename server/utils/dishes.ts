@@ -188,7 +188,10 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
   const values = {
     ...rest,
     ...source !== undefined && { sourceLink: source?.link ?? null, sourceKind: source?.kind ?? null },
-    ...focus && { imageFocusX: focus.x, imageFocusY: focus.y },
+    // Shifting the image the Dish has: a Placeholder stays centred.
+    ...focus && (rest.imageUrl === undefined
+      ? { imageFocusX: unlessPlaceholder(focus.x, FOCUS_CENTRE.x), imageFocusY: unlessPlaceholder(focus.y, FOCUS_CENTRE.y) }
+      : { imageFocusX: focus.x, imageFocusY: focus.y }),
   }
   const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
@@ -203,6 +206,12 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
 // A Dish without an image (its Placeholder) has none to shift.
 function focusOf(imageUrl: string | null, focus: ImageFocus | undefined): ImageFocus {
   return imageUrl && focus ? focus : { ...FOCUS_CENTRE }
+}
+
+// `percent` as a Dish's stored focus coordinate, or `centre` if it shows
+// its Placeholder.
+function unlessPlaceholder(percent: number, centre: number) {
+  return sql<number>`case when ${dish.imageUrl} is null then ${centre}::smallint else ${percent}::smallint end`
 }
 
 // Deletes a Dish (PRD story 47): a soft delete, so it can be restored. False

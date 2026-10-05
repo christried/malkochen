@@ -58,9 +58,13 @@ const shiftableImage = computed(() => {
 // Where it is shifted to: the Dish's own focus point, and for a new image
 // ("Bild neu laden", an own photo) the centre. Back to the image it has (a
 // new link drops what a reload found), it is the Dish's own again.
-const imageFocus = ref<ImageFocus>({ ...props.dish.imageFocus })
-watch(image, choice => imageFocus.value = { ...choice.kind === 'keep' ? props.dish.imageFocus : FOCUS_CENTRE })
-const focusChanged = computed(() => image.value.kind !== 'keep' || !sameFocus(imageFocus.value, props.dish.imageFocus))
+// Saved only if the Member shifted it, or it is new: compared with the focus
+// point as editing started, so another Member's shift meanwhile (the Board
+// keeps the Dish up to date) isn't undone.
+const startFocus = { ...props.dish.imageFocus }
+const imageFocus = ref<ImageFocus>({ ...startFocus })
+watch(image, choice => imageFocus.value = { ...choice.kind === 'keep' ? startFocus : FOCUS_CENTRE })
+const focusChanged = computed(() => image.value.kind !== 'keep' || !sameFocus(imageFocus.value, startFocus))
 
 // "Bild neu laden" was tapped for the link as it is now: the link's lookup is
 // then the reload's (looking, failed, or found with or without an image).

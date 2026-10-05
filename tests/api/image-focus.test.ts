@@ -111,8 +111,10 @@ test('a Placeholder has no focus point: picking one puts it back in the centre',
   const res = await editDish(ada, dish.id, { imageUrl: null, placeholder: 'ramen', imageFocus: { x: 10, y: 10 } })
 
   expect(await res.json()).toMatchObject({ imageUrl: null, imageFocus: CENTRE })
-  // Nor does a Dish added without an image take one.
-  expect((await addDish(ada, { imageFocus: { x: 10, y: 10 } })).imageFocus).toEqual(CENTRE)
+  // Nor does a Dish added without an image take one, or shifted later.
+  const placeholderDish = await addDish(ada, { imageFocus: { x: 10, y: 10 } })
+  expect(placeholderDish.imageFocus).toEqual(CENTRE)
+  expect(await (await editDish(ada, placeholderDish.id, { imageFocus: { x: 10, y: 10 } })).json()).toMatchObject({ imageFocus: CENTRE })
 })
 
 test('a photo that isn’t used doesn’t move the image the Dish keeps', async () => {

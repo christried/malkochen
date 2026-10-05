@@ -76,16 +76,12 @@ const choice = 'flex min-h-24 flex-col items-center justify-center gap-2 overflo
     :title="title"
     :close-label="closeLabel"
   >
-    <template v-if="image">
-      <h3 class="mb-3 mt-5 text-label">
-        {{ t.imageDialog.focus }}
-      </h3>
-      <ImageFocusPreview
-        :key="image"
-        v-model:focus="focus"
-        :src="image"
-      />
-    </template>
+    <ImageFocusPreview
+      v-if="image"
+      :key="image"
+      v-model:focus="focus"
+      :src="image"
+    />
     <div
       class="mt-5 grid gap-2.5"
       :class="offerSource ? 'grid-cols-2' : 'grid-cols-1'"

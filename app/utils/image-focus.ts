@@ -32,14 +32,17 @@ export function dragFocus(from: ImageFocus, { dx, dy }: { dx: number, dy: number
 // How far an arrow key moves the focus point, in percent.
 const STEP = 5
 
-// The focus point after an arrow key: it moves the way the key points.
-// Null for any other key.
-export function nudgeFocus(focus: ImageFocus, key: string): ImageFocus | null {
+// The focus point after an arrow key: it moves the way the key points,
+// along the axis the frame crops (`overflow`, as for dragging). Null for any
+// other key.
+export function nudgeFocus(focus: ImageFocus, key: string, overflow: ImageFocus): ImageFocus | null {
+  const sideways = overflow.x > 0
+  const upright = overflow.y > 0
   switch (key) {
-    case 'ArrowLeft': return { ...focus, x: clamp(focus.x - STEP) }
-    case 'ArrowRight': return { ...focus, x: clamp(focus.x + STEP) }
-    case 'ArrowUp': return { ...focus, y: clamp(focus.y - STEP) }
-    case 'ArrowDown': return { ...focus, y: clamp(focus.y + STEP) }
+    case 'ArrowLeft': return sideways ? { ...focus, x: clamp(focus.x - STEP) } : null
+    case 'ArrowRight': return sideways ? { ...focus, x: clamp(focus.x + STEP) } : null
+    case 'ArrowUp': return upright ? { ...focus, y: clamp(focus.y - STEP) } : null
+    case 'ArrowDown': return upright ? { ...focus, y: clamp(focus.y + STEP) } : null
     default: return null
   }
 }
