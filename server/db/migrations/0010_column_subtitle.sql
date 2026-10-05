@@ -1,0 +1,1 @@
+ALTER TABLE "board_column" ADD COLUMN "subtitle" text;

@@ -71,6 +71,13 @@
       "when": 1791183728579,
       "tag": "0009_dish_creator",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791198514518,
+      "tag": "0010_column_subtitle",
+      "breakpoints": true
     }
   ]
 }

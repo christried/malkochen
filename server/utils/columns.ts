@@ -14,10 +14,19 @@ import { membershipOf } from './boards'
 export interface ColumnView {
   id: string
   name: string
+  // Its Column Subtitle, null if it has none.
+  subtitle: string | null
   isGekocht: boolean
 }
 
-const columnView = { id: boardColumn.id, name: boardColumn.name, isGekocht: boardColumn.isGekocht }
+// The Gekocht Column's Column Subtitle, whatever it is called. It can't be
+// changed, so it isn't stored.
+export const GEKOCHT_SUBTITLE = 'Schon geschafft!'
+
+// A Column's Column Subtitle as the app shows it.
+export const columnSubtitle = sql<string | null>`case when ${boardColumn.isGekocht} then ${GEKOCHT_SUBTITLE}::text else ${boardColumn.subtitle} end`
+
+export const columnView = { id: boardColumn.id, name: boardColumn.name, subtitle: columnSubtitle, isGekocht: boardColumn.isGekocht }
 
 // The Column, if it is on a Board the user is a Member of.
 function onMembersBoard(columnId: string, userId: string) {
