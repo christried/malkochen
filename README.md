@@ -28,12 +28,12 @@ variables are validated at startup by `server/env.ts` — add new ones there too
 
 | Variable | Purpose | Where it is set |
 |---|---|---|
-| `DATABASE_URL` | Postgres connection string. Neon in deployed environments (neon-http driver); a `localhost` URL switches to node-postgres (`server/db/index.ts`). | `.env` locally; Vercel **production, preview and development**, each with its own Neon database or branch. |
-| `BETTER_AUTH_SECRET` | Signs session cookies. At least 32 random characters. | `.env` locally; Vercel **production, preview and development**, a different value each. |
-| `BETTER_AUTH_URL` | The app's public origin. Google redirects to `<this>/api/auth/callback/google`, which must be an authorised redirect URI of the Google OAuth client. | `.env` locally (`http://localhost:3000`); Vercel **production, preview and development**, each with its own origin. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client for sign-in. | `.env` locally; Vercel **production, preview and development**. |
-| `ALLOWLIST_EMAILS` | The Allowlist: comma-separated emails allowed to sign in at all. | `.env` locally; Vercel **production, preview and development**. |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token: the Image Store copies each Dish's Source image there on save. Required in Vercel production and preview (the server refuses to start without it). Empty locally stores images on disk under `.data/images`, served at `/images/…`. | Vercel **production, preview and development**, set by connecting the project's Blob store. Optional in `.env`. Never in CI (tests store on disk). |
+| `DATABASE_URL` | Postgres connection string. Neon in deployed environments (neon-http driver); a `localhost` URL switches to node-postgres (`server/db/index.ts`). | `.env` locally; Vercel **production and development**, each with its own Neon database or branch. |
+| `BETTER_AUTH_SECRET` | Signs session cookies. At least 32 random characters. | `.env` locally; Vercel **production and development**, a different value each. |
+| `BETTER_AUTH_URL` | The app's public origin. Google redirects to `<this>/api/auth/callback/google`, which must be an authorised redirect URI of the Google OAuth client. | `.env` locally (`http://localhost:3000`); Vercel **production and development**, each with its own origin. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client for sign-in. | `.env` locally; Vercel **production and development**. |
+| `ALLOWLIST_EMAILS` | The Allowlist: comma-separated emails allowed to sign in at all. | `.env` locally; Vercel **production and development**. |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token: the Image Store copies each Dish's Source image there on save. Required in Vercel production and preview (the server refuses to start without it). Empty locally stores images on disk under `.data/images`, served at `/images/…`. | Vercel **production and development**, set by connecting the project's Blob store. Optional in `.env`. Never in CI (tests store on disk). |
 | `AUTH_DEV_BYPASS` | `1` enables `POST /api/auth/dev/sign-in` (below). The server refuses to start with it on Vercel production or preview. | `.env` locally, optional. The test runners set it themselves. **Never** in Vercel. |
 | `VERCEL_ENV` | Set by Vercel itself; `server/env.ts` reads it only to refuse `AUTH_DEV_BYPASS` and require `BLOB_READ_WRITE_TOKEN` in production and preview. | Never set by hand. |
 | `TEST_DATABASE_ADMIN_URL` | Superuser URL of the **local** Postgres. `pnpm test` and `pnpm test:e2e` use it to create and drop a throwaway database per run. | `.env` locally; `env:` of `.github/workflows/ci.yml` (points at the job's Postgres service, no secret). Never in Vercel. |
@@ -85,10 +85,13 @@ pnpm db:migrate    # applies pending migrations to DATABASE_URL
 `db:migrate` uses the same neon-http driver as the app for Neon URLs (not
 `drizzle-kit migrate`, whose WebSocket transport fails in plain Node).
 
-Deployed databases migrate themselves: `vercel.json` makes every Vercel build
-run `pnpm db:migrate` before `pnpm build`, against that environment's
-`DATABASE_URL` (production builds migrate production, previews the preview
-database). A failing migration fails the build, so the old deployment stays
+Vercel deploys `main` only: `vercel.json` turns off preview deployments for
+every other branch, and Vercel preview has no `DATABASE_URL`. Test changes
+locally, then on production after the merge.
+
+The production database migrates itself: `vercel.json` makes every Vercel
+build run `pnpm db:migrate` before `pnpm build`, against production's
+`DATABASE_URL`. A failing migration fails the build, so the old deployment stays
 live. Keep migrations additive, since the previous deployment keeps running
 on the migrated schema until the new one is promoted.
 
