@@ -52,19 +52,28 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
     if (!stopped && document.visibilityState === 'visible') timer = setTimeout(() => sync(), POLL_MS)
   }
 
+  // The app coming back to the front, told by whichever of visibilitychange
+  // and focus comes first (a phone may send focus first). Only the first
+  // decides whether this reopens the Board: a sync before the reopen would
+  // record the Board as seen up to now, and the reopen would then take
+  // every Dish added while away off what is "Neu".
+  function comeBack() {
+    const reopen = hiddenSince !== null && Date.now() - hiddenSince >= REOPEN_AFTER_MS
+    hiddenSince = null
+    sync({ reopen })
+  }
+
   function onVisibilityChange() {
     if (document.visibilityState === 'hidden') {
       hiddenSince = Date.now()
       clearTimeout(timer)
       return
     }
-    const reopen = hiddenSince !== null && Date.now() - hiddenSince >= REOPEN_AFTER_MS
-    hiddenSince = null
-    sync({ reopen })
+    comeBack()
   }
-  // A desktop window coming back to the front, while it was visible all along.
+  // Also a desktop window coming back to the front, while it was visible all along.
   function onFocus() {
-    sync()
+    comeBack()
   }
 
   onMounted(() => {

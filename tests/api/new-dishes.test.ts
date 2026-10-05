@@ -108,3 +108,22 @@ test('on my first open of a Board, Dishes others added since I joined are New, a
 
   expect((await getBoard(owner, id)).newDishIds.toSorted()).toEqual([before, meanwhile].toSorted())
 })
+
+test('every Dish another Member added while I was away is New, not just one; opening the Board again clears them all', async () => {
+  const { id, owner, member } = await sharedBoard('Wochenmarkt')
+  // I had the Board open and polling, then went away.
+  await poll(owner, id)
+  const added = [
+    await addDish(member, id, 'Shakshuka'),
+    await addDish(member, id, 'Ofengemüse'),
+    await addDish(member, id, 'Bohneneintopf'),
+  ]
+
+  await open(owner, id)
+  expect((await poll(owner, id)).newDishIds.toSorted()).toEqual(added.toSorted())
+  // Still all three on the next poll while the Board stays open.
+  expect((await poll(owner, id)).newDishIds.toSorted()).toEqual(added.toSorted())
+
+  await open(owner, id)
+  expect((await getBoard(owner, id)).newDishIds).toEqual([])
+})

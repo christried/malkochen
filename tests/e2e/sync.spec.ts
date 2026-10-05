@@ -3,7 +3,7 @@ import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, titles } from './board'
-import { gotoHydrated } from './hydration'
+import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
 
 // Sync between Members and "Neu" markers (PRD stories 37, 38): others'
@@ -93,6 +93,56 @@ test('a desktop window coming back to the front refreshes the Board at once', as
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await expect(titles(page, 'Ideen')).toHaveText(['Chai'], { timeout: 2_000 })
 })
+
+// The titles of the Ideen Dishes marked "Neu", in any order.
+async function newTitles(page: Page): Promise<string[]> {
+  const cards = column(page, 'Ideen').getByRole('article').filter({ has: page.locator('[data-neu]') })
+  return (await cards.evaluateAll(els => els.map(el => el.getAttribute('aria-label') ?? ''))).toSorted()
+}
+
+const AWAY = ['Shakshuka', 'Ofengemüse', 'Bohneneintopf']
+
+test('every Dish another Member added while I was away is "Neu" when I open the Board; opening it again clears them all', async ({ page, browser }) => {
+  const { boardId, dorothy } = await sharedBoard(page, browser, 'Wochenmarkt')
+  await gotoHydrated(page, `/b/${boardId}`)
+  await page.goto('/settings')
+
+  for (const title of AWAY) await addDish(dorothy, boardId, title)
+  await gotoHydrated(page, `/b/${boardId}`)
+  await expect(titles(page, 'Ideen')).toHaveCount(3)
+  await expect.poll(() => newTitles(page)).toEqual(AWAY.toSorted())
+
+  await reloadHydrated(page)
+  await expect(titles(page, 'Ideen')).toHaveCount(3)
+  await expect(column(page, 'Ideen').locator('[data-neu]')).toHaveCount(0)
+})
+
+// Coming back to the app, a phone may tell the page it has the focus before
+// it says it is visible again, or after.
+for (const focusFirst of [false, true]) {
+  test(`coming back to the open Board after half an hour away marks every Dish added meanwhile "Neu"; opening it again clears them all (focus ${focusFirst ? 'before' : 'after'} visible)`, async ({ page, browser }) => {
+    const { boardId, dorothy } = await sharedBoard(page, browser, focusFirst ? 'Gemüsekiste' : 'Obstkorb')
+    await page.clock.install()
+    await gotoHydrated(page, `/b/${boardId}`)
+    await setVisibility(page, 'hidden')
+
+    for (const title of AWAY) await addDish(dorothy, boardId, title)
+    await page.clock.fastForward('31:00')
+    const focus = () => page.evaluate(() => window.dispatchEvent(new Event('focus')))
+    if (focusFirst) await focus()
+    await setVisibility(page, 'visible')
+    if (!focusFirst) await focus()
+    await expect(titles(page, 'Ideen')).toHaveCount(3, { timeout: 5_000 })
+    await expect.poll(() => newTitles(page)).toEqual(AWAY.toSorted())
+    // They stay "Neu" while the Board is open: past the next poll too.
+    await page.waitForTimeout(6_000)
+    expect(await newTitles(page)).toEqual(AWAY.toSorted())
+
+    await reloadHydrated(page)
+    await expect(titles(page, 'Ideen')).toHaveCount(3)
+    await expect(column(page, 'Ideen').locator('[data-neu]')).toHaveCount(0)
+  })
+}
 
 test('a Dish open in the detail that another Member deletes closes it and says so', async ({ page, browser }) => {
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Resteessen')
