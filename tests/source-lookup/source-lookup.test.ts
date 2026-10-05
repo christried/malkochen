@@ -272,19 +272,99 @@ const PINTEREST_OEMBED = 'https://www.pinterest.com/oembed.json?'
 const PIN_IMAGE_736 = 'https://i.pinimg.com/736x/a7/66/56/a76656e966b1958f568d63c3f1c05aec.jpg'
 
 describe('Pinterest', () => {
-  test('a Pin gives a larger image and never its unusable "oEmbed" title', async () => {
+  const PIN_PAGE = 'https://www.pinterest.com/pin/99360735500167749/'
+
+  test('a Pin gives its title from the Pin page, its pinner as Creator and a larger image', async () => {
     const { lookup } = lookupWith([
       [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
       [PIN_IMAGE_736, () => status(200)],
+      // Recorded: the Pin page redirects to the reader's language.
+      [PIN_PAGE, () => redirect('https://de.pinterest.com/pin/99360735500167749/')],
+      ['https://de.pinterest.com/pin/99360735500167749/', () => html(fixture('pinterest-pin-page.html'))],
     ])
 
     expect(await lookup('https://de.pinterest.com/pin/99360735500167749/?mt=login')).toEqual({
       kind: 'pinterest-pin',
       canonicalLink: 'https://www.pinterest.com/pin/99360735500167749/',
-      suggestedTitle: '',
-      creator: null,
+      // og:title up to the first " | "; the board keywords after it are left out.
+      suggestedTitle: 'Goodbye Live Tweeting, Hello Live Pinning',
+      creator: 'Kent Brewster',
       imageUrl: 'https://i.pinimg.com/736x/a7/66/56/a76656e966b1958f568d63c3f1c05aec.jpg',
     })
+  })
+
+  test('a Pin whose og:title has no " | " takes all of it', async () => {
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      ['https://www.pinterest.com/pin/85779567902561995/', () => html(fixture('pinterest-pin-page-plain-title.html'))],
+    ])
+
+    expect((await lookup('https://www.pinterest.com/pin/85779567902561995/')).suggestedTitle).toBe('Crispy Baked Tofu with Italian Herbs')
+  })
+
+  test('a Pin title is put into shape like any Suggested Title', async () => {
+    const page = fixture('pinterest-pin-page.html')
+      .replace(/content="Goodbye Live Tweeting, Hello Live Pinning \|([^"]*)" data-app="true" name="og:title"/, 'content="CREMIGE PILZPASTA 🍄 #vegan |$1" data-app="true" name="og:title"')
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_PAGE, () => html(page)],
+    ])
+
+    expect((await lookup(PIN_PAGE)).suggestedTitle).toBe('Cremige Pilzpasta')
+  })
+
+  test.each<[string, Route[]]>([
+    ['has no Pin in it', [[PIN_PAGE, () => html(fixture('pinterest-pin-page-missing.html'))]]],
+    ['answers with an error', [[PIN_PAGE, () => status(500)]]],
+    ['is unreachable', []],
+  ])('when the Pin page %s, there is no Suggested Title, but still the image and the Creator', async (_, pinPage) => {
+    const { lookup } = lookupWith([
+      ...pinPage,
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_IMAGE_736, () => status(200)],
+    ])
+
+    expect(await lookup(PIN_PAGE)).toEqual({
+      kind: 'pinterest-pin',
+      canonicalLink: PIN_PAGE,
+      suggestedTitle: '',
+      creator: 'Kent Brewster',
+      imageUrl: PIN_IMAGE_736,
+    })
+  })
+
+  test('a page that isn\'t a Pin gives no Suggested Title, even with an og:title', async () => {
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_PAGE, () => html('<html><head><meta property="og:type" content="website"><meta property="og:title" content="Pinterest"></head></html>')],
+    ])
+
+    expect((await lookup(PIN_PAGE)).suggestedTitle).toBe('')
+  })
+
+  test('a Pin page that stalls leaves half the time for the image', async () => {
+    const { lookup } = lookupWith([
+      [PIN_PAGE, () => 'hang'],
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_IMAGE_736, () => status(200)],
+    ], { timeoutMs: 200 })
+
+    expect(await lookup(PIN_PAGE)).toMatchObject({ suggestedTitle: '', imageUrl: PIN_IMAGE_736 })
+  })
+
+  test('the pinner\'s profile tagline after " | " is no part of the Creator', async () => {
+    // Recorded: oEmbed's author_name for Pin 85779567902561995.
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json({ ...JSON.parse(fixture('pinterest-oembed.json')), author_name: 'Minimalist Baker | Simple Recipes That Make You Feel Good' })],
+    ])
+
+    expect((await lookup(PIN_PAGE)).creator).toBe('Minimalist Baker')
+  })
+
+  test('the unusable "oEmbed" title never becomes the Suggested Title', async () => {
+    const { lookup } = lookupWith([[PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))]])
+
+    expect((await lookup(PIN_PAGE)).suggestedTitle).toBe('')
   })
 
   test('keeps the oEmbed image when no larger size exists', async () => {
