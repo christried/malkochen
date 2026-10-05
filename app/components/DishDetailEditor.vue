@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { SourceInput } from '~~/server/utils/dish-input'
 import type { DishView } from '~~/server/utils/dishes'
+import { FOCUS_CENTRE, focusPosition, sameFocus, type ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
 import type { BoardResult } from '~/board/board-module'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
@@ -48,6 +49,22 @@ type ImageChoice
     | { kind: 'found', url: string, ticket: string | null }
     | { kind: 'photo' } & UploadedPhoto
 const image = ref<ImageChoice>({ kind: 'keep' })
+// The image to shift in the image dialog, if it is one: not a Placeholder.
+const shiftableImage = computed(() => {
+  const choice = image.value
+  if (choice.kind === 'found' || choice.kind === 'photo') return choice.url
+  return choice.kind === 'keep' ? props.dish.imageUrl : null
+})
+// Where it is shifted to: the Dish's own focus point, and for a new image
+// ("Bild neu laden", an own photo) the centre. Back to the image it has (a
+// new link drops what a reload found), it is the Dish's own again.
+// Saved only if the Member shifted it, or it is new: compared with the focus
+// point as editing started, so another Member's shift meanwhile (the Board
+// keeps the Dish up to date) isn't undone.
+const startFocus = { ...props.dish.imageFocus }
+const imageFocus = ref<ImageFocus>({ ...startFocus })
+watch(image, choice => imageFocus.value = { ...choice.kind === 'keep' ? startFocus : FOCUS_CENTRE })
+const focusChanged = computed(() => image.value.kind !== 'keep' || !sameFocus(imageFocus.value, startFocus))
 
 // "Bild neu laden" was tapped for the link as it is now: the link's lookup is
 // then the reload's (looking, failed, or found with or without an image).
@@ -144,6 +161,7 @@ async function save() {
       ...choice.kind === 'placeholder' && { imageUrl: null },
       ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
       ...choice.kind === 'photo' && { photo: { url: choice.url, ticket: choice.ticket } },
+      ...shiftableImage.value && focusChanged.value && { imageFocus: imageFocus.value },
     })
     emit('saved', saved)
   }
@@ -189,6 +207,7 @@ async function save() {
           :alt="t.addDish.sourceImage"
           referrerpolicy="no-referrer"
           class="h-full w-full object-cover"
+          :style="{ objectPosition: focusPosition(imageFocus) }"
           data-reloaded-image
           @error="foundImageBroken = true"
         >
@@ -197,11 +216,13 @@ async function save() {
           :src="image.url"
           :alt="t.imageDialog.ownPhoto"
           class="h-full w-full object-cover"
+          :style="{ objectPosition: focusPosition(imageFocus) }"
           data-own-photo
         >
         <DishImage
           v-else
           :image-url="image.kind === 'placeholder' ? null : dish.imageUrl"
+          :focus="imageFocus"
           :placeholder="placeholder"
           :motion="choosingImage ? null : 'loop'"
         />
@@ -342,10 +363,12 @@ async function save() {
     <ImageDialog
       v-model:open="choosingImage"
       v-model:placeholder="placeholder"
+      v-model:focus="imageFocus"
       :title="t.detail.chooseImage"
       :close-label="t.detail.close"
       :board-id="boardId"
       :offer-source="sourceLink !== null"
+      :image="shiftableImage"
       @source="reloadImage"
       @photo="usePhoto"
       @placeholder="usePlaceholder"

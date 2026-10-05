@@ -66,6 +66,7 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
     >
       <DishImage
         :image-url="dish.imageUrl"
+        :focus="dish.imageFocus"
         :placeholder="dish.placeholder"
         :motion="motion"
         lazy

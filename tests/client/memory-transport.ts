@@ -106,6 +106,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       imageUrl: input.photo
         ? (input.photo.ticket ? input.photo.url : null)
         : input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
+      imageFocus: { x: 50, y: 50 },
       placeholder: input.placeholder,
       addedBy: null,
       createdAt: new Date().toISOString(),
@@ -113,6 +114,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     }
     const column = boardId === server.id ? columnForNewDishes(server.columns)! : { id: 'elsewhere', dishes: [] as DishView[] }
     column.dishes.unshift(dish)
+    if (dish.imageUrl && input.imageFocus) dish.imageFocus = { ...input.imageFocus }
     const placed = { ...structuredClone(dish), placement: { boardId, columnId: column.id, index: 0 } }
     const refused = input.photo ? !input.photo.ticket : input.imageUrl && !input.imageTicket
     return refused ? { ...placed, imageNotStored: true } : placed
@@ -120,19 +122,25 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
 
   // Saves the fields sent, as the server reads them (trimmed; a blank note
   // or Creator is none). A new image without its Image Ticket isn't stored: the Dish
-  // keeps the one it had. Null for a Dish the server doesn't have.
+  // keeps the one it had. A new image starts in the centre unless its focus
+  // point comes with it. Null for a Dish the server doesn't have.
   function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    const { title, note, source, creator, placeholder, imageUrl, imageTicket } = changes
+    const { title, note, source, creator, placeholder, imageUrl, imageTicket, imageFocus } = changes
     if (title !== undefined) dish.title = title.trim()
     if (note !== undefined) dish.note = note?.trim() || null
     if (source !== undefined) dish.source = source && { link: source.link, kind: source.kind ?? 'other' }
     if (creator !== undefined) dish.creator = creator?.trim() || null
     if (placeholder !== undefined) dish.placeholder = placeholder
-    if (imageUrl === null || (imageUrl && imageTicket)) dish.imageUrl = imageUrl && `/images/${dishId}-${Date.now()}.jpg`
+    const refused = Boolean(imageUrl && !imageTicket)
+    if (imageUrl === null || (imageUrl && imageTicket)) {
+      dish.imageUrl = imageUrl && `/images/${dishId}-${Date.now()}.jpg`
+      dish.imageFocus = { x: 50, y: 50 }
+    }
+    if (imageFocus && dish.imageUrl && !refused) dish.imageFocus = { ...imageFocus }
     const saved = structuredClone(dish)
-    return imageUrl && !imageTicket ? { ...saved, imageNotStored: true } : saved
+    return refused ? { ...saved, imageNotStored: true } : saved
   }
 
   function deleteOnServer(dishId: string): boolean {

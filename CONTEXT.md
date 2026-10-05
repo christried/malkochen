@@ -68,6 +68,10 @@ _Avoid_: Default image, fallback image, stock photo
 A photo a Member uploads as a Dish's image ("Eigenes Foto"), instead of the Source's image or a Placeholder Image. Any Member can replace it again.
 _Avoid_: Upload, custom image, user image
 
+**Focus Point**:
+The part of a Dish's Source image or Own Photo that shows wherever a frame crops it (the card, the detail, search results). A Member shifts the image to set it ("Ausschnitt"), for all Members; a new image starts in the centre. A Placeholder Image has none.
+_Avoid_: Crop, zoom, image position
+
 **Gekocht Column**:
 The one Column per Board that marks Dishes as Cooked. It can be renamed and moved but not deleted. A Board always keeps at least one other Column: new Dishes go to the first Column that isn't the Gekocht Column.
 _Avoid_: Done column, archive

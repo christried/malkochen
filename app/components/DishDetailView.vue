@@ -76,6 +76,7 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
         >
           <DishImage
             :image-url="dish.imageUrl"
+            :focus="dish.imageFocus"
             :placeholder="dish.placeholder"
             motion="loop"
           />

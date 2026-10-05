@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardSummary } from '~~/server/utils/boards'
 import type { DuplicateDish } from '~~/server/utils/dishes'
+import { FOCUS_CENTRE, focusPosition, type ImageFocus } from '~~/shared/image-focus'
 import type { BoardResult } from '~/board/board-module'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
@@ -61,6 +62,10 @@ const usingSourceImage = computed(() => sourceImage.value !== null && !preferPla
 // The image shown large above the title: the own photo or the Source image.
 // Without one, the inline picker shows instead.
 const shownImage = computed(() => photo.value?.url ?? (usingSourceImage.value ? sourceImage.value : null))
+// Where the Member shifted that image in the image dialog; a new image
+// starts in the centre.
+const imageFocus = ref<ImageFocus>({ ...FOCUS_CENTRE })
+watch(shownImage, () => imageFocus.value = { ...FOCUS_CENTRE })
 // Who published the Source (CONTEXT.md: Creator), if the lookup found them:
 // shown under the title and saved with the Dish. Editing it is the detail's.
 const creator = computed(() => withoutLink.value ? null : result.value?.creator ?? null)
@@ -198,6 +203,7 @@ async function save() {
       imageUrl: usingSourceImage.value ? sourceImage.value : null,
       imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
       photo: photo.value,
+      ...shownImage.value && { imageFocus: imageFocus.value },
     })
     const image = form.value?.querySelector('[data-source-image], [role="radio"][aria-checked="true"]')
     emit('added', added, image?.getBoundingClientRect() ?? null)
@@ -368,6 +374,7 @@ async function save() {
             :src="photo.url"
             :alt="t.imageDialog.ownPhoto"
             class="aspect-[4/3] w-full object-cover"
+            :style="{ objectPosition: focusPosition(imageFocus) }"
             data-source-image
             data-own-photo
           >
@@ -377,6 +384,7 @@ async function save() {
             :alt="t.addDish.sourceImage"
             referrerpolicy="no-referrer"
             class="bloom aspect-[4/3] w-full object-cover"
+            :style="{ objectPosition: focusPosition(imageFocus) }"
             data-source-image
             @error="sourceImageBroken = true"
           >
@@ -531,11 +539,13 @@ async function save() {
     <ImageDialog
       v-model:open="choosingImage"
       v-model:placeholder="placeholder"
+      v-model:focus="imageFocus"
       :title="t.addDish.chooseImage"
       :close-label="t.addDish.close"
       :board-id="boardId"
       :offer-source="sourceImage !== null"
       :source-image="sourceImage"
+      :image="shownImage"
       @source="preferPlaceholder = false; photo = null"
       @photo="photo = $event"
       @placeholder="preferPlaceholder = true; photo = null"
