@@ -3,8 +3,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./heic-decode.d.ts" />
 import { randomUUID } from 'node:crypto'
-import decodeHeic from 'heic-decode'
-import sharp, { type Sharp } from 'sharp'
+import type { Sharp } from 'sharp'
 import { PHOTO_MAX_BYTES } from '../../shared/photo'
 import type { Storage } from '.'
 
@@ -47,8 +46,14 @@ function kindOf(bytes: Uint8Array): PhotoKind | null {
   return null
 }
 
+// sharp (native) and libheif (WebAssembly) are loaded on the first photo,
+// not with the server: every other request would wait for them on a cold
+// start.
+const loadSharp = async () => (await import('sharp')).default
+
 // sharp can't decode HEVC, so a HEIC photo is unpacked by libheif first.
 async function heicInput(bytes: Uint8Array, maxPixels: number): Promise<Sharp> {
+  const [{ default: decodeHeic }, sharp] = await Promise.all([import('heic-decode'), loadSharp()])
   const images = await decodeHeic.all({ buffer: bytes })
   try {
     const [primary] = images
@@ -63,6 +68,7 @@ async function heicInput(bytes: Uint8Array, maxPixels: number): Promise<Sharp> {
 
 async function input(kind: PhotoKind, bytes: Uint8Array, maxPixels: number): Promise<Sharp> {
   if (kind === 'heic') return heicInput(bytes, maxPixels)
+  const sharp = await loadSharp()
   // 'error', not 'warning': phones write JPEGs with harmless quirks.
   const image = sharp(bytes, { failOn: 'error', limitInputPixels: maxPixels })
   // The content must really be what its first bytes say.
