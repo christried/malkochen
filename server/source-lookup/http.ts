@@ -14,8 +14,9 @@ export interface Http {
   // Whether the URL answers 2xx.
   exists: (url: string) => Promise<boolean>
   // Where a short link leads: the first hop `arrived` accepts (that page is
-  // never requested; TikTok's and Pinterest's post pages stall for servers), else
-  // the last reachable hop.
+  // never requested here: TikTok's post pages stall for servers, and a
+  // strategy that wants the post page asks for its canonical link itself,
+  // under its own time limit), else the last reachable hop.
   resolve: (url: string, arrived: (url: URL) => boolean) => Promise<URL>
   // An HTML page and the URL it was finally served from. `timeoutMs` gives
   // up on it sooner than the lookup's deadline.
