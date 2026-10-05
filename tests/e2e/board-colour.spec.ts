@@ -164,6 +164,12 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     expect(tintedWith((await rgb(page, [wash.colour]))[0]!, known)).toBe('orchid')
     // Reduced motion: the tint changes at once.
     if (reducedMotion === 'reduce') expect(wash.transition.split(', ').every(d => d === '0s')).toBe(true)
+    // The lane fills more, its subtitle still readable on it.
+    const target = column(page, 'Diese Woche')
+    await target.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+    const [fill, subtitle] = await rgb(page, [await backgroundOf(target), await colourOf(target.locator('hgroup p'))])
+    expect(tintedWith(fill!, known)).toBe('orchid')
+    expect(contrast(subtitle!, fill!)).toBeGreaterThanOrEqual(4.5)
 
     await page.mouse.up()
     await expect(page.getByTestId('drag-card')).toHaveCount(0)

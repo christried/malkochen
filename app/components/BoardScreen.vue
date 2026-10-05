@@ -178,11 +178,15 @@ const dropTint = computed(() => {
   return index === -1 ? undefined : columnAccent(index)
 })
 // With every Column showing, the page's wash fades out on drop in the tint
-// it had, not toward none.
+// it had, not toward none; a new drag fades it in from the background, not
+// from the last drag's tint.
 const dropWash = ref<string>()
 watch(dropTint, (tint) => {
   if (tint) dropWash.value = tint
 })
+watch(dragging, (isDragging) => {
+  if (isDragging) dropWash.value = undefined
+}, { flush: 'sync' })
 const gradient = computed(() => boardGradient(board.value?.columns.length ?? 0))
 
 const { dx, progress, following } = useColumnSwipe(columnsEl, {
@@ -505,6 +509,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           }"
           :style="{ ...titleMotion(index), '--accent': columnAccent(index) }"
           :data-column-id="column.id"
+          data-lane
           :data-gekocht="column.isGekocht || undefined"
         >
           <ColumnTitle
@@ -968,6 +973,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   .column.lane-target {
     scale: 1.012;
     background-color: color-mix(in oklab, var(--accent) var(--wash-lane-target), var(--color-bg));
+    /* Pulled further than at rest (main.css), for AA on the fuller fill. */
+    --color-text-muted: color-mix(in oklab, var(--color-text) 40%, var(--board-muted));
     box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent);
     animation: lane-wiggle 600ms var(--ease-idle);
   }
