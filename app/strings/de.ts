@@ -48,8 +48,10 @@ export const de = {
     prompt: (example: string) => `Optional, z. B. „${example}“`,
   },
   signIn: {
-    headline: 'Was willst du mal kochen?',
-    intro: 'Sammelt Essen, das ihr online findet, und plant, was ihr als Nächstes kocht.',
+    // "Was willst du malkochen?": the app's name (app.name) goes between
+    // the two, highlighted.
+    headline: { before: 'Was willst du ', after: '?' },
+    intro: 'Sammle Essen, das du online findest, und plane, was du als Nächstes kochst.',
     google: 'Mit Google anmelden',
     pending: 'Einen Moment …',
     failed: 'Die Anmeldung hat nicht geklappt. Versuch es gleich noch mal.',

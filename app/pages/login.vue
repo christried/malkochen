@@ -101,11 +101,8 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'curry', 'bowl', 'ta
           />
         </div>
       </div>
-      <p class="mt-8 text-overline uppercase text-text-muted">
-        {{ t.app.name }}
-      </p>
-      <h1 class="mt-3 font-display text-display-m tablet:text-display-l desktop:text-display-xl">
-        {{ t.signIn.headline }}
+      <h1 class="mt-8 font-display text-display-m tablet:text-display-l desktop:text-display-xl">
+        {{ t.signIn.headline.before }}<span class="app-name">{{ t.app.name }}</span>{{ t.signIn.headline.after }}
       </h1>
       <p class="mt-4 max-w-md text-body text-text-muted">
         {{ t.signIn.intro }}
@@ -143,6 +140,14 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'curry', 'bowl', 'ta
   to {
     rotate: 360deg;
   }
+}
+/* The app's name in the headline: coloured, on a marker stroke across its
+   lower half. Both colours keep 4.5:1 (main.css). */
+.app-name {
+  color: var(--color-name-ink);
+  background-image: linear-gradient(transparent 55%, var(--color-name-mark) 55%, var(--color-name-mark) 92%, transparent 92%);
+  padding-inline: 0.06em;
+  margin-inline: -0.06em;
 }
 /* The tiles pop in around Topfbert, one after another. */
 .hero-pop {

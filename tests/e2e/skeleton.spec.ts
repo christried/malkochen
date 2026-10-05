@@ -16,7 +16,7 @@ test.describe('design tokens', () => {
       await page.setViewportSize({ width, height: 800 })
       await gotoHydrated(page, '/login')
       const h1 = page.getByRole('heading', { level: 1 })
-      await expect(h1).toHaveText('Was willst du mal kochen?')
+      await expect(h1).toHaveText('Was willst du malkochen?')
       await expect(h1).toHaveCSS('font-size', size)
       await expect(h1).toHaveCSS('font-family', /Newsreader/)
     })

@@ -10,6 +10,63 @@ test('a signed-out visitor is sent to the sign-in screen', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Mit Google anmelden' })).toBeVisible()
 })
 
+// WCAG relative luminance and contrast ratio of two opaque rgb() colours.
+function contrast(a: string, b: string): number {
+  const luminance = (rgb: string) => {
+    const [r, g, bl] = rgb.match(/\d+(\.\d+)?/g)!.slice(0, 3).map((v) => {
+      const c = Number(v) / 255
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+    }) as [number, number, number]
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl
+  }
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number]
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+// Each theme by the phone's setting, and each chosen against it (Darstellung
+// sets <html data-theme>).
+const THEMES = [
+  { label: 'light', device: 'light', chosen: null, dark: false },
+  { label: 'dark', device: 'dark', chosen: null, dark: true },
+  { label: 'Dunkel chosen on a light phone', device: 'light', chosen: 'dark', dark: true },
+  { label: 'Hell chosen on a dark phone', device: 'dark', chosen: 'light', dark: false },
+] as const
+
+for (const { label, device, chosen, dark } of THEMES) {
+  test(`the sign-in screen asks "Was willst du malkochen?" with the app's name highlighted (${label})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: device })
+    await gotoHydrated(page, '/login')
+    if (chosen)
+      await page.evaluate(theme => document.documentElement.setAttribute('data-theme', theme), chosen)
+    await expect(page.locator('main')).toHaveCSS('background-color', dark ? 'rgb(19, 18, 17)' : 'rgb(247, 246, 242)')
+
+    const headline = page.getByRole('heading', { level: 1 })
+    await expect(headline).toHaveText('Was willst du malkochen?')
+    await expect(page.getByText('Sammle Essen, das du online findest, und plane, was du als Nächstes kochst.')).toBeVisible()
+    // The app's name shows once, in the headline: no small wordmark above it.
+    const name = page.getByText('malkochen', { exact: true })
+    await expect(name).toHaveCount(1)
+    await expect(headline.getByText('malkochen', { exact: true })).toBeVisible()
+
+    // The name is coloured and sits on a highlight, and stays readable
+    // (WCAG AA, 4.5:1) on the page and on its highlight.
+    const look = await name.evaluate((el) => {
+      const style = getComputedStyle(el)
+      return {
+        color: style.color,
+        headlineColor: getComputedStyle(el.closest('h1')!).color,
+        page: getComputedStyle(el.closest('main')!).backgroundColor,
+        highlights: (style.backgroundImage.match(/rgba?\([^)]*\)/g) ?? [])
+          .filter(c => !/^rgba\(.*,\s*0\)$/.test(c)),
+      }
+    })
+    expect(look.color).not.toBe(look.headlineColor)
+    expect(look.highlights.length).toBeGreaterThan(0)
+    for (const background of [look.page, ...look.highlights])
+      expect(contrast(look.color, background), `${look.color} on ${background}`).toBeGreaterThanOrEqual(4.5)
+  })
+}
+
 test('a refused sign-in shows the friendly "Not unlocked" screen', async ({ page }) => {
   await gotoHydrated(page, '/login?error=not_allowed&error_description=Not%20on%20the%20Allowlist')
 
