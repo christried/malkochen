@@ -18,21 +18,23 @@ const { data: me } = await useMe()
 const pictureUpload = usePhotoUpload()
 const { uploading } = pictureUpload
 const problem = ref<PhotoProblem | null>(null)
-const problemMessage = computed(() => problem.value && ({
-  'too-large': t.imageDialog.tooLarge,
-  'not-an-image': t.imageDialog.notAnImage,
-  'failed': t.imageDialog.failed,
-} satisfies Record<PhotoProblem, string>)[problem.value])
+const problemMessage = computed(() => problem.value && photoProblemMessage(t, problem.value))
 
-// The uploaded picture the preview shows, until it is used or dropped.
+// The uploaded picture the preview shows. Kept after closing, so the sheet
+// moves out with it; the next upload replaces it.
 const previewed = ref<UploadedPhoto | null>(null)
+const saving = ref(false)
+const previewShown = ref(false)
+// Once "Übernehmen" is under way, it can't be called off: the preview stays
+// until it is done.
 const previewOpen = computed({
-  get: () => previewed.value !== null,
+  get: () => previewShown.value,
   set: (open) => {
-    if (!open) previewed.value = null
+    if (!saving.value) previewShown.value = open
   },
 })
-const saving = ref(false)
+// Picking, uploading or saving: one thing at a time.
+const busy = computed(() => uploading.value || saving.value)
 
 async function pickPicture(event: Event) {
   const input = event.target as HTMLInputElement
@@ -41,8 +43,11 @@ async function pickPicture(event: Event) {
   input.value = ''
   if (!file) return
   problem.value = null
-  previewed.value = await pictureUpload.upload(photoUploadTo.picture(), file)
+  const uploaded = await pictureUpload.upload(photoUploadTo.picture(), file)
   problem.value = pictureUpload.problem.value
+  if (!uploaded) return
+  previewed.value = uploaded
+  previewShown.value = true
 }
 
 // Typed as a plain string: Nitro's route typing runs too deep here.
@@ -54,20 +59,19 @@ async function changePicture(change: () => Promise<Me>) {
   problem.value = null
   try {
     me.value = await change()
-    previewed.value = null
   }
   catch {
     problem.value = 'failed'
-    previewed.value = null
   }
   finally {
     saving.value = false
+    previewShown.value = false
   }
 }
 
 function usePicture() {
   const picture = previewed.value
-  if (!picture) return
+  if (!picture || !previewShown.value) return
   return changePicture(() => $fetch<Me>(OWN_PICTURE, { method: 'PUT', body: picture }))
 }
 
@@ -125,13 +129,13 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
                  which on phones offers the camera too. -->
             <label
               class="inline-flex cursor-pointer items-center gap-2 rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus"
-              :class="{ 'pointer-events-none opacity-60': uploading || saving }"
+              :class="{ 'pointer-events-none opacity-60': busy }"
             >
               <input
                 type="file"
                 :accept="PHOTO_ACCEPT"
                 class="sr-only"
-                :disabled="uploading || saving"
+                :disabled="busy"
                 @change="pickPicture"
               >
               <LoadingDots v-if="uploading" />
@@ -145,7 +149,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
               v-if="me.ownPicture"
               type="button"
               class="rounded-pill px-4 py-2.5 text-button text-text-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
-              :disabled="saving"
+              :disabled="busy"
               @click="removePicture"
             >
               {{ t.userSettings.removePicture }}
@@ -200,7 +204,8 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
           </button>
           <button
             type="button"
-            class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+            class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
+            :disabled="saving"
             @click="previewOpen = false"
           >
             {{ t.userSettings.cancelPicture }}

@@ -102,7 +102,9 @@ export async function preparePhoto(bytes: Uint8Array, options: PhotoLimits & Pho
   if (!kind) return { ok: false, refusal: 'not-an-image' }
   try {
     const image = await input(kind, bytes, options.maxPixels ?? MAX_PIXELS)
-    const side = options.square && await squareSide(image, options.square)
+    const side = options.square ? await squareSide(image, options.square) : 0
+    // A picture of no size can't be cut square (nor be a picture at all).
+    if (options.square && side < 1) throw new Error('no size to cut square')
     const jpeg = await image
       // Upright as taken (EXIF orientation), then the orientation is dropped
       // with all other metadata: sharp keeps none unless asked to.

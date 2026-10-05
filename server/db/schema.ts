@@ -21,9 +21,10 @@ export const user = pgTable('user', {
   emailVerified: boolean('email_verified').notNull().default(false),
   // The Google photo, as Better Auth wrote it on the first sign-in.
   image: text('image'),
-  // The user's own Profile Picture (CONTEXT.md), uploaded in /settings. Ours
-  // alone: Better Auth knows nothing of it, so signing in with Google again
-  // never overwrites it. Shown before the Google photo (server/utils/people.ts).
+  // The user's own Profile Picture (CONTEXT.md), uploaded in /settings. Kept
+  // apart from the Google photo, and Better Auth only reads it (an additional
+  // field it never takes as input), so signing in with Google again never
+  // overwrites it. Shown before the Google photo (server/utils/people.ts).
   ownPicture: text('own_picture'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),

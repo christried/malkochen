@@ -17,12 +17,13 @@ export interface Me {
   ownPicture: string | null
 }
 
-const meColumns = { id: user.id, name: user.name, email: user.email, image: pictureOf, ownPicture: user.ownPicture }
-
-export async function findMe(userId: string): Promise<Me | null> {
-  const [found] = await db.select(meColumns).from(user).where(eq(user.id, userId))
-  return found ?? null
+// The same for the signed-in user, from their session.
+export function meOf(signedIn: { id: string, name: string, email: string, image?: string | null, ownPicture?: string | null }): Me {
+  const { id, name, email, image, ownPicture } = signedIn
+  return { id, name, email, image: ownPicture ?? image ?? null, ownPicture: ownPicture ?? null }
 }
+
+const meColumns = { id: user.id, name: user.name, email: user.email, image: pictureOf, ownPicture: user.ownPicture }
 
 // Sets (or, with null, removes) the user's own Profile Picture.
 export async function setOwnPicture(userId: string, url: string | null): Promise<Me | null> {

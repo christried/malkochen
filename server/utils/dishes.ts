@@ -408,14 +408,13 @@ function escapeLike(text: string): string {
 // of the Board, or if another Member deleted it already.
 export async function addDish(
   boardId: string,
-  adder: Omit<DishAdder, 'image'>,
+  adder: Omit<DishAdder, 'image'> & { image?: string | null, ownPicture?: string | null },
   input: NewDish,
 ): Promise<PlacedDish | null> {
   const columns = await db
-    .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht, adderImage: pictureOf })
+    .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
     .from(boardColumn)
     .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, adder.id)))
-    .innerJoin(user, eq(user.id, membership.userId))
     .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))
   const firstColumn = columnForNewDishes(columns)
@@ -451,7 +450,8 @@ export async function addDish(
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,
-    addedBy: { id: adder.id, name: adder.name, image: columns[0]!.adderImage },
+    // Their Profile Picture, picked as everywhere else (server/utils/people.ts).
+    addedBy: { id: adder.id, name: adder.name, image: adder.ownPicture ?? adder.image ?? null },
     createdAt: created.createdAt.toISOString(),
     cookings: [],
   })
