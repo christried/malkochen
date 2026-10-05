@@ -6,7 +6,7 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 // whether the link's canonical form is already on the chosen Board.
 
 interface Duplicate {
-  duplicate: { id: string, title: string, columnName: string } | null
+  duplicate: { id: string, code: string, title: string, columnName: string } | null
 }
 
 async function landingBoardId(caller: Caller): Promise<string> {
@@ -16,7 +16,7 @@ async function landingBoardId(caller: Caller): Promise<string> {
 async function addDish(caller: Caller, boardId: string, title: string, link: string) {
   const res = await postDish(caller, boardId, { title, placeholder: 'bowl', source: { link } })
   expect(res.status).toBe(201)
-  return (await res.json()) as { id: string }
+  return (await res.json()) as { id: string, code: string }
 }
 
 function checkDuplicate(caller: Caller, boardId: string, link: string) {
@@ -37,7 +37,7 @@ test('a link already on the Board names the Dish and its Column', async () => {
   expect(await duplicateOf(ada, board, link)).toBeNull()
   const saved = await addDish(ada, board, 'Crispy Tofu', link)
 
-  expect(await duplicateOf(ada, board, link)).toEqual({ id: saved.id, title: 'Crispy Tofu', columnName: 'Ideen' })
+  expect(await duplicateOf(ada, board, link)).toEqual({ id: saved.id, code: saved.code, title: 'Crispy Tofu', columnName: 'Ideen' })
 })
 
 test('another form of the same link is the same Source', async () => {
@@ -71,7 +71,7 @@ test('saving anyway adds a second Dish; the newest one is named', async () => {
 
   const second = await addDish(grace, board, 'Chana Masala, die Zweite', `${link}?feature=share`)
 
-  expect(await duplicateOf(grace, board, link)).toEqual({ id: second.id, title: 'Chana Masala, die Zweite', columnName: 'Ideen' })
+  expect(await duplicateOf(grace, board, link)).toEqual({ id: second.id, code: second.code, title: 'Chana Masala, die Zweite', columnName: 'Ideen' })
 })
 
 test('only Members can ask, and only about web links', async () => {
