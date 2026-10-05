@@ -9,8 +9,12 @@ const HASHTAG = /#[\p{L}\p{N}_]+/gu
 // (skin tones, joiners, variation selectors, keycaps, flags).
 const EMOJI = /\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|‍|️|⃣/gu
 
+// Instagram captions pad with the blank Braille pattern, which isn't \s.
+const BLANK = /\u2800/g
+
 function cleanLine(line: string): string {
   return line
+    .replace(BLANK, ' ')
     .replace(HASHTAG, ' ')
     .replace(EMOJI, ' ')
     .replace(/\s+/g, ' ')
@@ -62,7 +66,8 @@ export function cutText(text: string, max: number): string {
 
 export function shortenTitle(raw: string | null | undefined): string {
   if (!raw) return ''
-  for (const line of raw.split(/\r?\n/)) {
+  // Line breaks, and the line separators some captions use instead.
+  for (const line of raw.split(/\r?\n|[\u2028\u2029]/)) {
     const cleaned = cleanLine(line)
     if (/[\p{L}\p{N}]/u.test(cleaned)) return cutText(uncapitalise(cleaned), MAX_LENGTH)
   }

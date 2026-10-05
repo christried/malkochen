@@ -169,6 +169,15 @@ describe('Instagram', () => {
     })
   })
 
+  test('an embed page that stalls leaves half the time for the post page\'s image', async () => {
+    const { lookup } = lookupWith([
+      [INSTAGRAM_REEL_EMBED, () => 'hang'],
+      [INSTAGRAM_REEL_PAGE, () => html(fixture('instagram-reel-page.html'))],
+    ], { timeoutMs: 200 })
+
+    expect((await lookup(INSTAGRAM_REEL_PAGE)).imageUrl).toMatch(POST_PAGE_IMAGE)
+  })
+
   test('an embed page with a caption but no image keeps the caption and takes the post page\'s image', async () => {
     const withoutImage = fixture('instagram-embed-captioned.html').replace(/<img class="EmbeddedMediaImage"[^>]*>/, '')
     const { lookup } = lookupWith([
@@ -191,12 +200,23 @@ describe('Instagram', () => {
     ['linked hashtags count as hashtags', '<a href="/explore/tags/vegan/">#vegan</a> <a href="/explore/tags/dal/">#dal</a><br />Linsen-Dal', 'Linsen-Dal'],
     ['a shouted caption is put into normal case', 'CREMIGE PILZPASTA<br />so gut', 'Cremige Pilzpasta'],
     ['entities are read as text', 'Mac &amp; Cheese &#x1f9c0; ohne K&#xe4;se', 'Mac & Cheese ohne Käse'],
-  ])('the caption: %s', async (_, caption, expected) => {
+    ['a line separator ends the line, like a line break', 'Cremige Pilzpasta\u2028Zutaten: 200 g Nudeln', 'Cremige Pilzpasta'],
+    ['Instagram\'s blank padding character is space', '\u2800\u2800<br />Linsen-Dal\u2800\u2800 #vegan', 'Linsen-Dal'],
+    ['a verified account\'s name is no title either', 'Linsen-Dal', 'Linsen-Dal', '<a class="CaptionUsername notranslate" href="/vegan_govegan/">vegan_govegan<span class="Verified"></span></a>'],
+  ])('the caption: %s', async (_, caption, expected, usernameLink = '$1') => {
     const page = fixture('instagram-embed-captioned.html')
-      .replace(/(<a class="CaptionUsername"[^>]*>vegan_govegan<\/a>)[\s\S]*?(<div class="CaptionComments">)/, `$1<br /><br />${caption}$2`)
+      .replace(/(<a class="CaptionUsername"[^>]*>vegan_govegan<\/a>)[\s\S]*?(<div class="CaptionComments">)/, `${usernameLink}<br /><br />${caption}$2`)
     const { lookup } = lookupWith([[INSTAGRAM_REEL_EMBED, () => html(page)]])
 
     expect((await lookup(INSTAGRAM_REEL_PAGE)).suggestedTitle).toBe(expected)
+  })
+
+  test('a caption of only the account\'s name, in any markup, gives no Suggested Title', async () => {
+    const page = fixture('instagram-embed-no-caption.html')
+      .replace(/<a class="CaptionUsername"[^>]*>vegan_govegan<\/a>/, '<a class=\'CaptionUsername notranslate\' href="/vegan_govegan/">vegan_govegan<span class="Verified"></span></a>')
+    const { lookup } = lookupWith([[INSTAGRAM_REEL_EMBED, () => html(page)]])
+
+    expect((await lookup(INSTAGRAM_REEL_PAGE)).suggestedTitle).toBe('')
   })
 
   test('a login wall gives no title and no image', async () => {

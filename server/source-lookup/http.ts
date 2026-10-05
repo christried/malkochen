@@ -17,8 +17,9 @@ export interface Http {
   // never requested; TikTok's and Pinterest's post pages stall for servers), else
   // the last reachable hop.
   resolve: (url: string, arrived: (url: URL) => boolean) => Promise<URL>
-  // An HTML page and the URL it was finally served from.
-  page: (url: string) => Promise<{ url: string, html: string | null }>
+  // An HTML page and the URL it was finally served from. `timeoutMs` gives
+  // up on it sooner than the lookup's deadline.
+  page: (url: string, options?: { timeoutMs?: number }) => Promise<{ url: string, html: string | null }>
   // The body of a 2xx response whose content type `accept` allows, unless it
   // is empty or larger than `maxBytes`.
   bytes: (url: string, accept: (contentType: string) => boolean, maxBytes: number) => Promise<{ bytes: Uint8Array, contentType: string } | null>
@@ -59,7 +60,7 @@ export function createHttp(fetchImpl: typeof fetch, signal: AbortSignal): Http {
       return await fetchImpl(url, {
         ...init,
         redirect: 'manual',
-        signal,
+        signal: init.signal ?? signal,
         headers: { 'user-agent': USER_AGENT, 'accept-language': 'de,en;q=0.8', ...init.headers },
       })
     }
@@ -146,8 +147,11 @@ export function createHttp(fetchImpl: typeof fetch, signal: AbortSignal): Http {
       return new URL(finalUrl)
     },
 
-    async page(url) {
-      const { url: finalUrl, response } = await follow(url, { headers: { accept: 'text/html,application/xhtml+xml' } })
+    async page(url, { timeoutMs } = {}) {
+      const { url: finalUrl, response } = await follow(url, {
+        headers: { accept: 'text/html,application/xhtml+xml' },
+        signal: timeoutMs === undefined ? signal : AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]),
+      })
       if (!response?.ok || !/html/i.test(response.headers.get('content-type') ?? '')) {
         await response?.body?.cancel().catch(() => {})
         return { url: finalUrl, html: null }

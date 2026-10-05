@@ -30,6 +30,18 @@ export function attributes(tag: string): Record<string, string> {
 // The tag body after its name, quoted values allowed to contain ">".
 export const TAG_BODY = String.raw`((?:[^>"']|"[^"]*"|'[^']*')*)>`
 
+// The first `<tag>` with `className` among its classes: its attributes and
+// where its opening tag starts and ends.
+export function findTag(html: string, tag: string, className: string): { attrs: Record<string, string>, start: number, end: number } | null {
+  for (const match of html.matchAll(new RegExp(String.raw`<${tag}\b${TAG_BODY}`, 'gi'))) {
+    // Most tags don't mention the class at all: skip them unparsed.
+    if (!match[1]?.includes(className)) continue
+    const attrs = attributes(match[1])
+    if (attrs.class?.split(/\s+/).includes(className)) return { attrs, start: match.index, end: match.index + match[0].length }
+  }
+  return null
+}
+
 // A page's og:/twitter:/description meta tags by lower-cased property or name.
 export function metaTags(html: string): Map<string, string> {
   const meta = new Map<string, string>()

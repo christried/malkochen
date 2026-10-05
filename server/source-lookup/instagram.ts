@@ -1,9 +1,9 @@
 import { creatorName } from './creator'
-import { attributes, decodeEntities, metaTags, TAG_BODY } from './html'
+import { decodeEntities, findTag, metaTags } from './html'
 import type { Http } from './http'
 import { httpUrl, withoutTracking } from './link'
 import { shortenTitle } from './title'
-import { nothingFound, type SourceGuess, type SourceKind, type Strategy } from './types'
+import { nothingFound, type SourceGuess, type SourceKind, type SourceLookupResult, type Strategy } from './types'
 
 // Instagram (ADR 0005): the Reel's or post's embed page shows a server what
 // the post page hides from it: the caption (its first line becomes the
@@ -40,16 +40,6 @@ function guess(url: URL): SourceGuess {
   return postLink(url) ?? { kind: 'other', canonicalLink: withoutTracking(url) }
 }
 
-// The first `<tag>` with `className` among its classes: its attributes and
-// where its markup ends.
-function findTag(html: string, tag: string, className: string): { attrs: Record<string, string>, end: number } | null {
-  for (const match of html.matchAll(new RegExp(`<${tag}\\b${TAG_BODY}`, 'gi'))) {
-    const attrs = attributes(match[1] ?? '')
-    if (attrs.class?.split(/\s+/).includes(className)) return { attrs, end: match.index + match[0].length }
-  }
-  return null
-}
-
 // The caption as text, one line per line break. In the embed page it is the
 // "Caption" block: the account's name as a link, then the caption with <br>
 // for line breaks and links for hashtags and mentions, then the comments
@@ -58,9 +48,13 @@ function caption(html: string): string {
   const block = findTag(html, 'div', 'Caption')
   if (!block) return ''
   const rest = html.slice(block.end)
-  const markup = rest.slice(0, rest.search(/<\/?div\b|$/i))
+  let markup = rest.slice(0, rest.search(/<\/?div\b|$/i))
+  const account = findTag(markup, 'a', 'CaptionUsername')
+  if (account) {
+    const close = markup.indexOf('</a>', account.end)
+    markup = markup.slice(0, account.start) + (close < 0 ? '' : markup.slice(close + '</a>'.length))
+  }
   return decodeEntities(markup
-    .replace(/<a\b[^>]*\bclass="CaptionUsername"[^>]*>[^<]*<\/a>/i, '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]*>/g, ''))
 }
@@ -71,14 +65,12 @@ function username(html: string): string | null {
   return span && decodeEntities(html.slice(span.end).split('<', 1)[0] ?? '')
 }
 
-interface EmbedFindings {
-  suggestedTitle: string
-  creator: string | null
-  imageUrl: string | null
-}
+type Findings = Omit<SourceLookupResult, keyof SourceGuess>
 
-async function embedPage(http: Http, post: SourceGuess): Promise<EmbedFindings> {
-  const html = (await http.page(`${post.canonicalLink}embed/captioned/`)).html ?? ''
+// The embed page gets half the lookup's time, so the post page still can
+// answer when it stalls.
+async function embedPage(http: Http, post: SourceGuess, timeoutMs: number): Promise<Findings> {
+  const html = (await http.page(`${post.canonicalLink}embed/captioned/`, { timeoutMs: timeoutMs / 2 })).html ?? ''
   return {
     suggestedTitle: shortenTitle(caption(html)),
     creator: creatorName(username(html)),
@@ -99,13 +91,13 @@ export const instagram: Strategy = {
     return guess(url)
   },
 
-  async lookup(url, { http }) {
+  async lookup(url, { http, timeoutMs }) {
     const post = SHARE_PATH.test(url.pathname)
       ? postLink(await http.resolve(url.href, hop => postLink(hop) !== null))
       : postLink(url)
     if (!post) return nothingFound(guess(url))
 
-    const embed = await embedPage(http, post)
+    const embed = await embedPage(http, post, timeoutMs)
     return { ...post, ...embed, imageUrl: embed.imageUrl ?? await postPageImage(http, post) }
   },
 }
