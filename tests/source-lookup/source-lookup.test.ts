@@ -43,6 +43,12 @@ describe('TikTok', () => {
     expect(creator!.length).toBeLessThanOrEqual(100)
   })
 
+  test('cutting an overlong Creator never splits an emoji', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json({ ...JSON.parse(fixture('tiktok-oembed.json')), author_name: `${'a'.repeat(98)}🌱🌱🌱` })]])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')).creator).toBe(`${'a'.repeat(98)}…`)
+  })
+
   test('a short link resolves to the canonical video link', async () => {
     const { lookup } = lookupWith([
       // Recorded: vm.tiktok.com lands on /@/video/<id>, without the username.
@@ -243,6 +249,16 @@ describe('blogs and other links', () => {
       creator: 'Maya Patel',
       imageUrl: 'https://cozy-kitchen.example/images/dal-1200.jpg',
     })
+  })
+
+  test.each([
+    ['in another JSON-LD block', '<script type="application/ld+json">{"@type":"Recipe","name":"Dal","author":{"@id":"#maya"}}</script><script type="application/ld+json">{"@graph":[{"@type":"Person","@id":"#maya","name":"Maya Patel"}]}</script>'],
+    ['with an empty name beside the reference', '<script type="application/ld+json">[{"@type":"Recipe","name":"Dal","author":{"@id":"#maya","name":""}},{"@type":"Person","@id":"#maya","name":"Maya Patel"}]</script>'],
+  ])('a Recipe author referred to by @id is found %s', async (_, scripts) => {
+    const link = 'https://cozy-kitchen.example/dal'
+    const { lookup } = lookupWith([[link, () => html(`<html><head><meta property="og:site_name" content="Cozy Kitchen">${scripts}</head></html>`)]])
+
+    expect((await lookup(link)).creator).toBe('Maya Patel')
   })
 
   test('a page with only og: tags uses them, without the site name in the title, and the site as Creator', async () => {

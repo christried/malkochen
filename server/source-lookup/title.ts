@@ -50,11 +50,13 @@ function uncapitalise(title: string): string {
   return shouting ? title.replace(WORD, word => inCaps(word) ? capitalised(word) : word) : title
 }
 
-function cut(title: string): string {
-  if (title.length <= MAX_LENGTH) return title
-  const head = title.slice(0, MAX_LENGTH - 1)
+// Text longer than `max` cut to fit with "…": at its last space if that
+// keeps at least half, and never inside an emoji.
+export function cutText(text: string, max: number): string {
+  if (text.length <= max) return text
+  const head = text.slice(0, max - 1).replace(/[\uD800-\uDBFF]$/, '')
   const lastSpace = head.lastIndexOf(' ')
-  const kept = lastSpace >= MAX_LENGTH / 2 ? head.slice(0, lastSpace) : head
+  const kept = lastSpace >= max / 2 ? head.slice(0, lastSpace) : head
   return `${kept.replace(/[\s,;:|·•–—-]+$/u, '')}…`
 }
 
@@ -62,7 +64,7 @@ export function shortenTitle(raw: string | null | undefined): string {
   if (!raw) return ''
   for (const line of raw.split(/\r?\n/)) {
     const cleaned = cleanLine(line)
-    if (/[\p{L}\p{N}]/u.test(cleaned)) return cut(uncapitalise(cleaned))
+    if (/[\p{L}\p{N}]/u.test(cleaned)) return cutText(uncapitalise(cleaned), MAX_LENGTH)
   }
   return ''
 }

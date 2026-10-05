@@ -131,7 +131,18 @@ test('the Creator shows under the title on the card and in the detail, and can b
   await expect(creator).toHaveText('Veröffentlicht von Scout, Suki & Stella')
   await expect(creator).toBeVisible()
 
+  // Edit mode's field morphs from where the Creator was, rather than
+  // rising in from nowhere (12px below). Slowed once the card has finished
+  // morphing into the detail.
+  await expect(page.locator('html')).not.toHaveAttribute('data-morph')
+  const normalSpeed = await slowAnimations(page)
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  const from = await detail.locator('[data-morph-field="creator"]').evaluate(el => el.getAnimations()
+    .filter(animation => animation.id === 'edit-morph')
+    .map(animation => (animation.effect as KeyframeEffect).getKeyframes()[0]?.translate))
+  await normalSpeed()
+  expect(from).toHaveLength(1)
+  expect(from[0]).not.toMatch(/^0(px)? 12px$/)
   const field = detail.getByLabel('Veröffentlicht von')
   await expect(field).toHaveValue('Scout, Suki & Stella')
   await field.fill('  @veganschnitzel ')

@@ -8,9 +8,9 @@ import { webLink } from '~/utils/web-link'
 // The Dish detail's edit mode (PRD stories 43–45): title, Creator, note,
 // image and Source. A new link is looked up (Source Lookup, as in Add Dish)
 // so it is saved as what it really is, but that never changes the image or
-// the Creator: only "Bild neu laden" changes the image, and the image it finds (or the Placeholder, if none) is
-// shown here and stored on Speichern, through the client Board module.
-// Nothing changes until then.
+// the Creator: only "Bild neu laden" changes the image, and the image it
+// finds (or the Placeholder, if none) is shown here and stored on Speichern,
+// through the client Board module. Nothing changes until then.
 const props = defineProps<{ dish: DishView }>()
 const emit = defineEmits<{ saved: [result: BoardResult], cancel: [] }>()
 const t = useStrings()
@@ -237,7 +237,7 @@ async function save() {
       <label
         :for="creatorId"
         class="text-label"
-      >{{ t.detail.creator }}</label>
+      >{{ t.dish.creator }}</label>
       <input
         :id="creatorId"
         v-model="creator"

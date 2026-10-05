@@ -94,6 +94,7 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
         <span
           v-if="dish.creator"
           class="truncate"
+          :title="dish.creator"
           data-creator
         ><span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}</span>
         <span

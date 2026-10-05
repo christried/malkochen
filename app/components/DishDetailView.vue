@@ -120,14 +120,18 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
         >
           {{ dish.title }}
         </h1>
-        <p
-          v-if="dish.creator"
-          class="break-words text-small text-text-muted"
-          data-creator
-        >
-          <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}
-        </p>
       </div>
+
+      <!-- Its own morph field, so edit mode's Creator field morphs from it;
+           as close under the title as the title's lines are to each other. -->
+      <p
+        v-if="dish.creator"
+        class="-mt-3 break-words text-small text-text-muted"
+        data-creator
+        data-morph-field="creator"
+      >
+        <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}
+      </p>
 
       <p
         v-if="dish.note"

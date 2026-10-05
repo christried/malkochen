@@ -32,35 +32,34 @@ function* nodesOf(node: Json): Generator<JsonObject> {
   for (const child of children) yield* nodesOf(child)
 }
 
-// A Recipe, and the nodes of its block by @id, since its properties may
-// refer to one ({"@id": …}) instead of repeating it.
+// The page's first Recipe, and the nodes of all its JSON-LD blocks by @id,
+// since the Recipe's properties may refer to one ({"@id": …}) instead of
+// repeating it, also one in another block (a recipe plugin's block naming
+// the author an SEO plugin's block describes).
 interface JsonLdRecipe {
   recipe: JsonObject
   byId: Map<string, JsonObject>
 }
 
 function jsonLdRecipe(html: string): JsonLdRecipe | null {
+  const nodes: JsonObject[] = []
   for (const [, body, content] of html.matchAll(new RegExp(String.raw`<script\b${TAG_BODY}([\s\S]*?)</script>`, 'gi'))) {
     if (!/ld\+json/i.test(attributes(body ?? '').type ?? '')) continue
-    let parsed: Json
     try {
-      parsed = JSON.parse(content ?? '')
+      nodes.push(...nodesOf(JSON.parse(content ?? '')))
     }
     catch {
-      // Malformed JSON-LD is common; try the next block.
-      continue
+      // Malformed JSON-LD is common; the other blocks still count.
     }
-    const nodes = [...nodesOf(parsed)]
-    const recipe = nodes.find(isRecipe)
-    if (!recipe) continue
-    const byId = new Map<string, JsonObject>()
-    for (const node of nodes) {
-      const id = node['@id']
-      if (typeof id === 'string' && !byId.has(id)) byId.set(id, node)
-    }
-    return { recipe, byId }
   }
-  return null
+  const recipe = nodes.find(isRecipe)
+  if (!recipe) return null
+  const byId = new Map<string, JsonObject>()
+  for (const node of nodes) {
+    const id = node['@id']
+    if (typeof id === 'string' && !byId.has(id)) byId.set(id, node)
+  }
+  return { recipe, byId }
 }
 
 // schema.org image: a URL string, an ImageObject, or an array of either.
@@ -89,8 +88,12 @@ function authorName(author: Json, byId: Map<string, JsonObject>): string | null 
   if (typeof author === 'string') return creatorName(decodeEntities(author))
   if (!isObject(author)) return null
   const reference = author['@id']
-  const node = author.name === undefined && typeof reference === 'string' ? byId.get(reference) : author
-  return typeof node?.name === 'string' ? creatorName(decodeEntities(node.name)) : null
+  const referred = typeof reference === 'string' ? byId.get(reference) : undefined
+  return nameOf(author) ?? (referred ? nameOf(referred) : null)
+}
+
+function nameOf(node: JsonObject): string | null {
+  return typeof node.name === 'string' ? creatorName(decodeEntities(node.name)) : null
 }
 
 // "Weekend Shakshuka | Salt & Pan" → "Weekend Shakshuka" when the page names
