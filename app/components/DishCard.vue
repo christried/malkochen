@@ -41,6 +41,11 @@ onBeforeUnmount(() => {
   observer?.disconnect()
   clearTimeout(seenTimer)
 })
+
+// A title longer than two lines ends in "…"; the full title then comes up
+// under it on hover or keyboard focus.
+const titleEl = useTemplateRef<HTMLElement>('title')
+const titleCut = useTextCut(titleEl, () => props.dish.title)
 </script>
 
 <template>
@@ -73,7 +78,10 @@ onBeforeUnmount(() => {
       />
     </div>
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">
-      <h3 class="line-clamp-2 pr-8 font-display text-title-s">
+      <h3
+        ref="title"
+        class="title pr-8 font-display text-title-s"
+      >
         {{ dish.title }}
       </h3>
       <p
@@ -119,10 +127,74 @@ onBeforeUnmount(() => {
         </span>
       </div>
     </div>
+    <!-- For the eyes only: the heading and the card's link already give
+         screen readers the whole title. -->
+    <span
+      v-if="titleCut"
+      class="title-tip pointer-events-none absolute inset-x-2.5 top-16 z-[1] rounded-chip bg-inverse px-3 py-2 text-small text-on-inverse shadow-card"
+      aria-hidden="true"
+      data-title-tip
+    >{{ dish.title }}</span>
   </article>
 </template>
 
 <style scoped>
+/* At most two lines, the second ending in "…". Below the second line the
+   title is clipped 0.1em short of its box, not at it: with title-s's tight
+   line height (1.16), Newsreader's accented capitals (Ä, Ö, Ü, É) reach
+   above their line, so a third line starting with one used to show the tops
+   of its accents under the second. The second line's descenders end 0.11em
+   above the box, the third line's accents start 0.08–0.09em above it
+   (measured at 19px), so the cut falls between them. Above and before the
+   first line nothing is cut, so its own accents keep their tops. The lines
+   cut off are clipped (not hidden), so that they don't make the lane
+   scrollable either. Recheck these numbers if the font changes;
+   dish-card-title.spec.ts catches a third line showing. */
+.title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: clip;
+  overflow-clip-margin: 0.5em;
+  clip-path: inset(-0.5em 0 0.1em -0.5em);
+}
+
+/* The full title of a cut one (handoff Toast colours): under the title,
+   across the card, so it stays within the card unless the title is very
+   long. It comes up after a short hover, so it doesn't flash while the mouse
+   crosses the Board, and at once with keyboard focus; not while a Dish is
+   being dragged. The pointer goes through it to "Gekocht ✓" under it. Until
+   it shows it takes no room, so a long one doesn't make the lane scrollable. */
+.title-tip {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  :where(article:hover) .title-tip {
+    display: block;
+    animation: tip-in var(--dur-fade) var(--ease-fade) 400ms backwards;
+  }
+}
+:where(:focus-visible > article) .title-tip {
+  display: block;
+  animation: tip-in var(--dur-fade) var(--ease-fade) backwards;
+}
+.dragging article .title-tip {
+  display: none;
+}
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes tip-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
 /* The "Neu" pebble: a butter-to-orange pebble, tilted like a sticker. It
    pops in from -20° just after the card has entered, and a ring pulses out
    of it every 3.2s until the card has been seen. Reduced motion: it is

@@ -255,6 +255,15 @@ html[data-theme-reveal="fade"] *::after {
   to { opacity: 0; }
 }
 
+/* A very long title's full version (DishCard) can hang over the card below,
+   so the card it belongs to comes first while hovered, and a focused one
+   before that. */
+[data-dish-list] > li:hover {
+  z-index: 1;
+}
+[data-dish-list] > li:focus-within {
+  z-index: 2;
+}
 /* Under a mouse (handoff "Desktop hover", gated on `pointer: fine`, not on
    width; 280ms, pop):
    - A Board card's shadow deepens and, with motion, it lifts 4px and tilts
