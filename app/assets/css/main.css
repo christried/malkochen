@@ -61,21 +61,30 @@ html {
 /* The colours around them: the "Neu" pebble's ink and orange (its gradient
    is --gradient-neu), and each celebration's wash, its clip's background
    (REMOTION.md), so the clip sits in it without an edge. Same theme rules
-   as tokens.css. */
+   as tokens.css.
+   The app's name in the sign-in headline: its ink and its marker stroke
+   (login.vue). The ink keeps WCAG AA (4.5:1) on --color-bg and on the
+   stroke: 5.6 and 4.8 light, 10.7 and 6.4 dark. */
 :root {
   --color-neu-ink: #5a3300;
   --color-neu-accent: #F29B32;
   --wash-milestone-10x: #D1DAC5;
   --wash-board-created: #F3E9CB;
+  --color-name-ink: #A8420E;
+  --color-name-mark: #FCE2A0;
 }
 [data-theme="dark"] {
   --wash-milestone-10x: #686B59;
   --wash-board-created: #483723;
+  --color-name-ink: #F7B94A;
+  --color-name-mark: #4A3818;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --wash-milestone-10x: #686B59;
     --wash-board-created: #483723;
+    --color-name-ink: #F7B94A;
+    --color-name-mark: #4A3818;
   }
 }
 /* A saved Dish flying onto the Board (handoff "Saved → card flies to
