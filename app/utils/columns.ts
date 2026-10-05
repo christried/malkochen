@@ -14,6 +14,15 @@ export function columnAccent(index: number): string {
   return `var(--color-${columnAccentName(index)})`
 }
 
+// The page behind the lanes once every Column shows (tablet and desktop): a
+// soft gradient across the Column accents from left to right, each washed
+// into the background (--wash-page, main.css).
+export function boardGradient(count: number): string {
+  const stops = Array.from({ length: Math.max(count, 2) }, (_, i) =>
+    `color-mix(in oklab, ${columnAccent(Math.min(i, count - 1))} var(--wash-page), var(--color-bg))`)
+  return `linear-gradient(to right, ${stops.join(', ')})`
+}
+
 // A swipe's progress (a Column index, fractional mid-swipe) kept on the
 // Board: rubber-banding past either end doesn't go beyond the first or last.
 export function clampProgress(progress: number, count: number): number {

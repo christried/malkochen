@@ -8,7 +8,8 @@ import { boardLabel } from '~~/shared/board'
 // reduced motion: they are still, at 60% opacity. Phones show the tabs and
 // the first Column, tablet and desktop every Column. The Board's name and
 // Columns come from the Board switcher's list (useBoardListings); a Board
-// not on it shows three nameless Columns.
+// not on it shows three nameless Columns. Tablet and desktop colour it as the
+// Board (main.css), so nothing changes colour when it opens.
 const props = defineProps<{ boardId: string }>()
 const t = useStrings()
 
@@ -25,7 +26,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
 <template>
   <main
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
-    :style="{ '--tint': columnAccent(0) }"
+    :style="{ '--tint': columnAccent(0), '--board-gradient': boardGradient(columns.length) }"
     :aria-label="t.board.loading"
     aria-busy="true"
     data-board-skeleton
@@ -87,6 +88,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
           :key="column.id"
           :aria-label="column.name || undefined"
           class="column w-full shrink-0 rounded-panel bg-surface-muted p-3 tablet:w-[340px] desktop:w-[330px] tablet:p-4"
+          :style="{ '--accent': columnAccent(index) }"
         >
           <ColumnTitle :subtitle="column.subtitle">
             <template v-if="column.name">

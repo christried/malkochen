@@ -81,6 +81,30 @@ export async function resetBoard(page: Page) {
   }
 }
 
+// Gives the signed-in user's landing Board these Columns, in order, the last
+// one the Gekocht Column, and no Dishes: Boards with more or fewer Columns
+// than a new Board's three.
+export async function setColumns(page: Page, names: string[]) {
+  const boardId = await landingBoardId(page)
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    await client.query('begin')
+    await client.query('delete from dish where board_id = $1', [boardId])
+    await client.query('delete from board_column where board_id = $1', [boardId])
+    for (const [position, name] of names.entries()) {
+      await client.query(
+        'insert into board_column (board_id, name, position, is_gekocht) values ($1, $2, $3, $4)',
+        [boardId, name, position, position === names.length - 1],
+      )
+    }
+    await client.query('commit')
+  }
+  finally {
+    await client.end()
+  }
+}
+
 // Stored images are served from disk here (no Blob token), as in local dev.
 // A solid PNG of the given size, as the Image Store would have written it;
 // removeStoredImages() deletes them again.
