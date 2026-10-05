@@ -376,6 +376,7 @@ function noticeText(notice: Exclude<Notice, 'cook'>, { dish, cooking }: BoardRes
     case 'cookingDeleteFailed': return t.cooking.deleteFailed
     case 'cookingRestoreFailed': return t.cooking.restoreFailed
     case 'imageNotStored': return t.addDish.imageNotStored(dish.title)
+    case 'photoNotStored': return t.addDish.photoNotStored(dish.title)
     case 'imageNotReplaced': return t.detail.imageNotStored(dish.title)
     default: return t.dish[notice](dish.title)
   }

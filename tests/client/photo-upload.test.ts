@@ -1,6 +1,5 @@
 import { expect, test } from 'vitest'
 import { usePhotoUpload, type UploadedPhoto } from '../../app/composables/usePhotoUpload'
-import { PHOTO_MAX_BYTES } from '../../shared/photo'
 
 // Seam 4: "Eigenes Foto" on the client. A picked file goes to the Board's
 // photo upload (faked here); the tests look at what comes back, what was
@@ -38,12 +37,25 @@ test('a picked photo is uploaded to the Board and where it was stored comes back
   expect(upload.problem.value).toBeNull()
 })
 
-test('a file over the size limit is refused as too large without uploading it', async () => {
-  const { upload, sent } = setup(async () => STORED)
+// The host refuses request bodies above ~4.5 MB.
+test('a file too large to send that the browser can’t shrink (HEIC, or no image) is refused as too large without uploading it', async () => {
+  const { upload, sent } = setup(async () => STORED, async () => null)
 
-  expect(await upload.upload(BOARD, file(PHOTO_MAX_BYTES + 1))).toBeNull()
+  expect(await upload.upload(BOARD, file(6_000_000, 'image/heic'))).toBeNull()
   expect(upload.problem.value).toBe('too-large')
   expect(sent).toEqual([])
+})
+
+test('a file larger than the browser should even try to read is refused as too large', async () => {
+  const shrinks: Blob[] = []
+  const { upload, sent } = setup(async () => STORED, async (f) => {
+    shrinks.push(f)
+    return file(10)
+  })
+
+  expect(await upload.upload(BOARD, file(40_000_001))).toBeNull()
+  expect(upload.problem.value).toBe('too-large')
+  expect([shrinks, sent]).toEqual([[], []])
 })
 
 test.each([
@@ -63,25 +75,24 @@ test.each([
 
 test('a new pick clears the last problem', async () => {
   const { upload } = setup(async () => STORED)
-  await upload.upload(BOARD, file(PHOTO_MAX_BYTES + 1))
+  await upload.upload(BOARD, file(1000, 'text/plain'))
+  await upload.upload(BOARD, file(50_000_000))
+  expect(upload.problem.value).toBe('too-large')
 
   await upload.upload(BOARD, file(1000))
 
   expect(upload.problem.value).toBeNull()
 })
 
-// The host refuses request bodies above ~4.5 MB, so a large photo is made
-// smaller in the browser first; the server still checks and scales it.
-test('a large photo is sent shrunk; one the browser can’t shrink is sent as it is', async () => {
+// So a large photo is made smaller in the browser first, even one over the
+// server's own limit (a 50 MP phone photo); the server still checks and
+// scales it.
+test.each([6_000_000, 25_000_000])('a %i byte photo is sent shrunk', async (size) => {
   const small = file(500)
-  const shrunk = setup(async () => STORED, async () => small)
-  await shrunk.upload.upload(BOARD, file(6_000_000))
-  expect(shrunk.sent[0]!.body).toBe(small)
+  const { upload, sent } = setup(async () => STORED, async () => small)
 
-  const heic = file(6_000_000, 'image/heic')
-  const unshrinkable = setup(async () => STORED, async () => null)
-  await unshrinkable.upload.upload(BOARD, heic)
-  expect(unshrinkable.sent[0]!.body).toBe(heic)
+  expect(await upload.upload(BOARD, file(size))).toEqual(STORED)
+  expect(sent[0]!.body).toBe(small)
 })
 
 test('a photo small enough is sent untouched, metadata and all, for the server to clean', async () => {

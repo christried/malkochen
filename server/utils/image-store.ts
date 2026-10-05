@@ -32,8 +32,30 @@ export const storeFoundImage = createFoundImageStore({ isMember, copyImage, tick
 export const storePhoto = createPhotoStore({ storage, onFailure: reason => console.warn(`[image-store] photo not stored: ${reason}`) })
 export const photoTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'photo' })
 
-// The uploaded photo a Dish is added or edited with, if its ticket is valid
-// for this Member: its URL, else null.
-export function checkedPhoto(userId: string, photo: { url: string, ticket: string }): string | null {
-  return photoTickets.check(userId, photo.url, photo.ticket) ? photo.url : null
+export interface DishImageRequest {
+  photo?: { url: string, ticket: string } | null
+  imageUrl?: string | null
+  imageTicket?: string | null
+}
+
+// The new image a Dish is added or edited with, for both: the Member's own
+// photo (stored by its upload, so only its photo ticket is checked) or else
+// the Source image Source Lookup found (copied now, and only for a Member of
+// `boardOf()`'s Board). `stored`: its URL, or null; `refused`: one was asked
+// for and isn't stored, so the Member is told.
+export async function storeDishImage(
+  userId: string,
+  boardOf: () => Promise<string | null>,
+  { photo, imageUrl, imageTicket }: DishImageRequest,
+): Promise<{ stored: string | null, refused: boolean }> {
+  let stored: string | null = null
+  if (photo) {
+    stored = photoTickets.check(userId, photo.url, photo.ticket) ? photo.url : null
+    if (!stored) console.warn(`[image-store] photo not taken: no valid photo ticket (${photo.url})`)
+  }
+  else if (imageUrl) {
+    const boardId = await boardOf()
+    stored = boardId && await storeFoundImage(userId, boardId, imageUrl, imageTicket)
+  }
+  return { stored, refused: Boolean(photo || imageUrl) && !stored }
 }

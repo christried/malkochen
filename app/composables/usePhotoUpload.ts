@@ -1,13 +1,13 @@
 import { ref } from 'vue'
 // Relative imports, not `~~`: the module's tests run in plain Node (the
 // "client" Vitest project), which knows no Nuxt aliases.
-import { PHOTO_MAX_BYTES, PHOTO_NOT_AN_IMAGE, PHOTO_TOO_LARGE } from '../../shared/photo'
+import { PHOTO_NOT_AN_IMAGE, PHOTO_TOO_LARGE } from '../../shared/photo'
 
 // "Eigenes Foto" on the client: uploads a picked photo to the Board
 // (POST /api/boards/:id/photos) and answers where it was stored, with the
 // photo ticket a Dish needs to take it. The server checks, scales and cleans
-// the photo; here only the size limit is checked early, and a photo too
-// large to send is made smaller first. Plain Vue reactivity; the upload and
+// the photo; here a photo too large to send is made smaller first, and one
+// that can't be is refused early. Plain Vue reactivity; the upload and
 // the shrinking are replaced with fakes in the tests, so it runs in Node.
 
 export interface UploadedPhoto { url: string, ticket: string }
@@ -22,9 +22,13 @@ export type SendPhoto = (boardId: string, body: Blob) => Promise<UploadedPhoto>
 // image at all).
 export type ShrinkPhoto = (photo: Blob) => Promise<Blob | null>
 
-// Vercel refuses request bodies above 4.5 MB, below our own limit: a larger
-// photo is sent shrunk, as a JPEG of at most SHRINK_SIDE.
+// Vercel refuses request bodies above 4.5 MB, below the server's own limit
+// (PHOTO_MAX_BYTES): a larger photo is sent shrunk, as a JPEG of at most
+// SHRINK_SIDE, so even a 50 MP phone photo goes. One the browser can't read
+// (Chrome reads no HEIC) can't be sent at all. Nor is a file over
+// SHRINK_LIMIT read: unpacking it could take the tab down.
 const SEND_LIMIT = 4_000_000
+const SHRINK_LIMIT = 40_000_000
 const SHRINK_SIDE = 2400
 
 function sendPhoto(boardId: string, body: Blob): Promise<UploadedPhoto> {
@@ -44,7 +48,11 @@ async function shrinkPhoto(photo: Blob): Promise<Blob | null> {
     const canvas = document.createElement('canvas')
     canvas.width = Math.round(bitmap.width * scale)
     canvas.height = Math.round(bitmap.height * scale)
-    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    const context = canvas.getContext('2d')!
+    // A JPEG has no transparency: white behind it, as the server flattens.
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     bitmap.close()
     return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
   }
@@ -71,14 +79,11 @@ export function usePhotoUpload(send: SendPhoto = sendPhoto, shrink: ShrinkPhoto 
   async function upload(boardId: string, photo: Blob): Promise<UploadedPhoto | null> {
     const run = ++latest
     problem.value = null
-    if (photo.size > PHOTO_MAX_BYTES) {
-      uploading.value = false
-      problem.value = 'too-large'
-      return null
-    }
     uploading.value = true
     try {
-      const body = photo.size > SEND_LIMIT ? await shrink(photo) ?? photo : photo
+      if (photo.size > SHRINK_LIMIT) throw Object.assign(new Error('too large to read'), { statusCode: PHOTO_TOO_LARGE })
+      const body = photo.size > SEND_LIMIT ? await shrink(photo) : photo
+      if (!body) throw Object.assign(new Error('too large to send'), { statusCode: PHOTO_TOO_LARGE })
       const stored = await send(boardId, body)
       return run === latest ? stored : null
     }

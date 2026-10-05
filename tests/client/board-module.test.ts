@@ -452,6 +452,18 @@ test('a Dish added to another Board doesn’t show on this one, and the result s
   expect(board.value!.columns.flatMap(c => c.dishes).some(d => d.id === result.dish.id)).toBe(false)
 })
 
+// "Eigenes Foto": the Member is told it was their photo that wasn't taken.
+test('an added Dish whose own photo the server refused says so, apart from a Source image', async () => {
+  const { module } = setup()
+
+  const refused = await module.addDish('board', { title: 'Shakshuka', placeholder: 'bowl', photo: { url: '/images/dishes/foto.jpg', ticket: '' } })
+  expect(refused).toMatchObject({ notice: 'photoNotStored', dish: { imageUrl: null } })
+
+  const taken = await module.addDish('board', { title: 'Falafel', placeholder: 'bowl', photo: { url: '/images/dishes/foto.jpg', ticket: 'ticket' } })
+  expect(taken).not.toHaveProperty('notice')
+  expect(taken.dish.imageUrl).toBe('/images/dishes/foto.jpg')
+})
+
 test('an edit replaces the Dish’s fields with what the server saved', async () => {
   const { board, module, shown } = setup()
   const shownDish = () => board.value!.columns[0]!.dishes[1]!

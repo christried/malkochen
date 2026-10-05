@@ -17,8 +17,9 @@ import type { Storage } from '.'
 export const PHOTO_MAX_SIDE = 1600
 
 // Larger images are refused before they are unpacked: a few kilobytes can
-// unpack to gigabytes. Phone cameras stay well below.
-const MAX_PIXELS = 100_000_000
+// unpack to gigabytes. 50 MP unpacks to 200 MB. The client sends photos
+// over 4 MB shrunk anyway (app/composables/usePhotoUpload.ts).
+const MAX_PIXELS = 50_000_000
 
 export type PhotoRefusal = 'not-an-image' | 'too-large'
 

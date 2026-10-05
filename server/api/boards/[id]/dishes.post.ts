@@ -1,6 +1,6 @@
 import { addDishBody, sourceOf } from '../../../utils/dish-input'
 import { addDish, type AddedDish } from '../../../utils/dishes'
-import { checkedPhoto, storeFoundImage } from '../../../utils/image-store'
+import { storeDishImage } from '../../../utils/image-store'
 
 // POST /api/boards/:id/dishes — adds a Dish at the top of the Board's first
 // Column: from a link (Source and Source image), or without one ("Ohne Link
@@ -15,13 +15,8 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A title and a Placeholder Image are required' })
   const user = requireUser(event)
   const { source, imageUrl, imageTicket, photo, ...rest } = parsed.data
-  // The image, if one is asked for: the Member's own photo (stored by its
-  // upload, so only its ticket is checked) or the Source image (copied now,
-  // but not for a non-Member, whom addDish then refuses).
-  const wanted = photo ?? imageUrl
-  let stored: string | null = null
-  if (photo) stored = checkedPhoto(user.id, photo)
-  else if (imageUrl) stored = await storeFoundImage(user.id, boardId, imageUrl, imageTicket)
+  // Not copied for a non-Member, whom addDish then refuses.
+  const { stored, refused } = await storeDishImage(user.id, async () => boardId, { photo, imageUrl, imageTicket })
   const created = await addDish(boardId, user, {
     ...rest,
     source: source ? sourceOf(source) : null,
@@ -29,5 +24,5 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   })
   if (!created) throw boardNotFound()
   setResponseStatus(event, 201)
-  return wanted && !stored ? { ...created, imageNotStored: true } : created
+  return refused ? { ...created, imageNotStored: true } : created
 })

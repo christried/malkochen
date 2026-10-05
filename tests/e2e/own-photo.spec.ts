@@ -100,7 +100,7 @@ test('a file that isn’t a photo, or is too large, is refused kindly and the di
   await expect(dialog).toBeVisible()
 
   await pickPhoto(dialog, { name: 'riesig.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(10_000_001) })
-  await expect(dialog.getByRole('alert')).toHaveText('Das Foto ist zu groß. Bis 10 MB geht es.')
+  await expect(dialog.getByRole('alert')).toHaveText('Das Foto ist zu groß. Ein kleineres oder ein JPEG klappt bestimmt.')
   await expect(dialog).toBeVisible()
 
   // Opened again, it starts afresh.

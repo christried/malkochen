@@ -7,15 +7,18 @@ import { photoTickets, storePhoto } from '../../../utils/image-store'
 // metadata stripped), it answers where it went and a photo ticket; adding or
 // editing a Dish with both makes it the Dish's image. Only for a Member of
 // the Board, so nobody else fills our storage. Refused: 413 over the size
-// limit, 415 for anything that isn't a JPEG, PNG, WebP or HEIC photo.
+// limit, 411 without a Content-Length, 415 for anything that isn't a JPEG, PNG, WebP or HEIC photo.
 export default defineEventHandler(async (event): Promise<{ url: string, ticket: string }> => {
   const boardId = boardIdParam(event)
   const user = requireUser(event)
   if (!await isMember(boardId, user.id)) throw boardNotFound()
 
-  // Refused before reading, when the size is announced.
+  // Refused before reading: browsers announce a file's size, so a body
+  // without one (chunked) isn't read at all.
   const tooLarge = () => createError({ statusCode: PHOTO_TOO_LARGE, statusMessage: 'Photo too large' })
-  if (Number(getRequestHeader(event, 'content-length')) > PHOTO_MAX_BYTES) throw tooLarge()
+  const length = getRequestHeader(event, 'content-length')
+  if (!length) throw createError({ statusCode: 411, statusMessage: 'Length required' })
+  if (Number(length) > PHOTO_MAX_BYTES) throw tooLarge()
   const bytes = await readRawBody(event, false) ?? new Uint8Array()
 
   const stored = await storePhoto(bytes)

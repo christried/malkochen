@@ -144,6 +144,20 @@ test('a file over 10 MB is refused as too large (413), and nothing is stored', a
   expect(await storedImages()).toEqual(before)
 })
 
+test('a body of unannounced size (chunked) isn’t read at all (411)', async () => {
+  const ada = await signIn(ALLOWLISTED[0])
+  const board = await landingBoard(ada)
+  const photo = await phonePhoto()
+  const body = new ReadableStream({ start(controller) {
+    controller.enqueue(new Uint8Array(photo))
+    controller.close()
+  } })
+
+  const res = await ada.fetch(`/api/boards/${board.id}/photos`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body, duplex: 'half' } as RequestInit)
+
+  expect(res.status).toBe(411)
+})
+
 test('only a Member can upload to a Board, and only when signed in', async () => {
   const ada = await signIn(ALLOWLISTED[0])
   const board = await landingBoard(ada)
