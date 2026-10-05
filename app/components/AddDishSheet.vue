@@ -56,7 +56,8 @@ const usingSourceImage = computed(() => sourceImage.value !== null && !preferPla
 // Who published the Source (CONTEXT.md: Creator), if the lookup found them:
 // shown under the title and saved with the Dish. Editing it is the detail's.
 const creator = computed(() => withoutLink.value ? null : result.value?.creator ?? null)
-// Found an image but no title (Pinterest, Instagram): ask for one, kindly.
+// The Source shows no title (a Pin, a post without a caption): ask for one,
+// kindly.
 const titleNeeded = computed(() => result.value !== null && result.value.suggestedTitle === '' && title.value.trim() === '')
 
 // The Source link the Dish is saved with: the canonical one if the lookup

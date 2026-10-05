@@ -94,32 +94,134 @@ describe('TikTok', () => {
 })
 
 const INSTAGRAM_REEL_PAGE = 'https://www.instagram.com/reel/C0WUh-tqkxU/'
+const INSTAGRAM_REEL_EMBED = 'https://www.instagram.com/reel/C0WUh-tqkxU/embed/captioned/'
+const INSTAGRAM_POST_EMBED = 'https://www.instagram.com/p/C0WUh-tqkxU/embed/captioned/'
+// The embed page's image: the cover without a play button, 720 pixels wide.
+const EMBED_IMAGE = /^https:\/\/scontent-ham3-1\.cdninstagram\.com\/v\/t51\.71878-15\/498545386_3002789429884475_7188408567440722305_n\.jpg\?stp=dst-jpg_e15_tt6&_nc_cat=100&/
+// The post page's og:image: the same cover, half the size, with a play button.
+const POST_PAGE_IMAGE = /^https:\/\/scontent-dus1-1\.cdninstagram\.com\/v\/t51\.71878-15\/498545386_3002789429884475_7188408567440722305_n\.jpg\?stp=cmp1_dst-jpg_e35_s640x640_tt6&_nc_cat=100&/
 
 describe('Instagram', () => {
-  test('a Reel gives the image from its page and never a title (Instagram shows no caption to servers)', async () => {
-    const { lookup } = lookupWith([[INSTAGRAM_REEL_PAGE, () => html(fixture('instagram-reel-page.html'))]])
+  test('a Reel gives its caption as Suggested Title, its account as Creator and the image from its embed page', async () => {
+    const { lookup, upstream } = lookupWith([[INSTAGRAM_REEL_EMBED, () => html(fixture('instagram-embed-captioned.html'))]])
 
     expect(await lookup('https://www.instagram.com/vegan_govegan/reel/C0WUh-tqkxU/?igsh=MTc4MmM1YmI2Ng==')).toEqual({
       kind: 'instagram-reel',
       canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
-      suggestedTitle: '',
-      creator: null,
-      imageUrl: expect.stringMatching(/^https:\/\/scontent-dus1-1\.cdninstagram\.com\/v\/t51\.71878-15\/498545386_3002789429884475_7188408567440722305_n\.jpg\?stp=cmp1_dst-jpg_e35_s640x640_tt6&_nc_cat=100&/),
+      suggestedTitle: 'Easy Overnight Bread Rolls',
+      creator: 'vegan_govegan',
+      imageUrl: expect.stringMatching(EMBED_IMAGE),
+    })
+    // Everything came from the embed page: the post page isn't asked.
+    expect(upstream.requested).toEqual([INSTAGRAM_REEL_EMBED])
+  })
+
+  test('a post is its own kind of Source, read from its own embed page', async () => {
+    const { lookup } = lookupWith([[INSTAGRAM_POST_EMBED, () => html(fixture('instagram-embed-captioned.html'))]])
+
+    expect(await lookup('https://instagram.com/p/C0WUh-tqkxU')).toEqual({
+      kind: 'instagram-post',
+      canonicalLink: 'https://www.instagram.com/p/C0WUh-tqkxU/',
+      suggestedTitle: 'Easy Overnight Bread Rolls',
+      creator: 'vegan_govegan',
+      imageUrl: expect.stringMatching(EMBED_IMAGE),
     })
   })
 
-  test('a post is its own kind of Source', async () => {
-    const { lookup } = lookupWith([['https://www.instagram.com/p/C0WUh-tqkxU/', () => html(fixture('instagram-reel-page.html'))]])
+  test('a share link is resolved to the post before its embed page is read', async () => {
+    const { lookup } = lookupWith([
+      ['https://www.instagram.com/share/reel/BAbc123/', () => redirect('https://www.instagram.com/reel/C0WUh-tqkxU/?igsh=MTc4MmM1YmI2Ng==')],
+      [INSTAGRAM_REEL_EMBED, () => html(fixture('instagram-embed-captioned.html'))],
+    ])
 
-    expect(await lookup('https://instagram.com/p/C0WUh-tqkxU')).toMatchObject({
+    expect(await lookup('https://www.instagram.com/share/reel/BAbc123/')).toMatchObject({
+      kind: 'instagram-reel',
+      canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
+      suggestedTitle: 'Easy Overnight Bread Rolls',
+    })
+  })
+
+  test('without a caption there is no Suggested Title, but still the Creator and the image', async () => {
+    const { lookup } = lookupWith([[INSTAGRAM_POST_EMBED, () => html(fixture('instagram-embed-no-caption.html'))]])
+
+    expect(await lookup('https://www.instagram.com/p/C0WUh-tqkxU/')).toEqual({
       kind: 'instagram-post',
       canonicalLink: 'https://www.instagram.com/p/C0WUh-tqkxU/',
-      imageUrl: expect.stringMatching(/^https:\/\/scontent-dus1-1\.cdninstagram\.com\//),
+      suggestedTitle: '',
+      creator: 'vegan_govegan',
+      imageUrl: expect.stringMatching(EMBED_IMAGE),
     })
+  })
+
+  test.each<[string, Route[]]>([
+    ['shows a broken embed', [[INSTAGRAM_REEL_EMBED, () => html(fixture('instagram-embed-broken.html'))]]],
+    ['answers with an error', [[INSTAGRAM_REEL_EMBED, () => status(500)]]],
+    ['is unreachable', []],
+  ])('when the embed page %s, the image comes from the post page, without a title', async (_, embed) => {
+    const { lookup } = lookupWith([...embed, [INSTAGRAM_REEL_PAGE, () => html(fixture('instagram-reel-page.html'))]])
+
+    expect(await lookup('https://www.instagram.com/reel/C0WUh-tqkxU/')).toEqual({
+      kind: 'instagram-reel',
+      canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
+      suggestedTitle: '',
+      creator: null,
+      imageUrl: expect.stringMatching(POST_PAGE_IMAGE),
+    })
+  })
+
+  test('an embed page that stalls leaves half the time for the post page\'s image', async () => {
+    const { lookup } = lookupWith([
+      [INSTAGRAM_REEL_EMBED, () => 'hang'],
+      [INSTAGRAM_REEL_PAGE, () => html(fixture('instagram-reel-page.html'))],
+    ], { timeoutMs: 200 })
+
+    expect((await lookup(INSTAGRAM_REEL_PAGE)).imageUrl).toMatch(POST_PAGE_IMAGE)
+  })
+
+  test('an embed page with a caption but no image keeps the caption and takes the post page\'s image', async () => {
+    const withoutImage = fixture('instagram-embed-captioned.html').replace(/<img class="EmbeddedMediaImage"[^>]*>/, '')
+    const { lookup } = lookupWith([
+      [INSTAGRAM_REEL_EMBED, () => html(withoutImage)],
+      [INSTAGRAM_REEL_PAGE, () => html(fixture('instagram-reel-page.html'))],
+    ])
+
+    expect(await lookup('https://www.instagram.com/reel/C0WUh-tqkxU/')).toEqual({
+      kind: 'instagram-reel',
+      canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
+      suggestedTitle: 'Easy Overnight Bread Rolls',
+      creator: 'vegan_govegan',
+      imageUrl: expect.stringMatching(POST_PAGE_IMAGE),
+    })
+  })
+
+  test.each([
+    ['hashtags and emojis are left out of the first line', 'Cremige Pilzpasta 🍄🍝 #vegan #pasta<br />Rezept unten', 'Cremige Pilzpasta'],
+    ['a first line of only hashtags and emojis is skipped', '#vegan #foodie 🌱<br /><br />Linsen-Dal mit Spinat', 'Linsen-Dal mit Spinat'],
+    ['linked hashtags count as hashtags', '<a href="/explore/tags/vegan/">#vegan</a> <a href="/explore/tags/dal/">#dal</a><br />Linsen-Dal', 'Linsen-Dal'],
+    ['a shouted caption is put into normal case', 'CREMIGE PILZPASTA<br />so gut', 'Cremige Pilzpasta'],
+    ['entities are read as text', 'Mac &amp; Cheese &#x1f9c0; ohne K&#xe4;se', 'Mac & Cheese ohne Käse'],
+    ['a line separator ends the line, like a line break', 'Cremige Pilzpasta\u2028Zutaten: 200 g Nudeln', 'Cremige Pilzpasta'],
+    ['Instagram\'s blank padding character is space', '\u2800\u2800<br />Linsen-Dal\u2800\u2800 #vegan', 'Linsen-Dal'],
+    ['a verified account\'s name is no title either', 'Linsen-Dal', 'Linsen-Dal', '<a class="CaptionUsername notranslate" href="/vegan_govegan/">vegan_govegan<span class="Verified"></span></a>'],
+  ])('the caption: %s', async (_, caption, expected, usernameLink = '$1') => {
+    const page = fixture('instagram-embed-captioned.html')
+      .replace(/(<a class="CaptionUsername"[^>]*>vegan_govegan<\/a>)[\s\S]*?(<div class="CaptionComments">)/, `${usernameLink}<br /><br />${caption}$2`)
+    const { lookup } = lookupWith([[INSTAGRAM_REEL_EMBED, () => html(page)]])
+
+    expect((await lookup(INSTAGRAM_REEL_PAGE)).suggestedTitle).toBe(expected)
+  })
+
+  test('a caption of only the account\'s name, in any markup, gives no Suggested Title', async () => {
+    const page = fixture('instagram-embed-no-caption.html')
+      .replace(/<a class="CaptionUsername"[^>]*>vegan_govegan<\/a>/, '<a class=\'CaptionUsername notranslate\' href="/vegan_govegan/">vegan_govegan<span class="Verified"></span></a>')
+    const { lookup } = lookupWith([[INSTAGRAM_REEL_EMBED, () => html(page)]])
+
+    expect((await lookup(INSTAGRAM_REEL_PAGE)).suggestedTitle).toBe('')
   })
 
   test('a login wall gives no title and no image', async () => {
     const { lookup } = lookupWith([
+      [INSTAGRAM_REEL_EMBED, () => redirect('https://www.instagram.com/accounts/login/?next=%2Freel%2FC0WUh-tqkxU%2Fembed%2Fcaptioned%2F')],
       [INSTAGRAM_REEL_PAGE, () => redirect('https://www.instagram.com/accounts/login/?next=%2Freel%2FC0WUh-tqkxU%2F')],
       ['https://www.instagram.com/accounts/login/', () => html(fixture('instagram-login-page.html'))],
     ])

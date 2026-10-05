@@ -56,7 +56,7 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
 
     const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
     try {
-      return await strategy.lookup(url, { http })
+      return await strategy.lookup(url, { http, timeoutMs })
     }
     catch {
       return nothingFound(guess)

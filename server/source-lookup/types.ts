@@ -41,6 +41,8 @@ export type SourceLookup = (link: string) => Promise<SourceLookupResult>
 
 export interface StrategyContext {
   http: Http
+  // The time budget for the whole lookup, shared by all of `http`'s requests.
+  timeoutMs: number
 }
 
 // One per kind of Source. `match` decides from the link alone (no network)

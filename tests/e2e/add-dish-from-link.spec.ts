@@ -189,6 +189,24 @@ test('image only (Pinterest): a friendly prompt asks for the title, which is req
   await expect(card.locator('[data-creator]')).toHaveCount(0)
 })
 
+test('Instagram with a caption: its title and Creator fill in, and no title is asked for', async ({ page }) => {
+  const reel = 'https://www.instagram.com/reel/C0WUh-tqkxU/'
+  await stubSourceLookup(page, { kind: 'instagram-reel', canonicalLink: reel, suggestedTitle: 'Easy Overnight Bread Rolls', creator: 'vegan_govegan', imageUrl: PORTRAIT, imageTicket: 'fixture-ticket' })
+  await stubImage(page, PORTRAIT, 90, 160)
+  const sheet = await openAddDish(page)
+
+  await sheet.getByLabel('Link').fill(reel)
+
+  await expect(sheet.getByRole('img', { name: 'Bild vom Link' })).toBeVisible()
+  const title = sheet.getByLabel('Titel')
+  await expect(title).toHaveValue('Easy Overnight Bread Rolls')
+  await expect(title).not.toHaveAttribute('placeholder', 'Titel eingeben')
+  await expect(title).not.toHaveAttribute('aria-describedby')
+  await expect(sheet.getByText('Zu diesem Link gibt es keinen Titel. Wie heißt das Gericht?')).toHaveCount(0)
+  await expect(sheet.locator('[data-creator]')).toHaveText('Veröffentlicht von vegan_govegan')
+  await expect(sheet.getByRole('button', { name: 'Speichern' })).toBeEnabled()
+})
+
 test('nothing found: the Placeholder picker opens by itself and the title is required', async ({ page }) => {
   const blog = 'https://kochblog.example/rezept/linsen-dal'
   await stubSourceLookup(page, { kind: 'other', canonicalLink: blog, suggestedTitle: '', imageUrl: null, imageTicket: null })

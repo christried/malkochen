@@ -21,6 +21,8 @@ export function fakeUpstream(routes: Route[]): FakeUpstream {
   const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input)
     requested.push(url)
+    // Like fetch, a request whose signal already aborted fails at once.
+    if (init?.signal?.aborted) throw init.signal.reason
     const route = routes.find(([prefix]) => url.startsWith(prefix))
     if (!route) throw new TypeError(`fetch failed (no fixture for ${url})`)
     const reply = route[1]()
