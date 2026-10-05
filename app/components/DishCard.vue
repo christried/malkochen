@@ -41,6 +41,25 @@ onBeforeUnmount(() => {
   observer?.disconnect()
   clearTimeout(seenTimer)
 })
+
+// A title longer than two lines ends in "…"; the full title then comes up
+// under it on hover or keyboard focus. Whether it is cut changes with the
+// card's width, the title and the font arriving.
+const titleEl = useTemplateRef<HTMLElement>('title')
+const titleCut = ref(false)
+function measureTitle() {
+  const el = titleEl.value
+  if (el) titleCut.value = el.scrollHeight > el.clientHeight
+}
+let titleResize: ResizeObserver | undefined
+onMounted(() => {
+  if (!titleEl.value) return
+  titleResize = new ResizeObserver(measureTitle)
+  titleResize.observe(titleEl.value)
+  document.fonts.ready.then(measureTitle)
+})
+watch(() => props.dish.title, measureTitle, { flush: 'post' })
+onBeforeUnmount(() => titleResize?.disconnect())
 </script>
 
 <template>
@@ -73,9 +92,22 @@ onBeforeUnmount(() => {
       />
     </div>
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">
-      <h3 class="line-clamp-2 pr-8 font-display text-title-s">
-        {{ dish.title }}
-      </h3>
+      <div class="relative">
+        <h3
+          ref="title"
+          class="title pr-8 font-display text-title-s"
+        >
+          {{ dish.title }}
+        </h3>
+        <!-- For the eyes only: the heading and the card's link already give
+             screen readers the whole title. -->
+        <span
+          v-if="titleCut"
+          class="title-tip pointer-events-none absolute -inset-x-2 top-full z-[1] mt-1.5 rounded-chip bg-inverse px-2 py-1.5 text-small text-on-inverse shadow-card"
+          aria-hidden="true"
+          data-title-tip
+        >{{ dish.title }}</span>
+      </div>
       <p
         v-if="dish.cookings.length"
         class="mt-0.5 truncate text-caption text-text-muted"
@@ -123,6 +155,62 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* At most two lines, the second ending in "…". Below the second line the
+   title is clipped 0.1em short of its box, not at it: with title-s's tight
+   line height (1.16), Newsreader's accented capitals (Ä, Ö, Ü, É) reach
+   above their line, so a third line starting with one used to show the tops
+   of its accents under the second. The second line's descenders end 0.11em
+   above the box, the third line's accents start 0.08–0.09em above it
+   (measured at 19px), so the cut falls between them. Above and before the first line nothing is cut, so its own
+   accents keep their tops. Recheck these numbers if the font changes;
+   dish-card-title.spec.ts catches a third line showing. */
+.title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  clip-path: inset(-0.5em 0 0.1em -0.5em);
+}
+
+/* The full title of a cut one (handoff Toast colours): under the title, over
+   the rest of the card, after a short hover so it doesn't flash while the
+   mouse crosses the Board, and at once with keyboard focus. It inherits its
+   visibility when shown, so it stays hidden with a card that is (the place a
+   dragged card left), and it doesn't come up while a Dish is dragged over
+   the cards (the drag rule wins: the others are :where()). The pointer goes
+   through it to "Gekocht ✓" under it. */
+.title-tip {
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 -4px;
+  transition:
+    opacity var(--dur-fade) var(--ease-fade),
+    translate var(--dur-fade) var(--ease-fade),
+    visibility 0s linear var(--dur-fade);
+}
+@media (hover: hover) and (pointer: fine) {
+  :where(article:hover) .title-tip {
+    visibility: inherit;
+    opacity: 1;
+    translate: none;
+    transition-delay: 400ms;
+  }
+}
+:where(:focus-visible > article) .title-tip {
+  visibility: inherit;
+  opacity: 1;
+  translate: none;
+  transition-delay: 0s;
+}
+.dragging article .title-tip {
+  visibility: hidden;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-tip {
+    translate: none;
+  }
+}
+
 /* The "Neu" pebble: a butter-to-orange pebble, tilted like a sticker. It
    pops in from -20° just after the card has entered, and a ring pulses out
    of it every 3.2s until the card has been seen. Reduced motion: it is
