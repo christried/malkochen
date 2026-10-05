@@ -80,7 +80,7 @@ test('after signing in the app opens "Meine Küche" with its three Columns', asy
   await signIn(page, ALLOWLISTED[2])
   await gotoHydrated(page, '/')
 
-  await expect(page).toHaveURL(/\/b\/[0-9a-f-]{36}$/)
+  await expect(page).toHaveURL(/\/b\/meine-kueche(-\d+)?$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🍲 Meine Küche')
   const columns = page.getByRole('region')
   await expect(columns.getByRole('heading', { level: 2 })).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])

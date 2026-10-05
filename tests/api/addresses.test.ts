@@ -10,7 +10,8 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 // Readable addresses (issue #127, CONTEXT.md: Address): a Board is at
 // /b/<slug>, a Dish at /b/<Board slug>/<title slug>-<code>, and every
 // address a Board or Dish had before, by slug or by id, forwards to the
-// current one. Maryam is used by this file only; Linus is the non-Member.
+// current one. Maryam and Jocelyn are used by this file only; Linus is
+// the non-Member, who joins no Board here.
 // Board slugs are unique across the database every API test file shares, so
 // these Boards have names no other file uses.
 
@@ -132,22 +133,22 @@ test('a Dish’s address ends in its code, which finds it whatever title or old 
 
 test('a Dish moved to another Board: its old address forwards there, for that Board’s Members only', async () => {
   const maryam = await signIn(ALLOWLISTED[31])
-  const linus = await signIn(ALLOWLISTED[2])
+  const jocelyn = await signIn(ALLOWLISTED[32])
   const from = await createBoard(maryam, 'Umzug von hier')
   const to = await createBoard(maryam, 'Umzug nach dort')
   const added = await (await postDish(maryam, from.id, { title: 'Reisender Eintopf', placeholder: 'eintopf' })).json() as { id: string, code: string }
   const current = `reisender-eintopf-${added.code}`
 
-  // Linus is a Member of the Board it leaves, not of the one it goes to.
+  // Jocelyn is a Member of the Board it leaves, not of the one it goes to.
   const { inviteToken } = await (await maryam.fetch(`/api/boards/${from.id}`)).json() as { inviteToken: string }
-  expect((await send(linus, 'POST', `/api/invites/${inviteToken}/join`)).status).toBe(200)
+  expect((await send(jocelyn, 'POST', `/api/invites/${inviteToken}/join`)).status).toBe(200)
 
   expect((await send(maryam, 'POST', `/api/dishes/${added.id}/move`, { columnId: to.columns[0]!.id })).status).toBe(200)
 
   expect(await addressOf(maryam, from.slug, current)).toEqual({ boardId: to.id, slug: to.slug, dish: current })
   expect(await addressOf(maryam, from.id, added.id)).toEqual({ boardId: to.id, slug: to.slug, dish: current })
-  // To Linus, it is a Dish address that isn't on the Board.
-  expect(await addressOf(linus, from.slug, current)).toEqual({ boardId: from.id, slug: from.slug, dish: current })
+  // To Jocelyn, it is a Dish address that isn't on the Board.
+  expect(await addressOf(jocelyn, from.slug, current)).toEqual({ boardId: from.id, slug: from.slug, dish: current })
 })
 
 test('a Board’s former address, too, looks to a non-Member like one no Board has', async () => {
