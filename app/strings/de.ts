@@ -225,6 +225,16 @@ export const de = {
     pinterest: 'Pinterest',
     web: 'Web',
   } satisfies Record<SourceBadgeKind, string>,
+  // The image dialog ("Bild wählen") in Add Dish and the Dish detail.
+  imageDialog: {
+    fromLink: 'Bild vom Link',
+    ownPhoto: 'Eigenes Foto',
+    placeholders: 'Platzhalter',
+    uploading: 'Foto wird hochgeladen …',
+    tooLarge: 'Das Foto ist zu groß. Bis 10 MB geht es.',
+    notAnImage: 'Das ist kein Foto, das ich lesen kann. JPEG, PNG, WebP oder HEIC gehen.',
+    failed: 'Das Hochladen hat nicht geklappt. Versuch es gleich noch mal.',
+  },
   addDish: {
     open: 'Gericht hinzufügen',
     heading: 'Gericht hinzufügen',

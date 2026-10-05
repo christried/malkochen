@@ -171,6 +171,7 @@ watch(editing, async (isEditing) => {
         <DishDetailEditor
           v-if="editing"
           :dish="located.dish"
+          :board-id="board.id"
           @saved="onSaved"
           @cancel="editing = false"
         />
