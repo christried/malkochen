@@ -33,6 +33,16 @@ export async function useBoardAddress(under = ''): Promise<string | null> {
   return null
 }
 
+// The address the open Board page is at, for its links that stay under it
+// (a Dish's, back from its detail). A Board renamed while it is open (by
+// another Member; sync brings the new slug) keeps it until it is opened
+// again: it still leads here, while a link to the new one would open the
+// Board anew, which moves on what is marked "Neu".
+export function useOpenBoardAddress() {
+  const route = useRoute()
+  return computed(() => ({ slug: String(route.params.board) }))
+}
+
 // Whether the page is at the address as it is now. The Dish detail's old
 // address (/b/<id>/d/<id>) is an alias of its route.
 function isCurrent(found: BoardAddress, route: RouteLocationNormalizedLoaded): boolean {

@@ -24,6 +24,7 @@ const route = useRoute()
 const fetchPassingCookies = useFetchPassingCookies()
 const boardId = await useBoardAddress()
 const id = boardId ?? ''
+const address = useOpenBoardAddress()
 
 // Opening the Board first remembers it as the one to reopen next time and
 // moves on what is marked "Neu" (PRD story 37); the Board then comes with
@@ -139,9 +140,9 @@ const { cookFromCard, onCardLeave, flight, onFlightLanded } = useGekochtCelebrat
 // drag, which never gets here.
 function openDish(event: MouseEvent, dish: DishView) {
   const onLink = (event.target as Element).closest('.card-link')
-  if (!onLink || !board.value || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  if (!onLink || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   event.preventDefault()
-  const path = dishPath(board.value, dish)
+  const path = dishPath(address.value, dish)
   morphOpen(cardThumb(dish.id), path, async () => {
     await navigateTo(path)
   })
@@ -570,7 +571,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                 <template v-if="dish">
                   <NuxtLink
                     :id="`dish-${dish.id}`"
-                    :to="dishPath(board, dish)"
+                    :to="dishPath(address, dish)"
                     :aria-label="dish.title"
                     class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                   >

@@ -70,6 +70,24 @@ test('old addresses forward: a Board’s and a Dish’s ids, and a Dish’s old 
   await gotoHydrated(page, `/b/${board.slug}/alter-titel-${soup.code}`)
   await expect(page).toHaveURL(at(`/b/${board.slug}/kuerbissuppe-${soup.code}`))
   await expect(page.getByRole('dialog', { name: 'Kürbissuppe' })).toBeVisible()
+
+  await gotoHydrated(page, `/b/${board.id}/settings`)
+  await expect(page).toHaveURL(at(`/b/${board.slug}/settings`))
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Umleitung')
+})
+
+test('a Dish moved to another Board opens there from its old address', async ({ page }) => {
+  await signIn(page, GRETE)
+  const from = await createBoard(page, 'Abfahrt')
+  const to = await createBoard(page, 'Ankunft')
+  const stew = await addDish(page, from.id, 'Wandernder Eintopf')
+  const { columns } = await (await page.request.get(`/api/boards/${to.id}`)).json() as { columns: { id: string }[] }
+  expect((await page.request.post(`/api/dishes/${stew.id}/move`, { data: { columnId: columns[0]!.id } })).status()).toBe(200)
+
+  await gotoHydrated(page, `/b/${from.slug}/wandernder-eintopf-${stew.code}`)
+
+  await expect(page).toHaveURL(at(`/b/${to.slug}/wandernder-eintopf-${stew.code}`))
+  await expect(page.getByRole('dialog', { name: 'Wandernder Eintopf' })).toBeVisible()
 })
 
 test('a renamed Board is at its new address, and its old one forwards there', async ({ page }) => {
@@ -108,6 +126,33 @@ test('a Board opened from its old address still marks another Member’s new Dis
 
   await expect(page).toHaveURL(at(`/b/${board.slug}`))
   await expect(column(page, 'Ideen').getByRole('article', { name: 'Youyous Gratin' }).getByText('Neu')).toBeVisible()
+})
+
+// A rename by another Member reaches an open Board by sync. Its links keep
+// to the address it was opened at, which still leads to it: following one
+// to the new address would open the Board again.
+test('a Board renamed while it is open keeps its address until it is opened again', async ({ page, browser }) => {
+  await signIn(page, GRETE)
+  const board = await createBoard(page, 'Umbenannt beim Lesen')
+  const youyou = await newTab(browser)
+  await signIn(youyou, YOUYOU)
+  expect((await youyou.request.post(`/api/invites/${await inviteToken(page, board.id)}/join`)).status()).toBe(200)
+  await addDish(youyou, board.id, 'Youyous Auflauf')
+
+  await gotoHydrated(page, `/b/${board.slug}`)
+  const card = column(page, 'Ideen').getByRole('article', { name: 'Youyous Auflauf' })
+  await expect(card.getByText('Neu')).toBeVisible()
+  expect((await youyou.request.patch(`/api/boards/${board.id}`, { data: { name: 'Neu benannt' } })).status()).toBe(200)
+  await youyou.context().close()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🧭 Neu benannt', { timeout: 15_000 })
+
+  await page.getByRole('link', { name: 'Youyous Auflauf' }).click()
+  const detail = page.getByRole('dialog', { name: 'Youyous Auflauf' })
+  await expect(detail).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/b/${board.slug}/youyous-auflauf-[a-z0-9]+$`))
+  await detail.getByRole('button', { name: 'Schließen' }).click()
+  await expect(page).toHaveURL(at(`/b/${board.slug}`))
+  await expect(card.getByText('Neu')).toBeVisible()
 })
 
 test('someone else’s Board’s address looks like one that doesn’t exist', async ({ page, browser }) => {

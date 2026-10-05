@@ -50,7 +50,8 @@ onMounted(() => {
 // doesn't grow; a deep link replaces itself with the Board. The image
 // morphs back into the Dish's card, unless it is being edited, has scrolled
 // away under the compact bar, or the Dish is no longer on the Board.
-const boardPath = computed(() => pathOfBoard(props.board))
+const address = useOpenBoardAddress()
+const boardPath = computed(() => pathOfBoard(address.value))
 let leaving = false
 async function close() {
   if (leaving) return
