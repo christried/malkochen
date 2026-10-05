@@ -255,10 +255,14 @@ html[data-theme-reveal="fade"] *::after {
   to { opacity: 0; }
 }
 
-/* A cut title's full version (DishCard) hangs over the card below, so the
-   card it belongs to comes first while hovered or focused. */
-[data-dish-list] > li:is(:hover, :focus-within) {
+/* A very long title's full version (DishCard) can hang over the card below,
+   so the card it belongs to comes first while hovered, and a focused one
+   before that. */
+[data-dish-list] > li:hover {
   z-index: 1;
+}
+[data-dish-list] > li:focus-within {
+  z-index: 2;
 }
 /* Under a mouse (handoff "Desktop hover", gated on `pointer: fine`, not on
    width; 280ms, pop):

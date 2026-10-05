@@ -1,10 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from './fixtures'
+import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest, column } from './board'
 import { gotoHydrated } from './hydration'
-import { seedDish } from './seed'
+import { resetBoard, seedDish } from './seed'
 
 // A Dish card's title (PRD story 9): at most two lines, ending in an
 // ellipsis, with nothing of a third line showing; the full title comes up on
@@ -20,6 +20,8 @@ const LONG = 'Knuspriger Sesam-Tofu mit Erdnusssoße und Frühlingszwiebeln'
 // ones that start a third line are what used to peek out under the second.
 const UMLAUTS = 'Überbackene Äpfel Über Öl Über Äpfel Über Öl Über Äpfel Über Öl'
 const SHORT = 'Linsensuppe'
+// As long as a title can be (200 characters).
+const LONGEST = 'Ofengemüse mit Kichererbsen, Tahini-Dressing, Granatapfelkernen, gerösteten Mandeln, frischer Minze und Zitronenzeste, dazu Fladenbrot aus der Pfanne und ein Joghurt-Dip aus Soja mit Knoblauch & Salz.'
 
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1280, height: 800 }
@@ -59,15 +61,19 @@ async function lastRowColours(page: Page, heading: Locator) {
   }, png.toString('base64'))
 }
 
+test.beforeAll(async ({ browser }) => {
+  const page = await newTab(browser)
+  await signIn(page, ALLOWLISTED[22])
+  await resetBoard(page)
+  // The first seeded ends up at the bottom of Ideen.
+  for (const text of [LONGEST, LONG, UMLAUTS, SHORT]) await seedDish(page, { title: text, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await page.context().close()
+})
+
 for (const [device, size] of [['phone', PHONE], ['desktop', DESKTOP]] as const) {
   test(`a long title shows exactly two lines on a ${device}`, async ({ page }) => {
     await page.setViewportSize(size)
     await signIn(page, ALLOWLISTED[22])
-    if (device === 'phone') {
-      await seedDish(page, { title: LONG, sourceLink: TIKTOK, sourceKind: 'tiktok' })
-      await seedDish(page, { title: UMLAUTS, sourceLink: TIKTOK, sourceKind: 'tiktok' })
-      await seedDish(page, { title: SHORT, sourceLink: TIKTOK, sourceKind: 'tiktok' })
-    }
     await gotoHydrated(page, '/')
     await page.evaluate(() => document.fonts.ready)
 
@@ -86,6 +92,23 @@ for (const [device, size] of [['phone', PHONE], ['desktop', DESKTOP]] as const) 
   })
 }
 
+test('the lines cut off give the lanes nothing to scroll down to', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, ALLOWLISTED[22])
+  await gotoHydrated(page, '/')
+  const heading = title(page, LONGEST)
+  await cardAtRest(heading)
+
+  // The lanes scroll sideways; the longest title, on the last card of the
+  // tallest lane, mustn't give them anything to scroll down to.
+  const scrollableDown = await heading.evaluate((el) => {
+    let lanes = el.parentElement
+    while (lanes && getComputedStyle(lanes).overflowX !== 'auto') lanes = lanes.parentElement
+    return lanes!.scrollHeight - lanes!.clientHeight
+  })
+  expect(scrollableDown).toBe(0)
+})
+
 test('hovering a card with a cut title shows the full title, and keyboard focus does too', async ({ page }) => {
   await page.setViewportSize(DESKTOP)
   await signIn(page, ALLOWLISTED[22])
@@ -103,9 +126,11 @@ test('hovering a card with a cut title shows the full title, and keyboard focus 
   await card(page, LONG).focus()
   await expect(tip).toBeVisible()
 
-  // A title that fits needs no second copy.
+  // A title that fits needs no second copy. Every card has been measured by
+  // now: the tip above came from the same measuring.
   await card(page, SHORT).hover()
   await expect(fullTitleTip(page, SHORT)).toHaveCount(0)
+  await expect(fullTitleTip(page, LONGEST)).toHaveCount(1)
 })
 
 test('screen readers get the whole title, cut or not', async ({ page }) => {
