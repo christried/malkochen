@@ -1,3 +1,6 @@
+// heic-decode ships no types: its declaration has to come along wherever
+// this file goes (the server and the tests alike).
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./heic-decode.d.ts" />
 import { randomUUID } from 'node:crypto'
 import decodeHeic from 'heic-decode'
