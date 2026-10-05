@@ -20,20 +20,18 @@ const t = useStrings()
 const route = useRoute()
 
 // The Board at this address; an outdated address forwards first, and the
-// Board isn't opened there (useBoardAddress).
+// Board isn't opened there (useBoardAddress). Opening the Board first
+// remembers it as the one to reopen next time and moves on what is marked
+// "Neu" (PRD story 37); the Board then comes with its New Dishes. The
+// client Board module changes it in place.
 const fetchPassingCookies = useFetchPassingCookies()
-const boardId = await useBoardAddress()
-const id = boardId ?? ''
+const opened = await useBoardAddress('', async (boardId) => {
+  await fetchPassingCookies(`/api/boards/${boardId}/open`, { method: 'POST' })
+  return fetchPassingCookies<BoardView>(`/api/boards/${boardId}`)
+})
+const id = opened?.boardId ?? ''
+const board = opened?.loaded ?? ref<BoardView>()
 const address = useOpenBoardAddress()
-
-// Opening the Board first remembers it as the one to reopen next time and
-// moves on what is marked "Neu" (PRD story 37); the Board then comes with
-// its New Dishes. Deep: the client Board module changes it in place.
-const { data: board, error } = await useAsyncData(`board-${id}`, async () => {
-  await fetchPassingCookies(`/api/boards/${id}/open`, { method: 'POST' })
-  return fetchPassingCookies<BoardView>(`/api/boards/${id}`)
-}, { deep: true, immediate: boardId !== null })
-if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
 const newDishIds = computed(() => new Set(board.value?.newDishIds))
 
 // You, for your photo in the header, which opens your settings. Phones have

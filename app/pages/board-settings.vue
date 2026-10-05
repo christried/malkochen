@@ -18,7 +18,7 @@ definePageMeta({ path: '/b/:board/settings' })
 const t = useStrings()
 
 // The Board at this address; an outdated one forwards (useBoardAddress).
-const boardId = await useBoardAddress('/settings')
+const boardId = (await useBoardAddress('/settings'))?.boardId ?? null
 const id = computed(() => boardId ?? '')
 
 const { data: board, error, refresh } = await useFetch<BoardView>(() => `/api/boards/${id.value}`, { immediate: boardId !== null })
