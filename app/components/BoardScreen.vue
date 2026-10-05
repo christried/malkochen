@@ -8,7 +8,8 @@ import { httpTransport } from '~/board/http-transport'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
-// switched with the Column tabs or by swiping; tablet and desktop show all
+// its name large above the Column tabs (ColumnHeadline), switched with the
+// tabs or by swiping; tablet and desktop show all
 // Columns side by side, scroll-snapping. Dishes can be dragged: within a
 // Column, onto a Column tab (phones) or across lanes (from 768px). The Board
 // page (pages/b/[id].vue) shows it once it has loaded, its skeleton until
@@ -530,7 +531,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
               {{ column.name }}
               <PebbleBurst
                 v-if="columnCue?.value.columnId === column.id && columnCue.value.kind !== 'bump'"
-                class="name-burst"
                 :color="columnAccent(index)"
               />
             </span>
@@ -984,11 +984,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 @media (min-width: 768px) {
   .column-name.cue-bump {
     animation: name-bump var(--dur-tab-bump) var(--ease-pop);
-  }
-}
-@media (max-width: 767.98px) {
-  .name-burst {
-    display: none;
   }
 }
 @keyframes name-bump {

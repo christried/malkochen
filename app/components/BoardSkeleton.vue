@@ -7,9 +7,8 @@ import { boardLabel } from '~~/shared/board'
 // take their place and rise in. A light sweeps across them every 1.4s;
 // reduced motion: they are still, at 60% opacity. Phones show the first
 // Column's headline, the tabs and that Column, tablet and desktop every
-// Column. The Board's name and
-// Columns come from the Board switcher's list (useBoardListings); a Board
-// not on it shows three nameless Columns. Tablet and desktop colour it as the
+// Column. The Board's name and Columns come from the Board switcher's list
+// (useBoardListings); a Board not on it shows three nameless Columns. Tablet and desktop colour it as the
 // Board (main.css), so a Board on that list keeps its colours as it opens.
 const props = defineProps<{ boardId: string }>()
 const t = useStrings()
