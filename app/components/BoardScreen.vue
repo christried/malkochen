@@ -386,7 +386,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   showToast({
     text: t.dish.cook,
     duration: UNDO_WINDOW_MS,
-    celebrate: true,
+    celebrate: { cheer: nextCheer(t.dish.cheers) },
     actions: [
       { label: t.dish.addNote, run: async () => {
         const cooking = await recorded

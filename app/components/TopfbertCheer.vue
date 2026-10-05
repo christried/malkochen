@@ -9,11 +9,9 @@
 // The layers (assets/topfbert/layers.json → happy), back to front, and how
 // each one idles.
 const LAYERS = ['01-steam_1', '02-steam_2', '03-handles', '04-body', '05-eyes', '06-cheeks', '07-mouth', '08-rim', '09-hat'] as const
-const t = useStrings()
+// What he says: one of his cheers, picked with the Gekocht toast (utils/cheer).
+defineProps<{ cheer: string }>()
 const still = prefersReducedMotion()
-// Picked as he pops up, never the one he said last. A Gekocht toast that
-// replaces another keeps him as he is, cheer and all.
-const cheer = nextCheer(t.dish.cheers)
 </script>
 
 <template>
@@ -37,10 +35,11 @@ const cheer = nextCheer(t.dish.cheers)
         class="absolute inset-0 h-full w-full"
         :class="`layer-${layer.slice(3)}`"
       >
-      <!-- Anchored on its left, where "Mmh!" starts, so a longer cheer grows
-           to the right over the toast rather than over his face; one line. -->
+      <!-- Anchored on its left, where "Mmh!" always started (61% of his
+           width), so a longer cheer grows to the right over the toast
+           rather than over his face; one line. -->
       <span
-        class="bubble absolute left-[51px] top-1 whitespace-nowrap rounded-pill bg-surface px-2.5 py-1 font-display text-title-s text-text shadow-card"
+        class="bubble absolute left-[61%] top-1 whitespace-nowrap rounded-pill bg-surface px-2.5 py-1 font-display text-title-s text-text shadow-card"
         data-cheer
       >
         {{ cheer }}

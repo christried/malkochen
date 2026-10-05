@@ -1,7 +1,8 @@
 // Every piece of UI text lives here. Components read it through useStrings(),
 // so adding English later means adding an `en.ts` of type `Strings` and
-// choosing between them in useStrings() -- no component changes. Imported
-// by relative paths, so the tests can read it too (they have no `~`).
+// choosing between them in useStrings() -- no component changes. Its types
+// come by relative paths: the tests read it too, and their typecheck
+// (.nuxt/tsconfig.node.json) has no `~` aliases.
 import type { AchievementLevel } from '../utils/achievement'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
