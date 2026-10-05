@@ -20,21 +20,34 @@ function cleanLine(line: string): string {
     .replace(/^[\s,;:|·•–—-]+/u, '')
 }
 
-// A title counts as shouting when more than this share of its cased letters
-// are capitals. Keeps "Pasta mit BBQ-TOFU" (about half) as it is.
-const CAPS_SHARE = 0.6
+// A word: letters with case and digits, joined by apostrophes ("MOM'S",
+// "5MIN"). Spaces, hyphens, brackets, quotes and letters without case (寿司)
+// all separate words.
+const WORD = /[\p{LC}\p{M}\p{N}]+(?:['’][\p{LC}\p{M}\p{N}]+)*/gu
+// Shorter words are left out of deciding whether a title shouts, since that
+// is how acronyms look ("BBQ", "XXL").
+const LONG_WORD_LETTERS = 4
 
-// A letter that starts a word: not after a letter, a digit or a letter's
-// apostrophe ("Mom's", "5min"), but after spaces, hyphens, brackets, quotes.
-const WORD_START = /(?<![\p{L}\p{M}\p{N}]['’]?)\p{L}/gu
+// No small letters but ß, which has no everyday capital ("SOßE").
+function inCaps(word: string): boolean {
+  return /\p{Lu}/u.test(word) && !/\p{Ll}/u.test(word.replaceAll('ß', ''))
+}
 
-// "CREMIGE PILZPASTA" → "Cremige Pilzpasta". Anything not mostly capitals,
-// acronyms in it included, stays as written. "SS" is never guessed to be "ß".
+function capitalised(word: string): string {
+  return word.toLowerCase()
+    .replace(/^\p{L}/u, letter => letter.toUpperCase())
+    // A one-letter prefix and its apostrophe start a name: O'Brien, D'Artagnan.
+    .replace(/^(\p{L}['’])(\p{L})(?=\p{L})/u, (_, prefix: string, letter: string) => prefix + letter.toUpperCase())
+}
+
+// "CREMIGE PILZPASTA" → "Cremige Pilzpasta". A title shouts when most of its
+// longer words are in capitals; then each word in capitals is capitalised
+// and every other word stays as written. A title that doesn't shout stays as
+// it is, acronyms included. "SS" is never guessed to be "ß".
 function uncapitalise(title: string): string {
-  const upper = title.match(/\p{Lu}/gu)?.length ?? 0
-  const lower = title.match(/\p{Ll}/gu)?.length ?? 0
-  if (upper <= CAPS_SHARE * (upper + lower)) return title
-  return title.toLowerCase().replace(WORD_START, letter => letter.toUpperCase())
+  const longWords = (title.match(WORD) ?? []).filter(word => (word.match(/\p{LC}/gu)?.length ?? 0) >= LONG_WORD_LETTERS)
+  const shouting = longWords.filter(inCaps).length * 2 > longWords.length
+  return shouting ? title.replace(WORD, word => inCaps(word) ? capitalised(word) : word) : title
 }
 
 function cut(title: string): string {

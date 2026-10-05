@@ -53,7 +53,7 @@ A kind of Source malkochen fully supports, with an image reliably found: TikTok 
 _Avoid_: Platform, integration
 
 **Suggested Title**:
-The title proposed from the Source when a Dish is being added, which the user can edit before saving.
+The title proposed from the Source when a Dish is being added, which the user can edit before saving. One that the Source writes mostly in capitals is proposed in normal case ("CREMIGE PILZPASTA" becomes "Cremige Pilzpasta"); titles typed by hand stay as written.
 _Avoid_: Inferred title, auto title
 
 **New Dish**:

@@ -359,7 +359,8 @@ describe('Suggested Title shortening', () => {
 
   test.each([
     ['all caps get each word capitalised', 'CREMIGE PILZPASTA', 'Cremige Pilzpasta'],
-    ['mostly caps count as caps', 'CREMIGE PILZPASTA in 15 Minuten', 'Cremige Pilzpasta In 15 Minuten'],
+    ['mostly caps count as caps, the words not in caps stay', 'CREMIGE PILZPASTA in 15 Minuten', 'Cremige Pilzpasta in 15 Minuten'],
+    ['a word not in caps stays in a title in caps', 'PASTA x3', 'Pasta x3'],
     ['caps among hashtags and emojis', '🍄 CREMIGE PILZPASTA 🍄 #vegan #pasta', 'Cremige Pilzpasta'],
     ['umlauts are lowered and raised', 'ÜBERBACKENE ÄPFEL MIT ÖL', 'Überbackene Äpfel Mit Öl'],
     ['SS stays SS, it is not guessed to be ß', 'SOSSE FÜR NUDELN', 'Sosse Für Nudeln'],
@@ -368,9 +369,15 @@ describe('Suggested Title shortening', () => {
     ['each part of a hyphenated word', 'PILZ-PASTA MIT TOFU-WÜRFELN', 'Pilz-Pasta Mit Tofu-Würfeln'],
     ['words after brackets, quotes and numbers', '(VEGAN) „LASAGNE“ 2.0', '(Vegan) „Lasagne“ 2.0'],
     ['nothing after an apostrophe or a digit', 'MOM’S 5MIN PASTA', 'Mom’s 5min Pasta'],
+    ['a name after a one-letter prefix and an apostrophe', "I'M HUNGRY FOR O'BRIEN STEW", "I'm Hungry For O'Brien Stew"],
+    ['a word right after letters without case', '寿司SUSHI BOWL', '寿司Sushi Bowl'],
     ['a normal title stays as it is', 'Cremige Pilzpasta mit Tofu', 'Cremige Pilzpasta mit Tofu'],
     ['a short acronym in a normal title stays', 'Pulled Jackfruit vom BBQ', 'Pulled Jackfruit vom BBQ'],
+    ['a short title starting with an acronym stays', 'BBQ Dip', 'BBQ Dip'],
+    ['short acronyms around one normal word stay', 'XXL BBQ Wrap', 'XXL BBQ Wrap'],
+    ['a lone acronym stays', 'BBQ', 'BBQ'],
     ['a few words in caps in a normal title stay', 'Pasta mit BBQ-TOFU', 'Pasta mit BBQ-TOFU'],
+    ['one word in caps of two stays', 'VEGANE Lasagne', 'VEGANE Lasagne'],
     ['ß in a normal title stays', 'Nudeln mit Soße', 'Nudeln mit Soße'],
     ['a lowercase title stays', 'one-pot lemon orzo', 'one-pot lemon orzo'],
   ])('capitals: %s', async (_, caption, expected) => {
