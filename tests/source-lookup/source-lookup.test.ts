@@ -342,14 +342,36 @@ describe('Pinterest', () => {
     expect((await lookup(PIN_PAGE)).suggestedTitle).toBe('')
   })
 
-  test('a Pin page that stalls leaves half the time for the image', async () => {
+  test('a Pin page that stalls is given up after half the time, and the image still comes', async () => {
     const { lookup } = lookupWith([
       [PIN_PAGE, () => 'hang'],
       [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
       [PIN_IMAGE_736, () => status(200)],
-    ], { timeoutMs: 200 })
+    ], { timeoutMs: 2000 })
 
+    const started = performance.now()
     expect(await lookup(PIN_PAGE)).toMatchObject({ suggestedTitle: '', imageUrl: PIN_IMAGE_736 })
+    // Given up at 1 s, not at the lookup's 2 s deadline.
+    expect(performance.now() - started).toBeLessThan(1600)
+  })
+
+  test('a Pin without a title of its own gives no Suggested Title, not the "Pin auf <board>" Pinterest makes up', async () => {
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      ['https://www.pinterest.com/pin/99360735527172842/', () => html(fixture('pinterest-pin-page-untitled.html'))],
+    ])
+
+    expect((await lookup('https://www.pinterest.com/pin/99360735527172842/')).suggestedTitle).toBe('')
+  })
+
+  test('nor the English "Pin on <board>"', async () => {
+    const page = fixture('pinterest-pin-page-untitled.html').replace(/content="Pin auf Instagram" data-app="true" name="og:title"/, 'content="Pin on Instagram" data-app="true" name="og:title"')
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))],
+      [PIN_PAGE, () => html(page)],
+    ])
+
+    expect((await lookup(PIN_PAGE)).suggestedTitle).toBe('')
   })
 
   test('the pinner\'s profile tagline after " | " is no part of the Creator', async () => {
@@ -361,8 +383,11 @@ describe('Pinterest', () => {
     expect((await lookup(PIN_PAGE)).creator).toBe('Minimalist Baker')
   })
 
-  test('the unusable "oEmbed" title never becomes the Suggested Title', async () => {
-    const { lookup } = lookupWith([[PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))]])
+  test('oEmbed\'s title is never used, even when the Pin page gives none', async () => {
+    const { lookup } = lookupWith([
+      [PINTEREST_OEMBED, () => json({ ...JSON.parse(fixture('pinterest-oembed.json')), title: 'Crispy Baked Tofu with Italian Herbs' })],
+      [PIN_PAGE, () => html(fixture('pinterest-pin-page-missing.html'))],
+    ])
 
     expect((await lookup(PIN_PAGE)).suggestedTitle).toBe('')
   })

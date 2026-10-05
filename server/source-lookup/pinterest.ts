@@ -43,13 +43,18 @@ async function fromOembed(http: Http, found: SourceGuess): Promise<{ creator: st
   }
 }
 
-// The Pin page gets half the lookup's time, so a stalled one still leaves the
-// image. Only a page that says it is a Pin is believed: anything else
-// (a missing Pin, a login wall) would only offer "Pinterest".
+// What Pinterest calls a Pin that has no title of its own: "Pin auf <board>"
+// in German, "Pin on <board>" in English (the languages Source Lookup asks for).
+const UNTITLED = /^Pin (?:auf|on) /
+
+// The Pin page runs alongside oEmbed and gets half the lookup's time, so a
+// stalled one holds the image back by that much at most. Only a page that
+// says it is a Pin is believed: anything else (a missing Pin, a login wall)
+// would only offer "Pinterest".
 async function pinPageTitle(http: Http, found: SourceGuess, timeoutMs: number): Promise<string> {
   const meta = metaTags((await http.page(found.canonicalLink, { timeoutMs: timeoutMs / 2 })).html ?? '')
-  if (meta.get('og:type') !== 'pinterestapp:pin') return ''
-  return shortenTitle(beforeFirstBar(meta.get('og:title')))
+  const title = meta.get('og:type') === 'pinterestapp:pin' ? beforeFirstBar(meta.get('og:title')) : undefined
+  return title && !UNTITLED.test(title) ? shortenTitle(title) : ''
 }
 
 export const pinterest: Strategy = {
