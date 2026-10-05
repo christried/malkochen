@@ -4,6 +4,7 @@ import { db, runAtomic, type Db } from '../db'
 import { board, boardColumn, dish, membership, user } from '../db/schema'
 import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
+import { pictureOf } from './people'
 
 // The Board a user gets on their first sign-in (PRD story 3).
 const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍲' }
@@ -81,7 +82,7 @@ export async function listBoards(userId: string): Promise<BoardListing[]> {
   const ids = boards.map(b => b.id)
   const [members, columns] = await Promise.all([
     db
-      .select({ boardId: membership.boardId, id: user.id, name: user.name, image: user.image })
+      .select({ boardId: membership.boardId, id: user.id, name: user.name, image: pictureOf })
       .from(membership)
       .innerJoin(user, eq(user.id, membership.userId))
       .where(inArray(membership.boardId, ids))
@@ -242,7 +243,7 @@ export async function editBoard(boardId: string, userId: string, changes: BoardC
 // The Board's Members, the Owner first, then in the order they joined.
 export function boardMembers(boardId: string) {
   return db
-    .select({ id: user.id, name: user.name, image: user.image, isOwner: membership.isOwner })
+    .select({ id: user.id, name: user.name, image: pictureOf, isOwner: membership.isOwner })
     .from(membership)
     .innerJoin(user, eq(user.id, membership.userId))
     .where(eq(membership.boardId, boardId))

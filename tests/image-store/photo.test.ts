@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { expect, test } from 'vitest'
-import { createPhotoStore, PHOTO_MAX_SIDE, preparePhoto } from '../../server/image-store/photo'
+import { createPhotoStore, PHOTO_MAX_SIDE, PICTURE_SIDE, preparePhoto } from '../../server/image-store/photo'
 import type { Storage } from '../../server/image-store'
 
 // Seam 3: a Member's own photo ("Eigenes Foto") before it goes into the
@@ -93,6 +93,45 @@ test.each([
   expect(await preparePhoto(await make(), { maxPixels: 1000 })).toEqual({ ok: false, refusal: 'not-an-image' })
 })
 
+// A Profile Picture shows round: cut to a square around its middle, at
+// most PICTURE_SIDE across.
+test('as a Profile Picture, a photo is cut to a square around its middle and scaled down', async () => {
+  // Left half red, right half blue: the middle square holds both.
+  const halves = await sharp({ create: { width: 3000, height: 1000, channels: 3, background: '#f00' } })
+    .composite([{ input: { create: { width: 1500, height: 1000, channels: 3, background: '#00f' } }, left: 1500, top: 0 }])
+    .jpeg()
+    .toBuffer()
+
+  const prepared = await preparePhoto(halves, { square: PICTURE_SIDE })
+
+  if (!prepared.ok) throw new Error(`refused: ${prepared.refusal}`)
+  const { format, width, height, exif } = await metadataOf(prepared.bytes)
+  expect({ format, width, height, exif }).toEqual({ format: 'jpeg', width: PICTURE_SIDE, height: PICTURE_SIDE, exif: undefined })
+  const { data } = await sharp(prepared.bytes).raw().toBuffer({ resolveWithObject: true })
+  const pixel = (x: number) => [...data.subarray((10 * PICTURE_SIDE + x) * 3, (10 * PICTURE_SIDE + x) * 3 + 3)]
+  expect(pixel(5)[0]).toBeGreaterThan(200)
+  expect(pixel(PICTURE_SIDE - 5)[2]).toBeGreaterThan(200)
+})
+
+test('as a Profile Picture, a small photo is cut square but not enlarged', async () => {
+  const prepared = await preparePhoto(await photo(300, 200).png().toBuffer(), { square: PICTURE_SIDE })
+
+  if (!prepared.ok) throw new Error(`refused: ${prepared.refusal}`)
+  const { width, height } = await metadataOf(prepared.bytes)
+  expect([width, height]).toEqual([200, 200])
+})
+
+test('as a Profile Picture, a photo taken upright is cut square upright', async () => {
+  // Stored landscape, marked "rotate 90°" (EXIF orientation 6).
+  const sideways = await photo(400, 300).withMetadata({ orientation: 6 }).jpeg().toBuffer()
+
+  const prepared = await preparePhoto(sideways, { square: PICTURE_SIDE })
+
+  if (!prepared.ok) throw new Error(`refused: ${prepared.refusal}`)
+  const { width, height, orientation } = await metadataOf(prepared.bytes)
+  expect([width, height, orientation]).toEqual([300, 300, undefined])
+})
+
 interface Saved { name: string, bytes: Uint8Array, contentType: string }
 function recordingStorage(fail = false): Storage & { saved: Saved[] } {
   const saved: Saved[] = []
@@ -117,6 +156,19 @@ test('a stored photo is saved as a Dish image and its URL comes back', async () 
   expect(saved!.name).toMatch(/^dishes\/[0-9a-f-]{36}\.jpg$/)
   expect(saved!.contentType).toBe('image/jpeg')
   expect((await metadataOf(saved!.bytes)).exif).toBeUndefined()
+  expect(stored).toEqual({ ok: true, url: `https://store.example/${saved!.name}` })
+})
+
+test('a store for Profile Pictures saves square pictures under pictures/', async () => {
+  const storage = recordingStorage()
+  const store = createPhotoStore({ storage, folder: 'pictures', square: PICTURE_SIDE })
+
+  const stored = await store(await phoneJpeg())
+
+  const [saved] = storage.saved
+  expect(saved!.name).toMatch(/^pictures\/[0-9a-f-]{36}\.jpg$/)
+  const { width, height } = await metadataOf(saved!.bytes)
+  expect([width, height]).toEqual([PICTURE_SIDE, PICTURE_SIDE])
   expect(stored).toEqual({ ok: true, url: `https://store.example/${saved!.name}` })
 })
 

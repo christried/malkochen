@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { blobStorage, createImageStore, diskStorage, type ImageStore } from '../image-store'
 import { createFoundImageStore } from '../image-store/found-image'
-import { createPhotoStore } from '../image-store/photo'
+import { createPhotoStore, PICTURE_SIDE } from '../image-store/photo'
 import { createImageTickets } from '../image-store/tickets'
 import { parseServerEnv } from '../env'
 import { isMember } from './boards'
@@ -31,6 +31,11 @@ export const storeFoundImage = createFoundImageStore({ isMember, copyImage, tick
 // ever takes a photo its Member uploaded.
 export const storePhoto = createPhotoStore({ storage, onFailure: reason => console.warn(`[image-store] photo not stored: ${reason}`) })
 export const photoTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'photo' })
+
+// A Profile Picture: stored the same way, but cut square, and signed for the
+// user who uploaded it, so they only ever take their own.
+export const storePicture = createPhotoStore({ storage, folder: 'pictures', square: PICTURE_SIDE, onFailure: reason => console.warn(`[image-store] picture not stored: ${reason}`) })
+export const pictureTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'picture' })
 
 export interface DishImageRequest {
   photo?: { url: string, ticket: string } | null

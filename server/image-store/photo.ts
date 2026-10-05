@@ -7,7 +7,8 @@ import type { Sharp } from 'sharp'
 import { PHOTO_MAX_BYTES } from '../../shared/photo'
 import type { Storage } from '.'
 
-// "Eigenes Foto": a Member's own photo as a Dish's image. Before it goes into
+// "Eigenes Foto": a Member's own photo as a Dish's image, and the same for a
+// Profile Picture (cut square instead). Before it goes into
 // the Image Store, it is told apart by its content (never its name or the
 // type the browser claims): JPEG, PNG, WebP or HEIC, nothing else. It is then
 // turned upright, scaled down to fit PHOTO_MAX_SIDE and stored as a JPEG
@@ -15,6 +16,10 @@ import type { Storage } from '.'
 
 // Large enough for the Dish detail on a wide screen at 2× density.
 export const PHOTO_MAX_SIDE = 1600
+
+// A Profile Picture shows round and small (a badge, the settings): a square
+// this wide is plenty, even at 3× density.
+export const PICTURE_SIDE = 512
 
 // Larger images are refused before they are unpacked: a few kilobytes can
 // unpack to gigabytes. 50 MP unpacks to 200 MB. The client sends photos
@@ -30,6 +35,12 @@ export type PreparedPhoto
 export interface PhotoLimits {
   maxBytes?: number
   maxPixels?: number
+}
+
+export interface PhotoShape {
+  // Cut to a square around the middle, at most this wide (a Profile
+  // Picture), instead of scaled to fit PHOTO_MAX_SIDE whole (a Dish's photo).
+  square?: number
 }
 
 type PhotoKind = 'jpeg' | 'png' | 'webp' | 'heic'
@@ -77,17 +88,28 @@ async function input(kind: PhotoKind, bytes: Uint8Array, maxPixels: number): Pro
   return image
 }
 
-export async function preparePhoto(bytes: Uint8Array, limits: PhotoLimits = {}): Promise<PreparedPhoto> {
-  if (bytes.length > (limits.maxBytes ?? PHOTO_MAX_BYTES)) return { ok: false, refusal: 'too-large' }
+// The square's side: never larger than the photo's shorter side, so a small
+// photo is cut but not enlarged. (A quarter turn swaps width and height, so
+// the shorter side is the same upright or not.)
+async function squareSide(image: Sharp, side: number): Promise<number> {
+  const { width = 0, height = 0 } = await image.metadata()
+  return Math.min(side, width, height)
+}
+
+export async function preparePhoto(bytes: Uint8Array, options: PhotoLimits & PhotoShape = {}): Promise<PreparedPhoto> {
+  if (bytes.length > (options.maxBytes ?? PHOTO_MAX_BYTES)) return { ok: false, refusal: 'too-large' }
   const kind = kindOf(bytes)
   if (!kind) return { ok: false, refusal: 'not-an-image' }
   try {
-    const image = await input(kind, bytes, limits.maxPixels ?? MAX_PIXELS)
+    const image = await input(kind, bytes, options.maxPixels ?? MAX_PIXELS)
+    const side = options.square && await squareSide(image, options.square)
     const jpeg = await image
       // Upright as taken (EXIF orientation), then the orientation is dropped
       // with all other metadata: sharp keeps none unless asked to.
       .rotate()
-      .resize({ width: PHOTO_MAX_SIDE, height: PHOTO_MAX_SIDE, fit: 'inside', withoutEnlargement: true })
+      .resize(side
+        ? { width: side, height: side, fit: 'cover', position: 'centre' }
+        : { width: PHOTO_MAX_SIDE, height: PHOTO_MAX_SIDE, fit: 'inside', withoutEnlargement: true })
       .flatten({ background: '#ffffff' })
       .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer()
@@ -104,18 +126,20 @@ export type PhotoStore = (bytes: Uint8Array) => Promise<
   | { ok: false, refusal: PhotoRefusal | 'not-stored' }
 >
 
-export interface PhotoStoreOptions extends PhotoLimits {
+export interface PhotoStoreOptions extends PhotoLimits, PhotoShape {
   storage: Storage
+  // Where in the storage it goes: 'dishes' (the default) or 'pictures'.
+  folder?: 'dishes' | 'pictures'
   // Told why a prepared photo couldn't be stored.
   onFailure?: (reason: string) => void
 }
 
-export function createPhotoStore({ storage, onFailure, ...limits }: PhotoStoreOptions): PhotoStore {
+export function createPhotoStore({ storage, onFailure, folder = 'dishes', ...options }: PhotoStoreOptions): PhotoStore {
   return async (bytes) => {
-    const prepared = await preparePhoto(bytes, limits)
+    const prepared = await preparePhoto(bytes, options)
     if (!prepared.ok) return prepared
     try {
-      return { ok: true, url: await storage.save(`dishes/${randomUUID()}.jpg`, prepared.bytes, prepared.contentType) }
+      return { ok: true, url: await storage.save(`${folder}/${randomUUID()}.jpg`, prepared.bytes, prepared.contentType) }
     }
     catch (error) {
       onFailure?.(`storage failed: ${error instanceof Error ? error.message : String(error)}`)

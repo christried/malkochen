@@ -7,6 +7,7 @@ import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, membership, user } from '../db/schema'
 import { cookingsByDish, type CookingView } from './cookings'
+import { pictureOf } from './people'
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -107,7 +108,7 @@ function selectDishes() {
       createdAt: dish.createdAt,
       adderId: user.id,
       adderName: user.name,
-      adderImage: user.image,
+      adderImage: pictureOf,
     })
     .from(dish)
     .leftJoin(user, eq(user.id, dish.addedBy))
@@ -407,13 +408,14 @@ function escapeLike(text: string): string {
 // of the Board, or if another Member deleted it already.
 export async function addDish(
   boardId: string,
-  adder: Omit<DishAdder, 'image'> & { image?: string | null },
+  adder: Omit<DishAdder, 'image'>,
   input: NewDish,
 ): Promise<PlacedDish | null> {
   const columns = await db
-    .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
+    .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht, adderImage: pictureOf })
     .from(boardColumn)
     .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, adder.id)))
+    .innerJoin(user, eq(user.id, membership.userId))
     .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))
   const firstColumn = columnForNewDishes(columns)
@@ -449,7 +451,7 @@ export async function addDish(
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,
-    addedBy: { id: adder.id, name: adder.name, image: adder.image ?? null },
+    addedBy: { id: adder.id, name: adder.name, image: columns[0]!.adderImage },
     createdAt: created.createdAt.toISOString(),
     cookings: [],
   })
