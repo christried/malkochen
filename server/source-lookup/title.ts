@@ -1,6 +1,6 @@
 // Turns a caption or page title into a Suggested Title that reads well on a
 // Board: the first line that still says something once hashtags and emojis
-// are gone, cut to a sensible length.
+// are gone, out of capitals if it shouts, cut to a sensible length.
 
 const MAX_LENGTH = 80
 
@@ -20,6 +20,36 @@ function cleanLine(line: string): string {
     .replace(/^[\s,;:|·•–—-]+/u, '')
 }
 
+// A word: letters with case and digits, joined by apostrophes ("MOM'S",
+// "5MIN"). Spaces, hyphens, brackets, quotes and letters without case (寿司)
+// all separate words.
+const WORD = /[\p{LC}\p{M}\p{N}]+(?:['’][\p{LC}\p{M}\p{N}]+)*/gu
+// Shorter words are left out of deciding whether a title shouts, since that
+// is how acronyms look ("BBQ", "XXL").
+const LONG_WORD_LETTERS = 4
+
+// No small letters but ß, which has no everyday capital ("SOßE").
+function inCaps(word: string): boolean {
+  return /\p{Lu}/u.test(word) && !/\p{Ll}/u.test(word.replaceAll('ß', ''))
+}
+
+function capitalised(word: string): string {
+  return word.toLowerCase()
+    .replace(/^\p{L}/u, letter => letter.toUpperCase())
+    // A one-letter prefix and its apostrophe start a name: O'Brien, D'Artagnan.
+    .replace(/^(\p{L}['’])(\p{L})(?=\p{L})/u, (_, prefix: string, letter: string) => prefix + letter.toUpperCase())
+}
+
+// "CREMIGE PILZPASTA" → "Cremige Pilzpasta". A title shouts when most of its
+// longer words are in capitals; then each word in capitals is capitalised
+// and every other word stays as written. A title that doesn't shout stays as
+// it is, acronyms included. "SS" is never guessed to be "ß".
+function uncapitalise(title: string): string {
+  const longWords = (title.match(WORD) ?? []).filter(word => (word.match(/\p{LC}/gu)?.length ?? 0) >= LONG_WORD_LETTERS)
+  const shouting = longWords.filter(inCaps).length * 2 > longWords.length
+  return shouting ? title.replace(WORD, word => inCaps(word) ? capitalised(word) : word) : title
+}
+
 function cut(title: string): string {
   if (title.length <= MAX_LENGTH) return title
   const head = title.slice(0, MAX_LENGTH - 1)
@@ -32,7 +62,7 @@ export function shortenTitle(raw: string | null | undefined): string {
   if (!raw) return ''
   for (const line of raw.split(/\r?\n/)) {
     const cleaned = cleanLine(line)
-    if (/[\p{L}\p{N}]/u.test(cleaned)) return cut(cleaned)
+    if (/[\p{L}\p{N}]/u.test(cleaned)) return cut(uncapitalise(cleaned))
   }
   return ''
 }
