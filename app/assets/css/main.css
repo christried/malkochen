@@ -100,14 +100,6 @@ html {
   --wash-lane: 24%;
   --wash-lane-target: 32%;
 }
-[data-theme="dark"] {
-  --wash-page: 14%;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --wash-page: 14%;
-  }
-}
 @media (min-width: 768px) {
   .board {
     --board-muted: var(--color-text-muted);
