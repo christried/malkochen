@@ -148,9 +148,10 @@ test('switching Boards shows the new Board’s skeleton at once, shimmering, and
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌙 Abends')
   await expect(page.getByRole('link', { name: 'Bowl' })).toHaveCount(0)
   await expect(skeleton(page)).toHaveAttribute('aria-busy', 'true')
-  // Phones: the tabs, and the first Column only.
+  // Phones: the first Column's headline, the tabs, and that Column only.
   await expect(page.getByRole('navigation', { name: 'Spalten' }).getByRole('button')).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
-  await expect(skeleton(page).getByRole('region').getByRole('heading', { level: 2 })).toHaveText(['Ideen'])
+  await expect(skeleton(page).getByRole('heading', { level: 2 })).toHaveText(['Ideen'])
+  await expect(skeleton(page).getByRole('region')).toHaveCount(1)
   const card = skeleton(page).locator('[data-skeleton-card]').first()
   await expect(card).toBeVisible()
   expect(await animations(card)).toEqual([{ duration: 1400, iterations: Infinity, easing: 'ease-in-out' }])
@@ -174,7 +175,7 @@ test('with reduced motion the skeleton is still, at 60% opacity, in every Column
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌙 Picknick')
   await expect(skeleton(page).getByRole('region').getByRole('heading', { level: 2 })).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
-  await expect(skeleton(page).locator('[data-column-subtitle]')).toHaveText(['Worauf hast du Lust?', 'Das steht an.', 'Schon geschafft!'])
+  await expect(skeleton(page).getByRole('region').locator('[data-column-subtitle]')).toHaveText(['Worauf hast du Lust?', 'Das steht an.', 'Schon geschafft!'])
   await expect(skeleton(page).locator('[data-skeleton-cards]')).toHaveCount(3)
   await expect(skeleton(page).locator('[data-skeleton-cards]').first()).toHaveCSS('opacity', '0.6')
   expect(await animations(skeleton(page))).toEqual([])
