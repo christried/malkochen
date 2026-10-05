@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
 import { PHOTO_ACCEPT } from '~~/shared/photo'
 import type { PhotoProblem, UploadedPhoto } from '~/composables/usePhotoUpload'
@@ -7,9 +8,12 @@ import type { PhotoProblem, UploadedPhoto } from '~/composables/usePhotoUpload'
 // image is the Source's ("Bild vom Link", only for a link Dish), the
 // Member's own photo ("Eigenes Foto") or a Placeholder Image. Picking one
 // closes it. An own photo is uploaded to the Board first; while that runs it
-// says so, and if the photo is refused it says why and stays open.
+// says so, and if the photo is refused it says why and stays open. Above
+// the choices, a Source image or own photo can be shifted within the card's
+// frame ("Ausschnitt"), which moves its focus point; a Placeholder can't.
 const open = defineModel<boolean>('open', { required: true })
 const placeholder = defineModel<Placeholder>('placeholder', { required: true })
+const focus = defineModel<ImageFocus>('focus', { required: true })
 const props = defineProps<{
   title: string
   closeLabel: string
@@ -18,6 +22,9 @@ const props = defineProps<{
   // Whether "Bild vom Link" is offered, and its preview if there is one.
   offerSource: boolean
   sourceImage?: string | null
+  // The image the Dish gets, if it is one to shift: a Source image or an own
+  // photo, not a Placeholder.
+  image?: string | null
 }>()
 const emit = defineEmits<{
   source: []
@@ -69,6 +76,16 @@ const choice = 'flex min-h-24 flex-col items-center justify-center gap-2 overflo
     :title="title"
     :close-label="closeLabel"
   >
+    <template v-if="image">
+      <h3 class="mb-3 mt-5 text-label">
+        {{ t.imageDialog.focus }}
+      </h3>
+      <ImageFocusPreview
+        :key="image"
+        v-model:focus="focus"
+        :src="image"
+      />
+    </template>
     <div
       class="mt-5 grid gap-2.5"
       :class="offerSource ? 'grid-cols-2' : 'grid-cols-1'"

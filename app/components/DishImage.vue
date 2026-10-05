@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { focusPosition, type ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
 import type { ClipMotion } from '~/utils/motion'
 
@@ -7,9 +8,11 @@ import type { ClipMotion } from '~/utils/motion'
 // Placeholder. On a server-rendered page it may have failed before hydration,
 // when no @error listener was attached yet, so mounting checks too.
 // `motion` plays the Placeholder's loop, on and on or once (then `ended`);
-// a stored image stays as it is.
+// a stored image stays as it is. `focus`: the part of a stored image the
+// frame shows when it crops it (shared/image-focus.ts); the centre if left out.
 const props = defineProps<{
   imageUrl: string | null
+  focus?: ImageFocus
   placeholder: Placeholder
   lazy?: boolean
   motion?: ClipMotion
@@ -31,6 +34,7 @@ onMounted(() => {
     :src="imageUrl"
     alt=""
     class="h-full w-full object-cover"
+    :style="focus && { objectPosition: focusPosition(focus) }"
     :loading="lazy ? 'lazy' : undefined"
     data-dish-image
     @error="imageBroken = true"

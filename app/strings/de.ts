@@ -234,6 +234,10 @@ export const de = {
     tooLarge: 'Das Foto ist zu groß. Ein kleineres oder ein JPEG klappt bestimmt.',
     notAnImage: 'Das ist kein Foto, das ich lesen kann. JPEG, PNG, WebP oder HEIC gehen.',
     failed: 'Das Hochladen hat nicht geklappt. Versuch es gleich noch mal.',
+    // Shifting a Source image or own photo within the card's frame.
+    focus: 'Ausschnitt',
+    focusHint: 'Verschieb das Bild, bis das Essen im Rahmen ist.',
+    focusValue: (x: number, y: number) => `${x} % von links, ${y} % von oben`,
   },
   addDish: {
     open: 'Gericht hinzufügen',

@@ -1,4 +1,4 @@
-import type { ImageFocus } from '~~/shared/image-focus'
+import type { ImageFocus } from '../../shared/image-focus'
 
 // Shifting a Dish's image in the image dialog's preview (shared/image-focus.ts).
 // The image covers its frame, so it is cut off along one axis at most: that
