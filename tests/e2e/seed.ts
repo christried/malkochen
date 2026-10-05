@@ -70,8 +70,8 @@ export async function resetBoard(page: Page) {
     await client.query('delete from dish where board_id = $1', [boardId])
     await client.query('delete from board_column where board_id = $1', [boardId])
     await client.query(
-      `insert into board_column (board_id, name, position, is_gekocht)
-       values ($1, 'Ideen', 0, false), ($1, 'Diese Woche', 1, false), ($1, 'Gekocht', 2, true)`,
+      `insert into board_column (board_id, name, subtitle, position, is_gekocht)
+       values ($1, 'Ideen', 'Worauf hast du Lust?', 0, false), ($1, 'Diese Woche', 'Das steht an.', 1, false), ($1, 'Gekocht', null, 2, true)`,
       [boardId],
     )
     await client.query('commit')

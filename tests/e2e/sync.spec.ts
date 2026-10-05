@@ -82,6 +82,21 @@ test('another Member’s change to a Dish’s Creator shows up without a reload,
   await expect(creator).toHaveCount(0, { timeout: 10_000 })
 })
 
+test('another Member’s change to a Column Subtitle shows up without a reload', async ({ page, browser }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  const { boardId, dorothy } = await sharedBoard(page, browser, 'Kochclub')
+  await gotoHydrated(page, `/b/${boardId}`)
+  const subtitle = column(page, 'Ideen').locator('[data-column-subtitle]')
+  await expect(subtitle).toHaveText('Worauf hast du Lust?')
+
+  const { columns } = await (await dorothy.request.get(`/api/boards/${boardId}`)).json() as { columns: { id: string }[] }
+  expect((await dorothy.request.patch(`/api/columns/${columns[0]!.id}`, { data: { subtitle: 'Irgendwann mal' } })).status()).toBe(200)
+  await expect(subtitle).toHaveText('Irgendwann mal', { timeout: 10_000 })
+
+  expect((await dorothy.request.patch(`/api/columns/${columns[0]!.id}`, { data: { subtitle: null } })).status()).toBe(200)
+  await expect(subtitle).toHaveCount(0, { timeout: 10_000 })
+})
+
 test('polling stops while the Board is in the background, and coming back refreshes it at once', async ({ page, browser }) => {
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Suppenküche')
   await gotoHydrated(page, `/b/${boardId}`)

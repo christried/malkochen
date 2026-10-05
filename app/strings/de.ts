@@ -310,6 +310,8 @@ export const de = {
     close: 'Schließen',
     columns: 'Spalten',
     columnName: (name: string) => `Name der Spalte „${name}“`,
+    columnSubtitle: (name: string) => `Untertitel der Spalte „${name}“`,
+    subtitlePrompt: 'Untertitel (optional)',
     notDeletable: 'Kann nicht gelöscht werden',
     dishCount,
     moveUp: (name: string) => `„${name}“ nach oben`,

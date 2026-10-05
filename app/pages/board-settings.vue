@@ -77,6 +77,19 @@ async function renameColumn(column: ColumnRow, newName: string) {
   }
 }
 
+// A Column Subtitle; null clears it.
+async function setColumnSubtitle(column: ColumnRow, subtitle: string | null) {
+  const old = column.subtitle
+  column.subtitle = subtitle
+  try {
+    await $fetch(`/api/columns/${column.id}`, { method: 'PATCH', body: { subtitle } })
+  }
+  catch {
+    column.subtitle = old
+    failed()
+  }
+}
+
 async function saveOrder(before: ColumnRow[]) {
   try {
     await $fetch(`/api/boards/${id.value}/columns`, { method: 'PUT', body: { columnIds: columns.value.map(c => c.id) } })
@@ -378,6 +391,7 @@ function confirmDelete() {
         <ColumnSettingsList
           v-model="columns"
           @rename="renameColumn"
+          @subtitle="setColumnSubtitle"
           @reordered="saveOrder"
           @delete="askDelete"
         />

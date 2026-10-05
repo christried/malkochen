@@ -4,14 +4,16 @@ import type { ColumnView } from '~~/server/utils/columns'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings' Columns (PRD stories 57–60): each can be renamed in place,
-// moved with ↑/↓ or dragged by its grip, and deleted, except the Gekocht
-// Column (marked) and the last Column besides it. The order changes here
+// given a Column Subtitle or have it cleared (not the Gekocht Column, whose
+// subtitle is fixed), moved with ↑/↓ or dragged by its grip, and deleted,
+// except the Gekocht Column (marked) and the last Column besides it. The order changes here
 // while dragging; `reordered` says a move is done, with the order before it.
 export type ColumnRow = ColumnView & { count: number }
 
 const columns = defineModel<ColumnRow[]>({ required: true })
 const emit = defineEmits<{
   rename: [column: ColumnRow, name: string]
+  subtitle: [column: ColumnRow, subtitle: string | null]
   reordered: [before: ColumnRow[]]
   delete: [column: ColumnRow]
 }>()
@@ -31,6 +33,14 @@ function rename(column: ColumnRow, event: Event) {
     return
   }
   emit('rename', column, name)
+}
+
+// A blank subtitle clears it.
+function setSubtitle(column: ColumnRow, event: Event) {
+  const input = event.target as HTMLInputElement
+  const subtitle = input.value.trim() || null
+  input.value = subtitle ?? ''
+  if (subtitle !== column.subtitle) emit('subtitle', column, subtitle)
 }
 
 const list = useTemplateRef<ComponentPublicInstance>('list')
@@ -167,6 +177,22 @@ function drop(event?: Event) {
           @change="rename(column, $event)"
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         >
+        <input
+          v-if="!column.isGekocht"
+          type="text"
+          :value="column.subtitle ?? ''"
+          :aria-label="t.settings.columnSubtitle(column.name)"
+          :placeholder="t.settings.subtitlePrompt"
+          maxlength="40"
+          autocomplete="off"
+          class="w-full rounded-field bg-transparent px-2 py-1 font-display text-body-serif italic text-text-muted placeholder:text-text-muted/70 focus:bg-surface focus:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          @change="setSubtitle(column, $event)"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+        >
+        <span
+          v-else
+          class="px-2 py-1 font-display text-body-serif italic text-text-muted"
+        >{{ column.subtitle }}</span>
         <span class="px-2 text-small text-text-muted">
           {{ t.settings.dishCount(column.count) }}<template v-if="column.isGekocht"> · {{ t.settings.notDeletable }}</template>
         </span>
