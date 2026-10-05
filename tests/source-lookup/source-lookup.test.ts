@@ -356,4 +356,46 @@ describe('Suggested Title shortening', () => {
     expect(title).toBe('This is the absolute best vegan lasagna you will ever make in your life and it…')
     expect(title.length).toBeLessThanOrEqual(80)
   })
+
+  test.each([
+    ['all caps get each word capitalised', 'CREMIGE PILZPASTA', 'Cremige Pilzpasta'],
+    ['mostly caps count as caps', 'CREMIGE PILZPASTA in 15 Minuten', 'Cremige Pilzpasta In 15 Minuten'],
+    ['caps among hashtags and emojis', '🍄 CREMIGE PILZPASTA 🍄 #vegan #pasta', 'Cremige Pilzpasta'],
+    ['umlauts are lowered and raised', 'ÜBERBACKENE ÄPFEL MIT ÖL', 'Überbackene Äpfel Mit Öl'],
+    ['SS stays SS, it is not guessed to be ß', 'SOSSE FÜR NUDELN', 'Sosse Für Nudeln'],
+    ['a capital ß becomes a small one', 'SOẞE FÜR NUDELN', 'Soße Für Nudeln'],
+    ['a small ß among capitals is kept', 'SOßE FÜR NUDELN', 'Soße Für Nudeln'],
+    ['each part of a hyphenated word', 'PILZ-PASTA MIT TOFU-WÜRFELN', 'Pilz-Pasta Mit Tofu-Würfeln'],
+    ['words after brackets, quotes and numbers', '(VEGAN) „LASAGNE“ 2.0', '(Vegan) „Lasagne“ 2.0'],
+    ['nothing after an apostrophe or a digit', 'MOM’S 5MIN PASTA', 'Mom’s 5min Pasta'],
+    ['a normal title stays as it is', 'Cremige Pilzpasta mit Tofu', 'Cremige Pilzpasta mit Tofu'],
+    ['a short acronym in a normal title stays', 'Pulled Jackfruit vom BBQ', 'Pulled Jackfruit vom BBQ'],
+    ['a few words in caps in a normal title stay', 'Pasta mit BBQ-TOFU', 'Pasta mit BBQ-TOFU'],
+    ['ß in a normal title stays', 'Nudeln mit Soße', 'Nudeln mit Soße'],
+    ['a lowercase title stays', 'one-pot lemon orzo', 'one-pot lemon orzo'],
+  ])('capitals: %s', async (_, caption, expected) => {
+    expect(await captioned(caption)).toBe(expected)
+  })
+
+  test('caps are capitalised before an overlong title is cut', async () => {
+    const title = await captioned('THIS IS THE ABSOLUTE BEST VEGAN LASAGNA YOU WILL EVER MAKE IN YOUR LIFE AND IT ONLY TAKES THIRTY MINUTES')
+
+    expect(title).toBe('This Is The Absolute Best Vegan Lasagna You Will Ever Make In Your Life And It…')
+  })
+
+  test('a YouTube Short\'s title in caps is capitalised too', async () => {
+    const { lookup } = lookupWith([
+      [YOUTUBE_OEMBED, () => json({ ...JSON.parse(fixture('youtube-oembed.json')), title: 'VEGANE LASAGNE 🍝 #shorts' })],
+      [VERTICAL_THUMBNAIL, () => status(200)],
+    ])
+
+    expect((await lookup('https://www.youtube.com/shorts/tPEE9ZwTmy0')).suggestedTitle).toBe('Vegane Lasagne')
+  })
+
+  test('a blog\'s title in caps is capitalised too', async () => {
+    const link = 'https://caps.example/lasagne'
+    const { lookup } = lookupWith([[link, () => html('<html><head><title>VEGANE LASAGNE</title></head><body></body></html>')]])
+
+    expect((await lookup(link)).suggestedTitle).toBe('Vegane Lasagne')
+  })
 })
