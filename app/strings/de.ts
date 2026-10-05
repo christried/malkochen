@@ -1,9 +1,10 @@
 // Every piece of UI text lives here. Components read it through useStrings(),
 // so adding English later means adding an `en.ts` of type `Strings` and
-// choosing between them in useStrings() -- no component changes.
-import type { AchievementLevel } from '~/utils/achievement'
-import type { Placeholder } from '~~/shared/placeholders'
-import type { SourceBadgeKind } from '~~/shared/source-badge'
+// choosing between them in useStrings() -- no component changes. Imported
+// by relative paths, so the tests can read it too (they have no `~`).
+import type { AchievementLevel } from '../utils/achievement'
+import type { Placeholder } from '../../shared/placeholders'
+import type { SourceBadgeKind } from '../../shared/source-badge'
 
 // "3. Sept.", with the year only when it isn't this year. Always in German
 // time, so the server and the browser render the same day.
@@ -111,8 +112,27 @@ export const de = {
     // "Gekocht ✓" on its button, where the check is drawn (CookButton).
     cookWord: 'Gekocht',
     cookLabel: (title: string) => `Gekocht ✓: „${title}“`,
-    // Topfbert's speech bubble in the Gekocht celebration.
-    cheer: 'Mmh!',
+    // Topfbert's speech bubble in the Gekocht celebration: one at random
+    // each time, never the same twice in a row (utils/cheer). Short enough
+    // for the bubble beside the toast on a 360px phone, and vegan.
+    cheers: [
+      'Mmh!',
+      'Lecker!',
+      'Hmm, fein!',
+      'Yes, Chef!',
+      'Mjam!',
+      'Köstlich!',
+      'Himmlisch!',
+      'Ein Genuss!',
+      'Gut gemacht!',
+      'Bravo!',
+      'Na, lecker!',
+      'Guten Appetit!',
+      'Weiter so!',
+      'Top gekocht!',
+      'So gut!',
+      'Klasse!',
+    ],
     cookedCount: (count: number) => `${count}× gekocht`,
     addNote: 'Notiz hinzufügen',
     cookFailed: (title: string) => `„${title}“ ließ sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,

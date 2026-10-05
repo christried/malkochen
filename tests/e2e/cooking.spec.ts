@@ -3,7 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest, column, titles } from './board'
-import { confetti, topfbert } from './celebration'
+import { ANY_CHEER, CHEERS, cheer, confetti, topfbert } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
 import { seedCookings, seedDish } from './seed'
@@ -133,7 +133,7 @@ test('"Gekocht ✓" celebrates: veggie confetti, then Topfbert behind the toast 
   // 14 pieces fly up from the button and fall off the screen, once.
   await expect(confetti(page)).toHaveCount(14)
   await expect(topfbert(page)).toBeVisible()
-  await expect(topfbert(page)).toContainText('Mmh!')
+  await expect(cheer(page)).toHaveText(ANY_CHEER)
   await expect(confetti(page)).toHaveCount(0)
   // Topfbert stays with the toast and leaves with it.
   await expect(topfbert(page)).toBeVisible()
@@ -151,7 +151,7 @@ test('"Gekocht ✓" in the Dish detail celebrates there', async ({ page }) => {
   await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
 
   await expect(confetti(detail)).toHaveCount(14)
-  await expect(topfbert(detail)).toContainText('Mmh!')
+  await expect(cheer(detail)).toHaveText(ANY_CHEER)
 })
 
 // The note sheet opened from the Gekocht toast makes the Dish detail step back (scale
@@ -237,5 +237,44 @@ test('"99× gekocht" shows in full beside an avatar and a note, side by side and
         expect(apart, `${a.name} overlaps ${b.name} at ${viewport.width}px`).toBe(true)
       }
     }
+  }
+})
+
+// #114: Topfbert says a different cheer each time he pops up, and every one
+// of them fits his bubble on one line, within the Gekocht toast, on a 360px
+// phone (the narrowest the toast gets). Each cheer is put in his bubble in
+// turn and measured.
+test('Topfbert says something else the next time, and every cheer fits beside the toast on a phone', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[6])
+  await seedDish(page, { title: 'Dal', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await page.setViewportSize({ width: 360, height: 740 })
+  await gotoHydrated(page, '/')
+  // On a phone, Ideen shows; "Gekocht ✓" on its card cooks it.
+  const cook = page.getByRole('button', { name: 'Gekocht ✓: „Dal“' })
+
+  await cook.click()
+  await expect(cheer(page)).toHaveText(ANY_CHEER)
+  const first = await cheer(page).textContent()
+  await gekochtToast(page).getByRole('button', { name: 'Rückgängig' }).click()
+  await expect(topfbert(page)).toHaveCount(0)
+  await expect(cook).toBeVisible()
+  await cook.click()
+  await expect(cheer(page)).toHaveText(ANY_CHEER)
+  expect(await cheer(page).textContent(), 'the same cheer twice in a row').not.toBe(first)
+
+  // Once he and his bubble have popped up (the idle loops go on).
+  await cheer(page).evaluate(el => Promise.all([el, el.parentElement!].flatMap(e => e.getAnimations()).map(a => a.finished)))
+  const pill = await page.locator('[data-toast]').boundingBox()
+  for (const text of CHEERS) {
+    const bubble = await cheer(page).evaluate((el, text) => {
+      el.textContent = text
+      const lines = document.createRange()
+      lines.selectNodeContents(el)
+      const { left, right } = el.getBoundingClientRect()
+      return { left, right, lines: new Set([...lines.getClientRects()].map(r => Math.round(r.top))).size }
+    }, text)
+    expect(bubble.lines, `"${text}" on one line`).toBe(1)
+    expect(bubble.left, `"${text}" within the toast`).toBeGreaterThanOrEqual(pill!.x)
+    expect(bubble.right, `"${text}" within the toast`).toBeLessThanOrEqual(pill!.x + pill!.width)
   }
 })
