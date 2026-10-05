@@ -111,7 +111,6 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
         <div class="flex flex-col gap-4 rounded-card bg-surface p-4">
           <div class="flex items-center gap-4">
             <UserAvatar
-              :key="me.image ?? ''"
               :name="me.name"
               :image="me.image"
               :size="56"
