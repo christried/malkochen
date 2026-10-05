@@ -27,6 +27,10 @@ export function sourceOf(input: SourceInput): DishSource {
   return { link: guess.canonicalLink, kind: isBlog ? 'blog' : guess.kind }
 }
 
+// A Member's own photo ("Eigenes Foto") as POST /api/boards/:id/photos
+// stored it: where it went, and the photo ticket it came with.
+export const photoInput = z.object({ url: z.string().min(1).max(2048), ticket: z.string().max(200) })
+
 // Adding a Dish (POST /api/boards/:id/dishes).
 export const addDishBody = z.object({
   title: dishTitle,
@@ -39,6 +43,8 @@ export const addDishBody = z.object({
   // came with; copied on save, but only with a valid ticket.
   imageUrl: webLinkInput.nullish(),
   imageTicket: z.string().max(200).nullish(),
+  // Or the Member's own photo, used instead of any Source image.
+  photo: photoInput.nullish(),
 })
 export type AddDishBody = z.input<typeof addDishBody>
 
@@ -56,5 +62,7 @@ export const dishEditBody = z.object({
   // it came with, as when adding a Dish.
   imageUrl: webLinkInput.nullable().optional(),
   imageTicket: z.string().max(200).nullish(),
+  // The Member's own photo becomes the image, used instead of `imageUrl`.
+  photo: photoInput.optional(),
 })
 export type DishEditBody = z.input<typeof dishEditBody>

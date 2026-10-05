@@ -50,3 +50,14 @@ test('a ticket signed with another secret, or tampered with, is refused', () => 
     expect(tickets.check('user-1', IMAGE, junk)).toBe(false)
   }
 })
+
+// "Eigenes Foto" gets its own kind of ticket for the photo it stored, so a
+// found image's ticket never passes for a photo, nor the other way round.
+test('a ticket of one purpose is refused for another', () => {
+  const found = createImageTickets(SECRET)
+  const photos = createImageTickets(SECRET, { purpose: 'photo' })
+
+  expect(photos.check('user-1', IMAGE, found.issue('user-1', IMAGE))).toBe(false)
+  expect(found.check('user-1', IMAGE, photos.issue('user-1', IMAGE))).toBe(false)
+  expect(photos.check('user-1', IMAGE, photos.issue('user-1', IMAGE))).toBe(true)
+})

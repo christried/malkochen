@@ -31,12 +31,12 @@ export function focusAfterLeaving(column: { id: string, dishes: { id: string }[]
 // strings: mostly in their `dish` section (each takes the Dish's title,
 // except `cook`: the Gekocht toast); those starting with `cooking` are about
 // a Cooking, and come with it. `imageNotStored`: an added Dish's Source
-// image couldn't be stored, so it has its Placeholder Image;
-// `imageNotReplaced`: an edited Dish's new image couldn't be, so it keeps
+// image couldn't be stored, so it has its Placeholder Image (`photoNotStored`:
+// the same for the Member's own photo); `imageNotReplaced`: an edited Dish's new image couldn't be, so it keeps
 // the one it had.
 export type Notice = 'deleted' | 'deleteFailed' | 'restoreFailed' | 'moveFailed' | 'cookFailed' | 'uncookFailed' | 'cook'
   | 'cookingDeleted' | 'cookingDeleteFailed' | 'cookingRestoreFailed'
-  | 'imageNotStored' | 'imageNotReplaced'
+  | 'imageNotStored' | 'photoNotStored' | 'imageNotReplaced'
 
 // What an operation answers: the Dish it was about, where it now is, the
 // Cooking it recorded or deleted, a notice to show, an undo to offer with it, where
@@ -246,7 +246,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     if (into && !find(fields.id)) insert(into, placement.index, fields)
     // The Board's own copy, once it shows.
     const dish = find(fields.id)?.dish ?? fields
-    return { dish, placement, ...imageNotStored && { notice: 'imageNotStored' } }
+    return { dish, placement, ...imageNotStored && { notice: input.photo ? 'photoNotStored' : 'imageNotStored' } }
   }
 
   // Editing a Dish (PRD stories 43–45), from the Dish detail, which waits

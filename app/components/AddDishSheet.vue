@@ -4,11 +4,13 @@ import type { DuplicateDish } from '~~/server/utils/dishes'
 import type { BoardResult } from '~/board/board-module'
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
+import type { UploadedPhoto } from '~/composables/usePhotoUpload'
 import { webLink } from '~/utils/web-link'
 
 // Add Dish. First a link: pasting one looks it up right away (Source Lookup)
 // and shows a preview with the image and an editable Suggested Title. Or
-// "Ohne Link hinzufügen": a title, a note and a Placeholder Image. Either way
+// "Ohne Link hinzufügen": a title, a note and a Placeholder Image. The image
+// dialog also takes the Member's own photo ("Eigenes Foto"). Either way
 // the Member picks the Board (the one they are on) and saves, through the
 // client Board module. If the link is already on that Board, a warning names
 // the Dish and its Column: open it, or save anyway. Saved, it passes on what
@@ -47,12 +49,18 @@ const failed = ref(false)
 
 const showForm = computed(() => withoutLink.value || lookupStatus.value === 'found' || lookupStatus.value === 'failed')
 
-// The Source image, unless the Member swapped it for a Placeholder or it
-// doesn't load in the browser either.
+// The Member's own photo, once uploaded: it is the image, whatever the
+// link brings.
+const photo = ref<UploadedPhoto | null>(null)
+// The Source image, unless the Member swapped it for a Placeholder or their
+// own photo, or it doesn't load in the browser either.
 const sourceImageBroken = ref(false)
 const preferPlaceholder = ref(false)
 const sourceImage = computed(() => sourceImageBroken.value ? null : result.value?.imageUrl ?? null)
-const usingSourceImage = computed(() => sourceImage.value !== null && !preferPlaceholder.value)
+const usingSourceImage = computed(() => sourceImage.value !== null && !preferPlaceholder.value && !photo.value)
+// The image shown large above the title: the own photo or the Source image.
+// Without one, the inline picker shows instead.
+const shownImage = computed(() => photo.value?.url ?? (usingSourceImage.value ? sourceImage.value : null))
 // Who published the Source (CONTEXT.md: Creator), if the lookup found them:
 // shown under the title and saved with the Dish. Editing it is the detail's.
 const creator = computed(() => withoutLink.value ? null : result.value?.creator ?? null)
@@ -164,6 +172,7 @@ watch(open, async (isOpen) => {
   note.value = ''
   noteExample.pickAnother()
   placeholder.value = DEFAULT_PLACEHOLDER
+  photo.value = null
   boardId.value = props.boardId
   failed.value = false
   boards.value = await $fetch<BoardSummary[]>('/api/boards').catch(() => [])
@@ -188,6 +197,7 @@ async function save() {
       creator: creator.value,
       imageUrl: usingSourceImage.value ? sourceImage.value : null,
       imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
+      photo: photo.value,
     })
     const image = form.value?.querySelector('[data-source-image], [role="radio"][aria-checked="true"]')
     emit('added', added, image?.getBoundingClientRect() ?? null)
@@ -350,10 +360,19 @@ async function save() {
         </div>
 
         <div
-          v-if="usingSourceImage"
+          v-if="shownImage"
           class="relative overflow-hidden rounded-thumb bg-surface-muted"
         >
           <img
+            v-if="photo"
+            :src="photo.url"
+            :alt="t.imageDialog.ownPhoto"
+            class="aspect-[4/3] w-full object-cover"
+            data-source-image
+            data-own-photo
+          >
+          <img
+            v-else
             :src="sourceImage!"
             :alt="t.addDish.sourceImage"
             referrerpolicy="no-referrer"
@@ -403,7 +422,7 @@ async function save() {
         </div>
 
         <div
-          v-if="!usingSourceImage"
+          v-if="!shownImage"
           class="flex flex-col gap-2"
         >
           <p
@@ -507,20 +526,20 @@ async function save() {
       </template>
     </form>
 
-    <AppSheet
+    <!-- Picking a Placeholder here replaces the Source image and any own
+         photo; "Bild vom Link" takes the Source image back. -->
+    <ImageDialog
       v-model:open="choosingImage"
+      v-model:placeholder="placeholder"
       :title="t.addDish.chooseImage"
       :close-label="t.addDish.close"
-    >
-      <!-- Picking a tile here replaces the Source image. -->
-      <PlaceholderPicker
-        v-model="placeholder"
-        v-model:open="choosingImage"
-        class="mt-5"
-        :label="t.addDish.chooseImage"
-        @pick="preferPlaceholder = true"
-      />
-    </AppSheet>
+      :board-id="boardId"
+      :offer-source="sourceImage !== null"
+      :source-image="sourceImage"
+      @source="preferPlaceholder = false; photo = null"
+      @photo="photo = $event"
+      @placeholder="preferPlaceholder = true; photo = null"
+    />
   </AppSheet>
 </template>
 

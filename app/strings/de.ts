@@ -225,6 +225,16 @@ export const de = {
     pinterest: 'Pinterest',
     web: 'Web',
   } satisfies Record<SourceBadgeKind, string>,
+  // The image dialog ("Bild wählen") in Add Dish and the Dish detail.
+  imageDialog: {
+    fromLink: 'Bild vom Link',
+    ownPhoto: 'Eigenes Foto',
+    placeholders: 'Platzhalter',
+    uploading: 'Foto wird hochgeladen …',
+    tooLarge: 'Das Foto ist zu groß. Ein kleineres oder ein JPEG klappt bestimmt.',
+    notAnImage: 'Das ist kein Foto, das ich lesen kann. JPEG, PNG, WebP oder HEIC gehen.',
+    failed: 'Das Hochladen hat nicht geklappt. Versuch es gleich noch mal.',
+  },
   addDish: {
     open: 'Gericht hinzufügen',
     heading: 'Gericht hinzufügen',
@@ -254,6 +264,7 @@ export const de = {
     close: 'Schließen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     imageNotStored: (title: string) => `Das Bild vom Link ließ sich nicht speichern. „${title}“ hat jetzt ein Platzhalterbild.`,
+    photoNotStored: (title: string) => `Dein Foto ließ sich nicht speichern. „${title}“ hat jetzt ein Platzhalterbild.`,
   },
   placeholders: {
     pasta: 'Pasta',

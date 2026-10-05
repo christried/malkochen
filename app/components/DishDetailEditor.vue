@@ -3,15 +3,19 @@ import type { SourceInput } from '~~/server/utils/dish-input'
 import type { DishView } from '~~/server/utils/dishes'
 import type { Placeholder } from '~~/shared/placeholders'
 import type { BoardResult } from '~/board/board-module'
+import type { UploadedPhoto } from '~/composables/usePhotoUpload'
 import { webLink } from '~/utils/web-link'
 
 // The Dish detail's edit mode (PRD stories 43–45): title, Creator, note,
 // image and Source. A new link is looked up (Source Lookup, as in Add Dish)
 // so it is saved as what it really is, but that never changes the image or
-// the Creator: only "Bild neu laden" changes the image, and the image it
-// finds (or the Placeholder, if none) is shown here and stored on Speichern,
-// through the client Board module. Nothing changes until then.
-const props = defineProps<{ dish: DishView }>()
+// the Creator: only "Bild neu laden" (or "Bild vom Link" in the image
+// dialog) changes the image, and the image it finds (or the Placeholder, if
+// none) is shown here and stored on Speichern, through the client Board
+// module. So is a Placeholder or the Member's own photo ("Eigenes Foto")
+// picked in the image dialog. Nothing changes until then.
+// `boardId`: the Board it is on, where an own photo is uploaded to.
+const props = defineProps<{ dish: DishView, boardId: string }>()
 const emit = defineEmits<{ saved: [result: BoardResult], cancel: [] }>()
 const t = useStrings()
 const boardModule = useBoardModule()
@@ -35,12 +39,14 @@ const noteId = useId()
 const linkId = useId()
 const linkHintId = useId()
 
-// The image on Speichern: the one the Dish has, its Placeholder, or the one
-// "Bild neu laden" found (third-party, with the Image Ticket to store it).
+// The image on Speichern: the one the Dish has, its Placeholder, the one
+// "Bild neu laden" found (third-party, with the Image Ticket to store it), or
+// the Member's own photo (already uploaded, with its photo ticket).
 type ImageChoice
   = | { kind: 'keep' }
     | { kind: 'placeholder' }
     | { kind: 'found', url: string, ticket: string | null }
+    | { kind: 'photo' } & UploadedPhoto
 const image = ref<ImageChoice>({ kind: 'keep' })
 
 // "Bild neu laden" was tapped for the link as it is now: the link's lookup is
@@ -92,10 +98,17 @@ watch(link, () => {
 // The full picker closes itself when a tile is picked. Picked either way,
 // with arrow keys too, the Placeholder becomes the image.
 const choosingImage = ref(false)
-watch(placeholder, () => {
+function usePlaceholder() {
   image.value = { kind: 'placeholder' }
   reloadAsked.value = false
-})
+}
+// Picking the Placeholder already selected counts too (after a photo).
+watch(placeholder, usePlaceholder)
+
+function usePhoto(photo: UploadedPhoto) {
+  image.value = { kind: 'photo', ...photo }
+  reloadAsked.value = false
+}
 
 // The Source as saved: the Dish's own, or what Source Lookup says the new
 // link is (canonical link and kind). If the lookup fails, the server reads the
@@ -130,6 +143,7 @@ async function save() {
       placeholder: placeholder.value,
       ...choice.kind === 'placeholder' && { imageUrl: null },
       ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
+      ...choice.kind === 'photo' && { photo: { url: choice.url, ticket: choice.ticket } },
     })
     emit('saved', saved)
   }
@@ -178,6 +192,13 @@ async function save() {
           data-reloaded-image
           @error="foundImageBroken = true"
         >
+        <img
+          v-else-if="image.kind === 'photo'"
+          :src="image.url"
+          :alt="t.imageDialog.ownPhoto"
+          class="h-full w-full object-cover"
+          data-own-photo
+        >
         <DishImage
           v-else
           :image-url="image.kind === 'placeholder' ? null : dish.imageUrl"
@@ -185,7 +206,7 @@ async function save() {
           :motion="choosingImage ? null : 'loop'"
         />
       </div>
-      <!-- A row of image actions, with room for a future "eigenes Foto". -->
+      <!-- A row of image actions; "Bild wählen" also offers an own photo. -->
       <div class="flex flex-wrap gap-2">
         <button
           type="button"
@@ -318,17 +339,16 @@ async function save() {
       />
     </button>
 
-    <AppSheet
+    <ImageDialog
       v-model:open="choosingImage"
+      v-model:placeholder="placeholder"
       :title="t.detail.chooseImage"
       :close-label="t.detail.close"
-    >
-      <PlaceholderPicker
-        v-model="placeholder"
-        v-model:open="choosingImage"
-        class="mt-5"
-        :label="t.detail.chooseImage"
-      />
-    </AppSheet>
+      :board-id="boardId"
+      :offer-source="sourceLink !== null"
+      @source="reloadImage"
+      @photo="usePhoto"
+      @placeholder="usePlaceholder"
+    />
   </form>
 </template>

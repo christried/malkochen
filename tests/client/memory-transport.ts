@@ -94,7 +94,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
 
   // Adds a Dish as the server does: at the top of the Column that takes new
   // Dishes. One for another Board just answers it placed there. A Source
-  // image without its Image Ticket isn't stored, as on the server.
+  // image without its Image Ticket isn't stored, as on the server; nor is an
+  // own photo without its photo ticket.
   function addOnServer(boardId: string, input: AddDishBody): AddedDish {
     const dish: DishView = {
       id: `added-${++added}`,
@@ -102,7 +103,9 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       note: input.note || null,
       source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,
       creator: input.creator?.trim() || null,
-      imageUrl: input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
+      imageUrl: input.photo
+        ? (input.photo.ticket ? input.photo.url : null)
+        : input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
       placeholder: input.placeholder,
       addedBy: null,
       createdAt: new Date().toISOString(),
@@ -111,7 +114,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const column = boardId === server.id ? columnForNewDishes(server.columns)! : { id: 'elsewhere', dishes: [] as DishView[] }
     column.dishes.unshift(dish)
     const placed = { ...structuredClone(dish), placement: { boardId, columnId: column.id, index: 0 } }
-    return input.imageUrl && !input.imageTicket ? { ...placed, imageNotStored: true } : placed
+    const refused = input.photo ? !input.photo.ticket : input.imageUrl && !input.imageTicket
+    return refused ? { ...placed, imageNotStored: true } : placed
   }
 
   // Saves the fields sent, as the server reads them (trimmed; a blank note
