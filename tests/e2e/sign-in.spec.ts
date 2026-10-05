@@ -23,10 +23,22 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05)
 }
 
-for (const colorScheme of ['light', 'dark'] as const) {
-  test(`the sign-in screen asks "Was willst du malkochen?" with the app's name highlighted (${colorScheme})`, async ({ page }) => {
-    await page.emulateMedia({ colorScheme })
+// Each theme by the phone's setting, and each chosen against it (Darstellung
+// sets <html data-theme>).
+const THEMES = [
+  { label: 'light', device: 'light', chosen: null, dark: false },
+  { label: 'dark', device: 'dark', chosen: null, dark: true },
+  { label: 'Dunkel chosen on a light phone', device: 'light', chosen: 'dark', dark: true },
+  { label: 'Hell chosen on a dark phone', device: 'dark', chosen: 'light', dark: false },
+] as const
+
+for (const { label, device, chosen, dark } of THEMES) {
+  test(`the sign-in screen asks "Was willst du malkochen?" with the app's name highlighted (${label})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: device })
     await gotoHydrated(page, '/login')
+    if (chosen)
+      await page.evaluate(theme => document.documentElement.setAttribute('data-theme', theme), chosen)
+    await expect(page.locator('main')).toHaveCSS('background-color', dark ? 'rgb(19, 18, 17)' : 'rgb(247, 246, 242)')
 
     const headline = page.getByRole('heading', { level: 1 })
     await expect(headline).toHaveText('Was willst du malkochen?')
@@ -45,7 +57,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         headlineColor: getComputedStyle(el.closest('h1')!).color,
         page: getComputedStyle(el.closest('main')!).backgroundColor,
         highlights: (style.backgroundImage.match(/rgba?\([^)]*\)/g) ?? [])
-          .filter(c => !/,\s*0\)$/.test(c)),
+          .filter(c => !/^rgba\(.*,\s*0\)$/.test(c)),
       }
     })
     expect(look.color).not.toBe(look.headlineColor)

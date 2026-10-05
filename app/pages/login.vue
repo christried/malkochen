@@ -148,7 +148,6 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'curry', 'bowl', 'ta
   background-image: linear-gradient(transparent 55%, var(--color-name-mark) 55%, var(--color-name-mark) 92%, transparent 92%);
   padding-inline: 0.06em;
   margin-inline: -0.06em;
-  box-decoration-break: clone;
 }
 /* The tiles pop in around Topfbert, one after another. */
 .hero-pop {

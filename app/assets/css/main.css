@@ -64,7 +64,7 @@ html {
    as tokens.css.
    The app's name in the sign-in headline: its ink and its marker stroke
    (login.vue). The ink keeps WCAG AA (4.5:1) on --color-bg and on the
-   stroke: 5.6 and 4.8 light, 10.7 and 6.4 dark. */
+   stroke (sign-in.spec.ts checks it). */
 :root {
   --color-neu-ink: #5a3300;
   --color-neu-accent: #F29B32;
