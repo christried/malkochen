@@ -3,7 +3,8 @@ import type { BoardSummary } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 
-// The Dish detail's contents: a large image, the title and note, the Source
+// The Dish detail's contents: a large image, the title with the Creator
+// under it, the note, the Source
 // with "Original öffnen", where the Dish is (Board and Column), who added it
 // and when, its Cooking History with "Gekocht ✓", "Verschieben nach…" and
 // "Löschen". Scrolled past its image, a compact bar at the top keeps close,
@@ -119,6 +120,13 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
         >
           {{ dish.title }}
         </h1>
+        <p
+          v-if="dish.creator"
+          class="break-words text-small text-text-muted"
+          data-creator
+        >
+          <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}
+        </p>
       </div>
 
       <p

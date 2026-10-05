@@ -53,6 +53,9 @@ const sourceImageBroken = ref(false)
 const preferPlaceholder = ref(false)
 const sourceImage = computed(() => sourceImageBroken.value ? null : result.value?.imageUrl ?? null)
 const usingSourceImage = computed(() => sourceImage.value !== null && !preferPlaceholder.value)
+// Who published the Source (CONTEXT.md: Creator), if the lookup found them:
+// shown under the title and saved with the Dish. Editing it is the detail's.
+const creator = computed(() => withoutLink.value ? null : result.value?.creator ?? null)
 // Found an image but no title (Pinterest, Instagram): ask for one, kindly.
 const titleNeeded = computed(() => result.value !== null && result.value.suggestedTitle === '' && title.value.trim() === '')
 
@@ -181,6 +184,7 @@ async function save() {
       note: note.value,
       placeholder: placeholder.value,
       source,
+      creator: creator.value,
       imageUrl: usingSourceImage.value ? sourceImage.value : null,
       imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
     })
@@ -388,6 +392,13 @@ async function save() {
             :id="titleHintId"
             class="text-small text-text-muted"
           >{{ t.addDish.titleNeededHint }}</span>
+          <p
+            v-if="creator"
+            class="break-words px-1 text-small text-text-muted"
+            data-creator
+          >
+            <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ creator }}
+          </p>
         </div>
 
         <div

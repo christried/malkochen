@@ -68,6 +68,20 @@ test('another Member\'s new Dish, edit and move show up without a reload, their 
   await expect(titles(page, 'Ideen')).toHaveText(['Alans Auflauf'])
 })
 
+test('another Member’s change to a Dish’s Creator shows up without a reload, and so does clearing it', async ({ page, browser }) => {
+  const { boardId, dorothy } = await sharedBoard(page, browser, 'Kochclub')
+  const dishId = await addDish(page, boardId, 'Alans Auflauf')
+  await gotoHydrated(page, `/b/${boardId}`)
+  const creator = card(page, 'Ideen', 'Alans Auflauf').locator('[data-creator]')
+  await expect(creator).toHaveCount(0)
+
+  expect((await dorothy.request.patch(`/api/dishes/${dishId}`, { data: { creator: 'Love and Lemons' } })).status()).toBe(200)
+  await expect(creator).toHaveText('Veröffentlicht von Love and Lemons', { timeout: 10_000 })
+
+  expect((await dorothy.request.patch(`/api/dishes/${dishId}`, { data: { creator: '' } })).status()).toBe(200)
+  await expect(creator).toHaveCount(0, { timeout: 10_000 })
+})
+
 test('polling stops while the Board is in the background, and coming back refreshes it at once', async ({ page, browser }) => {
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Suppenküche')
   await gotoHydrated(page, `/b/${boardId}`)
