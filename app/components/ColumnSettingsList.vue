@@ -6,8 +6,9 @@ import { columnDeletion } from '~~/shared/placement'
 // Board settings' Columns (PRD stories 57–60): each can be renamed in place,
 // given a Column Subtitle or have it cleared (not the Gekocht Column, whose
 // subtitle is fixed), moved with ↑/↓ or dragged by its grip, and deleted,
-// except the Gekocht Column (marked) and the last Column besides it. The order changes here
-// while dragging; `reordered` says a move is done, with the order before it.
+// except the Gekocht Column (marked) and the last Column besides it. The
+// order changes here while dragging; `reordered` says a move is done, with
+// the order before it.
 export type ColumnRow = ColumnView & { count: number }
 
 const columns = defineModel<ColumnRow[]>({ required: true })

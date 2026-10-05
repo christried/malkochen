@@ -133,6 +133,28 @@ test('on a computer, each Column shows its name large with its subtitle below, �
   expect(height).toBeLessThan(lineHeight * 1.5)
 })
 
+test('on a computer, a lane without a subtitle lines up with the others, and a long name wraps inside its lane', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await openSettings(page)
+  await setSubtitle(page, 'Diese Woche', '')
+  const renamed = page.getByRole('textbox', { name: 'Name der Spalte „Gekocht“' })
+  await renamed.fill('Wochenendeinkaufsplanungfürdiegroßefeier')
+  const saved = page.waitForResponse(r => r.request().method() === 'PATCH' && r.url().includes('/api/columns/') && r.ok())
+  await renamed.press('Enter')
+  await saved
+  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
+
+  const listTop = (name: string) => column(page, name).locator('[data-dish-list]').evaluate(el => el.getBoundingClientRect().top)
+  await expect(column(page, 'Diese Woche').locator('[data-column-subtitle]')).toHaveCount(0)
+  expect(await listTop('Diese Woche')).toBe(await listTop('Ideen'))
+  const lane = column(page, 'Wochenendeinkaufsplanungfürdiegroßefeier')
+  const { title, laneRight } = await lane.evaluate(el => ({
+    title: el.querySelector('h2 span')!.getBoundingClientRect().right,
+    laneRight: el.getBoundingClientRect().right,
+  }))
+  expect(title).toBeLessThanOrEqual(laneRight)
+})
+
 test('an empty Column goes at once', async ({ page }) => {
   await openSettings(page)
 
