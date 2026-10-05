@@ -1,11 +1,17 @@
-import { metaTags } from './html'
+import { creatorName } from './creator'
+import { attributes, decodeEntities, metaTags, TAG_BODY } from './html'
+import type { Http } from './http'
 import { httpUrl, withoutTracking } from './link'
+import { shortenTitle } from './title'
 import { nothingFound, type SourceGuess, type SourceKind, type Strategy } from './types'
 
-// Instagram: the image comes from the post page's og:image, which Instagram
-// serves to servers without a login. The caption never is ("caption":null),
-// and Meta's instagram_oembed has returned neither since November 2025, so an
-// Instagram link never has a Suggested Title. A login wall gives no image.
+// Instagram (ADR 0005): the Reel's or post's embed page shows a server what
+// the post page hides from it: the caption (its first line becomes the
+// Suggested Title), the account that posted it (the Creator) and the cover
+// without a play button, twice the size of og:image. The embed page isn't an
+// official interface, so when it fails or shows none of that, the image
+// comes from the post page's og:image, as before ADR 0005. A login wall on
+// both gives no image. No Meta app, no token (ADR 0001).
 const HOST = /^(?:www\.|m\.)?(?:instagram\.com|instagr\.am)$/
 // /reel/<code>, /reels/<code>, /p/<code>, /tv/<code>, optionally after a
 // /<username>/ prefix.
@@ -34,6 +40,59 @@ function guess(url: URL): SourceGuess {
   return postLink(url) ?? { kind: 'other', canonicalLink: withoutTracking(url) }
 }
 
+// The first `<tag>` with `className` among its classes: its attributes and
+// where its markup ends.
+function findTag(html: string, tag: string, className: string): { attrs: Record<string, string>, end: number } | null {
+  for (const match of html.matchAll(new RegExp(`<${tag}\\b${TAG_BODY}`, 'gi'))) {
+    const attrs = attributes(match[1] ?? '')
+    if (attrs.class?.split(/\s+/).includes(className)) return { attrs, end: match.index + match[0].length }
+  }
+  return null
+}
+
+// The caption as text, one line per line break. In the embed page it is the
+// "Caption" block: the account's name as a link, then the caption with <br>
+// for line breaks and links for hashtags and mentions, then the comments
+// link in a block of its own.
+function caption(html: string): string {
+  const block = findTag(html, 'div', 'Caption')
+  if (!block) return ''
+  const rest = html.slice(block.end)
+  const markup = rest.slice(0, rest.search(/<\/?div\b|$/i))
+  return decodeEntities(markup
+    .replace(/<a\b[^>]*\bclass="CaptionUsername"[^>]*>[^<]*<\/a>/i, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]*>/g, ''))
+}
+
+// The account that posted it, as the embed page's header names it.
+function username(html: string): string | null {
+  const span = findTag(html, 'span', 'UsernameText')
+  return span && decodeEntities(html.slice(span.end).split('<', 1)[0] ?? '')
+}
+
+interface EmbedFindings {
+  suggestedTitle: string
+  creator: string | null
+  imageUrl: string | null
+}
+
+async function embedPage(http: Http, post: SourceGuess): Promise<EmbedFindings> {
+  const html = (await http.page(`${post.canonicalLink}embed/captioned/`)).html ?? ''
+  return {
+    suggestedTitle: shortenTitle(caption(html)),
+    creator: creatorName(username(html)),
+    imageUrl: httpUrl(findTag(html, 'img', 'EmbeddedMediaImage')?.attrs.src),
+  }
+}
+
+// The post page's og:image (or twitter:image), shown to servers without a
+// login. Its caption never is ("caption":null).
+async function postPageImage(http: Http, post: SourceGuess): Promise<string | null> {
+  const meta = metaTags((await http.page(post.canonicalLink)).html ?? '')
+  return httpUrl(meta.get('og:image')) ?? httpUrl(meta.get('twitter:image'))
+}
+
 export const instagram: Strategy = {
   match(url) {
     if (!HOST.test(url.hostname)) return null
@@ -46,13 +105,7 @@ export const instagram: Strategy = {
       : postLink(url)
     if (!post) return nothingFound(guess(url))
 
-    const page = await http.page(post.canonicalLink)
-    const meta = metaTags(page.html ?? '')
-    return {
-      ...post,
-      suggestedTitle: '',
-      creator: null,
-      imageUrl: httpUrl(meta.get('og:image')) ?? httpUrl(meta.get('twitter:image')),
-    }
+    const embed = await embedPage(http, post)
+    return { ...post, ...embed, imageUrl: embed.imageUrl ?? await postPageImage(http, post) }
   },
 }
