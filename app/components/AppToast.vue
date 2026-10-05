@@ -62,6 +62,7 @@ function act(action: ToastAction) {
         <!-- Topfbert peeks out from behind the toast, over its left half. -->
         <TopfbertCheer
           v-if="toast.celebrate"
+          :cheer="toast.celebrate.cheer"
           class="absolute bottom-[calc(100%-22px)] left-6 w-[84px]"
         />
         <div

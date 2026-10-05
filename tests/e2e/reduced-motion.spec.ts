@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { confetti, topfbert } from './celebration'
+import { ANY_CHEER, cheer, confetti, topfbert } from './celebration'
 import { clipStill, countClips, loopStill } from './clips'
 import { editMorph, slowAnimations } from './edit-morph'
 import { gotoHydrated } from './hydration'
@@ -74,7 +74,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await expect(history.locator('[data-cooking]')).toHaveCount(1)
   // The celebration: Topfbert's still behind the toast, and no confetti.
   await expect(topfbert(detail).locator('img[src="/illustrations/topfbert-happy.svg"]')).toBeVisible()
-  await expect(topfbert(detail)).toContainText('Mmh!')
+  await expect(cheer(detail)).toHaveText(ANY_CHEER)
   expect(await confetti(page).count()).toBe(0)
   await detail.getByRole('button', { name: 'Schließen' }).click()
   await expect(detail).toBeHidden()

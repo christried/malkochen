@@ -3,7 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, tab, titles } from './board'
-import { confetti, topfbert } from './celebration'
+import { ANY_CHEER, cheer, confetti } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { resetBoard, seedDish } from './seed'
 
@@ -203,7 +203,7 @@ test('phone: a Dish dropped on the Gekocht tab is cooked, and that celebrates', 
 
   await expect(tab(page, 'Gekocht 1')).toBeVisible()
   await expect(confetti(page)).toHaveCount(14)
-  await expect(topfbert(page)).toContainText('Mmh!')
+  await expect(cheer(page)).toHaveText(ANY_CHEER)
 })
 
 test('desktop: a Dish dropped in the Gekocht Column is cooked, and that celebrates', async ({ page }) => {
@@ -216,7 +216,7 @@ test('desktop: a Dish dropped in the Gekocht Column is cooked, and that celebrat
 
   await expect(titles(page, 'Gekocht')).toHaveText(['Ramen', 'Bowl'])
   await expect(confetti(page)).toHaveCount(14)
-  await expect(topfbert(page)).toContainText('Mmh!')
+  await expect(cheer(page)).toHaveText(ANY_CHEER)
 })
 
 test('desktop: a Column with one Dish is at least as tall as an empty one', async ({ page }) => {
