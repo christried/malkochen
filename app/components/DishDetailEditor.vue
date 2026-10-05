@@ -56,9 +56,10 @@ const shiftableImage = computed(() => {
   return choice.kind === 'keep' ? props.dish.imageUrl : null
 })
 // Where it is shifted to: the Dish's own focus point, and for a new image
-// ("Bild neu laden", an own photo) the centre.
+// ("Bild neu laden", an own photo) the centre. Back to the image it has (a
+// new link drops what a reload found), it is the Dish's own again.
 const imageFocus = ref<ImageFocus>({ ...props.dish.imageFocus })
-watch(shiftableImage, () => imageFocus.value = { ...FOCUS_CENTRE })
+watch(image, choice => imageFocus.value = { ...choice.kind === 'keep' ? props.dish.imageFocus : FOCUS_CENTRE })
 const focusChanged = computed(() => image.value.kind !== 'keep' || !sameFocus(imageFocus.value, props.dish.imageFocus))
 
 // "Bild neu laden" was tapped for the link as it is now: the link's lookup is
