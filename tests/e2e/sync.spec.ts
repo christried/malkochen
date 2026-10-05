@@ -117,32 +117,72 @@ test('every Dish another Member added while I was away is "Neu" when I open the 
   await expect(column(page, 'Ideen').locator('[data-neu]')).toHaveCount(0)
 })
 
+// Lets the open Board's next poll go out (page.clock installed) and come back.
+async function nextPoll(page: Page) {
+  const seen = page.waitForResponse(res => res.url().endsWith('/seen') && res.ok())
+  await page.clock.runFor(6_000)
+  await seen
+}
+
+// Alan has the Board open with one New Dish of Dorothy's, then the app goes
+// to the background; a stray focus comes while it is there.
+async function goAway(page: Page, dorothy: Page, boardId: string) {
+  await addDish(dorothy, boardId, 'Linsencurry')
+  await page.clock.install()
+  await gotoHydrated(page, `/b/${boardId}`)
+  await expect.poll(() => newTitles(page)).toEqual(['Linsencurry'])
+  await setVisibility(page, 'hidden')
+  await page.clock.fastForward('01:00')
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+}
+
+const focus = (page: Page) => page.evaluate(() => window.dispatchEvent(new Event('focus')))
+
 // Coming back to the app, a phone may tell the page it has the focus before
 // it says it is visible again, or after.
 for (const focusFirst of [false, true]) {
-  test(`coming back to the open Board after half an hour away marks every Dish added meanwhile "Neu"; opening it again clears them all (focus ${focusFirst ? 'before' : 'after'} visible)`, async ({ page, browser }) => {
+  test(`coming back to the open Board after half an hour away marks every Dish added meanwhile "Neu", and only those; opening it again clears them all (focus ${focusFirst ? 'before' : 'after'} visible)`, async ({ page, browser }) => {
     const { boardId, dorothy } = await sharedBoard(page, browser, focusFirst ? 'Gemüsekiste' : 'Obstkorb')
-    await page.clock.install()
-    await gotoHydrated(page, `/b/${boardId}`)
-    await setVisibility(page, 'hidden')
+    await goAway(page, dorothy, boardId)
 
     for (const title of AWAY) await addDish(dorothy, boardId, title)
-    await page.clock.fastForward('31:00')
-    const focus = () => page.evaluate(() => window.dispatchEvent(new Event('focus')))
-    if (focusFirst) await focus()
+    await page.clock.fastForward('30:00')
+    if (focusFirst) await focus(page)
     await setVisibility(page, 'visible')
-    if (!focusFirst) await focus()
-    await expect(titles(page, 'Ideen')).toHaveCount(3, { timeout: 5_000 })
+    if (!focusFirst) await focus(page)
+    await expect(titles(page, 'Ideen')).toHaveCount(4, { timeout: 5_000 })
+    // Linsencurry was seen before going away: no longer "Neu".
     await expect.poll(() => newTitles(page)).toEqual(AWAY.toSorted())
     // They stay "Neu" while the Board is open: past the next poll too.
-    await page.waitForTimeout(6_000)
+    await nextPoll(page)
     expect(await newTitles(page)).toEqual(AWAY.toSorted())
 
     await reloadHydrated(page)
-    await expect(titles(page, 'Ideen')).toHaveCount(3)
+    await expect(titles(page, 'Ideen')).toHaveCount(4)
     await expect(column(page, 'Ideen').locator('[data-neu]')).toHaveCount(0)
   })
 }
+
+test('coming back after half an hour while still offline reopens the Board once it can', async ({ page, browser }) => {
+  const { boardId, dorothy } = await sharedBoard(page, browser, 'Vorratskammer')
+  await goAway(page, dorothy, boardId)
+  for (const title of AWAY) await addDish(dorothy, boardId, title)
+  await page.clock.fastForward('30:00')
+
+  // The first reopen fails, as a phone's network may still be waking up.
+  let failed = false
+  await page.route('**/api/boards/*/open', (route) => {
+    if (failed) return route.continue()
+    failed = true
+    return route.abort()
+  })
+  await setVisibility(page, 'visible')
+  await expect.poll(() => failed).toBe(true)
+
+  await nextPoll(page)
+  await expect(titles(page, 'Ideen')).toHaveCount(4)
+  await expect.poll(() => newTitles(page)).toEqual(AWAY.toSorted())
+})
 
 test('a Dish open in the detail that another Member deletes closes it and says so', async ({ page, browser }) => {
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Resteessen')

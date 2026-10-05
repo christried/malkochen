@@ -17,21 +17,28 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
   let timer: ReturnType<typeof setTimeout> | undefined
   let asking = false
   // A sync asked for while a poll was out, to run once it is back.
-  let queued: { reopen: boolean } | null = null
+  let queued = false
   let hiddenSince: number | null = null
+  // The user came back after long enough away to reopen the Board, and it
+  // hasn't been reopened yet: the next sync does that before it polls. Kept
+  // until the reopen succeeds, as a phone coming back may still be offline.
+  let reopenDue = false
   // Once the Board page is gone, a poll still out schedules no other.
   let stopped = false
 
-  async function sync({ reopen = false } = {}) {
+  async function sync() {
     if (asking) {
-      queued = { reopen: reopen || (queued?.reopen ?? false) }
+      queued = true
       return
     }
     asking = true
     clearTimeout(timer)
     const id = boardId()
     try {
-      if (reopen) await $fetch(`/api/boards/${id}/open`, { method: 'POST' })
+      if (reopenDue) {
+        await $fetch(`/api/boards/${id}/open`, { method: 'POST' })
+        reopenDue = false
+      }
       // Polling also records what the user has seen (so it isn't "Neu" next time).
       await boardModule.sync(() => $fetch<BoardView>(`/api/boards/${id}/seen`, { method: 'POST' }), { paused })
     }
@@ -41,8 +48,9 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
     finally {
       asking = false
       const next = queued
-      queued = null
-      if (next && !stopped) sync(next)
+      queued = false
+      // Not while hidden: the user is away, and coming back syncs anyway.
+      if (next && !stopped && document.visibilityState === 'visible') sync()
       else schedule()
     }
   }
@@ -52,15 +60,15 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
     if (!stopped && document.visibilityState === 'visible') timer = setTimeout(() => sync(), POLL_MS)
   }
 
-  // The app coming back to the front, told by whichever of visibilitychange
-  // and focus comes first (a phone may send focus first). Only the first
-  // decides whether this reopens the Board: a sync before the reopen would
-  // record the Board as seen up to now, and the reopen would then take
-  // every Dish added while away off what is "Neu".
+  // The app coming back to the front, told by visibilitychange or focus,
+  // whichever comes first (a phone may send either first). The first one
+  // back decides whether this reopens the Board, before anything is polled:
+  // a poll before the reopen would record the Board as seen up to now, and
+  // the reopen would then take every Dish added while away off what is "Neu".
   function comeBack() {
-    const reopen = hiddenSince !== null && Date.now() - hiddenSince >= REOPEN_AFTER_MS
+    if (hiddenSince !== null && Date.now() - hiddenSince >= REOPEN_AFTER_MS) reopenDue = true
     hiddenSince = null
-    sync({ reopen })
+    sync()
   }
 
   function onVisibilityChange() {
@@ -71,9 +79,10 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
     }
     comeBack()
   }
-  // Also a desktop window coming back to the front, while it was visible all along.
+  // Also a desktop window coming back to the front, while it was visible
+  // all along. Focus while still hidden isn't the user coming back.
   function onFocus() {
-    comeBack()
+    if (document.visibilityState === 'visible') comeBack()
   }
 
   onMounted(() => {
