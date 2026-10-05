@@ -25,7 +25,7 @@ useHead({ title: () => `${t.settings.title} · ${t.app.name}` })
 
 const name = ref(board.value?.name ?? '')
 const emoji = ref(board.value?.emoji ?? '')
-const rows = (view: BoardView | undefined): ColumnRow[] => view?.columns.map(c => ({ id: c.id, name: c.name, isGekocht: c.isGekocht, count: c.dishes.length })) ?? []
+const rows = (view: BoardView | undefined): ColumnRow[] => view?.columns.map(c => ({ id: c.id, name: c.name, subtitle: c.subtitle, isGekocht: c.isGekocht, count: c.dishes.length })) ?? []
 const columns = ref(rows(board.value))
 
 const toast = ref<Toast | null>(null)

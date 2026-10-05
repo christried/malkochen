@@ -10,20 +10,21 @@ import { isLocalDatabaseUrl } from './url'
 // the same neon-http (fetch) driver the app uses -- deliberately NOT
 // `drizzle-kit migrate`, which goes through @neondatabase/serverless's
 // WebSocket transport and fails in a plain Node process. A localhost URL
-// (dev and the throwaway test databases) uses node-postgres.
-const MIGRATIONS = { migrationsFolder: './server/db/migrations' }
+// (dev and the throwaway test databases) uses node-postgres. A test of a
+// migration passes a folder holding only the migrations before it.
+export const MIGRATIONS_FOLDER = './server/db/migrations'
 
-export async function migrateDatabase(url: string): Promise<void> {
+export async function migrateDatabase(url: string, migrationsFolder = MIGRATIONS_FOLDER): Promise<void> {
   if (isLocalDatabaseUrl(url)) {
     const pool = new pg.Pool({ connectionString: url })
     try {
-      await migratePg(drizzlePg(pool), MIGRATIONS)
+      await migratePg(drizzlePg(pool), { migrationsFolder })
     }
     finally {
       await pool.end()
     }
   }
   else {
-    await migrateNeon(drizzleNeon(neon(url)), MIGRATIONS)
+    await migrateNeon(drizzleNeon(neon(url)), { migrationsFolder })
   }
 }
