@@ -150,7 +150,7 @@ test('switching Boards shows the new Board’s skeleton at once, shimmering, and
   await expect(skeleton(page)).toHaveAttribute('aria-busy', 'true')
   // Phones: the tabs, and the first Column only.
   await expect(page.getByRole('navigation', { name: 'Spalten' }).getByRole('button')).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
-  await expect(skeleton(page).getByRole('region')).toHaveText(['Ideen'])
+  await expect(skeleton(page).getByRole('region').getByRole('heading', { level: 2 })).toHaveText(['Ideen'])
   const card = skeleton(page).locator('[data-skeleton-card]').first()
   await expect(card).toBeVisible()
   expect(await animations(card)).toEqual([{ duration: 1400, iterations: Infinity, easing: 'ease-in-out' }])
@@ -173,11 +173,17 @@ test('with reduced motion the skeleton is still, at 60% opacity, in every Column
   const release = await switchingBoards(page, 'Brunch', 'Picknick')
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌙 Picknick')
-  await expect(skeleton(page).getByRole('region')).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
+  await expect(skeleton(page).getByRole('region').getByRole('heading', { level: 2 })).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
+  await expect(skeleton(page).locator('[data-column-subtitle]')).toHaveText(['Worauf hast du Lust?', 'Das steht an.', 'Schon geschafft!'])
   await expect(skeleton(page).locator('[data-skeleton-cards]')).toHaveCount(3)
   await expect(skeleton(page).locator('[data-skeleton-cards]').first()).toHaveCSS('opacity', '0.6')
   expect(await animations(skeleton(page))).toEqual([])
+  // The lane headers are the Board's, so its Dishes take the cards' place.
+  const placeholder = await layoutBox(skeleton(page).locator('[data-skeleton-card]').first())
 
   release()
-  await expect(page.getByRole('link', { name: 'Ramen' })).toBeVisible()
+  const dish = column(page, 'Ideen').locator('li', { has: page.getByRole('link', { name: 'Ramen' }) })
+  await expect(dish).toBeVisible()
+  await expect(skeleton(page)).toHaveCount(0)
+  expect(await layoutBox(dish)).toEqual(placeholder)
 })

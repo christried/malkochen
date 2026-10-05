@@ -97,6 +97,9 @@ export const boardColumn = pgTable('board_column', {
   id: uuid('id').primaryKey().defaultRandom(),
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  // Its Column Subtitle (CONTEXT.md), if it has one. The Gekocht Column's is
+  // fixed and never read from here (server/utils/columns.ts).
+  subtitle: text('subtitle'),
   position: integer('position').notNull(),
   isGekocht: boolean('is_gekocht').notNull().default(false),
 }, t => [

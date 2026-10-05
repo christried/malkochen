@@ -15,7 +15,7 @@ const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
 // The Column names in settings, top to bottom, until they are `expected`.
 async function expectColumnNames(page: Page, expected: string[]) {
-  const fields = page.getByRole('list', { name: 'Spalten' }).getByRole('textbox')
+  const fields = page.getByRole('list', { name: 'Spalten' }).getByRole('textbox', { name: /^Name der Spalte/ })
   await expect.poll(() => fields.evaluateAll(els => els.map(el => (el as HTMLInputElement).value))).toEqual(expected)
 }
 
@@ -80,6 +80,79 @@ test('a Member adds, renames and reorders Columns; Gekocht is marked and can’t
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Für Gäste', 'Gekocht'])
   await page.getByRole('link', { name: 'Zurück zum Board' }).click()
   await expect(page.getByRole('region').getByRole('heading', { level: 2 })).toHaveText(['Ideen', 'Diese Woche', 'Für Gäste', 'Gekocht'])
+})
+
+// A Column's subtitle field in settings.
+function subtitleField(page: Page, name: string) {
+  return page.getByRole('textbox', { name: `Untertitel der Spalte „${name}“` })
+}
+
+async function setSubtitle(page: Page, name: string, subtitle: string) {
+  const field = subtitleField(page, name)
+  await field.fill(subtitle)
+  const saved = page.waitForResponse(r => r.request().method() === 'PATCH' && r.url().includes('/api/columns/') && r.ok())
+  await field.press('Enter')
+  await saved
+}
+
+test('a Member sets and clears Column Subtitles; the Gekocht Column’s is fixed', async ({ page }) => {
+  await openSettings(page)
+  await expect(subtitleField(page, 'Ideen')).toHaveValue('Worauf hast du Lust?')
+  await expect(subtitleField(page, 'Diese Woche')).toHaveValue('Das steht an.')
+  await expect(subtitleField(page, 'Ideen')).toHaveAttribute('maxlength', '40')
+  await expect(subtitleField(page, 'Gekocht')).toHaveCount(0)
+  await expect(row(page, 'Gekocht')).toContainText('Schon geschafft!')
+
+  await setSubtitle(page, 'Ideen', '  Was wir mal kochen wollen ')
+  await setSubtitle(page, 'Diese Woche', '')
+  await expect(subtitleField(page, 'Ideen')).toHaveValue('Was wir mal kochen wollen')
+
+  await reloadHydrated(page)
+  await expect(subtitleField(page, 'Ideen')).toHaveValue('Was wir mal kochen wollen')
+  await expect(subtitleField(page, 'Diese Woche')).toHaveValue('')
+  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
+  await expect(column(page, 'Ideen')).toContainText('Was wir mal kochen wollen')
+  await expect(column(page, 'Diese Woche').locator('[data-column-subtitle]')).toHaveCount(0)
+})
+
+test('on a computer, each Column shows its name large with its subtitle below, “Diese Woche” on one line', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await openSettings(page)
+  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
+
+  for (const [name, subtitle] of [['Ideen', 'Worauf hast du Lust?'], ['Diese Woche', 'Das steht an.'], ['Gekocht', 'Schon geschafft!']]) {
+    const lane = column(page, name!)
+    await expect(lane.getByRole('heading', { level: 2 })).toHaveText(name!)
+    await expect(lane.locator('[data-column-subtitle]')).toHaveText(subtitle!)
+    await expect(lane.locator('[data-column-subtitle]')).toHaveCSS('font-style', 'italic')
+  }
+  const title = column(page, 'Diese Woche').getByRole('heading', { level: 2 })
+  expect(parseFloat(await title.evaluate(el => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(32)
+  // One line: the name doesn't wrap in a 330px lane.
+  const { height, lineHeight } = await title.evaluate(el => ({ height: el.getBoundingClientRect().height, lineHeight: parseFloat(getComputedStyle(el).lineHeight) }))
+  expect(height).toBeLessThan(lineHeight * 1.5)
+})
+
+test('on a computer, a lane without a subtitle lines up with the others, and a long name wraps inside its lane', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await openSettings(page)
+  await setSubtitle(page, 'Diese Woche', '')
+  const renamed = page.getByRole('textbox', { name: 'Name der Spalte „Gekocht“' })
+  await renamed.fill('Wochenendeinkaufsplanungfürdiegroßefeier')
+  const saved = page.waitForResponse(r => r.request().method() === 'PATCH' && r.url().includes('/api/columns/') && r.ok())
+  await renamed.press('Enter')
+  await saved
+  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
+
+  const listTop = (name: string) => column(page, name).locator('[data-dish-list]').evaluate(el => el.getBoundingClientRect().top)
+  await expect(column(page, 'Diese Woche').locator('[data-column-subtitle]')).toHaveCount(0)
+  expect(await listTop('Diese Woche')).toBe(await listTop('Ideen'))
+  const lane = column(page, 'Wochenendeinkaufsplanungfürdiegroßefeier')
+  const { title, laneRight } = await lane.evaluate(el => ({
+    title: el.querySelector('h2 span')!.getBoundingClientRect().right,
+    laneRight: el.getBoundingClientRect().right,
+  }))
+  expect(title).toBeLessThanOrEqual(laneRight)
 })
 
 test('an empty Column goes at once', async ({ page }) => {

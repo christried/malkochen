@@ -2,17 +2,18 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, gt, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 import { db, runAtomic, type Db } from '../db'
 import { board, boardColumn, dish, membership, user } from '../db/schema'
-import type { ColumnView } from './columns'
+import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
 
 // The Board a user gets on their first sign-in (PRD story 3).
 const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍲' }
 
-// Every new Board starts with these Columns; the last is the Gekocht Column.
+// Every new Board starts with these Columns; the last is the Gekocht Column,
+// whose Column Subtitle is fixed (GEKOCHT_SUBTITLE).
 export const DEFAULT_COLUMNS = [
-  { name: 'Ideen', isGekocht: false },
-  { name: 'Diese Woche', isGekocht: false },
-  { name: 'Gekocht', isGekocht: true },
+  { name: 'Ideen', subtitle: 'Worauf hast du Lust?', isGekocht: false },
+  { name: 'Diese Woche', subtitle: 'Das steht an.', isGekocht: false },
+  { name: 'Gekocht', subtitle: null, isGekocht: true },
 ] as const
 
 // A Board as Board settings shows it: its name and emoji.
@@ -34,7 +35,7 @@ export interface BoardView extends BoardSummary {
   inviteToken: string
   // Everyone on it, the Owner first, as Board settings lists them.
   members: BoardMemberView[]
-  columns: { id: string, name: string, isGekocht: boolean, dishes: DishView[] }[]
+  columns: (ColumnView & { dishes: DishView[] })[]
   // Its New Dishes for the user looking (PRD story 37), marked "Neu".
   newDishIds: string[]
 }
@@ -86,7 +87,7 @@ export async function listBoards(userId: string): Promise<BoardListing[]> {
       .where(inArray(membership.boardId, ids))
       .orderBy(desc(membership.isOwner), asc(membership.joinedAt)),
     db
-      .select({ boardId: boardColumn.boardId, id: boardColumn.id, name: boardColumn.name, isGekocht: boardColumn.isGekocht })
+      .select({ boardId: boardColumn.boardId, ...columnView })
       .from(boardColumn)
       .where(inArray(boardColumn.boardId, ids))
       .orderBy(asc(boardColumn.position)),
@@ -140,7 +141,7 @@ export async function createBoard(userId: string, { name, emoji }: Omit<BoardNam
 // `where` that holds.
 function insertBoard(d: Db, id: string, userId: string, { name, emoji }: Omit<BoardNameAndEmoji, 'id'>, where: SQL = sql`true`) {
   const columns = sql.join(
-    DEFAULT_COLUMNS.map((c, i) => sql`(${c.name}, ${i}::int, ${c.isGekocht}::boolean)`),
+    DEFAULT_COLUMNS.map((c, i) => sql`(${c.name}, ${c.subtitle}::text, ${i}::int, ${c.isGekocht}::boolean)`),
     sql`, `,
   )
   return d.execute(sql`
@@ -153,9 +154,9 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: Omit<Bo
       insert into ${membership} (board_id, user_id, is_owner)
       select id, ${userId}, true from new_board
     )
-    insert into ${boardColumn} (board_id, name, position, is_gekocht)
-    select new_board.id, c.name, c.position, c.is_gekocht
-    from new_board cross join (values ${columns}) as c(name, position, is_gekocht)
+    insert into ${boardColumn} (board_id, name, subtitle, position, is_gekocht)
+    select new_board.id, c.name, c.subtitle, c.position, c.is_gekocht
+    from new_board cross join (values ${columns}) as c(name, subtitle, position, is_gekocht)
   `)
 }
 
@@ -170,7 +171,7 @@ export async function getBoard(boardId: string, userId: string): Promise<BoardVi
   const { newSince, ...view } = found
 
   const columns = await db
-    .select({ id: boardColumn.id, name: boardColumn.name, isGekocht: boardColumn.isGekocht })
+    .select(columnView)
     .from(boardColumn)
     .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))

@@ -60,14 +60,15 @@ async function sweep(adminUrl: string) {
   }
 }
 
-export async function createThrowawayDatabase(adminUrl: string): Promise<{ url: string, drop: () => Promise<void> }> {
+// Migrated with the migrations in `migrationsFolder`, all of them by default.
+export async function createThrowawayDatabase(adminUrl: string, migrationsFolder?: string): Promise<{ url: string, drop: () => Promise<void> }> {
   await sweep(adminUrl)
   const name = `${RUN_DB_PREFIX}${Date.now()}_${randomBytes(3).toString('hex')}`
   await withAdminClient(adminUrl, c => c.query(`CREATE DATABASE ${quoteIdent(name)}`))
   const url = withDatabase(adminUrl, name)
   const drop = () => dropDatabase(adminUrl, name)
   try {
-    await migrateDatabase(url)
+    await migrateDatabase(url, migrationsFolder)
   }
   catch (err) {
     await drop()

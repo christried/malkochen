@@ -25,7 +25,7 @@ useHead({ title: () => `${t.settings.title} · ${t.app.name}` })
 
 const name = ref(board.value?.name ?? '')
 const emoji = ref(board.value?.emoji ?? '')
-const rows = (view: BoardView | undefined): ColumnRow[] => view?.columns.map(c => ({ id: c.id, name: c.name, isGekocht: c.isGekocht, count: c.dishes.length })) ?? []
+const rows = (view: BoardView | undefined): ColumnRow[] => view?.columns.map(c => ({ id: c.id, name: c.name, subtitle: c.subtitle, isGekocht: c.isGekocht, count: c.dishes.length })) ?? []
 const columns = ref(rows(board.value))
 
 const toast = ref<Toast | null>(null)
@@ -73,6 +73,19 @@ async function renameColumn(column: ColumnRow, newName: string) {
   }
   catch {
     column.name = old
+    failed()
+  }
+}
+
+// A Column Subtitle; null clears it.
+async function setColumnSubtitle(column: ColumnRow, subtitle: string | null) {
+  const old = column.subtitle
+  column.subtitle = subtitle
+  try {
+    await $fetch(`/api/columns/${column.id}`, { method: 'PATCH', body: { subtitle } })
+  }
+  catch {
+    column.subtitle = old
     failed()
   }
 }
@@ -378,6 +391,7 @@ function confirmDelete() {
         <ColumnSettingsList
           v-model="columns"
           @rename="renameColumn"
+          @subtitle="setColumnSubtitle"
           @reordered="saveOrder"
           @delete="askDelete"
         />

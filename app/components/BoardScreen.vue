@@ -500,7 +500,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           :data-column-id="column.id"
           :data-gekocht="column.isGekocht || undefined"
         >
-          <h2 class="column-title px-1 font-display text-title-s">
+          <ColumnTitle
+            class="column-title"
+            :subtitle="column.subtitle"
+          >
             <span
               :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"
               class="column-name relative inline-block"
@@ -513,7 +516,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                 :color="columnAccent(index)"
               />
             </span>
-          </h2>
+          </ColumnTitle>
           <!-- Never shorter than with only the empty state in it. -->
           <div class="min-h-[var(--height-empty-column)]">
             <TransitionGroup

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, eq, exists, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, exists, inArray, isNull, not, sql } from 'drizzle-orm'
 import { columnDeletion, type ColumnRefusal } from '../../shared/placement'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, dish, membership } from '../db/schema'
@@ -14,10 +14,25 @@ import { membershipOf } from './boards'
 export interface ColumnView {
   id: string
   name: string
+  // Its Column Subtitle, null if it has none.
+  subtitle: string | null
   isGekocht: boolean
 }
 
-const columnView = { id: boardColumn.id, name: boardColumn.name, isGekocht: boardColumn.isGekocht }
+// The Gekocht Column's Column Subtitle, whatever it is called. It can't be
+// changed, so it isn't stored.
+export const GEKOCHT_SUBTITLE = 'Schon geschafft!'
+
+// A Column's Column Subtitle as the app shows it.
+const shownSubtitle = sql<string | null>`case when ${boardColumn.isGekocht} then ${GEKOCHT_SUBTITLE}::text else ${boardColumn.subtitle} end`
+
+export const columnView = { id: boardColumn.id, name: boardColumn.name, subtitle: shownSubtitle, isGekocht: boardColumn.isGekocht }
+
+// What Board settings may change about a Column.
+export interface ColumnChanges {
+  name?: string
+  subtitle?: string | null
+}
 
 // The Column, if it is on a Board the user is a Member of.
 function onMembersBoard(columnId: string, userId: string) {
@@ -52,10 +67,18 @@ export async function addColumn(boardId: string, userId: string, name: string): 
   return added ?? null
 }
 
-// Renames a Column, the Gekocht Column too.
-export async function renameColumn(columnId: string, userId: string, name: string): Promise<ColumnView | null> {
-  const [renamed] = await db.update(boardColumn).set({ name }).where(onMembersBoard(columnId, userId)).returning(columnView)
-  return renamed ?? null
+// Renames a Column, the Gekocht Column too, or sets or clears its Column
+// Subtitle, except the Gekocht Column's ('gekocht'). Fields left out stay as
+// they are.
+export async function editColumn(columnId: string, userId: string, changes: ColumnChanges): Promise<ColumnView | 'gekocht' | null> {
+  const [edited] = await db
+    .update(boardColumn)
+    .set(changes)
+    .where(and(onMembersBoard(columnId, userId), changes.subtitle === undefined ? undefined : not(boardColumn.isGekocht)))
+    .returning(columnView)
+  if (edited) return edited
+  const [found] = await db.select({ id: boardColumn.id }).from(boardColumn).where(onMembersBoard(columnId, userId))
+  return found ? 'gekocht' : null
 }
 
 // The Board's Columns in order.

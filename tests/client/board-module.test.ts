@@ -24,9 +24,9 @@ function boardFixture(): BoardView {
     members: [],
     newDishIds: [],
     columns: [
-      { id: 'ideen', name: 'Ideen', isGekocht: false, dishes: [dish('a'), dish('b'), dish('c')] },
-      { id: 'woche', name: 'Diese Woche', isGekocht: false, dishes: [dish('d')] },
-      { id: 'gekocht', name: 'Gekocht', isGekocht: true, dishes: [] },
+      { id: 'ideen', name: 'Ideen', subtitle: 'Worauf hast du Lust?', isGekocht: false, dishes: [dish('a'), dish('b'), dish('c')] },
+      { id: 'woche', name: 'Diese Woche', subtitle: 'Das steht an.', isGekocht: false, dishes: [dish('d')] },
+      { id: 'gekocht', name: 'Gekocht', subtitle: 'Schon geschafft!', isGekocht: true, dishes: [] },
     ],
   }
 }
@@ -40,8 +40,8 @@ function otherBoardFixture(): BoardView {
     name: 'Feierabend',
     emoji: '🌙',
     columns: [
-      { id: 'f-ideen', name: 'Ideen', isGekocht: false, dishes: [dish('e')] },
-      { id: 'f-gekocht', name: 'Gekocht', isGekocht: true, dishes: [] },
+      { id: 'f-ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('e')] },
+      { id: 'f-gekocht', name: 'Gekocht', subtitle: 'Schon geschafft!', isGekocht: true, dishes: [] },
     ],
   }
 }
