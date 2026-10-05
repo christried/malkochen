@@ -92,6 +92,13 @@
       "when": 1791222155123,
       "tag": "0012_profile_picture",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791224483468,
+      "tag": "0013_readable_addresses",
+      "breakpoints": true
     }
   ]
 }

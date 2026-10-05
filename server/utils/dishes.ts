@@ -24,6 +24,8 @@ export interface DishSource {
 
 export interface DishView {
   id: string
+  // Its short code, which ends its Address (shared/address.ts).
+  code: string
   title: string
   note: string | null
   source: DishSource | null
@@ -95,6 +97,7 @@ function selectDishes() {
   return db
     .select({
       id: dish.id,
+      code: dish.code,
       columnId: dish.columnId,
       title: dish.title,
       note: dish.note,
@@ -438,11 +441,12 @@ export async function addDish(
       placeholder: input.placeholder,
       addedBy: adder.id,
     })
-    .returning({ id: dish.id, createdAt: dish.createdAt })
+    .returning({ id: dish.id, code: dish.code, createdAt: dish.createdAt })
   if (!created) throw new Error(`Dish was not added to Board ${boardId}`)
 
   return withPlacement({
     id: created.id,
+    code: created.code,
     title: input.title,
     note: input.note,
     source: input.source,

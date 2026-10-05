@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { db } from '../db'
 import { board, membership } from '../db/schema'
+import { slugOf } from './addresses'
 import { boardMembers, membershipOf, type BoardMember, type BoardNameAndEmoji } from './boards'
 
 // Invite Links (CONTEXT.md): /invite/<token> lets a signed-in user on the
@@ -12,7 +13,7 @@ import { boardMembers, membershipOf, type BoardMember, type BoardNameAndEmoji } 
 // the first few who are already on it. Public to whoever has the link, so
 // no more of the Board than the landing's avatar row needs.
 export interface InviteView {
-  board: Omit<BoardNameAndEmoji, 'id'>
+  board: Pick<BoardNameAndEmoji, 'name' | 'emoji'>
   owner: BoardMember
   members: BoardMember[]
 }
@@ -38,7 +39,7 @@ export function inviteTokenParam(event: H3Event): string {
 async function boardOf(token: string) {
   if (!TOKEN.test(token)) return null
   const [found] = await db
-    .select({ id: board.id, name: board.name, emoji: board.emoji })
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
     .from(board)
     .where(eq(board.inviteToken, token))
   return found ?? null
@@ -58,9 +59,9 @@ export async function inviteView(token: string): Promise<InviteView | null> {
 
 // Makes the user a Member of the token's Board (PRD story 64); for someone
 // already on it, only this changes (story 65): following the link counts as
-// opening the Board, so the app lands on it next. The Board's id, or null if
-// no Board has the token.
-export async function joinByInvite(token: string, userId: string): Promise<string | null> {
+// opening the Board, so the app lands on it next. The Board's id and the
+// slug of its Address, or null if no Board has the token.
+export async function joinByInvite(token: string, userId: string): Promise<{ boardId: string, slug: string } | null> {
   const found = await boardOf(token)
   if (!found) return null
   const now = new Date()
@@ -68,7 +69,7 @@ export async function joinByInvite(token: string, userId: string): Promise<strin
     .insert(membership)
     .values({ boardId: found.id, userId, lastOpenedAt: now })
     .onConflictDoUpdate({ target: [membership.boardId, membership.userId], set: { lastOpenedAt: now } })
-  return found.id
+  return { boardId: found.id, slug: found.slug }
 }
 
 // Gives the Board a new token, so the old link stops working (story 66).
