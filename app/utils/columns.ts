@@ -18,8 +18,10 @@ export function columnAccent(index: number): string {
 // soft gradient across the Column accents from left to right, each washed
 // into the background (--wash-page, main.css).
 export function boardGradient(count: number): string {
+  // A gradient takes two stops: a single Column's accent fills it evenly.
+  const last = Math.max(count, 1) - 1
   const stops = Array.from({ length: Math.max(count, 2) }, (_, i) =>
-    `color-mix(in oklab, ${columnAccent(Math.min(i, count - 1))} var(--wash-page), var(--color-bg))`)
+    `color-mix(in oklab, ${columnAccent(Math.min(i, last))} var(--wash-page), var(--color-bg))`)
   return `linear-gradient(to right, ${stops.join(', ')})`
 }
 
