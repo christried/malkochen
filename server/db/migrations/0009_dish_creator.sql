@@ -1,0 +1,1 @@
+ALTER TABLE "dish" ADD COLUMN "creator" text;

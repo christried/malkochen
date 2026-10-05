@@ -14,6 +14,7 @@ interface Dish {
   placeholder: string
   imageUrl: string | null
   source: { link: string, kind: string } | null
+  creator: string | null
 }
 interface Board {
   id: string
@@ -82,6 +83,28 @@ test('a Source can be removed, and a web page may stay a blog', async () => {
     .toMatchObject({ source: { link: TIKTOK, kind: 'tiktok' } })
   expect(await (await editDish(ada, dish.id, { source: null })).json()).toMatchObject({ source: null })
   expect((await onBoard(ada, dish.id))?.source).toBeNull()
+})
+
+test('a Member can change and clear the Creator, and nothing else changes with it', async () => {
+  const ada = await signIn(ALLOWLISTED[0])
+  const dish = await addDish(ada, { note: 'scharf', source: { link: TIKTOK }, creator: 'Scout, Suki & Stella' })
+
+  const changed = await (await editDish(ada, dish.id, { creator: ' @veganschnitzel ' })).json()
+  expect(changed).toEqual({ ...dish, creator: '@veganschnitzel' })
+  expect(await onBoard(ada, dish.id)).toEqual(changed)
+
+  const cleared = await (await editDish(ada, dish.id, { creator: '' })).json()
+  expect(cleared).toEqual({ ...dish, creator: null })
+  expect(await onBoard(ada, dish.id)).toEqual(cleared)
+})
+
+test('editing other fields leaves the Creator as it is', async () => {
+  const ada = await signIn(ALLOWLISTED[0])
+  const dish = await addDish(ada, { source: { link: TIKTOK }, creator: 'Scout, Suki & Stella' })
+
+  const edited = await (await editDish(ada, dish.id, { title: 'Linsen-Dal', source: { link: SHORT } })).json()
+
+  expect(edited.creator).toBe('Scout, Suki & Stella')
 })
 
 test('choosing a Placeholder Image changes only the image', async () => {

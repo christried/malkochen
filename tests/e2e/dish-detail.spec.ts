@@ -49,6 +49,8 @@ test('tapping a card opens its detail with everything about the Dish', async ({ 
   await expect(original).toHaveAttribute('target', '_blank')
   await expect(detail.getByText('Meine Küche · Diese Woche')).toBeVisible()
   await expect(detail.getByText(/^Hinzugefügt am \d/)).toBeVisible()
+  // Without a Creator, no empty line for one.
+  await expect(detail.locator('[data-creator]')).toHaveCount(0)
 
   // Phones: full-screen.
   expect(await settledBox(detail)).toEqual({ x: 0, y: 0, width: 390, height: 844 })
@@ -117,6 +119,47 @@ test('edits to the title, note and image persist; Abbrechen discards them', asyn
   await expect(page.getByRole('article', { name: 'Knuspriger Tofu' }).locator('img[src="/placeholders/wok-light.svg"]')).toBeVisible()
 })
 
+test('the Creator shows under the title on the card and in the detail, and can be changed and cleared', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[0])
+  await seedDish(page, { title: 'Gochujang-Tofu', sourceLink: TIKTOK, sourceKind: 'tiktok', creator: 'Scout, Suki & Stella' })
+  await gotoHydrated(page, '/')
+  const card = page.getByRole('article', { name: 'Gochujang-Tofu' })
+  await expect(card.locator('[data-creator]')).toHaveText('Veröffentlicht von Scout, Suki & Stella')
+
+  const detail = await openDetail(page, 'Gochujang-Tofu')
+  const creator = detail.locator('[data-creator]')
+  await expect(creator).toHaveText('Veröffentlicht von Scout, Suki & Stella')
+  await expect(creator).toBeVisible()
+
+  // Edit mode's field morphs from where the Creator was, rather than
+  // rising in from nowhere (12px below). Slowed once the card has finished
+  // morphing into the detail.
+  await expect(page.locator('html')).not.toHaveAttribute('data-morph')
+  const normalSpeed = await slowAnimations(page)
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  const from = await detail.locator('[data-morph-field="creator"]').evaluate(el => el.getAnimations()
+    .filter(animation => animation.id === 'edit-morph')
+    .map(animation => (animation.effect as KeyframeEffect).getKeyframes()[0]?.translate))
+  await normalSpeed()
+  expect(from).toHaveLength(1)
+  expect(from[0]).not.toMatch(/^0(px)? 12px$/)
+  const field = detail.getByLabel('Veröffentlicht von')
+  await expect(field).toHaveValue('Scout, Suki & Stella')
+  await field.fill('  @veganschnitzel ')
+  await detail.getByRole('button', { name: 'Speichern' }).click()
+  await expect(creator).toHaveText('Veröffentlicht von @veganschnitzel')
+  await reloadHydrated(page)
+  await expect(creator).toHaveText('Veröffentlicht von @veganschnitzel')
+
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.getByLabel('Veröffentlicht von').fill('')
+  await detail.getByRole('button', { name: 'Speichern' }).click()
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' }).first()).toBeVisible()
+  await expect(creator).toHaveCount(0)
+  await detail.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(card.locator('[data-creator]')).toHaveCount(0)
+})
+
 test.afterAll(removeStoredImages)
 
 function editedBody(page: Page) {
@@ -130,10 +173,10 @@ test('changing the Source keeps the image; "Bild neu laden" replaces it, or fall
   const found = 'https://images.invalid/ofengemuese.png'
   await signIn(page, ALLOWLISTED[0])
   const image = await storedImage(160, 90)
-  await seedDish(page, { title: 'Ofengemüse', imageUrl: image, sourceLink: blog, sourceKind: 'blog' })
+  await seedDish(page, { title: 'Ofengemüse', imageUrl: image, sourceLink: blog, sourceKind: 'blog', creator: 'Kochblog' })
   // A new link is looked up at once; what it finds for the image is only
-  // used by "Bild neu laden".
-  await stubSourceLookup(page, { kind: 'instagram-reel', canonicalLink: reel, suggestedTitle: '', imageUrl: found, imageTicket: 'fixture-ticket' })
+  // used by "Bild neu laden", and its Creator never.
+  await stubSourceLookup(page, { kind: 'instagram-reel', canonicalLink: reel, suggestedTitle: '', creator: 'Jemand anderes', imageUrl: found, imageTicket: 'fixture-ticket' })
   await stubImage(page, found, 90, 160)
   await gotoHydrated(page, '/')
   const detail = await openDetail(page, 'Ofengemüse')
@@ -159,8 +202,9 @@ test('changing the Source keeps the image; "Bild neu laden" replaces it, or fall
   await expect(detail.locator('[data-reloaded-image]')).toHaveAttribute('src', found)
   body = editedBody(page)
   await detail.getByRole('button', { name: 'Speichern' }).click()
-  expect(await body).toMatchObject({ imageUrl: found, imageTicket: 'fixture-ticket', source: { link: reel, kind: 'instagram-reel' } })
+  expect(await body).toMatchObject({ imageUrl: found, imageTicket: 'fixture-ticket', source: { link: reel, kind: 'instagram-reel' }, creator: 'Kochblog' })
   await expect(page.locator('[data-toast]')).toContainText('„Ofengemüse“ behält sein bisheriges Bild')
+  await expect(detail.locator('[data-creator]')).toHaveText('Veröffentlicht von Kochblog')
   await expect(detail.locator('[data-dish-image]')).toHaveAttribute('src', image)
 
   // Nothing found: the Placeholder it is.

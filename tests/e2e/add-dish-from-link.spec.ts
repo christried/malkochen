@@ -29,12 +29,13 @@ function savedBody(page: Page) {
     .then(r => r.postDataJSON() as Record<string, unknown>)
 }
 
-test('a pasted link shows a loading state, then a preview with image and editable title', async ({ page }) => {
+test('a pasted link shows a loading state, then a preview with image, editable title and Creator', async ({ page }) => {
   let answer!: () => void
   await stubSourceLookup(page, {
     kind: 'tiktok',
     canonicalLink: TIKTOK,
     suggestedTitle: 'Crispy Tofu Bowl',
+    creator: 'Vegan Food Club',
     imageUrl: PORTRAIT,
     imageTicket: 'fixture-ticket',
   }, new Promise(r => answer = r))
@@ -62,6 +63,7 @@ test('a pasted link shows a loading state, then a preview with image and editabl
   await expect(preview).toBeVisible()
   await expect(preview).toHaveAttribute('src', PORTRAIT)
   await expect(sheet.getByLabel('Titel')).toHaveValue('Crispy Tofu Bowl')
+  await expect(sheet.locator('[data-creator]')).toHaveText('Veröffentlicht von Vegan Food Club')
   // With an image found, the Placeholder picker stays closed.
   await expect(sheet.getByRole('radiogroup', { name: 'Bild' })).toHaveCount(0)
   await expect(sheet.getByLabel('Board')).toContainText('Meine Küche')
@@ -80,12 +82,14 @@ test('a pasted link shows a loading state, then a preview with image and editabl
     title: 'Knusprige Tofu-Bowl',
     note: 'mit Erdnusssoße',
     source: { link: TIKTOK, kind: 'tiktok' },
+    creator: 'Vegan Food Club',
     imageUrl: PORTRAIT,
     imageTicket: 'fixture-ticket',
   })
   await expect(sheet).toBeHidden()
   const card = page.getByRole('region', { name: 'Ideen' }).getByRole('article').first()
   await expect(card).toHaveAccessibleName('Knusprige Tofu-Bowl')
+  await expect(card.locator('[data-creator]')).toHaveText('Veröffentlicht von Vegan Food Club')
   await expect(card.getByText('TikTok')).toBeVisible()
   // The image wasn't stored (the fixture ticket isn't valid, and the fixture
   // host can't be downloaded from anyway), so the Dish shows its Placeholder,
@@ -158,6 +162,8 @@ test('image only (Pinterest): a friendly prompt asks for the title, which is req
   await expect(title).toHaveValue('')
   await expect(title).toHaveAttribute('placeholder', 'Titel eingeben')
   await expect(title).toHaveAccessibleDescription('Zu diesem Link gibt es keinen Titel. Wie heißt das Gericht?')
+  // No Creator found: no empty line for one.
+  await expect(sheet.locator('[data-creator]')).toHaveCount(0)
   const save = sheet.getByRole('button', { name: 'Speichern' })
   await expect(save).toBeDisabled()
   await title.fill('Zucchini-Lasagne')
@@ -179,6 +185,8 @@ test('image only (Pinterest): a friendly prompt asks for the title, which is req
   await expect(page.locator('[data-toast]')).toHaveCount(0)
   await expect(card.getByText('Pinterest')).toBeVisible()
   await expect(card.locator('img[src="/placeholders/pasta-light.svg"]')).toBeVisible()
+  expect((await body).creator).toBeNull()
+  await expect(card.locator('[data-creator]')).toHaveCount(0)
 })
 
 test('nothing found: the Placeholder picker opens by itself and the title is required', async ({ page }) => {

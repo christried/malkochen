@@ -5,12 +5,12 @@ import type { Placeholder } from '~~/shared/placeholders'
 import type { BoardResult } from '~/board/board-module'
 import { webLink } from '~/utils/web-link'
 
-// The Dish detail's edit mode (PRD stories 43–45): title, note, image and
-// Source. A new link is looked up (Source Lookup, as in Add Dish) so it is
-// saved as what it really is, but that never changes the image: only "Bild
-// neu laden" does, and the image it finds (or the Placeholder, if none) is
-// shown here and stored on Speichern, through the client Board module.
-// Nothing changes until then.
+// The Dish detail's edit mode (PRD stories 43–45): title, Creator, note,
+// image and Source. A new link is looked up (Source Lookup, as in Add Dish)
+// so it is saved as what it really is, but that never changes the image or
+// the Creator: only "Bild neu laden" changes the image, and the image it
+// finds (or the Placeholder, if none) is shown here and stored on Speichern,
+// through the client Board module. Nothing changes until then.
 const props = defineProps<{ dish: DishView }>()
 const emit = defineEmits<{ saved: [result: BoardResult], cancel: [] }>()
 const t = useStrings()
@@ -19,6 +19,7 @@ const boardModule = useBoardModule()
 const title = ref(props.dish.title)
 const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
 onMounted(() => titleInput.value?.focus())
+const creator = ref(props.dish.creator ?? '')
 const note = ref(props.dish.note ?? '')
 // The note field's made-up example, a new one each time editing starts.
 const noteExample = useExamplePrompt(t.dishNote.examples, t.dishNote.prompt)
@@ -29,6 +30,7 @@ const link = ref(props.dish.source?.link ?? '')
 const lookup = useLinkLookup(link)
 const placeholder = ref<Placeholder>(props.dish.placeholder)
 const titleId = useId()
+const creatorId = useId()
 const noteId = useId()
 const linkId = useId()
 const linkHintId = useId()
@@ -122,6 +124,7 @@ async function save() {
     const source = await sourceToSave()
     const saved = await boardModule.editDish(props.dish.id, {
       title: title.value,
+      creator: creator.value,
       note: note.value,
       source,
       placeholder: placeholder.value,
@@ -224,6 +227,25 @@ async function save() {
         maxlength="200"
         autocomplete="off"
         class="rounded-field border border-line-strong bg-surface px-4 py-field-display font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      >
+    </div>
+
+    <div
+      class="flex flex-col gap-2"
+      data-morph-field="creator"
+    >
+      <label
+        :for="creatorId"
+        class="text-label"
+      >{{ t.dish.creator }}</label>
+      <input
+        :id="creatorId"
+        v-model="creator"
+        type="text"
+        maxlength="100"
+        autocomplete="off"
+        :placeholder="t.detail.creatorPrompt"
+        class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
     </div>
 

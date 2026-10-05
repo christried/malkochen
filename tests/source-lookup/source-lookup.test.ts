@@ -19,8 +19,34 @@ describe('TikTok', () => {
       kind: 'tiktok',
       canonicalLink: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
       suggestedTitle: 'Scramble up ur name & I’ll try to guess it',
+      creator: 'Scout, Suki & Stella',
       imageUrl: expect.stringMatching(/^https:\/\/p16-common-sign\.tiktokcdn-eu\.com\/tos-maliva-p-0068\/2367c7d45cf54a1397abd/),
     })
+  })
+
+  test.each([
+    ['spaces and line breaks are tidied', '  Vegan\n  Kitchen  ', 'Vegan Kitchen'],
+    ['a blank author is no Creator', '   ', null],
+    ['a missing author is no Creator', undefined, null],
+  ])('the Creator: %s', async (_, authorName, expected) => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json({ ...JSON.parse(fixture('tiktok-oembed.json')), author_name: authorName })]])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')).creator).toBe(expected)
+  })
+
+  test('an overlong Creator is cut to 100 characters with an ellipsis', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json({ ...JSON.parse(fixture('tiktok-oembed.json')), author_name: `Die ${'sehr '.repeat(30)}lange Küche` })]])
+
+    const { creator } = await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')
+
+    expect(creator).toMatch(/^Die sehr sehr .*sehr…$/)
+    expect(creator!.length).toBeLessThanOrEqual(100)
+  })
+
+  test('cutting an overlong Creator never splits an emoji', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json({ ...JSON.parse(fixture('tiktok-oembed.json')), author_name: `${'a'.repeat(98)}🌱🌱🌱` })]])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')).creator).toBe(`${'a'.repeat(98)}…`)
   })
 
   test('a short link resolves to the canonical video link', async () => {
@@ -61,6 +87,7 @@ describe('TikTok', () => {
       kind: 'tiktok',
       canonicalLink: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
       suggestedTitle: '',
+      creator: null,
       imageUrl: null,
     })
   })
@@ -76,6 +103,7 @@ describe('Instagram', () => {
       kind: 'instagram-reel',
       canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
       suggestedTitle: '',
+      creator: null,
       imageUrl: expect.stringMatching(/^https:\/\/scontent-dus1-1\.cdninstagram\.com\/v\/t51\.71878-15\/498545386_3002789429884475_7188408567440722305_n\.jpg\?stp=cmp1_dst-jpg_e35_s640x640_tt6&_nc_cat=100&/),
     })
   })
@@ -100,6 +128,7 @@ describe('Instagram', () => {
       kind: 'instagram-reel',
       canonicalLink: 'https://www.instagram.com/reel/C0WUh-tqkxU/',
       suggestedTitle: '',
+      creator: null,
       imageUrl: null,
     })
   })
@@ -119,6 +148,7 @@ describe('YouTube Shorts', () => {
       kind: 'youtube-short',
       canonicalLink: 'https://www.youtube.com/shorts/tPEE9ZwTmy0',
       suggestedTitle: 'Shortest Video on Youtube',
+      creator: 'Mylo the Cat',
       imageUrl: VERTICAL_THUMBNAIL,
     })
   })
@@ -150,6 +180,7 @@ describe('Pinterest', () => {
       kind: 'pinterest-pin',
       canonicalLink: 'https://www.pinterest.com/pin/99360735500167749/',
       suggestedTitle: '',
+      creator: null,
       imageUrl: 'https://i.pinimg.com/736x/a7/66/56/a76656e966b1958f568d63c3f1c05aec.jpg',
     })
   })
@@ -195,32 +226,47 @@ describe('blogs and other links', () => {
       kind: 'blog',
       canonicalLink: 'https://www.loveandlemons.com/brownies-recipe/',
       suggestedTitle: 'Best Homemade Brownies',
+      // The Recipe's first author, not the site (og:site_name "Love and Lemons").
+      creator: 'Jeanine Donofrio',
       imageUrl: 'https://cdn.loveandlemons.com/wp-content/uploads/2020/01/brownie-recipe-500x500.jpg',
     })
   })
 
-  test('Recipe JSON-LD with a relative image string and HTML entities in its name', async () => {
+  test('Recipe JSON-LD with a relative image string, HTML entities in its name and an author by name only', async () => {
     expect(await page('https://veggie-kueche.example/knuspriger-tofu/', 'blog-recipe-string.html')).toEqual({
       kind: 'blog',
       canonicalLink: 'https://veggie-kueche.example/knuspriger-tofu/',
       suggestedTitle: 'Knuspriger Tofu mit Erdnusssoße & Reis',
+      creator: 'Lena Müller',
       imageUrl: 'https://veggie-kueche.example/wp-content/uploads/2025/03/knuspriger-tofu.jpg',
     })
   })
 
-  test('Recipe JSON-LD with an ImageObject, among other top-level items', async () => {
+  test('Recipe JSON-LD with an ImageObject and an author by reference, among other top-level items', async () => {
     expect(await page('https://cozy-kitchen.example/dal', 'blog-recipe-object.html')).toMatchObject({
       kind: 'blog',
       suggestedTitle: 'Red Lentil Dal',
+      creator: 'Maya Patel',
       imageUrl: 'https://cozy-kitchen.example/images/dal-1200.jpg',
     })
   })
 
-  test('a page with only og: tags uses them, without the site name', async () => {
+  test.each([
+    ['in another JSON-LD block', '<script type="application/ld+json">{"@type":"Recipe","name":"Dal","author":{"@id":"#maya"}}</script><script type="application/ld+json">{"@graph":[{"@type":"Person","@id":"#maya","name":"Maya Patel"}]}</script>'],
+    ['with an empty name beside the reference', '<script type="application/ld+json">[{"@type":"Recipe","name":"Dal","author":{"@id":"#maya","name":""}},{"@type":"Person","@id":"#maya","name":"Maya Patel"}]</script>'],
+  ])('a Recipe author referred to by @id is found %s', async (_, scripts) => {
+    const link = 'https://cozy-kitchen.example/dal'
+    const { lookup } = lookupWith([[link, () => html(`<html><head><meta property="og:site_name" content="Cozy Kitchen">${scripts}</head></html>`)]])
+
+    expect((await lookup(link)).creator).toBe('Maya Patel')
+  })
+
+  test('a page with only og: tags uses them, without the site name in the title, and the site as Creator', async () => {
     expect(await page('https://salt-and-pan.example/shakshuka', 'blog-og-only.html')).toEqual({
       kind: 'blog',
       canonicalLink: 'https://salt-and-pan.example/shakshuka',
       suggestedTitle: 'Weekend Shakshuka',
+      creator: 'Salt & Pan',
       imageUrl: 'https://cdn.salt-and-pan.example/shakshuka.jpg',
     })
   })
@@ -229,6 +275,7 @@ describe('blogs and other links', () => {
     expect(await page('https://pics.example/miso', 'blog-twitter-only.html')).toMatchObject({
       kind: 'blog',
       suggestedTitle: 'Miso Aubergine',
+      creator: null,
       imageUrl: 'https://pics.example/miso.jpg',
     })
   })
@@ -237,6 +284,7 @@ describe('blogs and other links', () => {
     expect(await page('https://recipes.example/crumble', 'blog-title-only.html')).toMatchObject({
       kind: 'blog',
       suggestedTitle: 'Grandma\'s Apple Crumble',
+      creator: null,
       imageUrl: null,
     })
   })
@@ -246,6 +294,7 @@ describe('blogs and other links', () => {
       kind: 'other',
       canonicalLink: 'https://broken.example/recipe',
       suggestedTitle: '',
+      creator: null,
       imageUrl: null,
     })
   })
@@ -264,7 +313,7 @@ describe('blogs and other links', () => {
 })
 
 describe('never fails', () => {
-  const nothing = { suggestedTitle: '', imageUrl: null }
+  const nothing = { suggestedTitle: '', creator: null, imageUrl: null }
 
   test('an upstream that errors gives an empty result', async () => {
     const { lookup } = lookupWith([['https://down.example/', () => status(500)]])

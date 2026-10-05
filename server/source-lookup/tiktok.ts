@@ -1,4 +1,5 @@
 import { asString, httpUrl } from './link'
+import { creatorName } from './creator'
 import { shortenTitle } from './title'
 import type { Strategy } from './types'
 
@@ -32,6 +33,7 @@ export const tiktok: Strategy = {
       kind: 'tiktok',
       canonicalLink: canonical(post, asString(oembed?.author_unique_id)),
       suggestedTitle: shortenTitle(asString(oembed?.title)),
+      creator: creatorName(oembed?.author_name),
       imageUrl: httpUrl(oembed?.thumbnail_url),
     }
   },

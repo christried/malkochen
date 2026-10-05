@@ -94,6 +94,9 @@ export const de = {
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
     hasNote: 'Mit Notiz',
+    // The Creator's field in edit mode, and read out before the Creator
+    // (CONTEXT.md) where it shows as just its name.
+    creator: 'Veröffentlicht von',
     // The marker on a New Dish (CONTEXT.md).
     new: 'Neu',
     menu: (title: string) => `Mehr zu „${title}“`,
@@ -198,6 +201,7 @@ export const de = {
     editing: 'Gericht bearbeiten',
     title: 'Titel',
     note: 'Notiz',
+    creatorPrompt: 'z. B. @veganschnitzel oder ein Blog',
     source: 'Link',
     sourcePrompt: 'Link von TikTok, Instagram, YouTube, Pinterest oder einem Blog',
     sourceHint: 'Ein neuer Link ändert das Bild nicht. Dafür gibt es „Bild neu laden“.',

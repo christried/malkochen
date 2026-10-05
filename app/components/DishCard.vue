@@ -84,12 +84,29 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
       >
         {{ dish.title }}
       </h3>
+      <!-- One line under the title: the Creator, cut with "…" if long, then
+           "N× gekocht", which is never cut. Two lines would not fit under a
+           two-line title. -->
       <p
-        v-if="dish.cookings.length"
-        class="mt-0.5 truncate text-caption text-text-muted"
-        data-cooked-count
+        v-if="dish.creator || dish.cookings.length"
+        class="mt-0.5 flex min-w-0 pr-1 text-caption text-text-muted"
       >
-        {{ t.dish.cookedCount(dish.cookings.length) }}
+        <span
+          v-if="dish.creator"
+          class="truncate"
+          :title="dish.creator"
+          data-creator
+        ><span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}</span>
+        <span
+          v-if="dish.creator && dish.cookings.length"
+          aria-hidden="true"
+          class="shrink-0 px-1"
+        >·</span>
+        <span
+          v-if="dish.cookings.length"
+          class="shrink-0"
+          data-cooked-count
+        >{{ t.dish.cookedCount(dish.cookings.length) }}</span>
       </p>
       <div class="mt-auto flex min-w-0 items-center gap-2 pr-[108px] text-text-muted">
         <span

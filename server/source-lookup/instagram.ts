@@ -51,6 +51,7 @@ export const instagram: Strategy = {
     return {
       ...post,
       suggestedTitle: '',
+      creator: null,
       imageUrl: httpUrl(meta.get('og:image')) ?? httpUrl(meta.get('twitter:image')),
     }
   },

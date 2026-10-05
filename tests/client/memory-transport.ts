@@ -101,6 +101,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       title: input.title,
       note: input.note || null,
       source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,
+      creator: input.creator?.trim() || null,
       imageUrl: input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
       placeholder: input.placeholder,
       addedBy: null,
@@ -114,15 +115,16 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   }
 
   // Saves the fields sent, as the server reads them (trimmed; a blank note
-  // is none). A new image without its Image Ticket isn't stored: the Dish
+  // or Creator is none). A new image without its Image Ticket isn't stored: the Dish
   // keeps the one it had. Null for a Dish the server doesn't have.
   function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    const { title, note, source, placeholder, imageUrl, imageTicket } = changes
+    const { title, note, source, creator, placeholder, imageUrl, imageTicket } = changes
     if (title !== undefined) dish.title = title.trim()
     if (note !== undefined) dish.note = note?.trim() || null
     if (source !== undefined) dish.source = source && { link: source.link, kind: source.kind ?? 'other' }
+    if (creator !== undefined) dish.creator = creator?.trim() || null
     if (placeholder !== undefined) dish.placeholder = placeholder
     if (imageUrl === null || (imageUrl && imageTicket)) dish.imageUrl = imageUrl && `/images/${dishId}-${Date.now()}.jpg`
     const saved = structuredClone(dish)

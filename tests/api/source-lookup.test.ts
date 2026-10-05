@@ -36,6 +36,7 @@ test('a link answers with what Source Lookup knows about it, even when that is n
     kind: 'other',
     canonicalLink: 'http://127.0.0.1/rezept',
     suggestedTitle: '',
+    creator: null,
     imageUrl: null,
     // Only a found image comes with an Image Ticket.
     imageTicket: null,

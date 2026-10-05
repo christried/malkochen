@@ -203,14 +203,16 @@ test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toa
   }
 })
 
-// PRD story 30. The count is `truncate`d, so its text is complete in the DOM
-// even when the card shows "99× g…": only its widths tell. The desktop Column
-// is the narrowest side by side (tablet's is 340px), and a 360px phone is
-// about as narrow as a card gets.
-test('"99× gekocht" shows in full beside an avatar and a note, side by side and on a phone', async ({ page }) => {
+// PRD story 30. Text that is cut keeps all of it in the DOM, so only its
+// widths tell whether "99× gekocht" shows in full. It shares its line with a
+// long Creator (#118), which gives way with "…". The desktop Column is the
+// narrowest side by side (tablet's is 340px), and a 360px phone is about as
+// narrow as a card gets.
+test('"99× gekocht" shows in full beside a long Creator, an avatar and a note, side by side and on a phone', async ({ page }) => {
   const title = 'Ofengemüse mit Räuchertofu und Zitronen-Tahini'
+  const creator = 'Die vegane Familienküche von Oma Hildegard und ihren Enkeln'
   await signIn(page, ALLOWLISTED[6])
-  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Tofu geht auch.', addedBy: ALLOWLISTED[6] })
+  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Tofu geht auch.', addedBy: ALLOWLISTED[6], creator })
   await seedCookings(page, title, 99)
 
   for (const viewport of [{ width: 1280, height: 800 }, { width: 768, height: 900 }, { width: 360, height: 740 }]) {
@@ -222,8 +224,17 @@ test('"99× gekocht" shows in full beside an avatar and a note, side by side and
     await cardAtRest(card)
 
     expect(await count.evaluate(el => el.scrollWidth <= el.clientWidth), `cut at ${viewport.width}px`).toBe(true)
+    // The Creator: one line, ending in "…".
+    const shownCreator = card.locator('[data-creator]')
+    await expect(shownCreator).toHaveText(`Veröffentlicht von ${creator}`)
+    expect(await shownCreator.evaluate(el => ({
+      cut: el.scrollWidth > el.clientWidth,
+      ellipsis: getComputedStyle(el).textOverflow,
+      lines: Math.round(el.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(el).lineHeight)),
+    })), `Creator at ${viewport.width}px`).toEqual({ cut: true, ellipsis: 'ellipsis', lines: 1 })
     const parts: Record<string, Locator> = {
       title: card.getByRole('heading', { name: title }),
+      creator: shownCreator,
       avatar: card.getByTitle(/^Hinzugefügt von /),
       note: card.getByTitle('Mit Notiz'),
       count,
@@ -236,6 +247,11 @@ test('"99× gekocht" shows in full beside an avatar and a note, side by side and
           || a.box.y + a.box.height <= b.box.y || b.box.y + b.box.height <= a.box.y
         expect(apart, `${a.name} overlaps ${b.name} at ${viewport.width}px`).toBe(true)
       }
+    }
+    // All of it within the card.
+    const cardBox = (await card.boundingBox())!
+    for (const { name, box } of boxes) {
+      expect(box.y + box.height, `${name} below the card at ${viewport.width}px`).toBeLessThanOrEqual(cardBox.y + cardBox.height)
     }
   }
 })
