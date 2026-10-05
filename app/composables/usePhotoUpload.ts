@@ -3,9 +3,10 @@ import { ref } from 'vue'
 // "client" Vitest project), which knows no Nuxt aliases.
 import { PHOTO_NOT_AN_IMAGE, PHOTO_TOO_LARGE } from '../../shared/photo'
 
-// "Eigenes Foto" on the client: uploads a picked photo to the Board
-// (POST /api/boards/:id/photos) and answers where it was stored, with the
-// photo ticket a Dish needs to take it. The server checks, scales and cleans
+// "Eigenes Foto" and Profile Pictures on the client: uploads a picked photo
+// (to a Board, POST /api/boards/:id/photos, or as a Profile Picture, POST
+// /api/me/pictures: photoUploadTo) and answers where it was stored, with the
+// ticket a Dish, or the user's settings, need to take it. The server checks, scales and cleans
 // the photo; here a photo too large to send is made smaller first, and one
 // that can't be is refused early. Plain Vue reactivity; the upload and
 // the shrinking are replaced with fakes in the tests, so it runs in Node.
@@ -15,9 +16,16 @@ export interface UploadedPhoto { url: string, ticket: string }
 // Why a photo wasn't taken, as the Member is told.
 export type PhotoProblem = 'too-large' | 'not-an-image' | 'failed'
 
-// Sends the photo; rejects with the HTTP status code ($fetch's statusCode)
-// if refused.
-export type SendPhoto = (boardId: string, body: Blob) => Promise<UploadedPhoto>
+// Where a photo goes: a Board's photos (a Dish's own photo) or the user's
+// Profile Pictures.
+export const photoUploadTo = {
+  board: (boardId: string) => `/api/boards/${boardId}/photos`,
+  picture: () => '/api/me/pictures',
+}
+
+// Sends the photo to the upload `to`; rejects with the HTTP status code
+// ($fetch's statusCode) if refused.
+export type SendPhoto = (to: string, body: Blob) => Promise<UploadedPhoto>
 // The photo made smaller, or null if the browser can't read it (HEIC, or no
 // image at all).
 export type ShrinkPhoto = (photo: Blob) => Promise<Blob | null>
@@ -31,8 +39,8 @@ const SEND_LIMIT = 4_000_000
 const SHRINK_LIMIT = 40_000_000
 const SHRINK_SIDE = 2400
 
-function sendPhoto(boardId: string, body: Blob): Promise<UploadedPhoto> {
-  return $fetch<UploadedPhoto>(`/api/boards/${boardId}/photos`, {
+function sendPhoto(to: string, body: Blob): Promise<UploadedPhoto> {
+  return $fetch<UploadedPhoto>(to, {
     method: 'POST',
     body,
     headers: { 'content-type': body.type || 'application/octet-stream' },
@@ -76,7 +84,7 @@ export function usePhotoUpload(send: SendPhoto = sendPhoto, shrink: ShrinkPhoto 
 
   // The stored photo, or null if it was refused, failed, or a later pick
   // came first.
-  async function upload(boardId: string, photo: Blob): Promise<UploadedPhoto | null> {
+  async function upload(to: string, photo: Blob): Promise<UploadedPhoto | null> {
     const run = ++latest
     problem.value = null
     uploading.value = true
@@ -84,7 +92,7 @@ export function usePhotoUpload(send: SendPhoto = sendPhoto, shrink: ShrinkPhoto 
       if (photo.size > SHRINK_LIMIT) throw Object.assign(new Error('too large to read'), { statusCode: PHOTO_TOO_LARGE })
       const body = photo.size > SEND_LIMIT ? await shrink(photo) : photo
       if (!body) throw Object.assign(new Error('too large to send'), { statusCode: PHOTO_TOO_LARGE })
-      const stored = await send(boardId, body)
+      const stored = await send(to, body)
       return run === latest ? stored : null
     }
     catch (error) {

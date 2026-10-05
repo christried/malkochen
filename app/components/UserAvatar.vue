@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// A person's round picture: their Google photo, or their initial on one of the
+// A person's round picture (CONTEXT.md: Profile Picture): their own picture or
+// Google photo, whichever the server picked, or their initial on one of the
 // handoff's avatar colours (tokens.json color.avatar: [fill, ink], the same in
 // both themes), picked from the name so a person always gets the same one.
 const props = withDefaults(defineProps<{
@@ -22,6 +23,10 @@ const colors = computed(() => {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length]!
 })
 const imageFailed = ref(false)
+// A new picture (one just uploaded, or removed) gets its own try.
+watch(() => props.image, () => {
+  imageFailed.value = false
+})
 </script>
 
 <template>

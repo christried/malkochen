@@ -55,6 +55,12 @@ export const auth = betterAuth({
     },
   },
   user: {
+    // The user's own Profile Picture (server/utils/people.ts), so the session
+    // carries it. Never taken from a sign-in or Better Auth's own endpoints
+    // (input: false): only PUT /api/me/picture sets it.
+    additionalFields: {
+      ownPicture: { type: 'string', required: false, input: false },
+    },
     // Runs on user creation and, for Google, on every repeat sign-in too, so
     // someone removed from the Allowlist can't sign in again.
     validateUserInfo: ({ user }) => allowlistRefusal(String(user.email)),

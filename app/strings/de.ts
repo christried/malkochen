@@ -404,6 +404,18 @@ export const de = {
     german: 'Deutsch',
     moreLanguages: 'Weitere Sprachen kommen später.',
     signOut: 'Abmelden',
+    // Your own Profile Picture, shown instead of your Google photo.
+    pickPicture: 'Eigenes Bild hochladen',
+    changePicture: 'Anderes Bild hochladen',
+    removePicture: 'Eigenes Bild entfernen',
+    uploadingPicture: 'Bild wird hochgeladen …',
+    previewTitle: 'Dein Profilbild',
+    previewAlt: 'Vorschau',
+    previewHint: 'So sehen dich die anderen auf euren Boards.',
+    usePicture: 'Übernehmen',
+    savingPicture: 'Speichert …',
+    cancelPicture: 'Abbrechen',
+    closePreview: 'Schließen',
   },
   theme: {
     label: 'Darstellung',

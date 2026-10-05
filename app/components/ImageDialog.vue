@@ -2,7 +2,7 @@
 import type { ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
 import { PHOTO_ACCEPT } from '~~/shared/photo'
-import type { PhotoProblem, UploadedPhoto } from '~/composables/usePhotoUpload'
+import { photoUploadTo, type UploadedPhoto } from '~/composables/usePhotoUpload'
 
 // The image dialog ("Bild wählen") of Add Dish and the Dish detail: a Dish's
 // image is the Source's ("Bild vom Link", only for a link Dish), the
@@ -35,11 +35,7 @@ const t = useStrings()
 
 const photoUpload = usePhotoUpload()
 const { uploading, problem } = photoUpload
-const problemMessage = computed(() => problem.value && ({
-  'too-large': t.imageDialog.tooLarge,
-  'not-an-image': t.imageDialog.notAnImage,
-  'failed': t.imageDialog.failed,
-} satisfies Record<PhotoProblem, string>)[problem.value])
+const problemMessage = computed(() => problem.value && photoProblemMessage(t, problem.value))
 
 // Each opening starts afresh; closing drops an upload still under way.
 watch(open, photoUpload.reset)
@@ -50,7 +46,7 @@ async function pickPhoto(event: Event) {
   // Picking the same file again must still count.
   input.value = ''
   if (!file) return
-  const stored = await photoUpload.upload(props.boardId, file)
+  const stored = await photoUpload.upload(photoUploadTo.board(props.boardId), file)
   if (!stored) return
   emit('photo', stored)
   open.value = false

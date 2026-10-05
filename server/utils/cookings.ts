@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '../db'
 import { cooking, dish, membership, user } from '../db/schema'
 import type { DishAdder } from './dishes'
+import { pictureOf } from './people'
 
 // One occasion a Dish was cooked (CONTEXT.md: Cooking), as its Cooking
 // History shows it.
@@ -22,7 +23,7 @@ function selectCookings() {
       note: cooking.note,
       recorderId: user.id,
       recorderName: user.name,
-      recorderImage: user.image,
+      recorderImage: pictureOf,
     })
     .from(cooking)
     .leftJoin(user, eq(user.id, cooking.recordedBy))
