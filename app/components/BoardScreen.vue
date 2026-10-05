@@ -247,11 +247,6 @@ function selectTab(index: number) {
   showColumn(index)
 }
 
-// Headline parallax: a Column's name drifts and fades as it slides away.
-function titleMotion(index: number) {
-  const offset = index - progress.value
-  return { '--title-x': `${offset * 70}px`, '--title-fade': Math.max(0, 1 - Math.abs(offset) * 1.6) }
-}
 const tint = computed(() => accentAt(clampProgress(progress.value, board.value?.columns.length ?? 1)))
 const isEmpty = computed(() => board.value?.columns.every(c => c.dishes.length === 0) ?? false)
 // A Column showing no cards shows its empty state, whose clip is the Board
@@ -471,6 +466,16 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       data-testid="search-results"
     />
 
+    <!-- Phones: the active Column's name and subtitle, large. -->
+    <ColumnHeadline
+      v-show="!searching"
+      class="-mx-4 mt-5 px-4 tablet:hidden"
+      :columns="board.columns"
+      :active="activeIndex"
+      :progress="progress"
+      :following="following"
+    />
+
     <ColumnTabs
       v-show="!searching"
       ref="tabBar"
@@ -507,13 +512,14 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             'lane-target': drag?.laneColumnId === column.id,
             'lane-dimmed': drag?.laneColumnId && drag.laneColumnId !== column.id,
           }"
-          :style="{ ...titleMotion(index), '--accent': columnAccent(index) }"
+          :style="{ '--accent': columnAccent(index) }"
           :data-column-id="column.id"
           data-lane
           :data-gekocht="column.isGekocht || undefined"
         >
+          <!-- Phones show it above the tabs (ColumnHeadline) instead. -->
           <ColumnTitle
-            class="column-title"
+            class="hidden tablet:block"
             :subtitle="column.subtitle"
           >
             <span
@@ -774,8 +780,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     translate: calc(var(--active) * -1 * (100% + 1rem) + var(--dx)) 0;
     transition: translate var(--dur-settle) var(--ease-settle);
   }
-  .track.following,
-  .track.following .column-title {
+  .track.following {
     transition: none;
   }
   .column.parked {
@@ -784,19 +789,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     padding-block: 0;
     overflow: hidden;
   }
-  .column-title {
-    translate: var(--title-x) 0;
-    opacity: var(--title-fade);
-    transition: translate var(--dur-settle) var(--ease-settle), opacity var(--dur-settle) var(--ease-fade);
-  }
 }
-/* Reduced motion: no sliding or parallax, and the tint cuts (tokens.css
-   collapses --dur-swoosh); the new Column, name and all, cross-fades in. */
+/* Reduced motion: no sliding, and the tint cuts (tokens.css collapses
+   --dur-swoosh); the new Column cross-fades in. */
 @media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
-  .column-title {
-    translate: none;
-    opacity: 1;
-  }
   .column {
     transition: opacity var(--dur-fade) var(--ease-fade);
   }

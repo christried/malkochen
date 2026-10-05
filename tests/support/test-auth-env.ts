@@ -5,7 +5,7 @@ export const E2E_ORIGIN = 'http://localhost:3100'
 // whatever .env holds: a fixed Allowlist, the dev sign-in bypass, and dummy
 // Google credentials (Google itself is never called in tests).
 // The test Allowlist; any other email is refused.
-export const ALLOWLISTED = ['ada@example.com', 'grace@example.com', 'linus@example.com', 'margaret@example.com', 'barbara@example.com', 'katherine@example.com', 'hedy@example.com', 'mary@example.com', 'ida@example.com', 'annie@example.com', 'joan@example.com', 'radia@example.com', 'frances@example.com', 'sophie@example.com', 'evelyn@example.com', 'alan@example.com', 'dorothy@example.com', 'ruth@example.com', 'jean@example.com', 'emmy@example.com', 'lise@example.com', 'hertha@example.com', 'rosalind@example.com', 'chien-shiung@example.com'] as const
+export const ALLOWLISTED = ['ada@example.com', 'grace@example.com', 'linus@example.com', 'margaret@example.com', 'barbara@example.com', 'katherine@example.com', 'hedy@example.com', 'mary@example.com', 'ida@example.com', 'annie@example.com', 'joan@example.com', 'radia@example.com', 'frances@example.com', 'sophie@example.com', 'evelyn@example.com', 'alan@example.com', 'dorothy@example.com', 'ruth@example.com', 'jean@example.com', 'emmy@example.com', 'lise@example.com', 'hertha@example.com', 'rosalind@example.com', 'chien-shiung@example.com', 'katalin@example.com'] as const
 
 // A first sign-in's name and Google photo, as Google would send them; later
 // sign-ins keep the first. The dev sign-in takes them for the tests.

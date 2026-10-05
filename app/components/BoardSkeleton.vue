@@ -5,8 +5,9 @@ import { boardLabel } from '~~/shared/board'
 // loading"): its chrome at once, and in its Columns skeleton cards the size
 // of a DishCard (128px high, an 86px thumb), so nothing jumps when its Dishes
 // take their place and rise in. A light sweeps across them every 1.4s;
-// reduced motion: they are still, at 60% opacity. Phones show the tabs and
-// the first Column, tablet and desktop every Column. The Board's name and
+// reduced motion: they are still, at 60% opacity. Phones show the first
+// Column's headline, the tabs and that Column, tablet and desktop every
+// Column. The Board's name and
 // Columns come from the Board switcher's list (useBoardListings); a Board
 // not on it shows three nameless Columns. Tablet and desktop colour it as the
 // Board (main.css), so a Board on that list keeps its colours as it opens.
@@ -60,6 +61,23 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
       />
     </header>
 
+    <ColumnHeadline
+      v-if="listing"
+      class="-mx-4 mt-5 px-4 tablet:hidden"
+      :columns="columns"
+      :active="0"
+      :progress="0"
+      :following="false"
+    />
+    <div
+      v-else
+      aria-hidden="true"
+      class="mt-5 px-1 font-display tablet:hidden"
+    >
+      <span class="block text-display-xl leading-none"><span class="name-pebble w-40">&nbsp;</span></span>
+      <span class="mt-1 block text-subline"><span class="name-pebble w-48">&nbsp;</span></span>
+    </div>
+
     <ColumnTabs
       v-if="listing"
       class="-mx-4 mt-4 px-4 tablet:hidden"
@@ -91,7 +109,10 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
           :style="{ '--accent': columnAccent(index) }"
           data-lane
         >
-          <ColumnTitle :subtitle="column.subtitle">
+          <ColumnTitle
+            class="hidden tablet:block"
+            :subtitle="column.subtitle"
+          >
             <template v-if="column.name">
               {{ column.name }}
             </template>
