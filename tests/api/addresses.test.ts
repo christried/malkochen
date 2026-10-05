@@ -18,7 +18,7 @@ interface Board {
   id: string
   slug: string
   name: string
-  columns: { dishes: { id: string, title: string, code: string }[] }[]
+  columns: { id: string, dishes: { id: string, title: string, code: string }[] }[]
 }
 
 interface Address {
@@ -124,6 +124,41 @@ test('a Dish’s address ends in its code, which finds it whatever title or old 
 
   // A Dish address that isn't on the Board is left as it is.
   expect(await addressOf(maryam, board.slug, 'gibt-es-nicht-zzzz')).toMatchObject({ dish: 'gibt-es-nicht-zzzz' })
+
+  // So is a deleted Dish's.
+  await send(maryam, 'DELETE', `/api/dishes/${added.id}`)
+  expect(await addressOf(maryam, board.slug, `linsen-dal-${added.code}`)).toEqual({ boardId: board.id, slug: board.slug, dish: `linsen-dal-${added.code}` })
+})
+
+test('a Dish moved to another Board: its old address forwards there, for that Board’s Members only', async () => {
+  const maryam = await signIn(ALLOWLISTED[31])
+  const linus = await signIn(ALLOWLISTED[2])
+  const from = await createBoard(maryam, 'Umzug von hier')
+  const to = await createBoard(maryam, 'Umzug nach dort')
+  const added = await (await postDish(maryam, from.id, { title: 'Reisender Eintopf', placeholder: 'eintopf' })).json() as { id: string, code: string }
+  const current = `reisender-eintopf-${added.code}`
+
+  // Linus is a Member of the Board it leaves, not of the one it goes to.
+  const { inviteToken } = await (await maryam.fetch(`/api/boards/${from.id}`)).json() as { inviteToken: string }
+  expect((await send(linus, 'POST', `/api/invites/${inviteToken}/join`)).status).toBe(200)
+
+  expect((await send(maryam, 'POST', `/api/dishes/${added.id}/move`, { columnId: to.columns[0]!.id })).status).toBe(200)
+
+  expect(await addressOf(maryam, from.slug, current)).toEqual({ boardId: to.id, slug: to.slug, dish: current })
+  expect(await addressOf(maryam, from.id, added.id)).toEqual({ boardId: to.id, slug: to.slug, dish: current })
+  // To Linus, it is a Dish address that isn't on the Board.
+  expect(await addressOf(linus, from.slug, current)).toEqual({ boardId: from.id, slug: from.slug, dish: current })
+})
+
+test('a Board’s former address, too, looks to a non-Member like one no Board has', async () => {
+  const maryam = await signIn(ALLOWLISTED[31])
+  const linus = await signIn(ALLOWLISTED[2])
+  const board = await createBoard(maryam, 'Früherer Name')
+  await send(maryam, 'PATCH', `/api/boards/${board.id}`, { name: 'Späterer Name' })
+
+  const res = await linus.fetch(`/api/addresses/${board.slug}`)
+  expect(res.status).toBe(404)
+  expect((await res.json()).statusMessage).toBe('Board not found')
 })
 
 test('where the app opens names the Board’s address too', async () => {

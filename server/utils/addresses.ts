@@ -7,9 +7,10 @@ import { board, boardSlug, dish, membership } from '../db/schema'
 // The server picks a Board's slug, keeps every slug it ever had, and finds
 // a Board and a Dish from any address they had.
 
-// Where an address leads, as it is now: the Board's id and current slug,
-// and the Dish part of the address (null for the Board itself). A Dish part
-// that matches no Dish on the Board comes back as it was asked.
+// Where an address leads, as it is now: the Board's id and current slug
+// (for a Dish's address, of the Board the Dish is on now), and the Dish
+// part of the address (null for the Board itself). A Dish part that matches
+// no Dish on the user's Boards comes back as it was asked.
 export interface BoardAddress {
   boardId: string
   slug: string
@@ -68,14 +69,19 @@ export async function boardAddress(ref: string, userId: string, dishPart?: strin
   if (!found) return null
   if (dishPart === undefined) return { ...found, dish: null }
 
+  // The Dish wherever it is now: its code (or id) is unique across all
+  // Boards, so one moved to another of the user's Boards is found there,
+  // and its address forwards to that Board.
   const wanted = dishRef(dishPart.toLowerCase())
   const [shown] = await db
-    .select({ title: dish.title, code: dish.code })
+    .select({ boardId: dish.boardId, slug: slugOf, title: dish.title, code: dish.code })
     .from(dish)
+    .innerJoin(board, eq(board.id, dish.boardId))
+    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
     .where(and(
-      eq(dish.boardId, found.boardId),
       isNull(dish.deletedAt),
       'id' in wanted ? eq(dish.id, wanted.id) : eq(dish.code, wanted.code),
     ))
-  return { ...found, dish: shown ? dishSegment(shown) : dishPart }
+  if (!shown) return { ...found, dish: dishPart }
+  return { boardId: shown.boardId, slug: shown.slug, dish: dishSegment(shown) }
 }
