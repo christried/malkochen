@@ -11,6 +11,7 @@ interface Dish {
   placeholder: string
   imageUrl: string | null
   source: { link: string, kind: string } | null
+  creator: string | null
   addedBy: { name: string, image: string | null } | null
 }
 interface Board {
@@ -61,6 +62,28 @@ test('the note is optional, and a blank note is no note', async () => {
 
   expect(without.note).toBeNull()
   expect(blank.note).toBeNull()
+})
+
+test('a Dish keeps the Creator it was added with; without one, or a blank one, it has none', async () => {
+  const grace = await signIn(ALLOWLISTED[1])
+  const board = await landingBoard(grace)
+
+  const withCreator = await (await addDish(grace, board.id, { title: 'Brownies', placeholder: 'bread', creator: '  Love and Lemons ' })).json() as Placed
+  const without = await (await addDish(grace, board.id, { title: 'Porridge', placeholder: 'porridge' })).json() as Placed
+  const blank = await (await addDish(grace, board.id, { title: 'Brot', placeholder: 'bread', creator: '  ' })).json() as Placed
+
+  expect(withCreator.creator).toBe('Love and Lemons')
+  expect(without.creator).toBeNull()
+  expect(blank.creator).toBeNull()
+  const shown = (await landingBoard(grace)).columns[0]!.dishes
+  expect(shown.find(d => d.id === withCreator.id)?.creator).toBe('Love and Lemons')
+})
+
+test('a Creator longer than 100 characters is refused', async () => {
+  const grace = await signIn(ALLOWLISTED[1])
+  const board = await landingBoard(grace)
+
+  expect((await addDish(grace, board.id, { title: 'Dal', placeholder: 'curry', creator: 'x'.repeat(101) })).status).toBe(400)
 })
 
 test('a Dish needs a title and a known Placeholder Image', async () => {

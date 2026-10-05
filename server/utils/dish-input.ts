@@ -12,6 +12,10 @@ export const dishTitle = z.string().trim().min(1).max(200)
 // Optional; a blank note is no note.
 export const dishNote = z.string().trim().max(2000).nullish().transform(note => note || null)
 
+// Who published the Source (CONTEXT.md: Creator), as Source Lookup found it
+// or a Member typed it. Optional; a blank one is none.
+export const dishCreator = z.string().trim().max(100).nullish().transform(creator => creator || null)
+
 // The canonical link and kind from Source Lookup. The kind is read from the
 // link itself; the one sent only tells a blog from any other web page.
 export const sourceInput = z.object({ link: webLinkInput, kind: z.enum(SOURCE_KINDS).optional() })
@@ -30,6 +34,7 @@ export const addDishBody = z.object({
   // Its Placeholder Image, shown if there is no Source image.
   placeholder: z.enum(PLACEHOLDERS),
   source: sourceInput.nullish(),
+  creator: dishCreator,
   // The Source image Source Lookup found (third-party) and the Image Ticket it
   // came with; copied on save, but only with a valid ticket.
   imageUrl: webLinkInput.nullish(),
@@ -43,6 +48,8 @@ export const dishEditBody = z.object({
   note: dishNote.optional(),
   // Null removes the Source. Changing it never changes the image.
   source: sourceInput.nullable().optional(),
+  // Blank clears it. Changing the Source never changes it.
+  creator: dishCreator.optional(),
   placeholder: z.enum(PLACEHOLDERS).optional(),
   // Null drops the stored image, so the Dish shows its Placeholder. A link is
   // the image "Bild neu laden" found (third-party) and needs the Image Ticket

@@ -20,6 +20,9 @@ export interface SourceLookupResult {
   // share parameters, mobile host) gives the same value.
   canonicalLink: string
   suggestedTitle: string
+  // The Creator (CONTEXT.md): the account, channel or blog that published
+  // the Source, as it names itself; null when it names none.
+  creator: string | null
   // A third-party image URL. It may expire, so it is copied into our own
   // storage when a Dish is saved.
   imageUrl: string | null
@@ -30,7 +33,7 @@ export type SourceGuess = Pick<SourceLookupResult, 'kind' | 'canonicalLink'>
 
 // The answer when nothing more than the guess could be found.
 export function nothingFound(guess: SourceGuess): SourceLookupResult {
-  return { ...guess, suggestedTitle: '', imageUrl: null }
+  return { ...guess, suggestedTitle: '', creator: null, imageUrl: null }
 }
 
 // Given a link, return what we know about it. Never rejects.

@@ -25,6 +25,8 @@ export interface DishView {
   title: string
   note: string | null
   source: DishSource | null
+  // Who published the Source (CONTEXT.md: Creator); null if nobody is named.
+  creator: string | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   placeholder: Placeholder
@@ -59,6 +61,7 @@ export interface NewDish {
   title: string
   note: string | null
   source: DishSource | null
+  creator: string | null
   // Must already be a stored image (Image Store), never a third-party link.
   imageUrl: string | null
   placeholder: Placeholder
@@ -90,6 +93,7 @@ function selectDishes() {
       note: dish.note,
       sourceLink: dish.sourceLink,
       sourceKind: dish.sourceKind,
+      creator: dish.creator,
       imageUrl: dish.imageUrl,
       placeholder: dish.placeholder,
       createdAt: dish.createdAt,
@@ -139,7 +143,7 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 
 // What editing a Dish may change (PRD story 43); fields left out stay as
 // they are. `imageUrl` must already be a stored image, never a third-party link.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'imageUrl' | 'placeholder'>>
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'creator' | 'imageUrl' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -397,6 +401,7 @@ export async function addDish(
       note: input.note,
       sourceLink: input.source?.link ?? null,
       sourceKind: input.source?.kind ?? null,
+      creator: input.creator,
       imageUrl: input.imageUrl,
       placeholder: input.placeholder,
       addedBy: adder.id,
@@ -409,6 +414,7 @@ export async function addDish(
     title: input.title,
     note: input.note,
     source: input.source,
+    creator: input.creator,
     imageUrl: input.imageUrl,
     placeholder: input.placeholder,
     addedBy: { id: adder.id, name: adder.name, image: adder.image ?? null },

@@ -32,6 +32,6 @@ export const pinterest: Strategy = {
     const oembed = await http.json(`https://www.pinterest.com/oembed.json?url=${encodeURIComponent(found.canonicalLink)}`)
     const image = httpUrl(oembed?.thumbnail_url)
     const larger = largerSize(image)
-    return { ...found, suggestedTitle: '', imageUrl: larger && await http.exists(larger) ? larger : image }
+    return { ...found, suggestedTitle: '', creator: null, imageUrl: larger && await http.exists(larger) ? larger : image }
   },
 }

@@ -121,6 +121,9 @@ export const dish = pgTable('dish', {
   // The Source: its canonical link and kind, both null for a Dish without one.
   sourceLink: text('source_link'),
   sourceKind: text('source_kind').$type<SourceKind>(),
+  // The Creator (CONTEXT.md): who published the Source, as it names itself.
+  // Null when it names none, or a Member cleared it.
+  creator: text('creator'),
   // The image: a copy in the Image Store if there is one, else the
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),
