@@ -177,6 +177,17 @@ const dropTint = computed(() => {
   const index = board.value?.columns.findIndex(c => c.id === dropTarget.value) ?? -1
   return index === -1 ? undefined : columnAccent(index)
 })
+// With every Column showing, the page's wash fades out on drop in the tint
+// it had, not toward none; a new drag fades it in from the background, not
+// from the last drag's tint.
+const dropWash = ref<string>()
+watch(dropTint, (tint) => {
+  if (tint) dropWash.value = tint
+})
+watch(dragging, (isDragging) => {
+  if (isDragging) dropWash.value = undefined
+}, { flush: 'sync' })
+const gradient = computed(() => boardGradient(board.value?.columns.length ?? 0))
 
 const { dx, progress, following } = useColumnSwipe(columnsEl, {
   count: () => board.value?.columns.length ?? 0,
@@ -404,7 +415,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     v-if="board"
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
     :class="{ following, dragging, 'drop-tinted': dropTint }"
-    :style="{ '--tint': tint, '--drop-tint': dropTint }"
+    :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, '--board-gradient': gradient }"
   >
     <header class="flex items-center justify-between gap-3">
       <div class="flex min-w-0 items-center gap-3">
@@ -498,6 +509,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           }"
           :style="{ ...titleMotion(index), '--accent': columnAccent(index) }"
           :data-column-id="column.id"
+          data-lane
           :data-gekocht="column.isGekocht || undefined"
         >
           <ColumnTitle
@@ -949,7 +961,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 }
 /* A lane a dragged Dish is over (handoff "Drop target", desktop): it grows
    a little, fills with its accent and glows, and wiggles once; the other
-   lanes dim. The background tints toward it. Reduced motion: fill and ring.
+   lanes dim. The page tints toward it. Reduced motion: fill and ring.
    The lanes scroll sideways, which clips them, so they have room around them
    for the ring (12px above, 16px beside, for a long lane's wiggle, 40px
    below), and a lane grows from its top, however long it is. */
@@ -960,7 +972,9 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   }
   .column.lane-target {
     scale: 1.012;
-    background-color: color-mix(in srgb, var(--accent) 30%, var(--color-surface-muted));
+    background-color: color-mix(in oklab, var(--accent) var(--wash-lane-target), var(--color-bg));
+    /* Pulled further than at rest (main.css), for AA on the fuller fill. */
+    --color-text-muted: color-mix(in oklab, var(--color-text) 40%, var(--board-muted));
     box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent);
     animation: lane-wiggle 600ms var(--ease-idle);
   }
@@ -993,9 +1007,39 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     scale: none;
   }
 }
-.board.drop-tinted {
-  background-color: color-mix(in oklch, var(--drop-tint) 22%, var(--color-bg));
-  transition: background-color var(--dur-fade) var(--ease-fade);
+/* A Dish dragged over a Column tints the page in its accent, and dropping
+   it brings the page back: on phones its background colour (over the active
+   Column's tint), with every Column showing a wash over the gradient
+   (main.css), which fades in and out. Reduced motion: the tint cuts. */
+@media (max-width: 767.98px) {
+  .board.drop-tinted {
+    background-color: color-mix(in oklch, var(--drop-tint) 22%, var(--color-bg));
+    transition: background-color var(--dur-fade) var(--ease-fade);
+  }
+}
+@media (min-width: 768px) {
+  .board {
+    isolation: isolate;
+  }
+  .board::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: color-mix(in oklch, var(--drop-wash, var(--color-bg)) 22%, var(--color-bg));
+    opacity: 0;
+    transition: opacity var(--dur-fade) var(--ease-fade), background-color var(--dur-fade) var(--ease-fade);
+  }
+  .board.drop-tinted::before {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board.drop-tinted,
+  .board::before {
+    transition: none;
+  }
 }
 @keyframes fab-prompt {
   0%, 100% { box-shadow: var(--shadow-fab), 0 0 0 2px var(--color-focus); }

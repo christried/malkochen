@@ -87,6 +87,30 @@ html {
     --color-name-mark: #4A3818;
   }
 }
+/* Colour once every Column shows (tablet and desktop; BoardScreen and its
+   skeleton): the page is a soft gradient across the Column accents
+   (boardGradient, as --board-gradient), and each lane is tinted in its own
+   accent (--accent), as much as a phone's page is (REMOTION.md "column
+   tint"). A lane a Dish is dragged over fills more (BoardScreen). Muted text
+   in a lane is pulled 30% toward the text colour (darker in light, lighter in
+   dark), so it keeps WCAG AA (4.5:1) on every accent's tint; the Board's name
+   keeps it on the page (board-colour.spec.ts checks both). Lanes are
+   [data-lane], not .column, which other Column pictures use too. */
+:root {
+  --wash-page: 10%;
+  --wash-lane: 24%;
+  --wash-lane-target: 36%;
+}
+@media (min-width: 768px) {
+  .board {
+    --board-muted: var(--color-text-muted);
+    background-image: var(--board-gradient);
+  }
+  .board [data-lane] {
+    --color-text-muted: color-mix(in oklab, var(--color-text) 30%, var(--board-muted));
+    background-color: color-mix(in oklab, var(--accent) var(--wash-lane), var(--color-bg));
+  }
+}
 /* A saved Dish flying onto the Board (handoff "Saved → card flies to
    Board": 900ms). */
 :root {

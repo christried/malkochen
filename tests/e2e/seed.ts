@@ -67,13 +67,41 @@ export async function resetBoard(page: Page) {
   try {
     await client.query('begin')
     await client.query(`update board set name = 'Meine Küche', emoji = '🍲' where id = $1`, [boardId])
-    await client.query('delete from dish where board_id = $1', [boardId])
-    await client.query('delete from board_column where board_id = $1', [boardId])
+    await replaceColumns(client, boardId, [
+      { name: 'Ideen', subtitle: 'Worauf hast du Lust?' },
+      { name: 'Diese Woche', subtitle: 'Das steht an.' },
+      { name: 'Gekocht', subtitle: null },
+    ])
+    await client.query('commit')
+  }
+  finally {
+    await client.end()
+  }
+}
+
+// Empties a Board and gives it these Columns, in order, the last one the
+// Gekocht Column. Inside the caller's transaction.
+async function replaceColumns(client: pg.Client, boardId: string, columns: { name: string, subtitle: string | null }[]) {
+  await client.query('delete from dish where board_id = $1', [boardId])
+  await client.query('delete from board_column where board_id = $1', [boardId])
+  for (const [position, { name, subtitle }] of columns.entries()) {
     await client.query(
-      `insert into board_column (board_id, name, subtitle, position, is_gekocht)
-       values ($1, 'Ideen', 'Worauf hast du Lust?', 0, false), ($1, 'Diese Woche', 'Das steht an.', 1, false), ($1, 'Gekocht', null, 2, true)`,
-      [boardId],
+      'insert into board_column (board_id, name, subtitle, position, is_gekocht) values ($1, $2, $3, $4, $5)',
+      [boardId, name, subtitle, position, position === columns.length - 1],
     )
+  }
+}
+
+// Gives the signed-in user's landing Board these Columns, in order, the last
+// one the Gekocht Column, and no Dishes: Boards with more or fewer Columns
+// than a new Board's three.
+export async function setColumns(page: Page, names: string[]) {
+  const boardId = await landingBoardId(page)
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    await client.query('begin')
+    await replaceColumns(client, boardId, names.map(name => ({ name, subtitle: null })))
     await client.query('commit')
   }
   finally {
