@@ -4,7 +4,6 @@ import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { inviteToken } from './invite'
 import { landingBoardId, resetBoard, seedDish } from './seed'
 
 // Board settings (PRD stories 57–60, 62, 63): the Board's name and emoji,
@@ -272,10 +271,11 @@ test('a Column barely dragged settles where it was', async ({ page }) => {
 // The Invite Link's buttons (PRD stories 62, 63). invite-links.spec.ts reads
 // the link from its field; these click "Link kopieren" and "Link teilen".
 
-// The Invite Link to Ida's Board, made from its token as the API has it
-// rather than read from the page.
+// The Invite Link to Ida's Board, made from its slug and secret as the API
+// has them rather than read from the page.
 async function inviteLink(page: Page): Promise<string> {
-  return `${E2E_ORIGIN}/invite/${await inviteToken(page, await landingBoardId(page))}`
+  const { slug, inviteToken } = await (await page.request.get(`/api/boards/${await landingBoardId(page)}`)).json() as { slug: string, inviteToken: string }
+  return `${E2E_ORIGIN}/invite/${slug}-${inviteToken}`
 }
 
 // navigator.share, set before the page loads (settings checks for it once

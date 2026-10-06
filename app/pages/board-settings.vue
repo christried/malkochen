@@ -4,6 +4,7 @@ import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
+import { invitePath } from '~~/shared/invite'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
@@ -175,8 +176,9 @@ async function gotDishes(column: ColumnRow): Promise<boolean> {
 // only the Owner resets it, after confirming, since the old one then stops
 // working wherever it was sent.
 const origin = useRequestURL().origin
-// Read from the Board itself, so a refetch never shows an old link.
-const inviteLink = computed(() => `${origin}/invite/${board.value?.inviteToken ?? ''}`)
+// The secret read from the Board itself, so a refetch never shows an old
+// link; the slug follows a new name (any slug works: only the secret counts).
+const inviteLink = computed(() => `${origin}${invitePath({ slug: saved.value.slug, inviteToken: board.value?.inviteToken ?? '' })}`)
 
 // Copied, the button says so for a moment (handoff Button "success flip":
 // its label rolls up and out, "Kopiert ✓" pops in, five pebbles burst),

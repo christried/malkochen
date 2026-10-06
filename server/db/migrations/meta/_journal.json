@@ -99,6 +99,13 @@
       "when": 1791224483468,
       "tag": "0013_readable_addresses",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791306668431,
+      "tag": "0014_readable_invite_links",
+      "breakpoints": true
     }
   ]
 }

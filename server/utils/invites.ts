@@ -1,13 +1,16 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq, gt, lt, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
+import { inviteSecret } from '../../shared/invite'
 import { db } from '../db'
-import { board, membership } from '../db/schema'
+import { board, inviteMiss, membership } from '../db/schema'
 import { slugOf } from './addresses'
 import { boardMembers, membershipOf, type BoardMember, type BoardNameAndEmoji } from './boards'
 
-// Invite Links (CONTEXT.md): /invite/<token> lets a signed-in user on the
-// Allowlist become a Member of the Board. The token is the Board's
-// `invite_token`; it never expires, and the Owner can reset it.
+// Invite Links (CONTEXT.md): /invite/<Board slug>-<secret> lets a signed-in
+// user on the Allowlist become a Member of the Board (shared/invite.ts).
+// Only the secret counts: it is the Board's `invite_token`, which never
+// expires, and the Owner can reset it. A link from before is the token
+// alone, which still counts too.
 
 // What the invite landing shows: the Board, who invited you (its Owner) and
 // the first few who are already on it. Public to whoever has the link, so
@@ -21,33 +24,31 @@ export interface InviteView {
 // How many Members the invite landing shows.
 const LANDING_MEMBERS = 4
 
-// Tokens are 32 hex characters; anything else can't be one.
-const TOKEN = /^[0-9a-f]{32}$/
-
 export function inviteNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Invite Link not found' })
 }
 
-// An Invite Link token from the route. Anything malformed is a link that doesn't exist.
-export function inviteTokenParam(event: H3Event): string {
-  const token = getRouterParam(event, 'token') ?? ''
-  if (!TOKEN.test(token)) throw inviteNotFound()
-  return token
+// The secret of the Invite Link in the route. A link that can't end in one
+// doesn't exist.
+export function inviteSecretParam(event: H3Event): string {
+  const secret = inviteSecret(getRouterParam(event, 'token') ?? '')
+  if (!secret) throw inviteNotFound()
+  return secret
 }
 
-// The Board a token opens, or null if none has it (any more).
-async function boardOf(token: string) {
-  if (!TOKEN.test(token)) return null
+// The Board a secret opens, or null if none has it (any more).
+async function boardOf(secret: string) {
+  if (inviteSecret(secret) !== secret) return null
   const [found] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
     .from(board)
-    .where(eq(board.inviteToken, token))
+    .where(eq(board.inviteToken, secret))
   return found ?? null
 }
 
-// The invite landing for a token, or null if no Board has it (any more).
-export async function inviteView(token: string): Promise<InviteView | null> {
-  const found = await boardOf(token)
+// The invite landing for a secret, or null if no Board has it (any more).
+export async function inviteView(secret: string): Promise<InviteView | null> {
+  const found = await boardOf(secret)
   if (!found) return null
 
   const members = await boardMembers(found.id).limit(LANDING_MEMBERS)
@@ -57,12 +58,12 @@ export async function inviteView(token: string): Promise<InviteView | null> {
   return { board: { name: found.name, emoji: found.emoji }, owner: strip(owner), members: members.map(strip) }
 }
 
-// Makes the user a Member of the token's Board (PRD story 64); for someone
+// Makes the user a Member of the secret's Board (PRD story 64); for someone
 // already on it, only this changes (story 65): following the link counts as
 // opening the Board, so the app lands on it next. The Board's id and the
-// slug of its Address, or null if no Board has the token.
-export async function joinByInvite(token: string, userId: string): Promise<{ boardId: string, slug: string } | null> {
-  const found = await boardOf(token)
+// slug of its Address, or null if no Board has the secret.
+export async function joinByInvite(secret: string, userId: string): Promise<{ boardId: string, slug: string } | null> {
+  const found = await boardOf(secret)
   if (!found) return null
   const now = new Date()
   await db
@@ -72,7 +73,8 @@ export async function joinByInvite(token: string, userId: string): Promise<{ boa
   return { boardId: found.id, slug: found.slug }
 }
 
-// Gives the Board a new token, so the old link stops working (story 66).
+// Gives the Board a new secret, so the old link stops working (story 66),
+// with its old slug or any other.
 // 'forbidden' for a Member who isn't the Owner, null for a non-Member.
 export async function resetInvite(boardId: string, userId: string): Promise<{ inviteToken: string } | 'forbidden' | null> {
   const [found] = await membershipOf(boardId, userId)
@@ -87,7 +89,71 @@ export async function resetInvite(boardId: string, userId: string): Promise<{ in
 }
 
 // ---------------------------------------------------------------------------
-// The remembered invite (story 5): a cookie holding the token, set on the
+// Guessing a secret is hopeless (about 84 bits); to keep it that way for
+// anyone trying many, a client that asks for too many secrets no Board has
+// gets no answer about any link, not even a working one, for the rest of
+// the window. A refused sign-in is no miss: it doesn't look one up. Clients
+// are told apart by IP address only, so people behind one address share
+// their misses; a few dozen opening a reset link within the window is not
+// what this app sees.
+
+const MISSES_ALLOWED = 30
+const MISS_WINDOW = sql`now() - interval '15 minutes'`
+
+export function tooManyMisses() {
+  return createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found' })
+}
+
+// Who asks: their IP address. On Vercel, x-forwarded-for is the visitor's,
+// set by Vercel and not by the client; a page rendered on the server passes
+// it on to the API calls it makes (useFetch, useFetchPassingCookies).
+function clientOf(event: H3Event): string {
+  return getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
+}
+
+// Counts one more lookup as a miss before it is made, so lookups sent at
+// once can't all slip under the limit: one more in the client's window, or
+// the first of a new one. Whether the client is now over the limit.
+async function reserveMiss(client: string): Promise<boolean> {
+  const inWindow = gt(inviteMiss.windowStart, MISS_WINDOW)
+  const [counted] = await db
+    .insert(inviteMiss)
+    .values({ client })
+    .onConflictDoUpdate({
+      target: inviteMiss.client,
+      set: {
+        misses: sql`case when ${inWindow} then ${inviteMiss.misses} + 1 else 1 end`,
+        windowStart: sql`case when ${inWindow} then ${inviteMiss.windowStart} else now() end`,
+      },
+    })
+    .returning({ misses: inviteMiss.misses, newWindow: sql<boolean>`${inviteMiss.windowStart} = now()` })
+  // Windows that are over need no row; cleared once per new window, not on
+  // every lookup.
+  if (counted?.newWindow) await db.delete(inviteMiss).where(lt(inviteMiss.windowStart, MISS_WINDOW))
+  return (counted?.misses ?? 0) > MISSES_ALLOWED
+}
+
+// A lookup that found its Board was no miss after all.
+async function refundMiss(client: string) {
+  await db
+    .update(inviteMiss)
+    .set({ misses: sql`greatest(${inviteMiss.misses} - 1, 0)` })
+    .where(eq(inviteMiss.client, client))
+}
+
+// What `find` finds for this client's Invite Link: 429 while the client has
+// missed too often, 404 (a miss) if it finds nothing.
+export async function lookUpInvite<T>(event: H3Event, find: () => Promise<T | null>): Promise<T> {
+  const client = clientOf(event)
+  if (await reserveMiss(client)) throw tooManyMisses()
+  const found = await find()
+  if (found === null) throw inviteNotFound()
+  await refundMiss(client)
+  return found
+}
+
+// ---------------------------------------------------------------------------
+// The remembered invite (story 5): a cookie holding the secret, set on the
 // invite landing when the visitor starts signing in. A sign-in that goes
 // through joins its Board and clears it (server/utils/auth.ts); a refused one
 // leaves it, so "Not unlocked" can name the Owner and a later sign-in still
@@ -101,8 +167,8 @@ export const FORGOTTEN_INVITE_COOKIE = { path: '/', maxAge: 0 } as const
 // Long enough for the Owner to put the visitor on the Allowlist.
 const REMEMBERED_INVITE_MAX_AGE = 60 * 60 * 24 * 30
 
-export function rememberInvite(event: H3Event, token: string) {
-  setCookie(event, REMEMBERED_INVITE_COOKIE, token, {
+export function rememberInvite(event: H3Event, secret: string) {
+  setCookie(event, REMEMBERED_INVITE_COOKIE, secret, {
     httpOnly: true,
     sameSite: 'lax',
     secure: getRequestURL(event).protocol === 'https:',

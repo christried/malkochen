@@ -13,7 +13,16 @@ const route = useRoute()
 const token = String(route.params.token)
 const fetchPassingCookies = useFetchPassingCookies()
 
-const { data: invite } = await useFetch<InviteView>(`/api/invites/${token}`)
+// Too many links that don't exist asked for from here, for now (429,
+// server/utils/invites.ts): not a link that stopped working, so the error
+// screen says to try again soon.
+const tooMany = (status: number | undefined) => status === 429
+  ? createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found', fatal: true })
+  : null
+
+const { data: invite, error: lookupFailed } = await useFetch<InviteView>(`/api/invites/${token}`)
+const lookupRefused = tooMany(lookupFailed.value?.statusCode)
+if (lookupRefused) throw lookupRefused
 // The same request the page guard just made, so it isn't sent twice. It
 // fails for anyone who can't use the app yet: 401 signed out, 403 signed in
 // but off the Allowlist.
@@ -21,7 +30,11 @@ const { error: noAccess } = await useFetch('/api/me', { key: `me:${route.fullPat
 
 if (invite.value && !noAccess.value) {
   // Joining also clears a remembered invite, hence the cookies.
-  const joined = await fetchPassingCookies<{ boardId: string, slug: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch(() => null)
+  const joined = await fetchPassingCookies<{ boardId: string, slug: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch((err: { statusCode?: number }) => {
+    const refused = tooMany(err.statusCode)
+    if (refused) throw refused
+    return null
+  })
   // A link reset since it was looked up shows as not working.
   if (joined) await navigateTo(boardPath(joined), { replace: true })
   else invite.value = undefined

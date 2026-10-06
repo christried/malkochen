@@ -73,9 +73,12 @@ export const board = pgTable('board', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   emoji: text('emoji').notNull(),
-  // The secret in the Board's Invite Link (/invite/<token>). It never
-  // expires; the Owner resets it by setting it back to its default.
-  inviteToken: text('invite_token').notNull().unique().default(sql`replace(gen_random_uuid()::text, '-', '')`),
+  // The secret in the Board's Invite Link (/invite/<slug>-<secret>,
+  // shared/invite.ts): 17 characters without look-alikes
+  // (random_invite_secret(), migration 0014). A Board from before keeps its
+  // 32 hex characters until the link is reset. It never expires; the Owner
+  // resets it by setting it back to its default.
+  inviteToken: text('invite_token').notNull().unique().default(sql`random_invite_secret()`),
   // Its Address (CONTEXT.md): /b/<slug>, made from its name and one of its
   // board_slug rows (server/utils/addresses.ts). Null only for a Board
   // created while the deployment before readable addresses still ran; its
@@ -91,6 +94,15 @@ export const boardSlug = pgTable('board_slug', {
   slug: text('slug').primaryKey(),
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
 }, t => [index('board_slug_board_id_idx').on(t.boardId)])
+
+// Invite Link lookups of a secret no Board has, per client (its IP address),
+// since the window started: too many, and the client gets no answer about
+// any link for the rest of the window (server/utils/invites.ts).
+export const inviteMiss = pgTable('invite_miss', {
+  client: text('client').primaryKey(),
+  windowStart: timestamp('window_start', { withTimezone: true }).notNull().defaultNow(),
+  misses: integer('misses').notNull().default(1),
+})
 
 export const membership = pgTable('membership', {
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
