@@ -1,8 +1,15 @@
+import 'dotenv/config'
+import pg from 'pg'
 import { expect, test } from 'vitest'
+import { migrateDatabase } from '../../server/db/migrate'
+import { migrationsBefore } from '../support/migrations'
+import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
 import { ALLOWLISTED, anonymous, browser, signIn, type Caller } from './client'
 
 // Invite Links (PRD stories 4, 5, 63–66, 72): joining through the link, the
 // invite remembered across a refused sign-in, and the Owner resetting it.
+// A link is /invite/<Board slug>-<secret> (issue #128); only the secret
+// counts. Lookups of a secret no Board has are limited per client.
 // Ida owns the Boards made here. Radia and Joan sign in for the first time in
 // this file, through an invite; nothing else may sign them in before. Evelyn,
 // the Member who joins by link, is used by this file only.
@@ -81,7 +88,7 @@ test('joining needs a signed-in user and a link that exists', async () => {
   const member = await evelyn()
 
   expect((await join(anonymous(), board.inviteToken)).status).toBe(401)
-  for (const token of ['0123456789abcdef0123456789abcdef', 'nope']) {
+  for (const token of ['0123456789abcdef0123456789abcdef', 'nur-mit-link-23456789abcdefghj', 'nope']) {
     expect((await join(member, token)).status).toBe(404)
     expect((await anonymous().fetch(`/api/invites/${token}`)).status).toBe(404)
     expect((await remember(anonymous(), token)).status).toBe(404)
@@ -168,4 +175,93 @@ test('a Member signing in with a remembered invite lands on that Board, not the 
   expect((await again.signIn(ALLOWLISTED[14])).status).toBe(200)
 
   expect(await (await again.fetch('/api/boards/landing')).json()).toEqual({ boardId: board.id, slug: board.slug })
+})
+
+// What follows /invite/ in the link Board settings shows.
+const linkOf = (board: Board) => `${board.slug}-${board.inviteToken}`
+
+test('a new Board’s secret is 17 characters without look-alikes, and so is a reset one', async () => {
+  const board = await idasBoard('Geheimrezept')
+  expect(board.inviteToken).toMatch(/^[2-9a-hjkmnp-z]{17}$/)
+
+  const res = await reset(await ida(), board.id)
+  const { inviteToken } = await res.json() as { inviteToken: string }
+  expect(inviteToken).toMatch(/^[2-9a-hjkmnp-z]{17}$/)
+  expect(inviteToken).not.toBe(board.inviteToken)
+})
+
+test('the link with the Board’s slug in front lands, remembers and joins', async () => {
+  const board = await idasBoard('Lesbarer Link')
+  expect(linkOf(board)).toMatch(/^lesbarer-link-[2-9a-hjkmnp-z]{17}$/)
+
+  expect(await (await anonymous().fetch(`/api/invites/${linkOf(board)}`)).json()).toMatchObject({ board: { name: 'Lesbarer Link' } })
+  expect((await remember(browser(), linkOf(board))).status).toBe(204)
+  const res = await join(await evelyn(), linkOf(board))
+  expect(res.status).toBe(200)
+  expect(await res.json()).toEqual({ boardId: board.id, slug: board.slug })
+})
+
+test('only the secret counts: a renamed Board’s old link still works', async () => {
+  const board = await idasBoard('Einladung vorher')
+  const before = linkOf(board)
+  const owner = await ida()
+  const renamed = await owner.fetch(`/api/boards/${board.id}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Einladung nachher' }),
+  })
+  expect(await renamed.json()).toMatchObject({ slug: 'einladung-nachher' })
+
+  expect(await (await anonymous().fetch(`/api/invites/${before}`)).json()).toMatchObject({ board: { name: 'Einladung nachher' } })
+  expect((await anonymous().fetch(`/api/invites/irgendwas-${board.inviteToken}`)).status).toBe(200)
+  expect((await join(await evelyn(), before)).status).toBe(200)
+})
+
+test('a reset link stops working, slug or not', async () => {
+  const board = await idasBoard('Neu gemischt')
+  await reset(await ida(), board.id)
+
+  expect((await anonymous().fetch(`/api/invites/${linkOf(board)}`)).status).toBe(404)
+  expect((await join(await evelyn(), linkOf(board))).status).toBe(404)
+})
+
+test('after too many links no Board has, a client gets no answer for a while, not even for a working link', async () => {
+  const board = await idasBoard('Ratespiel')
+  const from = (address: string): Caller => ({
+    fetch: (path, init) => anonymous().fetch(path, { ...init, headers: { ...init?.headers, 'x-forwarded-for': address } }),
+  })
+  const guesser = from('203.0.113.9')
+
+  for (let guess = 0; guess < 30; guess++) {
+    const wrong = `ratespiel-${'23456789abcdefghjkmnpqrstuvwxyz'[guess]}${'b'.repeat(16)}`
+    expect((await guesser.fetch(`/api/invites/${wrong}`)).status, wrong).toBe(404)
+  }
+
+  expect((await guesser.fetch(`/api/invites/${linkOf(board)}`)).status).toBe(429)
+  expect((await remember(guesser, linkOf(board))).status).toBe(429)
+  // Anyone else still gets in.
+  expect((await from('203.0.113.10').fetch(`/api/invites/${linkOf(board)}`)).status).toBe(200)
+})
+
+test('Boards from before readable Invite Links keep their token; new ones get a secret', async () => {
+  const before = await migrationsBefore('0014_readable_invite_links')
+  const database = await createThrowawayDatabase(readAdminUrl(), before.folder)
+  const client = new pg.Client({ connectionString: database.url })
+  try {
+    await client.connect()
+    const { rows: [old] } = await client.query<{ invite_token: string }>(`insert into board (name, emoji) values ('Alt', '🍲') returning invite_token`)
+    expect(old!.invite_token).toMatch(/^[0-9a-f]{32}$/)
+
+    await migrateDatabase(database.url)
+
+    const { rows } = await client.query<{ name: string, invite_token: string }>('select name, invite_token from board')
+    expect(rows).toEqual([{ name: 'Alt', invite_token: old!.invite_token }])
+    const { rows: [fresh] } = await client.query<{ invite_token: string }>(`insert into board (name, emoji) values ('Neu', '🍲') returning invite_token`)
+    expect(fresh!.invite_token).toMatch(/^[2-9a-hjkmnp-z]{17}$/)
+  }
+  finally {
+    await client.end()
+    await database.drop()
+    await before.remove()
+  }
 })

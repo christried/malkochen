@@ -69,12 +69,14 @@ export const auth = betterAuth({
     // A sign-in that goes through joins the remembered invite's Board (PRD
     // stories 4, 5, 64) before the app picks where to land, so a first-time
     // user arriving this way never gets "Meine Küche". A refused sign-in
-    // creates no session and keeps the invite for the next try.
+    // creates no session and keeps the invite for the next try. Not limited
+    // like the invite routes' lookups: each try takes a sign-in that goes
+    // through.
     after: createAuthMiddleware(async (ctx) => {
       const signedIn = ctx.context.newSession
-      const token = ctx.getCookie(REMEMBERED_INVITE_COOKIE)
-      if (!signedIn || !token) return
-      await joinByInvite(token, signedIn.user.id)
+      const secret = ctx.getCookie(REMEMBERED_INVITE_COOKIE)
+      if (!signedIn || !secret) return
+      await joinByInvite(secret, signedIn.user.id)
       ctx.setCookie(REMEMBERED_INVITE_COOKIE, '', FORGOTTEN_INVITE_COOKIE)
     }),
   },
