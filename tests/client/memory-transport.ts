@@ -99,6 +99,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   function addOnServer(boardId: string, input: AddDishBody): AddedDish {
     const dish: DishView = {
       id: `added-${++added}`,
+      code: `new${added}`,
       title: input.title,
       note: input.note || null,
       source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,

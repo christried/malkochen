@@ -2,23 +2,26 @@
 import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
+import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
 // and emoji, its Columns, its Members, the Invite Link and leaving; for the
 // Owner also removing Members, handing over ownership and deleting the Board.
-// Its own page, not a child of the Board: any page under b/[id]/ opens over
+// Its own page, not a child of the Board: any page under b/[board]/ opens over
 // the Board (a route group doesn't help, it is nested all the same), so it
 // lives here and sets its path. Every change saves at once; one that fails
 // is put back and a notice says so.
-definePageMeta({ path: '/b/:id/settings' })
+definePageMeta({ path: '/b/:board/settings' })
 
 const t = useStrings()
-const route = useRoute()
-const id = computed(() => String(route.params.id))
 
-const { data: board, error, refresh } = await useFetch<BoardView>(() => `/api/boards/${id.value}`)
+// The Board at this address; an outdated one forwards (useBoardAddress).
+const boardId = (await useBoardAddress('/settings'))?.boardId ?? null
+const id = computed(() => boardId ?? '')
+
+const { data: board, error, refresh } = await useFetch<BoardView>(() => `/api/boards/${id.value}`, { immediate: boardId !== null })
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
 
 useHead({ title: () => `${t.settings.title} · ${t.app.name}` })
@@ -33,8 +36,9 @@ function failed() {
   toast.value = { text: t.settings.failed, duration: NOTICE_MS }
 }
 
-// The Board's name and emoji. A blank name puts the saved one back.
-const saved = ref({ name: name.value, emoji: emoji.value })
+// The Board's name and emoji, and its Address, which follows a new name.
+// A blank name puts the saved one back.
+const saved = ref({ name: name.value, emoji: emoji.value, slug: board.value?.slug ?? '' })
 async function saveBoard(changes: BoardChanges) {
   try {
     saved.value = await $fetch<BoardNameAndEmoji>(`/api/boards/${id.value}`, { method: 'PATCH', body: changes })
@@ -323,7 +327,7 @@ function confirmDelete() {
     <div class="mx-auto flex max-w-[560px] flex-col gap-8">
       <header class="flex items-center gap-3">
         <NuxtLink
-          :to="`/b/${board.id}`"
+          :to="boardPath(saved)"
           :aria-label="t.settings.back"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >

@@ -9,6 +9,7 @@ import { ALLOWLISTED, anonymous, browser, signIn, type Caller } from './client'
 
 interface Board {
   id: string
+  slug: string
   name: string
   emoji: string
   isOwner: boolean
@@ -62,14 +63,14 @@ test('an Allowlisted user joins through the link, and opening it again changes n
   const res = await join(member, board.inviteToken)
 
   expect(res.status).toBe(200)
-  expect(await res.json()).toEqual({ boardId: board.id })
+  expect(await res.json()).toEqual({ boardId: board.id, slug: board.slug })
   expect(await (await member.fetch(`/api/boards/${board.id}`)).json()).toMatchObject({ id: board.id, isOwner: false })
 
   // A Member (and the Owner) opening the link just lands on the Board.
   for (const caller of [member, await ida()]) {
     const again = await join(caller, board.inviteToken)
     expect(again.status).toBe(200)
-    expect(await again.json()).toEqual({ boardId: board.id })
+    expect(await again.json()).toEqual({ boardId: board.id, slug: board.slug })
   }
   const listed = await (await member.fetch('/api/boards')).json() as { id: string, members: unknown[] }[]
   expect(listed.find(b => b.id === board.id)?.members).toHaveLength(2)
@@ -95,7 +96,7 @@ test('an invite remembered before a first sign-in joins right at sign-in, and no
   expect((await radia.signIn(ALLOWLISTED[11])).status).toBe(200)
 
   expect(await boardNames(radia)).toEqual(['Pastaabend'])
-  expect(await (await radia.fetch('/api/boards/landing')).json()).toEqual({ boardId: board.id })
+  expect(await (await radia.fetch('/api/boards/landing')).json()).toEqual({ boardId: board.id, slug: board.slug })
   expect(await boardNames(radia)).toEqual(['Pastaabend'])
   // Used up: it no longer shows as remembered.
   expect((await radia.fetch('/api/invites/pending')).status).toBe(404)
@@ -166,5 +167,5 @@ test('a Member signing in with a remembered invite lands on that Board, not the 
 
   expect((await again.signIn(ALLOWLISTED[14])).status).toBe(200)
 
-  expect(await (await again.fetch('/api/boards/landing')).json()).toEqual({ boardId: board.id })
+  expect(await (await again.fetch('/api/boards/landing')).json()).toEqual({ boardId: board.id, slug: board.slug })
 })

@@ -223,5 +223,6 @@ test('a Dish open in the detail that another Member deletes closes it and says s
 
   await expect(page.getByRole('dialog', { name: 'Bratreis' })).toHaveCount(0, { timeout: 10_000 })
   await expect(page.getByText('„Bratreis“ ist nicht mehr auf diesem Board.')).toBeVisible()
-  await expect(page).toHaveURL(new RegExp(`/b/${boardId}$`))
+  const { slug } = await (await page.request.get(`/api/boards/${boardId}`)).json() as { slug: string }
+  await expect(page).toHaveURL(new RegExp(`/b/${slug}$`))
 })

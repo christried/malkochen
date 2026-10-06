@@ -24,6 +24,8 @@ export interface DishSource {
 
 export interface DishView {
   id: string
+  // Its short code, which ends its Address (shared/address.ts).
+  code: string
   title: string
   note: string | null
   source: DishSource | null
@@ -95,6 +97,7 @@ function selectDishes() {
   return db
     .select({
       id: dish.id,
+      code: dish.code,
       columnId: dish.columnId,
       title: dish.title,
       note: dish.note,
@@ -370,6 +373,7 @@ function renumberForDrop(d: Db, dishId: string, columnId: string, index: number,
 // A Dish already on a Board with the Source being added (PRD story 24).
 export interface DuplicateDish {
   id: string
+  code: string
   title: string
   columnName: string
 }
@@ -378,7 +382,7 @@ export interface DuplicateDish {
 // Deleted Dishes don't count.
 export async function dishWithSource(boardId: string, canonicalLink: string): Promise<DuplicateDish | null> {
   const [found] = await db
-    .select({ id: dish.id, title: dish.title, columnName: boardColumn.name })
+    .select({ id: dish.id, code: dish.code, title: dish.title, columnName: boardColumn.name })
     .from(dish)
     .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
     .where(and(eq(dish.boardId, boardId), eq(dish.sourceLink, canonicalLink), isNull(dish.deletedAt)))
@@ -438,11 +442,12 @@ export async function addDish(
       placeholder: input.placeholder,
       addedBy: adder.id,
     })
-    .returning({ id: dish.id, createdAt: dish.createdAt })
+    .returning({ id: dish.id, code: dish.code, createdAt: dish.createdAt })
   if (!created) throw new Error(`Dish was not added to Board ${boardId}`)
 
   return withPlacement({
     id: created.id,
+    code: created.code,
     title: input.title,
     note: input.note,
     source: input.source,

@@ -40,7 +40,7 @@ test('tapping a card opens its detail with everything about the Dish', async ({ 
 
   const detail = await openDetail(page, 'Crispy Tofu')
 
-  await expect(page).toHaveURL(/\/b\/[^/]+\/d\/[^/]+$/)
+  await expect(page).toHaveURL(/\/b\/meine-kueche(-\d+)?\/crispy-tofu-[^/]+$/)
   await expect(detail.getByRole('heading', { level: 1 })).toHaveText('Crispy Tofu')
   await expect(detail.locator('img[src="/placeholders/bowl-light.svg"]').first()).toBeVisible()
   await expect(detail.getByText('TikTok')).toBeVisible()

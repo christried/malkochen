@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, gt, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 import { db, runAtomic, type Db } from '../db'
-import { board, boardColumn, dish, membership, user } from '../db/schema'
+import { board, boardColumn, boardSlug, dish, membership, user } from '../db/schema'
+import { freeSlug, lockSlugs, recordSlug, slugOf } from './addresses'
 import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
 import { pictureOf } from './people'
@@ -17,15 +18,20 @@ export const DEFAULT_COLUMNS = [
   { name: 'Gekocht', subtitle: null, isGekocht: true },
 ] as const
 
-// A Board as Board settings shows it: its name and emoji.
+// A Board as Board settings shows it: its name and emoji, and the slug of
+// its Address (/b/<slug>, CONTEXT.md), which follows its name.
 export interface BoardNameAndEmoji {
   id: string
+  slug: string
   name: string
   emoji: string
 }
 
 // What Board settings may change.
 export type BoardChanges = Partial<Pick<BoardNameAndEmoji, 'name' | 'emoji'>>
+
+// What a new Board is made from.
+type NewBoard = Pick<BoardNameAndEmoji, 'name' | 'emoji'>
 
 export interface BoardSummary extends BoardNameAndEmoji {
   isOwner: boolean
@@ -68,6 +74,7 @@ export async function listBoards(userId: string): Promise<BoardListing[]> {
   const boards = await db
     .select({
       id: board.id,
+      slug: slugOf,
       name: board.name,
       emoji: board.emoji,
       isOwner: membership.isOwner,
@@ -104,27 +111,29 @@ export async function listBoards(userId: string): Promise<BoardListing[]> {
 // Board at all (a first sign-in) gets "Meine Küche" created for them here --
 // not when their account is created, so someone arriving through an Invite
 // Link can join that Board first and never get an extra empty one (story 4).
-export async function landingBoardId(userId: string): Promise<string> {
+export async function landingBoard(userId: string): Promise<{ boardId: string, slug: string }> {
   const [last] = await lastOpenedBoard(userId)
-  if (last) return last.id
+  if (last) return last
 
   await runAtomic(d => [
     // Serialises concurrent first landings of the same user until commit, so
     // a second one sees the first one's Board and creates none.
     d.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`starter-board:${userId}`}, 0))`),
+    lockSlugs(d),
     insertBoard(d, randomUUID(), userId, STARTER_BOARD, sql`not exists (select 1 from ${membership} where user_id = ${userId})`),
   ])
 
   const [created] = await lastOpenedBoard(userId)
   if (!created) throw new Error(`no landing Board for user ${userId}`)
-  return created.id
+  return created
 }
 
 // The Board the user opened last (or joined last, if they opened none yet).
 function lastOpenedBoard(userId: string) {
   return db
-    .select({ id: membership.boardId })
+    .select({ boardId: membership.boardId, slug: slugOf })
     .from(membership)
+    .innerJoin(board, eq(board.id, membership.boardId))
     .where(eq(membership.userId, userId))
     .orderBy(sql`${membership.lastOpenedAt} desc nulls last`, desc(membership.joinedAt))
     .limit(1)
@@ -132,25 +141,30 @@ function lastOpenedBoard(userId: string) {
 
 // Creates a Board (PRD story 61) with the default Columns and the user as
 // its Owner.
-export async function createBoard(userId: string, { name, emoji }: Omit<BoardNameAndEmoji, 'id'>): Promise<BoardSummary> {
+export async function createBoard(userId: string, { name, emoji }: NewBoard): Promise<BoardSummary> {
   const id = randomUUID()
-  await runAtomic(d => [insertBoard(d, id, userId, { name, emoji })])
-  return { id, name, emoji, isOwner: true }
+  await runAtomic(d => [lockSlugs(d), insertBoard(d, id, userId, { name, emoji })])
+  const [created] = await db.select({ slug: slugOf }).from(board).where(eq(board.id, id))
+  if (!created) throw new Error(`Board ${id} was not created`)
+  return { id, slug: created.slug, name, emoji, isOwner: true }
 }
 
-// One statement inserting a Board, its Owner and its default Columns, only
-// `where` that holds.
-function insertBoard(d: Db, id: string, userId: string, { name, emoji }: Omit<BoardNameAndEmoji, 'id'>, where: SQL = sql`true`) {
+// One statement inserting a Board with its slug (after lockSlugs), its
+// Owner and its default Columns, only `where` that holds.
+function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoard, where: SQL = sql`true`) {
   const columns = sql.join(
     DEFAULT_COLUMNS.map((c, i) => sql`(${c.name}, ${c.subtitle}::text, ${i}::int, ${c.isGekocht}::boolean)`),
     sql`, `,
   )
   return d.execute(sql`
     with new_board as (
-      insert into ${board} (id, name, emoji)
-      select ${id}, ${name}, ${emoji}
+      insert into ${board} (id, name, emoji, slug)
+      select ${id}, ${name}, ${emoji}, ${freeSlug(id, name)}
       where ${where}
-      returning id
+      returning id, slug
+    ), address as (
+      insert into ${boardSlug} (slug, board_id)
+      select slug, id from new_board
     ), owner as (
       insert into ${membership} (board_id, user_id, is_owner)
       select id, ${userId}, true from new_board
@@ -164,7 +178,7 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: Omit<Bo
 // The Board with its Columns and their Dishes, or null unless the user is one of its Members.
 export async function getBoard(boardId: string, userId: string): Promise<BoardView | null> {
   const [found] = await db
-    .select({ id: board.id, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, inviteToken: board.inviteToken, newSince: membership.newSince })
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, inviteToken: board.inviteToken, newSince: membership.newSince })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
@@ -229,14 +243,23 @@ export async function markSeen(boardId: string, userId: string): Promise<boolean
 }
 
 // Renames the Board or changes its emoji (PRD story 62); fields left out stay
-// as they are. Null unless the user is a Member.
+// as they are. A new name gives it a new Address; the old one forwards.
+// Null unless the user is a Member.
 export async function editBoard(boardId: string, userId: string, changes: BoardChanges): Promise<BoardNameAndEmoji | null> {
+  const renamed = changes.name !== undefined
+  await runAtomic(d => [
+    ...(renamed ? [lockSlugs(d)] : []),
+    d
+      .update(board)
+      // Setting the id to itself keeps an empty change a valid statement.
+      .set({ id: sql`${board.id}`, ...changes, ...(renamed ? { slug: freeSlug(boardId, changes.name!) } : {}) })
+      .where(and(eq(board.id, boardId), exists(membershipOf(boardId, userId)))),
+    ...(renamed ? [recordSlug(d, boardId)] : []),
+  ])
   const [edited] = await db
-    .update(board)
-    // Setting the id to itself keeps an empty change a valid statement.
-    .set({ id: sql`${board.id}`, ...changes })
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
+    .from(board)
     .where(and(eq(board.id, boardId), exists(membershipOf(boardId, userId))))
-    .returning({ id: board.id, name: board.name, emoji: board.emoji })
   return edited ?? null
 }
 

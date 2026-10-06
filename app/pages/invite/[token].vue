@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { InviteView } from '~~/server/utils/invites'
+import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 
 // The invite landing (PRD stories 4, 64, 65): "Du wurdest zu 🍜 Kochclub
@@ -20,9 +21,9 @@ const { error: noAccess } = await useFetch('/api/me', { key: `me:${route.fullPat
 
 if (invite.value && !noAccess.value) {
   // Joining also clears a remembered invite, hence the cookies.
-  const joined = await fetchPassingCookies<{ boardId: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch(() => null)
+  const joined = await fetchPassingCookies<{ boardId: string, slug: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch(() => null)
   // A link reset since it was looked up shows as not working.
-  if (joined) await navigateTo(`/b/${joined.boardId}`, { replace: true })
+  if (joined) await navigateTo(boardPath(joined), { replace: true })
   else invite.value = undefined
 }
 else if (invite.value && noAccess.value?.statusCode === 403) {

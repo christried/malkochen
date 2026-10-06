@@ -5,6 +5,7 @@ import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import { boardModuleKey, createBoardModule, type BoardResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
+import { boardPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
@@ -12,22 +13,25 @@ import { boardLabel, dishOnBoard } from '~~/shared/board'
 // tabs or by swiping; tablet and desktop show all
 // Columns side by side, scroll-snapping. Dishes can be dragged: within a
 // Column, onto a Column tab (phones) or across lanes (from 768px). The Board
-// page (pages/b/[id].vue) shows it once it has loaded, its skeleton until
+// page (pages/b/[board].vue) shows it once it has loaded, its skeleton until
 // then.
 
 const t = useStrings()
 const route = useRoute()
-const id = computed(() => String(route.params.id))
 
-// Opening the Board first remembers it as the one to reopen next time and
-// moves on what is marked "Neu" (PRD story 37); the Board then comes with
-// its New Dishes. Deep: the client Board module changes it in place.
+// The Board at this address; an outdated address forwards first, and the
+// Board isn't opened there (useBoardAddress). Opening the Board first
+// remembers it as the one to reopen next time and moves on what is marked
+// "Neu" (PRD story 37); the Board then comes with its New Dishes. The
+// client Board module changes it in place.
 const fetchPassingCookies = useFetchPassingCookies()
-const { data: board, error } = await useAsyncData(() => `board-${id.value}`, async () => {
-  await fetchPassingCookies(`/api/boards/${id.value}/open`, { method: 'POST' })
-  return fetchPassingCookies<BoardView>(`/api/boards/${id.value}`)
-}, { deep: true })
-if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
+const opened = await useBoardAddress('', async (boardId) => {
+  await fetchPassingCookies(`/api/boards/${boardId}/open`, { method: 'POST' })
+  return fetchPassingCookies<BoardView>(`/api/boards/${boardId}`)
+})
+const id = opened?.boardId ?? ''
+const board = opened?.loaded ?? ref<BoardView>()
+const address = useOpenBoardAddress()
 const newDishIds = computed(() => new Set(board.value?.newDishIds))
 
 // You, for your photo in the header, which opens your settings. Phones have
@@ -84,11 +88,11 @@ const confetti = useConfetti()
 // Just made with "Neues Board", the Board celebrates as it opens.
 const justCreated = useJustCreatedBoard()
 const celebratingBoard = ref(false)
-onMounted(() => watch(id, () => {
-  if (justCreated.value !== id.value) return
+onMounted(() => {
+  if (justCreated.value !== id) return
   justCreated.value = null
   celebratingBoard.value = true
-}, { immediate: true }))
+})
 
 // A Dish's 10th Cooking (milestone-10x): once it is recorded, a moment
 // after the Gekocht toast is in, over the Board or the Dish detail; once per
@@ -132,12 +136,12 @@ const { cookFromCard, onCardLeave, flight, onFlightLanded } = useGekochtCelebrat
 // Tapping a card morphs it into its detail (utils/dish-morph.ts). Clicks
 // for a new tab or window are left to the link; so is one swallowed after a
 // drag, which never gets here.
-function openDish(event: MouseEvent, dishId: string) {
+function openDish(event: MouseEvent, dish: DishView) {
   const onLink = (event.target as Element).closest('.card-link')
   if (!onLink || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   event.preventDefault()
-  const path = `/b/${id.value}/d/${dishId}`
-  morphOpen(cardThumb(dishId), path, async () => {
+  const path = dishPath(address.value, dish)
+  morphOpen(cardThumb(dish.id), path, async () => {
     await navigateTo(path)
   })
 }
@@ -165,10 +169,10 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
 // state's loop. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
-  covered: () => !!route.params.dishId || adding.value || menuOpen.value || !!noting.value,
+  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
-useBoardSync(() => id.value, boardModule, () => dragging.value)
+useBoardSync(() => id, boardModule, () => dragging.value)
 // Each Column's cards as they show, with the slot while a Dish is dragged.
 const lists = computed(() => new Map(board.value?.columns.map(c => [c.id, entries(c)])))
 const listOf = (column: { id: string }) => lists.value.get(column.id) ?? []
@@ -258,15 +262,20 @@ const emptyClipId = (column: { id: string }) => `empty:${column.id}`
 const emptyColumnIds = computed(() => board.value?.columns.filter(isColumnEmpty).map(c => c.id).join() ?? '')
 watch(emptyColumnIds, () => boardLoop.playWhenAtRest())
 
-// The Dish detail is a child route (/b/:id/d/:dishId) over the Board. On
+// The Dish detail is a child route (/b/:board/:dish) over the Board. On
 // phones its Column comes to the front, so closing it lands there (in the
 // Column it was moved to, if it was). Closing it puts focus back on the
 // Dish's card (or, if it was deleted or moved to another Board, on what
-// took its place), as the Board module says.
-watch(() => route.params.dishId, (dishId, closedId) => {
-  const shown = board.value && dishOnBoard(board.value, dishId ?? closedId)
+// took its place), as the Board module says. Its Dish is remembered by id
+// while it shows, as it may be gone from the Board by the time it closes.
+let detailDishId: string | null = null
+watch(() => route.params.dish, (dish) => {
+  const opened = board.value && dish ? dishAt(board.value, dish) : null
+  const closedId = detailDishId
+  detailDishId = opened?.dish.id ?? null
+  const shown = opened ?? (board.value && closedId ? dishOnBoard(board.value, closedId) : null)
   if (shown) activeColumnId.value = shown.column.id
-  if (dishId || typeof closedId !== 'string') return
+  if (dish || !closedId) return
   const focus = boardModule.focusAfterDetail(closedId)
   if (focus) void focusOn(focus)
 }, { immediate: true })
@@ -277,7 +286,7 @@ const adding = ref(false)
 // query, what the search found takes the place of the Columns.
 const searchOpen = ref(false)
 const searchButton = useTemplateRef<ComponentPublicInstance>('searchButton')
-const { query, answer, failed: searchFailed, active: searching } = useDishSearch(() => id.value, board)
+const { query, answer, failed: searchFailed, active: searching } = useDishSearch(() => id, board)
 async function closeSearch() {
   query.value = ''
   searchOpen.value = false
@@ -358,7 +367,7 @@ async function showResult(result: BoardResult, { origin, moved, moveFocus = true
       : { text, duration: NOTICE_MS })
   }
   void settled?.then(r => showResult(r))
-  if (moveFocus && result.focus && !route.params.dishId) await focusOn(result.focus)
+  if (moveFocus && result.focus && !route.params.dish) await focusOn(result.focus)
 }
 
 // Where "Verschieben nach…" moved a Dish to: a Column of this Board (into
@@ -429,7 +438,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           />
         </RoundButton>
         <NuxtLink
-          :to="`/b/${board.id}/settings`"
+          :to="`${boardPath(board)}/settings`"
           :aria-label="t.settings.title"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >
@@ -555,12 +564,12 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                 :data-dish-id="dish?.id"
                 :data-drag-state="state"
                 :data-drop-slot="!dish || undefined"
-                @click.capture="dish && openDish($event, dish.id)"
+                @click.capture="dish && openDish($event, dish)"
               >
                 <template v-if="dish">
                   <NuxtLink
                     :id="`dish-${dish.id}`"
-                    :to="`/b/${board.id}/d/${dish.id}`"
+                    :to="dishPath(address, dish)"
                     :aria-label="dish.title"
                     class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                   >
@@ -662,9 +671,9 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
 
-    <VeggieConfetti v-if="!route.params.dishId" />
+    <VeggieConfetti v-if="!route.params.dish" />
     <AppToast
-      v-if="!route.params.dishId"
+      v-if="!route.params.dish"
       v-model="toast"
     />
 

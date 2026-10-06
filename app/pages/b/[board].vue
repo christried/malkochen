@@ -4,14 +4,14 @@
 // before, until it has loaded. The first, server-rendered load arrives
 // whole, under the splash.
 const route = useRoute()
-const id = computed(() => String(route.params.id))
+const address = computed(() => String(route.params.board))
 </script>
 
 <template>
   <Suspense>
     <BoardScreen />
     <template #fallback>
-      <BoardSkeleton :board-id="id" />
+      <BoardSkeleton :address="address" />
     </template>
   </Suspense>
 </template>

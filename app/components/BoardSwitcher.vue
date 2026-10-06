@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BoardListing, BoardNameAndEmoji } from '~~/server/utils/boards'
+import { boardPath } from '~~/shared/address'
 
 // The handoff's BoardSwitcher (PRD story 39): the Board's emoji and name at
 // the top of the Board, as a pill that opens a dropdown of the user's Boards
@@ -39,7 +40,7 @@ function onPointerDown(event: PointerEvent) {
 }
 onMounted(() => document.addEventListener('pointerdown', onPointerDown))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown))
-watch(() => route.params.id, () => close())
+watch(() => route.params.board, () => close())
 
 // Shown at once, before the list first arrives: this Board.
 const shown = computed(() => boards.value.length
@@ -105,7 +106,7 @@ function newBoard() {
             :style="{ '--i': index }"
           >
             <NuxtLink
-              :to="`/b/${listed.id}`"
+              :to="boardPath(listed)"
               :aria-current="listed.id === board.id ? 'page' : undefined"
               class="flex items-center gap-3 rounded-field px-2 py-2 transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
               @click="close()"

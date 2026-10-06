@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { SearchAnswer } from '~/composables/useDishSearch'
+import { dishPath } from '~~/shared/address'
 import { dishOnBoard } from '~~/shared/board'
 
 // What a search of the Board found: one list of the matching Dishes, each
@@ -8,6 +9,7 @@ import { dishOnBoard } from '~~/shared/board'
 // it is on the Board now, so one deleted meanwhile is gone at once.
 const props = defineProps<{ board: BoardView, answer: SearchAnswer | null, failed: boolean }>()
 const t = useStrings()
+const address = useOpenBoardAddress()
 
 const results = computed(() => props.answer?.dishes.flatMap((found) => {
   const on = dishOnBoard(props.board, found.id)
@@ -59,7 +61,7 @@ const status = computed(() => {
             {{ column.name }}
           </p>
           <NuxtLink
-            :to="`/b/${board.id}/d/${dish.id}`"
+            :to="dishPath(address, dish)"
             :aria-label="`${dish.title}, ${column.name}`"
             class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >

@@ -76,8 +76,21 @@ export const board = pgTable('board', {
   // The secret in the Board's Invite Link (/invite/<token>). It never
   // expires; the Owner resets it by setting it back to its default.
   inviteToken: text('invite_token').notNull().unique().default(sql`replace(gen_random_uuid()::text, '-', '')`),
+  // Its Address (CONTEXT.md): /b/<slug>, made from its name and one of its
+  // board_slug rows (server/utils/addresses.ts). Null only for a Board
+  // created while the deployment before readable addresses still ran; its
+  // address is its id then, until it is renamed.
+  slug: text('slug'),
   createdAt: createdAt(),
 })
+
+// Every slug a Board has had, its current one too: a former one forwards to
+// the current one. Unique across all Boards, so no two Boards ever share an
+// address, not even a former one.
+export const boardSlug = pgTable('board_slug', {
+  slug: text('slug').primaryKey(),
+  boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
+}, t => [index('board_slug_board_id_idx').on(t.boardId)])
 
 export const membership = pgTable('membership', {
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
@@ -120,6 +133,11 @@ export const boardColumn = pgTable('board_column', {
 export const dish = pgTable('dish', {
   id: uuid('id').primaryKey().defaultRandom(),
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
+  // Its short code, the end of its Address (/b/<Board>/<title>-<code>):
+  // four characters, unique across all Dishes, so it stays the same when the
+  // Dish is renamed or moves to another Board. The database draws it
+  // (random_dish_code(), migration 0013).
+  code: text('code').notNull().unique().default(sql`random_dish_code()`),
   // No cascade: a Column's Dishes must be moved before it can be deleted.
   columnId: uuid('column_id').notNull().references(() => boardColumn.id),
   // Order within the Column, smallest first. New Dishes take one less than the
