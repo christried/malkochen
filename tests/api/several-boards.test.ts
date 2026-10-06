@@ -101,7 +101,7 @@ function moveDish(caller: Caller, dishId: string, columnId: string) {
 }
 
 async function addDish(caller: Caller, boardId: string, title: string): Promise<{ id: string }> {
-  const res = await postDish(caller, boardId, { title, placeholder: 'curry' })
+  const res = await postDish(caller, boardId, { title, placeholder: 'bowl' })
   expect(res.status).toBe(201)
   return res.json()
 }

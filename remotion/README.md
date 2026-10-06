@@ -45,7 +45,10 @@ Commit the rendered files; the app serves them as they are.
 Not rendered any more (#111): the Placeholder Images, `empty-column` and
 `topfbert-wow`. The app draws those loops in code from their SVGs
 (`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
-refresh rate and sharp at any size. Their compositions stay in Studio.
+refresh rate and sharp at any size. Their compositions stay in Studio, but
+only for the nine Round 10 Placeholder Images: Round 11's pasta, bowl and
+breakfast were drawn for CSS keyframes (`assets/r11-keyframes.css`) and have
+none (`STUDIO_PLACEHOLDERS` in `src/briefs.ts`).
 
 ## How it is built
 

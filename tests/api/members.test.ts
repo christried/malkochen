@@ -70,7 +70,7 @@ async function boardIds(caller: Caller): Promise<string[]> {
 test('a Member leaves; the Board is gone for them and the Dishes they added stay, with their name', async () => {
   const member = await sophie()
   const board = await francesBoard('Resteessen', member)
-  const added = await postDish(member, board.id, { title: 'Sophies Chana Masala', placeholder: 'curry' })
+  const added = await postDish(member, board.id, { title: 'Sophies Chana Masala', placeholder: 'bowl' })
   expect(added.status).toBe(201)
 
   const res = await removeMember(member, board.id, memberId(board, 'sophie'))

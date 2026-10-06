@@ -27,28 +27,38 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   const save = sheet.getByRole('button', { name: 'Speichern' })
   await expect(save).toBeDisabled()
 
+  // Inline: 4×2 with the fallback (Salat / Bowl) selected while no title
+  // names a dish; Eintopf is only in the full picker.
+  const inline = sheet.getByRole('radiogroup', { name: 'Bild' })
+  await expect(inline.getByRole('radio')).toHaveCount(8)
+  await expect(inline.getByRole('radio', { name: 'Salat / Bowl' })).toHaveAttribute('aria-checked', 'true')
+  await expect(inline.getByRole('radio', { name: 'Eintopf' })).toHaveCount(0)
+  // The title names its dish: that Placeholder picks itself, in the last
+  // inline slot (handoff illustrations.json autoPick).
   await sheet.getByLabel('Titel').fill('Omas Linsensuppe')
+  await expect(inline.getByRole('radio')).toHaveCount(8)
+  await expect(inline.getByRole('radio', { name: 'Eintopf' })).toHaveAttribute('aria-checked', 'true')
   // The note suggests one of the made-up examples (app/strings/de.ts).
   await expect(sheet.getByLabel('Notiz')).toHaveAttribute('placeholder', /^Optional, z\. B\. „.+“$/)
   await sheet.getByLabel('Notiz').fill('mit Räuchertofu und Frühlingszwiebeln')
-  // Inline: 4×2 with the default (Bowl) selected; Eintopf is only in the full picker.
-  const inline = sheet.getByRole('radiogroup', { name: 'Bild' })
-  await expect(inline.getByRole('radio')).toHaveCount(8)
-  await expect(inline.getByRole('radio', { name: 'Bowl' })).toHaveAttribute('aria-checked', 'true')
-  await expect(inline.getByRole('radio', { name: 'Eintopf' })).toHaveCount(0)
 
   await sheet.getByRole('button', { name: 'Bild wählen' }).click()
   const all = page.getByRole('dialog', { name: 'Bild wählen' })
-  await expect(all.getByRole('radio')).toHaveCount(16)
-  await all.getByRole('radio', { name: 'Bowl' }).focus()
+  await expect(all.getByRole('radio')).toHaveCount(12)
+  // The arrows go on from the selection; past the last tile, the first.
+  await all.getByRole('radio', { name: 'Eintopf' }).focus()
   await page.keyboard.press('ArrowRight')
-  await expect(all.getByRole('radio', { name: 'Salat' })).toBeFocused()
+  await expect(all.getByRole('radio', { name: 'Pasta' })).toBeFocused()
   await expect(all).toBeVisible()
-  await all.getByRole('radio', { name: 'Eintopf' }).click()
+  await all.getByRole('radio', { name: 'Dumplings' }).click()
   await expect(all).toBeHidden()
   await expect(sheet).toBeVisible()
   await expect(inline.getByRole('radio')).toHaveCount(8)
-  await expect(inline.getByRole('radio', { name: 'Eintopf' })).toHaveAttribute('aria-checked', 'true')
+  await expect(inline.getByRole('radio', { name: 'Dumplings' })).toHaveAttribute('aria-checked', 'true')
+  // Picked by hand, it stays, whatever the title says then.
+  await sheet.getByLabel('Titel').fill('Pancakes')
+  await sheet.getByLabel('Titel').fill('Omas Linsensuppe')
+  await expect(inline.getByRole('radio', { name: 'Dumplings' })).toHaveAttribute('aria-checked', 'true')
   await save.click()
 
   await expect(sheet).toBeHidden()
@@ -57,8 +67,8 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   await expect(card.getByText('Mit Notiz')).toBeAttached()
   // No Source, no Source badge.
   await expect(card.locator('[data-source-badge]')).toHaveCount(0)
-  await expect(card.locator('img[src="/placeholders/eintopf-light.svg"]')).toBeVisible()
-  await expect(card.locator('img[src="/placeholders/eintopf-dark.svg"]')).toBeHidden()
+  await expect(card.locator('img[src="/placeholders/dumplings-light.svg"]')).toBeVisible()
+  await expect(card.locator('img[src="/placeholders/dumplings-dark.svg"]')).toBeHidden()
   await expect(ideen.getByText('Füg deinen ersten Link ein!')).toHaveCount(0)
 
   // A second Dish, without a note, goes above the first, also after a reload.
@@ -84,8 +94,8 @@ test('in the dark theme the card shows the dark still', async ({ page }) => {
   await gotoHydrated(page, '/')
 
   const card = page.getByRole('article', { name: 'Omas Linsensuppe' })
-  await expect(card.locator('img[src="/placeholders/eintopf-dark.svg"]')).toBeVisible()
-  await expect(card.locator('img[src="/placeholders/eintopf-light.svg"]')).toBeHidden()
+  await expect(card.locator('img[src="/placeholders/dumplings-dark.svg"]')).toBeVisible()
+  await expect(card.locator('img[src="/placeholders/dumplings-light.svg"]')).toBeHidden()
   await gotoHydrated(page, '/settings')
   await page.getByRole('radio', { name: 'Hell' }).click()
   await expect(page.getByRole('radio', { name: 'Hell' })).toHaveAttribute('aria-checked', 'true')

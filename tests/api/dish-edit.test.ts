@@ -25,7 +25,7 @@ const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
 
 async function addDish(caller: Caller, body: Record<string, unknown>): Promise<Dish> {
   const board = await landingBoard(caller)
-  const res = await postDish(caller, board.id, { title: 'Dal', placeholder: 'curry', ...body })
+  const res = await postDish(caller, board.id, { title: 'Dal', placeholder: 'bowl', ...body })
   expect(res.status).toBe(201)
   // Without where it was placed, as the Board shows it.
   const { placement: _, ...dish } = await res.json() as Dish & { placement: unknown }
@@ -53,7 +53,7 @@ test('a Member can change a Dish’s title and note', async () => {
 
   expect(res.status).toBe(200)
   const edited = await res.json()
-  expect(edited).toMatchObject({ id: dish.id, title: 'Rote Linsen Dal', note: 'mit Spinat', placeholder: 'curry' })
+  expect(edited).toMatchObject({ id: dish.id, title: 'Rote Linsen Dal', note: 'mit Spinat', placeholder: 'bowl' })
   expect(await onBoard(ada, dish.id)).toEqual(edited)
 })
 
@@ -109,11 +109,11 @@ test('editing other fields leaves the Creator as it is', async () => {
 
 test('choosing a Placeholder Image changes only the image', async () => {
   const ada = await signIn(ALLOWLISTED[0])
-  const dish = await addDish(ada, { note: 'scharf', placeholder: 'curry', source: { link: TIKTOK } })
+  const dish = await addDish(ada, { note: 'scharf', placeholder: 'bowl', source: { link: TIKTOK } })
 
-  const edited = await (await editDish(ada, dish.id, { placeholder: 'pizza', imageUrl: null })).json()
+  const edited = await (await editDish(ada, dish.id, { placeholder: 'bread', imageUrl: null })).json()
 
-  expect(edited).toEqual({ ...dish, placeholder: 'pizza', imageUrl: null })
+  expect(edited).toEqual({ ...dish, placeholder: 'bread', imageUrl: null })
   expect(await onBoard(ada, dish.id)).toEqual(edited)
 })
 

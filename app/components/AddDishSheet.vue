@@ -4,7 +4,7 @@ import type { DuplicateDish } from '~~/server/utils/dishes'
 import { dishPath } from '~~/shared/address'
 import { FOCUS_CENTRE, focusPosition, type ImageFocus } from '~~/shared/image-focus'
 import type { BoardResult } from '~/board/board-module'
-import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
+import { autoPlaceholder, PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
 import { webLink } from '~/utils/web-link'
@@ -24,9 +24,6 @@ const emit = defineEmits<{ added: [result: BoardResult, from: DOMRect | null] }>
 const t = useStrings()
 const boardModule = useBoardModule()
 
-// "bowl" is the handoff's fallback Placeholder (illustrations.json autoPick).
-const DEFAULT_PLACEHOLDER: Placeholder = 'bowl'
-
 const form = useTemplateRef<HTMLFormElement>('form')
 const withoutLink = ref(false)
 const link = ref('')
@@ -39,7 +36,13 @@ const title = ref('')
 const note = ref('')
 // The note field's made-up example, a new one each time the sheet opens.
 const noteExample = useExamplePrompt(t.dishNote.examples, t.dishNote.prompt)
-const placeholder = ref<Placeholder>(DEFAULT_PLACEHOLDER)
+// The Placeholder Image goes by the title, else the link (handoff
+// illustrations.json autoPick), until the Member picks one.
+const pickedPlaceholder = ref<Placeholder | null>(null)
+const placeholder = computed<Placeholder>({
+  get: () => pickedPlaceholder.value ?? autoPlaceholder(title.value, withoutLink.value ? null : link.value),
+  set: picked => pickedPlaceholder.value = picked,
+})
 const boardId = ref(props.boardId)
 const boards = ref<BoardSummary[]>([])
 const linkId = useId()
@@ -180,7 +183,7 @@ watch(open, async (isOpen) => {
   title.value = ''
   note.value = ''
   noteExample.pickAnother()
-  placeholder.value = DEFAULT_PLACEHOLDER
+  pickedPlaceholder.value = null
   photo.value = null
   boardId.value = props.boardId
   failed.value = false

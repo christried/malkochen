@@ -20,7 +20,7 @@ const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
 
 async function addDish(caller: Caller, title: string): Promise<Dish> {
   const board = await landingBoard(caller)
-  const res = await postDish(caller, board.id, { title, placeholder: 'curry' })
+  const res = await postDish(caller, board.id, { title, placeholder: 'bowl' })
   expect(res.status).toBe(201)
   return res.json()
 }

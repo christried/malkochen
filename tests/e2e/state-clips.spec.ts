@@ -41,25 +41,25 @@ test('an empty Column\'s loop keeps playing while a Placeholder card is hovered 
   await signIn(page, EMMY)
   await resetBoard(page)
   await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: `${TIKTOK}?foto`, sourceKind: 'tiktok' })
-  await seedDish(page, { title: 'Ohne Foto', placeholder: 'curry', sourceLink: `${TIKTOK}?curry`, sourceKind: 'tiktok' })
+  await seedDish(page, { title: 'Ohne Foto', placeholder: 'bowl', sourceLink: `${TIKTOK}?bowl`, sourceKind: 'tiktok' })
   await gotoHydrated(page, '/')
 
-  // The curry plays once on first view; an empty Column's loop goes on.
+  // The bowl plays once on first view; an empty Column's loop goes on.
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual(['/clips/empty-column-orchid-light.svg'])
 
-  // Hovered, the curry loops beside it, and it keeps going.
+  // Hovered, the bowl loops beside it, and it keeps going.
   await page.getByRole('link', { name: 'Ohne Foto' }).hover()
-  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/curry-light.svg'])
+  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/bowl-light.svg'])
   await page.mouse.move(5, 5)
   await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-orchid-light.svg'])
 
   // Lifted, the same.
-  const curry = (await page.getByRole('link', { name: 'Ohne Foto' }).boundingBox())!
-  await page.mouse.move(curry.x + curry.width / 2, curry.y + curry.height / 2)
+  const bowl = (await page.getByRole('link', { name: 'Ohne Foto' }).boundingBox())!
+  await page.mouse.move(bowl.x + bowl.width / 2, bowl.y + bowl.height / 2)
   await page.mouse.down()
-  await page.mouse.move(curry.x + curry.width / 2 + 20, curry.y + curry.height / 2, { steps: 4 })
+  await page.mouse.move(bowl.x + bowl.width / 2 + 20, bowl.y + bowl.height / 2, { steps: 4 })
   await expect(page.getByTestId('drag-card')).toBeVisible()
-  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/curry-light.svg'])
+  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/bowl-light.svg'])
   await page.keyboard.press('Escape')
   await page.mouse.up()
   await expect(page.getByTestId('drag-card')).toHaveCount(0)
@@ -164,9 +164,9 @@ test('the sign-in hero loops Topfbert, and every second tile of its turning ring
 
   await expect.poll(async () => (await playing(page)).sort()).toEqual([
     '/clips/topfbert-wow-light.svg',
-    '/placeholders/curry-light.svg',
+    '/placeholders/bowl-light.svg',
+    '/placeholders/breakfast-light.svg',
     '/placeholders/pasta-light.svg',
-    '/placeholders/tacos-light.svg',
     '/placeholders/wok-light.svg',
   ])
   // The ring turns.

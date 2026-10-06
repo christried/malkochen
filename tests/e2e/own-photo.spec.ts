@@ -174,7 +174,7 @@ test('a Member replaces a Dish’s image with a photo in the detail, and every M
   await page.getByRole('link', { name: 'Ofengemüse' }).click()
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
   await detail.getByRole('button', { name: 'Bild wählen' }).click()
-  await imageDialog(page).getByRole('radio', { name: 'Bowl' }).click()
+  await imageDialog(page).getByRole('radio', { name: 'Salat / Bowl' }).click()
   await detail.getByRole('button', { name: 'Speichern' }).click()
   await expect(detail.locator('[data-detail-image] img[src="/placeholders/bowl-light.svg"]').first()).toBeVisible()
   await expect(detail.locator('[data-dish-image]')).toHaveCount(0)

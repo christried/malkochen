@@ -32,8 +32,6 @@ export type Keyframe = { at: number; ease?: string } & Partial<Pose>;
 export const uniformScale = (scale: number) => ({ scaleX: scale, scaleY: scale });
 
 const ANIMATIONS: Record<string, Keyframe[]> = {
-  // pasta fork: translateY −10 · rotate −10°, 0 / 50 / 100%
-  twirl: [{ at: 0 }, { at: 0.5, y: -10, rotate: -10 }, { at: 1 }],
   // ramen, dumplings (phases 0, ⅓, ⅔), bread (0, ½): each wisp rises to −14
   // and fades out, comes back in from +6, and rests for the rest of the loop.
   steam: [
@@ -43,26 +41,6 @@ const ANIMATIONS: Record<string, Keyframe[]> = {
     { at: 0.32 },
     { at: 1 },
   ],
-  // curry (phases 0, ⅓, ⅔): each bubble swells to 1.35 and pops, grows back
-  // from .2, and rests.
-  bub: [
-    { at: 0 },
-    { at: 0.15, opacity: 0, ...uniformScale(1.35) },
-    { at: 0.16, opacity: 0, ...uniformScale(0.2) },
-    { at: 0.32 },
-    { at: 1 },
-  ],
-  // bowl (phases 0, 11/12, ⅚): y −7 at the brief's apex (50%), squash
-  // 1.08/.92 on landing, at rest again before ⅚.
-  hop: [
-    { at: 0 },
-    { at: 0.5, y: -7 },
-    { at: 0.68, scaleX: 1.08, scaleY: 0.92 },
-    { at: 0.8 },
-    { at: 1 },
-  ],
-  // salad: y −4 · rotate −5°, 0 / 50 / 100%
-  sway: [{ at: 0 }, { at: 0.5, y: -4, rotate: -5 }, { at: 1 }],
   // burger bun: y −14 · rotate −5°, lands squashed at 60% and springs back
   // (spring(0.6, 400): damping ratio .6, stiffness 400), settled by 82%.
   lid: [
@@ -81,13 +59,6 @@ const ANIMATIONS: Record<string, Keyframe[]> = {
     { at: 0.75, rotate: -7, ease: "ease-in" },
     { at: 1 },
   ],
-  // pizza slice: x +10 · y −14 · rotate −8°, held 45–65%
-  slice: [
-    { at: 0 },
-    { at: 0.45, x: 10, y: -14, rotate: -8 },
-    { at: 0.65, x: 10, y: -14, rotate: -8 },
-    { at: 1 },
-  ],
   // wok pan: rotate −6°
   pan: [{ at: 0 }, { at: 0.5, rotate: -6 }, { at: 1 }],
   // wok veg (phases 0 to .93): y −26 and a full turn, back in the pan by 90%
@@ -96,25 +67,6 @@ const ANIMATIONS: Record<string, Keyframe[]> = {
     { at: 0.45, y: -26, rotate: 180 },
     { at: 0.9, rotate: 360 },
     { at: 1, rotate: 360 },
-  ],
-  // porridge drop: falls y +34, vanishes on impact at 45%, fades back in on top
-  fall: [
-    { at: 0 },
-    { at: 0.45, y: 34 },
-    { at: 0.48, y: 34, opacity: 0 },
-    { at: 0.8, opacity: 0 },
-    { at: 1 },
-  ],
-  // porridge ripple: the still's ripple fades, then spreads .3→1.4 from the
-  // impact at 45% and settles back into place.
-  ripple: [
-    { at: 0 },
-    { at: 0.2, opacity: 0 },
-    { at: 0.45, opacity: 0, ...uniformScale(0.3) },
-    { at: 0.5, ...uniformScale(0.6) },
-    { at: 0.8, opacity: 0, ...uniformScale(1.4) },
-    { at: 0.85, opacity: 0 },
-    { at: 1 },
   ],
   // bread loaf: scale 1.04 × 1.10 about the bottom
   rise: [{ at: 0 }, { at: 0.5, scaleX: 1.04, scaleY: 1.1 }, { at: 1 }],
@@ -128,21 +80,6 @@ const ANIMATIONS: Record<string, Keyframe[]> = {
   ],
   // cake sparks (phases 0, ½): wink out, then scale 0→1 back in
   spark: [{ at: 0 }, { at: 0.15, ...uniformScale(0) }, { at: 0.35 }, { at: 1 }],
-  // wrap sheet: scaleX .08↔1 about the left edge. Open in the still, so the
-  // brief's rolled 0–15 / 85–100% moves half a loop on, to 35–65%.
-  roll: [
-    { at: 0 },
-    { at: 0.35, scaleX: 0.08 },
-    { at: 0.65, scaleX: 0.08 },
-    { at: 1 },
-  ],
-  // wrap roll: 1.12 while rolled, 1 while the sheet is out
-  rollc: [
-    { at: 0 },
-    { at: 0.35, ...uniformScale(1.12) },
-    { at: 0.65, ...uniformScale(1.12) },
-    { at: 1 },
-  ],
   // smoothie (phases 0, ⅓, ⅔): each bubble rises y 0→−38 and fades, fades
   // back in where it started, and rests.
   up: [

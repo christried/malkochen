@@ -65,7 +65,7 @@ test('a Dish moved to another Board from its detail leaves this one and keeps it
   await signIn(page, ALLOWLISTED[9])
   const from = await createBoard(page, 'Zuhause', '🏡')
   const to = await createBoard(page, 'WG-Küche', '🍲')
-  const res = await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Linsen-Dal', placeholder: 'curry' } })
+  const res = await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Linsen-Dal', placeholder: 'bowl' } })
   const { id: dishId } = await res.json()
   await page.request.post(`/api/dishes/${dishId}/cook`)
   await gotoHydrated(page, `/b/${from}/d/${dishId}`)
@@ -118,7 +118,7 @@ test('a Dish moved into another Board’s Gekocht Column celebrates, naming that
   const from = await createBoard(page, 'Wohnung', '🏠')
   const to = await createBoard(page, 'Familie', '🍲')
   for (const title of ['Gnocchi', 'Shakshuka', 'Pho']) {
-    await page.request.post(`/api/boards/${from}/dishes`, { data: { title, placeholder: 'curry' } })
+    await page.request.post(`/api/boards/${from}/dishes`, { data: { title, placeholder: 'bowl' } })
   }
   await gotoHydrated(page, `/b/${from}`)
   await expect(titles(page, 'Ideen')).toHaveText(['Pho', 'Shakshuka', 'Gnocchi'])
@@ -161,7 +161,7 @@ test('a Dish moved into another Board’s Gekocht Column from its detail celebra
   await signIn(page, ALLOWLISTED[9])
   const from = await createBoard(page, 'Studio', '🎨')
   const to = await createBoard(page, 'Oma', '🍰')
-  const res = await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Kaiserschmarrn', placeholder: 'curry' } })
+  const res = await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Kaiserschmarrn', placeholder: 'bowl' } })
   const { id: dishId } = await res.json()
   await gotoHydrated(page, `/b/${from}/d/${dishId}`)
 
@@ -218,7 +218,7 @@ function animations(element: Locator) {
 async function switchingBoards(page: Page, fromName: string, toName: string) {
   const from = await createBoard(page, fromName, '🥗')
   const to = await createBoard(page, toName, '🌙')
-  await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Bowl', placeholder: 'salad' } })
+  await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Bowl', placeholder: 'bowl' } })
   await page.request.post(`/api/boards/${to}/dishes`, { data: { title: 'Ramen', placeholder: 'ramen' } })
   await gotoHydrated(page, `/b/${from}`)
   const release = await holdRequests(page, 'GET', new RegExp(`/api/boards/${to}$`))

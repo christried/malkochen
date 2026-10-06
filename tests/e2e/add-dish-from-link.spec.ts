@@ -214,7 +214,7 @@ for (const [name, kind, link, suggestedTitle, creator] of [
 }
 
 test('nothing found: the Placeholder picker opens by itself and the title is required', async ({ page }) => {
-  const blog = 'https://kochblog.example/rezept/linsen-dal'
+  const blog = 'https://kochblog.example/rezept/rote-linsen-suppe'
   await stubSourceLookup(page, { kind: 'other', canonicalLink: blog, suggestedTitle: '', imageUrl: null, imageTicket: null })
   const sheet = await openAddDish(page)
 
@@ -223,18 +223,20 @@ test('nothing found: the Placeholder picker opens by itself and the title is req
   await expect(sheet.getByText('Kein Bild gefunden. Such dir eins aus!')).toBeVisible()
   const picker = sheet.getByRole('radiogroup', { name: 'Bild' })
   await expect(picker.getByRole('radio')).toHaveCount(8)
+  // Without a title yet, the link's words name the dish.
+  await expect(picker.getByRole('radio', { name: 'Eintopf' })).toHaveAttribute('aria-checked', 'true')
   const save = sheet.getByRole('button', { name: 'Speichern' })
   await expect(save).toBeDisabled()
 
-  await picker.getByRole('radio', { name: 'Curry' }).click()
+  await picker.getByRole('radio', { name: 'Ramen' }).click()
   await sheet.getByLabel('Titel').fill('Linsen-Dal')
   const body = savedBody(page)
   await save.click()
 
-  expect(await body).toMatchObject({ placeholder: 'curry', imageUrl: null, source: { link: blog, kind: 'other' } })
+  expect(await body).toMatchObject({ placeholder: 'ramen', imageUrl: null, source: { link: blog, kind: 'other' } })
   const card = page.getByRole('article', { name: 'Linsen-Dal' })
   await expect(card.getByText('Web')).toBeVisible()
-  await expect(card.locator('img[src="/placeholders/curry-light.svg"]')).toBeVisible()
+  await expect(card.locator('img[src="/placeholders/ramen-light.svg"]')).toBeVisible()
 })
 
 test('lookup failed: the Dish can still be saved with a Placeholder and a typed title', async ({ page }) => {

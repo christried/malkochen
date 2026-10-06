@@ -29,7 +29,7 @@ async function sharedBoard(page: Page, browser: Browser, name: string): Promise<
 }
 
 async function addDish(page: Page, boardId: string, title: string): Promise<string> {
-  const res = await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'curry' } })
+  const res = await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl' } })
   expect(res.status()).toBe(201)
   return (await res.json()).id
 }

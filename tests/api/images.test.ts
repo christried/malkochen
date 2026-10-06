@@ -29,13 +29,13 @@ const storedImages = () => readdir(resolve('.data/images/dishes')).catch(() => [
 test('a non-Member’s write copies no image, adding a Dish or reloading its image', async () => {
   const ada = await signIn(ALLOWLISTED[0])
   const board = await landingBoard(ada)
-  const dish = await (await postDish(ada, board.id, { title: 'Dal', placeholder: 'curry' })).json() as { id: string }
+  const dish = await (await postDish(ada, board.id, { title: 'Dal', placeholder: 'bowl' })).json() as { id: string }
   const linus = await signIn(ALLOWLISTED[2])
   const imageUrl = 'https://cdn.example/cover.jpg'
   const imageTicket = tickets.issue(await me(linus), imageUrl)
   const before = await storedImages()
 
-  expect((await postDish(linus, board.id, { title: 'Eindringling', placeholder: 'curry', imageUrl, imageTicket })).status).toBe(404)
+  expect((await postDish(linus, board.id, { title: 'Eindringling', placeholder: 'bowl', imageUrl, imageTicket })).status).toBe(404)
   const edit = await linus.fetch(`/api/dishes/${dish.id}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },

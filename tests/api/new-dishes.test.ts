@@ -34,7 +34,7 @@ async function poll(caller: Caller, id: string): Promise<Board> {
 }
 
 async function addDish(caller: Caller, boardId: string, title: string): Promise<string> {
-  const res = await postDish(caller, boardId, { title, placeholder: 'curry' })
+  const res = await postDish(caller, boardId, { title, placeholder: 'bowl' })
   expect(res.status).toBe(201)
   return (await res.json() as { id: string }).id
 }
