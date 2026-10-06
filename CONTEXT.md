@@ -31,7 +31,7 @@ The one Member of a Board who can delete it, remove Members, reset the Invite Li
 _Avoid_: Admin, creator
 
 **Invite Link**:
-A shareable link that lets a signed-in user on the Allowlist become a Member of a Board.
+A shareable link that lets a signed-in user on the Allowlist become a Member of a Board: the Board's Address, then a secret (`/invite/kochclub-7fk2qm9xh3tdz8wpc`). Only the secret counts, so renaming the Board doesn't break a link sent before; resetting it does.
 _Avoid_: Share link, invitation
 
 **Address**:
