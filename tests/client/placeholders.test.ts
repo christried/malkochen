@@ -76,7 +76,7 @@ test('without a dish in the title, the link’s path names it', () => {
   expect(autoPlaceholder('', 'https://pasta.example/rezept/123')).toBe('bowl')
 })
 
-test('nothing found, or no usable link: the fallback is "bowl"', () => {
+test('nothing found, or no usable link: "bowl"', () => {
   expect(autoPlaceholder('', null)).toBe('bowl')
   expect(autoPlaceholder('Etwas Leckeres', 'https://www.tiktok.com/@vegan/video/7300000000000000000')).toBe('bowl')
   expect(autoPlaceholder('Etwas Leckeres', 'kein link')).toBe('bowl')

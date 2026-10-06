@@ -1,5 +1,6 @@
 // The Placeholder Images (CONTEXT.md, ADR 0004): the handoff's 12 vegan dish
-// illustrations, in picker order. A Dish stores one of these keys as its
+// illustrations, in picker order (the order of remotion-briefs.json; the
+// inline picker shows the first eight). A Dish stores one of these keys as its
 // image; the stills live at /placeholders/<key>-light.svg and <key>-dark.svg.
 export const PLACEHOLDERS = [
   'pasta',
@@ -23,8 +24,8 @@ export const PLACEHOLDER_THEMES = ['light', 'dark'] as const
 
 export type PlaceholderTheme = typeof PLACEHOLDER_THEMES[number]
 
-// The handoff's fallback (illustrations.json autoPick).
-export const FALLBACK_PLACEHOLDER: Placeholder = 'bowl'
+// A new Dish whose title and link name no dish (illustrations.json autoPick).
+const UNNAMED_DISH: Placeholder = 'bowl'
 
 // The words that name each drawing's dish (illustrations.json autoPick):
 // the handoff's own keywords for pasta, bowl and breakfast, and each other
@@ -60,9 +61,9 @@ function words(text: string): string[] {
 const PHRASES = PLACEHOLDERS.flatMap(placeholder =>
   KEYWORDS[placeholder].map(keyword => ({ placeholder, keyword: words(keyword) })))
 
-// How well a word names a keyword's dish: the whole word, the end of it,
-// or not at all.
-function fit(word: string, keyword: string): number {
+// How well a word names a keyword's dish: the whole word (2), the end of
+// it (1), or not at all (0).
+function matchQuality(word: string, keyword: string): number {
   for (const ending of PLURAL) {
     if (word === keyword + ending) return 2
   }
@@ -72,18 +73,20 @@ function fit(word: string, keyword: string): number {
 
 // The first dish named in these words. At one word, a whole word wins over
 // a compound's end ("Pfannkuchen" are no "Kuchen"), and of two ends the
-// longer.
-function named(text: string[]): Placeholder | null {
+// longer keyword.
+function firstDishNamed(text: string[]): Placeholder | null {
   for (let i = 0; i < text.length; i++) {
-    let best: { placeholder: Placeholder, score: number } | null = null
+    let best: { placeholder: Placeholder, quality: number, length: number } | null = null
     for (const { placeholder, keyword } of PHRASES) {
       const last = keyword.length - 1
       if (keyword.slice(0, last).some((part, j) => text[i + j] !== part)) continue
       const word = text[i + last]
-      const quality = word === undefined ? 0 : fit(word, keyword[last]!)
+      const quality = word === undefined ? 0 : matchQuality(word, keyword[last]!)
       if (quality === 0) continue
-      const score = quality * 1000 + keyword.join(' ').length
-      if (!best || score > best.score) best = { placeholder, score }
+      const length = keyword.join(' ').length
+      if (!best || quality > best.quality || (quality === best.quality && length > best.length)) {
+        best = { placeholder, quality, length }
+      }
     }
     if (best) return best.placeholder
   }
@@ -101,7 +104,7 @@ function pathWords(link: string): string[] {
 
 // The Placeholder Image a new Dish starts with (handoff illustrations.json
 // autoPick): the dish its title names, else the one its link's path names
-// (a blog's "/vegane-spaghetti-bolognese"), else the fallback.
+// (a blog's "/vegane-spaghetti-bolognese"), else bowl.
 export function autoPlaceholder(title: string, link: string | null): Placeholder {
-  return named(words(title)) ?? (link ? named(pathWords(link)) : null) ?? FALLBACK_PLACEHOLDER
+  return firstDishNamed(words(title)) ?? (link ? firstDishNamed(pathWords(link)) : null) ?? UNNAMED_DISH
 }

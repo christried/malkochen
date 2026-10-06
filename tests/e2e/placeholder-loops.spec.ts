@@ -83,7 +83,7 @@ test('a Board loop scrolled off-screen stops, and the card now in the middle pla
   await page.getByRole('link', { name: 'Gericht dumplings' }).evaluate(el => el.scrollIntoView({ block: 'center' }))
   await expect.poll(() => playing(page)).toEqual(['/placeholders/dumplings-light.svg'])
 
-  // Dumplings are near the top of Ideen; at the bottom it is far off-screen.
+  // Dumplings are near the top of Ideen; at the bottom they are far off-screen.
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
   await expect.poll(async () => {
     const clips = await playing(page)

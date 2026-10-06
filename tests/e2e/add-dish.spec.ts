@@ -27,8 +27,7 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   const save = sheet.getByRole('button', { name: 'Speichern' })
   await expect(save).toBeDisabled()
 
-  // Inline: 4×2 with the fallback (Salat / Bowl) selected while no title
-  // names a dish; Eintopf is only in the full picker.
+  // Inline: 4×2 with Salat / Bowl selected while no title names a dish; Eintopf is only in the full picker.
   const inline = sheet.getByRole('radiogroup', { name: 'Bild' })
   await expect(inline.getByRole('radio')).toHaveCount(8)
   await expect(inline.getByRole('radio', { name: 'Salat / Bowl' })).toHaveAttribute('aria-checked', 'true')
