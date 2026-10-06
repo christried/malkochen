@@ -34,7 +34,9 @@
   --radius-chip: 15px;
   --radius-sheet: 36px 36px 0 0;
   --radius-dialog: 32px 28px 33px 29px;
-  --radius-panel: 30px 26px 0 0;
+  /* Not the handoff's 30px 26px 0 0: panels are rounded on all four corners,
+     like the Dish cards (decided on #105, #130). */
+  --radius-panel: 28px 24px 30px 26px;
   --radius-blob: 48% 52% 46% 54% / 55% 50% 50% 45%;
   --radius-tab-1: 22px 17px 20px 15px;
   --radius-tab-2: 17px 22px 15px 20px;

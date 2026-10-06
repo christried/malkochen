@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
+import { expectCardShape } from './card-shape'
 import { editMorph, expectFieldsMorphing, slowAnimations } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
@@ -47,6 +48,7 @@ test('tapping a card opens its detail with everything about the Dish', async ({ 
   const original = detail.getByRole('link', { name: 'Original öffnen' })
   await expect(original).toHaveAttribute('href', TIKTOK)
   await expect(original).toHaveAttribute('target', '_blank')
+  await expectCardShape(detail.locator('[data-morph-field="source"]'))
   await expect(detail.getByText('Meine Küche · Diese Woche')).toBeVisible()
   await expect(detail.getByText(/^Hinzugefügt am \d/)).toBeVisible()
   // Without a Creator, no empty line for one.
