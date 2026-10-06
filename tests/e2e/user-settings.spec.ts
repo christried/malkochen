@@ -20,11 +20,21 @@ test.beforeEach(async ({ page }) => {
   await signIn(page, JEAN, { name: 'Jean Bartik', image: PHOTO })
 })
 
-test('your photo on the Board opens your settings, with your Google name and photo', async ({ page }) => {
+test('your photo on the Board opens a menu with who is signed in, and "Einstellungen" opens your settings', async ({ page }) => {
   await gotoHydrated(page, '/')
   const board = page.url()
 
-  await page.getByRole('link', { name: 'Deine Einstellungen' }).click()
+  const avatar = page.getByRole('button', { name: 'Dein Konto' })
+  await expect(avatar.locator(`img[src="${PHOTO}"]`)).toBeVisible()
+  await avatar.click()
+
+  const menu = page.getByRole('menu', { name: `Jean Bartik ${JEAN}` })
+  await expect(menu).toBeVisible()
+  await expect(avatar).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.locator(`img[src="${PHOTO}"]`)).toHaveCount(2)
+  await expect(menu.getByRole('menuitem')).toHaveText(['Einstellungen', 'Abmelden'])
+
+  await menu.getByRole('menuitem', { name: 'Einstellungen' }).click()
 
   await expect(page).toHaveURL('/settings')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Einstellungen')
@@ -39,11 +49,58 @@ test('your photo on the Board opens your settings, with your Google name and pho
   await expect(page).toHaveURL(board)
 })
 
+test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs you out', async ({ page }) => {
+  await gotoHydrated(page, '/')
+  const avatar = page.getByRole('button', { name: 'Dein Konto' })
+  const menu = page.getByRole('menu')
+  const settings = menu.getByRole('menuitem', { name: 'Einstellungen' })
+  const signOut = menu.getByRole('menuitem', { name: 'Abmelden' })
+
+  // Opening moves focus onto the first row; the arrows go round.
+  await avatar.focus()
+  await page.keyboard.press('Enter')
+  await expect(settings).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(signOut).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(settings).toBeFocused()
+  await page.keyboard.press('ArrowUp')
+  await expect(signOut).toBeFocused()
+  await page.keyboard.press('Home')
+  await expect(settings).toBeFocused()
+  await page.keyboard.press('End')
+  await expect(signOut).toBeFocused()
+
+  // Escape closes it and hands focus back to your photo.
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await expect(avatar).toBeFocused()
+  await expect(avatar).toHaveAttribute('aria-expanded', 'false')
+
+  // ArrowUp opens it on the last row.
+  await page.keyboard.press('ArrowUp')
+  await expect(signOut).toBeFocused()
+  await page.keyboard.press('Enter')
+
+  await expect(page).toHaveURL('/login')
+  expect((await page.request.get('/api/me')).status()).toBe(401)
+})
+
+test('the user menu closes on a press anywhere else', async ({ page }) => {
+  await gotoHydrated(page, '/')
+  await page.getByRole('button', { name: 'Dein Konto' }).click()
+  await expect(page.getByRole('menu')).toBeVisible()
+
+  await page.getByRole('main').click({ position: { x: 5, y: 400 } })
+
+  await expect(page.getByRole('menu')).toHaveCount(0)
+})
+
 test('on a phone your settings are the last row of the Board switcher', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await gotoHydrated(page, '/')
-  // No room in the header beside the Board's name.
-  await expect(page.getByRole('link', { name: 'Deine Einstellungen' })).toHaveCount(0)
+  // No room in the header beside the Board's name for your photo's menu.
+  await expect(page.getByRole('button', { name: 'Dein Konto' })).toBeHidden()
 
   await page.getByRole('button', { name: /Board wechseln/ }).click()
   const panel = page.getByRole('navigation')

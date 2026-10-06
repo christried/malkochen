@@ -401,6 +401,8 @@ export const de = {
   userSettings: {
     title: 'Einstellungen',
     open: 'Deine Einstellungen',
+    // Your photo at the top right of the Board: opens the user menu.
+    menu: 'Dein Konto',
     back: 'Zurück zum Board',
     account: 'Konto',
     language: 'Sprache',

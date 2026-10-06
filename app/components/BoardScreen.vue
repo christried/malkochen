@@ -480,18 +480,11 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           />
         </NuxtLink>
       </div>
-      <NuxtLink
+      <UserMenu
         v-if="me"
-        to="/settings"
-        :aria-label="t.userSettings.open"
-        class="hidden shrink-0 rounded-full transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus tablet:block"
-      >
-        <UserAvatar
-          :name="me.name"
-          :image="me.image"
-          :size="44"
-        />
-      </NuxtLink>
+        :me="me"
+        class="hidden shrink-0 tablet:block"
+      />
     </header>
 
     <BoardSearchBar

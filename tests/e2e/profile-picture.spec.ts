@@ -78,7 +78,7 @@ test('a picture uploaded in the settings shows round in a preview, and once used
 
   // On the Board, her header photo and the badge on her Dish.
   await gotoHydrated(page, '/')
-  await expect(page.getByRole('link', { name: 'Deine Einstellungen' }).locator('img')).toHaveAttribute('src', picture)
+  await expect(page.getByRole('button', { name: 'Dein Konto' }).locator('img')).toHaveAttribute('src', picture)
   const card = column(page, 'Ideen').getByRole('article', { name: 'Mangold-Galette' })
   await expect(card.locator(`img[src="${picture}"]`)).toBeVisible()
 
