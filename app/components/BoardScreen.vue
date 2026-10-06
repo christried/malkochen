@@ -270,7 +270,18 @@ watch(emptyColumnIds, () => boardLoop.playWhenAtRest())
 // took its place), as the Board module says. Its Dish is remembered by id
 // while it shows, as it may be gone from the Board by the time it closes.
 let detailDishId: string | null = null
+// What waits for the detail to close (detailClosed): told true once it
+// has, false if the Board goes first.
+const detailWaiters = new Set<(closed: boolean) => void>()
+onBeforeUnmount(() => {
+  for (const waiter of detailWaiters) waiter(false)
+  detailWaiters.clear()
+})
 watch(() => route.params.dish, (dish) => {
+  if (!dish) {
+    for (const waiter of detailWaiters) waiter(true)
+    detailWaiters.clear()
+  }
   const opened = board.value && dish ? dishAt(board.value, dish) : null
   const closedId = detailDishId
   detailDishId = opened?.dish.id ?? null
@@ -352,17 +363,21 @@ function deleteFromMenu() {
 // (`moveFocus: false`) or the Dish detail makes the Board inert (focus goes
 // back as it closes). A Dish moved into another Board's Gekocht Column from
 // its detail leaves the screen with the detail: it celebrates over the
-// Board, once the detail has closed.
+// Board once the detail has closed, unless its move has failed by then,
+// and focus is left to the detail's closing.
 async function showResult(result: BoardResult, { origin, moved, moveFocus = true }: ResultContext & { moveFocus?: boolean } = {}) {
   const { notice, undo, settled } = result
+  const inDetail = !!route.params.dish
+  let ended: BoardResult | undefined
+  void settled?.then(r => (ended = r))
   if (notice === 'deleted' || notice === 'cookingDeleted') hapticReject()
   if (moved && !notice) {
     const text = movedText(result, moved.toBoard)
     if (text) showNotice(text)
   }
   if (notice === 'cook') {
-    if (moved?.toBoard) await detailClosed()
-    celebrateCooking(result, origin, moved?.toBoard)
+    const shown = moved?.toBoard ? await detailClosed() : true
+    if (shown && !ended?.notice) celebrateCooking(result, origin, moved?.toBoard)
   }
   else if (notice) {
     const text = noticeText(notice, result)
@@ -371,7 +386,7 @@ async function showResult(result: BoardResult, { origin, moved, moveFocus = true
       : { text, duration: NOTICE_MS })
   }
   void settled?.then(r => showResult(r))
-  if (moveFocus && result.focus && !route.params.dish) await focusOn(result.focus)
+  if (moveFocus && result.focus && !inDetail && !route.params.dish) await focusOn(result.focus)
 }
 
 // Where "Verschieben nach…" moved a Dish to: a Column of this Board, or of
@@ -397,18 +412,12 @@ function noticeText(notice: Exclude<Notice, 'cook'>, { dish, cooking }: BoardRes
 }
 
 // Resolves once the Dish detail has closed and the Board shows its own
-// Toast, pill and confetti again; at once if it isn't open.
-async function detailClosed() {
-  if (route.params.dish) {
-    await new Promise<void>((resolve) => {
-      const stop = watch(() => route.params.dish, (dish) => {
-        if (dish) return
-        stop()
-        resolve()
-      })
-    })
-  }
+// Toast, pill and confetti again (at once if it isn't open): true, or
+// false if the Board went first.
+async function detailClosed(): Promise<boolean> {
+  const closed = route.params.dish ? await new Promise<boolean>(resolve => detailWaiters.add(resolve)) : true
   await nextTick()
+  return closed
 }
 
 // A Cooking recorded (PRD stories 49–55), as decided on #105: haptics,
@@ -425,6 +434,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   if (origin !== null) confetti.fire(origin ?? gekochtPill.origin())
   showToast({
     text: t.dish.cook,
+    ...toBoard && { unseen: t.dish.cookedOn(boardLabel(toBoard)) },
     duration: UNDO_WINDOW_MS,
     actions: [
       { label: t.dish.addNote, run: async () => {

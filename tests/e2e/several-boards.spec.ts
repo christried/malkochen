@@ -139,6 +139,8 @@ test('a Dish moved into another Board’s Gekocht Column celebrates, naming that
   expect((await pill.boundingBox())!.y).toBeLessThan(height / 8)
   const toast = gekochtToast(page)
   await expect(toast.getByRole('button', { name: 'Notiz hinzufügen' })).toBeVisible()
+  // Screen readers hear the Board from the toast: the pill is decoration.
+  await expect(toast).toContainText('Gekocht ✓ in 🍲 Familie')
   await expect(page.getByText(/ist jetzt in/)).toHaveCount(0)
 
   await toast.getByRole('button', { name: 'Rückgängig' }).click()

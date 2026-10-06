@@ -635,9 +635,11 @@ test('an undo of a Cooking recorded on another Board that fails takes the Dish o
   const undone = await moved.undo!()
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
 
-  expect(await undone.settled).toMatchObject({ notice: 'uncookFailed' })
+  // Focus goes where it went as the Dish left, also once the detail closes.
+  expect(await undone.settled).toMatchObject({ notice: 'uncookFailed', focus: { dish: 'c' } })
   expect(shown().ideen).toEqual(['a', 'c'])
   expect(moved.dish.cookings).toEqual([recorded])
+  expect(module.focusAfterDetail('b')).toEqual({ dish: 'c' })
 })
 
 test('a move into another Board’s Gekocht Column that fails puts the Dish back without a Cooking, with a notice', async () => {

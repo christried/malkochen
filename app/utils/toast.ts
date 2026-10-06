@@ -1,6 +1,9 @@
 // What the Toast (AppToast) shows. A new one replaces the one showing.
 export interface Toast {
   text: string
+  // Said to screen readers after `text`, for what shows only elsewhere:
+  // the other Board a Dish was cooked into, named in the Gekocht pill.
+  unseen?: string
   // Buttons beside the text, e.g. "Rückgängig" (the Gekocht toast has two).
   actions?: ToastAction[]
   // How long it stays, in ms.

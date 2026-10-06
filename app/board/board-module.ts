@@ -435,7 +435,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
           // from the Cooking History meanwhile).
           if (recorded && !isGone(error) && !dish.cookings.some(c => c.id === recorded.id)) dish.cookings.unshift(recorded)
           if (cooked) moveBack(dish, cooked)
-          else takeOut(dishId)
+          else {
+            // Off this Board again, focus goes where it would as it leaves.
+            const shown = find(dishId)
+            if (shown) {
+              const { focus } = leave(dish, shown.column)
+              focusWhenGone.set(dishId, focus)
+              return { dish, notice: 'uncookFailed', focus }
+            }
+          }
           return { dish, notice: 'uncookFailed' }
         }
       })

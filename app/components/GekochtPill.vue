@@ -4,22 +4,12 @@
 // and "Gekocht ✓"; for a Dish moved into another Board's Gekocht Column, a
 // second line names that Board ("in 🍲 Familie"). It slides down from the
 // top edge a moment after the confetti and goes by itself
-// (--dur-gekocht-pill). Its actions are the Gekocht toast's, at the bottom.
-// Decoration beside that toast, which says "Gekocht ✓" to screen readers.
+// (useGekochtPill). Its actions are the Gekocht toast's, at the bottom.
+// Decoration beside that toast, which says it all to screen readers.
 // Put it beside the page's Toast: on the Board, in the Dish detail, in a
 // celebration over them. Reduced motion: it only fades.
 const t = useStrings()
 const { pill } = useGekochtPill()
-
-let timer: ReturnType<typeof setTimeout> | undefined
-watch(pill, (shown) => {
-  clearTimeout(timer)
-  if (!shown) return
-  timer = setTimeout(() => {
-    if (pill.value === shown) pill.value = null
-  }, motionMs('gekocht-pill'))
-}, { immediate: true })
-onBeforeUnmount(() => clearTimeout(timer))
 
 // Inside a modal, it's lifted into the top layer (useTopLayerInModal).
 const place = useTemplateRef<HTMLElement>('place')

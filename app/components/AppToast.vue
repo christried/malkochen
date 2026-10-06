@@ -58,6 +58,10 @@ function act(action: ToastAction) {
             :class="{ 'shrink-0 whitespace-nowrap': (toast.actions?.length ?? 0) > 1 }"
           >
             {{ toast.text }}
+            <span
+              v-if="toast.unseen"
+              class="sr-only"
+            > {{ toast.unseen }}</span>
           </p>
           <button
             v-for="action in toast.actions"
