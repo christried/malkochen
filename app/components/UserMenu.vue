@@ -1,14 +1,17 @@
 <script setup lang="ts">
-// The user menu (#131, decided on #105 as variant A): your photo at the top
-// right of the Board opens a list like the Board switcher's panel, popping
-// from the photo's corner: who is signed in, then "Einstellungen" and
+import type { Me } from '~~/server/utils/people'
+
+// The user menu (#131, decided on #105 as variant A): your Profile Picture at
+// the top right of the Board opens a list like the Board switcher's panel,
+// popping from its corner: who is signed in, then "Einstellungen" and
 // "Abmelden". Phones don't show it; there your settings are the Board
 // switcher's last row.
 //
 // A menu button (WAI-ARIA APG): opening puts focus on a row (the last with
-// ArrowUp), the arrows go round the rows, Home and End jump, Escape closes
-// and hands focus back to the photo. Tab and a press anywhere else close it.
-defineProps<{ me: { name: string, email: string, image: string | null } }>()
+// ArrowUp), the arrows go round the rows, Home and End jump, Enter or Space
+// choose, Escape closes and hands focus back to the picture. Tab and a press
+// anywhere else close it.
+defineProps<{ me: Pick<Me, 'name' | 'email' | 'image'> }>()
 const t = useStrings()
 const { signOut } = useAuth()
 const route = useRoute()
@@ -20,14 +23,14 @@ const root = useTemplateRef<HTMLElement>('root')
 const button = useTemplateRef<HTMLButtonElement>('button')
 const menu = useTemplateRef<HTMLElement>('menu')
 
-function items() {
+function rows() {
   return [...menu.value?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []]
 }
 
-async function show(at: 'first' | 'last') {
+async function show(row: 'first' | 'last') {
   open.value = true
   await nextTick()
-  items().at(at === 'first' ? 0 : -1)?.focus()
+  rows().at(row === 'first' ? 0 : -1)?.focus()
 }
 
 function close({ refocus = false } = {}) {
@@ -42,17 +45,29 @@ function toggle() {
 }
 
 function onMenuKeydown(event: KeyboardEvent) {
-  const rows = items()
-  const at = rows.indexOf(document.activeElement as HTMLElement)
+  const all = rows()
+  const current = all.indexOf(document.activeElement as HTMLElement)
+  // A link follows Enter only; Space chooses it too, as it does the button row.
+  if (event.key === ' ' && all[current] instanceof HTMLAnchorElement) {
+    event.preventDefault()
+    all[current].click()
+    return
+  }
   const next = {
-    ArrowDown: (at + 1) % rows.length,
-    ArrowUp: (at - 1 + rows.length) % rows.length,
+    ArrowDown: (current + 1) % all.length,
+    ArrowUp: (current - 1 + all.length) % all.length,
     Home: 0,
-    End: rows.length - 1,
+    End: all.length - 1,
   }[event.key]
   if (next === undefined) return
   event.preventDefault()
-  rows[next]?.focus()
+  all[next]?.focus()
+}
+
+// Closed first, so the row can't be chosen twice while signing out.
+function chooseSignOut() {
+  close()
+  void signOut()
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -136,7 +151,7 @@ watch(() => route.fullPath, () => close())
               role="menuitem"
               tabindex="-1"
               class="flex w-full items-center gap-3 rounded-field px-3 py-2.5 text-left text-button transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
-              @click="signOut"
+              @click="chooseSignOut"
             >
               <AppIcon
                 name="sign-out"
@@ -161,6 +176,7 @@ watch(() => route.fullPath, () => close())
 }
 .panel-leave-active {
   transition: opacity var(--dur-fade) var(--ease-fade);
+  pointer-events: none;
 }
 .panel-enter-from {
   translate: 0 -16px;
