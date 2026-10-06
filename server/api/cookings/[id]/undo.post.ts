@@ -8,8 +8,10 @@ const body = z.object({ columnId: z.uuid(), index: z.int().min(0).max(100_000) }
 
 // POST /api/cookings/:id/undo — "Rückgängig" in the Gekocht toast: the
 // Cooking is removed for good and the Dish goes back where it was, and the
-// answer says where that is (PlacedDish). Refused (400) for a Column
-// elsewhere, or once the Dish has left the Gekocht Column.
+// answer says where that is (PlacedDish): back on its own Board, also after
+// it was moved into another Board's Gekocht Column. Refused (400) for a
+// Column on a Board the user isn't a Member of, or once the Dish has left
+// the Gekocht Column.
 export default defineEventHandler(async (event): Promise<PlacedDish> => {
   const cookingId = cookingIdParam(event)
   const parsed = body.safeParse(await readBody(event).catch(() => null))
@@ -21,5 +23,5 @@ export default defineEventHandler(async (event): Promise<PlacedDish> => {
   if (undone) return undone
   // Deleted meanwhile: gone, like the Cooking with it.
   if (!await isDishMember(dishId, user.id)) throw cookingNotFound()
-  throw createError({ statusCode: 400, statusMessage: 'Dish not in Gekocht, or Column not on this Board' })
+  throw createError({ statusCode: 400, statusMessage: 'Dish not in Gekocht, or Column not on one of your Boards' })
 })

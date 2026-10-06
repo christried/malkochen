@@ -113,6 +113,9 @@ export const de = {
     thisBoard: 'Dieses Board',
     moveFailed: (title: string) => `„${title}“ ließ sich nicht verschieben. Versuch es gleich noch mal.`,
     cook: 'Gekocht ✓',
+    // Under "Gekocht ✓" in the celebration's pill, for a Dish moved into
+    // another Board's Gekocht Column: that Board, with its emoji.
+    cookedOn: (board: string) => `in ${board}`,
     // "Gekocht ✓" on its button, where the check is drawn (CookButton).
     cookWord: 'Gekocht',
     cookLabel: (title: string) => `Gekocht ✓: „${title}“`,

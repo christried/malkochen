@@ -15,7 +15,8 @@ import { boardPath as pathOfBoard, dishAt } from '~~/shared/address'
 // "Verschieben nach…", "Löschen", the Cooking History's) go through the
 // client Board module the page provides, and each result goes up as
 // `result`, for the page to show as it shows a card's. The Board is inert
-// behind this dialog, so its Toast shows in here.
+// behind this dialog, so its Toast and the Gekocht celebration show in
+// here.
 definePageMeta({ alias: '/b/:board/d/:dish' })
 
 const props = defineProps<{ board: BoardView }>()
@@ -208,6 +209,7 @@ watch(editing, async (isEditing) => {
         />
       </AppSheet>
       <VeggieConfetti />
+      <GekochtPill />
       <AppToast v-model="toast" />
     </dialog>
     <!-- The Cooking note sheet sits beside the detail, not in it: the

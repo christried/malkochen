@@ -12,9 +12,11 @@ export interface ResultContext {
 }
 
 // "Verschieben nach…" (MoveTargetPicker), from a card's menu or the Dish
-// detail: to the top of a Column of this Board, or of `toBoard`.
+// detail: to the top of a Column of this Board, or of `toBoard` (into its
+// Gekocht Column, that records a Cooking too). Null for a Column `toBoard`
+// doesn't have.
 export function moveToPicked(boardModule: BoardModule, dishId: string, columnId: string, toBoard: BoardListing | null) {
-  return toBoard
-    ? boardModule.moveToBoard(dishId, { boardId: toBoard.id, columnId })
-    : boardModule.moveDish(dishId, { columnId })
+  if (!toBoard) return boardModule.moveDish(dishId, { columnId })
+  const column = toBoard.columns.find(c => c.id === columnId)
+  return column ? boardModule.moveToBoard(dishId, { boardId: toBoard.id, columnId, isGekocht: column.isGekocht }) : null
 }

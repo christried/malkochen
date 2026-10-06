@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, titles } from './board'
+import { ANY_CHEER, cheer, confetti, confettiOrigin, gekochtPill } from './celebration'
 import { gotoHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
 
@@ -100,6 +101,92 @@ test('the card’s menu moves a Dish to a Column on another Board', async ({ pag
   await expect(titles(page, 'Ideen')).toHaveCount(0)
   await gotoHydrated(page, `/b/${to}`)
   await expect(titles(page, 'Ideen')).toHaveText(['Focaccia'])
+})
+
+// #129: "Verschieben nach…" into another Board's Gekocht Column records a
+// Cooking there, and celebrates as cooking here does (#105): the pill at
+// the top names that Board, the confetti bursts from it, and the Gekocht
+// toast at the bottom offers "Notiz hinzufügen" and "Rückgängig".
+function gekochtToast(page: Page) {
+  return page.getByRole('status').filter({ hasText: 'Gekocht ✓' })
+}
+
+test('a Dish moved into another Board’s Gekocht Column celebrates, naming that Board; undo brings it back where it was', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await signIn(page, ALLOWLISTED[9])
+  const from = await createBoard(page, 'Wohnung', '🏠')
+  const to = await createBoard(page, 'Familie', '🍲')
+  for (const title of ['Gnocchi', 'Shakshuka', 'Pho']) {
+    await page.request.post(`/api/boards/${from}/dishes`, { data: { title, placeholder: 'curry' } })
+  }
+  await gotoHydrated(page, `/b/${from}`)
+  await expect(titles(page, 'Ideen')).toHaveText(['Pho', 'Shakshuka', 'Gnocchi'])
+
+  await page.getByRole('button', { name: 'Mehr zu „Shakshuka“' }).click()
+  await page.getByRole('button', { name: 'Verschieben nach…' }).click()
+  await page.getByRole('dialog', { name: 'Shakshuka' }).getByRole('region', { name: 'Familie' }).getByRole('button', { name: 'Gekocht' }).click()
+
+  await expect(titles(page, 'Ideen')).toHaveText(['Pho', 'Gnocchi'])
+  await expect(confetti(page)).toHaveCount(14)
+  const pill = gekochtPill(page)
+  await expect(pill.locator('p')).toHaveText('Gekocht ✓in 🍲 Familie')
+  await expect(cheer(pill)).toHaveText(ANY_CHEER)
+  // The confetti bursts from the pill's place, at the top in the middle.
+  const { width, height } = page.viewportSize()!
+  const origin = await confettiOrigin(page)
+  expect(Math.abs(origin.x - width / 2)).toBeLessThan(2)
+  expect(origin.y).toBeLessThan(height / 8)
+  expect((await pill.boundingBox())!.y).toBeLessThan(height / 8)
+  const toast = gekochtToast(page)
+  await expect(toast.getByRole('button', { name: 'Notiz hinzufügen' })).toBeVisible()
+  // Screen readers hear the Board from the toast: the pill is decoration.
+  await expect(toast).toContainText('Gekocht ✓ in 🍲 Familie')
+  await expect(page.getByText(/ist jetzt in/)).toHaveCount(0)
+
+  await toast.getByRole('button', { name: 'Rückgängig' }).click()
+
+  await expect(titles(page, 'Ideen')).toHaveText(['Pho', 'Shakshuka', 'Gnocchi'])
+  await expect(page.getByRole('link', { name: 'Shakshuka' })).toBeFocused()
+  await expect(page.getByText('1× gekocht')).toHaveCount(0)
+  await gotoHydrated(page, `/b/${from}`)
+  await expect(titles(page, 'Ideen')).toHaveText(['Pho', 'Shakshuka', 'Gnocchi'])
+  await expect(page.getByText('1× gekocht')).toHaveCount(0)
+  await gotoHydrated(page, `/b/${to}`)
+  await expect(page.getByRole('link', { name: 'Shakshuka' })).toHaveCount(0)
+})
+
+test('a Dish moved into another Board’s Gekocht Column from its detail celebrates over the Board once the detail has closed; a note from the toast goes with it', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page, ALLOWLISTED[9])
+  const from = await createBoard(page, 'Studio', '🎨')
+  const to = await createBoard(page, 'Oma', '🍰')
+  const res = await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Kaiserschmarrn', placeholder: 'curry' } })
+  const { id: dishId } = await res.json()
+  await gotoHydrated(page, `/b/${from}/d/${dishId}`)
+
+  const detail = page.getByRole('dialog', { name: 'Kaiserschmarrn' })
+  await detail.getByRole('button', { name: 'Verschieben nach…' }).click()
+  const picker = page.getByRole('dialog', { name: 'Verschieben nach…' })
+  await picker.getByRole('region', { name: 'Oma' }).getByRole('button', { name: 'Gekocht' }).click()
+
+  await expect(detail).toHaveCount(0)
+  const pill = gekochtPill(page)
+  await expect(pill.locator('p')).toHaveText('Gekocht ✓in 🍰 Oma')
+  await expect(confetti(page)).toHaveCount(14)
+  // Over the Board: the detail's own pill and toast went with it.
+  await expect(pill).toHaveCount(1)
+  await expect(page.getByRole('link', { name: 'Kaiserschmarrn' })).toHaveCount(0)
+
+  await gekochtToast(page).getByRole('button', { name: 'Notiz hinzufügen' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
+  await sheet.getByLabel('Notiz').fill('mit Apfelmus')
+  await sheet.getByRole('button', { name: 'Speichern' }).click()
+  await expect(sheet).toBeHidden()
+
+  await gotoHydrated(page, `/b/${to}/d/${dishId}`)
+  const moved = page.getByRole('dialog', { name: 'Kaiserschmarrn' })
+  await expect(moved.locator('[data-cooking]')).toHaveCount(1)
+  await expect(moved.locator('[data-cooking]')).toContainText('mit Apfelmus')
 })
 
 // Opening another Board (handoff "Skeleton shimmer"): its chrome shows at

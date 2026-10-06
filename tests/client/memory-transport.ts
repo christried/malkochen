@@ -52,9 +52,10 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   let cookings = 0
   let added = 0
 
-  // The Dish on the server that `matches`, and its Column.
+  // The Dish on the server that `matches`, and its Column: on this Board, or
+  // on another of the Member's Boards it was moved to.
   function located(matches: (dish: DishView) => boolean) {
-    for (const column of server.columns) {
+    for (const column of [server, ...others].flatMap(b => b.columns)) {
       const dish = column.dishes.find(matches)
       if (dish) return { dish, column }
     }
