@@ -105,3 +105,16 @@ test('a link from before readable Invite Links still opens the invite, and setti
   await reloadHydrated(page)
   await expect(page.getByLabel('Einladungslink')).toHaveValue(new RegExp(`/invite/${slug}-${token}$`))
 })
+
+test('someone who asked for too many links that don’t exist is told to try again soon, not that the link is gone', async ({ page, browser }) => {
+  const { link } = await ownersLink(page, 'Rateabend', '🍲')
+  // Its own client, as Vercel tells clients apart, so no other test shares its misses.
+  const guesser = await newTab(browser, { extraHTTPHeaders: { 'x-forwarded-for': '2001:db8::e2e:1' } })
+  for (let guess = 0; guess < 30; guess++) {
+    const wrong = `${'23456789abcdefghjkmnpqrstuvwxyz'[guess]}${'b'.repeat(16)}`
+    expect((await guesser.request.get(`/api/invites/rateabend-${wrong}`)).status()).toBe(404)
+  }
+
+  await gotoHydrated(guesser, link)
+  await expect(guesser.getByRole('heading', { level: 1 })).toHaveText('Da ist was angebrannt.')
+})

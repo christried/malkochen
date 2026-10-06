@@ -5,10 +5,11 @@ import type { NitroFetchOptions } from 'nitropack'
 // run in-process and their Set-Cookie headers would stay on the server; this
 // sends the visitor's cookies along and passes the ones set back to the
 // browser. In the browser it is plain $fetch. Call it at the top of setup:
-// the request it belongs to is only known there.
+// the request it belongs to is only known there. It passes on who is
+// asking too (x-forwarded-for), which Invite Link lookups are limited by.
 export function useFetchPassingCookies() {
   const event = useRequestEvent()
-  const headers = useRequestHeaders(['cookie'])
+  const headers = useRequestHeaders(['cookie', 'x-forwarded-for'])
   return async <T>(url: string, options?: NitroFetchOptions<string>): Promise<T> => {
     const res = await $fetch.raw<T>(url, { ...options, headers: { ...headers } })
     for (const cookie of res.headers.getSetCookie()) event?.node.res.appendHeader('set-cookie', cookie)

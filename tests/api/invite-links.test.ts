@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { randomBytes } from 'node:crypto'
 import pg from 'pg'
 import { expect, test } from 'vitest'
 import { migrateDatabase } from '../../server/db/migrate'
@@ -225,22 +226,43 @@ test('a reset link stops working, slug or not', async () => {
   expect((await join(await evelyn(), linkOf(board))).status).toBe(404)
 })
 
+// A client of its own, told apart by the address Vercel puts in
+// x-forwarded-for: new each run, so a rerun against the same server starts
+// with no misses.
+function client(): Caller {
+  const address = `2001:db8::${randomBytes(4).toString('hex').replace(/(....)(....)/, '$1:$2')}`
+  return {
+    fetch: (path, init) => anonymous().fetch(path, { ...init, headers: { ...init?.headers, 'x-forwarded-for': address } }),
+  }
+}
+
+// A secret no Board has.
+const wrongSecret = (n: number) => `${'23456789abcdefghjkmnpqrstuvwxyz'[n % 31]}${'23456789abcdefghjkmnpqrstuvwxyz'[Math.floor(n / 31) % 31]}${'b'.repeat(15)}`
+
 test('after too many links no Board has, a client gets no answer for a while, not even for a working link', async () => {
   const board = await idasBoard('Ratespiel')
-  const from = (address: string): Caller => ({
-    fetch: (path, init) => anonymous().fetch(path, { ...init, headers: { ...init?.headers, 'x-forwarded-for': address } }),
-  })
-  const guesser = from('203.0.113.9')
+  const guesser = client()
 
+  // Working links in between are no misses.
   for (let guess = 0; guess < 30; guess++) {
-    const wrong = `ratespiel-${'23456789abcdefghjkmnpqrstuvwxyz'[guess]}${'b'.repeat(16)}`
-    expect((await guesser.fetch(`/api/invites/${wrong}`)).status, wrong).toBe(404)
+    expect((await guesser.fetch(`/api/invites/ratespiel-${wrongSecret(guess)}`)).status).toBe(404)
+    if (guess % 10 === 0) expect((await guesser.fetch(`/api/invites/${linkOf(board)}`)).status).toBe(200)
   }
 
   expect((await guesser.fetch(`/api/invites/${linkOf(board)}`)).status).toBe(429)
   expect((await remember(guesser, linkOf(board))).status).toBe(429)
   // Anyone else still gets in.
-  expect((await from('203.0.113.10').fetch(`/api/invites/${linkOf(board)}`)).status).toBe(200)
+  expect((await client().fetch(`/api/invites/${linkOf(board)}`)).status).toBe(200)
+})
+
+test('guesses sent all at once don’t slip past the limit', async () => {
+  const guesser = client()
+
+  const answers = await Promise.all(Array.from({ length: 45 }, (_, n) => guesser.fetch(`/api/invites/${wrongSecret(n)}`)))
+
+  const statuses = answers.map(a => a.status)
+  expect(statuses.filter(s => s === 404)).toHaveLength(30)
+  expect(statuses.filter(s => s === 429)).toHaveLength(15)
 })
 
 test('Boards from before readable Invite Links keep their token; new ones get a secret', async () => {

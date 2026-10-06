@@ -1,4 +1,4 @@
-import { and, eq, gt, lt, sql } from 'drizzle-orm'
+import { eq, gt, lt, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { inviteSecret } from '../../shared/invite'
 import { db } from '../db'
@@ -92,7 +92,10 @@ export async function resetInvite(boardId: string, userId: string): Promise<{ in
 // Guessing a secret is hopeless (about 84 bits); to keep it that way for
 // anyone trying many, a client that asks for too many secrets no Board has
 // gets no answer about any link, not even a working one, for the rest of
-// the window. A refused sign-in is no miss: it doesn't look one up.
+// the window. A refused sign-in is no miss: it doesn't look one up. Clients
+// are told apart by IP address only, so people behind one address share
+// their misses; a few dozen opening a reset link within the window is not
+// what this app sees.
 
 const MISSES_ALLOWED = 30
 const MISS_WINDOW = sql`now() - interval '15 minutes'`
@@ -103,23 +106,17 @@ export function tooManyMisses() {
 
 // Who asks: their IP address. On Vercel, x-forwarded-for is the visitor's,
 // set by Vercel and not by the client; a page rendered on the server passes
-// it on to the API calls it makes (event.$fetch).
+// it on to the API calls it makes (useFetch, useFetchPassingCookies).
 function clientOf(event: H3Event): string {
   return getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
 }
 
-async function missedTooOften(client: string): Promise<boolean> {
-  const [row] = await db
-    .select({ misses: inviteMiss.misses })
-    .from(inviteMiss)
-    .where(and(eq(inviteMiss.client, client), gt(inviteMiss.windowStart, MISS_WINDOW)))
-  return (row?.misses ?? 0) >= MISSES_ALLOWED
-}
-
-// Counts a miss: one more in the client's window, or the first of a new one.
-async function countMiss(client: string) {
+// Counts one more lookup as a miss before it is made, so lookups sent at
+// once can't all slip under the limit: one more in the client's window, or
+// the first of a new one. Whether the client is now over the limit.
+async function reserveMiss(client: string): Promise<boolean> {
   const inWindow = gt(inviteMiss.windowStart, MISS_WINDOW)
-  await db
+  const [counted] = await db
     .insert(inviteMiss)
     .values({ client })
     .onConflictDoUpdate({
@@ -129,20 +126,29 @@ async function countMiss(client: string) {
         windowStart: sql`case when ${inWindow} then ${inviteMiss.windowStart} else now() end`,
       },
     })
-  // Windows that are over need no row.
-  await db.delete(inviteMiss).where(lt(inviteMiss.windowStart, MISS_WINDOW))
+    .returning({ misses: inviteMiss.misses, newWindow: sql<boolean>`${inviteMiss.windowStart} = now()` })
+  // Windows that are over need no row; cleared once per new window, not on
+  // every lookup.
+  if (counted?.newWindow) await db.delete(inviteMiss).where(lt(inviteMiss.windowStart, MISS_WINDOW))
+  return (counted?.misses ?? 0) > MISSES_ALLOWED
+}
+
+// A lookup that found its Board was no miss after all.
+async function refundMiss(client: string) {
+  await db
+    .update(inviteMiss)
+    .set({ misses: sql`greatest(${inviteMiss.misses} - 1, 0)` })
+    .where(eq(inviteMiss.client, client))
 }
 
 // What `find` finds for this client's Invite Link: 429 while the client has
-// missed too often, 404 (one more miss) if it finds nothing.
+// missed too often, 404 (a miss) if it finds nothing.
 export async function lookUpInvite<T>(event: H3Event, find: () => Promise<T | null>): Promise<T> {
   const client = clientOf(event)
-  if (await missedTooOften(client)) throw tooManyMisses()
+  if (await reserveMiss(client)) throw tooManyMisses()
   const found = await find()
-  if (found === null) {
-    await countMiss(client)
-    throw inviteNotFound()
-  }
+  if (found === null) throw inviteNotFound()
+  await refundMiss(client)
   return found
 }
 
