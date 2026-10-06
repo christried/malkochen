@@ -2,22 +2,24 @@ import type { Browser, Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { gotoHydrated } from './hydration'
+import { gotoHydrated, reloadHydrated } from './hydration'
+import { seedOldInviteToken } from './seed'
 
 // Invite Links (PRD stories 4, 63–66): the Owner's link in Board settings,
 // opened by a second user. Frances owns the Boards; Sophie and Joan are the
 // invited users, used by this file only (Sophie's first sign-in is here).
 
-// A Board of Frances's, and its Invite Link as Board settings shows it.
-async function ownersLink(page: Page, name: string, emoji: string): Promise<{ slug: string, link: string }> {
+// A Board of Frances's, and its Invite Link as Board settings shows it: the
+// Board's address, then its secret (#128).
+async function ownersLink(page: Page, name: string, emoji: string): Promise<{ id: string, slug: string, link: string }> {
   await signIn(page, ALLOWLISTED[12])
   const res = await page.request.post('/api/boards', { data: { name, emoji } })
   expect(res.status()).toBe(201)
-  const { slug } = await res.json()
+  const { id, slug } = await res.json()
   await gotoHydrated(page, `/b/${slug}/settings`)
   const link = await page.getByLabel('Einladungslink').inputValue()
-  expect(link).toMatch(/\/invite\/[0-9a-f]{32}$/)
-  return { slug, link }
+  expect(link).toMatch(new RegExp(`/invite/${slug}-[2-9a-hjkmnp-z]{17}$`))
+  return { id, slug, link }
 }
 
 // A second person's browser, signed out.
@@ -77,4 +79,29 @@ test('a signed-in user opening the link joins at once, and a reset link stops wo
   const stranger = await secondBrowser(browser)
   await gotoHydrated(stranger, link)
   await expect(stranger.getByRole('heading', { level: 1 })).toHaveText('Dieser Link geht nicht mehr.')
+})
+
+test('a renamed Board’s link names it anew, and the link sent before still opens the invite', async ({ page, browser }) => {
+  const { id, link } = await ownersLink(page, 'Suppenabend', '🍲')
+  const secret = link.slice(link.lastIndexOf('-') + 1)
+  expect((await page.request.patch(`/api/boards/${id}`, { data: { name: 'Eintopfabend' } })).status()).toBe(200)
+
+  await reloadHydrated(page)
+  await expect(page.getByLabel('Einladungslink')).toHaveValue(new RegExp(`/invite/eintopfabend-${secret}$`))
+
+  const invited = await secondBrowser(browser)
+  await gotoHydrated(invited, link)
+  await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🍲 Eintopfabend eingeladen')
+})
+
+test('a link from before readable Invite Links still opens the invite, and settings show it with the Board’s name', async ({ page, browser }) => {
+  const { id, slug } = await ownersLink(page, 'Altes Linkdinner', '🥗')
+  const token = await seedOldInviteToken(id)
+
+  const invited = await secondBrowser(browser)
+  await gotoHydrated(invited, `/invite/${token}`)
+  await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🥗 Altes Linkdinner eingeladen')
+
+  await reloadHydrated(page)
+  await expect(page.getByLabel('Einladungslink')).toHaveValue(new RegExp(`/invite/${slug}-${token}$`))
 })

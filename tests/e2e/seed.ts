@@ -57,6 +57,21 @@ export async function seedCookings(page: Page, title: string, count: number) {
   }
 }
 
+// Gives a Board the kind of Invite Link token Boards had before readable
+// Invite Links (#128): 32 hex characters, its link /invite/<token>.
+export async function seedOldInviteToken(boardId: string): Promise<string> {
+  const token = randomUUID().replaceAll('-', '')
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    await client.query('update board set invite_token = $2 where id = $1', [boardId, token])
+  }
+  finally {
+    await client.end()
+  }
+  return token
+}
+
 // Puts the signed-in user's landing Board back as a new Board starts: named
 // "Meine Küche" 🍲, with the default Columns and no Dishes. For files whose
 // tests each need that start, whatever the test before them left.
