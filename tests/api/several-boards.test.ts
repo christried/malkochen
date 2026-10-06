@@ -145,6 +145,28 @@ test('a Dish moved into another Board’s Gekocht Column records a Cooking there
   expect(after.columns.find(c => c.isGekocht)!.dishes.map(d => d.id)).toEqual([dish.id])
 })
 
+// "Rückgängig" in the Gekocht toast after "Verschieben nach…" into another
+// Board's Gekocht Column (#129).
+test('undoing a Cooking recorded on another Board puts the Dish back where it was on its first Board', async () => {
+  const annie = await signIn(ALLOWLISTED[9])
+  const from = await createBoard(annie, 'Zuhause', '🏡')
+  const to = await createBoard(annie, 'Kochclub', '🍜')
+  const below = await addDish(annie, from.id, 'Linsensuppe')
+  const dish = await addDish(annie, from.id, 'Pho')
+  const above = await addDish(annie, from.id, 'Tacos')
+  const ideen = from.columns[0]!
+  const { cooking } = await (await moveDish(annie, dish.id, to.columns.find(c => c.isGekocht)!.id)).json() as { cooking: { id: string } }
+
+  const res = await send(annie, 'POST', `/api/cookings/${cooking.id}/undo`, { columnId: ideen.id, index: 1 })
+
+  expect(res.status).toBe(200)
+  expect(await res.json()).toMatchObject({ id: dish.id, cookings: [], placement: { boardId: from.id, columnId: ideen.id, index: 1 } })
+  const back = await (await annie.fetch(`/api/boards/${from.id}`)).json() as Board
+  expect(back.columns[0]!.dishes.map(d => d.id)).toEqual([above.id, dish.id, below.id])
+  const left = await (await annie.fetch(`/api/boards/${to.id}`)).json() as Board
+  expect(left.columns.flatMap(c => c.dishes)).toEqual([])
+})
+
 test('a Dish can’t be moved to a Board its mover isn’t a Member of, nor moved by a non-Member', async () => {
   const annie = await signIn(ALLOWLISTED[9])
   const linus = await signIn(ALLOWLISTED[2])
