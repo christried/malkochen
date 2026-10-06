@@ -1,6 +1,6 @@
 // What Topfbert says in the Gekocht celebration (TopfbertCheer): one of his
-// cheers (strings: dish.cheers) at random for each Gekocht toast, never the
-// one he said last.
+// cheers (strings: dish.cheers) at random each time the Gekocht pill shows,
+// never the one he said last.
 
 // One of `items` at random, other than `last` (unless it's the only one).
 export function pickOtherThan<T>(items: readonly T[], last: T | undefined, random: () => number = Math.random): T {

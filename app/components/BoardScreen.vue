@@ -374,8 +374,9 @@ async function showResult(result: BoardResult, { origin, moved, moveFocus = true
   if (moveFocus && result.focus && !route.params.dish) await focusOn(result.focus)
 }
 
-// Where "Verschieben nach…" moved a Dish to: a Column of this Board (into
-// the Gekocht Column, the Gekocht toast says so instead), or of `toBoard`.
+// Where "Verschieben nach…" moved a Dish to: a Column of this Board, or of
+// `toBoard` (into a Gekocht Column, the Gekocht celebration says so
+// instead).
 function movedText({ dish, placement }: BoardResult, toBoard: BoardListing | null) {
   const column = (toBoard ?? board.value)?.columns.find(c => c.id === placement?.columnId)
   if (!column) return null

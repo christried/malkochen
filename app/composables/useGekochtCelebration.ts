@@ -7,13 +7,14 @@ import { recordsCooking } from '~~/shared/placement'
 // - at once, the button springs (CookButton) and the confetti bursts from it;
 // - 300ms on, the card swooshes out of its Column (unless it is in the
 //   Gekocht Column already), the Gekocht tab, or the Gekocht Column's title
-//   on wider screens, bumps as its count rolls, and the Gekocht toast follows
-//   (+500ms, AppToast);
+//   on wider screens, bumps as its count rolls, the Gekocht toast comes up
+//   at the bottom (AppToast), and the Gekocht pill with Topfbert comes down
+//   at the top (+500ms, GekochtPill);
 // - from another Column, a pebble flies from the button to that tab or
 //   title (640ms) and bursts there, with a CLOCK_TICK.
-// `cookDish` records the Cooking and shows its result: the Gekocht toast,
-// and focus on what took the card's place. Reduced motion: no wait, no
-// flight; the toast and the count change.
+// `cookDish` records the Cooking and shows its result: the Gekocht pill and
+// toast, and focus on what took the card's place. Reduced motion: no wait,
+// no flight; the pill, the toast and the count change.
 export function useGekochtCelebration(
   board: Ref<BoardView | undefined>,
   options: {
