@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest } from './board'
+import { expectCardShape } from './card-shape'
 import { gotoHydrated } from './hydration'
 import { clickAndExpectSaving, dotsMoving, holdRequests, linkField, linkFound, loadingDots, SAGE } from './loading'
 import { removeStoredImages, seedDish, storedImage } from './seed'
@@ -45,6 +46,7 @@ test('a pasted link shows a loading state, then a preview with image, editable t
   await sheet.getByLabel('Link').fill(`${TIKTOK}?is_from_webapp=1`)
 
   await expect(sheet.getByRole('status')).toHaveText('Ich schau mal nach …')
+  await expectCardShape(sheet.locator('[data-lookup="looking"]'))
   await expect(sheet.getByRole('button', { name: 'Speichern' })).toHaveCount(0)
   // The link field shows the lookup under way: loading dots, no check yet.
   const field = linkField(sheet)
@@ -243,6 +245,7 @@ test('lookup failed: the Dish can still be saved with a Placeholder and a typed 
   await sheet.getByLabel('Link').fill(short)
 
   await expect(sheet.getByRole('status')).toContainText('Das Nachschauen hat nicht geklappt')
+  await expectCardShape(sheet.locator('[data-lookup="failed"]'))
   // Nothing recognised: neither dots nor the check stay in the link field.
   await expect(loadingDots(linkField(sheet))).toHaveCount(0)
   await expect(linkFound(sheet)).toHaveCount(0)
@@ -268,6 +271,7 @@ test('a link already on the Board warns, naming the Dish and its Column; "Trotzd
   await sheet.getByLabel('Link').fill(`${short}?feature=share`)
 
   await expect(sheet.getByRole('alert')).toContainText('Schon auf dem Board: „Crispy Tofu“ in Ideen')
+  await expectCardShape(sheet.locator('[data-duplicate]'))
   await expect(sheet.getByRole('button', { name: 'Speichern', exact: true })).toHaveCount(0)
   const body = savedBody(page)
   await sheet.getByRole('button', { name: 'Trotzdem speichern' }).click()

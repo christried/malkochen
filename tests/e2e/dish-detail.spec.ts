@@ -2,7 +2,8 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { cardAtRest } from './board'
+import { cardAtRest, column } from './board'
+import { expectCardShape } from './card-shape'
 import { editMorph, expectFieldsMorphing, slowAnimations } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
@@ -47,6 +48,7 @@ test('tapping a card opens its detail with everything about the Dish', async ({ 
   const original = detail.getByRole('link', { name: 'Original öffnen' })
   await expect(original).toHaveAttribute('href', TIKTOK)
   await expect(original).toHaveAttribute('target', '_blank')
+  await expectCardShape(detail.locator('[data-morph-field="source"]'))
   await expect(detail.getByText('Meine Küche · Diese Woche')).toBeVisible()
   await expect(detail.getByText(/^Hinzugefügt am \d/)).toBeVisible()
   // Without a Creator, no empty line for one.
@@ -67,10 +69,13 @@ for (const [width, panel] of [[1024, 440], [1440, 480]] as const) {
     await page.setViewportSize({ width, height: 900 })
     await signIn(page, ALLOWLISTED[0])
     await gotoHydrated(page, '/')
+    // The Columns side by side, rounded on all four corners.
+    for (const name of ['Ideen', 'Diese Woche', 'Gekocht']) await expectCardShape(column(page, name))
 
     const detail = await openDetail(page, 'Crispy Tofu')
 
     expect(await settledBox(detail)).toEqual({ x: width - panel, y: 0, width: panel, height: 900 })
+    await expectCardShape(detail.locator('[data-morph-field="source"]'))
     await page.keyboard.press('Escape')
     await expect(detail).toBeHidden()
     await expect(page).toHaveURL(/\/b\/[^/]+$/)

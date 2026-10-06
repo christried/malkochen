@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, swipe, tab } from './board'
+import { expectCardShape } from './card-shape'
 import { gotoHydrated } from './hydration'
 import { landingBoardId, resetBoard } from './seed'
 
@@ -68,6 +69,7 @@ test('a phone shows the active Column’s name large, with its subtitle in itali
   await expect(title).toHaveCSS('font-family', /Newsreader/)
   await expect(subtitle).toHaveCSS('font-style', 'italic')
   await expectShown(page, 'Ideen', 'Worauf hast du Lust?')
+  await expectCardShape(column(page, 'Ideen'))
 
   const [name, sub, tabs] = await Promise.all([title, subtitle, page.getByRole('navigation', { name: 'Spalten' })].map(l => l.boundingBox()))
   expect(name!.y + name!.height).toBeLessThanOrEqual(sub!.y + 1)

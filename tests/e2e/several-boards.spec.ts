@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, titles } from './board'
+import { expectCardShape } from './card-shape'
 import { ANY_CHEER, cheer, confetti, confettiOrigin, gekochtPill } from './celebration'
 import { gotoHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
@@ -239,6 +240,7 @@ test('switching Boards shows the new Board’s skeleton at once, shimmering, and
   await expect(page.getByRole('navigation', { name: 'Spalten' }).getByRole('button')).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
   await expect(skeleton(page).getByRole('heading', { level: 2 })).toHaveText(['Ideen'])
   await expect(skeleton(page).getByRole('region')).toHaveCount(1)
+  await expectCardShape(skeleton(page).getByRole('region'))
   const card = skeleton(page).locator('[data-skeleton-card]').first()
   await expect(card).toBeVisible()
   expect(await animations(card)).toEqual([{ duration: 1400, iterations: Infinity, easing: 'ease-in-out' }])
