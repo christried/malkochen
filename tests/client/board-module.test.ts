@@ -176,7 +176,7 @@ test('leaving the Dish detail, focus goes to its card while on the Board, else t
   // Deleted, or moved to another Board: what took its place then.
   module.deleteDish('b')
   expect(module.focusAfterDetail('b')).toEqual({ dish: 'c' })
-  module.moveToBoard('c', { boardId: 'feierabend', columnId: 'f-ideen' })
+  module.moveToBoard('c', { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })
   expect(module.focusAfterDetail('c')).toEqual({ column: 'ideen' })
 })
 
@@ -527,7 +527,7 @@ test('a move under way when an edit is saved still settles where the server put 
 test('a Dish moved to another Board leaves this one at once, and settles where the server put it there', async () => {
   const { fake, module, shown } = setup()
 
-  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!
 
   expect(shown().ideen).toEqual(['a', 'c'])
   expect(result).toMatchObject({ dish: { id: 'b' }, placement: { boardId: 'feierabend', columnId: 'f-ideen', index: 0 }, focus: { dish: 'c' } })
@@ -540,7 +540,7 @@ test('a move to another Board that fails puts the Dish back exactly where it was
   const { fake, module, shown } = setup()
   fake.failNext('moveDish', 500)
 
-  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!
   // Deleting Dish a meanwhile moves c up to b's old index: b still goes back above c.
   module.deleteDish('a')
 
@@ -552,7 +552,7 @@ test('a Dish another Member deleted already (404) stays gone when moved to anoth
   const { fake, module, shown } = setup()
   fake.deleteDishElsewhere('b')
 
-  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+  const result = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!
 
   expect(await result.settled).toEqual({ dish: result.dish })
   expect(shown().ideen).toEqual(['a', 'c'])
@@ -564,7 +564,7 @@ test('a move then a move to another Board that both fail leave the Dish where it
   fake.failNext('moveDish', 500)
 
   const moved = module.moveDish('b', { columnId: 'woche' })!
-  const movedAway = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen' })!
+  const movedAway = module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!
 
   expect(await moved.settled).toMatchObject({ notice: 'moveFailed' })
   expect(await movedAway.settled).toMatchObject({ notice: 'moveFailed' })
@@ -572,17 +572,86 @@ test('a move then a move to another Board that both fail leave the Dish where it
   expect(fake.sent).toEqual(['moveDish b woche', 'moveDish b f-ideen'])
 })
 
-test('a Dish moved into another Board’s Gekocht Column keeps its Cooking History here, with no Gekocht toast or undo', async () => {
+// "Verschieben nach…" into another Board's Gekocht Column (#129).
+const INTO_FEIERABEND_GEKOCHT = { boardId: 'feierabend', columnId: 'f-gekocht', isGekocht: true }
+
+test('a Dish moved into another Board’s Gekocht Column records a Cooking at once, keeps its Cooking History, and offers the Gekocht toast’s undo', async () => {
   const { module, shown } = setup(cookedTwice)
 
-  const result = module.moveToBoard('d', { boardId: 'feierabend', columnId: 'f-gekocht' })!
+  const result = module.moveToBoard('d', INTO_FEIERABEND_GEKOCHT)!
 
-  expect(result).not.toHaveProperty('notice')
-  expect(result).not.toHaveProperty('undo')
-  expect(result).not.toHaveProperty('cooking')
-  expect(await result.settled).toEqual({ dish: result.dish, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 } })
-  expect(result.dish.cookings.map(c => c.id)).toEqual(['sept-20', 'sept-1'])
   expect(shown().woche).toEqual([])
+  expect(result).toMatchObject({ notice: 'cook', cooking: { note: null }, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 }, focus: { column: 'woche' } })
+  expect(result.undo).toBeTypeOf('function')
+  expect(result.dish.cookings.map(c => c.id)).toEqual(['', 'sept-20', 'sept-1'])
+  const settled = (await result.settled)!
+  expect(settled).toMatchObject({ placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 }, cooking: { id: 'cooking-1' } })
+  expect(settled).not.toHaveProperty('notice')
+  expect(result.dish.cookings.map(c => c.id)).toEqual(['cooking-1', 'sept-20', 'sept-1'])
+  expect(shown().woche).toEqual([])
+})
+
+test('"Rückgängig" after a move into another Board’s Gekocht Column brings the Dish back where it was, without that Cooking', async () => {
+  const { fake, module, shown, history } = setup(cookedTwice)
+  const moved = module.moveToBoard('b', INTO_FEIERABEND_GEKOCHT)!
+  await moved.settled
+
+  const undone = await moved.undo!()
+
+  expect(undone).toMatchObject({ focus: { dish: 'b' } })
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+  expect(history('b')).toEqual([])
+  expect(await undone.settled).toMatchObject({ placement: { boardId: 'board', columnId: 'ideen', index: 1 } })
+  expect(await undone.settled).not.toHaveProperty('notice')
+  expect(fake.sent).toEqual(['moveDish b f-gekocht', 'undoCooking cooking-1 ideen 1'])
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+  expect(fake.server.columns[0]!.dishes.map(d => d.id)).toEqual(['a', 'b', 'c'])
+  expect(fake.server.columns[0]!.dishes[1]!.cookings).toEqual([])
+})
+
+test('"Rückgängig" before the move into another Board’s Gekocht Column has reached the server waits for it, then takes the Cooking off again', async () => {
+  const { fake, module, shown, history } = setup()
+  const moving = fake.holdNext('moveDish')
+  const moved = module.moveToBoard('b', INTO_FEIERABEND_GEKOCHT)!
+
+  const undone = await moved.undo!()
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+  expect(history('b')).toEqual([])
+
+  moving.succeed()
+  expect(await moved.settled).not.toHaveProperty('notice')
+  expect(await undone.settled).not.toHaveProperty('notice')
+  expect(fake.sent).toEqual(['moveDish b f-gekocht', 'undoCooking cooking-1 ideen 1'])
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+  expect(history('b')).toEqual([])
+})
+
+test('an undo of a Cooking recorded on another Board that fails takes the Dish off this Board again, with a notice', async () => {
+  const { fake, module, shown } = setup()
+  const moved = module.moveToBoard('b', INTO_FEIERABEND_GEKOCHT)!
+  const recorded = (await moved.settled)!.cooking!
+  fake.failNext('undoCooking', 500)
+
+  const undone = await moved.undo!()
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+
+  expect(await undone.settled).toMatchObject({ notice: 'uncookFailed' })
+  expect(shown().ideen).toEqual(['a', 'c'])
+  expect(moved.dish.cookings).toEqual([recorded])
+})
+
+test('a move into another Board’s Gekocht Column that fails puts the Dish back without a Cooking, with a notice', async () => {
+  const { fake, module, shown } = setup(cookedTwice)
+  fake.failNext('moveDish', 500)
+
+  const moved = module.moveToBoard('d', INTO_FEIERABEND_GEKOCHT)!
+
+  expect(await moved.settled).toEqual({ dish: moved.dish, notice: 'cookFailed' })
+  expect(shown().woche).toEqual(['d'])
+  expect(moved.dish.cookings.map(c => c.id)).toEqual(['sept-20', 'sept-1'])
+  // Nothing left to undo.
+  expect(await moved.undo!()).toEqual({ dish: moved.dish })
+  expect(fake.sent).toEqual(['moveDish d f-gekocht'])
 })
 
 test('a poll brings other Members’ changes, keeping the Columns and Dishes still there as they were', async () => {

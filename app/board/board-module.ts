@@ -92,10 +92,11 @@ export interface Destination {
 }
 
 // Where a Dish moved to another Board is asked to go: to the top of a
-// Column there.
+// Column there, which may be that Board's Gekocht Column.
 export interface BoardDestination {
   boardId: string
   columnId: string
+  isGekocht: boolean
 }
 
 // Where a Dish was in its Column, to put it back there (putBack): its index,
@@ -105,6 +106,14 @@ interface Place {
   index: number
   above?: string
   below?: string
+}
+
+// How a move that may record a Cooking ended, for its undo: whether it
+// failed, the Cooking it recorded, and whether it was undone.
+interface MoveEnded {
+  failed: boolean
+  recorded?: CookingView
+  undone: boolean
 }
 
 function placeOf(column: BoardColumn, index: number): Place {
@@ -338,30 +347,22 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const focus = stays ? { dish: dishId } : left.focus
     insert(target, landing, dish)
     const placement = { boardId: board.value.id, columnId: target.id, index: landing }
-    // The Cooking as the server will record it, filled in once it has. The
-    // Board's own (reactive) copy, so filling it in shows.
-    if (cooks) dish.cookings.unshift({ id: '', cookedAt: new Date().toISOString(), note: null, recordedBy: null })
-    const pending = cooks ? dish.cookings[0]! : undefined
-    // How the move ended, for undo: failed, or with the Cooking it recorded.
-    let failed = false
-    let recorded: CookingView | undefined
-    let undone = false
+    const pending = cooks ? recordPending(dish) : undefined
+    const ended: MoveEnded = { failed: false, undone: false }
 
     const settled = queued(dishId, async (latest): Promise<BoardResult> => {
       try {
         const moved = await write()
-        recorded = moved.cooking
+        ended.recorded = moved.cooking
         rolledBackTo.delete(dishId)
         if (latest()) settle(dish, moved)
         // A later write has the Dish elsewhere by now: only the Cooking
         // settles, if it still shows, or goes if none was recorded.
-        else if (pending && moved.cooking) Object.assign(pending, moved.cooking)
-        else removeFrom(dish.cookings, pending)
-        const cooking = moved.cooking && dish.cookings.find(c => c.id === moved.cooking!.id)
-        return { dish, placement: moved.placement, ...cooking && { cooking } }
+        else settlePending(dish, pending, moved.cooking)
+        return { dish, placement: moved.placement, ...shownCooking(dish, moved.cooking) }
       }
       catch (error) {
-        failed = true
+        ended.failed = true
         if (isGone(error)) {
           takeOut(dishId)
           return { dish }
@@ -371,29 +372,59 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         const back = rollBackTo(dishId, origin)
         removeFrom(dish.cookings, pending)
         // Undone already, it is back, and nothing is left to tell.
-        if (undone) return { dish }
+        if (ended.undone) return { dish }
         if (latest()) moveBack(dish, back)
         return { dish, notice: cooks ? 'cookFailed' : 'moveFailed' }
       }
     })
 
-    // "Rückgängig" in the Gekocht toast (PRD story 51): the Dish is back
-    // where it was at once, without that Cooking, with focus on it. Its
-    // write waits for the move, then takes the Cooking off again (with none
-    // recorded, it moves the Dish back). If that fails, the Dish is cooked
-    // again where it was, with a notice. After a failed move, the Dish is
-    // back already.
-    async function undo(): Promise<BoardResult> {
-      if (failed) return { dish }
-      undone = true
+    return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo: undoCooked(dish, origin, pending, ended) } }
+  }
+
+  // The Cooking a move records, shown in the Dish's Cooking History at once
+  // and filled in once the server has recorded it. The Board's own
+  // (reactive) copy, so filling it in shows.
+  function recordPending(dish: DishView): CookingView {
+    dish.cookings.unshift({ id: '', cookedAt: new Date().toISOString(), note: null, recordedBy: null })
+    return dish.cookings[0]!
+  }
+
+  // Fills in the pending Cooking as the server recorded it, or takes it out
+  // of the Cooking History if the server recorded none.
+  function settlePending(dish: DishView, pending: CookingView | undefined, recorded: CookingView | undefined) {
+    if (pending && recorded) Object.assign(pending, recorded)
+    else removeFrom(dish.cookings, pending)
+  }
+
+  // The recorded Cooking as the Dish's Cooking History shows it, unless it
+  // is gone from there (undone meanwhile).
+  function shownCooking(dish: DishView, recorded: CookingView | undefined): { cooking?: CookingView } {
+    const cooking = recorded && dish.cookings.find(c => c.id === recorded.id)
+    return cooking ? { cooking } : {}
+  }
+
+  // "Rückgängig" in the Gekocht toast (PRD story 51), for a move that
+  // records a Cooking: the Dish is back where it was at once (on this
+  // Board, also from another Board's Gekocht Column), without that Cooking,
+  // with focus on it. Its write waits for the move, then takes the Cooking
+  // off again (with none recorded, it moves the Dish back). If that fails,
+  // the Dish is cooked again where it was, with a notice: back in this
+  // Board's Gekocht Column, or off this Board again. After a failed move,
+  // the Dish is back already.
+  function undoCooked(dish: DishView, origin: Place, pending: CookingView, ended: MoveEnded) {
+    const dishId = dish.id
+    return async (): Promise<BoardResult> => {
+      if (ended.failed) return { dish }
+      ended.undone = true
       const now = find(dishId)
       const cooked = now && placeOf(now.column, now.column.dishes.indexOf(now.dish))
       moveBack(dish, origin)
-      removeFrom(dish.cookings, dish.cookings.find(c => c === pending || c.id === recorded?.id))
+      removeFrom(dish.cookings, dish.cookings.find(c => c === pending || c.id === ended.recorded?.id))
 
       const back = { columnId: origin.columnId, index: origin.index }
       const undoing = queued(dishId, async (latest): Promise<BoardResult> => {
-        if (failed) return { dish }
+        if (ended.failed) return { dish }
+        const { recorded } = ended
         try {
           const placed = recorded ? await transport.undoCooking(recorded.id, back) : await transport.moveDish(dishId, back)
           if (latest()) settle(dish, placed)
@@ -402,47 +433,59 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         catch (error) {
           // Its Cooking stays gone if it is gone on the server (deleted
           // from the Cooking History meanwhile).
-          if (recorded && !isGone(error) && !dish.cookings.some(c => c.id === recorded!.id)) dish.cookings.unshift(recorded)
+          if (recorded && !isGone(error) && !dish.cookings.some(c => c.id === recorded.id)) dish.cookings.unshift(recorded)
           if (cooked) moveBack(dish, cooked)
+          else takeOut(dishId)
           return { dish, notice: 'uncookFailed' }
         }
       })
       return { dish, focus: { dish: dishId }, settled: undoing }
     }
-
-    return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo } }
   }
 
   // Moving a Dish to a Column on another of the Member's Boards (PRD story
   // 46): it leaves this Board at once, for the top of that Column, keeping
-  // its Cooking History; into that Board's Gekocht Column the server
-  // records a Cooking, but there is no Gekocht toast or undo, as the Dish
-  // is no longer here. If the move fails, it comes back exactly where it
+  // its Cooking History. If the move fails, it comes back exactly where it
   // was, with a notice; one the server no longer has (another Member
   // deleted it) stays gone. Null if it isn't on this Board.
+  //
+  // Into that Board's Gekocht Column it records a Cooking, as a move into
+  // this Board's would (#129): it shows in the Dish's Cooking History at
+  // once, and the Gekocht toast (`cook`) offers "Rückgängig", which brings
+  // the Dish back here.
   function moveToBoard(dishId: string, to: BoardDestination): BoardResult | null {
     const found = find(dishId)
     if (!found) return null
     const { dish } = found
+    const cooks = recordsCooking(found.column, { id: to.columnId, isGekocht: to.isGekocht })
     const { origin, focus } = leave(dish, found.column)
     focusWhenGone.set(dishId, focus)
+    const pending = cooks ? recordPending(dish) : undefined
+    const ended: MoveEnded = { failed: false, undone: false }
 
     const settled = queued(dishId, async (latest): Promise<BoardResult> => {
       try {
         const moved = await transport.moveDish(dishId, { columnId: to.columnId })
+        ended.recorded = moved.cooking
         rolledBackTo.delete(dishId)
-        return { dish, placement: moved.placement }
+        settlePending(dish, pending, moved.cooking)
+        return { dish, placement: moved.placement, ...shownCooking(dish, moved.cooking) }
       }
       catch (error) {
+        ended.failed = true
+        removeFrom(dish.cookings, pending)
         if (isGone(error)) return { dish }
         // Back where the server still has it.
         const back = rollBackTo(dishId, origin)
+        // Undone already, it is back, and nothing is left to tell.
+        if (ended.undone) return { dish }
         if (latest()) moveBack(dish, back)
-        return { dish, notice: 'moveFailed' }
+        return { dish, notice: cooks ? 'cookFailed' : 'moveFailed' }
       }
     })
 
-    return { dish, placement: { ...to, index: 0 }, focus, settled }
+    const placement = { boardId: to.boardId, columnId: to.columnId, index: 0 }
+    return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo: undoCooked(dish, origin, pending, ended) } }
   }
 
   // Puts a Cooking back into its Dish's Cooking History, found by the
