@@ -72,7 +72,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await expect(clipStill(history, 'never-cooked')).toBeVisible()
   await history.getByRole('button', { name: 'Gekocht ✓' }).click()
   await expect(history.locator('[data-cooking]')).toHaveCount(1)
-  // The celebration: Topfbert's still behind the toast, and no confetti.
+  // The celebration: Topfbert's still in the Gekocht pill, and no confetti.
   await expect(topfbert(detail).locator('img[src="/illustrations/topfbert-happy.svg"]')).toBeVisible()
   await expect(cheer(detail)).toHaveText(ANY_CHEER)
   expect(await confetti(page).count()).toBe(0)

@@ -89,7 +89,7 @@ test('the 10th Cooking celebrates once; its toast stays on top, and undo there e
   await expect(milestone(page)).toBeVisible()
   await expect(milestone(page)).toContainText('Chili sin Carne ist jetzt ein Klassiker: 10× gekocht.')
   await expect(milestone(page).locator('[data-clip="/clips/milestone-10x"]')).toBeVisible()
-  // Topfbert says the same over it as behind the Board's toast (#114).
+  // Topfbert says the same over it as in the Board's Gekocht pill (#114).
   const said = cheer(page)
   await expect(said).toHaveCount(2)
   const [onBoard, overIt] = await said.allTextContents()
