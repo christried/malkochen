@@ -20,21 +20,9 @@ watch([toast, bar], ([, el]) => {
 }, { flush: 'post' })
 onBeforeUnmount(() => timer?.cancel())
 
-// Inside a modal (the Dish detail, a celebration), the toast is lifted into
-// the top layer as a manual popover. When a sheet opens over the Dish detail,
-// the detail steps back (scale .96), and a scaled ancestor would otherwise
-// carry the toast along into the side panel. Popovers stack in the order
-// they're shown, so it's lifted a tick after mounting, once the modal it's
-// in has opened: then it's above that modal, and sheets opened later stay
-// above it. Outside a modal it stays an ordinary fixed element, so the
-// offline screen and the splash still cover it.
+// Inside a modal, it's lifted into the top layer (useTopLayerInModal).
 const region = useTemplateRef<HTMLElement>('region')
-onMounted(async () => {
-  await nextTick()
-  // Gone already if the page it was on was left at once.
-  const el = region.value
-  if (el?.isConnected && el.closest('dialog')) el.showPopover()
-})
+useTopLayerInModal(region)
 
 function act(action: ToastAction) {
   toast.value = null
@@ -57,14 +45,7 @@ function act(action: ToastAction) {
       <div
         v-if="toast"
         class="relative max-w-md"
-        :class="{ celebrating: toast.celebrate }"
       >
-        <!-- Topfbert peeks out from behind the toast, over its left half. -->
-        <TopfbertCheer
-          v-if="toast.celebrate"
-          :cheer="toast.celebrate.cheer"
-          class="absolute bottom-[calc(100%-22px)] left-6 w-[84px]"
-        />
         <div
           class="pointer-events-auto relative flex items-center gap-4 overflow-hidden rounded-pill bg-inverse py-3 pl-5 text-small text-on-inverse shadow-fab"
           :class="toast.actions?.length ? 'pr-2' : 'pr-5'"
@@ -100,13 +81,10 @@ function act(action: ToastAction) {
 </template>
 
 <style scoped>
-/* In: up from below, 380ms with a little overshoot (sheet); the Gekocht
-   toast a moment after its confetti. Out: down, 300ms. */
+/* In: up from below, 380ms with a little overshoot (sheet). Out: down,
+   300ms. */
 .toast-enter-active {
   transition: translate 380ms var(--ease-sheet), opacity var(--dur-fade) var(--ease-fade);
-}
-.toast-enter-active.celebrating {
-  transition-delay: var(--dur-toast-delay);
 }
 .toast-leave-active {
   transition: translate 300ms var(--ease-swoosh), opacity 300ms var(--ease-fade);

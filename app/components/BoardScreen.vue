@@ -84,6 +84,7 @@ function addNote(dish: DishView, cooking: CookingView) {
 const boardModule = createBoardModule(board, httpTransport())
 provide(boardModuleKey, boardModule)
 const confetti = useConfetti()
+const gekochtPill = useGekochtPill()
 
 // Just made with "Neues Board", the Board celebrates as it opens.
 const justCreated = useJustCreatedBoard()
@@ -95,9 +96,9 @@ onMounted(() => {
 })
 
 // A Dish's 10th Cooking (milestone-10x): once it is recorded, a moment
-// after the Gekocht toast is in, over the Board or the Dish detail; once per
-// Dish on this device. The toast shows over it, and undoing that Cooking
-// there ends it.
+// after the Gekocht pill is in, over the Board or the Dish detail; once per
+// Dish on this device. The pill and the toast show over it, and undoing that
+// Cooking there ends it.
 const milestone = ref<{ dish: DishView, cooking: CookingView } | null>(null)
 const milestoneOpen = computed({
   get: () => !!milestone.value,
@@ -349,7 +350,9 @@ function deleteFromMenu() {
 // celebration (its confetti from `origin`); then what its write ended in,
 // once settled; and focus where it says, unless dragging moved it
 // (`moveFocus: false`) or the Dish detail makes the Board inert (focus goes
-// back as it closes).
+// back as it closes). A Dish moved into another Board's Gekocht Column from
+// its detail leaves the screen with the detail: it celebrates over the
+// Board, once the detail has closed.
 async function showResult(result: BoardResult, { origin, moved, moveFocus = true }: ResultContext & { moveFocus?: boolean } = {}) {
   const { notice, undo, settled } = result
   if (notice === 'deleted' || notice === 'cookingDeleted') hapticReject()
@@ -358,7 +361,8 @@ async function showResult(result: BoardResult, { origin, moved, moveFocus = true
     if (text) showNotice(text)
   }
   if (notice === 'cook') {
-    celebrateCooking(result, origin)
+    if (moved?.toBoard) await detailClosed()
+    celebrateCooking(result, origin, moved?.toBoard)
   }
   else if (notice) {
     const text = noticeText(notice, result)
@@ -391,19 +395,36 @@ function noticeText(notice: Exclude<Notice, 'cook'>, { dish, cooking }: BoardRes
   }
 }
 
-// A Cooking recorded (PRD stories 49–55): haptics, confetti from `origin`
-// (from the toast's place without one; none if `null`, as the caller set
-// it off already), and the Gekocht toast, offering "Notiz hinzufügen" once
-// the Cooking is recorded, and "Rückgängig". The Cooking that makes the
-// Dish a Klassiker (the 10th) celebrates that too.
-function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point | null) {
+// Resolves once the Dish detail has closed and the Board shows its own
+// Toast, pill and confetti again; at once if it isn't open.
+async function detailClosed() {
+  if (route.params.dish) {
+    await new Promise<void>((resolve) => {
+      const stop = watch(() => route.params.dish, (dish) => {
+        if (dish) return
+        stop()
+        resolve()
+      })
+    })
+  }
+  await nextTick()
+}
+
+// A Cooking recorded (PRD stories 49–55), as decided on #105: haptics,
+// confetti from `origin` (from the Gekocht pill without one; none if
+// `null`, as the caller set it off already), the Gekocht pill at the top
+// with Topfbert (naming `toBoard`, for a Dish moved into its Gekocht
+// Column), and the Gekocht toast at the bottom, offering "Notiz
+// hinzufügen" once the Cooking is recorded, and "Rückgängig". The Cooking
+// that makes the Dish a Klassiker (the 10th) celebrates that too.
+function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point | null, toBoard?: BoardListing | null) {
   const recorded = settled?.then(r => r.cooking ?? null) ?? Promise.resolve(null)
   hapticCelebrate()
-  if (origin !== null) confetti.fire(origin ?? { x: innerWidth / 2, y: innerHeight - 48 })
+  gekochtPill.show({ cheer: nextCheer(t.dish.cheers), ...toBoard && { board: boardLabel(toBoard) } })
+  if (origin !== null) confetti.fire(origin ?? gekochtPill.origin())
   showToast({
     text: t.dish.cook,
     duration: UNDO_WINDOW_MS,
-    celebrate: { cheer: nextCheer(t.dish.cheers) },
     actions: [
       { label: t.dish.addNote, run: async () => {
         const cooking = await recorded
@@ -671,11 +692,11 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
 
-    <VeggieConfetti v-if="!route.params.dish" />
-    <AppToast
-      v-if="!route.params.dish"
-      v-model="toast"
-    />
+    <template v-if="!route.params.dish">
+      <VeggieConfetti />
+      <GekochtPill />
+      <AppToast v-model="toast" />
+    </template>
 
     <CookingNoteSheet
       v-model:cooking="notingCooking"
@@ -754,6 +775,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       close-after="milestone-stay"
     >
       <template #toast>
+        <GekochtPill />
         <AppToast v-model="toast" />
       </template>
     </CelebrationDialog>

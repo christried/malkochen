@@ -5,11 +5,6 @@ export interface Toast {
   actions?: ToastAction[]
   // How long it stays, in ms.
   duration: number
-  // The Gekocht toast: it comes a moment after the Cooking's confetti
-  // (useConfetti), and Topfbert pops up behind it while it shows, saying
-  // `cheer`. Picked with the toast, so every AppToast showing it (the
-  // Board's, a celebration's over it) has him say the same.
-  celebrate?: { cheer: string }
 }
 
 export interface ToastAction {

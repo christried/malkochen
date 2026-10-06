@@ -12,13 +12,14 @@ export function supportsViewTransitions(): boolean {
 
 // The durations script may ask for: the handoff's motion tokens
 // (tokens.css) and the timings of single interactions (main.css). Every one
-// collapses to 0 with reduced motion, except `fade`.
+// collapses to 0 with reduced motion, except `fade` and `gekocht-pill`.
 export type DurationToken
   = | 'tap' | 'fade' | 'pop' | 'settle' | 'sheet' | 'swoosh' | 'lift' | 'stagger' | 'type' | 'celebrate' | 'idle'
     | 'image-bloom' | 'edit-morph' | 'drop-settle' | 'drop-swallow' | 'drop-shrink' | 'drop-collapse' | 'drop-burst'
     | 'cooking-collapse' | 'cook-hold' | 'cook-leave' | 'toast-delay' | 'tab-bump'
     | 'fly-to-tab' | 'milestone-delay' | 'saved-flight' | 'sheet-out' | 'scrim-out'
     | 'badge-step' | 'milestone-stay' | 'board-created-columns' | 'board-created-column-gap'
+    | 'gekocht-pill'
 
 // The easings, from tokens.css.
 export type EasingToken = 'tap' | 'fade' | 'pop' | 'settle' | 'sheet' | 'swoosh' | 'lift' | 'idle'
