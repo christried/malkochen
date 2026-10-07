@@ -258,18 +258,18 @@ async function save() {
     >
       <AppField
         :label="t.detail.title"
-        :control="titleId"
+        :control-id="titleId"
       >
-      <input
-        :id="titleId"
-        ref="titleInput"
-        v-model="title"
-        type="text"
-        required
-        maxlength="200"
-        autocomplete="off"
-        class="font-display text-title-s"
-      >
+        <input
+          :id="titleId"
+          ref="titleInput"
+          v-model="title"
+          type="text"
+          required
+          maxlength="200"
+          autocomplete="off"
+          class="font-display text-title-s"
+        >
       </AppField>
     </div>
 
@@ -279,16 +279,16 @@ async function save() {
     >
       <AppField
         :label="t.dish.creator"
-        :control="creatorId"
+        :control-id="creatorId"
       >
-      <input
-        :id="creatorId"
-        v-model="creator"
-        type="text"
-        maxlength="100"
-        autocomplete="off"
-        :placeholder="t.detail.creatorPrompt"
-      >
+        <input
+          :id="creatorId"
+          v-model="creator"
+          type="text"
+          maxlength="100"
+          autocomplete="off"
+          :placeholder="t.detail.creatorPrompt"
+        >
       </AppField>
     </div>
 
@@ -298,14 +298,14 @@ async function save() {
     >
       <AppField
         :label="t.detail.note"
-        :control="noteId"
+        :control-id="noteId"
       >
-      <textarea
-        :id="noteId"
-        v-model="note"
-        maxlength="2000"
-        :placeholder="noteExample.prompt.value"
-      />
+        <textarea
+          :id="noteId"
+          v-model="note"
+          maxlength="2000"
+          :placeholder="noteExample.prompt.value"
+        />
       </AppField>
     </div>
 
@@ -315,20 +315,20 @@ async function save() {
     >
       <AppField
         :label="t.detail.source"
-        :control="linkId"
+        :control-id="linkId"
       >
-      <input
-        :id="linkId"
-        v-model="link"
-        type="url"
-        inputmode="url"
-        autocomplete="off"
-        maxlength="2048"
-        :placeholder="t.detail.sourcePrompt"
-        :aria-describedby="linkHintId"
-        :aria-invalid="linkInvalid || undefined"
-        @paste="lookup.pasted()"
-      >
+        <input
+          :id="linkId"
+          v-model="link"
+          type="url"
+          inputmode="url"
+          autocomplete="off"
+          maxlength="2048"
+          :placeholder="t.detail.sourcePrompt"
+          :aria-describedby="linkHintId"
+          :aria-invalid="linkInvalid || undefined"
+          @paste="lookup.pasted()"
+        >
       </AppField>
       <span
         :id="linkHintId"

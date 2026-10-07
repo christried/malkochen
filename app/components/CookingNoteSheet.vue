@@ -64,7 +64,7 @@ async function save() {
     >
       <AppField
         :label="t.cooking.note"
-        :control="noteId"
+        :control-id="noteId"
       >
         <textarea
           :id="noteId"

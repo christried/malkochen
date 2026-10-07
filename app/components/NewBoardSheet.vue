@@ -58,7 +58,7 @@ async function create() {
     >
       <AppField
         :label="t.boards.name"
-        :control="nameId"
+        :control-id="nameId"
       >
         <input
           :id="nameId"

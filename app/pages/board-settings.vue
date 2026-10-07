@@ -367,7 +367,7 @@ function confirmDelete() {
           <AppField
             class="flex-1"
             :label="t.settings.name"
-            control="settings-name"
+            control-id="settings-name"
           >
             <input
               id="settings-name"
@@ -411,7 +411,7 @@ function confirmDelete() {
           <AppField
             class="flex-1"
             :label="t.settings.newColumn"
-            control="settings-new-column"
+            control-id="settings-new-column"
           >
             <input
               id="settings-new-column"
@@ -425,10 +425,10 @@ function confirmDelete() {
           <button
             type="submit"
             class="mb-1 h-11 shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-              :disabled="!newColumn.trim() || adding"
-            >
-              {{ t.settings.add }}
-            </button>
+            :disabled="!newColumn.trim() || adding"
+          >
+            {{ t.settings.add }}
+          </button>
         </form>
       </section>
 
@@ -462,17 +462,17 @@ function confirmDelete() {
         <div class="flex flex-col">
           <AppField
             :label="t.settings.inviteLink"
-            control="settings-invite-link"
+            control-id="settings-invite-link"
           >
             <input
-            id="settings-invite-link"
-            :value="inviteLink"
-            type="text"
-            readonly
-            aria-describedby="settings-invite-hint"
-            class="truncate"
-            @focus="($event.target as HTMLInputElement).select()"
-          >
+              id="settings-invite-link"
+              :value="inviteLink"
+              type="text"
+              readonly
+              aria-describedby="settings-invite-hint"
+              class="truncate"
+              @focus="($event.target as HTMLInputElement).select()"
+            >
           </AppField>
           <p
             id="settings-invite-hint"
@@ -628,15 +628,15 @@ function confirmDelete() {
         <AppField
           class="mt-3"
           :label="t.settings.deleteTypeName(saved.name)"
-          control="settings-delete-name"
+          control-id="settings-delete-name"
         >
-        <input
-          id="settings-delete-name"
-          v-model="typedName"
-          type="text"
-          autocomplete="off"
-          @keydown.enter="nameTyped || shake($event.target as Element)"
-        >
+          <input
+            id="settings-delete-name"
+            v-model="typedName"
+            type="text"
+            autocomplete="off"
+            @keydown.enter="nameTyped || shake($event.target as Element)"
+          >
         </AppField>
         <DangerButton
           type="submit"

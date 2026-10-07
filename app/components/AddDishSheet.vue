@@ -244,7 +244,7 @@ async function save() {
              then, once found, a sage border and a check. -->
         <AppField
           :label="t.addDish.link"
-          :control="linkId"
+          :control-id="linkId"
           :valid="!!result"
         >
           <span
@@ -401,21 +401,21 @@ async function save() {
         <div class="flex flex-col">
           <AppField
             :label="t.addDish.title"
-            :control="titleId"
+            :control-id="titleId"
           >
             <input
-            :id="titleId"
-            v-model="shownTitle"
-            type="text"
-            required
-            maxlength="200"
-            autocomplete="off"
-            :placeholder="titlePlaceholder"
-            :aria-describedby="titleNeeded ? titleHintId : undefined"
-            class="font-display text-title-s"
-            :class="{ 'title-prompt': titleNeeded }"
-            @focus="titleTypeIn.finish()"
-          >
+              :id="titleId"
+              v-model="shownTitle"
+              type="text"
+              required
+              maxlength="200"
+              autocomplete="off"
+              :placeholder="titlePlaceholder"
+              :aria-describedby="titleNeeded ? titleHintId : undefined"
+              class="font-display text-title-s"
+              :class="{ 'title-prompt': titleNeeded }"
+              @focus="titleTypeIn.finish()"
+            >
           </AppField>
           <span
             v-if="titleNeeded"
@@ -473,7 +473,7 @@ async function save() {
 
         <AppField
           :label="t.addDish.note"
-          :control="noteId"
+          :control-id="noteId"
         >
           <textarea
             :id="noteId"
@@ -486,7 +486,7 @@ async function save() {
         <AppField
           v-if="boards.length"
           :label="t.addDish.board"
-          :control="boardSelectId"
+          :control-id="boardSelectId"
         >
           <select
             :id="boardSelectId"

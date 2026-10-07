@@ -9,7 +9,7 @@
 defineProps<{
   label: string
   // The control's id, for the label.
-  control: string
+  controlId: string
   // The link field once its lookup found something: a sage border.
   valid?: boolean
 }>()
@@ -24,6 +24,6 @@ defineProps<{
     <fieldset aria-hidden="true">
       <legend>{{ label }}</legend>
     </fieldset>
-    <label :for="control">{{ label }}</label>
+    <label :for="controlId">{{ label }}</label>
   </div>
 </template>
