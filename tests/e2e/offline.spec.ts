@@ -138,3 +138,41 @@ test('with reduced motion the Offline screen shows its clip\'s still, and no cli
   expect(await playing(page)).toEqual([])
   await context.setOffline(false)
 })
+
+// #170: the Offline page in the app's own fonts (kept by the service worker,
+// as there's no connection to fetch them) and sizes, like the Offline
+// screen: the heading in `title-l`, from 768px `display-m`; the text in
+// `body`; the button in `button`.
+test('the Offline page is set in the app\'s fonts and type scale, on a phone and a tablet', async ({ page, context }) => {
+  await signIn(page)
+  await gotoHydrated(page, '/')
+  await serviceWorkerInControl(page)
+  await context.setOffline(true)
+
+  for (const [width, heading] of [
+    [390, { size: '28px', lineHeight: '30.8px', weight: '500', tracking: '-0.42px' }],
+    [800, { size: '32px', lineHeight: '34.56px', weight: '500', tracking: '-0.64px' }],
+  ] as const) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
+    const looks = await page.evaluate(async () => {
+      await document.fonts.ready
+      const type = (selector: string) => {
+        const style = getComputedStyle(document.querySelector(selector)!)
+        return { family: style.fontFamily, size: style.fontSize, lineHeight: style.lineHeight, weight: style.fontWeight, tracking: style.letterSpacing }
+      }
+      return {
+        loaded: [...new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replaceAll('"', '')))].sort(),
+        heading: type('#offline h1'),
+        text: type('#offline p'),
+        button: type('button'),
+      }
+    })
+    expect(looks.loaded).toEqual(['Figtree', 'Petrona'])
+    expect(looks.heading).toEqual({ family: expect.stringMatching(/^Petrona/), ...heading })
+    expect(looks.text).toMatchObject({ family: expect.stringMatching(/^Figtree/), size: '15.5px', lineHeight: '22.475px', weight: '500' })
+    expect(looks.button).toMatchObject({ family: expect.stringMatching(/^Figtree/), size: '15px', lineHeight: '15px', weight: '600' })
+  }
+  await context.setOffline(false)
+})

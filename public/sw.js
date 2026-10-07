@@ -6,7 +6,7 @@
 // launch paints them at once. Nothing else is cached: Boards and Dishes always
 // come from the network. Bump VERSION when offline.html, what it shows, or a
 // splash still changes.
-const VERSION = 'offline-v8'
+const VERSION = 'offline-v9'
 const FALLBACK_PAGE = '/offline.html'
 // The offline clip (still and video, both themes) plays on the Offline page
 // and the app's Offline screen, which both show only without a connection.
@@ -14,7 +14,10 @@ const OFFLINE_CLIP = ['light', 'dark'].flatMap(theme => ['png', 'webm', 'mp4'].m
 // The splash's poster (frame 10) and reduced-motion still (frame 16), upright
 // and landscape: from the cache first, as they show over the very first paint.
 const SPLASH_STILLS = ['splash', 'splash-landscape'].flatMap(name => [`/clips/${name}-poster.webp`, `/clips/${name}-still.webp`])
-const PRECACHED = [FALLBACK_PAGE, ...OFFLINE_CLIP, ...SPLASH_STILLS]
+// The fonts the fallback page is set in: fixed copies, as the app's own have
+// hashed names (offline.html).
+const OFFLINE_FONTS = ['figtree', 'petrona'].flatMap(font => ['latin', 'latin-ext'].map(subset => `/fonts/${font}-${subset}.woff2`))
+const PRECACHED = [FALLBACK_PAGE, ...OFFLINE_CLIP, ...SPLASH_STILLS, ...OFFLINE_FONTS]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(PRECACHED)).then(() => self.skipWaiting()))
