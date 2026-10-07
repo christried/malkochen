@@ -24,6 +24,10 @@ onBeforeUnmount(() => timer?.cancel())
 const region = useTemplateRef<HTMLElement>('region')
 useTopLayerInModal(region)
 
+// Two actions (the Gekocht toast) only fit a 360px phone with less space
+// around them (#170).
+const crowded = computed(() => (toast.value?.actions?.length ?? 0) > 1)
+
 function act(action: ToastAction) {
   toast.value = null
   action.run()
@@ -47,15 +51,15 @@ function act(action: ToastAction) {
         class="relative max-w-md"
       >
         <div
-          class="pointer-events-auto relative flex items-center gap-4 overflow-hidden rounded-pill bg-inverse py-3 pl-5 text-small text-on-inverse shadow-fab"
-          :class="toast.actions?.length ? 'pr-2' : 'pr-5'"
+          class="pointer-events-auto relative flex items-center overflow-hidden rounded-pill bg-inverse py-3 text-small text-on-inverse shadow-fab"
+          :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'gap-1 pl-4 tablet:gap-4 tablet:pl-5' : 'gap-4 pl-5']"
           data-toast
         >
           <!-- Beside two actions (the Gekocht toast) there's only room for a
                short text, kept on one line. -->
           <p
             class="min-w-0"
-            :class="{ 'shrink-0 whitespace-nowrap': (toast.actions?.length ?? 0) > 1 }"
+            :class="{ 'shrink-0 whitespace-nowrap': crowded }"
           >
             {{ toast.text }}
             <span
@@ -67,7 +71,8 @@ function act(action: ToastAction) {
             v-for="action in toast.actions"
             :key="action.label"
             type="button"
-            class="shrink-0 rounded-pill px-3 py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            :class="crowded ? 'px-2 tablet:px-3' : 'px-3'"
             @click="act(action)"
           >
             {{ action.label }}

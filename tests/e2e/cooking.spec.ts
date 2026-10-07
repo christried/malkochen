@@ -331,3 +331,63 @@ test('Topfbert says something else the next time, and every cheer fits beside hi
   }, CHEERS)
   for (const fit of fits) expect(fit, `"${fit.text}"`).toEqual({ text: fit.text, lines: 1, inPill: true, besideText: true, onScreen: true })
 })
+
+// #170: on a 360px phone the Gekocht toast's actions fit it, "Rückgängig"
+// not cut off.
+test('the Gekocht toast\'s actions fit it on a 360px phone', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[6])
+  await seedDish(page, { title: 'Kichererbsencurry', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await page.setViewportSize({ width: 360, height: 740 })
+  await gotoHydrated(page, '/')
+  await page.getByRole('button', { name: 'Gekocht ✓: „Kichererbsencurry“' }).click()
+  const toast = gekochtToast(page).locator('[data-toast]')
+  await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
+  const fit = await toast.evaluate(async (el) => {
+    // Once it has moved in (not the bar's countdown, a Web Animation).
+    await Promise.all(el.closest('[role="status"]')!.getAnimations({ subtree: true }).filter(a => a instanceof CSSTransition).map(a => a.finished))
+    const box = el.getBoundingClientRect()
+    return {
+      onScreen: box.left >= 0 && box.right <= innerWidth,
+      overflowing: el.scrollWidth > el.clientWidth,
+      cut: [...el.querySelectorAll('button')].filter(b => b.getBoundingClientRect().right > box.right || b.scrollWidth > b.clientWidth).map(b => b.textContent!.trim()),
+    }
+  })
+  expect(fit).toEqual({ onScreen: true, overflowing: false, cut: [] })
+})
+
+// #170 (option B, 2026-10-06): on a phone the Gekocht pill sits just below
+// the sticky Column tabs, so they and the Gekocht tab's bump stay in sight;
+// it's in the same place whether the tabs are stuck or not.
+test('on a phone the Gekocht pill sits below the sticky Column tabs, scrolled down or not', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[6])
+  for (let i = 1; i <= 8; i++) await seedDish(page, { title: `Bowl ${i}`, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await page.setViewportSize({ width: 390, height: 740 })
+  await gotoHydrated(page, '/')
+  const tabs = page.getByRole('navigation', { name: 'Spalten' })
+  const places: number[] = []
+  for (const scrolled of [false, true]) {
+    const title = scrolled ? 'Bowl 1' : 'Bowl 8'
+    if (scrolled) {
+      await page.getByRole('article', { name: title }).scrollIntoViewIfNeeded()
+      await page.mouse.wheel(0, 400)
+      await expect.poll(async () => (await tabs.boundingBox())!.y).toBeLessThanOrEqual(0.5)
+    }
+    await page.getByRole('button', { name: `Gekocht ✓: „${title}“` }).click()
+    await expect(gekochtPill(page)).toBeVisible()
+    await expect(topfbert(page)).toBeVisible()
+    const looks = await gekochtPill(page).evaluate(async (pill) => {
+      await Promise.all(pill.getAnimations().map(a => a.finished))
+      const nav = document.querySelector('nav[aria-label="Spalten"]')!.getBoundingClientRect()
+      const him = pill.querySelector('[data-topfbert]')!.getBoundingClientRect()
+      const box = pill.getBoundingClientRect()
+      return { top: Math.min(box.top, him.top), tabsBottom: nav.bottom, stuck: nav.top <= 0.5 }
+    })
+    expect(looks.stuck).toBe(scrolled)
+    if (scrolled) expect(looks.top).toBeGreaterThanOrEqual(looks.tabsBottom)
+    places.push(looks.top)
+    await gekochtToast(page).getByRole('button', { name: 'Rückgängig' }).click()
+    await expect(gekochtPill(page)).toHaveCount(0)
+  }
+  // The same place either way: it doesn't jump with the tabs.
+  expect(Math.abs(places[0]! - places[1]!)).toBeLessThanOrEqual(1)
+})

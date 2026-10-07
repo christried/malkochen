@@ -8,6 +8,12 @@
 // Decoration beside that toast, which says it all to screen readers.
 // Put it beside the page's Toast: on the Board, in the Dish detail, in a
 // celebration over them. Reduced motion: it only fades.
+// `belowTabs`: on the Board, phones put it just below where the sticky
+// Column tabs stick (#170, option B), so it doesn't hide them or the Gekocht
+// tab's bump; it stays there when they aren't stuck, rather than jumping.
+// Their bar is 51px tall (ColumnTabs: 8px around a 35px tab), and Topfbert
+// pokes 3px out of the pill's top. Tablet and desktop have no tabs.
+defineProps<{ belowTabs?: boolean }>()
 const t = useStrings()
 const { pill } = useGekochtPill()
 
@@ -23,7 +29,8 @@ useTopLayerInModal(place)
     ref="place"
     popover="manual"
     aria-hidden="true"
-    class="pointer-events-none fixed inset-x-4 bottom-auto top-6 z-toast m-0 flex h-14 w-auto items-center justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:top-8"
+    class="pointer-events-none fixed inset-x-4 bottom-auto z-toast m-0 flex h-14 w-auto items-center justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:top-8"
+    :class="belowTabs ? 'top-[60px]' : 'top-6'"
     data-gekocht-pill-place
   >
     <Transition name="pill">

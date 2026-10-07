@@ -700,7 +700,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 
     <template v-if="!route.params.dish">
       <VeggieConfetti />
-      <GekochtPill />
+      <GekochtPill below-tabs />
       <AppToast v-model="toast" />
     </template>
 
