@@ -113,22 +113,6 @@ describe("topfbert-wow", () => {
   });
 });
 
-describe("never-cooked", () => {
-  it("lifts Topfbert 4 at f45 and squashes him back near f80", () => {
-    expect(pose("never-cooked", "topfbert", 45).y).toBeCloseTo(-4);
-    expect(pose("never-cooked", "topfbert", 80).scaleY).toBeLessThan(1);
-  });
-
-  it("rolls the pea from his left at f0 to the right at f45", () => {
-    const left = pose("never-cooked", "pea", 0);
-    const right = pose("never-cooked", "pea", 45);
-    expect(left.x).toBeLessThan(0);
-    expect(right.x).toBeCloseTo(-left.x);
-    // Rolling, not sliding: turned the way it moves.
-    expect(right.rotate).toBeGreaterThan(left.rotate);
-  });
-});
-
 describe("empty-board", () => {
   const veggies = ["veggie.1", "veggie.2", "veggie.3", "veggie.4"];
 

@@ -48,7 +48,10 @@ Not rendered any more (#111): the Placeholder Images, `empty-column` and
 refresh rate and sharp at any size. Their compositions stay in Studio, but
 only for the nine Round 10 Placeholder Images: Round 11's pasta, bowl and
 breakfast were drawn for CSS keyframes (`assets/r11-keyframes.css`) and have
-none (`STUDIO_PLACEHOLDERS` in `src/briefs.ts`).
+none (`STUDIO_PLACEHOLDERS` in `src/briefs.ts`). Round 11's other new loops,
+the empty Column's Knobi and Schoti and the three "never cooked" scenes
+(which replaced `never-cooked`, #134), have no composition either: the app
+draws them in code the same way.
 
 ## How it is built
 
