@@ -61,6 +61,62 @@ test('a Member creates a Board from the switcher, switches between Boards, and t
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
 })
 
+// How the header's switcher and round buttons look, next to the theme's
+// tokens.
+async function headerLooks(page: Page) {
+  return page.locator('header').first().evaluate((header) => {
+    const token = (property: 'color' | 'boxShadow', value: string) => {
+      const probe = document.createElement('span')
+      probe.style[property] = value
+      document.body.append(probe)
+      const resolved = getComputedStyle(probe)[property]
+      probe.remove()
+      return resolved
+    }
+    const pill = header.querySelector('h1 button')!
+    const pebble = pill.querySelector('[data-emoji-pebble]')!
+    const emoji = pebble.firstElementChild ?? pebble
+    const inside = (inner: DOMRect, outer: DOMRect) => inner.left >= outer.left - 0.5 && inner.right <= outer.right + 0.5 && inner.top >= outer.top - 0.5 && inner.bottom <= outer.bottom + 0.5
+    const range = document.createRange()
+    range.selectNodeContents(emoji)
+    const style = getComputedStyle(pill)
+    const pebbleStyle = getComputedStyle(pebble)
+    const pebbleBox = pebble.getBoundingClientRect()
+    return {
+      pill: { background: style.backgroundColor, shadow: style.boxShadow, family: style.fontFamily, size: style.fontSize, weight: style.fontWeight },
+      pebble: { background: pebbleStyle.backgroundColor, round: Number.parseFloat(pebbleStyle.borderTopLeftRadius) >= pebbleBox.height / 2, emojiInside: inside(range.getBoundingClientRect(), pebbleBox), inPill: inside(pebbleBox, pill.getBoundingClientRect()) },
+      chevron: pill.querySelectorAll('svg').length,
+      buttons: [...header.querySelectorAll('[aria-label="Gerichte suchen"], [aria-label="Board-Einstellungen"]')].map(b => getComputedStyle(b).backgroundColor),
+      surface: token('color', 'var(--color-surface)'),
+      surfaceMuted: token('color', 'var(--color-surface-muted)'),
+      cardShadow: token('boxShadow', 'var(--shadow-card)'),
+    }
+  })
+}
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`the switcher is a pill on surface: the emoji in a round pebble, the name in the button type, a chevron (${scheme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme })
+    await signIn(page, ALLOWLISTED[9])
+    const name = scheme === 'light' ? 'Keksdose' : 'Keksglas'
+    const board = await createBoard(page, name, '🍪')
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      await gotoHydrated(page, `/b/${board}`)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(`🍪 ${name}`)
+      const looks = await headerLooks(page)
+      // Tailwind puts its (empty) ring shadows before the card's.
+      expect(looks.pill).toEqual({ background: looks.surface, shadow: expect.stringContaining(looks.cardShadow), family: expect.stringMatching(/^Figtree/), size: '15px', weight: '600' })
+      expect(looks.pebble).toEqual({ background: looks.surfaceMuted, round: true, emojiInside: true, inPill: true })
+      expect(looks.chevron).toBe(1)
+      expect(looks.buttons).toEqual([looks.surface, looks.surface])
+    }
+    // It still opens the list.
+    await switcher(page).click()
+    await expect(boardList(page).getByRole('link', { name: new RegExp(name) })).toHaveAttribute('aria-current', 'page')
+  })
+}
+
 test('a Dish moved to another Board from its detail leaves this one and keeps its Cooking History', async ({ page }) => {
   await signIn(page, ALLOWLISTED[9])
   const from = await createBoard(page, 'Zuhause', '🏡')

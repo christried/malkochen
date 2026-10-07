@@ -461,6 +461,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <RoundButton
           v-if="!searchOpen"
           ref="searchButton"
+          raised
           :aria-label="t.search.open"
           @click="searchOpen = true"
         >
@@ -472,7 +473,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <NuxtLink
           :to="`${boardPath(board)}/settings`"
           :aria-label="t.settings.title"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-text shadow-card transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >
           <AppIcon
             name="settings"

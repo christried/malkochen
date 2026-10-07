@@ -59,26 +59,29 @@ function newBoard() {
     class="relative min-w-0"
     @keydown.esc="close({ refocus: true })"
   >
-    <h1 class="font-display text-title-l tablet:text-display-m">
+    <!-- The mockup's pill (column-titles-ideen.png): on surface, the emoji in
+         a round pebble, the name in the button type, a chevron. -->
+    <h1 class="text-button">
       <button
         ref="pill"
         type="button"
-        class="pill flex max-w-full items-center gap-2 rounded-pill py-1 pl-1 pr-2 text-left transition-transform duration-tap ease-tap active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
+        class="pill flex h-11 max-w-full items-center gap-2 rounded-pill bg-surface py-1 pl-1 pr-3 text-left shadow-card transition-transform duration-tap ease-tap active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.boards.switcher(board.name)"
         :aria-expanded="open"
         :aria-controls="panelId"
         @click="toggle"
       >
-        <!-- Only the name truncates: clipped to the display font's tight
-             line, a tall emoji (🍪) would lose its top and bottom. -->
+        <!-- Only the name truncates: clipped to its line, a tall emoji (🍪)
+             would lose its top and bottom. -->
         <span
           aria-hidden="true"
-          class="shrink-0"
-        >{{ board.emoji }}</span> <span class="truncate">{{ board.name }}</span>
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[20px] leading-none"
+          data-emoji-pebble
+        ><span>{{ board.emoji }}</span></span> <span class="truncate">{{ board.name }}</span>
         <svg
           viewBox="0 0 24 24"
-          width="20"
-          height="20"
+          width="18"
+          height="18"
           fill="none"
           stroke="currentColor"
           stroke-width="2.5"
