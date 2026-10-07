@@ -49,6 +49,12 @@ export function loopStill(scope: Page | Locator, src: string, theme: 'light' | '
   return scope.locator(`img[src="${src}-${theme}.svg"]`)
 }
 
+// The still of an empty Column in Columns of `accent`, whichever of the three
+// illustrations its Board gives it (utils/empty-column.ts), loaded.
+export function emptyColumnStill(scope: Page | Locator, accent: string, theme: 'light' | 'dark' = 'light') {
+  return scope.locator(`img[src^="/clips/empty-column"][src$="-${accent}-${theme}.svg"]`)
+}
+
 // What loads a clip: a video, or a loop's animated drawing.
 const CLIP = 'video, [data-loop-svg]'
 

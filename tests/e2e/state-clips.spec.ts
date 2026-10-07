@@ -2,10 +2,12 @@ import type { Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { clipStill, countPeakPlaying, loopStill, playing } from './clips'
+import { clipStill, countPeakPlaying, emptyColumnStill, playing } from './clips'
 import { gotoHydrated } from './hydration'
-import { removeStoredImages, resetBoard, seedDish, storedImage } from './seed'
+import { landingBoardId, removeStoredImages, resetBoard, seedDish, setColumns, storedImage } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
+import { columnAccentName } from '../../app/utils/columns'
+import { emptyColumnIllustration } from '../../app/utils/empty-column'
 
 // The state and system clips (PRD story 82; handoff REMOTION.md): empty
 // Board, empty Column and search, the link lookup, a Dish never cooked,
@@ -17,6 +19,8 @@ test.describe.configure({ mode: 'serial' })
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const EMMY = ALLOWLISTED[19]
+// An empty Column's loop: any of the three illustrations, in any accent.
+const EMPTY_COLUMN_LIGHT = /^\/clips\/empty-column(-knobi|-schoti)?-\w+-light\.svg$/
 
 test.afterAll(removeStoredImages)
 
@@ -30,7 +34,32 @@ test('an empty Board loops its clip in the current theme, and only that one', as
 
   await expect.poll(() => playing(page)).toEqual(['/clips/empty-board-dark.webm'])
   // The other, empty Columns show their still.
-  await expect(loopStill(page, '/clips/empty-column-orchid', 'dark')).toBeVisible()
+  await expect(emptyColumnStill(page, 'orchid', 'dark')).toBeVisible()
+  expect(await peak()).toBe(1)
+})
+
+test('empty Columns show the Board\'s own order of the three illustrations, and one of them loops', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.emulateMedia({ colorScheme: 'light' })
+  const peak = await countPeakPlaying(page, '/clips/empty-column')
+  await signIn(page, EMMY)
+  await setColumns(page, ['Ideen', 'Diese Woche', 'Später', 'Gekocht'])
+  await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  const boardId = await landingBoardId(page)
+  const expected = [1, 2, 3].map(index => `/clips/${emptyColumnIllustration(boardId, index)}-${columnAccentName(index)}`)
+  const shown = () => page.locator('[data-empty="column"] [data-svg-loop]')
+    .evaluateAll(loops => loops.map(loop => loop.getAttribute('data-clip')))
+
+  await gotoHydrated(page, '/')
+  // Three empty Columns, three different illustrations: the Board's order.
+  expect(await shown()).toEqual(expected)
+  expect(new Set(expected.map(src => src.replace(/-\w+$/, ''))).size).toBe(3)
+  await expect.poll(() => playing(page, '/clips/empty-column')).toHaveLength(1)
+
+  // A reload shows the same.
+  await gotoHydrated(page, '/')
+  expect(await shown()).toEqual(expected)
+  await expect.poll(() => playing(page, '/clips/empty-column')).toHaveLength(1)
   expect(await peak()).toBe(1)
 })
 
@@ -45,13 +74,14 @@ test('an empty Column\'s loop keeps playing while a Placeholder card is hovered 
   await gotoHydrated(page, '/')
 
   // The bowl plays once on first view; an empty Column's loop goes on.
-  await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual(['/clips/empty-column-orchid-light.svg'])
+  await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual([expect.stringMatching(EMPTY_COLUMN_LIGHT)])
+  const loop = (await playing(page))[0]!
 
   // Hovered, the bowl loops beside it, and it keeps going.
   await page.getByRole('link', { name: 'Ohne Foto' }).hover()
-  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/bowl-light.svg'])
+  await expect.poll(async () => (await playing(page)).sort()).toEqual([loop, '/placeholders/bowl-light.svg'])
   await page.mouse.move(5, 5)
-  await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-orchid-light.svg'])
+  await expect.poll(() => playing(page)).toEqual([loop])
 
   // Lifted, the same.
   const bowl = (await page.getByRole('link', { name: 'Ohne Foto' }).boundingBox())!
@@ -59,7 +89,7 @@ test('an empty Column\'s loop keeps playing while a Placeholder card is hovered 
   await page.mouse.down()
   await page.mouse.move(bowl.x + bowl.width / 2 + 20, bowl.y + bowl.height / 2, { steps: 4 })
   await expect(page.getByTestId('drag-card')).toBeVisible()
-  await expect.poll(async () => (await playing(page)).sort()).toEqual(['/clips/empty-column-orchid-light.svg', '/placeholders/bowl-light.svg'])
+  await expect.poll(async () => (await playing(page)).sort()).toEqual([loop, '/placeholders/bowl-light.svg'])
   await page.keyboard.press('Escape')
   await page.mouse.up()
   await expect(page.getByTestId('drag-card')).toHaveCount(0)
@@ -67,24 +97,38 @@ test('an empty Column\'s loop keeps playing while a Placeholder card is hovered 
   expect(await peakPlaceholders()).toBe(1)
 })
 
-test('the empty Column\'s pea starts rolling from where it rests', async ({ page }) => {
+test('an empty Column\'s loop starts from where its still rests', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ colorScheme: 'light' })
-  // Where the pea is (its sideways shift, in the drawing's units) on the
-  // first frame its loop plays, and how far it goes over the next second.
+  // On the first frame the loop plays, how far its moving layers are from
+  // their pose in the still (the drawing as it is, its frame 0), and how far
+  // they go over the next second: shifts in the drawing's units, turns and
+  // squashes as the change in the transform's matrix. Whichever of the three
+  // illustrations plays.
   await page.addInitScript(() => {
-    const w = window as unknown as { pea: { first: number, furthest: number } | null }
-    w.pea = null
-    const shift = (pea: Element) => new DOMMatrix(getComputedStyle(pea).transform).e
+    type Moved = { shift: number, turn: number }
+    const w = window as unknown as { loop: { first: Moved, furthest: Moved } | null }
+    w.loop = null
+    const away = (layer: HTMLElement): Moved => {
+      const now = new DOMMatrix(getComputedStyle(layer).transform)
+      const rest = new DOMMatrix(layer.style.transform || 'none')
+      return {
+        shift: Math.max(Math.abs(now.e - rest.e), Math.abs(now.f - rest.f)),
+        turn: Math.max(...(['a', 'b', 'c', 'd'] as const).map(k => Math.abs(now[k] - rest[k]))),
+      }
+    }
+    const most = (layers: HTMLElement[]): Moved => layers.map(away)
+      .reduce((m, a) => ({ shift: Math.max(m.shift, a.shift), turn: Math.max(m.turn, a.turn) }), { shift: 0, turn: 0 })
     new MutationObserver(() => {
-      const pea = document.querySelector('[data-playing^="/clips/empty-column"] [data-loop-svg] [data-loop]')
-      if (!pea || w.pea) return
+      const layers = [...document.querySelectorAll<HTMLElement>('[data-playing^="/clips/empty-column"] [data-loop-svg] [data-loop]')]
+      if (!layers.length || w.loop) return
       requestAnimationFrame(() => {
-        w.pea = { first: shift(pea), furthest: 0 }
+        w.loop = { first: most(layers), furthest: { shift: 0, turn: 0 } }
         const started = performance.now()
         const sample = () => {
-          w.pea!.furthest = Math.max(w.pea!.furthest, Math.abs(shift(pea)))
-          if (performance.now() - started < 1000) requestAnimationFrame(sample)
+          const now = most(layers)
+          w.loop!.furthest = { shift: Math.max(w.loop!.furthest.shift, now.shift), turn: Math.max(w.loop!.furthest.turn, now.turn) }
+          if (performance.now() - started < 1200) requestAnimationFrame(sample)
         }
         requestAnimationFrame(sample)
       })
@@ -95,12 +139,19 @@ test('the empty Column\'s pea starts rolling from where it rests', async ({ page
   await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await gotoHydrated(page, '/')
 
-  // Its still shows it in the middle, and that's where it starts.
-  await expect(loopStill(page, '/clips/empty-column-orchid')).toBeVisible()
-  await expect.poll(() => playing(page)).toEqual(['/clips/empty-column-orchid-light.svg'])
-  const pea = () => page.evaluate(() => (window as unknown as { pea: { first: number, furthest: number } | null }).pea)
-  await expect.poll(async () => (await pea())?.furthest ?? 0).toBeGreaterThan(30)
-  expect(Math.abs((await pea())!.first)).toBeLessThan(2)
+  await expect(emptyColumnStill(page, 'orchid')).toBeVisible()
+  await expect.poll(() => playing(page)).toEqual([expect.stringMatching(EMPTY_COLUMN_LIGHT)])
+  type Moved = { shift: number, turn: number }
+  const loop = () => page.evaluate(() => (window as unknown as { loop: { first: Moved, furthest: Moved } | null }).loop)
+  // It moves...
+  await expect.poll(async () => {
+    const furthest = (await loop())?.furthest
+    return !!furthest && (furthest.shift > 10 || furthest.turn > 0.1)
+  }).toBe(true)
+  // ...from where it rested.
+  const { first } = (await loop())!
+  expect(first.shift).toBeLessThan(2)
+  expect(first.turn).toBeLessThan(0.05)
 })
 
 test('a search that finds nothing loops its clip', async ({ page }) => {

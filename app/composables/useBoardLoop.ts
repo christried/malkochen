@@ -11,8 +11,9 @@ import type { ClipMotion } from '~/utils/motion'
 //   plays its loop once,
 //
 // and beside it one empty state's clip, looping (found as the Board comes to
-// rest): the empty Board's when it is on screen, else the empty Column's
-// nearest the middle of the screen. Whatever the cards do never stops it.
+// rest): the empty Board's when it is on screen, else one empty Column's on
+// screen, picked at random and kept while it stays on screen, so only one of
+// them ever moves. Whatever the cards do never stops it.
 //
 // Nothing plays while the Board is `covered` (by the Dish detail, which loops
 // the Dish itself, or a sheet). Cards with a stored image never play;
@@ -58,23 +59,40 @@ export function useBoardLoop(
     if (restingDishId.value === dishId) restingDishId.value = null
   }
 
+  // The elements matching `selector` on screen.
+  function onScreen(selector: string): HTMLElement[] {
+    return [...surface.value?.querySelectorAll<HTMLElement>(selector) ?? []].filter((el) => {
+      const box = el.getBoundingClientRect()
+      return box.width > 0 && box.bottom > 0 && box.top < innerHeight && box.right > 0 && box.left < innerWidth
+    })
+  }
+
   // Of the elements matching `selector` on screen, the one nearest its middle.
   function nearest(selector: string): HTMLElement | null {
     const middleX = innerWidth / 2
     const middleY = innerHeight / 2
     let found: { el: HTMLElement, distance: number } | null = null
-    for (const el of surface.value?.querySelectorAll<HTMLElement>(selector) ?? []) {
+    for (const el of onScreen(selector)) {
       const box = el.getBoundingClientRect()
-      if (!box.width || box.bottom <= 0 || box.top >= innerHeight || box.right <= 0 || box.left >= innerWidth) continue
       const distance = Math.hypot(box.left + box.width / 2 - middleX, box.top + box.height / 2 - middleY)
       if (!found || distance < found.distance) found = { el, distance }
     }
     return found?.el ?? null
   }
 
+  // The empty Column last picked, picked again while it is on screen.
+  let pickedEmptyId: string | null = null
+  function pickEmpty(): string | null {
+    const emptyBoard = nearest(EMPTY_BOARD_CLIP)?.dataset.emptyClip
+    if (emptyBoard) return emptyBoard
+    const ids = onScreen(EMPTY_CLIP).map(el => el.dataset.emptyClip!)
+    if (!pickedEmptyId || !ids.includes(pickedEmptyId)) pickedEmptyId = ids[Math.floor(Math.random() * ids.length)] ?? null
+    return pickedEmptyId
+  }
+
   function playNearest() {
     restingDishId.value = nearest(PLACEHOLDER_CARD)?.dataset.dishId ?? null
-    restingEmptyId.value = (nearest(EMPTY_BOARD_CLIP) ?? nearest(EMPTY_CLIP))?.dataset.emptyClip ?? null
+    restingEmptyId.value = pickEmpty()
   }
 
   let restTimer: ReturnType<typeof setTimeout> | undefined
