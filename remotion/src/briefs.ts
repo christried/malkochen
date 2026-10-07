@@ -1,5 +1,6 @@
+import illustrations from "../../docs/design handoff/illustrations.json";
 import briefs from "../../docs/design handoff/remotion-briefs.json";
-import type { Placeholder, PlaceholderTheme } from "../../shared/placeholders";
+import { type Placeholder, type PlaceholderTheme, PLACEHOLDERS } from "../../shared/placeholders";
 import { palette } from "./clips/draw";
 
 // The handoff's remotion-briefs.json is the source of truth for each clip's
@@ -45,6 +46,12 @@ const videoBrief = (id: string) => {
   };
   return { brief, video };
 };
+
+// The Placeholder Images Studio draws: the Round 10 ones. Round 11's (pasta,
+// bowl, breakfast; illustrations.json "r11") were drawn for CSS keyframes
+// (assets/r11-keyframes.css), and the app draws every Placeholder Image in
+// code anyway (#111), so they have no composition here.
+export const STUDIO_PLACEHOLDERS = PLACEHOLDERS.filter((dish) => !("r11" in illustrations.dishes[dish]));
 
 export const placeholderBrief = (dish: Placeholder): Brief => {
   const { brief, video } = videoBrief(`placeholder-${dish}`);

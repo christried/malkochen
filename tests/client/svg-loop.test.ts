@@ -7,7 +7,7 @@ import { loopStyle } from '../../app/utils/svg-loop'
 // full; whether the loop runs on, once or not at all is SvgLoop's.
 
 test('a loop names its keyframes, duration, easing and delay', () => {
-  expect(loopStyle('ph-twirl 3s ease-in-out infinite', null)).toMatchObject({ '--loop': 'ph-twirl 3s ease-in-out 0s' })
+  expect(loopStyle('ph-pan 3s ease-in-out infinite', null)).toMatchObject({ '--loop': 'ph-pan 3s ease-in-out 0s' })
   expect(loopStyle('ph-steam 2.7s ease-out .9s infinite', null)).toMatchObject({ '--loop': 'ph-steam 2.7s ease-out .9s' })
   expect(loopStyle('r11-sprout 4.4s linear -4.1s infinite', null)).toMatchObject({ '--loop': 'r11-sprout 4.4s linear -4.1s' })
   expect(loopStyle('ph-toss 2.4s cubic-bezier(.3,.6,.4,1) .08s infinite', null))
@@ -16,7 +16,7 @@ test('a loop names its keyframes, duration, easing and delay', () => {
 
 test('played once, every layer goes round once in the loop\'s duration, ending as it started', () => {
   // Not delayed: one round.
-  expect(loopStyle('ph-twirl 3s ease-in-out infinite', null)).toMatchObject({ '--once': 'ph-twirl 3s ease-in-out 0s 1' })
+  expect(loopStyle('ph-pan 3s ease-in-out infinite', null)).toMatchObject({ '--once': 'ph-pan 3s ease-in-out 0s 1' })
   // Delayed by .9s of 2.7s: a delay is a phase, so it starts two thirds in
   // (at rest) and goes on to the same phase at 2.7s.
   expect(loopStyle('ph-steam 2.7s ease-out .9s infinite', null)).toMatchObject({ '--once': 'ph-steam 2.7s ease-out -1.8s 1.6667' })
@@ -30,9 +30,9 @@ test('a pivot in viewBox units turns about that point of the drawing', () => {
 })
 
 test('a pivot in percent or words turns about that point of the layer itself', () => {
-  expect(loopStyle('ph-twirl 3s ease-in-out infinite', '50% 100%'))
+  expect(loopStyle('ph-pan 3s ease-in-out infinite', '50% 100%'))
     .toMatchObject({ 'transform-box': 'fill-box', 'transform-origin': '50% 100%' })
-  expect(loopStyle('ph-bub 2.4s ease-out infinite', 'center'))
+  expect(loopStyle('ph-up 2.4s ease-out infinite', 'center'))
     .toMatchObject({ 'transform-box': 'fill-box', 'transform-origin': 'center' })
 })
 

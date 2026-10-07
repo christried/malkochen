@@ -33,7 +33,7 @@ const MISSING = '00000000-0000-4000-8000-000000000000'
 
 async function addDish(caller: Caller, title: string): Promise<Dish> {
   const board = await landingBoard(caller)
-  const res = await postDish(caller, board.id, { title, placeholder: 'curry' })
+  const res = await postDish(caller, board.id, { title, placeholder: 'bowl' })
   expect(res.status).toBe(201)
   return res.json()
 }

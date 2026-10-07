@@ -2,7 +2,7 @@
 import { PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 
 // A grid of Placeholder Images with the current one selected (handoff
-// PlaceholderPicker): all 16 by default, or the few the inline variant
+// PlaceholderPicker): all 12 by default, or the few the inline variant
 // passes in. The selected one loops (handoff illustrations.json "picker
 // selection"); the rest stay still. As it appears its grid unrolls from the
 // top (520ms) while its tiles pop in 40ms apart; the selected one's check

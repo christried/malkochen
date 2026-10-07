@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PLACEHOLDERS } from "../../shared/placeholders";
-import { placeholderBrief } from "./briefs";
+import { placeholderBrief, STUDIO_PLACEHOLDERS } from "./briefs";
 import { looksSame, parseLoop, poseAt, REST } from "./motion";
 
 // Motion is checked by eye in Remotion Studio (spec). What can be checked here
@@ -47,15 +46,14 @@ describe("parseLoop", () => {
   });
 
   it("defaults the delay to 0", () => {
-    expect(parseLoop("twirl 3s ease-in-out infinite").delayS).toBe(0);
+    expect(parseLoop("pan 2.4s ease-in-out infinite").delayS).toBe(0);
   });
 });
 
 describe("poseAt", () => {
-  it("reaches the brief's apex halfway through the pasta fork's twirl", () => {
-    const apex = poseAt("twirl 3s ease-in-out infinite", 45, FPS);
-    expect(apex.y).toBeCloseTo(-10);
-    expect(apex.rotate).toBeCloseTo(-10);
+  it("reaches the brief's apex halfway through the wok pan's tilt", () => {
+    const apex = poseAt("pan 2.4s ease-in-out infinite", 36, FPS);
+    expect(apex.rotate).toBeCloseTo(-6);
   });
 
   it("springs the burger bun back past rest after it lands", () => {
@@ -73,7 +71,7 @@ describe("poseAt", () => {
 });
 
 describe("looksSame", () => {
-  const rest = poseAt("twirl 3s ease-in-out infinite", 0, FPS);
+  const rest = poseAt("pan 2.4s ease-in-out infinite", 0, FPS);
 
   it("treats two invisible poses as the same, wherever they are", () => {
     expect(
@@ -90,7 +88,7 @@ describe("looksSame", () => {
   });
 });
 
-describe.each(PLACEHOLDERS)("placeholder-%s", (dish) => {
+describe.each(STUDIO_PLACEHOLDERS)("placeholder-%s", (dish) => {
   const { durationInFrames: frames, fps } = placeholderBrief(dish).video;
   const layers = animatedLayers(dish);
 

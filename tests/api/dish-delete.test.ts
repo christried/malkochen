@@ -19,7 +19,7 @@ const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
 
 async function addDish(caller: Caller, title: string, link?: string): Promise<Dish> {
   const board = await landingBoard(caller)
-  const res = await postDish(caller, board.id, { title, placeholder: 'curry', ...link && { source: { link } } })
+  const res = await postDish(caller, board.id, { title, placeholder: 'bowl', ...link && { source: { link } } })
   expect(res.status).toBe(201)
   return res.json()
 }
@@ -91,8 +91,8 @@ test('undo after the Dish’s Column was deleted answers the Column it went to i
     body: JSON.stringify({ name: 'Spalten', emoji: '🗂️' }),
   })).json() as { id: string }
   const [ideen, dieseWoche] = (await emmy.fetch(`/api/boards/${created.id}`).then(r => r.json()) as Board).columns
-  const kept = await postDish(emmy, created.id, { title: 'Bleibt', placeholder: 'curry' }).then(r => r.json()) as Dish
-  const moved = await postDish(emmy, created.id, { title: 'Wandert', placeholder: 'curry' }).then(r => r.json()) as Dish
+  const kept = await postDish(emmy, created.id, { title: 'Bleibt', placeholder: 'bowl' }).then(r => r.json()) as Dish
+  const moved = await postDish(emmy, created.id, { title: 'Wandert', placeholder: 'bowl' }).then(r => r.json()) as Dish
   await emmy.fetch(`/api/dishes/${moved.id}/move`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

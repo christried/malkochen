@@ -47,7 +47,7 @@ test('the newest Dish goes on top and the others keep their order', async () => 
   const board = await landingBoard(grace)
 
   for (const title of ['Dal', 'Pad Thai', 'Chana Masala']) {
-    expect((await addDish(grace, board.id, { title, placeholder: 'curry' })).status).toBe(201)
+    expect((await addDish(grace, board.id, { title, placeholder: 'bowl' })).status).toBe(201)
   }
 
   expect(titles(await landingBoard(grace)).slice(0, 3)).toEqual(['Chana Masala', 'Pad Thai', 'Dal'])
@@ -57,7 +57,7 @@ test('the note is optional, and a blank note is no note', async () => {
   const grace = await signIn(ALLOWLISTED[1])
   const board = await landingBoard(grace)
 
-  const without = await (await addDish(grace, board.id, { title: 'Porridge', placeholder: 'porridge' })).json()
+  const without = await (await addDish(grace, board.id, { title: 'Porridge', placeholder: 'breakfast' })).json()
   const blank = await (await addDish(grace, board.id, { title: 'Brot', note: '   ', placeholder: 'bread' })).json()
 
   expect(without.note).toBeNull()
@@ -69,7 +69,7 @@ test('a Dish keeps the Creator it was added with; without one, or a blank one, i
   const board = await landingBoard(grace)
 
   const withCreator = await (await addDish(grace, board.id, { title: 'Brownies', placeholder: 'bread', creator: '  Love and Lemons ' })).json() as Placed
-  const without = await (await addDish(grace, board.id, { title: 'Porridge', placeholder: 'porridge' })).json() as Placed
+  const without = await (await addDish(grace, board.id, { title: 'Porridge', placeholder: 'breakfast' })).json() as Placed
   const blank = await (await addDish(grace, board.id, { title: 'Brot', placeholder: 'bread', creator: '  ' })).json() as Placed
 
   expect(withCreator.creator).toBe('Love and Lemons')
@@ -83,7 +83,7 @@ test('a Creator longer than 100 characters is refused', async () => {
   const grace = await signIn(ALLOWLISTED[1])
   const board = await landingBoard(grace)
 
-  expect((await addDish(grace, board.id, { title: 'Dal', placeholder: 'curry', creator: 'x'.repeat(101) })).status).toBe(400)
+  expect((await addDish(grace, board.id, { title: 'Dal', placeholder: 'bowl', creator: 'x'.repeat(101) })).status).toBe(400)
 })
 
 test('a Dish needs a title and a known Placeholder Image', async () => {
@@ -102,7 +102,7 @@ test('only Members can add Dishes to a Board', async () => {
   const adasBoard = await landingBoard(await signIn(ALLOWLISTED[0]))
   const linus = await signIn(ALLOWLISTED[2])
 
-  expect((await addDish(linus, adasBoard.id, { title: 'Eindringling', placeholder: 'pizza' })).status).toBe(404)
+  expect((await addDish(linus, adasBoard.id, { title: 'Eindringling', placeholder: 'bread' })).status).toBe(404)
   expect(titles(await landingBoard(await signIn(ALLOWLISTED[0])))).not.toContain('Eindringling')
 })
 
@@ -130,7 +130,7 @@ test('the Source kind comes from the link, except that a web page may be a blog'
   const ada = await signIn(ALLOWLISTED[0])
   const board = await landingBoard(ada)
   const sourceOf = async (source: unknown) =>
-    ((await (await addDish(ada, board.id, { title: 'Dal', placeholder: 'curry', source })).json()) as Dish).source
+    ((await (await addDish(ada, board.id, { title: 'Dal', placeholder: 'bowl', source })).json()) as Dish).source
 
   expect(await sourceOf({ link: TIKTOK, kind: 'pinterest-pin' })).toEqual({ link: TIKTOK, kind: 'tiktok' })
   expect(await sourceOf({ link: TIKTOK, kind: 'blog' })).toEqual({ link: TIKTOK, kind: 'tiktok' })

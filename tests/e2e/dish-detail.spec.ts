@@ -257,15 +257,15 @@ test('a Placeholder chosen with the arrow keys is the one shown and saved', asyn
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
   await detail.getByRole('button', { name: 'Bild wählen' }).click()
   const picker = page.getByRole('dialog', { name: 'Bild wählen' })
-  await picker.getByRole('radio', { name: 'Bowl' }).focus()
+  await picker.getByRole('radio', { name: 'Salat / Bowl' }).focus()
   await page.keyboard.press('ArrowRight')
   await picker.getByRole('button', { name: 'Schließen' }).click()
 
-  await expect(detail.locator('img[src="/placeholders/salad-light.svg"]').first()).toBeVisible()
+  await expect(detail.locator('img[src="/placeholders/breakfast-light.svg"]').first()).toBeVisible()
   await expect(detail.locator('[data-dish-image]')).toHaveCount(0)
   const body = editedBody(page)
   await detail.getByRole('button', { name: 'Speichern' }).click()
-  expect(await body).toMatchObject({ placeholder: 'salad', imageUrl: null })
+  expect(await body).toMatchObject({ placeholder: 'breakfast', imageUrl: null })
 })
 
 test('focus follows the detail: into edit mode, back out, and back to the card', async ({ page }) => {

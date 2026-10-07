@@ -1,6 +1,6 @@
 import { Composition, Folder } from "remotion";
-import { PLACEHOLDER_THEMES, PLACEHOLDERS } from "../../shared/placeholders";
-import { clipBrief, clipVideo, LANDSCAPE_CLIPS, placeholderBrief } from "./briefs";
+import { PLACEHOLDER_THEMES } from "../../shared/placeholders";
+import { clipBrief, clipVideo, LANDSCAPE_CLIPS, placeholderBrief, STUDIO_PLACEHOLDERS } from "./briefs";
 import { calculateClipMetadata, ClipVideo } from "./ClipVideo";
 import { CLIPS } from "./clips/registry";
 import { calculatePlaceholderMetadata, Placeholder } from "./Placeholder";
@@ -13,7 +13,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Folder name="placeholders">
-        {PLACEHOLDERS.flatMap((dish) =>
+        {STUDIO_PLACEHOLDERS.flatMap((dish) =>
           PLACEHOLDER_THEMES.map((theme) => (
             <Composition
               key={`${dish}-${theme}`}

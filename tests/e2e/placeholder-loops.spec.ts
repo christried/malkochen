@@ -66,8 +66,8 @@ test('a Board full of Placeholders plays one loop on first view and one where sc
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual([])
 
   // Scrolling stops with a card in the middle of the screen: it plays once.
-  await page.getByRole('link', { name: 'Gericht porridge' }).evaluate(el => el.scrollIntoView({ block: 'center' }))
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/porridge-light.svg'])
+  await page.getByRole('link', { name: 'Gericht dumplings' }).evaluate(el => el.scrollIntoView({ block: 'center' }))
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/dumplings-light.svg'])
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual([])
 
   expect(await peak()).toBe(1)
@@ -80,14 +80,14 @@ test('a Board loop scrolled off-screen stops, and the card now in the middle pla
   await seedPlaceholderDishes(page)
   await gotoHydrated(page, '/')
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual([])
-  await page.getByRole('link', { name: 'Gericht porridge' }).evaluate(el => el.scrollIntoView({ block: 'center' }))
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/porridge-light.svg'])
+  await page.getByRole('link', { name: 'Gericht dumplings' }).evaluate(el => el.scrollIntoView({ block: 'center' }))
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/dumplings-light.svg'])
 
-  // Porridge is near the top of Ideen; at the bottom it is far off-screen.
+  // Dumplings are near the top of Ideen; at the bottom they are far off-screen.
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
   await expect.poll(async () => {
     const clips = await playing(page)
-    return clips.length === 1 && !clips.includes('/placeholders/porridge-light.svg')
+    return clips.length === 1 && !clips.includes('/placeholders/dumplings-light.svg')
   }).toBe(true)
 
   expect(await peak()).toBe(1)
@@ -99,7 +99,7 @@ test('hovering a card with a photo leaves the Board\'s loop to the Placeholders'
   await seedPlaceholderDishes(page, 3)
   await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: `${TIKTOK}?foto`, sourceKind: 'tiktok' })
   await gotoHydrated(page, '/')
-  // First view: one of pasta, ramen and curry plays once.
+  // First view: one of pasta, ramen and bowl plays once.
   await expect.poll(() => playing(page)).toHaveLength(1)
   const [firstView] = await playing(page)
   const other = PLACEHOLDERS.slice(0, 3).find(p => firstView !== `/placeholders/${p}-light.svg`)!
@@ -119,23 +119,23 @@ test('on desktop the hovered and the lifted card loop, one at a time', async ({ 
   await gotoHydrated(page, '/')
   await expect.poll(() => playing(page), { timeout: 10_000 }).toEqual([])
 
-  const curry = page.getByRole('link', { name: 'Gericht curry' })
-  await curry.hover()
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/curry-light.svg'])
-  await page.getByRole('link', { name: 'Gericht salad' }).hover()
-  await expect.poll(() => playing(page)).toEqual(['/placeholders/salad-light.svg'])
+  const bowl = page.getByRole('link', { name: 'Gericht bowl' })
+  await bowl.hover()
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/bowl-light.svg'])
+  await page.getByRole('link', { name: 'Gericht burger' }).hover()
+  await expect.poll(() => playing(page)).toEqual(['/placeholders/burger-light.svg'])
   await page.mouse.move(5, 5)
   await expect.poll(() => playing(page)).toEqual([])
 
   // Picked up with the mouse: the lifted card loops until it is let go.
-  await curry.scrollIntoViewIfNeeded()
-  const box = (await curry.boundingBox())!
+  await bowl.scrollIntoViewIfNeeded()
+  const box = (await bowl.boundingBox())!
   await page.mouse.move(box.x + 30, box.y + 30)
   await page.mouse.down()
   await page.mouse.move(box.x + 40, box.y + 60, { steps: 4 })
   const lifted = page.getByTestId('drag-card')
   await expect(lifted).toBeVisible()
-  await expect.poll(() => playing(lifted)).toEqual(['/placeholders/curry-light.svg'])
+  await expect.poll(() => playing(lifted)).toEqual(['/placeholders/bowl-light.svg'])
   await expect.poll(() => playing(page)).toHaveLength(1)
   await page.keyboard.press('Escape')
   await page.mouse.up()
@@ -166,7 +166,7 @@ test('with reduced motion no clip plays, not even in focus: stills show', async 
   await seedPlaceholderDishes(page)
   await gotoHydrated(page, '/')
 
-  await page.getByRole('link', { name: 'Gericht curry' }).hover()
+  await page.getByRole('link', { name: 'Gericht bowl' }).hover()
   const detail = await openDetail(page, 'Gericht wok')
   await expect(detail.locator('img[src="/placeholders/wok-light.svg"]')).toBeVisible()
   // Whatever would load a clip has had its chance.
@@ -189,27 +189,27 @@ test('the picker loops its selected Placeholder only, over a quiet Board', async
   const inline = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' }).getByRole('radiogroup', { name: 'Bild' })
 
   await expect.poll(() => playing(inline)).toEqual(['/placeholders/bowl-light.svg'])
-  await inline.getByRole('radio', { name: 'Curry' }).click()
-  await expect.poll(() => playing(inline)).toEqual(['/placeholders/curry-light.svg'])
+  await inline.getByRole('radio', { name: 'Frühstück' }).click()
+  await expect.poll(() => playing(inline)).toEqual(['/placeholders/breakfast-light.svg'])
 
-  expect(await playing(page)).toEqual(['/placeholders/curry-light.svg'])
+  expect(await playing(page)).toEqual(['/placeholders/breakfast-light.svg'])
   expect(await peak()).toBe(1)
 })
 
 test('editing a Dish, its picker loops instead of the image above it', async ({ page }) => {
   await resetBoard(page)
-  await seedDish(page, { title: 'Pizza', placeholder: 'pizza', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedDish(page, { title: 'Pancakes', placeholder: 'breakfast', sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await page.emulateMedia({ colorScheme: 'light' })
   await gotoHydrated(page, '/')
-  const detail = await openDetail(page, 'Pizza')
+  const detail = await openDetail(page, 'Pancakes')
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
-  await expect.poll(() => playing(detail)).toEqual(['/placeholders/pizza-light.svg'])
+  await expect.poll(() => playing(detail)).toEqual(['/placeholders/breakfast-light.svg'])
 
   await detail.getByRole('button', { name: 'Bild wählen' }).click()
   const picker = page.getByRole('dialog', { name: 'Bild wählen' })
-  await expect.poll(() => playing(picker)).toEqual(['/placeholders/pizza-light.svg'])
+  await expect.poll(() => playing(picker)).toEqual(['/placeholders/breakfast-light.svg'])
 
-  expect(await playing(page)).toEqual(['/placeholders/pizza-light.svg'])
+  expect(await playing(page)).toEqual(['/placeholders/breakfast-light.svg'])
 })
 
 test('a clip takes its still\'s place without moving the layout', async ({ page }) => {

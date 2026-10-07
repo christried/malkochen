@@ -39,8 +39,8 @@ const notUnlockedBody = computed(() => invite.value
 // The sign-in hero (handoff motion.json "Sign-in orbit"): a ring of
 // Placeholder Images around Topfbert. The tiles pop in one after another,
 // then the ring turns once every 40s, the tiles staying upright, and every
-// second tile loops its Placeholder.
-const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'curry', 'bowl', 'tacos', 'pizza', 'wok', 'cake']
+// second tile loops its Placeholder: the three drawn for Round 11 among them.
+const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'breakfast', 'burger', 'bowl', 'tacos', 'wok', 'cake']
 </script>
 
 <template>

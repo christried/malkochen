@@ -58,35 +58,11 @@
 /* The Placeholder Images' loops (public/placeholders/*.svg), as the Remotion
    project drew them into video (remotion/src/motion.ts, from the briefs'
    "Animate" lines). Every one rests at 0% and 100%: frame 0 is the still. */
-@keyframes ph-twirl {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  50% { transform: translate(0px, -10px) rotate(-10deg) scale(1, 1); opacity: 1 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
 @keyframes ph-steam {
   0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
   20% { transform: translate(0px, -14px) rotate(0deg) scale(1, 1); opacity: 0 }
   21% { transform: translate(0px, 6px) rotate(0deg) scale(1, 1); opacity: 0 }
   32% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
-@keyframes ph-bub {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  15% { transform: translate(0px, 0px) rotate(0deg) scale(1.35, 1.35); opacity: 0 }
-  16% { transform: translate(0px, 0px) rotate(0deg) scale(0.2, 0.2); opacity: 0 }
-  32% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
-@keyframes ph-hop {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  50% { transform: translate(0px, -7px) rotate(0deg) scale(1, 1); opacity: 1 }
-  68% { transform: translate(0px, 0px) rotate(0deg) scale(1.08, 0.92); opacity: 1 }
-  80% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
-@keyframes ph-sway {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  50% { transform: translate(0px, -4px) rotate(-5deg) scale(1, 1); opacity: 1 }
   100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
 }
 @keyframes ph-lid {
@@ -103,12 +79,6 @@
   75% { transform: translate(0px, 0px) rotate(-7deg) scale(1, 1); opacity: 1; animation-timing-function: ease-in }
   100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
 }
-@keyframes ph-slice {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  45% { transform: translate(10px, -14px) rotate(-8deg) scale(1, 1); opacity: 1 }
-  65% { transform: translate(10px, -14px) rotate(-8deg) scale(1, 1); opacity: 1 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
 @keyframes ph-pan {
   0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
   50% { transform: translate(0px, 0px) rotate(-6deg) scale(1, 1); opacity: 1 }
@@ -119,22 +89,6 @@
   45% { transform: translate(0px, -26px) rotate(180deg) scale(1, 1); opacity: 1 }
   90% { transform: translate(0px, 0px) rotate(360deg) scale(1, 1); opacity: 1 }
   100% { transform: translate(0px, 0px) rotate(360deg) scale(1, 1); opacity: 1 }
-}
-@keyframes ph-fall {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  45% { transform: translate(0px, 34px) rotate(0deg) scale(1, 1); opacity: 1 }
-  48% { transform: translate(0px, 34px) rotate(0deg) scale(1, 1); opacity: 0 }
-  80% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 0 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
-@keyframes ph-ripple {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  20% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 0 }
-  45% { transform: translate(0px, 0px) rotate(0deg) scale(0.3, 0.3); opacity: 0 }
-  50% { transform: translate(0px, 0px) rotate(0deg) scale(0.6, 0.6); opacity: 1 }
-  80% { transform: translate(0px, 0px) rotate(0deg) scale(1.4, 1.4); opacity: 0 }
-  85% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 0 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
 }
 @keyframes ph-rise {
   0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
@@ -152,18 +106,6 @@
   0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
   15% { transform: translate(0px, 0px) rotate(0deg) scale(0, 0); opacity: 1 }
   35% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
-@keyframes ph-roll {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  35% { transform: translate(0px, 0px) rotate(0deg) scale(0.08, 1); opacity: 1 }
-  65% { transform: translate(0px, 0px) rotate(0deg) scale(0.08, 1); opacity: 1 }
-  100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-}
-@keyframes ph-rollc {
-  0% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
-  35% { transform: translate(0px, 0px) rotate(0deg) scale(1.12, 1.12); opacity: 1 }
-  65% { transform: translate(0px, 0px) rotate(0deg) scale(1.12, 1.12); opacity: 1 }
   100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
 }
 @keyframes ph-up {
