@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest, column, titles } from './board'
 import { ANY_CHEER, CHEERS, cheer, confetti, confettiOrigin, gekochtPill, topfbert } from './celebration'
+import { playing } from './clips'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
 import { seedCookings, seedDish } from './seed'
@@ -145,6 +146,8 @@ test('"Gekocht ✓" celebrates: veggie confetti, Topfbert in a pill at the top u
   await expect(topfbert(pill)).toBeVisible()
   await expect(cheer(pill)).toHaveText(ANY_CHEER)
   await expect(topfbert(page)).toHaveCount(1)
+  // He idles there (TopfbertIdle).
+  await expect.poll(() => playing(topfbert(pill))).toEqual(['/clips/topfbert-idle-happy.svg'])
   // The toast at the bottom, with its actions.
   const toast = gekochtToast(page)
   await expect(toast.getByRole('button', { name: 'Notiz hinzufügen' })).toBeVisible()

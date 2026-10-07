@@ -1,0 +1,17 @@
+<!-- Topfbert happy, idling (handoff topfbert/layers.json → idle; layers from
+     assets/topfbert/topfbert-happy.svg and topfbert-eyes_closed.svg). Played by
+     TopfbertIdle; keyframes in app/assets/css/loops.css. Frame 0 is his still. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -20 140 150" width="420" height="450">
+<g data-layer="whole" data-loop="r11-breathe 3s ease-in-out infinite" data-pivot="70 123">
+  <g data-layer="steam_1" data-loop="r11-steam 3s ease-out infinite"><rect x="86" y="10" width="4" height="18" rx="2" fill="#1F1E1C" opacity=".45"></rect></g>
+  <g data-layer="steam_2" data-loop="r11-steam 3s ease-out -1.5s infinite"><rect x="102" y="16" width="4" height="14" rx="2" fill="#1F1E1C" opacity=".45"></rect></g>
+  <g data-layer="handles"><rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect><rect x="111.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+  <g data-layer="body"><path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="2.5"></path></g>
+  <g data-layer="eyes" data-loop="r11-ieo 6s linear infinite"><ellipse cx="50.5" cy="73" rx="4.5" ry="5" fill="#1F1E1C"></ellipse><ellipse cx="89.5" cy="73" rx="4.5" ry="5" fill="#1F1E1C"></ellipse></g>
+  <g data-layer="eyes_closed" data-loop="r11-iec 6s linear infinite" style="opacity:0"><path d="M45.5 72.5Q50.5 77.5 55.5 72.5M84.5 72.5Q89.5 77.5 94.5 72.5" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></g>
+  <g data-layer="cheeks"><ellipse cx="41.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse><ellipse cx="98.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse></g>
+  <g data-layer="mouth"><path d="M61 83A8.5 7 0 0 0 78 83" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round"></path></g>
+  <g data-layer="rim"><rect x="13.25" y="41.25" width="113.5" height="12.5" rx="6.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+  <g data-layer="hat" data-loop="r11-ihat 6s ease-in-out infinite" data-pivot="36 46"><g transform="rotate(-14 36 46)"><g><circle cx="22" cy="6" r="10.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="39" cy="1" r="11.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="50" cy="8" r="8.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><rect x="16" y="8" width="40" height="22" fill="#fff"></rect><rect x="16.25" y="23.25" width="39.5" height="13.5" rx="3" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g></g>
+</g>
+</svg>

@@ -346,11 +346,10 @@ async function save() {
           data-duplicate
         >
           <div class="flex items-center gap-3">
-            <img
-              src="/illustrations/topfbert-wow.svg"
-              alt=""
+            <TopfbertIdle
+              mood="wow"
               class="w-14 shrink-0"
-            >
+            />
             <span class="text-body">{{ t.addDish.duplicate(duplicate.title, duplicate.columnName) }}</span>
           </div>
           <div class="flex flex-wrap justify-end gap-2">

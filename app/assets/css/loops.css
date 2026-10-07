@@ -153,6 +153,14 @@
   46% { transform: translate(0px, 6px) rotate(0deg) scale(1, 0.8); opacity: 0 }
   100% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); opacity: 1 }
 }
+/* Topfbert oops's drop, which keeps its own loop while he idles
+   (public/clips/topfbert-idle-oops.svg; layers.json → oops "drop"): it
+   swells at 20–30%, then falls and fades at 80–100%. */
+@keyframes tb-drop {
+  0%, 20% { transform: scale(0); opacity: 1 }
+  30%, 80% { transform: none; opacity: 1 }
+  100% { transform: translateY(14px); opacity: 0 }
+}
 @keyframes tb-spark {
   0% { transform: translate(0px, 0px) rotate(0deg) scale(0, 0); opacity: 1 }
   50% { transform: translate(0px, 0px) rotate(45deg) scale(1, 1); opacity: 1 }

@@ -97,11 +97,10 @@ async function startGoogleSignIn() {
     </template>
 
     <template v-else>
-      <img
-        src="/illustrations/topfbert-oops.svg"
-        alt=""
+      <TopfbertIdle
+        mood="oops"
         class="w-[min(60vw,240px)]"
-      >
+      />
       <h1 class="mt-8 font-display text-display-m">
         {{ t.invite.invalidHeadline }}
       </h1>
