@@ -10,10 +10,12 @@ test('the three scenes are the handoff\'s, in its order', () => {
   expect(NEVER_COOKED_SCENES).toEqual(['never-cooked-hut', 'never-cooked-sprung', 'never-cooked-dampf'])
 })
 
-test('a Dish always shows the same scene', () => {
-  for (const dishId of dishIds) {
-    expect(neverCookedScene(dishId)).toBe(neverCookedScene(dishId))
-  }
+test('a Dish always shows the same scene, also after a deploy', () => {
+  // Pinned: a change to the hash or the scenes' order would give every Dish
+  // already on a Board another scene.
+  expect(neverCookedScene('0b2e6c1a-4f3d-4a8e-9c71-5d2f8e6b3a90')).toBe('never-cooked-hut')
+  expect(neverCookedScene('e5d4c3b2-a1f0-4e9d-8c7b-6a5f4e3d2c1b')).toBe('never-cooked-sprung')
+  expect(neverCookedScene('7f9d3e2b-1c4a-4b6e-8d5f-a0e1c2b3d4f5')).toBe('never-cooked-dampf')
 })
 
 test('Dishes differ in their scene, and every scene comes up', () => {

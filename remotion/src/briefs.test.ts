@@ -14,6 +14,7 @@ describe("clipBrief", () => {
 
   it("takes the poster from the brief's 'frame N' still", () => {
     expect(clipBrief("lookup-failed").poster.frame).toBe(30);
+    expect(clipBrief("empty-column").poster.frame).toBe(0);
     expect(clipBrief("not-unlocked").poster.frame).toBe(21);
     expect(clipBrief("splash").poster.frame).toBe(16);
     expect(clipBrief("error").poster.frame).toBe(0);
@@ -43,7 +44,7 @@ describe("clipBrief", () => {
 describe("CLIP_IDS", () => {
   it("lists every video brief that is not a Placeholder Image, transparent or new in Round 11, in order", () => {
     const fromHandoff = (briefs as { id: string; transparent: boolean; r11?: string }[])
-      .filter((b) => !b.id.startsWith("placeholder-") && !b.transparent && b.r11 !== "new")
+      .filter((b) => !b.id.startsWith("placeholder-") && !b.transparent && !b.r11?.startsWith("new"))
       .map((b) => b.id);
     expect(fromHandoff).toHaveLength(14);
     expect(CLIP_IDS).toEqual(fromHandoff);

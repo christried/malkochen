@@ -15,6 +15,7 @@ const props = defineProps<{ dish: DishView }>()
 defineEmits<{ cook: [origin: Point], note: [cooking: CookingView], delete: [cooking: CookingView] }>()
 const t = useStrings()
 const headingId = useId()
+const neverCooked = computed(() => `/clips/${neverCookedScene(props.dish.id)}`)
 
 const summary = computed(() => {
   const [last] = props.dish.cookings
@@ -71,7 +72,7 @@ function keyOf(cooking: CookingView): number {
       class="mx-auto aspect-[510/354] w-[min(60vw,220px)]"
     >
       <SvgLoop
-        :src="`/clips/${neverCookedScene(dish.id)}`"
+        :src="neverCooked"
         play
         transparent
       />
