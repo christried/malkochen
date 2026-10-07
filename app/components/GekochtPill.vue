@@ -8,7 +8,8 @@
 // Decoration beside that toast, which says it all to screen readers.
 // Put it beside the page's Toast: on the Board, in the Dish detail, in a
 // celebration over them. Reduced motion: it only fades.
-// `belowTabs`: on the Board, phones put it just below where the sticky
+// `belowTabs`: on the Board (and in a celebration over it, so the two
+// line up), phones put it just below where the sticky
 // Column tabs stick (#170, option B), so it doesn't hide them or the Gekocht
 // tab's bump; it stays there when they aren't stuck, rather than jumping.
 // Their bar is 51px tall (ColumnTabs: 8px around a 35px tab), and Topfbert

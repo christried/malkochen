@@ -781,7 +781,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       close-after="milestone-stay"
     >
       <template #toast>
-        <GekochtPill />
+        <GekochtPill below-tabs />
         <AppToast v-model="toast" />
       </template>
     </CelebrationDialog>

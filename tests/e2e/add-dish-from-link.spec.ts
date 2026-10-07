@@ -397,7 +397,9 @@ test('desktop cards show only the badge\'s dot, inside the thumbnail; tablet car
   }
 
   await page.setViewportSize({ width: 1000, height: 900 })
-  for (const badge of await badgesOnCards(page)) {
+  const tablet = await badgesOnCards(page)
+  expect(tablet).toHaveLength(7)
+  for (const badge of tablet) {
     expect(badge.nameWidth, badge.title!).toBeGreaterThan(10)
   }
 })

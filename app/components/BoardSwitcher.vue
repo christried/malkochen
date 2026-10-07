@@ -72,12 +72,13 @@ function newBoard() {
         @click="toggle"
       >
         <!-- Only the name truncates: clipped to its line, a tall emoji (🍪)
-             would lose its top and bottom. -->
+             would lose its top and bottom. The name's line is taller than
+             the button type's, so its descenders aren't clipped. -->
         <span
           aria-hidden="true"
           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[20px] leading-none"
           data-emoji-pebble
-        ><span>{{ board.emoji }}</span></span> <span class="truncate">{{ board.name }}</span>
+        ><span>{{ board.emoji }}</span></span> <span class="truncate leading-[1.3]">{{ board.name }}</span>
         <svg
           viewBox="0 0 24 24"
           width="18"
