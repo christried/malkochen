@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The handoff's "gekocht-topfbert" (part of the Gekocht celebration),
-// built from Topfbert's happy layers rather than a clip, as it sits over the
-// live Board. Sitting in the Gekocht pill (GekochtPill), 58px wide, he pops
+// drawn in code (TopfbertIdle, happy) rather than played as a video, as it
+// sits over the live Board. Sitting in the Gekocht pill (GekochtPill), 58px wide, he pops
 // up, overshoots, settles, wiggles and says one of his cheers ("Mmh!",
 // "Lecker!", …) in a bubble beside him; then he idles (TopfbertIdle) while
 // the pill stays. Reduced motion: his still, with the bubble.
@@ -19,7 +19,7 @@ defineProps<{ cheer: string }>()
     <!-- The pill is in the top layer, over any modal. -->
     <TopfbertIdle
       mood="happy"
-      on-top
+      ignores-modals
       class="cheer w-[58px] shrink-0"
     />
     <!-- Beside him, from 61% of his width (where "Mmh!" always started),

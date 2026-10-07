@@ -50,18 +50,16 @@
     .oops { position: absolute; bottom: 12%; left: 50%; width: 56%; transform: translateX(-50%) rotate(-6deg); }
     /* Topfbert idles, as TopfbertIdle plays him in the app (public/clips/
        topfbert-idle-oops.svg; keyframes from app/assets/css/loops.css):
-       breathes, blinks, sways his hat, his drop falls. Reduced motion: still. */
+       breathes and blinks, his drop falls. Reduced motion: still. */
     .oops g { transform-box: view-box; }
     .tb-eyes_closed { opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
       .tb-whole { transform-origin: 70px 123px; animation: r11-breathe 3s ease-in-out infinite both; }
       .tb-eyes { animation: r11-ieo 6s linear infinite both; }
       .tb-eyes_closed { animation: r11-iec 6s linear infinite both; }
-      .tb-hat { transform-origin: 36px 46px; animation: r11-ihat 6s ease-in-out infinite both; }
       .tb-drop { transform-box: fill-box; transform-origin: center; animation: tb-drop 2.4s ease-in infinite both; }
     }
     @keyframes r11-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.985,1.025)}}
-    @keyframes r11-ihat{0%,100%{transform:none}50%{transform:translateY(-1px) rotate(3deg)}}
     @keyframes r11-ieo{0%,33%{opacity:1}33.5%,35.5%{opacity:0}36%,83%{opacity:1}83.5%,85.5%{opacity:0}86%,88%{opacity:1}88.5%,90.5%{opacity:0}91%,100%{opacity:1}}
     @keyframes r11-iec{0%,33%{opacity:0}33.5%,35.5%{opacity:1}36%,83%{opacity:0}83.5%,85.5%{opacity:1}86%,88%{opacity:0}88.5%,90.5%{opacity:1}91%,100%{opacity:0}}
     @keyframes tb-drop { 0%, 20% { transform: scale(0); opacity: 1 } 30%, 80% { transform: none; opacity: 1 } 100% { transform: translateY(14px); opacity: 0 } }

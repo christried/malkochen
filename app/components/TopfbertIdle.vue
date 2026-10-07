@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Topfbert wherever he stands about (handoff README §7 "Topfbert idle",
 // topfbert/layers.json → idle): he breathes, blinks (now and then twice),
-// sways his hat and, but for oops, steams, in a 6s loop drawn in code from
+// and, but for oops, sways his hat and steams, in a 6s loop drawn in code from
 // his layers (public/clips/topfbert-idle-<mood>.svg). Every Topfbert on
 // screen keeps the page's clock, so none blinks out of step with another.
 // He pauses when less than half of him is on screen, and stands still while
@@ -11,11 +11,11 @@
 // would leave out the steam and the hat.
 const props = defineProps<{
   mood: 'happy' | 'wow' | 'oops'
-  // Drawn above every modal (the Gekocht pill): none ever covers him.
-  onTop?: boolean
+  // Drawn above every modal (the Gekocht pill): one opening never stills him.
+  ignoresModals?: boolean
 }>()
 const covered = useCoveredByModal()
-const play = computed(() => props.onTop || !covered.value)
+const play = computed(() => props.ignoresModals || !covered.value)
 </script>
 
 <template>

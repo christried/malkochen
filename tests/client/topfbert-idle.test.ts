@@ -31,7 +31,7 @@ test.each(MOODS)('%s blinks, eyes and closed eyes swapping on the 6s clock', (mo
   expect(layers.get('eyes_closed')).toBe('r11-iec 6s linear 0s')
 })
 
-test.each(MOODS)('%s sways his hat over the 6s loop', (mood) => {
+test.each(['happy', 'wow'])('%s sways his hat over the 6s loop', (mood) => {
   expect(loops(mood).get('hat')).toBe('r11-ihat 6s ease-in-out 0s')
 })
 
@@ -41,9 +41,10 @@ test.each(['happy', 'wow'])('%s steams, the second puff half a round behind', (m
   expect(layers.get('steam_2')).toBe('r11-steam 3s ease-out -1.5s')
 })
 
-test('oops has no steam, and his drop keeps its own loop', () => {
+test('oops only breathes and blinks: no steam, no hat sway; his drop keeps its own loop', () => {
   const layers = loops('oops')
   expect([...layers.keys()].filter(name => name.startsWith('steam'))).toEqual([])
+  expect(layers.has('hat')).toBe(false)
   expect(layers.get('drop')).toBe('tb-drop 2.4s ease-in 0s')
 })
 
