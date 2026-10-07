@@ -41,13 +41,13 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
         <span
           v-else
           aria-hidden="true"
-          class="font-display text-title-l tablet:text-display-m"
-        ><span class="name-pebble w-48">&nbsp;</span></span>
+          class="name-pebble h-11 w-44 shadow-card"
+        />
         <span
           v-for="icon in ['search', 'settings'] as const"
           :key="icon"
           aria-hidden="true"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-text-muted"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-text-muted shadow-card"
         >
           <AppIcon
             :name="icon"
@@ -166,9 +166,6 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
   display: inline-block;
   border-radius: var(--radius-pill);
   background: var(--color-surface);
-}
-header .name-pebble {
-  background: var(--color-surface-muted);
 }
 /* The shimmer: a soft light sweeping across each card, all in step. */
 .skeleton-card::after {
