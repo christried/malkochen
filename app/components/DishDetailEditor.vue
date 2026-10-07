@@ -253,86 +253,86 @@ async function save() {
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="title"
     >
-      <label
-        :for="titleId"
-        class="text-label"
-      >{{ t.detail.title }}</label>
-      <input
-        :id="titleId"
-        ref="titleInput"
-        v-model="title"
-        type="text"
-        required
-        maxlength="200"
-        autocomplete="off"
-        class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      <AppField
+        :label="t.detail.title"
+        :control-id="titleId"
       >
+        <input
+          :id="titleId"
+          ref="titleInput"
+          v-model="title"
+          type="text"
+          required
+          maxlength="200"
+          autocomplete="off"
+          class="font-display text-title-s"
+        >
+      </AppField>
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="creator"
     >
-      <label
-        :for="creatorId"
-        class="text-label"
-      >{{ t.dish.creator }}</label>
-      <input
-        :id="creatorId"
-        v-model="creator"
-        type="text"
-        maxlength="100"
-        autocomplete="off"
-        :placeholder="t.detail.creatorPrompt"
-        class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      <AppField
+        :label="t.dish.creator"
+        :control-id="creatorId"
       >
+        <input
+          :id="creatorId"
+          v-model="creator"
+          type="text"
+          maxlength="100"
+          autocomplete="off"
+          :placeholder="t.detail.creatorPrompt"
+        >
+      </AppField>
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="note"
     >
-      <label
-        :for="noteId"
-        class="text-label"
-      >{{ t.detail.note }}</label>
-      <textarea
-        :id="noteId"
-        v-model="note"
-        rows="3"
-        maxlength="2000"
-        :placeholder="noteExample.prompt.value"
-        class="resize-none rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-      />
+      <AppField
+        :label="t.detail.note"
+        :control-id="noteId"
+      >
+        <textarea
+          :id="noteId"
+          v-model="note"
+          maxlength="2000"
+          :placeholder="noteExample.prompt.value"
+        />
+      </AppField>
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="source"
     >
-      <label
-        :for="linkId"
-        class="text-label"
-      >{{ t.detail.source }}</label>
-      <input
-        :id="linkId"
-        v-model="link"
-        type="url"
-        inputmode="url"
-        autocomplete="off"
-        maxlength="2048"
-        :placeholder="t.detail.sourcePrompt"
-        :aria-describedby="linkHintId"
-        :aria-invalid="linkInvalid || undefined"
-        class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-        @paste="lookup.pasted()"
+      <AppField
+        :label="t.detail.source"
+        :control-id="linkId"
       >
+        <input
+          :id="linkId"
+          v-model="link"
+          type="url"
+          inputmode="url"
+          autocomplete="off"
+          maxlength="2048"
+          :placeholder="t.detail.sourcePrompt"
+          :aria-describedby="linkHintId"
+          :aria-invalid="linkInvalid || undefined"
+          @paste="lookup.pasted()"
+        >
+      </AppField>
       <span
         :id="linkHintId"
-        class="text-small text-text-muted"
+        class="field-helper"
       >{{ t.detail.sourceHint }}</span>
     </div>
 

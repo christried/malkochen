@@ -56,11 +56,10 @@ async function create() {
       class="mt-5 flex flex-col gap-5"
       @submit.prevent="create"
     >
-      <div class="flex flex-col gap-1.5">
-        <label
-          :for="nameId"
-          class="text-label"
-        >{{ t.boards.name }}</label>
+      <AppField
+        :label="t.boards.name"
+        :control-id="nameId"
+      >
         <input
           :id="nameId"
           v-model="name"
@@ -69,9 +68,9 @@ async function create() {
           maxlength="60"
           autocomplete="off"
           :placeholder="nameExample.prompt.value"
-          class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          class="font-display text-title-s"
         >
-      </div>
+      </AppField>
       <div class="flex flex-col gap-2">
         <span class="text-label">{{ t.boards.emoji }}</span>
         <EmojiPicker

@@ -337,14 +337,141 @@ html[data-theme-reveal="fade"] *::after {
   transition: box-shadow 180ms var(--ease-fade), border-color 180ms var(--ease-fade);
 }
 
-/* Bordered fields pad a little more above than below, in place of py-3, so
-   their text sits optically centred (measured from the cap tops and the
-   baseline, then checked by eye). One 1px shift serves both fonts: Petrona
-   (font-display, a one-line field) sits half a pixel high in its line box,
-   and Figtree (text-body, a select without its native look or a textarea)
-   is centred by its metrics but, like most sans-serifs, reads a touch high.
-   Recheck if a font changes: Newsreader needed 3px. */
-@utility py-field {
-  padding-top: 13px;
-  padding-bottom: 11px;
+/* Labelled fields (AppField), the handoff's label style 5b (components.json
+   → Input): the label in the border. The fieldset draws the border from
+   6px above the control, so its legend's line box (14px) is centred on the
+   2px top border and the border's outer edge meets the control's top; the
+   legend is hidden and only cuts the notch. The visible label sits exactly
+   over it. 52 = 2 + 13 + 20 + 15 + 2: the text 1px above the middle, an
+   optical lift measured for Figtree. Border and label change colour over
+   --dur-lift (180ms, the handoff's "focus ring"; at once with reduced
+   motion). In the components layer, so a control's own utilities (a serif
+   title, say) still win. */
+@layer components {
+  .field {
+    position: relative;
+    margin-top: 6px;
+    min-width: 0;
+  }
+  .field > fieldset {
+    position: absolute;
+    inset: -6px 0 0 0;
+    margin: 0;
+    padding: 0 8px;
+    min-width: 0;
+    border: var(--field-border) solid var(--field-outline);
+    border-radius: var(--radius-field);
+    pointer-events: none;
+    transition: border-color var(--dur-lift) var(--ease-fade);
+  }
+  .field > fieldset > legend,
+  .field > label {
+    padding: 0 6px;
+    font: 600 var(--field-label-size) / var(--field-label-line) var(--font-ui);
+    white-space: nowrap;
+  }
+  .field > fieldset > legend {
+    visibility: hidden;
+  }
+  .field > label {
+    position: absolute;
+    left: 10px;
+    top: -6px;
+    color: var(--color-text-muted);
+    transition: color var(--dur-lift) var(--ease-fade);
+  }
+  .field > :is(input, select, textarea),
+  .field > .field-row {
+    display: block;
+    width: 100%;
+    height: var(--field-h);
+    margin: 0;
+    border: 0;
+    border-radius: var(--radius-field);
+    background: transparent;
+    padding: var(--field-pad);
+    font: 500 15.5px / var(--field-line) var(--font-ui);
+    color: var(--color-text);
+  }
+  .field > :is(input, select, textarea):focus,
+  .field > .field-row > input:focus {
+    outline: none;
+  }
+  .field :is(input, textarea)::placeholder {
+    color: var(--color-text-muted);
+  }
+  /* A select: our own chevron (an 18px AppIcon after it), 16px in. */
+  .field > select {
+    appearance: none;
+    padding-right: 44px;
+  }
+  .field > select + svg {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    translate: 0 -50%;
+    pointer-events: none;
+    color: var(--color-text-muted);
+  }
+  .field > textarea {
+    height: auto;
+    min-height: 104px;
+    padding: 14px 16px;
+    line-height: 22px;
+    resize: vertical;
+  }
+  /* A field with more than its input inside the border (the Add Dish link:
+     Source dot, input, dots or check, "Einfügen"). The input keeps the
+     control's height and padding, so its text sits where a plain one's does. */
+  .field > .field-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 6px 0 16px;
+  }
+  .field > .field-row > input {
+    align-self: stretch;
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: var(--field-pad);
+    padding-inline: 0;
+    font: inherit;
+    color: inherit;
+  }
+
+  /* States: hover, focus, valid, error, disabled. */
+  @media (hover: hover) {
+    .field:hover > fieldset {
+      border-color: color-mix(in srgb, var(--color-text) 40%, transparent);
+    }
+  }
+  /* Valid before focus: a found link's field still shows focus, its check
+     saying it was found. */
+  .field[data-valid] > fieldset {
+    border-color: var(--color-sage);
+  }
+  .field:focus-within > fieldset {
+    border-color: var(--color-text);
+  }
+  .field:focus-within > label {
+    color: var(--color-text);
+  }
+  .field:has([aria-invalid="true"]) > fieldset {
+    border-color: var(--color-danger);
+  }
+  .field:has([aria-invalid="true"]) > label {
+    color: var(--color-danger);
+  }
+  .field:has(> :is(input, select, textarea):disabled) {
+    opacity: .45;
+  }
+  /* Helper text under a field: indented to the field's text. */
+  .field-helper {
+    padding: 8px 0 0 16px;
+    font-size: var(--field-label-size);
+    line-height: 16px;
+    color: var(--color-text-muted);
+  }
 }
