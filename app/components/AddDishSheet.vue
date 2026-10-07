@@ -417,7 +417,7 @@ async function save() {
             autocomplete="off"
             :placeholder="titlePlaceholder"
             :aria-describedby="titleNeeded ? titleHintId : undefined"
-            class="rounded-field border border-line-strong bg-surface px-4 py-field-display font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             :class="{ 'title-prompt': titleNeeded }"
             @focus="titleTypeIn.finish()"
           >
@@ -482,7 +482,7 @@ async function save() {
             rows="2"
             maxlength="2000"
             :placeholder="noteExample.prompt.value"
-            class="resize-none rounded-field border border-line-strong bg-surface px-4 py-field-body text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            class="resize-none rounded-field border border-line-strong bg-surface px-4 py-field text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           />
         </label>
 
@@ -497,7 +497,7 @@ async function save() {
           <span class="relative flex">
             <select
               v-model="boardId"
-              class="w-full appearance-none rounded-field border border-line-strong bg-surface py-field-body pl-4 pr-11 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              class="w-full appearance-none rounded-field border border-line-strong bg-surface py-field pl-4 pr-11 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <option
                 v-for="board in boards"

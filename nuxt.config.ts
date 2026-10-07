@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/eslint', '@nuxtjs/google-fonts'],
+  modules: ['@nuxt/eslint', '@nuxt/fonts'],
   css: ['~/assets/css/main.css', '~/assets/css/loops.css'],
   app: {
     head: {
@@ -35,15 +35,21 @@ export default defineNuxtConfig({
       ],
     },
   },
-  // tokens.json → font.load: Newsreader (opsz, 400/500, italic 400) and
-  // Hanken Grotesk (400–700). Downloaded at build time and self-hosted.
-  googleFonts: {
-    families: {
-      'Newsreader': { wght: [400, 500], ital: [400] },
-      'Hanken Grotesk': [400, 500, 600, 700],
-    },
-    display: 'swap',
-    download: true,
+  // tokens.json → font.load: Petrona (display) and Figtree (UI), both
+  // variable with italics, latin + latin-ext (ä ö ü ß, à è é ì ò ù).
+  // Downloaded at build time and self-hosted. The tokens name the fonts
+  // through CSS variables (--font-display, --font-ui), so those are scanned
+  // too: that's where the size-adjusted fallback faces are added, which keep
+  // the text from jumping when the font arrives (font-display: swap).
+  fonts: {
+    families: [
+      { name: 'Petrona', weights: ['100 900'], styles: ['normal', 'italic'], subsets: ['latin', 'latin-ext'], fallbacks: ['Georgia', 'Noto Serif'] },
+      { name: 'Figtree', weights: ['300 900'], styles: ['normal', 'italic'], subsets: ['latin', 'latin-ext'], fallbacks: ['Roboto', 'Arial'] },
+    ],
+    // From Google Fonts. Not named on each family: Google then picks the
+    // fallbacks itself (the generic "serif"), not the ones above.
+    priority: ['google'],
+    processCSSVariables: true,
   },
   // `nuxt typecheck` also covers the tests and the root tool configs.
   typescript: {

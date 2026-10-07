@@ -18,9 +18,32 @@ test.describe('design tokens', () => {
       const h1 = page.getByRole('heading', { level: 1 })
       await expect(h1).toHaveText('Was willst du malkochen?')
       await expect(h1).toHaveCSS('font-size', size)
-      await expect(h1).toHaveCSS('font-family', /Newsreader/)
+      await expect(h1).toHaveCSS('font-family', /Petrona/)
     })
   }
+
+  // tokens.json font.load: Petrona and Figtree, variable with italics, from
+  // the app itself (not Google), each with a size-adjusted fallback face so
+  // the text doesn't jump when the font arrives.
+  test('the display and UI fonts load self-hosted, with fallbacks sized to match', async ({ page }) => {
+    const fontRequests: string[] = []
+    page.on('request', (request) => {
+      if (request.resourceType() === 'font') fontRequests.push(new URL(request.url()).host)
+    })
+    await gotoHydrated(page, '/login')
+    await page.evaluate(() => Promise.all([
+      document.fonts.load('500 40px Petrona', 'ÄÖÜß'),
+      document.fonts.load('italic 400 22px Petrona'),
+      document.fonts.load('600 15px Figtree', 'àèéìòù'),
+    ]))
+    const loaded = await page.evaluate(() =>
+      [...document.fonts].filter(f => f.status === 'loaded').map(f => `${f.family} ${f.style} ${f.weight}`))
+    expect(loaded).toEqual(expect.arrayContaining(['Petrona normal 100 900', 'Petrona italic 100 900', 'Figtree normal 300 900']))
+    expect(fontRequests.length).toBeGreaterThan(0)
+    expect(new Set(fontRequests)).toEqual(new Set([new URL(page.url()).host]))
+    expect(await token(page, '--font-display')).toMatch(/^["']Petrona["'], "Petrona Fallback: [^"]+"/)
+    expect(await token(page, '--font-ui')).toMatch(/^["']Figtree["'], "Figtree Fallback: [^"]+"/)
+  })
 })
 
 test.describe('reduced motion', () => {

@@ -24,7 +24,8 @@ export const Pebble: React.FC<{
         y={cy}
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="Newsreader"
+        fontFamily="Petrona"
+        fontWeight={500}
         fontSize={size * 0.36}
         fill={label.color}
       >
