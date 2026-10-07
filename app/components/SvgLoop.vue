@@ -12,8 +12,9 @@ import { loopStyle } from '~/utils/svg-loop'
 // over the still, and its frame 0 is the still, so starting never jumps.
 //
 // `src` is the drawing without the theme: '/placeholders/pasta' plays
-// /placeholders/pasta-dark.svg in dark. The still is the default slot, or
-// else that same file as an image.
+// /placeholders/pasta-dark.svg in dark; one drawn the same in both themes
+// (`themed: false`, as Topfbert) is `src` + '.svg'. The still is the default
+// slot, or else that same file as an image.
 const props = withDefaults(defineProps<{
   src: string
   play?: boolean
@@ -22,17 +23,24 @@ const props = withDefaults(defineProps<{
   // The drawing has no background of its own: the still would show through,
   // so it hides while the drawing is up.
   transparent?: boolean
-}>(), { play: false, loop: true, transparent: false })
+  themed?: boolean
+  // Every looping drawing with `sync` keeps one clock, the page's: its
+  // rounds count from when the page opened, not from when it came in or
+  // back on screen, so several of them on screen move in step.
+  sync?: boolean
+  // How much of it must be on screen for it to run (else it pauses).
+  visibleShare?: number
+}>(), { play: false, loop: true, transparent: false, themed: true, sync: false, visibleShare: 0 })
 const emit = defineEmits<{ ended: [] }>()
 
 const theme = useResolvedTheme()
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const wanted = computed(() => props.play && !reducedMotion.value)
-const file = computed(() => `${props.src}-${theme.value}.svg`)
+const file = computed(() => props.themed ? `${props.src}-${theme.value}.svg` : `${props.src}.svg`)
 
 const root = useTemplateRef<HTMLElement>('root')
 const host = useTemplateRef<HTMLElement>('host')
-const onScreen = useOnScreen(root)
+const onScreen = useOnScreen(root, props.visibleShare)
 // The file drawn in `host`, once it is.
 const drawn = ref<string | null>(null)
 const shown = computed(() => wanted.value && drawn.value === file.value)
@@ -77,6 +85,16 @@ function finishRound() {
     animation.effect!.updateTiming({ iterations: (currentIteration ?? 0) + 1 })
   }
 }
+
+// Paused while off-screen, a layer falls behind the page's clock: each time
+// it runs again it's set back on it.
+watch(() => props.sync && run.value === 'loop' && onScreen.value, async (running) => {
+  if (!running) return
+  await nextTick()
+  for (const animation of animations()) {
+    if (animation.playState === 'running') animation.startTime = 0
+  }
+})
 
 function animations() {
   return host.value?.getAnimations({ subtree: true }) ?? []

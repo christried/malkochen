@@ -1,0 +1,16 @@
+<!-- Topfbert oops, idling (handoff topfbert/layers.json → idle; layers from
+     assets/topfbert/topfbert-oops.svg and topfbert-eyes_closed.svg). Played by
+     TopfbertIdle; keyframes in app/assets/css/loops.css. Frame 0 is his still. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -20 140 150" width="420" height="450">
+<g data-layer="whole" data-loop="r11-breathe 3s ease-in-out infinite" data-pivot="70 123">
+  <g data-layer="handles"><rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect><rect x="111.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+  <g data-layer="body"><path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="2.5"></path></g>
+  <g data-layer="eyes" data-loop="r11-ieo 6s linear infinite"><ellipse cx="50" cy="73.5" rx="4" ry="4.5" fill="#1F1E1C"></ellipse><rect x="83" y="72" width="13" height="3" rx="1.5" fill="#1F1E1C" transform="rotate(-12 89.5 73.5)"></rect></g>
+  <g data-layer="eyes_closed" data-loop="r11-iec 6s linear infinite" style="opacity:0"><path d="M45.5 72.5Q50.5 77.5 55.5 72.5M84.5 72.5Q89.5 77.5 94.5 72.5" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></g>
+  <g data-layer="cheeks"><ellipse cx="41.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse><ellipse cx="98.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse></g>
+  <g data-layer="mouth"><rect x="60" y="87" width="18" height="3" rx="1.5" fill="#1F1E1C" transform="rotate(8 69 88.5)"></rect></g>
+  <g data-layer="rim"><rect x="13.25" y="41.25" width="113.5" height="12.5" rx="6.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+  <g data-layer="hat" data-loop="r11-ihat 6s ease-in-out infinite" data-pivot="36 46"><g transform="rotate(-14 36 46)"><g><circle cx="22" cy="6" r="10.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="39" cy="1" r="11.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="50" cy="8" r="8.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><rect x="16" y="8" width="40" height="22" fill="#fff"></rect><rect x="16.25" y="23.25" width="39.5" height="13.5" rx="3" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g></g>
+  <g data-layer="drop" data-loop="tb-drop 2.4s ease-in infinite"><path d="M118 53C122 58 123 61 123 63A5 5 0 0 1 113 63C113 61 114 58 118 53Z" fill="#A8D4F0" stroke="#1F1E1C" stroke-width="2"></path></g>
+</g>
+</svg>

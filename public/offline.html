@@ -48,6 +48,23 @@
     [data-theme="dark"] .only-dark { display: block; }
     .spill { position: absolute; bottom: 10%; left: 50%; height: 9%; width: 54%; transform: translateX(-50%); border-radius: 50%; background: color-mix(in oklch, #F08A5D 40%, var(--bg)); }
     .oops { position: absolute; bottom: 12%; left: 50%; width: 56%; transform: translateX(-50%) rotate(-6deg); }
+    /* Topfbert idles, as TopfbertIdle plays him in the app (public/clips/
+       topfbert-idle-oops.svg; keyframes from app/assets/css/loops.css):
+       breathes, blinks, sways his hat, his drop falls. Reduced motion: still. */
+    .oops g { transform-box: view-box; }
+    .tb-eyes_closed { opacity: 0; }
+    @media (prefers-reduced-motion: no-preference) {
+      .tb-whole { transform-origin: 70px 123px; animation: r11-breathe 3s ease-in-out infinite both; }
+      .tb-eyes { animation: r11-ieo 6s linear infinite both; }
+      .tb-eyes_closed { animation: r11-iec 6s linear infinite both; }
+      .tb-hat { transform-origin: 36px 46px; animation: r11-ihat 6s ease-in-out infinite both; }
+      .tb-drop { transform-box: fill-box; transform-origin: center; animation: tb-drop 2.4s ease-in infinite both; }
+    }
+    @keyframes r11-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.985,1.025)}}
+    @keyframes r11-ihat{0%,100%{transform:none}50%{transform:translateY(-1px) rotate(3deg)}}
+    @keyframes r11-ieo{0%,33%{opacity:1}33.5%,35.5%{opacity:0}36%,83%{opacity:1}83.5%,85.5%{opacity:0}86%,88%{opacity:1}88.5%,90.5%{opacity:0}91%,100%{opacity:1}}
+    @keyframes r11-iec{0%,33%{opacity:0}33.5%,35.5%{opacity:1}36%,83%{opacity:0}83.5%,85.5%{opacity:1}86%,88%{opacity:0}88.5%,90.5%{opacity:1}91%,100%{opacity:0}}
+    @keyframes tb-drop { 0%, 20% { transform: scale(0); opacity: 1 } 30%, 80% { transform: none; opacity: 1 } 100% { transform: translateY(14px); opacity: 0 } }
     h1 { margin: 24px 0 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 28px; line-height: 1.15; }
     p { margin: 8px 0 0; max-width: 360px; color: var(--text-muted); font-size: 16px; line-height: 1.5; }
     button { margin-top: 32px; border: 0; border-radius: 999px; padding: 14px 20px; background: var(--inverse); color: var(--on-inverse); font: inherit; font-weight: 600; font-size: 16px; cursor: pointer; }
@@ -68,7 +85,19 @@
     <div class="art">
       <div class="blob carrot"></div>
       <div class="spill"></div>
-      <img class="oops" src="/illustrations/topfbert-oops.svg" alt="">
+      <svg class="oops" viewBox="0 -20 140 150" aria-hidden="true" data-topfbert-idle>
+      <g class="tb-whole">
+        <g class="tb-handles"><rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect><rect x="111.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+        <g class="tb-body"><path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="2.5"></path></g>
+        <g class="tb-eyes"><ellipse cx="50" cy="73.5" rx="4" ry="4.5" fill="#1F1E1C"></ellipse><rect x="83" y="72" width="13" height="3" rx="1.5" fill="#1F1E1C" transform="rotate(-12 89.5 73.5)"></rect></g>
+        <g class="tb-eyes_closed"><path d="M45.5 72.5Q50.5 77.5 55.5 72.5M84.5 72.5Q89.5 77.5 94.5 72.5" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></g>
+        <g class="tb-cheeks"><ellipse cx="41.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse><ellipse cx="98.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse></g>
+        <g class="tb-mouth"><rect x="60" y="87" width="18" height="3" rx="1.5" fill="#1F1E1C" transform="rotate(8 69 88.5)"></rect></g>
+        <g class="tb-rim"><rect x="13.25" y="41.25" width="113.5" height="12.5" rx="6.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+        <g class="tb-hat"><g transform="rotate(-14 36 46)"><g><circle cx="22" cy="6" r="10.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="39" cy="1" r="11.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="50" cy="8" r="8.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><rect x="16" y="8" width="40" height="22" fill="#fff"></rect><rect x="16.25" y="23.25" width="39.5" height="13.5" rx="3" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g></g>
+        <g class="tb-drop"><path d="M118 53C122 58 123 61 123 63A5 5 0 0 1 113 63C113 61 114 58 118 53Z" fill="#A8D4F0" stroke="#1F1E1C" stroke-width="2"></path></g>
+      </g>
+      </svg>
     </div>
     <h1>malkochen ist gerade nicht erreichbar.</h1>
     <p>Dein Internet geht, aber malkochen antwortet gerade nicht. Das liegt an uns, nicht an dir. Versuch es gleich noch mal.</p>

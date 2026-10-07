@@ -3,15 +3,11 @@
 // built from Topfbert's happy layers rather than a clip, as it sits over the
 // live Board. Sitting in the Gekocht pill (GekochtPill), 58px wide, he pops
 // up, overshoots, settles, wiggles and says one of his cheers ("Mmh!",
-// "Lecker!", …) in a bubble beside him; then he idles (steam, hat, a blink)
-// while the pill stays. Reduced motion: his still, with the bubble.
+// "Lecker!", …) in a bubble beside him; then he idles (TopfbertIdle) while
+// the pill stays. Reduced motion: his still, with the bubble.
 
-// The layers (assets/topfbert/layers.json → happy), back to front, and how
-// each one idles.
-const LAYERS = ['01-steam_1', '02-steam_2', '03-handles', '04-body', '05-eyes', '06-cheeks', '07-mouth', '08-rim', '09-hat'] as const
 // What he says: one of his cheers, picked with the Gekocht pill (utils/cheer).
 defineProps<{ cheer: string }>()
-const still = prefersReducedMotion()
 </script>
 
 <template>
@@ -20,22 +16,12 @@ const still = prefersReducedMotion()
     class="pointer-events-none flex items-start"
     data-topfbert
   >
-    <div class="cheer relative aspect-[140/150] w-[58px] shrink-0">
-      <img
-        v-if="still"
-        src="/illustrations/topfbert-happy.svg"
-        alt=""
-        class="absolute inset-0 h-full w-full"
-      >
-      <img
-        v-for="layer in (still ? [] : LAYERS)"
-        :key="layer"
-        :src="`/illustrations/topfbert-happy/${layer}.svg`"
-        alt=""
-        class="absolute inset-0 h-full w-full"
-        :class="`layer-${layer.slice(3)}`"
-      >
-    </div>
+    <!-- The pill is in the top layer, over any modal. -->
+    <TopfbertIdle
+      mood="happy"
+      on-top
+      class="cheer w-[58px] shrink-0"
+    />
     <!-- Beside him, from 61% of his width (where "Mmh!" always started),
          over his side but not his face; one line. Laid out with him, so a
          longer cheer makes room for itself and pushes what follows him in
@@ -73,36 +59,5 @@ const still = prefersReducedMotion()
 }
 @keyframes bubble-pop {
   from { scale: 0; rotate: -10deg; }
-}
-/* Idle (layers.json → happy). Steam rises and fades, the second puff .9s
-   behind; the hat (authored upright, worn at −14°) bobs; he blinks every 4s. */
-.layer-steam_1,
-.layer-steam_2 {
-  opacity: 0;
-  animation: steam 2.2s ease-out infinite;
-}
-.layer-steam_2 {
-  animation-delay: .9s;
-}
-@keyframes steam {
-  0% { opacity: 0; translate: 0 6px; scale: 1 .8; }
-  40% { opacity: .8; }
-  100% { opacity: 0; translate: 0 -14px; scale: 1 1.1; }
-}
-.layer-hat {
-  transform-origin: 25.7% 44%;
-  rotate: -14deg;
-  animation: hat 3s var(--ease-idle) infinite alternate;
-}
-@keyframes hat {
-  to { rotate: -9deg; translate: 0 -2px; }
-}
-.layer-eyes {
-  transform-origin: 50% 62%;
-  animation: blink 4s linear infinite;
-}
-@keyframes blink {
-  0%, 92%, 100% { scale: 1 1; }
-  96% { scale: 1 .1; }
 }
 </style>

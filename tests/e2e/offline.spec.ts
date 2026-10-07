@@ -90,7 +90,10 @@ for (const [what, outage] of [
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('malkochen ist gerade nicht erreichbar.')
     await expect(page.getByText('Das liegt an uns, nicht an dir.')).toBeVisible()
-    await expect(page.locator('img[src="/illustrations/topfbert-oops.svg"]')).toBeVisible()
+    // Topfbert, idling.
+    const topfbert = page.locator('[data-topfbert-idle]')
+    await expect(topfbert).toBeVisible()
+    await expect.poll(() => topfbert.evaluate(el => el.getAnimations({ subtree: true }).length)).toBeGreaterThan(0)
 
     await context.unroute(landing)
     await page.getByRole('button', { name: 'Nochmal versuchen' }).click()

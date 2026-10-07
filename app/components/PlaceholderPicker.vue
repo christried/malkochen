@@ -40,14 +40,13 @@ function move(step: number) {
 
 <template>
   <div>
-    <img
+    <TopfbertIdle
       v-if="full"
       :key="selected"
-      src="/illustrations/topfbert-happy.svg"
-      alt=""
+      mood="happy"
       aria-hidden="true"
-      class="hop mx-auto mb-3 h-16 w-16"
-    >
+      class="hop mx-auto mb-3 w-[60px]"
+    />
     <div
       role="radiogroup"
       :aria-label="label"
