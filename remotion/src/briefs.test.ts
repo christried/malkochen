@@ -13,7 +13,8 @@ describe("clipBrief", () => {
   });
 
   it("takes the poster from the brief's 'frame N' still", () => {
-    expect(clipBrief("empty-column").poster.frame).toBe(33);
+    expect(clipBrief("lookup-failed").poster.frame).toBe(30);
+    expect(clipBrief("empty-column").poster.frame).toBe(0);
     expect(clipBrief("not-unlocked").poster.frame).toBe(21);
     expect(clipBrief("splash").poster.frame).toBe(16);
     expect(clipBrief("error").poster.frame).toBe(0);
@@ -34,19 +35,18 @@ describe("clipBrief", () => {
     // The Column panel.
     expect(clipBrief("empty-board").background).toEqual(surfaceMuted);
     expect(clipBrief("empty-column").background).toEqual(surfaceMuted);
-    // The Dish detail and the invite page.
-    expect(clipBrief("never-cooked").background).toEqual(bg);
+    // The invite page.
     expect(clipBrief("invite-intro").background).toEqual(bg);
     expect(clipBrief("invite-loop").background).toEqual(bg);
   });
 });
 
 describe("CLIP_IDS", () => {
-  it("lists every video brief that is not a Placeholder Image or transparent, in order", () => {
-    const fromHandoff = (briefs as { id: string; transparent: boolean }[])
-      .filter((b) => !b.id.startsWith("placeholder-") && !b.transparent)
+  it("lists every video brief that is not a Placeholder Image, transparent or new in Round 11, in order", () => {
+    const fromHandoff = (briefs as { id: string; transparent: boolean; r11?: string }[])
+      .filter((b) => !b.id.startsWith("placeholder-") && !b.transparent && !b.r11?.startsWith("new"))
       .map((b) => b.id);
-    expect(fromHandoff).toHaveLength(15);
+    expect(fromHandoff).toHaveLength(14);
     expect(CLIP_IDS).toEqual(fromHandoff);
   });
 });

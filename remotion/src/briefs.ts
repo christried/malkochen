@@ -60,14 +60,16 @@ export const placeholderBrief = (dish: Placeholder): Brief => {
 
 // The state, system and celebration clips: every video brief that is not a
 // Placeholder Image, in the briefs' order. The transparent ones are built in
-// Vue instead. (briefs.test.ts checks this against the handoff.)
+// Vue instead, and Round 11's new ones (the empty Column's Knobi and Schoti,
+// the three "never cooked" scenes) were drawn for CSS keyframes: the app
+// draws them in code from their SVGs. (briefs.test.ts checks this against
+// the handoff.)
 export const CLIP_IDS = [
   "empty-board",
   "empty-column",
   "search-empty",
   "lookup-stir",
   "lookup-failed",
-  "never-cooked",
   "milestone-10x",
   "board-created",
   "invite-intro",
@@ -105,12 +107,10 @@ const posterOf = (id: ClipId, still: string, frames: number): Poster => {
 
 // Where the app shows a clip on another colour than its brief's, the clip is
 // rendered on that colour so it blends in, and draws its tint as a blob
-// instead: the Column panel (surface-muted), the Dish detail and the invite
-// page (bg).
+// instead: the Column panel (surface-muted) and the invite page (bg).
 const IN_APP_BACKGROUND: Partial<Record<ClipId, "surfaceMuted" | "bg">> = {
   "empty-board": "surfaceMuted",
   "empty-column": "surfaceMuted",
-  "never-cooked": "bg",
   "invite-intro": "bg",
   "invite-loop": "bg",
 };

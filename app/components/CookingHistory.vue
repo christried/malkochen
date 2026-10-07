@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
+import { neverCookedScene } from '~/utils/never-cooked'
 
 // A Dish's Cooking History in its detail (PRD stories 48, 53–55): "3×
 // gekocht · zuletzt 12. Sept." under its achievement badge, "Gekocht ✓",
 // and each Cooking (the handoff's CookingHistoryEntry) with its date, note
 // and who recorded it, a way to add or change the note and to delete it.
-// Never cooked, it loops the handoff's "never-cooked" clip instead. A
-// Cooking still being recorded shows, but can't be changed yet.
+// Never cooked, it loops one of the handoff's three "never cooked" scenes
+// instead, the Dish's own (utils/never-cooked.ts): drawn in code (SvgLoop),
+// with no background of its own, so it sits on the detail's. A Cooking still
+// being recorded shows, but can't be changed yet.
 const props = defineProps<{ dish: DishView }>()
 defineEmits<{ cook: [origin: Point], note: [cooking: CookingView], delete: [cooking: CookingView] }>()
 const t = useStrings()
 const headingId = useId()
+const neverCooked = computed(() => `/clips/${neverCookedScene(props.dish.id)}`)
 
 const summary = computed(() => {
   const [last] = props.dish.cookings
@@ -67,9 +71,10 @@ function keyOf(cooking: CookingView): number {
       v-if="!dish.cookings.length"
       class="mx-auto aspect-[510/354] w-[min(60vw,220px)]"
     >
-      <MotionClip
-        src="/clips/never-cooked"
+      <SvgLoop
+        :src="neverCooked"
         play
+        transparent
       />
     </div>
 

@@ -9,7 +9,6 @@ import { inviteLoop } from "./invite-loop";
 import { lookupFailed } from "./lookup-failed";
 import { lookupStir } from "./lookup-stir";
 import { milestone10x } from "./milestone-10x";
-import { neverCooked } from "./never-cooked";
 import { notUnlocked } from "./not-unlocked";
 import { offline } from "./offline";
 import { searchEmpty } from "./search-empty";
@@ -23,7 +22,6 @@ const BY_ID: Record<ClipId, Clip> = {
   "search-empty": searchEmpty,
   "lookup-stir": lookupStir,
   "lookup-failed": lookupFailed,
-  "never-cooked": neverCooked,
   "milestone-10x": milestone10x,
   "board-created": boardCreated,
   "invite-intro": inviteIntro,

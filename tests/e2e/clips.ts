@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { neverCookedScene } from '../../app/utils/never-cooked'
 
 // Motion clips in the browser tests: videos (MotionClip.vue) and loops drawn
 // in code (SvgLoop.vue).
@@ -53,6 +54,14 @@ export function loopStill(scope: Page | Locator, src: string, theme: 'light' | '
 // illustrations its Board gives it (utils/empty-column.ts), loaded.
 export function emptyColumnStill(scope: Page | Locator, accent: string, theme: 'light' | 'dark' = 'light') {
   return scope.locator(`img[src^="/clips/empty-column"][src$="-${accent}-${theme}.svg"]`)
+}
+
+// The "never cooked" scene of the Dish whose card link is `card`, its own by
+// its id (utils/never-cooked.ts), as a loop's `src` (for loopStill).
+export async function neverCookedClip(card: Locator) {
+  const id = await card.getAttribute('id')
+  if (!id?.startsWith('dish-')) throw new Error(`Not a Dish's card link: ${id}`)
+  return `/clips/${neverCookedScene(id.slice('dish-'.length))}`
 }
 
 // What loads a clip: a video, or a loop's animated drawing.
