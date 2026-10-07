@@ -7,7 +7,7 @@ import { gotoHydrated } from './hydration'
 import { landingBoardId, removeStoredImages, resetBoard, seedDish, setColumns, storedImage } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
 import { columnAccentName } from '../../app/utils/columns'
-import { emptyColumnIllustration } from '../../app/utils/empty-column'
+import { EMPTY_COLUMN_ILLUSTRATIONS, emptyColumnIllustration } from '../../app/utils/empty-column'
 
 // The state and system clips (PRD story 82; handoff REMOTION.md): empty
 // Board, empty Column and search, the link lookup, a Dish never cooked,
@@ -20,7 +20,7 @@ test.describe.configure({ mode: 'serial' })
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const EMMY = ALLOWLISTED[19]
 // An empty Column's loop: any of the three illustrations, in any accent.
-const EMPTY_COLUMN_LIGHT = /^\/clips\/empty-column(-knobi|-schoti)?-\w+-light\.svg$/
+const EMPTY_COLUMN_LIGHT = new RegExp(`^/clips/(${EMPTY_COLUMN_ILLUSTRATIONS.join('|')})-\\w+-light\\.svg$`)
 
 test.afterAll(removeStoredImages)
 
