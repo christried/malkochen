@@ -35,10 +35,11 @@ test.describe('design tokens', () => {
       document.fonts.load('500 40px Petrona', 'ÄÖÜß'),
       document.fonts.load('italic 400 22px Petrona'),
       document.fonts.load('600 15px Figtree', 'àèéìòù'),
+      document.fonts.load('italic 500 15px Figtree'),
     ]))
     const loaded = await page.evaluate(() =>
       [...document.fonts].filter(f => f.status === 'loaded').map(f => `${f.family} ${f.style} ${f.weight}`))
-    expect(loaded).toEqual(expect.arrayContaining(['Petrona normal 100 900', 'Petrona italic 100 900', 'Figtree normal 300 900']))
+    expect(loaded).toEqual(expect.arrayContaining(['Petrona normal 100 900', 'Petrona italic 100 900', 'Figtree normal 300 900', 'Figtree italic 300 900']))
     expect(fontRequests.length).toBeGreaterThan(0)
     expect(new Set(fontRequests)).toEqual(new Set([new URL(page.url()).host]))
     expect(await token(page, '--font-display')).toMatch(/^["']Petrona["'], "Petrona Fallback: [^"]+"/)

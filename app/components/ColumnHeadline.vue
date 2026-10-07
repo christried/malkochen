@@ -77,8 +77,8 @@ function titleStyle(index: number, name: string) {
 }
 /* display-xl (54px) where the name fits a line at that size, smaller where
    it doesn't, down to display-m (32px); by its length, as a Petrona letter
-   is about half as wide as it is high (0.47–0.55 across the default Column
-   names). Long words break at their syllables (the page is German). */
+   is at most about half as wide as it is high (0.45–0.52 across the default
+   Column names, with the title's letter spacing). Long words break at their syllables (the page is German). */
 .headline :deep(h2) {
   font-size: clamp(32px, (100cqi - .5rem) / (max(var(--name-length), 1) * .5), 54px);
   line-height: 1;
