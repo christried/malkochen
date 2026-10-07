@@ -72,7 +72,6 @@ async function save() {
           v-model="note"
           maxlength="2000"
           :placeholder="t.cooking.notePrompt"
-          class="font-display text-body-serif placeholder:font-ui placeholder:text-body"
         />
       </AppField>
       <p

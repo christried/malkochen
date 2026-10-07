@@ -467,11 +467,12 @@ html[data-theme-reveal="fade"] *::after {
   .field:has(> :is(input, select, textarea):disabled) {
     opacity: .45;
   }
-  /* Helper text under a field: indented to the field's text. */
+  /* Helper text under a field, in `caption`: indented to the field's text. */
   .field-helper {
     padding: 8px 0 0 16px;
     font-size: var(--field-label-size);
     line-height: 16px;
+    font-weight: 500;
     color: var(--color-text-muted);
   }
 }
