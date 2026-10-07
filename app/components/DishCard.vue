@@ -158,23 +158,24 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
 
 <style scoped>
 /* At most two lines, the second ending in "…". Below the second line the
-   title is clipped 0.1em short of its box, not at it: with title-s's tight
-   line height (1.16), Newsreader's accented capitals (Ä, Ö, Ü, É) reach
-   above their line, so a third line starting with one used to show the tops
-   of its accents under the second. The second line's descenders end 0.11em
-   above the box, the third line's accents start 0.08–0.09em above it
-   (measured at 19px), so the cut falls between them. Above and before the
-   first line nothing is cut, so its own accents keep their tops. The lines
-   cut off are clipped (not hidden), so that they don't make the lane
-   scrollable either. Recheck these numbers if the font changes;
-   dish-card-title.spec.ts catches a third line showing. */
+   title is clipped 0.045em short of its box. In title-s's line height
+   (1.16), Petrona's accented capitals (Ä, Ö, Ü, É) starting a third line
+   and the second line's descenders came within half a pixel of each other
+   (measured at 19px), too close to cut between, so the card's title is set
+   a little looser, at 1.2: the descenders end 1.6px above the box, the
+   accents start 0.1px above it, and the cut (0.85px) falls between them.
+   Above and before the first line nothing is cut, so its own accents keep
+   their tops. The lines cut off are clipped (not hidden), so that they
+   don't make the lane scrollable either. Recheck these numbers if the font
+   changes; dish-card-title.spec.ts catches a third line showing. */
 .title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: clip;
   overflow-clip-margin: 0.5em;
-  clip-path: inset(-0.5em 0 0.1em -0.5em);
+  clip-path: inset(-0.5em 0 0.045em -0.5em);
+  line-height: 1.2;
 }
 
 /* The full title of a cut one (handoff Toast colours): under the title,

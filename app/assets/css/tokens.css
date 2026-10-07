@@ -41,8 +41,8 @@
   --radius-tab-1: 22px 17px 20px 15px;
   --radius-tab-2: 17px 22px 15px 20px;
   --radius-tab-3: 20px 15px 22px 17px;
-  --font-display: 'Newsreader', Georgia, serif;
-  --font-ui: 'Hanken Grotesk', system-ui, sans-serif;
+  --font-display: 'Petrona', Georgia, serif;
+  --font-ui: 'Figtree', system-ui, sans-serif;
   --font-mono: ui-monospace, Menlo, monospace;
   --dur-tap: 120ms;
   --ease-tap: cubic-bezier(.2,0,0,1);

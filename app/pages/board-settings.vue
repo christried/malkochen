@@ -376,7 +376,7 @@ function confirmDelete() {
               required
               maxlength="60"
               autocomplete="off"
-              class="rounded-field border border-line-strong bg-surface px-4 py-field-display font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               @change="saveName"
               @keydown.enter="($event.target as HTMLInputElement).blur()"
             >

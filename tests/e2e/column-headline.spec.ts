@@ -66,7 +66,7 @@ test('a phone shows the active Column’s name large, with its subtitle in itali
   const title = headline(page).getByRole('heading', { level: 2, name: 'Ideen' })
   const subtitle = headline(page).getByText('Worauf hast du Lust?')
   await expect(title).toHaveCSS('font-size', '54px')
-  await expect(title).toHaveCSS('font-family', /Newsreader/)
+  await expect(title).toHaveCSS('font-family', /Petrona/)
   await expect(subtitle).toHaveCSS('font-style', 'italic')
   await expectShown(page, 'Ideen', 'Worauf hast du Lust?')
   await expectCardShape(column(page, 'Ideen'))

@@ -1,5 +1,5 @@
-import { loadFont as loadHankenGrotesk } from "@remotion/google-fonts/HankenGrotesk";
-import { loadFont as loadNewsreader } from "@remotion/google-fonts/Newsreader";
+import { loadFont as loadFigtree } from "@remotion/google-fonts/Figtree";
+import { loadFont as loadPetrona } from "@remotion/google-fonts/Petrona";
 import {
   type CalculateMetadataFunction,
   staticFile,
@@ -14,10 +14,10 @@ import { innerMarkup, viewBoxOf } from "./svg";
 // One state, system or celebration clip in one theme. calculateMetadata loads
 // the handoff art the clip asks for; the clip's Scene draws its timeline.
 
-// The app's fonts: Hanken Grotesk 700 for the sign and the z's, Newsreader
-// for the wordmark and the 10×.
-loadHankenGrotesk("normal", { weights: ["700"], subsets: ["latin"] });
-loadNewsreader("normal", { weights: ["400"], subsets: ["latin"] });
+// The app's fonts (tokens.json font): Figtree 700 for the sign and the z's,
+// Petrona 500 (the display weight) for the wordmark and the 10×.
+loadFigtree("normal", { weights: ["700"], subsets: ["latin"] });
+loadPetrona("normal", { weights: ["500"], subsets: ["latin"] });
 
 export type ClipProps = {
   clip: ClipId;

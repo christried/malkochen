@@ -6,7 +6,7 @@
 // launch paints them at once. Nothing else is cached: Boards and Dishes always
 // come from the network. Bump VERSION when offline.html, what it shows, or a
 // splash still changes.
-const VERSION = 'offline-v7'
+const VERSION = 'offline-v8'
 const FALLBACK_PAGE = '/offline.html'
 // The offline clip (still and video, both themes) plays on the Offline page
 // and the app's Offline screen, which both show only without a connection.

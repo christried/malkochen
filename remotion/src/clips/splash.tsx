@@ -125,7 +125,8 @@ export const splash = defineClip<"bloom" | "icon" | "lid" | "wordmark" | "dot">(
             justifyContent: "center",
             alignItems: "baseline",
             gap: fontSize * 0.06,
-            fontFamily: "Newsreader",
+            fontFamily: "Petrona",
+            fontWeight: 500,
             fontSize,
             color: INK,
           }}

@@ -69,7 +69,7 @@ async function create() {
           maxlength="60"
           autocomplete="off"
           :placeholder="nameExample.prompt.value"
-          class="rounded-field border border-line-strong bg-surface px-4 py-field-display font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
       </div>
       <div class="flex flex-col gap-2">
