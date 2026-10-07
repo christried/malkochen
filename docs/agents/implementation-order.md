@@ -6,7 +6,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 
 1. Go down the list below and take the **first ticket that is still open** (`gh issue view <n> --json state`).
 2. Check its blockers (the `## Blocked by` section of the issue). If one is still open, skip to the next ticket on the list and tell the user which ticket you skipped and why.
-3. Skip tickets labelled `ready-for-human`. Those are the user's.
+3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session, on its own branch, through a PR.
 
 GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103) as part of a ticket. Tell the user once all of a spec's tickets are closed.
@@ -159,6 +159,10 @@ From the first desktop field test (`docs/reviews/desktop-review1.md`). Two thing
 | # | Ticket | Note |
 |---|---|---|
 | #138 | Visual check against the handoff | Reports deviations; the user decides |
+| #170 | Small fixes: badge, switcher pill, fonts, offline page and more | From #138 and its font check; one PR for all checkboxes |
+| #180 | Empty Board and search-empty clips drawn in code | From #138 (5, 6) |
+| #181 | Desktop: add-Column lane | From #138 (4) |
+| #182 | Desktop keyboard shortcuts | `needs-info`: skip until the user confirms the keys and it's relabelled `ready-for-agent` |
 | #139 | Security pass | Last on purpose: blocked by every other ticket of #103. Files findings as new tickets, added here |
 
 English and Italian UI is the next spec, not part of #103.
