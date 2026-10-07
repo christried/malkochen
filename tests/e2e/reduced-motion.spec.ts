@@ -2,7 +2,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { ANY_CHEER, cheer, confetti, topfbert } from './celebration'
-import { clipStill, countClips, loopStill } from './clips'
+import { clipStill, countClips, emptyColumnStill, loopStill } from './clips'
 import { editMorph, slowAnimations } from './edit-morph'
 import { gotoHydrated } from './hydration'
 import { dotsMoving, holdRequests, linkField, linkFound } from './loading'
@@ -32,7 +32,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await stubSourceLookup(page, { kind: 'tiktok', canonicalLink: TIKTOK, suggestedTitle: 'Crispy Tofu Bowl', imageUrl: null, imageTicket: null }, new Promise(r => answer = r))
   await gotoHydrated(page, '/')
   await expect(clipStill(page, 'empty-board')).toBeVisible()
-  await expect(loopStill(page, '/clips/empty-column-orchid')).toBeVisible()
+  await expect(emptyColumnStill(page, 'orchid')).toBeVisible()
 
   // Add a Dish from a link: the lookup shows Topfbert's still.
   await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
