@@ -64,6 +64,13 @@
   --dur-celebrate: 2400ms;
   --dur-idle: 3000ms;
   --ease-idle: ease-in-out;
+  --field-h: 52px;
+  --field-border: 2px;
+  --field-pad: 13px 16px 15px;
+  --field-line: 20px;
+  --field-label-size: 12.5px;
+  --field-label-line: 14px;
+  --field-outline: rgba(31,30,28,.24);
 }
 .dark, [data-theme="dark"] {
   --color-bg: #131211;
@@ -85,6 +92,7 @@
   --shadow-dialog: 0 30px 60px -20px rgba(0,0,0,.80);
   --shadow-fab: 0 16px 32px -10px rgba(0,0,0,.70);
   --shadow-neu: 0 8px 18px -6px rgba(0,0,0,.6);
+  --field-outline: rgba(255,255,255,.24);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --color-bg: #131211;
@@ -106,6 +114,7 @@
   --shadow-dialog: 0 30px 60px -20px rgba(0,0,0,.80);
   --shadow-fab: 0 16px 32px -10px rgba(0,0,0,.70);
   --shadow-neu: 0 8px 18px -6px rgba(0,0,0,.6);
+  --field-outline: rgba(255,255,255,.24);
 } }
 @media (prefers-reduced-motion: reduce) { :root {
   --dur-tap: 0ms;

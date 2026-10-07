@@ -62,21 +62,19 @@ async function save() {
       class="mt-5 flex flex-col gap-4"
       @submit.prevent="save"
     >
-      <div class="flex flex-col gap-2">
-        <label
-          :for="noteId"
-          class="text-label"
-        >{{ t.cooking.note }}</label>
+      <AppField
+        :label="t.cooking.note"
+        :control="noteId"
+      >
         <textarea
           :id="noteId"
           ref="field"
           v-model="note"
-          rows="3"
           maxlength="2000"
           :placeholder="t.cooking.notePrompt"
-          class="resize-none rounded-field border border-line-strong bg-surface px-4 py-3 font-display text-body-serif text-text placeholder:font-ui placeholder:text-body placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          class="font-display text-body-serif placeholder:font-ui placeholder:text-body"
         />
-      </div>
+      </AppField>
       <p
         v-if="failed"
         role="alert"

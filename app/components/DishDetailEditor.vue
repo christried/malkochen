@@ -253,13 +253,13 @@ async function save() {
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="title"
     >
-      <label
-        :for="titleId"
-        class="text-label"
-      >{{ t.detail.title }}</label>
+      <AppField
+        :label="t.detail.title"
+        :control="titleId"
+      >
       <input
         :id="titleId"
         ref="titleInput"
@@ -268,18 +268,19 @@ async function save() {
         required
         maxlength="200"
         autocomplete="off"
-        class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        class="font-display text-title-s"
       >
+      </AppField>
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="creator"
     >
-      <label
-        :for="creatorId"
-        class="text-label"
-      >{{ t.dish.creator }}</label>
+      <AppField
+        :label="t.dish.creator"
+        :control="creatorId"
+      >
       <input
         :id="creatorId"
         v-model="creator"
@@ -287,36 +288,35 @@ async function save() {
         maxlength="100"
         autocomplete="off"
         :placeholder="t.detail.creatorPrompt"
-        class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
+      </AppField>
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="note"
     >
-      <label
-        :for="noteId"
-        class="text-label"
-      >{{ t.detail.note }}</label>
+      <AppField
+        :label="t.detail.note"
+        :control="noteId"
+      >
       <textarea
         :id="noteId"
         v-model="note"
-        rows="3"
         maxlength="2000"
         :placeholder="noteExample.prompt.value"
-        class="resize-none rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       />
+      </AppField>
     </div>
 
     <div
-      class="flex flex-col gap-2"
+      class="flex flex-col"
       data-morph-field="source"
     >
-      <label
-        :for="linkId"
-        class="text-label"
-      >{{ t.detail.source }}</label>
+      <AppField
+        :label="t.detail.source"
+        :control="linkId"
+      >
       <input
         :id="linkId"
         v-model="link"
@@ -327,12 +327,12 @@ async function save() {
         :placeholder="t.detail.sourcePrompt"
         :aria-describedby="linkHintId"
         :aria-invalid="linkInvalid || undefined"
-        class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         @paste="lookup.pasted()"
       >
+      </AppField>
       <span
         :id="linkHintId"
-        class="text-small text-text-muted"
+        class="field-helper"
       >{{ t.detail.sourceHint }}</span>
     </div>
 

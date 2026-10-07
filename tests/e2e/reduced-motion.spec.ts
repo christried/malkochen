@@ -39,10 +39,10 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   const sheet = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
   await sheet.getByLabel('Link').fill(TIKTOK)
   await expect(clipStill(sheet, 'lookup-stir')).toBeVisible()
-  // The link field's dots stand still; its sage ring and check simply appear.
+  // The link field's dots stand still; its sage border and check simply appear.
   const field = linkField(sheet)
   await expect.poll(() => dotsMoving(field)).toBe(false)
-  await expect(field).toHaveCSS('transition-duration', '0s')
+  await expect(field.locator('xpath=../fieldset')).toHaveCSS('transition-duration', '0s')
   answer()
   await expect(linkFound(sheet)).toBeVisible()
   // The found title doesn't type in: it is all there with the check.

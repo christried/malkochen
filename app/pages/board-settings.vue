@@ -364,11 +364,11 @@ function confirmDelete() {
           >
             {{ emoji }}
           </button>
-          <div class="flex flex-1 flex-col gap-1.5">
-            <label
-              for="settings-name"
-              class="text-label"
-            >{{ t.settings.name }}</label>
+          <AppField
+            class="flex-1"
+            :label="t.settings.name"
+            control="settings-name"
+          >
             <input
               id="settings-name"
               v-model="name"
@@ -376,11 +376,11 @@ function confirmDelete() {
               required
               maxlength="60"
               autocomplete="off"
-              class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              class="font-display text-title-s"
               @change="saveName"
               @keydown.enter="($event.target as HTMLInputElement).blur()"
             >
-          </div>
+          </AppField>
         </div>
       </section>
 
@@ -401,16 +401,18 @@ function confirmDelete() {
           @reordered="saveOrder"
           @delete="askDelete"
         />
-        <!-- The label above, then the field with its button centred beside it. -->
+        <!-- The label is in the field's border, so the button centres on the
+             field (handoff Input "withButton"): both sit on the bottom, the
+             44px button 4px up in the 52px field. -->
         <form
-          class="mt-2 flex flex-col gap-1.5"
+          class="mt-2 flex items-end gap-2.5"
           @submit.prevent="addColumn"
         >
-          <label
-            for="settings-new-column"
-            class="text-label"
-          >{{ t.settings.newColumn }}</label>
-          <div class="flex items-center gap-3">
+          <AppField
+            class="flex-1"
+            :label="t.settings.newColumn"
+            control="settings-new-column"
+          >
             <input
               id="settings-new-column"
               v-model="newColumn"
@@ -418,16 +420,15 @@ function confirmDelete() {
               maxlength="40"
               autocomplete="off"
               :placeholder="t.settings.newColumnPrompt"
-              class="min-w-0 flex-1 rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
-            <button
-              type="submit"
-              class="shrink-0 rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          </AppField>
+          <button
+            type="submit"
+            class="mb-1 h-11 shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               :disabled="!newColumn.trim() || adding"
             >
               {{ t.settings.add }}
             </button>
-          </div>
         </form>
       </section>
 
@@ -458,23 +459,24 @@ function confirmDelete() {
         >
           {{ t.settings.invite }}
         </h2>
-        <div class="flex flex-col gap-1.5">
-          <label
-            for="settings-invite-link"
-            class="text-label"
-          >{{ t.settings.inviteLink }}</label>
-          <input
+        <div class="flex flex-col">
+          <AppField
+            :label="t.settings.inviteLink"
+            control="settings-invite-link"
+          >
+            <input
             id="settings-invite-link"
             :value="inviteLink"
             type="text"
             readonly
             aria-describedby="settings-invite-hint"
-            class="truncate rounded-field border border-line-strong bg-surface-muted px-4 py-3 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            class="truncate"
             @focus="($event.target as HTMLInputElement).select()"
           >
+          </AppField>
           <p
             id="settings-invite-hint"
-            class="px-1 text-small text-text-muted"
+            class="field-helper"
           >
             {{ t.settings.inviteHint }}
           </p>
@@ -623,18 +625,19 @@ function confirmDelete() {
         <p class="text-body text-text-muted">
           {{ t.settings.deleteBody(boardLabel(saved)) }}
         </p>
-        <label
-          for="settings-delete-name"
-          class="mt-3 text-label"
-        >{{ t.settings.deleteTypeName(saved.name) }}</label>
+        <AppField
+          class="mt-3"
+          :label="t.settings.deleteTypeName(saved.name)"
+          control="settings-delete-name"
+        >
         <input
           id="settings-delete-name"
           v-model="typedName"
           type="text"
           autocomplete="off"
-          class="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           @keydown.enter="nameTyped || shake($event.target as Element)"
         >
+        </AppField>
         <DangerButton
           type="submit"
           class="mt-3 disabled:opacity-50"

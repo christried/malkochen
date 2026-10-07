@@ -48,6 +48,8 @@ const boards = ref<BoardSummary[]>([])
 const linkId = useId()
 const titleId = useId()
 const titleHintId = useId()
+const noteId = useId()
+const boardSelectId = useId()
 const choosingImage = ref(false)
 const saving = ref(false)
 const failed = ref(false)
@@ -238,21 +240,15 @@ async function save() {
       @submit.prevent="save"
     >
       <template v-if="!withoutLink">
-        <div class="flex flex-col gap-2">
-          <label
-            :for="linkId"
-            class="text-label"
-          >{{ t.addDish.link }}</label>
-          <!-- Input "valid" and "loading": dots while the link is looked up,
-               then, once found, a sage ring and a check. Focus then shows
-               as an outline around the ring, so neither hides the other.
-               The input pads 2px more above than below: centred in the
-               field, its letters sat a pixel high. -->
+        <!-- Input "valid" and "loading": dots while the link is looked up,
+             then, once found, a sage border and a check. -->
+        <AppField
+          :label="t.addDish.link"
+          :control="linkId"
+          :valid="!!result"
+        >
           <span
-            class="flex items-center gap-2 rounded-field border border-line-strong bg-surface py-1.5 pl-4 pr-1.5 transition-shadow duration-lift ease-lift"
-            :class="result
-              ? 'ring-2 ring-sage has-[input:focus]:outline-2 has-[input:focus]:outline-offset-2 has-[input:focus]:outline-focus'
-              : 'focus-within:ring-2 focus-within:ring-focus'"
+            class="field-row"
             data-link-field
           >
             <span
@@ -269,7 +265,6 @@ async function save() {
               autocomplete="off"
               maxlength="2048"
               :placeholder="t.addDish.linkPrompt"
-              class="min-w-0 flex-1 bg-transparent pb-[5px] pt-[7px] text-body text-text placeholder:text-text-muted focus:outline-none"
               @paste="lookup.pasted()"
             >
             <LoadingDots
@@ -296,7 +291,7 @@ async function save() {
               {{ t.addDish.paste }}
             </button>
           </span>
-        </div>
+        </AppField>
 
         <button
           v-if="lookupStatus === 'idle'"
@@ -403,12 +398,12 @@ async function save() {
           </button>
         </div>
 
-        <div class="flex flex-col gap-2">
-          <label
-            :for="titleId"
-            class="text-label"
-          >{{ t.addDish.title }}</label>
-          <input
+        <div class="flex flex-col">
+          <AppField
+            :label="t.addDish.title"
+            :control="titleId"
+          >
+            <input
             :id="titleId"
             v-model="shownTitle"
             type="text"
@@ -417,18 +412,19 @@ async function save() {
             autocomplete="off"
             :placeholder="titlePlaceholder"
             :aria-describedby="titleNeeded ? titleHintId : undefined"
-            class="rounded-field border border-line-strong bg-surface px-4 py-field font-display text-title-s text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            class="font-display text-title-s"
             :class="{ 'title-prompt': titleNeeded }"
             @focus="titleTypeIn.finish()"
           >
+          </AppField>
           <span
             v-if="titleNeeded"
             :id="titleHintId"
-            class="text-small text-text-muted"
+            class="field-helper"
           >{{ t.addDish.titleNeededHint }}</span>
           <p
             v-if="creator"
-            class="break-words px-1 text-small text-text-muted"
+            class="break-words pl-4 pt-2 text-small text-text-muted"
             data-creator
           >
             <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ creator }}
@@ -475,44 +471,37 @@ async function save() {
           />
         </div>
 
-        <label class="flex flex-col gap-2">
-          <span class="text-label">{{ t.addDish.note }}</span>
+        <AppField
+          :label="t.addDish.note"
+          :control="noteId"
+        >
           <textarea
+            :id="noteId"
             v-model="note"
-            rows="2"
             maxlength="2000"
             :placeholder="noteExample.prompt.value"
-            class="resize-none rounded-field border border-line-strong bg-surface px-4 py-field text-body text-text placeholder:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           />
-        </label>
+        </AppField>
 
-        <label
+        <AppField
           v-if="boards.length"
-          class="flex flex-col gap-2"
+          :label="t.addDish.board"
+          :control="boardSelectId"
         >
-          <span class="text-label">{{ t.addDish.board }}</span>
-          <!-- Our own chevron, its stroke as far in from the right as the
-               text is from the left (the icon's box has 4px of air around
-               the stroke); the browser's sat almost on the border. -->
-          <span class="relative flex">
-            <select
-              v-model="boardId"
-              class="w-full appearance-none rounded-field border border-line-strong bg-surface py-field pl-4 pr-11 text-body text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          <select
+            :id="boardSelectId"
+            v-model="boardId"
+          >
+            <option
+              v-for="board in boards"
+              :key="board.id"
+              :value="board.id"
             >
-              <option
-                v-for="board in boards"
-                :key="board.id"
-                :value="board.id"
-              >
-                {{ board.emoji }} {{ board.name }}
-              </option>
-            </select>
-            <AppIcon
-              name="down"
-              class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
-            />
-          </span>
-        </label>
+              {{ board.emoji }} {{ board.name }}
+            </option>
+          </select>
+          <AppIcon name="down" />
+        </AppField>
 
         <p
           v-if="failed"

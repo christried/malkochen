@@ -54,13 +54,14 @@ test('a pasted link shows a loading state, then a preview with image, editable t
   await expect(linkFound(sheet)).toHaveCount(0)
   answer()
 
-  // Found: a sage ring and a check, in place of the dots. The link field
-  // still shows when it has focus.
+  // Found: a sage border and a check, in place of the dots. The border
+  // stays sage when the field has focus; its label shows the focus.
   await expect(linkFound(sheet)).toBeVisible()
   await expect(loadingDots(field)).toHaveCount(0)
-  await expect.poll(() => field.evaluate(el => getComputedStyle(el).boxShadow)).toContain(`${SAGE} 0px 0px 0px 2px`)
+  const border = field.locator('xpath=../fieldset')
+  await expect(border).toHaveCSS('border-top-color', SAGE)
   await sheet.getByLabel('Link').focus()
-  await expect(field).toHaveCSS('outline-style', 'solid')
+  await expect(border).toHaveCSS('border-top-color', SAGE)
   const preview = sheet.getByRole('img', { name: 'Bild vom Link' })
   await expect(preview).toBeVisible()
   await expect(preview).toHaveAttribute('src', PORTRAIT)
