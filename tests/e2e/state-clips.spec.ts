@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { clipStill, countPeakPlaying, emptyColumnStill, playing } from './clips'
+import { clipStill, countPeakPlaying, emptyColumnStill, loopStill, neverCookedClip, playing } from './clips'
 import { gotoHydrated } from './hydration'
 import { landingBoardId, removeStoredImages, resetBoard, seedDish, setColumns, storedImage } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
@@ -190,23 +190,35 @@ test('the link lookup loops Topfbert stirring, then his oops when it fails', asy
   expect(await playing(sheet)).not.toContain('/clips/lookup-stir-light.webm')
 })
 
-test('a Dish never cooked loops its clip in the Cooking History, until it is cooked', async ({ page }) => {
+test('a Dish never cooked loops its own scene in the Cooking History, until it is cooked', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ colorScheme: 'dark' })
   await signIn(page, EMMY)
   await resetBoard(page)
   await seedDish(page, { title: 'Ofengemüse', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedDish(page, { title: 'Linsencurry', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await gotoHydrated(page, '/')
 
-  await page.getByRole('link', { name: 'Ofengemüse' }).click()
-  const detail = page.getByRole('dialog', { name: 'Ofengemüse' })
-  const history = detail.getByRole('region', { name: 'Gekocht' })
-  await history.scrollIntoViewIfNeeded()
-  await expect.poll(() => playing(history)).toEqual(['/clips/never-cooked-dark.webm'])
+  // Each Dish plays the scene its id picks, in the theme shown.
+  async function openNeverCooked(title: string) {
+    const card = page.getByRole('link', { name: title, exact: true })
+    const clip = await neverCookedClip(card)
+    await card.click()
+    const detail = page.getByRole('dialog', { name: title })
+    const history = detail.getByRole('region', { name: 'Gekocht' })
+    await history.scrollIntoViewIfNeeded()
+    await expect.poll(() => playing(history)).toEqual([`${clip}-dark.svg`])
+    return { clip, detail, history }
+  }
+  const first = await openNeverCooked('Linsencurry')
+  await first.detail.getByRole('button', { name: 'Schließen' }).click()
+  await expect(first.detail).toBeHidden()
+  const { clip, history } = await openNeverCooked('Ofengemüse')
 
+  // Cooked: no scene any more, nor its still.
   await history.getByRole('button', { name: 'Gekocht ✓' }).click()
-  await expect(history.locator('video')).toHaveCount(0)
-  await expect(clipStill(history, 'never-cooked', 'dark')).toHaveCount(0)
+  await expect(history.locator('[data-svg-loop]')).toHaveCount(0)
+  await expect(loopStill(history, clip, 'dark')).toHaveCount(0)
 })
 
 test('the sign-in hero loops Topfbert, and every second tile of its turning ring', async ({ page }) => {

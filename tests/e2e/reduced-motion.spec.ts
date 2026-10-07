@@ -2,7 +2,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { ANY_CHEER, cheer, confetti, topfbert } from './celebration'
-import { clipStill, countClips, emptyColumnStill, loopStill } from './clips'
+import { clipStill, countClips, emptyColumnStill, loopStill, neverCookedClip } from './clips'
 import { editMorph, slowAnimations } from './edit-morph'
 import { gotoHydrated } from './hydration'
 import { dotsMoving, holdRequests, linkField, linkFound } from './loading'
@@ -56,7 +56,9 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await expect(sheet).toBeHidden()
 
   // The Dish is on the Board; in its detail, never cooked, then cooked.
-  await page.getByRole('link', { name: 'Crispy Tofu Bowl' }).click()
+  const card = page.getByRole('link', { name: 'Crispy Tofu Bowl' })
+  const neverCooked = await neverCookedClip(card)
+  await card.click()
   const detail = page.getByRole('dialog', { name: 'Crispy Tofu Bowl' })
   // Into edit mode and back, the fields swap with a 150ms fade and don't move.
   const normalSpeed = await slowAnimations(page)
@@ -69,7 +71,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await normalSpeed()
   await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
   const history = detail.getByRole('region', { name: 'Gekocht' })
-  await expect(clipStill(history, 'never-cooked')).toBeVisible()
+  await expect(loopStill(history, neverCooked)).toBeVisible()
   await history.getByRole('button', { name: 'Gekocht ✓' }).click()
   await expect(history.locator('[data-cooking]')).toHaveCount(1)
   // The celebration: Topfbert's still in the Gekocht pill, and no confetti.
