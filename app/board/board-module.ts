@@ -2,6 +2,7 @@ import type { InjectionKey, Ref } from 'vue'
 // Relative imports, not `~~`: the module's tests run in plain Node (the
 // "client" Vitest project), which knows no Nuxt aliases.
 import type { BoardView } from '../../server/utils/boards'
+import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { AddedDish, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
@@ -80,6 +81,7 @@ export interface BoardTransport {
   deleteCooking: (cookingId: string) => Promise<void>
   restoreCooking: (cookingId: string) => Promise<CookingView>
   noteCooking: (cookingId: string, note: string) => Promise<CookingView>
+  addColumn: (boardId: string, name: string) => Promise<ColumnView>
 }
 
 type BoardColumn = BoardView['columns'][number]
@@ -559,6 +561,18 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     return { dish, cooking: cooking ?? saved }
   }
 
+  // A new Column (from the Board's add lane, on desktop): once the server
+  // has added it, at the end, it shows there, empty. Not optimistic, as it
+  // has no id before. A failed write rejects with WriteFailed, for the form
+  // to say so.
+  async function addColumn(name: string): Promise<ColumnView> {
+    const boardId = board.value?.id
+    if (!boardId) throw new WriteFailed()
+    const added = await transport.addColumn(boardId, name)
+    if (board.value?.id === boardId) board.value.columns.push({ ...added, dishes: [] })
+    return added
+  }
+
   // Others' changes (PRD story 38), from polling (useBoardSync), which asks
   // the server for the Board with `ask`: what it answers is merged into the
   // Board. Dropped if one of the module's writes was under way when it
@@ -572,7 +586,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     if (!writesSince(asked) && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
   }
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, sync, focusAfterDetail }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, sync, focusAfterDetail }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

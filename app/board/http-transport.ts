@@ -1,3 +1,4 @@
+import type { ColumnView } from '~~/server/utils/columns'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { AddedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import { WriteFailed, type BoardTransport } from './board-module'
@@ -16,6 +17,7 @@ export function httpTransport(): BoardTransport {
     deleteCooking: cookingId => asWrite($fetch<unknown>(`/api/cookings/${cookingId}`, { method: 'DELETE' })).then(() => undefined),
     restoreCooking: cookingId => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}/restore`, { method: 'POST' })),
     noteCooking: (cookingId, note) => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}`, { method: 'PATCH', body: { note } })),
+    addColumn: (boardId, name) => asWrite($fetch<ColumnView>(`/api/boards/${boardId}/columns`, { method: 'POST', body: { name } })),
   }
 }
 

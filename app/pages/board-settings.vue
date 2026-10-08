@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
-import type { ColumnView } from '~~/server/utils/columns'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
+import { httpTransport } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { invitePath } from '~~/shared/invite'
@@ -105,24 +105,12 @@ async function saveOrder(before: ColumnRow[]) {
   }
 }
 
-const newColumn = ref('')
-const adding = ref(false)
-async function addColumn() {
-  const trimmed = newColumn.value.trim()
-  if (!trimmed || adding.value) return
-  adding.value = true
-  try {
-    const added = await $fetch<ColumnView>(`/api/boards/${id.value}/columns`, { method: 'POST', body: { name: trimmed } })
-    columns.value.push({ ...added, count: 0 })
-    newColumn.value = ''
-  }
-  catch {
-    failed()
-  }
-  finally {
-    adding.value = false
-  }
-}
+// A new Column, at the end; the same as the Board's add lane on desktop.
+const transport = httpTransport()
+const { name: newColumn, canAdd: canAddColumn, submit: addColumn } = useNewColumn(async (columnName) => {
+  const added = await transport.addColumn(id.value, columnName)
+  columns.value.push({ ...added, count: 0 })
+}, failed)
 
 // Deleting: an empty Column goes at once (PRD story 59); one with Dishes
 // first asks where they go (story 58), the first Column chosen that isn't
@@ -425,7 +413,7 @@ function confirmDelete() {
           <button
             type="submit"
             class="mb-1 h-11 shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            :disabled="!newColumn.trim() || adding"
+            :disabled="!canAddColumn"
           >
             {{ t.settings.add }}
           </button>
