@@ -43,7 +43,9 @@ orientation for both themes: `splash[-landscape]-{poster,still}.webp`.
 Commit the rendered files; the app serves them as they are.
 
 Not rendered any more (#111): the Placeholder Images, `empty-column` and
-`topfbert-wow`. The app draws those loops in code from their SVGs
+`topfbert-wow`, and since #180 `empty-board` and `search-empty`, whose baked-in
+background showed as a box on the coloured lanes and page. The app draws those
+loops in code from their SVGs
 (`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
 refresh rate and sharp at any size. Their compositions stay in Studio, but
 only for the nine Round 10 Placeholder Images: Round 11's pasta, bowl and
@@ -93,7 +95,7 @@ draws them in code the same way.
 - Layouts follow the app's existing Vue stills where there is one
   (`EmptyBoard.vue`, `OfflineIllustration.vue`, the login and invite pages, …),
   so a still can be swapped for its clip without a jump. Where a clip's
-  background is the blob's own tint (empty-board, invite), the blob is the
+  background is the blob's own tint (invite), the blob is the
   video's frame, masked in Vue, rather than drawn.
 - Text is real text in the app's fonts (`@remotion/google-fonts`): the
   "Gleich!" sign, the z's, "10×" and the wordmark.
