@@ -1,6 +1,7 @@
 import type { BoardTransport } from '../../app/board/board-module'
 import { WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
+import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { AddedDish, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
@@ -51,6 +52,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   const deletedCookings = new Map<string, { cooking: CookingView, dishId: string }>()
   let cookings = 0
   let added = 0
+  let addedColumns = 0
 
   // The Dish on the server that `matches`, and its Column: on this Board, or
   // on another of the Member's Boards it was moved to.
@@ -187,6 +189,14 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return structuredClone(gone.cooking)
   }
 
+  // Adds a Column at the end of the Board, as the server does.
+  function addColumnOnServer(boardId: string, name: string): ColumnView | null {
+    if (boardId !== server.id) return null
+    const column = { id: `column-${++addedColumns}`, name, subtitle: null, isGekocht: false }
+    server.columns.push({ ...column, dishes: [] })
+    return { ...column }
+  }
+
   // Saves a Cooking's note, trimmed; a blank one is none. Null for a Cooking
   // the server doesn't have.
   function noteOnServer(cookingId: string, note: string): CookingView | null {
@@ -234,6 +244,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     deleteCooking: cookingId => answer('deleteCooking', cookingId, () => deleteCookingOnServer(cookingId) || null).then(() => undefined),
     restoreCooking: cookingId => answer('restoreCooking', cookingId, () => restoreCookingOnServer(cookingId)),
     noteCooking: (cookingId, note) => answer('noteCooking', cookingId, () => noteOnServer(cookingId, note)),
+    addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
   }
 
   return {

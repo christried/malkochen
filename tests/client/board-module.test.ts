@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { ref } from 'vue'
-import { createBoardModule } from '../../app/board/board-module'
+import { createBoardModule, WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
 import type { DishView } from '../../server/utils/dishes'
 import { memoryTransport, type MemoryTransport } from './memory-transport'
@@ -737,4 +737,36 @@ test('a poll answered while a Dish is being dragged is dropped', async () => {
   await module.sync(askServer(fake), { paused: () => true })
 
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
+})
+
+test('an added Column shows at the end of the Board as the server added it, empty', async () => {
+  const { board, fake, module, shown } = setup()
+
+  const added = await module.addColumn('Wochenende')
+
+  expect(fake.sent).toEqual(['addColumn board Wochenende'])
+  expect(added).toEqual({ id: fake.server.columns[3]!.id, name: 'Wochenende', subtitle: null, isGekocht: false })
+  expect(shown()).toEqual({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: [], [added.id]: [] })
+  expect(board.value!.columns[3]).toMatchObject({ name: 'Wochenende', subtitle: null, isGekocht: false, dishes: [] })
+})
+
+test('an added Column stays though a poll asked before the server added it comes back after', async () => {
+  const { fake, module, shown } = setup()
+  const slow = askServerSlowly(fake)
+  const polled = module.sync(slow.ask)
+
+  const added = await module.addColumn('Wochenende')
+  slow.answer()
+  await polled
+
+  expect(Object.keys(shown())).toEqual(['ideen', 'woche', 'gekocht', added.id])
+})
+
+test('an add that fails rejects, and the Board stays as it was', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('addColumn', 500)
+
+  await expect(module.addColumn('Wochenende')).rejects.toBeInstanceOf(WriteFailed)
+
+  expect(shown()).toEqual({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: [] })
 })
