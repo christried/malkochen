@@ -27,3 +27,9 @@ export function useModalStack(open: Ref<boolean> | (() => boolean)) {
 export function useCoveredByModal(): Readonly<Ref<boolean>> {
   return inject(coveredKey, computed(() => false))
 }
+
+// Whether any modal is open (a sheet, a dialog, the Dish detail).
+export function useAnyModalOpen(): Readonly<Ref<boolean>> {
+  const stack = useState<string[]>('modal-stack', () => [])
+  return computed(() => stack.value.length > 0)
+}

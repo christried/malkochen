@@ -171,7 +171,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
 // state's loop. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
-  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value,
+  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value || showingShortcuts.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
 useBoardSync(() => id, boardModule, () => dragging.value)
@@ -305,6 +305,28 @@ async function closeSearch() {
   searchOpen.value = false
   await nextTick()
   searchButton.value?.$el.focus()
+}
+
+// The keyboard shortcuts (utils/shortcuts.ts), not mid-drag: "?" lists
+// them; 1–9 open the user's Boards in the Board switcher's order, fetched
+// afresh as the switcher does (a number with no Board does nothing).
+const listings = useBoardListings()
+const showingShortcuts = ref(false)
+const searchBar = useTemplateRef<{ focus: () => void }>('searchBar')
+useBoardShortcuts((shortcut) => {
+  const action = shortcut.action
+  if (action === 'addDish') adding.value = true
+  else if (action === 'search' && searchOpen.value) searchBar.value?.focus()
+  else if (action === 'search') searchOpen.value = true
+  else if (action === 'close' && searchOpen.value) void closeSearch()
+  else if (action === 'boardSettings' && board.value) void navigateTo(`${boardPath(board.value)}/settings`)
+  else if (shortcut.action === 'switchBoard') void switchBoard(shortcut.board)
+  else if (action === 'help') showingShortcuts.value = true
+}, () => dragging.value)
+async function switchBoard(index: number) {
+  listings.value = await $fetch<BoardListing[]>('/api/boards').catch(() => listings.value)
+  const target = listings.value[index]
+  if (target && target.id !== board.value?.id) await navigateTo(boardPath(target))
 }
 
 // A Dish saved here shows where the server put it (the Board module put
@@ -491,6 +513,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 
     <BoardSearchBar
       v-if="searchOpen"
+      ref="searchBar"
       v-model="query"
       class="mx-auto mt-4 max-w-[560px]"
       @close="closeSearch"
@@ -773,6 +796,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         </template>
       </div>
     </AppSheet>
+
+    <ShortcutsDialog v-model:open="showingShortcuts" />
 
     <BoardCreatedCelebration
       v-model:open="celebratingBoard"

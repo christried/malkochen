@@ -5,8 +5,8 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 
 // Your own settings (PRD stories 73–75): the Google account you're signed in
 // with and your Profile Picture, Darstellung, a place kept for Sprache
-// (German only for now) and signing out. Reached from your photo on the
-// Board (on phones, from the Board switcher).
+// (German only for now), the Board's keyboard shortcuts and signing out.
+// Reached from your photo on the Board (on phones, from the Board switcher).
 const t = useStrings()
 const { signOut } = useAuth()
 
@@ -239,6 +239,24 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
         <div class="flex flex-col gap-1 rounded-card bg-surface p-4">
           <span class="text-body">{{ t.userSettings.german }}</span>
           <span class="text-small text-text-muted">{{ t.userSettings.moreLanguages }}</span>
+        </div>
+      </section>
+
+      <section
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-shortcuts"
+      >
+        <h2
+          id="settings-shortcuts"
+          class="px-1 text-overline uppercase text-text-muted"
+        >
+          {{ t.shortcuts.title }}
+        </h2>
+        <div class="flex flex-col gap-4 rounded-card bg-surface p-4">
+          <p class="text-small text-text-muted">
+            {{ t.shortcuts.intro }}
+          </p>
+          <ShortcutList />
         </div>
       </section>
 

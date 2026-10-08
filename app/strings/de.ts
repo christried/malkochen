@@ -424,6 +424,22 @@ export const de = {
     dark: 'Dunkel',
     system: 'System',
   },
+  // The Board's keyboard shortcuts (utils/shortcuts.ts): the "?" dialog and
+  // the section in your settings.
+  shortcuts: {
+    title: 'Tastenkürzel',
+    intro: 'Mit einer Tastatur geht auf dem Board einiges schneller. Nur nicht, während du in ein Feld tippst.',
+    ok: 'OK',
+    close: 'Schließen',
+    does: {
+      addDish: 'Gericht hinzufügen',
+      search: 'Gerichte suchen',
+      close: 'Schließt, was offen ist: Dialog, Gericht oder Suche',
+      boardSettings: 'Board-Einstellungen',
+      switchBoard: 'Zum 1. bis 9. Board wechseln',
+      help: 'Diese Tastenkürzel zeigen',
+    },
+  },
 }
 
 export type Strings = typeof de
