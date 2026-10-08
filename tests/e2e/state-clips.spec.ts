@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
@@ -24,6 +24,23 @@ const EMPTY_COLUMN_LIGHT = new RegExp(`^/clips/(${EMPTY_COLUMN_ILLUSTRATIONS.joi
 
 test.afterAll(removeStoredImages)
 
+// The backgrounds a drawn clip paints itself: those of the boxes it is sized
+// in, up to its empty state, and of everything it draws in (its still, the
+// drawing's host and the drawing itself; what the drawing draws inside is
+// tests/client/empty-state-clips.test.ts's).
+function backgroundsBehind(clip: Locator) {
+  return clip.evaluate((el) => {
+    const boxes: Element[] = [...el.querySelectorAll(':scope div, :scope img, :scope > div > svg')]
+    for (let box: Element | null = el; box && !box.matches('[data-empty]'); box = box.parentElement) boxes.push(box)
+    return boxes.flatMap((box) => {
+      const { backgroundColor, backgroundImage } = getComputedStyle(box)
+      return backgroundColor !== 'rgba(0, 0, 0, 0)' || backgroundImage !== 'none'
+        ? [`${box.tagName} ${box.getAttribute('class') ?? ''}: ${backgroundColor} ${backgroundImage}`]
+        : []
+    })
+  })
+}
+
 test('an empty Board loops its clip in the current theme, and only that one', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ colorScheme: 'dark' })
@@ -32,7 +49,9 @@ test('an empty Board loops its clip in the current theme, and only that one', as
   await resetBoard(page)
   await gotoHydrated(page, '/')
 
-  await expect.poll(() => playing(page)).toEqual(['/clips/empty-board-dark.webm'])
+  await expect.poll(() => playing(page)).toEqual(['/clips/empty-board-dark.svg'])
+  // Drawn on the lane itself: no box of its own around Topfbert.
+  expect(await backgroundsBehind(page.locator('[data-empty="board"] [data-svg-loop]'))).toEqual([])
   // The other, empty Columns show their still.
   await expect(emptyColumnStill(page, 'orchid', 'dark')).toBeVisible()
   expect(await peak()).toBe(1)
@@ -167,7 +186,9 @@ test('a search that finds nothing loops its clip', async ({ page }) => {
 
   const results = page.getByTestId('search-results')
   await expect(results.getByText('Nichts gefunden.')).toBeVisible()
-  await expect.poll(() => playing(results)).toEqual(['/clips/search-empty-light.webm'])
+  await expect.poll(() => playing(results)).toEqual(['/clips/search-empty-light.svg'])
+  // Drawn on the page itself: no box of its own around it.
+  expect(await backgroundsBehind(results.locator('[data-empty="search"] [data-svg-loop]'))).toEqual([])
 })
 
 test('the link lookup loops Topfbert stirring, then his oops when it fails', async ({ page }) => {

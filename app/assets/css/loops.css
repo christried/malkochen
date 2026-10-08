@@ -166,3 +166,35 @@
   50% { transform: translate(0px, 0px) rotate(45deg) scale(1, 1); opacity: 1 }
   100% { transform: translate(0px, 0px) rotate(90deg) scale(0, 0); opacity: 1 }
 }
+
+/* The empty Board (public/clips/empty-board-*.svg) and the empty search
+   (search-empty-*.svg), timed as remotion/src/clips/empty-board.tsx and
+   search-empty.tsx played their briefs (REMOTION.md) before they were drawn
+   in code (#180). Frames are of 30 fps. A veggie's hop counts in its own
+   18-frame slot of the 72, where the brief's storyboard counts the whole
+   loop. Topfbert's bob, hat and steam are tb-bob, tb-hat and tb-steam. */
+/* A veggie's hop, the first 18 of the 72 frames: up 32 and flipped 150° at
+   f9, landed a full turn round at f16. */
+@keyframes eb-hop {
+  0% { transform: translateY(0) rotate(0deg); animation-timing-function: ease-out }
+  12.5% { transform: translateY(-32px) rotate(150deg); animation-timing-function: ease-in }
+  22.2222%, 100% { transform: translateY(0) rotate(360deg) }
+}
+/* Topfbert blinks at f66–70. */
+@keyframes eb-blink {
+  0%, 91.6667%, 97.2222%, 100% { transform: scaleY(1) }
+  94.4444% { transform: scaleY(.1) }
+}
+/* The magnifier, drawn at −10° on the left, swings to +10° on the right at
+   f54 and back: a sine. */
+@keyframes se-sweep {
+  0%, 100% { transform: translateX(0) rotate(0deg); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+  50% { transform: translateX(24px) rotate(20deg); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+}
+/* The pea peeks out from behind the plate (up by f62, of 108), holds till
+   f80 and has ducked again by f90. */
+@keyframes se-peek {
+  0%, 50% { transform: translateY(0); animation-timing-function: ease-out }
+  57.4074%, 74.0741% { transform: translateY(-20px); animation-timing-function: ease-in }
+  83.3333%, 100% { transform: translateY(0) }
+}

@@ -9,7 +9,9 @@
 //
 // Not the loops the app draws in code from their SVGs since #111 (SvgLoop.vue:
 // sharp at any size, at the screen's refresh rate): the Placeholder Images,
-// the empty Column's and Topfbert wow's. Their compositions stay for Studio.
+// the empty Column's and Topfbert wow's, and since #180 the empty Board's and
+// the empty search's, which sit on the lane and the page without a box.
+// Their compositions stay for Studio.
 // (Round 11's new loops, like the "never cooked" scenes, never had one.)
 //
 // The splash has no PNGs: from frame 10 on the butter covers the Board's
@@ -68,7 +70,7 @@ const serveUrl = await bundle({
 });
 
 // Drawn in code by the app (see the top).
-const DRAWN_IN_APP = new Set(["empty-column", "topfbert-wow"]);
+const DRAWN_IN_APP = new Set(["empty-board", "empty-column", "search-empty", "topfbert-wow"]);
 const drawnInApp = (props: PlaceholderProps | ClipProps) => "dish" in props || DRAWN_IN_APP.has(props.clip);
 
 const all = await getCompositions(serveUrl);
