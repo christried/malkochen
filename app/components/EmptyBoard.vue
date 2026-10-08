@@ -2,6 +2,8 @@
 // A Board with no Dishes: the handoff's "empty-board" clip (Topfbert with
 // veggies hopping out of his pot, on a butter blob), looping while `play`
 // asks: it is the Board's one loop when nothing else plays (useBoardLoop).
+// Drawn in code (SvgLoop), its still is the loop's frame 0. No background of
+// its own: it sits on the first Column's, whatever its accent (#180).
 defineProps<{ play: boolean }>()
 const t = useStrings()
 </script>
@@ -12,9 +14,10 @@ const t = useStrings()
     data-empty="board"
   >
     <div class="aspect-[660/588] w-[min(70vw,240px)]">
-      <MotionClip
+      <SvgLoop
         src="/clips/empty-board"
         :play="play"
+        transparent
       />
     </div>
     <p class="mt-5 font-display text-title-m">
