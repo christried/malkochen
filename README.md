@@ -66,7 +66,9 @@ pnpm lint
 ```
 
 CI (`.github/workflows/ci.yml`) runs all four in one job on every PR (not on the
-merge to `main`, to save Actions minutes), against a Postgres service container.
+merge to `main`), against a Postgres service container, on the self-hosted
+runner `malkochen-wsl` (WSL Ubuntu with Docker on the maintainer's PC). With
+that PC off, runs wait in the queue.
 
 Both suites create a `malkochen_test_*` database from `TEST_DATABASE_ADMIN_URL`,
 apply the migrations, and drop it afterwards; leftovers of killed runs are
