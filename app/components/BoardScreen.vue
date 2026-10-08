@@ -11,7 +11,8 @@ import { boardLabel, dishOnBoard } from '~~/shared/board'
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
 // its name large above the Column tabs (ColumnHeadline), switched with the
 // tabs or by swiping; tablet and desktop show all
-// Columns side by side, scroll-snapping. Dishes can be dragged: within a
+// Columns side by side, scroll-snapping, desktop with an add lane after the
+// last one (AddColumnLane). Dishes can be dragged: within a
 // Column, onto a Column tab (phones) or across lanes (from 768px). The Board
 // page (pages/b/[board].vue) shows it once it has loaded, its skeleton until
 // then.
@@ -659,6 +660,11 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             </template>
           </div>
         </section>
+        <!-- Desktop: a new Column is added here, after the last one. -->
+        <AddColumnLane
+          class="hidden desktop:block"
+          @failed="showNotice(t.settings.failed)"
+        />
       </div>
     </div>
 
