@@ -1,6 +1,8 @@
 name: CI
-# Runs on PRs only. The PR run already tested the branch, so the merge to main
-# starts no second run: Actions minutes are billed on this private repo.
+# Runs on PRs only, on the self-hosted runner `malkochen-wsl` (WSL Ubuntu on
+# the maintainer's PC, Docker for the Postgres service): Actions minutes are
+# billed on this private repo, self-hosted ones aren't. With the PC off, runs
+# wait in the queue. The merge to main starts no second run.
 # Docs and Markdown alone can't break the app, so they start no run. main has
 # no required checks, so a skipped run blocks nothing.
 on:
@@ -22,7 +24,7 @@ jobs:
   # is billed in whole minutes, so shards cost more minutes than they save in
   # wall-clock. A failed lint, typecheck or unit test skips the browser tests.
   check:
-    runs-on: ubuntu-latest
+    runs-on: malkochen-wsl
     services:
       postgres:
         image: postgres:17
@@ -43,17 +45,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      # The browser download is cached per Playwright version; its system
-      # libraries aren't cacheable, so a hit still installs those.
-      - id: playwright
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - id: browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-      - if: steps.browsers.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
-      - if: steps.browsers.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium
+      # The runner keeps browsers on disk, so this is a no-op until Playwright
+      # updates. Their system libraries are installed once by hand (needs root):
+      # npx playwright@<version> install-deps chromium
+      - run: pnpm exec playwright install chromium
       - run: pnpm test:e2e
