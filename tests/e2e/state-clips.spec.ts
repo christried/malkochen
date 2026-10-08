@@ -24,16 +24,20 @@ const EMPTY_COLUMN_LIGHT = new RegExp(`^/clips/(${EMPTY_COLUMN_ILLUSTRATIONS.joi
 
 test.afterAll(removeStoredImages)
 
-// The backgrounds a drawn clip paints itself: its own and those of the box
-// it is sized in, up to its empty state.
+// The backgrounds a drawn clip paints itself: those of the boxes it is sized
+// in, up to its empty state, and of everything it draws in (its still, the
+// drawing's host and the drawing itself; what the drawing draws inside is
+// tests/client/empty-state-clips.test.ts's).
 function backgroundsBehind(clip: Locator) {
   return clip.evaluate((el) => {
-    const painted: string[] = []
-    for (let box: Element | null = el; box && !box.matches('[data-empty]'); box = box.parentElement) {
+    const boxes: Element[] = [...el.querySelectorAll(':scope div, :scope img, :scope > div > svg')]
+    for (let box: Element | null = el; box && !box.matches('[data-empty]'); box = box.parentElement) boxes.push(box)
+    return boxes.flatMap((box) => {
       const { backgroundColor, backgroundImage } = getComputedStyle(box)
-      if (backgroundColor !== 'rgba(0, 0, 0, 0)' || backgroundImage !== 'none') painted.push(`${box.className}: ${backgroundColor} ${backgroundImage}`)
-    }
-    return painted
+      return backgroundColor !== 'rgba(0, 0, 0, 0)' || backgroundImage !== 'none'
+        ? [`${box.tagName} ${box.getAttribute('class') ?? ''}: ${backgroundColor} ${backgroundImage}`]
+        : []
+    })
   })
 }
 

@@ -168,9 +168,11 @@
 }
 
 /* The empty Board (public/clips/empty-board-*.svg) and the empty search
-   (search-empty-*.svg), on their briefs' frames (REMOTION.md, 30 fps) as
-   remotion/src/clips/empty-board.tsx and search-empty.tsx timed them (#180).
-   Topfbert's bob, hat and steam there are tb-bob, tb-hat and tb-steam. */
+   (search-empty-*.svg), timed as remotion/src/clips/empty-board.tsx and
+   search-empty.tsx played their briefs (REMOTION.md) before they were drawn
+   in code (#180). Frames are of 30 fps. A veggie's hop counts in its own
+   18-frame slot of the 72, where the brief's storyboard counts the whole
+   loop. Topfbert's bob, hat and steam are tb-bob, tb-hat and tb-steam. */
 /* A veggie's hop, the first 18 of the 72 frames: up 32 and flipped 150° at
    f9, landed a full turn round at f16. */
 @keyframes eb-hop {

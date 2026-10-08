@@ -3,7 +3,8 @@
 // veggies hopping out of his pot, on a butter blob), looping while `play`
 // asks: it is the Board's one loop when nothing else plays (useBoardLoop).
 // Drawn in code (SvgLoop), its still is the loop's frame 0. No background of
-// its own: it sits on the first Column's, whatever its accent (#180).
+// its own: it sits on the first Column's, which is butter like its blob
+// (utils/columns.ts), in light and dark (#180).
 defineProps<{ play: boolean }>()
 const t = useStrings()
 </script>

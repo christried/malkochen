@@ -33,13 +33,24 @@ function keyframes(name: string) {
   return block.replace(/\s+/g, '')
 }
 
-// A background, as the videos had baked in: a rect from the drawing's corner
-// (no x), or a background style on the drawing itself.
+// A background, as the videos had baked in: a square-cornered rect from the
+// drawing's corner, or a background style on the drawing itself.
 function backgrounds(svg: string) {
+  const atZero = (rect: string, axis: string) =>
+    (rect.match(new RegExp(`\\b${axis}="([^"]*)"`))?.[1] ?? '0').replace(/(px|%)$/, '') === '0'
   return [
-    ...[...svg.matchAll(/<rect\b[^>]*>/g)].map(([rect]) => rect).filter(rect => !/\bx="/.test(rect)),
+    ...[...svg.matchAll(/<rect\b[^>]*>/g)].map(([rect]) => rect)
+      .filter(rect => atZero(rect, 'x') && atZero(rect, 'y') && !/\brx="/.test(rect)),
     ...(svg.match(/<svg\b[^>]*style="[^"]*background[^"]*"/g) ?? []),
   ]
+}
+
+// One top-level layer's markup: from its `data-layer` to the next one's.
+function layer(svg: string, name: string) {
+  const start = svg.indexOf(`<g data-layer="${name}"`)
+  if (start === -1) throw new Error(`No layer ${name}`)
+  const next = svg.indexOf('<g data-layer=', start + 1)
+  return svg.slice(start, next === -1 ? undefined : next)
 }
 
 test.each(THEMES)('the empty Board, %s: Topfbert on his butter blob, and nothing behind it', (theme) => {
@@ -119,11 +130,10 @@ test('the pea peeks out from behind the plate at f54–80 and has ducked by f90'
 
 test('in dark, the plate and the magnifier take the theme\'s ink and surface; the pea keeps its own', () => {
   const dark = drawing('search-empty', 'dark')
-  const layer = (name: string) => dark.match(new RegExp(`data-layer="${name}"[\\s\\S]*?</g>\\s*(?=<g data-layer|</svg>)`))?.[0] ?? ''
-  expect(layer('plate')).toContain('#F3EFE8')
-  expect(layer('plate')).toContain('#1E1C1A')
-  expect(layer('plate')).not.toMatch(/#1F1E1C|#FFFFFF/i)
-  expect(layer('magnifier')).toContain('#F3EFE8')
-  expect(layer('magnifier')).not.toMatch(/#1F1E1C/i)
-  expect(layer('pea')).toContain('#1F1E1C')
+  expect(layer(dark, 'plate')).toContain('#F3EFE8')
+  expect(layer(dark, 'plate')).toContain('#1E1C1A')
+  expect(layer(dark, 'plate')).not.toMatch(/#1F1E1C|#FFFFFF/i)
+  expect(layer(dark, 'magnifier')).toContain('#F3EFE8')
+  expect(layer(dark, 'magnifier')).not.toMatch(/#1F1E1C|#FFFFFF/i)
+  expect(layer(dark, 'pea')).toContain('#1F1E1C')
 })
