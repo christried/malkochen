@@ -336,7 +336,7 @@ test('Topfbert says something else the next time, and every cheer fits beside hi
 // of its own (an undo isn't settled before a reload). `needed` is what one
 // row takes, wrapped or not, and `parts` the widths it's made of, so a
 // failure says how much is missing (fonts differ between systems: the "✓"
-// comes from a fallback font, and Linux rounds glyphs to whole pixels).
+// comes from a fallback font, and Linux sets text about 5% wider).
 async function gekochtToastFit(page: Page, width: number, title: string) {
   await signIn(page, ALLOWLISTED[6])
   await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })

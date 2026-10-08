@@ -25,10 +25,11 @@ const region = useTemplateRef<HTMLElement>('region')
 useTopLayerInModal(region)
 
 // Two actions (the Gekocht toast) only fit a 360px phone in one row with
-// less space around them, and that leaves some room for wider fonts (the
-// "✓" comes from whatever font the system has). Narrower than that, or with
-// larger text, the actions go below the text instead of being cut off
-// (#170).
+// less space around and beside them, and that leaves some room for wider
+// text: the "✓" comes from whatever font the system has, and Linux
+// Chromium sets the same text about 5% wider than Windows. Narrower than
+// that, or with larger text, the actions go below the text instead of being
+// cut off (#170).
 const crowded = computed(() => (toast.value?.actions?.length ?? 0) > 1)
 
 function act(action: ToastAction) {
@@ -46,7 +47,8 @@ function act(action: ToastAction) {
     ref="region"
     popover="manual"
     role="status"
-    class="pointer-events-none fixed inset-x-4 bottom-6 top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-8"
+    class="pointer-events-none fixed bottom-6 top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-8"
+    :class="crowded ? 'inset-x-3 tablet:inset-x-4' : 'inset-x-4'"
   >
     <Transition name="toast">
       <div
@@ -55,7 +57,7 @@ function act(action: ToastAction) {
       >
         <div
           class="pointer-events-auto relative flex items-center overflow-hidden rounded-pill bg-inverse py-3 text-small text-on-inverse shadow-fab"
-          :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'flex-wrap gap-x-1 gap-y-0.5 pl-3.5 tablet:gap-x-4 tablet:pl-5' : 'gap-4 pl-5']"
+          :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'flex-wrap gap-x-0.5 gap-y-0.5 pl-3 tablet:gap-x-4 tablet:pl-5' : 'gap-4 pl-5']"
           data-toast
         >
           <!-- With two actions (the Gekocht toast) the text is short and
