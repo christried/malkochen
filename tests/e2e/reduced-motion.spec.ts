@@ -31,7 +31,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   let answer!: () => void
   await stubSourceLookup(page, { kind: 'tiktok', canonicalLink: TIKTOK, suggestedTitle: 'Crispy Tofu Bowl', imageUrl: null, imageTicket: null }, new Promise(r => answer = r))
   await gotoHydrated(page, '/')
-  await expect(clipStill(page, 'empty-board')).toBeVisible()
+  await expect(loopStill(page, '/clips/empty-board')).toBeVisible()
   await expect(emptyColumnStill(page, 'orchid')).toBeVisible()
 
   // Add a Dish from a link: the lookup shows Topfbert's still.
@@ -84,7 +84,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   // A search that finds nothing.
   await page.getByRole('button', { name: 'Gerichte suchen' }).click()
   await page.getByRole('searchbox', { name: 'Gerichte suchen' }).fill('Pizza')
-  await expect(clipStill(page.getByTestId('search-results'), 'search-empty')).toBeVisible()
+  await expect(loopStill(page.getByTestId('search-results'), '/clips/search-empty')).toBeVisible()
   await page.getByRole('searchbox', { name: 'Gerichte suchen' }).press('Escape')
 
   // A link whose lookup fails.
