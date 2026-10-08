@@ -58,8 +58,8 @@ function act(action: ToastAction) {
           :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'flex-wrap gap-x-1 gap-y-0.5 pl-3.5 tablet:gap-x-4 tablet:pl-5' : 'gap-4 pl-5']"
           data-toast
         >
-          <!-- Beside two actions (the Gekocht toast) there's only room for a
-               short text, kept on one line. -->
+          <!-- With two actions (the Gekocht toast) the text is short and
+               kept on one line, beside them or above them. -->
           <p
             class="min-w-0"
             :class="{ 'shrink-0 whitespace-nowrap': crowded }"
@@ -70,10 +70,12 @@ function act(action: ToastAction) {
               class="sr-only"
             > {{ toast.unseen }}</span>
           </p>
-          <!-- The actions stay together, at the end of the row they're in. -->
+          <!-- The actions stay together, at the end of the row they're in;
+               only if they don't fit a row on their own does one go below
+               the other. -->
           <div
             v-if="toast.actions?.length"
-            class="ml-auto flex shrink-0"
+            class="ml-auto flex flex-wrap justify-end"
             :class="{ 'tablet:gap-4': crowded }"
           >
             <button
