@@ -33,6 +33,13 @@ async function show(row: 'first' | 'last') {
   rows().at(row === 'first' ? 0 : -1)?.focus()
 }
 
+// Escape closes it, and only it (not also the Board's search).
+function closeOnEscape(event: KeyboardEvent) {
+  if (!open.value) return
+  event.preventDefault()
+  close({ refocus: true })
+}
+
 function close({ refocus = false } = {}) {
   if (!open.value) return
   open.value = false
@@ -82,7 +89,7 @@ watch(() => route.fullPath, () => close())
   <div
     ref="root"
     class="relative"
-    @keydown.esc="close({ refocus: true })"
+    @keydown.esc="closeOnEscape"
   >
     <button
       ref="button"

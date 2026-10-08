@@ -5,7 +5,7 @@ import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import { boardModuleKey, createBoardModule, type BoardResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
-import { boardPath, dishAt, dishPath } from '~~/shared/address'
+import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
@@ -171,7 +171,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
 // state's loop. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
-  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value,
+  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value || showingShortcuts.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
 useBoardSync(() => id, boardModule, () => dragging.value)
@@ -305,6 +305,48 @@ async function closeSearch() {
   searchOpen.value = false
   await nextTick()
   searchButton.value?.$el.focus()
+}
+
+// The keyboard shortcuts (utils/shortcuts.ts), once the Board is there and
+// not mid-drag: "?" lists them; Esc closes the search (what else is open
+// closes itself); 1–9 open the user's Boards in the Board switcher's order,
+// fetched afresh as the switcher does (a number with no Board does nothing).
+const listings = useBoardListings()
+const showingShortcuts = ref(false)
+const searchBar = useTemplateRef<{ focus: () => void }>('searchBar')
+useBoardShortcuts((shortcut) => {
+  switch (shortcut.action) {
+    case 'addDish':
+      adding.value = true
+      return true
+    case 'search':
+      if (searchOpen.value) searchBar.value?.focus()
+      else searchOpen.value = true
+      return true
+    case 'close':
+      if (!searchOpen.value) return false
+      void closeSearch()
+      return true
+    case 'boardSettings':
+      void navigateTo(boardSettingsPath(board.value!))
+      return true
+    case 'switchBoard':
+      void switchBoard(shortcut.board)
+      return true
+    case 'help':
+      showingShortcuts.value = true
+      return true
+  }
+}, () => !board.value || dragging.value)
+// Only the last number pressed counts, however the fetches come back.
+let switching = 0
+async function switchBoard(index: number) {
+  const press = ++switching
+  const boards = await $fetch<BoardListing[]>('/api/boards').catch(() => listings.value)
+  if (press !== switching) return
+  listings.value = boards
+  const target = boards[index]
+  if (target && target.id !== board.value?.id) await navigateTo(boardPath(target))
 }
 
 // A Dish saved here shows where the server put it (the Board module put
@@ -472,7 +514,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           />
         </RoundButton>
         <NuxtLink
-          :to="`${boardPath(board)}/settings`"
+          :to="boardSettingsPath(board)"
           :aria-label="t.settings.title"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-text shadow-card transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >
@@ -491,6 +533,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 
     <BoardSearchBar
       v-if="searchOpen"
+      ref="searchBar"
       v-model="query"
       class="mx-auto mt-4 max-w-[560px]"
       @close="closeSearch"
@@ -773,6 +816,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         </template>
       </div>
     </AppSheet>
+
+    <ShortcutsDialog v-model:open="showingShortcuts" />
 
     <BoardCreatedCelebration
       v-model:open="celebratingBoard"

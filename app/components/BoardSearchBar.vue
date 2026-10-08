@@ -1,11 +1,13 @@
 <script setup lang="ts">
-// The Board's search field, focused as it opens. ✕ or Escape closes it.
+// The Board's search field, focused as it opens (and by `focus`, as "/"
+// does when it is open already). ✕ or Escape closes it.
 const query = defineModel<string>({ required: true })
 defineEmits<{ close: [] }>()
 const t = useStrings()
 
 const field = useTemplateRef<HTMLInputElement>('field')
 onMounted(() => field.value?.focus())
+defineExpose({ focus: () => field.value?.focus() })
 </script>
 
 <template>
