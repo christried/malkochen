@@ -17,8 +17,14 @@ export function httpTransport(): BoardTransport {
     deleteCooking: cookingId => asWrite($fetch<unknown>(`/api/cookings/${cookingId}`, { method: 'DELETE' })).then(() => undefined),
     restoreCooking: cookingId => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}/restore`, { method: 'POST' })),
     noteCooking: (cookingId, note) => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}`, { method: 'PATCH', body: { note } })),
-    addColumn: (boardId, name) => asWrite($fetch<ColumnView>(`/api/boards/${boardId}/columns`, { method: 'POST', body: { name } })),
+    addColumn: (boardId, name) => asWrite(postColumn(boardId, name)),
   }
+}
+
+// Adds a Column at the end of a Board: from the Board's add lane (through
+// the Board module) and from Board settings.
+export function postColumn(boardId: string, name: string): Promise<ColumnView> {
+  return $fetch<ColumnView>(`/api/boards/${boardId}/columns`, { method: 'POST', body: { name } })
 }
 
 // A request that fails with WriteFailed and its status.

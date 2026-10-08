@@ -46,9 +46,8 @@ for (const scheme of ['light', 'dark'] as const) {
     expect(Math.abs(box.y - gekocht.y)).toBeLessThanOrEqual(1)
     expect(box.width).toBeCloseTo(330, 0)
     expect(await outline.evaluate(el => getComputedStyle(el).borderTopStyle)).toBe('dashed')
-    // Its label reads in the theme's own muted text, not the other theme's.
-    const [ink, background] = await lane.evaluate(el => [getComputedStyle(el).color, getComputedStyle(document.body).backgroundColor])
-    expect(ink).not.toBe(background)
+    // Its label reads in the theme's own muted text (tokens.css).
+    expect(await lane.evaluate(el => getComputedStyle(el).color)).toBe(scheme === 'dark' ? 'rgb(168, 162, 152)' : 'rgb(111, 107, 101)')
   })
 }
 
@@ -112,6 +111,32 @@ test('an empty name can’t be added; Escape, or clicking away from an empty fie
 
   await expect(columnNames(page)).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
   expect(posts).toEqual([])
+})
+
+test('an add that fails says so and keeps the name in the field, focused, for another try', async ({ page }) => {
+  await openBoard(page)
+  let release = () => {}
+  const held = new Promise<void>(resolve => (release = resolve))
+  await page.route(/\/api\/boards\/[^/]+\/columns$/, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    await held
+    await route.fulfill({ status: 500 })
+  })
+
+  await addLane(page).click()
+  await nameField(page).fill('Wochenende')
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
+  // While it is being added, the name stays as sent, and Escape doesn't close.
+  await expect(nameField(page)).toHaveAttribute('readonly')
+  await page.keyboard.press('Escape')
+  await expect(nameField(page)).toHaveValue('Wochenende')
+  release()
+
+  await expect(page.getByText('Das hat nicht geklappt. Versuch es gleich noch mal.')).toBeVisible()
+  await expect(nameField(page)).toHaveValue('Wochenende')
+  await expect(nameField(page)).toBeFocused()
+  await expect(nameField(page)).not.toHaveAttribute('readonly')
+  await expect(columnNames(page)).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
 })
 
 test('below 1200px there is no add lane: tablets and phones add Columns in Board settings', async ({ page }) => {

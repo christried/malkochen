@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
-import { httpTransport } from '~/board/http-transport'
+import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { invitePath } from '~~/shared/invite'
@@ -106,9 +106,8 @@ async function saveOrder(before: ColumnRow[]) {
 }
 
 // A new Column, at the end; the same as the Board's add lane on desktop.
-const transport = httpTransport()
 const { name: newColumn, canAdd: canAddColumn, submit: addColumn } = useNewColumn(async (columnName) => {
-  const added = await transport.addColumn(id.value, columnName)
+  const added = await postColumn(id.value, columnName)
   columns.value.push({ ...added, count: 0 })
 }, failed)
 

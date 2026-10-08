@@ -11,7 +11,7 @@ const emit = defineEmits<{ failed: [] }>()
 
 const t = useStrings()
 const boardModule = useBoardModule()
-const { name, canAdd, submit } = useNewColumn(columnName => boardModule.addColumn(columnName), () => emit('failed'))
+const { name, adding, canAdd, submit } = useNewColumn(columnName => boardModule.addColumn(columnName), () => emit('failed'))
 
 const open = ref(false)
 const form = useTemplateRef<HTMLFormElement>('form')
@@ -34,13 +34,22 @@ async function rest({ refocus = true } = {}) {
   opener.value?.focus()
 }
 
+// While the Column is being added, the name can't change and the lane stays
+// open, so what the server adds is what the field shows. If it fails, the
+// name stays for another try, focused (the add button is disabled
+// meanwhile, which drops focus).
 async function add() {
   if (await submit()) await rest()
+  else field.value?.focus()
+}
+
+function escape() {
+  if (!adding.value) void rest()
 }
 
 // Clicking (or tabbing) away from the empty field; not to its own button.
 function leave(event: FocusEvent) {
-  if (name.value.trim() || form.value?.contains(event.relatedTarget as Node | null)) return
+  if (adding.value || name.value.trim() || form.value?.contains(event.relatedTarget as Node | null)) return
   void rest({ refocus: false })
 }
 </script>
@@ -54,16 +63,10 @@ function leave(event: FocusEvent) {
       class="flex min-h-24 w-full items-center gap-3 rounded-panel px-5 py-4 text-left font-display text-title-s text-text-muted transition-[scale,color,background-color] duration-tap ease-tap hover:bg-surface-muted/50 hover:text-text active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
       @click="start"
     >
-      <svg
-        viewBox="0 0 24 24"
-        width="22"
-        height="22"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        aria-hidden="true"
-      ><path d="M12 5v14M5 12h14" /></svg>
+      <AppIcon
+        name="plus"
+        :size="22"
+      />
       {{ t.settings.newColumn }}
     </button>
     <!-- The label is in the field's border, so the button centres on the
@@ -73,7 +76,7 @@ function leave(event: FocusEvent) {
       ref="form"
       class="flex min-h-24 items-end gap-2.5 p-4"
       @submit.prevent="add"
-      @keydown.esc.prevent="rest()"
+      @keydown.esc.prevent="escape"
       @focusout="leave"
     >
       <AppField
@@ -88,6 +91,7 @@ function leave(event: FocusEvent) {
           type="text"
           maxlength="40"
           autocomplete="off"
+          :readonly="adding"
           :placeholder="t.settings.newColumnPrompt"
         >
       </AppField>
@@ -97,16 +101,10 @@ function leave(event: FocusEvent) {
         :aria-label="t.settings.add"
         :disabled="!canAdd"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          aria-hidden="true"
-        ><path d="M12 5v14M5 12h14" /></svg>
+        <AppIcon
+          name="plus"
+          :size="20"
+        />
       </button>
     </form>
   </div>
