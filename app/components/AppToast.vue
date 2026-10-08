@@ -24,8 +24,11 @@ onBeforeUnmount(() => timer?.cancel())
 const region = useTemplateRef<HTMLElement>('region')
 useTopLayerInModal(region)
 
-// Two actions (the Gekocht toast) only fit a 360px phone with less space
-// around them (#170).
+// Two actions (the Gekocht toast) only fit a 360px phone in one row with
+// less space around them, and that leaves some room for wider fonts (the
+// "✓" comes from whatever font the system has). Narrower than that, or with
+// larger text, the actions go below the text instead of being cut off
+// (#170).
 const crowded = computed(() => (toast.value?.actions?.length ?? 0) > 1)
 
 function act(action: ToastAction) {
@@ -52,7 +55,7 @@ function act(action: ToastAction) {
       >
         <div
           class="pointer-events-auto relative flex items-center overflow-hidden rounded-pill bg-inverse py-3 text-small text-on-inverse shadow-fab"
-          :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'gap-1 pl-4 tablet:gap-4 tablet:pl-5' : 'gap-4 pl-5']"
+          :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'flex-wrap gap-x-1 gap-y-0.5 pl-3.5 tablet:gap-x-4 tablet:pl-5' : 'gap-4 pl-5']"
           data-toast
         >
           <!-- Beside two actions (the Gekocht toast) there's only room for a
@@ -67,16 +70,23 @@ function act(action: ToastAction) {
               class="sr-only"
             > {{ toast.unseen }}</span>
           </p>
-          <button
-            v-for="action in toast.actions"
-            :key="action.label"
-            type="button"
-            class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-            :class="crowded ? 'px-2 tablet:px-3' : 'px-3'"
-            @click="act(action)"
+          <!-- The actions stay together, at the end of the row they're in. -->
+          <div
+            v-if="toast.actions?.length"
+            class="ml-auto flex shrink-0"
+            :class="{ 'tablet:gap-4': crowded }"
           >
-            {{ action.label }}
-          </button>
+            <button
+              v-for="action in toast.actions"
+              :key="action.label"
+              type="button"
+              class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              :class="crowded ? 'px-1.5 tablet:px-3' : 'px-3'"
+              @click="act(action)"
+            >
+              {{ action.label }}
+            </button>
+          </div>
           <span
             ref="bar"
             aria-hidden="true"

@@ -332,27 +332,43 @@ test('Topfbert says something else the next time, and every cheer fits beside hi
   for (const fit of fits) expect(fit, `"${fit.text}"`).toEqual({ text: fit.text, lines: 1, inPill: true, besideText: true, onScreen: true })
 })
 
-// #170: on a 360px phone the Gekocht toast's actions fit it, "Rückgängig"
-// not cut off.
-test('the Gekocht toast\'s actions fit it on a 360px phone', async ({ page }) => {
+// #170: on a 360px phone the Gekocht toast's actions fit it in one row,
+// "Rückgängig" not cut off, with room to spare (fonts differ between
+// systems: the "✓" comes from a fallback font). Narrower than that, the
+// actions move below the text rather than being cut off.
+test('the Gekocht toast\'s actions fit it on a 360px phone, and go below the text on a narrower one', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
   await seedDish(page, { title: 'Kichererbsencurry', sourceLink: TIKTOK, sourceKind: 'tiktok' })
-  await page.setViewportSize({ width: 360, height: 740 })
-  await gotoHydrated(page, '/')
-  await page.getByRole('button', { name: 'Gekocht ✓: „Kichererbsencurry“' }).click()
-  const toast = gekochtToast(page).locator('[data-toast]')
-  await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
-  const fit = await toast.evaluate(async (el) => {
-    // Once it has moved in (not the bar's countdown, a Web Animation).
-    await Promise.all(el.closest('[role="status"]')!.getAnimations({ subtree: true }).filter(a => a instanceof CSSTransition).map(a => a.finished))
-    const box = el.getBoundingClientRect()
-    return {
-      onScreen: box.left >= 0 && box.right <= innerWidth,
-      overflowing: el.scrollWidth > el.clientWidth,
-      cut: [...el.querySelectorAll('button')].filter(b => b.getBoundingClientRect().right > box.right || b.scrollWidth > b.clientWidth).map(b => b.textContent!.trim()),
-    }
-  })
-  expect(fit).toEqual({ onScreen: true, overflowing: false, cut: [] })
+  for (const width of [360, 320]) {
+    await page.setViewportSize({ width, height: 740 })
+    await gotoHydrated(page, '/')
+    await page.getByRole('button', { name: 'Gekocht ✓: „Kichererbsencurry“' }).click()
+    const toast = gekochtToast(page).locator('[data-toast]')
+    await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
+    const fit = await toast.evaluate(async (el) => {
+      // Once it has moved in (not the bar's countdown, a Web Animation).
+      const region = el.closest('[role="status"]')!
+      await Promise.all(region.getAnimations({ subtree: true }).filter(a => a instanceof CSSTransition).map(a => a.finished))
+      const box = el.getBoundingClientRect()
+      const buttons = [...el.querySelectorAll('button')]
+      const text = el.querySelector('p')!.getBoundingClientRect()
+      const middle = (r: DOMRect) => r.top + r.height / 2
+      const level = (a: DOMRect, b: DOMRect) => Math.abs(middle(a) - middle(b)) <= 2
+      return {
+        onScreen: box.left >= 0 && box.right <= innerWidth,
+        overflowing: el.scrollWidth > el.clientWidth,
+        cut: buttons.filter(b => b.getBoundingClientRect().right > box.right || b.scrollWidth > b.clientWidth).map(b => b.textContent!.trim()),
+        actionsInOneRow: buttons.every(b => level(b.getBoundingClientRect(), buttons[0]!.getBoundingClientRect())),
+        oneRow: buttons.every(b => level(b.getBoundingClientRect(), text)),
+        spare: Math.floor(region.getBoundingClientRect().width - box.width),
+      }
+    })
+    const { spare, ...rest } = fit
+    expect(rest, `${width}px`).toEqual({ onScreen: true, overflowing: false, cut: [], actionsInOneRow: true, oneRow: width === 360 })
+    if (width === 360) expect(spare, 'room to spare at 360px').toBeGreaterThanOrEqual(8)
+    await toast.getByRole('button', { name: 'Rückgängig' }).click()
+    await expect(page.getByRole('button', { name: 'Gekocht ✓: „Kichererbsencurry“' })).toBeVisible()
+  }
 })
 
 // #170 (option B, 2026-10-06): on a phone the Gekocht pill sits just below
