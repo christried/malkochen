@@ -4,8 +4,8 @@ import { SHORTCUTS, shortcutFor } from '../../app/utils/shortcuts'
 // Seam 4: which Board shortcut (#182) a key press is, given where focus is
 // and whether a dialog or the side panel is open.
 const free = { inField: false, modalOpen: false }
-const press = (key: string, held: { ctrlKey?: boolean, altKey?: boolean, metaKey?: boolean, shiftKey?: boolean } = {}) =>
-  ({ key, ctrlKey: false, altKey: false, metaKey: false, shiftKey: false, ...held })
+const press = (key: string, held: { ctrlKey?: boolean, altKey?: boolean, metaKey?: boolean, shiftKey?: boolean, repeat?: boolean } = {}) =>
+  ({ key, ctrlKey: false, altKey: false, metaKey: false, shiftKey: false, repeat: false, ...held })
 
 test('each key is its shortcut', () => {
   expect(shortcutFor(press('n'), free)).toEqual({ action: 'addDish' })
@@ -30,6 +30,10 @@ test('nothing with Ctrl, Alt or Cmd held, so the browser\'s shortcuts keep worki
   for (const held of [{ ctrlKey: true }, { altKey: true }, { metaKey: true }]) {
     for (const key of ['n', '/', ',', '1', '?', 'Escape']) expect(shortcutFor(press(key, held), free)).toBeNull()
   }
+})
+
+test('a key held down counts once', () => {
+  for (const key of ['n', '/', ',', '1', '?', 'Escape']) expect(shortcutFor(press(key, { repeat: true }), free)).toBeNull()
 })
 
 test('nothing while typing in a field, not even Escape (the field has its own)', () => {

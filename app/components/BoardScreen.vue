@@ -5,7 +5,7 @@ import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import { boardModuleKey, createBoardModule, type BoardResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
-import { boardPath, dishAt, dishPath } from '~~/shared/address'
+import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
@@ -307,25 +307,45 @@ async function closeSearch() {
   searchButton.value?.$el.focus()
 }
 
-// The keyboard shortcuts (utils/shortcuts.ts), not mid-drag: "?" lists
-// them; 1–9 open the user's Boards in the Board switcher's order, fetched
-// afresh as the switcher does (a number with no Board does nothing).
+// The keyboard shortcuts (utils/shortcuts.ts), once the Board is there and
+// not mid-drag: "?" lists them; Esc closes the search (what else is open
+// closes itself); 1–9 open the user's Boards in the Board switcher's order,
+// fetched afresh as the switcher does (a number with no Board does nothing).
 const listings = useBoardListings()
 const showingShortcuts = ref(false)
 const searchBar = useTemplateRef<{ focus: () => void }>('searchBar')
 useBoardShortcuts((shortcut) => {
-  const action = shortcut.action
-  if (action === 'addDish') adding.value = true
-  else if (action === 'search' && searchOpen.value) searchBar.value?.focus()
-  else if (action === 'search') searchOpen.value = true
-  else if (action === 'close' && searchOpen.value) void closeSearch()
-  else if (action === 'boardSettings' && board.value) void navigateTo(`${boardPath(board.value)}/settings`)
-  else if (shortcut.action === 'switchBoard') void switchBoard(shortcut.board)
-  else if (action === 'help') showingShortcuts.value = true
-}, () => dragging.value)
+  switch (shortcut.action) {
+    case 'addDish':
+      adding.value = true
+      return true
+    case 'search':
+      if (searchOpen.value) searchBar.value?.focus()
+      else searchOpen.value = true
+      return true
+    case 'close':
+      if (!searchOpen.value) return false
+      void closeSearch()
+      return true
+    case 'boardSettings':
+      void navigateTo(boardSettingsPath(board.value!))
+      return true
+    case 'switchBoard':
+      void switchBoard(shortcut.board)
+      return true
+    case 'help':
+      showingShortcuts.value = true
+      return true
+  }
+}, () => !board.value || dragging.value)
+// Only the last number pressed counts, however the fetches come back.
+let switching = 0
 async function switchBoard(index: number) {
-  listings.value = await $fetch<BoardListing[]>('/api/boards').catch(() => listings.value)
-  const target = listings.value[index]
+  const press = ++switching
+  const boards = await $fetch<BoardListing[]>('/api/boards').catch(() => listings.value)
+  if (press !== switching) return
+  listings.value = boards
+  const target = boards[index]
   if (target && target.id !== board.value?.id) await navigateTo(boardPath(target))
 }
 
@@ -494,7 +514,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           />
         </RoundButton>
         <NuxtLink
-          :to="`${boardPath(board)}/settings`"
+          :to="boardSettingsPath(board)"
           :aria-label="t.settings.title"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-text shadow-card transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >

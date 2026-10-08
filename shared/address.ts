@@ -36,6 +36,10 @@ export function boardPath(board: { slug: string }): string {
   return `/b/${board.slug}`
 }
 
+export function boardSettingsPath(board: { slug: string }): string {
+  return `${boardPath(board)}/settings`
+}
+
 export function dishPath(board: { slug: string }, dish: { title: string, code: string }): string {
   return `${boardPath(board)}/${dishSegment(dish)}`
 }

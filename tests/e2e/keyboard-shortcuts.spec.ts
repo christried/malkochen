@@ -58,6 +58,13 @@ test('/ opens the search, and Esc closes it again', async ({ page }) => {
   await field.fill('pilz')
   await expect(page.getByTestId('search-results').getByRole('heading', { level: 3 })).toHaveText(['Cremige Pilzpasta'])
 
+  // Esc in the Board switcher closes only the switcher.
+  await page.getByRole('heading', { level: 1 }).getByRole('button').click()
+  await expect(page.getByRole('navigation', { name: 'Deine Boards' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('navigation', { name: 'Deine Boards' })).toHaveCount(0)
+  await expect(field).toHaveValue('pilz')
+
   // With focus out of the field, Esc still closes the search.
   await field.blur()
   await page.keyboard.press('Escape')

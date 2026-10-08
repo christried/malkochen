@@ -28,6 +28,13 @@ async function toggle() {
   boards.value = await $fetch<BoardListing[]>('/api/boards').catch(() => boards.value)
 }
 
+// Escape closes it, and only it (not also the Board's search).
+function closeOnEscape(event: KeyboardEvent) {
+  if (!open.value) return
+  event.preventDefault()
+  close({ refocus: true })
+}
+
 function close({ refocus = false } = {}) {
   if (!open.value) return
   open.value = false
@@ -57,7 +64,7 @@ function newBoard() {
   <div
     ref="root"
     class="relative min-w-0"
-    @keydown.esc="close({ refocus: true })"
+    @keydown.esc="closeOnEscape"
   >
     <!-- The mockup's pill (column-titles-ideen.png): on surface, the emoji in
          a round pebble, the name in the button type, a chevron. -->

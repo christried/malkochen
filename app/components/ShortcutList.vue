@@ -12,7 +12,7 @@ const t = useStrings()
       :key="shortcut.action"
       class="flex items-center gap-3"
     >
-      <span class="flex w-16 shrink-0 items-center gap-1 text-text-muted">
+      <span class="flex w-24 shrink-0 items-center gap-1 text-text-muted">
         <template
           v-for="(key, i) in shortcut.keys"
           :key="key"
