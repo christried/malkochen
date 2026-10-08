@@ -65,8 +65,8 @@ pnpm typecheck
 pnpm lint
 ```
 
-CI (`.github/workflows/ci.yml`) runs all four on every PR and push to `main`,
-against a Postgres service container.
+CI (`.github/workflows/ci.yml`) runs all four in one job on every PR (not on the
+merge to `main`, to save Actions minutes), against a Postgres service container.
 
 Both suites create a `malkochen_test_*` database from `TEST_DATABASE_ADMIN_URL`,
 apply the migrations, and drop it afterwards; leftovers of killed runs are

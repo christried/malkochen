@@ -1,19 +1,26 @@
 name: CI
+# Runs on PRs only. The PR run already tested the branch, so the merge to main
+# starts no second run: Actions minutes are billed on this private repo.
 # Docs and Markdown alone can't break the app, so they start no run. main has
 # no required checks, so a skipped run blocks nothing.
 on:
-  push:
-    branches: [main]
-    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     paths-ignore: ['docs/**', '**/*.md']
 
+# A new push to a PR makes the run for its previous push pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 # Throwaway Postgres for the API and browser tests. Its credentials only exist
-# inside each job, so TEST_DATABASE_ADMIN_URL needs no secret.
+# inside the job, so TEST_DATABASE_ADMIN_URL needs no secret.
 env:
   TEST_DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
 
 jobs:
+  # One job on purpose: every job pays checkout, install and Postgres again and
+  # is billed in whole minutes, so shards cost more minutes than they save in
+  # wall-clock. A failed lint, typecheck or unit test skips the browser tests.
   check:
     runs-on: ubuntu-latest
     services:
@@ -36,34 +43,6 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-
-  # The browser tests are most of the run, so they split across shards that
-  # run next to `check`. Spec files run one after another within a shard,
-  # each shard on its own database.
-  e2e:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
-    name: e2e (${{ matrix.shard }}/4)
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 24, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
       # The browser download is cached per Playwright version; its system
       # libraries aren't cacheable, so a hit still installs those.
       - id: playwright
@@ -77,4 +56,4 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - if: steps.browsers.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
-      - run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+      - run: pnpm test:e2e
