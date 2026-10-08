@@ -121,7 +121,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
             />
             <div class="flex min-w-0 flex-col">
               <span class="truncate font-display text-title-s">{{ me.name }}</span>
-              <span class="truncate text-body-s text-text-muted">{{ me.email }}</span>
+              <span class="truncate text-small text-text-muted">{{ me.email }}</span>
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -238,7 +238,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
         </h2>
         <div class="flex flex-col gap-1 rounded-card bg-surface p-4">
           <span class="text-body">{{ t.userSettings.german }}</span>
-          <span class="text-body-s text-text-muted">{{ t.userSettings.moreLanguages }}</span>
+          <span class="text-small text-text-muted">{{ t.userSettings.moreLanguages }}</span>
         </div>
       </section>
 

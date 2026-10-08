@@ -1,4 +1,4 @@
-// tailwind.preset.js — malkochen. Copied verbatim from docs/design handoff/tailwind.preset.js (only this line differs); used by tailwind.config.cjs
+// tailwind.preset.js — malkochen. Copied verbatim from docs/design handoff/tailwind.preset.js (except this line and `plugins` at the end); used by tailwind.config.cjs
 module.exports = {
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
@@ -92,5 +92,13 @@ module.exports = {
       screens: { tablet: '768px', desktop: '1200px' },
       zIndex: { 'board': '0', 'tabs': '2', 'fab': '6', 'drag': '20', 'scrim': '30', 'sheet': '31', 'dialog': '40', 'toast': '50' }
     }
-  }
+  },
+  // Not in the handoff's copy: tokens.json → type.overline is
+  // [mono, 11, 1, 600, 0.08em, uppercase], but the handoff's preset leaves the
+  // family out, and a fontSize entry can't carry one (Tailwind sets only line
+  // height, tracking and weight from it). tokens.json is the source of truth
+  // (handoff README §1), so `text-overline` gets the mono family here (#170).
+  plugins: [
+    ({ addUtilities }) => addUtilities({ '.text-overline': { 'font-family': 'var(--font-mono)' } }),
+  ],
 };

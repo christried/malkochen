@@ -27,7 +27,7 @@ const t = useStrings()
       <span class="min-w-0 flex-1 truncate text-button">
         {{ member.name }}<span
           v-if="member.isYou"
-          class="font-normal text-text-muted"
+          class="text-text-muted"
         > ({{ t.settings.you }})</span>
       </span>
       <span

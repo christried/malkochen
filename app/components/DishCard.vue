@@ -75,6 +75,7 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
       <SourceBadge
         v-if="dish.source"
         :kind="dish.source.kind"
+        dot-only
         class="absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)]"
       />
     </div>

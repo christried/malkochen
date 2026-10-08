@@ -24,6 +24,14 @@ onBeforeUnmount(() => timer?.cancel())
 const region = useTemplateRef<HTMLElement>('region')
 useTopLayerInModal(region)
 
+// Two actions (the Gekocht toast) only fit a 360px phone in one row with
+// less space around and beside them, and that leaves some room for wider
+// text: the "✓" comes from whatever font the system has, and Linux
+// Chromium sets the same text about 5% wider than Windows. Narrower than
+// that, or with larger text, the actions go below the text instead of being
+// cut off (#170).
+const crowded = computed(() => (toast.value?.actions?.length ?? 0) > 1)
+
 function act(action: ToastAction) {
   toast.value = null
   action.run()
@@ -39,7 +47,8 @@ function act(action: ToastAction) {
     ref="region"
     popover="manual"
     role="status"
-    class="pointer-events-none fixed inset-x-4 bottom-6 top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-8"
+    class="pointer-events-none fixed bottom-6 top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-8"
+    :class="crowded ? 'inset-x-3 tablet:inset-x-4' : 'inset-x-4'"
   >
     <Transition name="toast">
       <div
@@ -47,15 +56,15 @@ function act(action: ToastAction) {
         class="relative max-w-md"
       >
         <div
-          class="pointer-events-auto relative flex items-center gap-4 overflow-hidden rounded-pill bg-inverse py-3 pl-5 text-small text-on-inverse shadow-fab"
-          :class="toast.actions?.length ? 'pr-2' : 'pr-5'"
+          class="pointer-events-auto relative flex items-center overflow-hidden rounded-pill bg-inverse py-3 text-small text-on-inverse shadow-fab"
+          :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'flex-wrap gap-x-0.5 gap-y-0.5 pl-3 tablet:gap-x-4 tablet:pl-5' : 'gap-4 pl-5']"
           data-toast
         >
-          <!-- Beside two actions (the Gekocht toast) there's only room for a
-               short text, kept on one line. -->
+          <!-- With two actions (the Gekocht toast) the text is short and
+               kept on one line, beside them or above them. -->
           <p
             class="min-w-0"
-            :class="{ 'shrink-0 whitespace-nowrap': (toast.actions?.length ?? 0) > 1 }"
+            :class="{ 'shrink-0 whitespace-nowrap': crowded }"
           >
             {{ toast.text }}
             <span
@@ -63,15 +72,25 @@ function act(action: ToastAction) {
               class="sr-only"
             > {{ toast.unseen }}</span>
           </p>
-          <button
-            v-for="action in toast.actions"
-            :key="action.label"
-            type="button"
-            class="shrink-0 rounded-pill px-3 py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-            @click="act(action)"
+          <!-- The actions stay together, at the end of the row they're in;
+               only if they don't fit a row on their own does one go below
+               the other. -->
+          <div
+            v-if="toast.actions?.length"
+            class="ml-auto flex flex-wrap justify-end"
+            :class="{ 'tablet:gap-4': crowded }"
           >
-            {{ action.label }}
-          </button>
+            <button
+              v-for="action in toast.actions"
+              :key="action.label"
+              type="button"
+              class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              :class="crowded ? 'px-1.5 tablet:px-3' : 'px-3'"
+              @click="act(action)"
+            >
+              {{ action.label }}
+            </button>
+          </div>
           <span
             ref="bar"
             aria-hidden="true"

@@ -364,3 +364,42 @@ test('every Source kind gets its badge', async ({ page }) => {
     await expect(page.getByRole('article', { name: `Badge ${title}` }).locator('[data-source-badge]')).toHaveText(badge)
   }
 })
+
+// Where each card's badge sits against its thumbnail, and how wide its
+// Source's name shows.
+async function badgesOnCards(page: Page) {
+  return page.locator('article[aria-label^="Badge "]').evaluateAll(cards => cards.map((card) => {
+    const badge = card.querySelector('[data-source-badge]')!
+    const thumb = badge.parentElement!.getBoundingClientRect()
+    const box = badge.getBoundingClientRect()
+    const name = badge.querySelector('[data-source-name]')!.getBoundingClientRect()
+    return {
+      title: card.getAttribute('aria-label'),
+      name: badge.textContent?.trim(),
+      inside: box.left >= thumb.left && box.right <= thumb.right && box.top >= thumb.top && box.bottom <= thumb.bottom,
+      nameWidth: name.width,
+    }
+  }))
+}
+
+test('desktop cards show only the badge\'s dot, inside the thumbnail; tablet cards the whole badge', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[2])
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await gotoHydrated(page, '/')
+  await expect(page.getByRole('article', { name: 'Badge Reel' })).toBeVisible()
+  const desktop = await badgesOnCards(page)
+  expect(desktop).toHaveLength(7)
+  for (const badge of desktop) {
+    // The name stays there for screen readers, out of sight.
+    expect(badge, badge.title!).toMatchObject({ inside: true })
+    expect(badge.name, badge.title!).toMatch(/^(Instagram|YouTube|Pinterest|TikTok|Web)$/)
+    expect(badge.nameWidth, badge.title!).toBeLessThanOrEqual(1)
+  }
+
+  await page.setViewportSize({ width: 1000, height: 900 })
+  const tablet = await badgesOnCards(page)
+  expect(tablet).toHaveLength(7)
+  for (const badge of tablet) {
+    expect(badge.nameWidth, badge.title!).toBeGreaterThan(10)
+  }
+})

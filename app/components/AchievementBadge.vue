@@ -114,6 +114,9 @@ onBeforeUnmount(() => clearTimeout(timer))
   background: var(--gradient-neu);
   box-shadow: var(--shadow-neu);
   font-size: calc(var(--size) * .36);
+  /* Display text is 500 (R11), set solid in its pebble. */
+  font-weight: 500;
+  line-height: 1;
   rotate: -4deg;
 }
 .badge.counting {
