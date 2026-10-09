@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session, on its own branch, through a PR.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -175,13 +175,38 @@ What the security pass (#139) found, most severe first. Each is its own ticket l
 |---|---|---|
 | #190 | Source Lookup reaches internal addresses (SSRF) | **High.** `server/source-lookup/http.ts`; the Image Store shares it |
 | #191 | Better Auth's update-user; unused auth endpoints off | Medium. `server/utils/auth.ts` |
+| #204 | Share to malkochen (Android) | From Phase 9 (#201), pulled forward by the user to come right after #191 |
 | #197 | Undoing a Cooking deletes any Cooking for good | Low. `undoCooking`; the app doesn't change |
 | #193 | Refuse /api writes from other origins | Low. A middleware next to `server/middleware/auth.ts` |
 | #194 | Found images checked by content and re-encoded | Low. Reuses `server/image-store/photo.ts` |
 | #196 | Rate limits; Better Auth limiter in the database | Low. Migration |
-| #195 | Image Store cleanup | `needs-info`: skip until the user picks how long deleted things stay restorable. New env var `CRON_SECRET` |
+| #195 | Image Store cleanup | Decided: deleted things stay restorable for 30 days. New env var `CRON_SECRET`. Blocks #220 |
 | #198 | Dependency updates from `pnpm audit` | Low. Dev and build tooling only. Before #192, whose CSP depends on what Nuxt inlines |
 | #192 | Response headers (CSP, framing) and no-store | Low. CSP report-only first |
+
+### Phase 9: desktop review 2 (#201)
+
+Everything from the second desktop review (`docs/reviews/desktop-review2.md`), after Phase 8. #204 already sits in Phase 8. The bundles collect small fixes so CI runs once per bundle. Each ticket says whether it is for desktop, phone or both.
+
+| # | Ticket | Note |
+|---|---|---|
+| #205 | Bundle A: copy and labels | Carries the open "Gleich" question; check each point against main first |
+| #206 | Bundle B: affordances | Brings the Tooltip used by #212 and #213 |
+| #207 | Bundle C: dialogs and scroll | Escape on the settings pages; before #210 |
+| #208 | Scroll indicators for cut-off Columns (desktop) | Touches the Board's horizontal scroller, like #207's scrollbars: after it |
+| #209 | Usernames | Blocked by #191. Migration |
+| #210 | User settings as a sheet | After #207 and #209 |
+| #211 | Board Dish count | Header and switcher |
+| #212 | Note on hover / tap | After #206 |
+| #213 | User popover | After #206 and #209 |
+| #214 | All-caps Suggested Titles | Source Lookup title rule |
+| #215 | Smooth motion 1: celebrations | Sets the SVG pattern for #216 and #217 |
+| #216 | Smooth motion 2: splash and link lookup | After #215 |
+| #217 | Smooth motion 3: remaining clips and the pea | After #215 |
+| #218 | Move or delete several Dishes at once | Server endpoint for several Dishes |
+| #219 | Push notifications | After #210. New env vars `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`; migration |
+| #220 | Daily email digest | After #219 and #195. New env var `RESEND_API_KEY`; the user verifies the sending domain first |
+| #221 | Click-to-play video embeds | After #192 (CSP) |
 
 ## Keeping this file current
 
