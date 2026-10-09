@@ -210,6 +210,14 @@ describe('an internal service behind a public-looking name', () => {
     expect(hits).toEqual([])
   })
 
+  test('an https link goes through the same check', async () => {
+    const fetchImpl = createPublicFetch(stubResolver({ 'secure.example': [['127.0.0.1']] }))
+
+    const failure = await fetchImpl(`https://secure.example:${port}/`).catch((error: Error) => error)
+
+    expect((failure as Error & { cause?: NodeJS.ErrnoException }).cause?.code).toBe('ENOTPUBLIC')
+  })
+
   test('the fetch itself refuses a literal internal address', async () => {
     hits.length = 0
 
