@@ -22,6 +22,10 @@ _Avoid_: Description, tagline
 A user who belongs to a Board. All Members can add, edit, move and delete Dishes and edit Columns.
 _Avoid_: Collaborator, participant
 
+**Username**:
+The name a user picks for themselves and the only name malkochen shows of them, written plainly ("Chris", not "@chris"). Unique across the whole app regardless of case, 2–24 letters, digits, `_`, `.` or `-`. A user can change it; the old one is free for others right away. The name from their Google account is kept but never shown.
+_Avoid_: Display name, handle, nickname, Google name
+
 **Profile Picture**:
 The round picture that shows who a Member is, e.g. on the Dishes they added: a picture they uploaded themselves in their settings, else their Google photo, else their initial. Signing in again never replaces one they uploaded; removing it brings the Google photo back.
 _Avoid_: Avatar (except in code), profile photo, user image
