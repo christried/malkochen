@@ -167,6 +167,22 @@ From the first desktop field test (`docs/reviews/desktop-review1.md`). Two thing
 
 English and Italian UI is the next spec, not part of #103.
 
+### Phase 8: security findings (#139)
+
+What the security pass (#139) found, most severe first. Each is its own ticket labelled `security`; the summary is #139's comment. None is critical: every one needs an account on the Allowlist, except #193, which needs a page on another `christried.me` subdomain.
+
+| # | Ticket | Note |
+|---|---|---|
+| #190 | Source Lookup reaches internal addresses (SSRF) | **High.** `server/source-lookup/http.ts`; the Image Store shares it |
+| #191 | Better Auth's update-user; unused auth endpoints off | Medium. `server/utils/auth.ts` |
+| #197 | Undoing a Cooking deletes any Cooking for good | Low. `undoCooking`; the app doesn't change |
+| #193 | Refuse /api writes from other origins | Low. A middleware next to `server/middleware/auth.ts` |
+| #194 | Found images checked by content and re-encoded | Low. Reuses `server/image-store/photo.ts` |
+| #196 | Rate limits; Better Auth limiter in the database | Low. Migration |
+| #195 | Image Store cleanup | `needs-info`: skip until the user picks how long deleted things stay restorable. New env var `CRON_SECRET` |
+| #198 | Dependency updates from `pnpm audit` | Low. Dev and build tooling only. Before #192, whose CSP depends on what Nuxt inlines |
+| #192 | Response headers (CSP, framing) and no-store | Low. CSP report-only first |
+
 ## Keeping this file current
 
 When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.
