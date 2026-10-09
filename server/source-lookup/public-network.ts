@@ -9,11 +9,12 @@ import { Agent, buildConnector, fetch as undiciFetch } from 'undici'
 // rebinding). So every connection checks the address it actually connects to.
 
 // Given a host name, the addresses it resolves to (like `dns.lookup` with
-// `all: true`).
-export type Resolve = (hostname: string) => Promise<LookupAddress[]>
+// `all: true`). `hints` are the getaddrinfo flags `net.connect` asks for
+// (e.g. ADDRCONFIG: no IPv6 answers on a machine without IPv6).
+export type Resolve = (hostname: string, options?: { hints?: number }) => Promise<LookupAddress[]>
 
-const systemResolve: Resolve = hostname => new Promise((resolve, reject) => {
-  dnsLookup(hostname, { all: true, order: 'verbatim' }, (error, addresses) => error ? reject(error) : resolve(addresses))
+const systemResolve: Resolve = (hostname, { hints } = {}) => new Promise((resolve, reject) => {
+  dnsLookup(hostname, { all: true, order: 'verbatim', hints }, (error, addresses) => error ? reject(error) : resolve(addresses))
 })
 
 // [network, prefix length] in the IPv4 space that is not publicly routable.
@@ -39,14 +40,15 @@ function v4Number(ip: string): number {
   return ip.split('.').reduce((n, part) => n * 256 + Number(part), 0)
 }
 
-function inV4Range(n: number, [network, prefix]: [string, number]): boolean {
-  const size = 2 ** (32 - prefix)
-  return Math.floor(n / size) === Math.floor(v4Number(network) / size)
-}
+// The same ranges as [first, last] address numbers.
+const NON_PUBLIC_V4_NUMBERS = NON_PUBLIC_V4.map(([network, prefix]) => {
+  const first = v4Number(network)
+  return [first, first + 2 ** (32 - prefix) - 1] as const
+})
 
 function isPublicV4(ip: string): boolean {
   const n = v4Number(ip)
-  return !NON_PUBLIC_V4.some(range => inV4Range(n, range))
+  return !NON_PUBLIC_V4_NUMBERS.some(([first, last]) => n >= first && n <= last)
 }
 
 // The 16 bytes of a valid IPv6 address (zone already removed).
@@ -96,8 +98,8 @@ export function isPublicAddress(ip: string): boolean {
   return false
 }
 
-function notPublic(hostname: string, address: string): NodeJS.ErrnoException {
-  return Object.assign(new Error(`${hostname} resolves to ${address}, which is not a public address`), { code: 'ENOTPUBLIC' })
+function notPublic(message: string): NodeJS.ErrnoException {
+  return Object.assign(new Error(`${message}, which is not a public address`), { code: 'ENOTPUBLIC' })
 }
 
 type LookupCallback = (error: NodeJS.ErrnoException | null, address: string | LookupAddress[], family?: number) => void
@@ -106,10 +108,10 @@ type LookupCallback = (error: NodeJS.ErrnoException | null, address: string | Lo
 // it resolves to is not public, and otherwise hands over exactly the addresses
 // it checked, so the connection goes where the check looked.
 export function publicOnlyLookup(resolve: Resolve = systemResolve) {
-  return (hostname: string, options: { all?: boolean, family?: number | string }, callback: LookupCallback): void => {
-    resolve(hostname).then((addresses) => {
+  return (hostname: string, options: { all?: boolean, family?: number | string, hints?: number }, callback: LookupCallback): void => {
+    resolve(hostname, { hints: options.hints }).then((addresses) => {
       const refused = addresses.find(({ address }) => !isPublicAddress(address))
-      if (refused) return callback(notPublic(hostname, refused.address), options.all ? [] : '')
+      if (refused) return callback(notPublic(`${hostname} resolves to ${refused.address}`), options.all ? [] : '')
       const family = options.family === 'IPv4' ? 4 : options.family === 'IPv6' ? 6 : Number(options.family) || 0
       const usable = family ? addresses.filter(address => address.family === family) : addresses
       if (!usable.length) {
@@ -128,12 +130,16 @@ export function createPublicFetch(resolve: Resolve = systemResolve): typeof fetc
   const agent = new Agent({
     connect: (options, callback) => {
       const host = options.hostname.replace(/^\[|\]$/g, '')
-      if (isIP(host) && !isPublicAddress(host)) return callback(notPublic(host, host), null)
+      if (isIP(host) && !isPublicAddress(host)) return callback(notPublic(`connecting to ${host}`), null)
       return connect(options, callback)
     },
   })
-  return ((input: RequestInfo | URL, init?: RequestInit) =>
-    undiciFetch(input instanceof Request ? input.url : String(input), { ...init, dispatcher: agent } as never)) as unknown as typeof fetch
+  // Takes a URL, not a Request: Http never builds one, and what a Request
+  // carries (method, headers, signal) would have to be copied over by hand.
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (input instanceof Request) throw new TypeError('publicFetch takes a URL, not a Request')
+    return undiciFetch(String(input), { ...init, dispatcher: agent } as never)
+  }) as unknown as typeof fetch
 }
 
 // What Source Lookup and the Image Store use unless a test hands them a fake.

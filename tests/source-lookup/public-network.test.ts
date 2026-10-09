@@ -17,6 +17,8 @@ import { redirect } from './fake-upstream'
 describe('the link check', () => {
   test.each([
     'http://localhost./',
+    'http://localhost../',
+    'http://localhost.localdomain/',
     'http://LOCALHOST/',
     'http://app.localhost./',
     'http://127.0.0.1./',
@@ -152,7 +154,7 @@ describe('an internal service behind a public-looking name', () => {
           void resolve(hostname).then(([first]) => {
             if (options.all) callback(null, [first!])
             else callback(null, first!.address, first!.family)
-          })
+          }, (error: NodeJS.ErrnoException) => callback(error, ''))
         },
       },
     })

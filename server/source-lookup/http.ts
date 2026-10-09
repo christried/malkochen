@@ -36,9 +36,10 @@ export interface Http {
 // connection refuses that (public-network.ts). Users only ever paste public
 // links; anything else is not our business to fetch from inside the server.
 function isPrivateHost(hostname: string): boolean {
-  const host = hostname.replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase()
+  const host = hostname.replace(/^\[|\]$/g, '').replace(/\.+$/, '').toLowerCase()
   if (isIP(host)) return !isPublicAddress(host)
-  return host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.local')
+  return host === 'localhost' || host === 'localhost.localdomain' || host.endsWith('.localhost')
+    || host.endsWith('.internal') || host.endsWith('.local')
 }
 
 export function isFetchable(url: string): boolean {
