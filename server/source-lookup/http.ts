@@ -1,7 +1,12 @@
+import { isIP } from 'node:net'
+import { isPublicAddress, publicFetch } from './public-network'
+
 // The only way the strategies (and the Image Store) talk to the outside
 // world. Every helper shares one deadline for the whole lookup, follows redirects itself (so each hop can
 // be checked), refuses private hosts, and turns every failure into `null`:
-// a strategy just sees "nothing there".
+// a strategy just sees "nothing there". Requests go out through
+// `publicFetch`, which only connects to public addresses, unless a test hands
+// in a fake `fetch`.
 
 const MAX_REDIRECTS = 5
 const MAX_PAGE_BYTES = 2_000_000
@@ -26,22 +31,14 @@ export interface Http {
   bytes: (url: string, accept: (contentType: string) => boolean, maxBytes: number) => Promise<{ bytes: Uint8Array, contentType: string } | null>
 }
 
-// Loopback, private, link-local and similar addresses, by name or literal IP.
-// Users only ever paste public links; anything else is not our business to
-// fetch from inside the server.
+// Loopback, private, link-local and similar hosts, by name or literal IP: a
+// fast first refusal. A name can still resolve to such an address; the
+// connection refuses that (public-network.ts). Users only ever paste public
+// links; anything else is not our business to fetch from inside the server.
 function isPrivateHost(hostname: string): boolean {
-  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase()
-  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.local')) return true
-  const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
-  if (v4) {
-    const [a, b] = [Number(v4[1]), Number(v4[2])]
-    return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127)
-      || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224
-  }
-  if (host.includes(':')) {
-    return host === '::' || host === '::1' || /^f[cd]/.test(host) || /^fe[89ab]/.test(host) || host.startsWith('::ffff:')
-  }
-  return false
+  const host = hostname.replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase()
+  if (isIP(host)) return !isPublicAddress(host)
+  return host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.local')
 }
 
 export function isFetchable(url: string): boolean {
@@ -54,7 +51,7 @@ export function isFetchable(url: string): boolean {
   }
 }
 
-export function createHttp(fetchImpl: typeof fetch, signal: AbortSignal): Http {
+export function createHttp(signal: AbortSignal, fetchImpl: typeof fetch = publicFetch): Http {
   async function request(url: string, init: RequestInit = {}): Promise<Response | null> {
     if (!isFetchable(url)) return null
     try {
