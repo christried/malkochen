@@ -1,0 +1,39 @@
+malkochen review DAS HIER SIND ALLES PUNKTE EXPLIZIT FÜR DIE DESKTOP VERSION --> stark durchdenken inwiefern das auch auf mobile zutrifft. Mobile first development wichtig!
+Wenn einzelne Punkte hier nur kleine Arbeiten sind, dann gruppiere sie, auch wenn sie nicht zwangsläufig thematisch zusammenpassen, zu größeren sammel-issues (z.B. 5 auf einmal) damit wir nicht so häufig tests und CI abwarten müssen für Kleinkram!
+- kleine punkte von dieser liste könntest du im rahmen der letzten PRs vielleicht schon abgehandelt haben.
+- branches auf github aufräumen
+- dead code aufräumen
+- wichtiges feature, falls das möglich ist (für mobile) zwischenschieben: Bei den verschiedenen Apps, wenn man auf "teilen" geht, soll man dort auch malkochen auswählen können mit dem resultat, dass sich malkochen öffnet und der share-link direkt in den hinzufügen dialog gepasted wird.
+- splash ist zu kurz nur angezeigt, kann man quasi nicht lesen in der Zeit
+- "Instagram" Pille auf Bild ist zu breit (nur "Insta"), Pinterest auch, vielleicht einfach "Pin"
+- Cookie Emoji beim board select trigger ist immernoch abgeschnitten, da waren wir schonmal dran.
+- optisch nicer wäre es, wenn zum allgemeinen stil passend, der Trigger für das Board-Auswahl-Menü auch andersfarbig hinterlegt ist (ggf. andere base-variante) - aber aktuell liegt das einfach genau auf dem gleichen Background, was die Klickfläche unklar macht.
+- Hover-states für klickbare Sachen auf Desktop einführen: Cursor Pointer z.B. Wo noch nicht vorhanden auch Motion oder andere Styling veränderung on Hover als Indikator für Klickbarkeit.
+- Überall wo auch nur ein bisschen sinnvoll: Tooltips für Desktop einbauen (z.B. Icon Buttons, überall wo nicht 100% klar ist was Funktionalität ist eben einfach).
+- mehr rotierende placeholder für neuen Column-Namen notwendig, nicht immer der Gleiche
+- Drag & Drop funktioniert super nice jetzt bei den Board-Settings! Aber wichtig: Der anklickbare Bereich für Drag-Handle ist zu klein. Das Icon soll etwas größer werden und der Toleranzbereich wo man "anheben" kann soll horizontal größer werden. Bestenfalls bis kurz vor den Elementen für Column-Name und die Anzahl der Gerichte. Diese sollen aber noch bequem selected werden können.
+- wenn "schon auf dem Board" Karte da ist, dann verschwindet aktuell der submit button bei Add Dish Dialog. Stattdessen lieber deaktivieren und error hint dabei anzeigen (schön gestyled), der auf die schon auf dem Board Karte weiter oben verweist.
+- in verkleinerten Fenstern/kleineren Screens werden die boards horizontal scrollable - soweit richtig und gewollt. Die Scrollbar ist aber ungestyled und sollte eigentlich zur App passen. Gilt auch für alle horizontalen Scrollbars, egal ob page oder dialog.
+- 10x gekocht celebration fühlt sich nach low fps an, warum haben wir das nicht überarbeitet? App generell checken, alle motions sollen so flüssig laufen wie der empty placeholder bei Columns und der Hero im login screen.
+- all Caps nochmal neu ran: https://www.tiktok.com/@eatthisorg/video/7688042287548370208 das sollte z.B. auch funktionieren. Auch bisschen weniger Caps im Titel sollte immernoch klappen.
+- Push-Notifications in PWA, geht das gut mit meinem Setup? Nicht standard-mäßig an, aber anschaltbar in den User Settings, um für das neue Hinzufügen von Dishes eine benachrichtigung zu kriegen.
+- Same mit E-Mail-Notifications
+- "veröffentlicht von" placeholder nicht @veganschnitzel sondern einfach @christried
+- not_allowed error für leute, die nicht whitelisted sind: "Gleich" wäre besser. "Sag der Person Bescheid" --> "Sag Chris Bescheid". Und das Bild ist ein bisschen komisch- Topfbert ist außerhalb des Hintergrundkreises. Besser wäre, wenn Topfbert gänzlich im Kreis oder der Kreis größer wäre und das Schild hochhält.
+- Impressum / Datenschutz Seiten notwendig! Kann verlinken auf christried.me/impressum und https://christried.me/privacy-malkochen.html
+- Usernames: Neuer User, direkt prompten für username. Namen aus Google nur in DB speichern, nie zeigen. Nur username zeigen. Username kann beliebig oft gewechselt werden (in normalem Maße beliebig)
+- Escape Keybind soll Settings und Dialoge schließen (auch board und user settings)
+- User Settings auslagern in Sheet anstelle neuer Seite
+- Wenn das Fenster kleiner wird und Boards nicht mehr sichtbar sind, dann versteht der user das nur über abgeschnittene Boards oder die horizontale scrollbar, die zu weit unten sein kann. Hier braucht es einen indikator an linker und rechter seite, je nachdem wo boards abgeschnitten sind, damit der user versteht, dass man dort scrollen muss. das anklicken dieser indikatoren scrollt ein board weiter in die richtung
+- Im Board, wenn man am PC über das Notiz-Symbol hovert, soll die Notiz angezeigt werden, so wie ein trunkierter Name angezeigt wird
+- Im Dialog "Bild wählen" sind die labels/headlines für die sections klein: Ausschnitt und Platzhalter fühlen sich nicht gut genug sichtbar und ungestyled an. An anderen Stellen der App ebenfalls checken und analog abändern, damit alles ins Styling passt und gut lesbar ist und nicht untergeht.
+- Der Board Header soll irgendeinen Indicator dafür haben, wie viele Dishes auf ihm sind
+- Erbse sieht nicht happy genug aus, wenn klein angezeigt
+- 10x Celebration square background ist anderer tint und deswegen visible --> schlecht
+- gleiches bei neuem Board und der "noch nichts hier" animation/asset von topfbert...............
+- videos embedden mal gucken?
+- mehrere Dishes gleichzeitig verschieben wäre super duper notwendig
+- wenn man über den Avatar (Kartenansicht) oder Avatar+Hinzugefügt von (Detailansicht) vom User hovert, soll sich ein Popover mit kurzen User-Infos öffnen: Username, Bild in groß, gemeinsame Boards, noch mehr falls dir was gutes einfällt.
+- wenn ich runtergescrollt die detailansicht einer karte öffne, dann wird im Hintergrund nach ganz oben gescrollt. Wenn die detailansicht sich schließt wird wieder auf den punkt von vorher gescrollt. Das öffnen der detailansicht soll kein scrolling auslösen - im background soll alles gleich bleiben
+- branches auf github aufräumen
+- dead code aufräumen
