@@ -1,10 +1,15 @@
-import { describe, expect, inject, test } from 'vitest'
+import { beforeAll, describe, expect, inject, test } from 'vitest'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 
 // Better Auth mounts all its built-in endpoints under /api/auth/**. malkochen
 // uses only Google sign-in (and its callback), get-session, sign-out and, in
-// tests, the dev sign-in; every other one is turned off (#191).
+// tests, the dev sign-in; every other path is turned off (#191): the other
+// built-in endpoints of better-auth 1.7.6, and any a later version adds.
 const DISABLED = [
+  '/ok',
+  '/error',
+  '/callback/github',
+  '/reset-password/a-token',
   '/update-user',
   '/update-session',
   '/change-email',
@@ -65,9 +70,12 @@ describe('Better Auth endpoints malkochen does not use', () => {
     expect((await me(marie)).name).toBe('Marie')
   })
 
-  test.each(DISABLED)('%s answers 404 to a signed-in user', async (path) => {
-    const emilie = await signIn(ALLOWLISTED[35])
+  let emilie: Caller
+  beforeAll(async () => {
+    emilie = await signIn(ALLOWLISTED[35])
+  })
 
+  test.each(DISABLED)('%s answers 404 to a signed-in user', async (path) => {
     expect((await post(emilie, `/api/auth${path}`)).status).toBe(404)
     expect((await emilie.fetch(`/api/auth${path}`)).status).toBe(404)
   })

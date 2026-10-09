@@ -6,56 +6,37 @@ import { z } from 'zod'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { parseServerEnv } from '../env'
-import { isAllowlisted, NOT_ALLOWLISTED } from './allowlist'
+import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
 
 const env = parseServerEnv(process.env)
 
-export function allowlistRefusal(email: string) {
+function allowlistRefusal(email: string) {
   return isAllowlisted(email, env.ALLOWLIST_EMAILS) ? undefined : NOT_ALLOWLISTED
 }
 
-// The gate on every sign-in: the email must be on the Allowlist and verified
-// by Google. Better Auth would otherwise create a user whose email Google
-// marks unverified. Refused the same way, as "Not unlocked".
+// The gate on every sign-in, and on every request after it: the email must be
+// on the Allowlist and verified by Google. Better Auth would otherwise create
+// a user whose email Google marks unverified. Both refusals read "Not
+// unlocked".
 export function signInRefusal(user: { email?: unknown, emailVerified?: unknown }) {
-  return user.emailVerified === true ? allowlistRefusal(String(user.email)) : NOT_ALLOWLISTED
+  return user.emailVerified === true ? allowlistRefusal(String(user.email)) : UNVERIFIED_EMAIL
 }
 
-// Better Auth's built-in endpoints that malkochen never uses. They answer 404,
-// so nobody can, say, set any name or image through /update-user. Kept on:
-// /sign-in/social and /callback/:id (Google), /get-session, /sign-out, /ok,
-// /error and the dev sign-in. Checked against better-auth 1.7.6
-// (dist/api/index.mjs); a new built-in endpoint after an upgrade belongs here
-// unless the app uses it. /reset-password/:token can't be listed (only exact
-// paths match): it only redirects, and with email and password sign-in off no
-// token for it is ever made.
-const UNUSED_AUTH_PATHS = [
-  '/update-user',
-  '/update-session',
-  '/change-email',
-  '/delete-user',
-  '/delete-user/callback',
-  '/link-social',
-  '/unlink-account',
-  '/list-accounts',
-  '/account-info',
-  '/get-access-token',
-  '/refresh-token',
-  '/list-sessions',
-  '/revoke-session',
-  '/revoke-sessions',
-  '/revoke-other-sessions',
-  '/sign-up/email',
-  '/sign-in/email',
-  '/change-password',
-  '/set-password',
-  '/verify-password',
-  '/request-password-reset',
-  '/reset-password',
-  '/send-verification-email',
-  '/verify-email',
-]
+// The only Better Auth endpoints malkochen uses: Google sign-in and its
+// callback, the session, sign-out and (local dev, tests) the dev sign-in.
+// Every other path under /api/auth answers 404, so nobody can, say, set any
+// name or image through /update-user (#191). An allowlist, not Better Auth's
+// disabledPaths: a built-in endpoint a later Better Auth adds stays off too.
+const USED_AUTH_PATHS = new Set(['/sign-in/social', '/callback/google', '/get-session', '/sign-out', '/dev/sign-in'])
+
+const onlyUsedEndpoints = {
+  id: 'only-used-endpoints',
+  onRequest: async (request) => {
+    const path = new URL(request.url).pathname.replace(/^\/api\/auth/, '')
+    if (!USED_AUTH_PATHS.has(path)) return { response: new Response('Not Found', { status: 404 }) }
+  },
+} satisfies BetterAuthPlugin
 
 // Local dev and tests only (AUTH_DEV_BYPASS=1, refused on Vercel production
 // and preview by server/env.ts): POST /api/auth/dev/sign-in
@@ -77,12 +58,16 @@ const devSignIn = {
       }),
     }, async (ctx) => {
       const { email, name, image, emailVerified = true } = ctx.body
-      const refusal = signInRefusal({ email, emailVerified })
+      const adapter = ctx.context.internalAdapter
+      const existing = (await adapter.findUserByEmail(email))?.user
+      // A new user goes through validateUserInfo inside createUser, exactly
+      // like a first Google sign-in; a returning one is checked here, like
+      // Google's repeat sign-in.
+      const refusal = existing && signInRefusal({ email, emailVerified })
       if (refusal) throw new APIError('FORBIDDEN', { code: refusal.error, message: refusal.errorDescription })
 
-      const adapter = ctx.context.internalAdapter
-      const user = (await adapter.findUserByEmail(email))?.user
-        ?? await adapter.createUser({ email, name: name ?? email.split('@')[0]!, image, emailVerified: true }, { method: 'dev-bypass' })
+      const user = existing
+        ?? await adapter.createUser({ email, name: name ?? email.split('@')[0]!, image, emailVerified }, { method: 'dev-bypass' })
       const session = await adapter.createSession(user.id)
       await setSessionCookie(ctx, { session, user })
       return ctx.json({ userId: user.id })
@@ -97,7 +82,6 @@ export const auth = betterAuth({
   // A refused Google sign-in (and any other OAuth error) redirects here as
   // /login?error=<code>, instead of to Better Auth's own error page.
   onAPIError: { errorURL: '/login' },
-  disabledPaths: UNUSED_AUTH_PATHS,
   socialProviders: {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
@@ -112,7 +96,8 @@ export const auth = betterAuth({
       ownPicture: { type: 'string', required: false, input: false },
     },
     // Runs on user creation and, for Google, on every repeat sign-in too, so
-    // someone removed from the Allowlist can't sign in again.
+    // someone removed from the Allowlist can't sign in again. Gets what Google
+    // says about the user, emailVerified included.
     validateUserInfo: ({ user }) => signInRefusal(user),
   },
   hooks: {
@@ -130,7 +115,7 @@ export const auth = betterAuth({
       ctx.setCookie(REMEMBERED_INVITE_COOKIE, '', FORGOTTEN_INVITE_COOKIE)
     }),
   },
-  plugins: env.AUTH_DEV_BYPASS === '1' ? [devSignIn] : [],
+  plugins: [onlyUsedEndpoints, ...(env.AUTH_DEV_BYPASS === '1' ? [devSignIn] : [])],
 })
 
 export type SessionUser = typeof auth.$Infer.Session.user
