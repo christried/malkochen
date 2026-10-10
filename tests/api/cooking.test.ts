@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import { landingBoard as landingBoardOf, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
+import { backdateCooking } from './time-travel'
 
 // Cooking (PRD stories 35, 48–55): moving a Dish into the Gekocht Column, by
 // "Verschieben nach…", a drop or the "Gekocht ✓" quick action, records a
@@ -23,11 +24,14 @@ interface Dish {
 }
 interface Board {
   id: string
+  inviteToken: string
   columns: { id: string, name: string, isGekocht: boolean, dishes: Dish[] }[]
 }
 
 const hedy = () => signIn(ALLOWLISTED[6])
 const linus = () => signIn(ALLOWLISTED[2])
+// Joins Hedy's Board in this file only.
+const gladys = () => signIn(ALLOWLISTED[40])
 const landingBoard = (caller: Caller) => landingBoardOf<Board>(caller)
 const MISSING = '00000000-0000-4000-8000-000000000000'
 
@@ -242,6 +246,72 @@ test('undo needs a Column of the Dish’s Board and a place', async () => {
   const found = await located(caller, dish.id)
   expect(found.column.id).toBe(gekocht.id)
   expect(found.dish.cookings).toEqual([cooking])
+})
+
+// "Rückgängig" takes back only what the Gekocht toast offers it for (#197):
+// the Cooking just recorded. Anything else is refused and stays, in the
+// Cooking History and the Dish where it is.
+test('undo refuses an older Cooking of the Dish', async () => {
+  const caller = await hedy()
+  const { gekocht } = await columnsOf(caller)
+  const dish = await addDish(caller, 'Shakshuka')
+  const older = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
+  const newest = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
+  const { index } = await located(caller, dish.id)
+
+  expect((await undoCooking(caller, older.id, gekocht.id, index)).status).toBe(409)
+
+  const found = await located(caller, dish.id)
+  expect(found.column.id).toBe(gekocht.id)
+  expect(found.dish.cookings).toEqual([newest, older])
+})
+
+test('undo refuses a Cooking another Member recorded', async () => {
+  const caller = await hedy()
+  const member = await gladys()
+  const { inviteToken, columns } = await landingBoard(caller)
+  expect((await post(member, `/api/invites/${inviteToken}/join`)).status).toBe(200)
+  const ideen = columns[0]!
+  const dish = await addDish(caller, 'Kürbisrisotto')
+  const before = await located(caller, dish.id)
+  const theirs = (await (await cookDish(member, dish.id)).json() as Dish).cooking!
+
+  expect((await undoCooking(caller, theirs.id, ideen.id, before.index)).status).toBe(409)
+
+  const found = await located(caller, dish.id)
+  expect(found.column.isGekocht).toBe(true)
+  expect(found.dish.cookings).toEqual([theirs])
+  // Their own undo still goes through.
+  expect((await undoCooking(member, theirs.id, ideen.id, before.index)).status).toBe(200)
+  expect((await located(caller, dish.id)).dish.cookings).toEqual([])
+})
+
+test('undo refuses a Cooking recorded longer than ten minutes ago', async () => {
+  const caller = await hedy()
+  const dish = await addDish(caller, 'Zucchinipuffer')
+  const before = await located(caller, dish.id)
+  const cooking = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
+  await backdateCooking(cooking.id, 11)
+
+  expect((await undoCooking(caller, cooking.id, before.column.id, before.index)).status).toBe(409)
+
+  const found = await located(caller, dish.id)
+  expect(found.column.isGekocht).toBe(true)
+  expect(found.dish.cookings.map(c => c.id)).toEqual([cooking.id])
+})
+
+test('undo still takes back a Cooking a few minutes old', async () => {
+  const caller = await hedy()
+  const dish = await addDish(caller, 'Kartoffelgulasch')
+  const before = await located(caller, dish.id)
+  const cooking = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
+  await backdateCooking(cooking.id, 9)
+
+  expect((await undoCooking(caller, cooking.id, before.column.id, before.index)).status).toBe(200)
+
+  const found = await located(caller, dish.id)
+  expect(found.column.id).toBe(before.column.id)
+  expect(found.dish.cookings).toEqual([])
 })
 
 test('cooking and its undo answer where the Dish now is, in Board order, with the Cooking recorded', async () => {
