@@ -6,12 +6,15 @@ import { testAuthEnv } from '../support/test-auth-env'
 
 // Seam 1 (the server API): builds the app once, boots the production server
 // against a throwaway local Postgres, and hands its base URL to the tests.
-// Tests talk to it over HTTP only, exactly like a real client would.
+// Tests talk to it over HTTP only, exactly like a real client would, except
+// to change what no client can: how long ago something happened
+// (time-travel.ts).
 const PORT = 3199
 
 declare module 'vitest' {
   export interface ProvidedContext {
     apiBaseUrl: string
+    databaseUrl: string
   }
 }
 
@@ -56,6 +59,7 @@ export default async function setup(project: TestProject) {
   }
 
   project.provide('apiBaseUrl', baseUrl)
+  project.provide('databaseUrl', database.url)
 
   return async () => {
     server.kill()

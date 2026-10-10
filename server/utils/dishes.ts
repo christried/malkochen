@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, desc, eq, exists, ilike, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, ilike, inArray, isNull, ne, notExists, or, sql, type SQL } from 'drizzle-orm'
 import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, membership, user } from '../db/schema'
-import { cookingsByDish, type CookingView } from './cookings'
+import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
 import { pictureOf } from './people'
 
 // The Member who added a Dish, as the card shows them.
@@ -289,20 +289,26 @@ export async function cookDish(dishId: string, userId: string): Promise<MovedDis
 // and puts its Dish back at `index` in the Column it came from, on its own
 // Board or, after a move into another Board's Gekocht Column, back on the
 // Board it came from. Answers the Dish and where it now is (PlacedDish);
-// null unless the Dish is still in a Gekocht Column (nobody moved it on
-// meanwhile) and that Column is on a Board the user is a Member of. The caller has checked that the user may see the Cooking
-// (cookingDishId).
+// null, changing nothing, unless "Rückgängig" may take the Cooking back
+// (undoableCooking: the user's own, just recorded), the Dish is still in a
+// Gekocht Column (nobody moved it on meanwhile) and `columnId` is on a Board
+// the user is a Member of. The caller has checked that the user may see the
+// Cooking (cookingDishId).
 export async function undoCooking(cookingId: string, dishId: string, userId: string, columnId: string, index: number): Promise<PlacedDish | null> {
   const stillCooked = inArray(dish.columnId, db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.isGekocht, true)))
   const movable = movableTo(and(onMembersBoard(dishId, userId), stillCooked), userId, columnId)
+  const cookingGone = notExists(db.select({ id: cooking.id }).from(cooking).where(eq(cooking.id, cookingId)))
   await runAtomic(d => [
     d.delete(cooking).where(and(
-      eq(cooking.id, cookingId),
+      undoableCooking(cookingId, userId),
       eq(cooking.dishId, dishId),
       exists(db.select({ id: dish.id }).from(dish).where(movable)),
     )),
-    renumberForDrop(d, dishId, columnId, index, movable),
+    // Only once the Cooking is gone: the delete above went through.
+    renumberForDrop(d, dishId, columnId, index, and(movable, cookingGone)),
   ])
+  const [kept] = await db.select({ id: cooking.id }).from(cooking).where(eq(cooking.id, cookingId))
+  if (kept) return null
   return withPlacement(await findDish(and(onMembersBoard(dishId, userId), eq(dish.columnId, columnId))))
 }
 
