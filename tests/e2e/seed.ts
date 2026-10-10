@@ -94,7 +94,7 @@ export async function resetBoard(page: Page) {
   }
 }
 
-// Deletes these users and every Board they're a Member of, so each one's
+// Deletes these users and the Boards only they are Members of, so each one's
 // next sign-in is a first one again: a new user with only "Meine Küche" and
 // no Profile Picture of their own. For CI's retry, which runs a failed test
 // again on the same database: it has to start where the first try did, not
@@ -106,10 +106,11 @@ export async function removeUsers(...emails: string[]) {
   await client.connect()
   try {
     await client.query('begin')
+    // Only Boards nobody else is a Member of: another file's Boards stay.
     await client.query(
-      `delete from board where id in (
-         select m.board_id from membership m join "user" u on u.id = m.user_id where u.email = any($1)
-       )`,
+      `delete from board b
+       where exists (select from membership m join "user" u on u.id = m.user_id where m.board_id = b.id and u.email = any($1))
+         and not exists (select from membership m join "user" u on u.id = m.user_id where m.board_id = b.id and u.email <> all($1))`,
       [emails],
     )
     await client.query('delete from "user" where email = any($1)', [emails])
