@@ -139,7 +139,9 @@ test('the achievement badge shows its count at once; both celebrations show thei
   await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
   await expect(badge).toHaveAccessibleName('Stammgericht: 9× gekocht, noch 1× bis Klassiker')
   expect(await badge.innerText()).toContain('9×')
-  await detail.getByRole('button', { name: 'Schließen' }).click()
+  // Scrolled down to "Gekocht ✓", the compact bar may be in, with a second
+  // "Schließen": the first one is the bar's while it is.
+  await detail.getByRole('button', { name: 'Schließen' }).first().click()
   await expect(detail).toBeHidden()
 
   // The 10th Cooking: the milestone's still, until it is closed.

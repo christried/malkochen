@@ -49,6 +49,9 @@ async function setVisibility(page: Page, state: 'visible' | 'hidden') {
 }
 
 test('another Member\'s new Dish, edit and move show up without a reload, their Dish marked "Neu"', async ({ page, browser }) => {
+  // Three changes, each waiting for a poll (up to 5s apart), after two
+  // sign-ins: on a busy machine more than the default 30s.
+  test.slow()
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Kochclub')
   await addDish(page, boardId, 'Alans Auflauf')
   await gotoHydrated(page, `/b/${boardId}`)

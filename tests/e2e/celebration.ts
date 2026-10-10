@@ -11,6 +11,33 @@ export function confetti(scope: Page | Locator) {
   return scope.locator('[data-confetti-piece]')
 }
 
+interface SeenCelebrations {
+  // Each confetti burst, by its number of pieces.
+  confetti: number[]
+  // Each time Topfbert popped up, his cheer.
+  cheers: string[]
+}
+
+// Records, in the page, the celebrations as they go by. The confetti is
+// gone 1.6s after it bursts and the pill 2.4s after it comes: where a test
+// can't look at once (a dropped card first flies to where it lands), it asks
+// this instead.
+export async function recordCelebrations(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { celebrations: SeenCelebrations }
+    const seen: SeenCelebrations = w.celebrations = { confetti: [], cheers: [] }
+    const within = (node: Element, selector: string) => [...(node.matches(selector) ? [node] : []), ...node.querySelectorAll(selector)]
+    new MutationObserver((records) => {
+      for (const node of records.flatMap(r => [...r.addedNodes])) {
+        if (!(node instanceof Element)) continue
+        for (const burst of within(node, '[data-confetti]')) seen.confetti.push(burst.querySelectorAll('[data-confetti-piece]').length)
+        for (const him of within(node, '[data-topfbert]')) seen.cheers.push(him.querySelector('[data-cheer]')?.textContent?.trim() ?? '')
+      }
+    }).observe(document, { childList: true, subtree: true })
+  })
+  return () => page.evaluate(() => (window as unknown as { celebrations: SeenCelebrations }).celebrations)
+}
+
 // Where the first confetti piece bursts from.
 export async function confettiOrigin(scope: Page | Locator) {
   return confetti(scope).first().evaluate(el => ({ x: Number.parseFloat((el as HTMLElement).style.left), y: Number.parseFloat((el as HTMLElement).style.top) }))

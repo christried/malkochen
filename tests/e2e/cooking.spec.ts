@@ -7,7 +7,7 @@ import { ANY_CHEER, CHEERS, cheer, confetti, confettiOrigin, gekochtPill, topfbe
 import { playing } from './clips'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
-import { seedCookings, seedDish } from './seed'
+import { resetBoard, seedCookings, seedDish } from './seed'
 
 // Cooking (PRD stories 35, 48–55): "Gekocht ✓" on a card, the Gekocht toast
 // with "Notiz hinzufügen" and "Rückgängig", and the Cooking History in the
@@ -24,6 +24,9 @@ function gekochtToast(page: Page) {
 
 test('"Gekocht ✓", then undo: the Dish goes back where it was, without a Cooking', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
+  // CI's retry runs the whole file again, on the same database: from an
+  // empty Board, not one with the Dishes of the try before.
+  await resetBoard(page)
   for (const title of ['Linsensuppe', 'Chana Masala', 'Pad Thai']) {
     await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
   }
@@ -130,15 +133,26 @@ test('"Gekocht ✓" celebrates: veggie confetti, Topfbert in a pill at the top u
   await expect(confetti(page)).toHaveCount(0)
   await expect(topfbert(page)).toHaveCount(0)
   const cook = page.getByRole('button', { name: 'Gekocht ✓: „Ramen“' })
-  const button = (await cook.boundingBox())!
+  // The button's middle as it is clicked: the cards may still be rising in
+  // (card-rise), a few pixels lower when measured before the click.
+  type Pressed = { pressedAt?: { x: number, y: number } }
+  await cook.evaluate((el) => {
+    el.addEventListener('click', () => {
+      const box = el.getBoundingClientRect()
+      const w = window as unknown as Pressed
+      w.pressedAt = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }, { once: true, capture: true })
+  })
 
   await cook.click()
 
   // 14 pieces fly up from the button and fall off the screen, once.
   await expect(confetti(page)).toHaveCount(14)
   const origin = await confettiOrigin(page)
-  expect(Math.abs(origin.x - (button.x + button.width / 2))).toBeLessThan(2)
-  expect(Math.abs(origin.y - (button.y + button.height / 2))).toBeLessThan(2)
+  const button = await page.evaluate(() => (window as unknown as Pressed).pressedAt)
+  expect(button, 'the click reached the button').toBeDefined()
+  expect(Math.abs(origin.x - button!.x)).toBeLessThan(2)
+  expect(Math.abs(origin.y - button!.y)).toBeLessThan(2)
   // The pill: Topfbert with his cheer, and "Gekocht ✓", at the top; no
   // second line on its own Board.
   const pill = gekochtPill(page)
