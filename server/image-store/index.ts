@@ -46,7 +46,6 @@ function mediaType(contentType: string): string {
 }
 
 export function createImageStore(options: ImageStoreOptions): ImageStore {
-  const fetchImpl = options.fetch ?? globalThis.fetch
   const timeoutMs = options.timeoutMs ?? 10_000
   const maxBytes = options.maxBytes ?? 10_000_000
   const fail = (imageUrl: string, reason: string) => {
@@ -55,7 +54,7 @@ export function createImageStore(options: ImageStoreOptions): ImageStore {
   }
 
   return async (imageUrl) => {
-    const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
+    const http = createHttp(AbortSignal.timeout(timeoutMs), options.fetch)
     const found = await http.bytes(imageUrl, type => mediaType(type) in IMAGE_TYPES, maxBytes).catch(() => null)
     if (!found) return fail(imageUrl, 'download failed (unreachable, not an image, empty or too large)')
     const type = mediaType(found.contentType)

@@ -563,6 +563,12 @@ describe('never fails', () => {
     'http://169.254.169.254/latest/meta-data/',
     'http://10.0.0.7/',
     'http://[::1]/',
+    'http://localhost./',
+    'http://[::127.0.0.1]/',
+    'http://[::ffff:127.0.0.1]/',
+    'http://[64:ff9b::a9fe:a9fe]/',
+    'http://[2002:7f00:1::]/',
+    'http://198.18.0.1/',
   ])('a private address (%s) is never fetched', async (link) => {
     const { lookup, upstream } = lookupWith([['http', () => html(fixture('blog-og-only.html'))]])
 

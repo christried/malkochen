@@ -47,14 +47,13 @@ function matchStrategy(link: string): { url: URL | null, strategy: Strategy, gue
 }
 
 export function createSourceLookup(options: SourceLookupOptions = {}): SourceLookup {
-  const fetchImpl = options.fetch ?? globalThis.fetch
   const timeoutMs = options.timeoutMs ?? 8000
 
   return async (link) => {
     const { url, strategy, guess } = matchStrategy(link)
     if (!url) return nothingFound(guess)
 
-    const http = createHttp(fetchImpl, AbortSignal.timeout(timeoutMs))
+    const http = createHttp(AbortSignal.timeout(timeoutMs), options.fetch)
     try {
       return await strategy.lookup(url, { http, timeoutMs })
     }
