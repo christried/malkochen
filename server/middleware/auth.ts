@@ -1,4 +1,4 @@
-import { allowlistRefusal, auth } from '../utils/auth'
+import { auth, signInRefusal } from '../utils/auth'
 
 // The security boundary for /api/**: every route needs a session, except
 // Better Auth's own, the health check, and what the invite landing and "Not
@@ -16,9 +16,9 @@ export default defineEventHandler(async (event) => {
   const session = await auth.api.getSession({ headers: event.headers }).catch(() => null)
   if (!session) throw createError({ statusCode: 401, statusMessage: 'Not signed in' })
 
-  // Someone taken off the Allowlist loses access even with a live session.
-  if (allowlistRefusal(session.user.email)) {
-    throw createError({ statusCode: 403, statusMessage: 'Not on the Allowlist' })
-  }
+  // Someone taken off the Allowlist loses access even with a live session; so
+  // does a session made before unverified emails were refused (#191).
+  const refusal = signInRefusal(session.user)
+  if (refusal) throw createError({ statusCode: 403, statusMessage: refusal.errorDescription })
   event.context.user = session.user
 })

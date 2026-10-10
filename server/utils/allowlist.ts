@@ -8,3 +8,7 @@ export function isAllowlisted(email: string, allowlistCsv: string): boolean {
 // The refusal Better Auth hands back to the client. The code is what the
 // sign-in page keys on to show "Not unlocked" (app/pages/login.vue).
 export const NOT_ALLOWLISTED = { error: 'not_allowed', errorDescription: 'Not on the Allowlist' } as const
+
+// An email Google hasn't verified: refused like one off the Allowlist (same
+// code, same "Not unlocked"), with its own reason for whoever reads the logs.
+export const UNVERIFIED_EMAIL = { error: 'not_allowed', errorDescription: 'Email not verified by Google' } as const
