@@ -158,7 +158,9 @@ test('an empty Column\'s loop starts from where its still rests', async ({ page 
   await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await gotoHydrated(page, '/')
 
-  await expect(emptyColumnStill(page, 'orchid')).toBeVisible()
+  // Attached, not visible: once its loop is drawn over it, the still hides,
+  // and the loop may already be up.
+  await expect(emptyColumnStill(page, 'orchid')).toBeAttached()
   await expect.poll(() => playing(page)).toEqual([expect.stringMatching(EMPTY_COLUMN_LIGHT)])
   type Moved = { shift: number, turn: number }
   const loop = () => page.evaluate(() => (window as unknown as { loop: { first: Moved, furthest: Moved } | null }).loop)
