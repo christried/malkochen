@@ -7,7 +7,7 @@ import { ANY_CHEER, CHEERS, cheer, confetti, confettiOrigin, gekochtPill, topfbe
 import { playing } from './clips'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
-import { seedCookings, seedDish } from './seed'
+import { resetBoard, seedCookings, seedDish } from './seed'
 
 // Cooking (PRD stories 35, 48–55): "Gekocht ✓" on a card, the Gekocht toast
 // with "Notiz hinzufügen" and "Rückgängig", and the Cooking History in the
@@ -24,6 +24,9 @@ function gekochtToast(page: Page) {
 
 test('"Gekocht ✓", then undo: the Dish goes back where it was, without a Cooking', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
+  // CI's retry runs the whole file again, on the same database: from an
+  // empty Board, not one with the Dishes of the try before.
+  await resetBoard(page)
   for (const title of ['Linsensuppe', 'Chana Masala', 'Pad Thai']) {
     await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
   }

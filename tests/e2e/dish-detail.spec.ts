@@ -7,7 +7,7 @@ import { expectCardShape } from './card-shape'
 import { editMorph, expectFieldsMorphing, slowAnimations } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
-import { removeStoredImages, seedCookings, seedDish, storedImage } from './seed'
+import { removeStoredImages, resetBoard, seedCookings, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // The Dish detail (PRD stories 41–45): tapping a card opens it, full-screen
@@ -35,6 +35,9 @@ async function settledBox(detail: Locator) {
 test('tapping a card opens its detail with everything about the Dish', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await signIn(page, ALLOWLISTED[0])
+  // CI's retry runs the whole file again, on the same database: from an
+  // empty Board, not one with the Dishes of the try before.
+  await resetBoard(page)
   await seedDish(page, { title: 'Crispy Tofu', sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
   await gotoHydrated(page, '/')
   await page.getByRole('button', { name: /^Diese Woche/ }).click()
@@ -455,6 +458,15 @@ async function parallax(detail: Locator) {
   return { by, moved, opacityAtTop, ...look }
 }
 
+// Waits for the compact bar to have settled in. Clicked while it is still
+// coming in from above, partly off-screen, Playwright scrolls it into view:
+// for a sticky bar that scrolls the detail back to the top, where the bar
+// goes away again.
+async function barSettled(bar: Locator) {
+  await expect(bar).toBeVisible()
+  await bar.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+}
+
 // How far the detail scrolls until its image has gone.
 async function imageHeight(detail: Locator) {
   return (await detail.locator('[data-detail-image]').boundingBox())!.height
@@ -498,6 +510,7 @@ test('once the image has scrolled away, a compact bar settles in with close, the
   // "Bearbeiten" from the bar opens edit mode; leaving it, focus goes back
   // to the header's "Bearbeiten", up top.
   await scrollDetailTo(detail, below)
+  await barSettled(bar)
   await bar.getByRole('button', { name: 'Bearbeiten' }).click()
   await expect(detail.getByLabel('Titel')).toBeFocused()
   await page.keyboard.press('Escape')
@@ -508,6 +521,7 @@ test('once the image has scrolled away, a compact bar settles in with close, the
   await scrollDetailTo(detail, below)
   const morphs = () => page.evaluate(() => (window as unknown as { morphs: number }).morphs)
   const morphsBefore = await morphs()
+  await barSettled(bar)
   await bar.getByRole('button', { name: 'Schließen' }).click()
   await expect(detail).toBeHidden()
   await expect(page.getByRole('link', { name: LONG })).toBeFocused()

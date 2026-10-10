@@ -98,7 +98,9 @@ test('the Owner deletes the Board only after typing its name', async ({ page, br
   await name.fill('Wegwerfboard')
   await forGood.click()
 
-  await expect(page).not.toHaveURL(new RegExp(boardId))
+  // The page leaves only once the Board is deleted. Its Address is readable
+  // (/b/wegwerfboard/settings), without the id, so wait for /settings to go.
+  await expect(page).not.toHaveURL(/settings/)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   expect((await page.request.get(`/api/boards/${boardId}`)).status()).toBe(404)
 })
