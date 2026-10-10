@@ -295,6 +295,22 @@ watch(() => route.params.dish, (dish) => {
 
 const adding = ref(false)
 
+// Something shared to malkochen (pages/share.vue) arrives as ?add=<link>,
+// empty if nothing shared was a web link: Add Dish opens with it filled in.
+// The address drops it at once, so going back or reloading doesn't open
+// Add Dish again; the link goes once the sheet has closed.
+const sharedLink = ref<string | null>(null)
+onMounted(() => {
+  const { add, ...rest } = route.query
+  if (typeof add !== 'string') return
+  sharedLink.value = add
+  adding.value = true
+  void navigateTo({ path: route.path, query: rest, hash: route.hash }, { replace: true })
+})
+watch(adding, (isOpen) => {
+  if (!isOpen) sharedLink.value = null
+})
+
 // Search (PRD story 36): the magnifier opens a field; while it holds a
 // query, what the search found takes the place of the Columns.
 const searchOpen = ref(false)
@@ -761,6 +777,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <AddDishSheet
       v-model:open="adding"
       :board-id="board.id"
+      :shared-link="sharedLink"
       @added="onAdded"
     />
 

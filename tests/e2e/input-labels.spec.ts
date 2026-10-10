@@ -101,7 +101,6 @@ for (const scheme of ['light', 'dark'] as const) {
     sheet = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
     await expectLabelInBorder(page, sheet.getByLabel('Titel'), 'Titel')
     await expectLabelInBorder(page, sheet.getByLabel('Notiz'), 'Notiz')
-    await expectLabelInBorder(page, sheet.getByLabel('Board'), 'Board')
     await page.keyboard.press('Escape')
     await expect(sheet).toHaveCount(0)
 

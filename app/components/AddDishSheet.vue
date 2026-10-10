@@ -13,13 +13,16 @@ import { webLink } from '~/utils/web-link'
 // and shows a preview with the image and an editable Suggested Title. Or
 // "Ohne Link hinzufügen": a title, a note and a Placeholder Image. The image
 // dialog also takes the Member's own photo ("Eigenes Foto"). Either way
-// the Member picks the Board (the one they are on) and saves, through the
+// the Member saves to the Board they are on (a Member of several Boards
+// may pick another), through the
 // client Board module. If the link is already on that Board, a warning names
 // the Dish and its Column: open it, or save anyway. Saved, it passes on what
 // the module answered and where the image showed, for the Dish to fly onto
 // the Board from there.
 const open = defineModel<boolean>('open', { required: true })
-const props = defineProps<{ boardId: string }>()
+// `sharedLink`: a link shared to malkochen (BoardScreen), filled in when the
+// sheet opens and looked up at once, as if pasted.
+const props = defineProps<{ boardId: string, sharedLink?: string | null }>()
 const emit = defineEmits<{ added: [result: BoardResult, from: DOMRect | null] }>()
 const t = useStrings()
 const boardModule = useBoardModule()
@@ -189,6 +192,10 @@ watch(open, async (isOpen) => {
   photo.value = null
   boardId.value = props.boardId
   failed.value = false
+  if (props.sharedLink) {
+    lookup.pasted()
+    link.value = props.sharedLink
+  }
   boards.value = await $fetch<BoardSummary[]>('/api/boards').catch(() => [])
 })
 
@@ -484,7 +491,7 @@ async function save() {
         </AppField>
 
         <AppField
-          v-if="boards.length"
+          v-if="boards.length > 1"
           :label="t.addDish.board"
           :control-id="boardSelectId"
         >

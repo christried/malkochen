@@ -15,5 +15,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
   if (status === 403) return navigateTo({ path: '/login', query: { error: 'not_allowed' } })
-  if (error.value) return navigateTo('/login')
+  // Something shared to malkochen (pages/share.vue) is kept through sign-in.
+  if (error.value) return navigateTo(to.path === '/share' ? { path: '/login', query: { redirect: to.fullPath } } : '/login')
 })
