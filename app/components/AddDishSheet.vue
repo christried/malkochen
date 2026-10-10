@@ -14,11 +14,10 @@ import { webLink } from '~/utils/web-link'
 // "Ohne Link hinzufügen": a title, a note and a Placeholder Image. The image
 // dialog also takes the Member's own photo ("Eigenes Foto"). Either way
 // the Member saves to the Board they are on (a Member of several Boards
-// may pick another), through the
-// client Board module. If the link is already on that Board, a warning names
-// the Dish and its Column: open it, or save anyway. Saved, it passes on what
-// the module answered and where the image showed, for the Dish to fly onto
-// the Board from there.
+// may pick another), through the client Board module. If the link is
+// already on that Board, a warning names the Dish and its Column: open it,
+// or save anyway. Saved, it passes on what the module answered and where
+// the image showed, for the Dish to fly onto the Board from there.
 const open = defineModel<boolean>('open', { required: true })
 // `sharedLink`: a link shared to malkochen (BoardScreen), filled in when the
 // sheet opens and looked up at once, as if pasted.

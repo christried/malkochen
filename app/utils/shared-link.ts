@@ -19,10 +19,11 @@ function firstLink(value: string | undefined): string | null {
   return found ? webLink(found) : null
 }
 
-// The link to add: the first http(s) link in the URL, else the text, else
-// the title (apps differ in where they put it). Null without one.
+// The link to add: the URL as shared, if it is a web link; else the first
+// http(s) link in the URL, the text, then the title (apps differ in where
+// they put it). Null without one.
 export function sharedLink({ url, text, title }: SharedContent): string | null {
-  return firstLink(url) ?? firstLink(text) ?? firstLink(title)
+  return (url ? webLink(url) : null) ?? firstLink(url) ?? firstLink(text) ?? firstLink(title)
 }
 
 // Where sign-in returns to: the share route with what was shared, so the

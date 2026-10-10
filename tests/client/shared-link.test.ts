@@ -23,6 +23,10 @@ test('a link right before closing punctuation stops before it', () => {
   expect(sharedLink({ text: '„https://blog.example/dal“' })).toBe('https://blog.example/dal')
 })
 
+test('a shared URL keeps what ends it; only links in text lose closing punctuation', () => {
+  expect(sharedLink({ url: 'https://de.wikipedia.org/wiki/Dal_(Gericht)' })).toBe('https://de.wikipedia.org/wiki/Dal_(Gericht)')
+})
+
 test('a URL that isn\'t a web link falls through to the text', () => {
   expect(sharedLink({ url: 'intent://foo', text: 'https://youtube.com/shorts/1' })).toBe('https://youtube.com/shorts/1')
 })
