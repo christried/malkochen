@@ -7,10 +7,14 @@ import { expectCardShape } from './card-shape'
 import { ANY_CHEER, cheer, confetti, confettiOrigin, gekochtPill } from './celebration'
 import { gotoHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
+import { removeUsers } from './seed'
 
 // Several Boards (PRD stories 12, 39, 46, 61): the Board switcher, "Neues
 // Board", and moving a Dish to another Board. Annie is used by this file
-// only; each test makes the Boards it needs.
+// only; each test makes the Boards it needs, from none: CI's retry of a
+// test runs it again on the same database, where Boards of the same name
+// from the try before would be there twice.
+test.beforeEach(() => removeUsers(ALLOWLISTED[9]))
 
 // The switcher: the Board's name at the top, which opens the list.
 function switcher(page: Page) {

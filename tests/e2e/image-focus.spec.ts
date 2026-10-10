@@ -6,7 +6,7 @@ import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
-import { landingBoardId, removeStoredImages, seedDish, storedImage } from './seed'
+import { landingBoardId, removeStoredImages, removeUsers, seedDish, storedImage } from './seed'
 
 // A Dish's image shifted within its frame (its focus point): in the image
 // dialog, a Source image or own photo is dragged, scrolled or moved with the
@@ -20,6 +20,7 @@ const MARIA = ALLOWLISTED[27]
 const INGE = ALLOWLISTED[28]
 const TIKTOK = 'https://www.tiktok.com/@veganschnitzel/video/7301234567890123456'
 
+test.beforeAll(() => removeUsers(MARIA, INGE))
 test.afterAll(removeStoredImages)
 
 function imageDialog(page: Page) {

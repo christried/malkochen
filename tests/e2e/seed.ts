@@ -94,6 +94,32 @@ export async function resetBoard(page: Page) {
   }
 }
 
+// Deletes these users and every Board they're a Member of, so each one's
+// next sign-in is a first one again: a new user with only "Meine Küche" and
+// no Profile Picture of their own. For CI's retry, which runs a failed test
+// again on the same database: it has to start where the first try did, not
+// among the Boards and Dishes that try left. A serial file retries all its
+// tests, so it calls this before the first (test.beforeAll); a file of
+// tests that each start from nothing, before each (test.beforeEach).
+export async function removeUsers(...emails: string[]) {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    await client.query('begin')
+    await client.query(
+      `delete from board where id in (
+         select m.board_id from membership m join "user" u on u.id = m.user_id where u.email = any($1)
+       )`,
+      [emails],
+    )
+    await client.query('delete from "user" where email = any($1)', [emails])
+    await client.query('commit')
+  }
+  finally {
+    await client.end()
+  }
+}
+
 // Empties a Board and gives it these Columns, in order, the last one the
 // Gekocht Column. Inside the caller's transaction.
 async function replaceColumns(client: pg.Client, boardId: string, columns: { name: string, subtitle: string | null }[]) {

@@ -3,7 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
-import { landingBoardId } from './seed'
+import { landingBoardId, removeUsers } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
 
 // Share to malkochen (issue #204): the installed app's share target. Android
@@ -12,6 +12,7 @@ import { stubSourceLookup } from './source-lookup-stub'
 // Stephanie, Gladys and Shafi are used by this file only.
 test.describe.configure({ mode: 'serial' })
 test.use({ colorScheme: 'light' })
+test.beforeAll(() => removeUsers(ALLOWLISTED[39], ALLOWLISTED[40], ALLOWLISTED[41]))
 
 const TIKTOK = 'https://www.tiktok.com/@veganfood/video/7301234567890123456'
 const REEL = 'https://www.instagram.com/reel/C1a2b3c4d5e/?igsh=abc'

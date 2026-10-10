@@ -3,13 +3,14 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated } from './hydration'
-import { seedDish } from './seed'
+import { removeUsers, seedDish } from './seed'
 
 // Searching a Board (PRD story 36) on a phone: the magnifier opens a field,
 // matches from every Column replace the Columns, and a query that finds
 // nothing says so. Mary's Board is used by this file only.
 
 test.describe.configure({ mode: 'serial' })
+test.beforeAll(() => removeUsers(ALLOWLISTED[7]))
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 

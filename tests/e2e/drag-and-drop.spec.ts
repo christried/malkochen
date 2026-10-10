@@ -5,7 +5,7 @@ import { signIn } from './auth'
 import { column, tab, titles } from './board'
 import { ANY_CHEER, recordCelebrations } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { resetBoard, seedDish } from './seed'
+import { removeUsers, resetBoard, seedDish } from './seed'
 
 // Dragging Dishes (PRD stories 31, 32, 34, 79): with the mouse on desktop,
 // within a Column and across lanes; with a long-press on phones, within the
@@ -13,6 +13,7 @@ import { resetBoard, seedDish } from './seed'
 // and show their drop border in full, and the cards make room smoothly.
 // Katherine's Board is used by this file only.
 test.describe.configure({ mode: 'serial' })
+test.beforeAll(() => removeUsers(ALLOWLISTED[5]))
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const PHONE = { width: 390, height: 844 }
