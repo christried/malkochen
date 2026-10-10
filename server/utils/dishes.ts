@@ -307,9 +307,11 @@ export async function undoCooking(cookingId: string, dishId: string, userId: str
     // Only once the Cooking is gone: the delete above went through.
     renumberForDrop(d, dishId, columnId, index, and(movable, cookingGone)),
   ])
+  // Also when an undo just before this one took the Cooking back already:
+  // the Dish is back, so this one answers where, too.
   const [kept] = await db.select({ id: cooking.id }).from(cooking).where(eq(cooking.id, cookingId))
   if (kept) return null
-  return withPlacement(await findDish(and(onMembersBoard(dishId, userId), eq(dish.columnId, columnId))))
+  return withPlacement(await findDish(onMembersBoard(dishId, userId)))
 }
 
 // The Dish `target`, if the Column is on a Board the user is a Member of:

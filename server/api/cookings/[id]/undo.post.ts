@@ -22,13 +22,11 @@ export default defineEventHandler(async (event): Promise<PlacedDish> => {
   const user = requireUser(event)
   const dishId = await cookingDishId(cookingId, user.id)
   if (!dishId) throw cookingNotFound()
-  if (!await isUndoableCooking(cookingId, user.id)) throw notUndoable()
   const undone = await undoCooking(cookingId, dishId, user.id, parsed.data.columnId, parsed.data.index)
   if (undone) return undone
   // The Dish, or the Cooking from its Cooking History, deleted meanwhile:
   // gone.
   if (!await cookingDishId(cookingId, user.id)) throw cookingNotFound()
-  // Cooked again meanwhile.
   if (!await isUndoableCooking(cookingId, user.id)) throw notUndoable()
   throw createError({ statusCode: 400, statusMessage: 'Dish not in Gekocht, or Column not on one of your Boards' })
 })
