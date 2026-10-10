@@ -177,6 +177,8 @@ What the security pass (#139) found, most severe first. Each is its own ticket l
 | #191 | Better Auth's update-user; unused auth endpoints off | Medium. `server/utils/auth.ts` |
 | #204 | Share to malkochen (Android) | From Phase 9 (#201), pulled forward by the user to come right after #191 |
 | #225 | Flaky browser tests: causes and cost of fixing | Pulled forward by the user as urgent: flakes hold up CI. Test-only fixes in its PR; bigger ones become new tickets, added here |
+| #228 | Browser tests: CI's retry of a serial spec file starts clean | From #225. Test only; makes CI's one retry actually rescue a flake |
+| #227 | The app can reopen the Board just left, not the one opened last | From #225. App change (polling vs. opening); reproduce first |
 | #197 | Undoing a Cooking deletes any Cooking for good | Low. `undoCooking`; the app doesn't change |
 | #193 | Refuse /api writes from other origins | Low. A middleware next to `server/middleware/auth.ts` |
 | #194 | Found images checked by content and re-encoded | Low. Reuses `server/image-store/photo.ts` |
