@@ -65,10 +65,9 @@ pnpm typecheck
 pnpm lint
 ```
 
-CI (`.github/workflows/ci.yml`) runs all four in one job on every PR (not on the
-merge to `main`), against a Postgres service container, on the self-hosted
-runner `malkochen-wsl` (WSL Ubuntu with Docker on the maintainer's PC). With
-that PC off, runs wait in the queue.
+CI (`.github/workflows/ci.yml`) runs all four on every PR (not on the merge to
+`main`), on GitHub-hosted runners against a Postgres service container: lint,
+typecheck and Vitest in one job, the browser tests in four shards beside it.
 
 Both suites create a `malkochen_test_*` database from `TEST_DATABASE_ADMIN_URL`,
 apply the migrations, and drop it afterwards; leftovers of killed runs are
