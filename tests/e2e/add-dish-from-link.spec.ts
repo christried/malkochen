@@ -72,7 +72,8 @@ test('a pasted link shows a loading state, then a preview with image, editable t
   await expect(sheet.locator('[data-creator]')).toHaveText('Veröffentlicht von Vegan Food Club')
   // With an image found, the Placeholder picker stays closed.
   await expect(sheet.getByRole('radiogroup', { name: 'Bild' })).toHaveCount(0)
-  await expect(sheet.getByLabel('Board')).toContainText('Meine Küche')
+  // A Member on one Board isn't asked which Board.
+  await expect(sheet.getByLabel('Board')).toHaveCount(0)
 
   await sheet.getByLabel('Titel').fill('Knusprige Tofu-Bowl')
   await sheet.getByLabel('Notiz').fill('mit Erdnusssoße')

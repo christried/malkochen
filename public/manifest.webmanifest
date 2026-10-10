@@ -10,6 +10,15 @@
   "orientation": "any",
   "background_color": "#FCD980",
   "theme_color": "#131211",
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/icons/icon-192.png",

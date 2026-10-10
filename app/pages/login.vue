@@ -2,6 +2,7 @@
 import type { InviteView } from '~~/server/utils/invites'
 import { boardLabel } from '~~/shared/board'
 import type { Placeholder } from '~~/shared/placeholders'
+import { shareReturnPath } from '~/utils/shared-link'
 
 // Sign-in, and the "Not unlocked" screen for a refused one: Better Auth sends
 // a refused Google sign-in back here as /login?error=not_allowed
@@ -15,13 +16,16 @@ const signingIn = ref(false)
 async function startGoogleSignIn() {
   signingIn.value = true
   try {
-    await signInWithGoogle()
+    await signInWithGoogle(returnPath.value)
   }
   catch {
     signingIn.value = false
   }
 }
 const route = useRoute()
+// Back to what was shared to malkochen, if that's what brought the visitor
+// here (middleware/auth.global.ts); else to the Board used last.
+const returnPath = computed(() => shareReturnPath(typeof route.query.redirect === 'string' ? route.query.redirect : undefined))
 
 const notUnlocked = computed(() => route.query.error === 'not_allowed')
 const failed = computed(() => Boolean(route.query.error) && !notUnlocked.value)
