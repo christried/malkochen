@@ -8,10 +8,12 @@ export const E2E_ORIGIN = 'http://localhost:3100'
 export const ALLOWLISTED = ['ada@example.com', 'grace@example.com', 'linus@example.com', 'margaret@example.com', 'barbara@example.com', 'katherine@example.com', 'hedy@example.com', 'mary@example.com', 'ida@example.com', 'annie@example.com', 'joan@example.com', 'radia@example.com', 'frances@example.com', 'sophie@example.com', 'evelyn@example.com', 'alan@example.com', 'dorothy@example.com', 'ruth@example.com', 'jean@example.com', 'emmy@example.com', 'lise@example.com', 'hertha@example.com', 'rosalind@example.com', 'chien-shiung@example.com', 'katalin@example.com', 'hypatia@example.com', 'mileva@example.com', 'maria@example.com', 'inge@example.com', 'grete@example.com', 'youyou@example.com', 'maryam@example.com', 'jocelyn@example.com', 'hilde@example.com', 'marie@example.com', 'emilie@example.com', 'rachel@example.com', 'mae@example.com', 'florence@example.com'] as const
 
 // A first sign-in's name and Google photo, as Google would send them; later
-// sign-ins keep the first. The dev sign-in takes them for the tests.
+// sign-ins keep the first. The dev sign-in takes them for the tests, and
+// whether Google says the email is verified (yes unless said otherwise).
 export interface Profile {
   name?: string
   image?: string
+  emailVerified?: boolean
 }
 
 export function testAuthEnv(baseUrl: string): Record<string, string> {

@@ -22,6 +22,24 @@ describe('sign-in', () => {
     expect(res.headers.getSetCookie()).toEqual([])
   })
 
+  test('a sign-in whose email Google has not verified is refused like one off the Allowlist', async () => {
+    const res = await devSignIn(ALLOWLISTED[37], { emailVerified: false })
+
+    expect(res.status).toBe(403)
+    expect((await res.json()).code).toBe('not_allowed')
+    expect(res.headers.getSetCookie()).toEqual([])
+  })
+
+  test('a returning user whose email Google no longer calls verified is refused too', async () => {
+    await signIn(ALLOWLISTED[38])
+
+    const res = await devSignIn(ALLOWLISTED[38], { emailVerified: false })
+
+    expect(res.status).toBe(403)
+    expect((await res.json()).code).toBe('not_allowed')
+    expect(res.headers.getSetCookie()).toEqual([])
+  })
+
   test('the API refuses callers without a session', async () => {
     expect((await anonymous().fetch('/api/boards/landing')).status).toBe(401)
     expect((await anonymous().fetch('/api/me')).status).toBe(401)
