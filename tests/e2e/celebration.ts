@@ -11,10 +11,10 @@ export function confetti(scope: Page | Locator) {
   return scope.locator('[data-confetti-piece]')
 }
 
-interface SeenCelebration {
-  // The most confetti pieces ever out at once.
-  confetti: number
-  // Topfbert's cheers, each new one as it came.
+interface SeenCelebrations {
+  // Each confetti burst, by its number of pieces.
+  confetti: number[]
+  // Each time Topfbert popped up, his cheer.
   cheers: string[]
 }
 
@@ -24,15 +24,18 @@ interface SeenCelebration {
 // this instead.
 export async function recordCelebrations(page: Page) {
   await page.addInitScript(() => {
-    const w = window as unknown as { celebrations: SeenCelebration }
-    const seen: SeenCelebration = w.celebrations = { confetti: 0, cheers: [] }
-    new MutationObserver(() => {
-      seen.confetti = Math.max(seen.confetti, document.querySelectorAll('[data-confetti-piece]').length)
-      const cheer = document.querySelector('[data-topfbert] [data-cheer]')?.textContent?.trim()
-      if (cheer && seen.cheers.at(-1) !== cheer) seen.cheers.push(cheer)
-    }).observe(document, { childList: true, subtree: true, characterData: true })
+    const w = window as unknown as { celebrations: SeenCelebrations }
+    const seen: SeenCelebrations = w.celebrations = { confetti: [], cheers: [] }
+    const within = (node: Element, selector: string) => [...(node.matches(selector) ? [node] : []), ...node.querySelectorAll(selector)]
+    new MutationObserver((records) => {
+      for (const node of records.flatMap(r => [...r.addedNodes])) {
+        if (!(node instanceof Element)) continue
+        for (const burst of within(node, '[data-confetti]')) seen.confetti.push(burst.querySelectorAll('[data-confetti-piece]').length)
+        for (const him of within(node, '[data-topfbert]')) seen.cheers.push(him.querySelector('[data-cheer]')?.textContent?.trim() ?? '')
+      }
+    }).observe(document, { childList: true, subtree: true })
   })
-  return () => page.evaluate(() => (window as unknown as { celebrations: SeenCelebration }).celebrations)
+  return () => page.evaluate(() => (window as unknown as { celebrations: SeenCelebrations }).celebrations)
 }
 
 // Where the first confetti piece bursts from.

@@ -464,7 +464,9 @@ async function parallax(detail: Locator) {
 // goes away again.
 async function barSettled(bar: Locator) {
   await expect(bar).toBeVisible()
-  await bar.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+  // A transition cut short rejects `finished`: then the bar is on its way
+  // out again, which the click's own wait reports.
+  await bar.evaluate(el => Promise.allSettled(el.getAnimations().map(a => a.finished)))
 }
 
 // How far the detail scrolls until its image has gone.

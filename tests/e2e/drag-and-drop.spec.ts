@@ -203,7 +203,7 @@ test('phone: a Dish dropped on the Gekocht tab is cooked, and that celebrates', 
   await touchDrag(page, card(page, 'Ramen'), await center(tab(page, 'Gekocht 0')))
 
   await expect(tab(page, 'Gekocht 1')).toBeVisible()
-  await expect.poll(celebrations).toEqual({ confetti: 14, cheers: [expect.stringMatching(ANY_CHEER)] })
+  await expect.poll(celebrations).toEqual({ confetti: [14], cheers: [expect.stringMatching(ANY_CHEER)] })
 })
 
 test('desktop: a Dish dropped in the Gekocht Column is cooked, and that celebrates', async ({ page }) => {
@@ -216,7 +216,7 @@ test('desktop: a Dish dropped in the Gekocht Column is cooked, and that celebrat
   await mouseDrag(page, card(page, 'Bowl'), { x: ramen.x, y: ramen.box.y + ramen.box.height + 40 })
 
   await expect(titles(page, 'Gekocht')).toHaveText(['Ramen', 'Bowl'])
-  await expect.poll(celebrations).toEqual({ confetti: 14, cheers: [expect.stringMatching(ANY_CHEER)] })
+  await expect.poll(celebrations).toEqual({ confetti: [14], cheers: [expect.stringMatching(ANY_CHEER)] })
 })
 
 test('desktop: a Column with one Dish is at least as tall as an empty one', async ({ page }) => {

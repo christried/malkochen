@@ -135,13 +135,13 @@ test('"Gekocht ✓" celebrates: veggie confetti, Topfbert in a pill at the top u
   const cook = page.getByRole('button', { name: 'Gekocht ✓: „Ramen“' })
   // The button's middle as it is clicked: the cards may still be rising in
   // (card-rise), a few pixels lower when measured before the click.
+  type Pressed = { pressedAt?: { x: number, y: number } }
   await cook.evaluate((el) => {
-    (window as unknown as { pressedAt: Promise<{ x: number, y: number }> }).pressedAt = new Promise((resolve) => {
-      el.addEventListener('click', () => {
-        const box = el.getBoundingClientRect()
-        resolve({ x: box.x + box.width / 2, y: box.y + box.height / 2 })
-      }, { once: true, capture: true })
-    })
+    el.addEventListener('click', () => {
+      const box = el.getBoundingClientRect()
+      const w = window as unknown as Pressed
+      w.pressedAt = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }, { once: true, capture: true })
   })
 
   await cook.click()
@@ -149,9 +149,10 @@ test('"Gekocht ✓" celebrates: veggie confetti, Topfbert in a pill at the top u
   // 14 pieces fly up from the button and fall off the screen, once.
   await expect(confetti(page)).toHaveCount(14)
   const origin = await confettiOrigin(page)
-  const button = await page.evaluate(() => (window as unknown as { pressedAt: Promise<{ x: number, y: number }> }).pressedAt)
-  expect(Math.abs(origin.x - button.x)).toBeLessThan(2)
-  expect(Math.abs(origin.y - button.y)).toBeLessThan(2)
+  const button = await page.evaluate(() => (window as unknown as Pressed).pressedAt)
+  expect(button, 'the click reached the button').toBeDefined()
+  expect(Math.abs(origin.x - button!.x)).toBeLessThan(2)
+  expect(Math.abs(origin.y - button!.y)).toBeLessThan(2)
   // The pill: Topfbert with his cheer, and "Gekocht ✓", at the top; no
   // second line on its own Board.
   const pill = gekochtPill(page)
