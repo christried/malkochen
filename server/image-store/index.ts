@@ -3,12 +3,15 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { put } from '@vercel/blob'
 import { createHttp } from '../source-lookup/http'
+import { FOUND_IMAGE_KINDS, preparePhoto } from './photo'
 
 // Image Store: copies a Source image into our own storage when a Dish is
 // saved, because third-party image links expire (TikTok's within ~48 h). A
 // Dish's image is therefore a stored image or a Placeholder, never a
 // third-party link. Downloads go through Source Lookup's Http, so private
-// hosts are refused on every redirect hop.
+// hosts are refused on every redirect hop. The copy is prepared like an Own
+// Photo before it is stored (photo.ts), never trusting the type the remote
+// server claims.
 
 // Given a third-party image URL, return the URL of our stored copy, or null if
 // it could not be copied. Never rejects.
@@ -26,13 +29,17 @@ export interface ImageStoreOptions {
   // Time budget for the download, across all redirects.
   timeoutMs?: number
   maxBytes?: number
+  // Larger images aren't unpacked (photo.ts has the default).
+  maxPixels?: number
   fetch?: typeof fetch
   // Told why a copy failed; the copy itself still just answers null.
   onFailure?: (imageUrl: string, reason: string) => void
 }
 
-// Raster formats only: an SVG served from our own origin could run script.
-// Media type → file extension.
+// What a download may claim to be: raster formats only. The claim alone
+// counts for nothing, the bytes are checked before they are stored. Media
+// type → file extension: copies stored before they were re-encoded kept
+// their type in their name, and the disk route still serves those.
 export const IMAGE_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -57,9 +64,10 @@ export function createImageStore(options: ImageStoreOptions): ImageStore {
     const http = createHttp(AbortSignal.timeout(timeoutMs), options.fetch)
     const found = await http.bytes(imageUrl, type => mediaType(type) in IMAGE_TYPES, maxBytes).catch(() => null)
     if (!found) return fail(imageUrl, 'download failed (unreachable, not an image, empty or too large)')
-    const type = mediaType(found.contentType)
+    const prepared = await preparePhoto(found.bytes, { maxBytes, maxPixels: options.maxPixels, kinds: FOUND_IMAGE_KINDS })
+    if (!prepared.ok) return fail(imageUrl, `not stored: ${prepared.refusal}`)
     try {
-      return await options.storage.save(`dishes/${randomUUID()}.${IMAGE_TYPES[type]}`, found.bytes, type)
+      return await options.storage.save(`dishes/${randomUUID()}.jpg`, prepared.bytes, prepared.contentType)
     }
     catch (error) {
       return fail(imageUrl, `storage failed: ${error instanceof Error ? error.message : String(error)}`)

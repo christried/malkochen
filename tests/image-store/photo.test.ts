@@ -74,6 +74,8 @@ test.each([
   ['a JPEG that breaks off in its header', async () => (await phoneJpeg()).subarray(0, 200)],
   ['an SVG', () => Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')],
   ['a GIF', () => photo(20, 20).gif().toBuffer()],
+  // Found images may be GIF or AVIF (image-store.test.ts); a phone's photo isn't.
+  ['an AVIF', () => photo(20, 20).avif().toBuffer()],
   ['a PDF', () => Buffer.from('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n')],
 ])('%s is refused as not an image', async (_, make) => {
   expect(await preparePhoto(await make())).toEqual({ ok: false, refusal: 'not-an-image' })

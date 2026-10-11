@@ -13,6 +13,10 @@ import type { Storage } from '.'
 // type the browser claims): JPEG, PNG, WebP or HEIC, nothing else. It is then
 // turned upright, scaled down to fit PHOTO_MAX_SIDE and stored as a JPEG
 // without any of its metadata, above all not where it was taken.
+//
+// A found image (the Source image Source Lookup found) goes through the same
+// preparation before it is stored (index.ts), only taking the formats the
+// web serves instead of the ones phones save. It ends up a still JPEG too.
 
 // Large enough for the Dish detail on a wide screen at 2× density.
 export const PHOTO_MAX_SIDE = 1600
@@ -35,6 +39,9 @@ export type PreparedPhoto
 export interface PhotoLimits {
   maxBytes?: number
   maxPixels?: number
+  // The formats taken, told apart by their first bytes. By default the ones
+  // a phone saves a photo in.
+  kinds?: readonly PhotoKind[]
 }
 
 export interface PhotoShape {
@@ -43,10 +50,21 @@ export interface PhotoShape {
   square?: number
 }
 
-type PhotoKind = 'jpeg' | 'png' | 'webp' | 'heic'
+export type PhotoKind = 'jpeg' | 'png' | 'webp' | 'heic' | 'gif' | 'avif'
+
+// What a phone saves a photo as (a GIF isn't a photo).
+const OWN_PHOTO_KINDS: readonly PhotoKind[] = ['jpeg', 'png', 'webp', 'heic']
+
+// What a found image may be: what the web serves images as.
+export const FOUND_IMAGE_KINDS: readonly PhotoKind[] = ['jpeg', 'png', 'webp', 'gif', 'avif']
+
+// The name sharp gives each format it reads itself (AVIF is HEIF coded in AV1).
+const SHARP_FORMATS: Record<Exclude<PhotoKind, 'heic'>, string> = { jpeg: 'jpeg', png: 'png', webp: 'webp', gif: 'gif', avif: 'heif' }
 
 // The brands a HEIC file names at its start (HEVC-coded HEIF, as phones save).
 const HEIC_BRANDS = new Set(['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'])
+// The brands an AVIF file names at its start (a still, or an image sequence).
+const AVIF_BRANDS = new Set(['avif', 'avis'])
 
 // What the file's first bytes say it is.
 function kindOf(bytes: Uint8Array): PhotoKind | null {
@@ -54,7 +72,12 @@ function kindOf(bytes: Uint8Array): PhotoKind | null {
   if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'jpeg'
   if (ascii(0, 8) === '\x89PNG\r\n\x1A\n') return 'png'
   if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') return 'webp'
-  if (ascii(4, 8) === 'ftyp' && HEIC_BRANDS.has(ascii(8, 12))) return 'heic'
+  if (ascii(4, 8) === 'ftyp') {
+    const brand = ascii(8, 12)
+    if (HEIC_BRANDS.has(brand)) return 'heic'
+    if (AVIF_BRANDS.has(brand)) return 'avif'
+  }
+  if (ascii(0, 6) === 'GIF87a' || ascii(0, 6) === 'GIF89a') return 'gif'
   return null
 }
 
@@ -81,10 +104,11 @@ async function heicInput(bytes: Uint8Array, maxPixels: number): Promise<Sharp> {
 async function input(kind: PhotoKind, bytes: Uint8Array, maxPixels: number): Promise<Sharp> {
   if (kind === 'heic') return heicInput(bytes, maxPixels)
   const sharp = await loadSharp()
-  // 'error', not 'warning': phones write JPEGs with harmless quirks.
+  // 'error', not 'warning': phones write JPEGs with harmless quirks. Only an
+  // animation's first frame is read, so what comes out is a still.
   const image = sharp(bytes, { failOn: 'error', limitInputPixels: maxPixels })
   // The content must really be what its first bytes say.
-  if ((await image.metadata()).format !== kind) throw new Error('not what it starts like')
+  if ((await image.metadata()).format !== SHARP_FORMATS[kind]) throw new Error('not what it starts like')
   return image
 }
 
@@ -99,7 +123,7 @@ async function squareSide(image: Sharp, side: number): Promise<number> {
 export async function preparePhoto(bytes: Uint8Array, options: PhotoLimits & PhotoShape = {}): Promise<PreparedPhoto> {
   if (bytes.length > (options.maxBytes ?? PHOTO_MAX_BYTES)) return { ok: false, refusal: 'too-large' }
   const kind = kindOf(bytes)
-  if (!kind) return { ok: false, refusal: 'not-an-image' }
+  if (!kind || !(options.kinds ?? OWN_PHOTO_KINDS).includes(kind)) return { ok: false, refusal: 'not-an-image' }
   try {
     const image = await input(kind, bytes, options.maxPixels ?? MAX_PIXELS)
     const side = options.square ? await squareSide(image, options.square) : 0
