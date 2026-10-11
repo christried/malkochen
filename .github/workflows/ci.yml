@@ -88,9 +88,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-traces-${{ matrix.shard }}
-          # Playwright writes .last-run.json on every run, failed or not.
-          path: |
-            test-results/
-            !test-results/.last-run.json
+          # Hidden files stay out, so the .last-run.json Playwright writes on
+          # every run uploads nothing by itself.
+          path: test-results/
           if-no-files-found: ignore
+          # A re-run job uploads under the same name.
+          overwrite: true
           retention-days: 14
