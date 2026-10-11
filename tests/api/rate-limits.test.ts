@@ -1,6 +1,6 @@
 import pg from 'pg'
 import sharp from 'sharp'
-import { expect, inject, test } from 'vitest'
+import { beforeAll, expect, inject, test } from 'vitest'
 import { RATE_LIMITS, type RateLimited } from '../../server/rate-limits'
 import { landingBoard, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
@@ -24,12 +24,31 @@ const lookUp = (c: Caller) => c.fetch(`/api/source-lookup?${new URLSearchParams(
 const ownPhoto = async (c: Caller) => sendPhoto(c, `/api/boards/${(await landingBoard(c)).id}/photos`, await photo())
 const profilePicture = async (c: Caller) => sendPhoto(c, '/api/me/pictures', await photo())
 
+// Rachel's Dish whose image is reloaded, added before any limit is used up.
+let reloadedDish = ''
+beforeAll(async () => {
+  const c = await signIn(rachel)
+  const added = await postDish(c, (await landingBoard(c)).id, { title: 'Dal', placeholder: 'bowl' })
+  reloadedDish = (await added.json() as { id: string }).id
+})
+
+// "Bild neu laden": the image found for the Dish's link, copied. The ticket
+// is no good, so nothing is copied, but the call counts all the same.
+function reloadImage(c: Caller) {
+  return c.fetch(`/api/dishes/${reloadedDish}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ imageUrl: 'https://bilder.example/dal.jpg', imageTicket: 'no-good' }),
+  })
+}
+
 // Each limited call, made once, with what it answers when it goes through.
 const calls: [string, RateLimited, number, (caller: Caller) => Promise<Response>][] = [
   ['Source Lookup', 'source-lookup', 200, lookUp],
-  ['an own photo', 'upload', 201, ownPhoto],
+  ['an Own Photo', 'upload', 201, ownPhoto],
   ['a Profile Picture', 'upload', 201, profilePicture],
   ['adding a Dish', 'add-dish', 201, async c => postDish(c, (await landingBoard(c)).id, { title: 'Dal', placeholder: 'bowl' })],
+  ['"Bild neu laden"', 'add-dish', 200, reloadImage],
   ['creating a Board', 'create-board', 201, c => c.fetch('/api/boards', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -58,7 +77,7 @@ test('one user over a limit doesn\'t limit another', async () => {
   await endLimitWindow(rachel, 'source-lookup')
 })
 
-test('own photos and Profile Pictures share one limit', async () => {
+test('Own Photos and Profile Pictures share one limit', async () => {
   const user = await signIn(rachel)
   await useUpLimit(rachel, 'upload', RATE_LIMITS.upload.calls - 1)
 

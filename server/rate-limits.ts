@@ -6,10 +6,11 @@
 export const RATE_LIMITS = {
   // Up to ~5 outbound requests and 8 s of function time each.
   'source-lookup': { calls: 60, window: '10 minutes' },
-  // Own photos and Profile Pictures together: decoding up to 50 MP, and a
+  // Own Photos and Profile Pictures together: decoding up to 50 MP, and a
   // Blob write.
   'upload': { calls: 30, window: '1 hour' },
-  // A Dish from a link copies its image: a download and a Blob write.
+  // A Dish from a link copies its image: a download and a Blob write. So
+  // does "Bild neu laden" on a Dish, which counts here too.
   'add-dish': { calls: 200, window: '1 hour' },
   'create-board': { calls: 20, window: '1 day' },
 } as const

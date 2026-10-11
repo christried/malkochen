@@ -2,7 +2,8 @@ import pg from 'pg'
 import { inject } from 'vitest'
 
 // What no client can do, so the tests do it in the server's database: let
-// time pass for one thing. Everything else goes over HTTP (global-setup.ts).
+// time pass for one thing, or make many calls at once (a rate limit used
+// up). Everything else goes over HTTP (global-setup.ts).
 
 // Makes a Cooking `minutes` older, as if it had been recorded that long
 // before.

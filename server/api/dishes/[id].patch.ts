@@ -13,6 +13,8 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Dish changes' })
   const user = requireUser(event)
   const { source, imageUrl, imageTicket, photo, imageFocus, ...rest } = parsed.data
+  // A reloaded image costs what adding a Dish from a link does.
+  if (imageUrl) await spendRateLimit(user.id, 'add-dish')
   // Not copied for a non-Member or a missing Dish, which editDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, () => boardOfDish(dishId), { photo, imageUrl, imageTicket })
   const edited = await editDish(dishId, user.id, {
