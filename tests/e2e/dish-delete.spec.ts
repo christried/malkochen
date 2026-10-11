@@ -3,11 +3,12 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { seedDish } from './seed'
+import { removeUsers, seedDish } from './seed'
 
 // Deleting a Dish with undo (PRD story 47), from the card's "…" menu and from
 // the Dish detail. Margaret's Board is used by this file only.
 test.describe.configure({ mode: 'serial' })
+test.beforeAll(() => removeUsers(ALLOWLISTED[3]))
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 

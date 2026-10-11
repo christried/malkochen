@@ -6,13 +6,14 @@ import { cardAtRest } from './board'
 import { expectCardShape } from './card-shape'
 import { gotoHydrated } from './hydration'
 import { clickAndExpectSaving, dotsMoving, holdRequests, linkField, linkFound, loadingDots, SAGE } from './loading'
-import { removeStoredImages, seedDish, storedImage } from './seed'
+import { removeStoredImages, removeUsers, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // Linus's Board is used by this file only. Source Lookup is stubbed with
 // fixtures (tests/e2e/source-lookup-stub.ts).
 test.describe.configure({ mode: 'serial' })
 test.use({ colorScheme: 'light' })
+test.beforeAll(() => removeUsers(ALLOWLISTED[2]))
 
 const TIKTOK = 'https://www.tiktok.com/@veganfood/video/7301234567890123456'
 const PORTRAIT = 'https://images.invalid/tiktok-cover.png'

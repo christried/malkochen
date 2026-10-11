@@ -3,6 +3,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
+import { removeUsers } from './seed'
 
 // The sheet opens on the link step; "Ohne Link hinzufügen" leads to the form.
 async function addWithoutLink(page: Page) {
@@ -14,6 +15,7 @@ async function addWithoutLink(page: Page) {
 // Grace's Board is used by this file only, so it starts empty.
 test.describe.configure({ mode: 'serial' })
 test.use({ colorScheme: 'light' })
+test.beforeAll(() => removeUsers(ALLOWLISTED[1]))
 
 test('an empty Board invites the first Dish, which then lands on top of Ideen', async ({ page }) => {
   await signIn(page, ALLOWLISTED[1])

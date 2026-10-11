@@ -6,7 +6,7 @@ import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
-import { landingBoardId } from './seed'
+import { landingBoardId, removeUsers } from './seed'
 
 // A Profile Picture of your own, uploaded in your settings: seen round in a
 // preview first, then on your badges for every Member, instead of your
@@ -20,6 +20,8 @@ const JOCELYN = ALLOWLISTED[32]
 // Stands in for Google's photo URL; served by the app, so it loads offline.
 const GOOGLE_PHOTO = `${E2E_ORIGIN}/icons/icon-192.png`
 const PROFILE = { name: 'Maryam', image: GOOGLE_PHOTO }
+
+test.beforeAll(() => removeUsers(MARYAM, JOCELYN))
 
 const PICTURE_URL = /^\/images\/pictures\/[0-9a-f-]{36}\.jpg$/
 

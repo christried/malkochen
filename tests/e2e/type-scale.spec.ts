@@ -5,7 +5,7 @@ import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated } from './hydration'
 import { inviteToken } from './invite'
-import { seedCookings, seedDish } from './seed'
+import { removeUsers, seedCookings, seedDish } from './seed'
 
 // Text set in the type scale's tokens (tokens.json → type), where the visual
 // check (#138) found it off them (#170). Marie and Émilie are used by this
@@ -15,6 +15,8 @@ test.describe.configure({ mode: 'serial' })
 const MARIE = ALLOWLISTED[34]
 const EMILIE = ALLOWLISTED[35]
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
+
+test.beforeAll(() => removeUsers(MARIE, EMILIE))
 
 async function font(locator: Locator) {
   return locator.evaluate((el) => {

@@ -6,7 +6,7 @@ import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
-import { landingBoardId } from './seed'
+import { landingBoardId, removeUsers } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // "Eigenes Foto": a Member's own photo as a Dish's image, picked in the
@@ -17,6 +17,8 @@ test.use({ colorScheme: 'light' })
 
 const HYPATIA = ALLOWLISTED[25]
 const MILEVA = ALLOWLISTED[26]
+
+test.beforeAll(() => removeUsers(HYPATIA, MILEVA))
 
 // A phone photo, with where it was taken written into it.
 const GPS = { GPSLatitudeRef: 'N', GPSLatitude: '48/1 8/1 0/1', GPSLongitudeRef: 'E', GPSLongitude: '11/1 34/1 0/1' }

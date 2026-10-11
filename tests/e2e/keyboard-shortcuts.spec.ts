@@ -4,7 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated } from './hydration'
-import { seedDish } from './seed'
+import { removeUsers, seedDish } from './seed'
 
 // The Board's keyboard shortcuts (#182): N, /, Esc, ",", 1–9 and ?, at any
 // width, never while typing in a field or with a dialog or the Dish detail
@@ -15,6 +15,8 @@ test.describe.configure({ mode: 'serial' })
 
 const FLORENCE = ALLOWLISTED[38]
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
+
+test.beforeAll(() => removeUsers(FLORENCE))
 
 function heading(page: Page) {
   return page.getByRole('heading', { level: 1 })

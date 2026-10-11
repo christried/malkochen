@@ -4,12 +4,13 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, swipe, tab, titles } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { seedDish } from './seed'
+import { removeUsers, seedDish } from './seed'
 
 // Column tabs and swiping on phones, "Verschieben nach…" from a card's menu,
 // and all Columns side by side from 768px (PRD stories 28, 33). Barbara's Board is
 // used by this file only.
 test.describe.configure({ mode: 'serial' })
+test.beforeAll(() => removeUsers(ALLOWLISTED[4]))
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const PHONE = { width: 390, height: 844 }
