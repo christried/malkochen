@@ -8,7 +8,7 @@ import { storeUploadedPhoto } from '../../utils/photo-upload'
 // sees it in a preview first.
 export default defineEventHandler(async (event): Promise<{ url: string, ticket: string }> => {
   const user = requireUser(event)
-  const url = await storeUploadedPhoto(event, storePicture)
+  const url = await storeUploadedPhoto(event, user.id, storePicture)
   setResponseStatus(event, 201)
   return { url, ticket: pictureTickets.issue(user.id, url) }
 })

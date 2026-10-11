@@ -9,7 +9,9 @@ const body = z.strictObject({ name: boardName, emoji: boardEmoji })
 export default defineEventHandler(async (event): Promise<BoardSummary> => {
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Board' })
-  const created = await createBoard(requireUser(event).id, parsed.data)
+  const user = requireUser(event)
+  await spendRateLimit(user.id, 'create-board')
+  const created = await createBoard(user.id, parsed.data)
   setResponseStatus(event, 201)
   return created
 })

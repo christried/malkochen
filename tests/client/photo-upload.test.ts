@@ -61,6 +61,7 @@ test('a file larger than the browser should even try to read is refused as too l
 test.each([
   [415, 'not-an-image'],
   [413, 'too-large'],
+  [429, 'too-many'],
   [500, 'failed'],
   [undefined, 'failed'],
 ] as const)('a refusal with status %s tells the Member "%s"', async (code, problem) => {

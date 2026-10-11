@@ -215,6 +215,7 @@ export const de = {
     reloadFound: 'Neues Bild vom Link. Es wird beim Speichern übernommen.',
     reloadNothingFound: 'Kein Bild gefunden. Beim Speichern bekommt das Gericht sein Platzhalterbild.',
     reloadFailed: 'Das Nachschauen hat nicht geklappt. Versuch es gleich noch mal.',
+    reloadTooMany: 'Zu viele Versuche. Gleich klappt das Nachschauen wieder.',
     save: 'Speichern',
     saving: 'Speichert …',
     cancel: 'Abbrechen',
@@ -237,6 +238,8 @@ export const de = {
     tooLarge: 'Das Foto ist zu groß. Ein kleineres oder ein JPEG klappt bestimmt.',
     notAnImage: 'Das ist kein Foto, das ich lesen kann. JPEG, PNG, WebP oder HEIC gehen.',
     failed: 'Das Hochladen hat nicht geklappt. Versuch es gleich noch mal.',
+    // Over the user's upload limit (server/rate-limits.ts).
+    tooMany: 'Zu viele Fotos auf einmal. In einer Weile klappt es wieder.',
     // Shifting a Source image or own photo within the card's frame.
     focus: 'Ausschnitt',
     focusHint: 'Verschieb das Bild, bis das Essen im Rahmen ist.',
@@ -253,6 +256,8 @@ export const de = {
     titleNeededHint: 'Zu diesem Link gibt es keinen Titel. Wie heißt das Gericht?',
     nothingFound: 'Kein Bild gefunden. Such dir eins aus!',
     lookupFailed: 'Das Nachschauen hat nicht geklappt. Speichern geht trotzdem: mit Titel und Bild von dir.',
+    // Over the user's Source Lookup limit (server/rate-limits.ts).
+    lookupTooMany: 'Zu viele Versuche. Gleich klappt das Nachschauen wieder. Speichern geht trotzdem: mit Titel und Bild von dir.',
     sourceImage: 'Bild vom Link',
     changeImage: 'Bild ändern',
     useSourceImage: 'Bild vom Link nehmen',

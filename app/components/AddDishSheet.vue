@@ -32,7 +32,7 @@ const link = ref('')
 // Looks the link up as soon as it is one: at once when pasted, after a short
 // pause while typing. Only the latest lookup's answer counts.
 const lookup = useLinkLookup(link)
-const { status: lookupStatus, result, canonicalLink } = lookup
+const { status: lookupStatus, result, canonicalLink, tooMany: lookupTooMany } = lookup
 
 const title = ref('')
 const note = ref('')
@@ -335,7 +335,7 @@ async function save() {
               play
             />
           </div>
-          <span class="text-small">{{ t.addDish.lookupFailed }}</span>
+          <span class="text-small">{{ lookupTooMany ? t.addDish.lookupTooMany : t.addDish.lookupFailed }}</span>
         </div>
       </template>
 

@@ -79,6 +79,12 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, { provider: 'pg', schema }),
+  // Counted in the database (rate_limit), not in memory: every Vercel
+  // function instance has its own memory, so a limit kept there is never
+  // reached. On in production only, Better Auth's default. The dev sign-in
+  // (local dev and tests only) is left out: the tests sign in many times a
+  // second, all from one address.
+  rateLimit: { storage: 'database', customRules: { '/dev/sign-in': false } },
   // A refused Google sign-in (and any other OAuth error) redirects here as
   // /login?error=<code>, instead of to Better Auth's own error page.
   onAPIError: { errorURL: '/login' },

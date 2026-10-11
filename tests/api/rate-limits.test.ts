@@ -1,0 +1,85 @@
+import pg from 'pg'
+import sharp from 'sharp'
+import { expect, inject, test } from 'vitest'
+import { RATE_LIMITS, type RateLimited } from '../../server/rate-limits'
+import { landingBoard, postDish } from './boards'
+import { ALLOWLISTED, signIn, type Caller } from './client'
+import { endLimitWindow, useUpLimit } from './time-travel'
+
+// What one user may do of the costly things per window (server/rate-limits.ts):
+// over the limit a call answers 429 until the window is over. Each test uses
+// up all but the last call of the window in the database, as if the user had
+// made them, instead of making them all.
+
+const rachel = ALLOWLISTED[36]
+const mae = ALLOWLISTED[37]
+
+const photo = () => sharp({ create: { width: 40, height: 30, channels: 3, background: '#7a4' } }).jpeg().toBuffer()
+
+function sendPhoto(caller: Caller, path: string, bytes: Uint8Array) {
+  return caller.fetch(path, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array(bytes) })
+}
+
+const lookUp = (c: Caller) => c.fetch(`/api/source-lookup?${new URLSearchParams({ link: 'http://127.0.0.1/rezept' })}`)
+const ownPhoto = async (c: Caller) => sendPhoto(c, `/api/boards/${(await landingBoard(c)).id}/photos`, await photo())
+const profilePicture = async (c: Caller) => sendPhoto(c, '/api/me/pictures', await photo())
+
+// Each limited call, made once, with what it answers when it goes through.
+const calls: [string, RateLimited, number, (caller: Caller) => Promise<Response>][] = [
+  ['Source Lookup', 'source-lookup', 200, lookUp],
+  ['an own photo', 'upload', 201, ownPhoto],
+  ['a Profile Picture', 'upload', 201, profilePicture],
+  ['adding a Dish', 'add-dish', 201, async c => postDish(c, (await landingBoard(c)).id, { title: 'Dal', placeholder: 'bowl' })],
+  ['creating a Board', 'create-board', 201, c => c.fetch('/api/boards', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Noch ein Board', emoji: '🥕' }),
+  })],
+]
+
+test.each(calls)('%s answers 429 over the limit, and works again in the next window', async (_, limited, ok, call) => {
+  const user = await signIn(rachel)
+  await useUpLimit(rachel, limited, RATE_LIMITS[limited].calls - 1)
+
+  expect((await call(user)).status).toBe(ok)
+  expect((await call(user)).status).toBe(429)
+
+  await endLimitWindow(rachel, limited)
+  expect((await call(user)).status).toBe(ok)
+})
+
+test('one user over a limit doesn\'t limit another', async () => {
+  const [over, other] = [await signIn(rachel), await signIn(mae)]
+  await useUpLimit(rachel, 'source-lookup', RATE_LIMITS['source-lookup'].calls)
+
+  expect((await lookUp(over)).status).toBe(429)
+  expect((await lookUp(other)).status).toBe(200)
+
+  await endLimitWindow(rachel, 'source-lookup')
+})
+
+test('own photos and Profile Pictures share one limit', async () => {
+  const user = await signIn(rachel)
+  await useUpLimit(rachel, 'upload', RATE_LIMITS.upload.calls - 1)
+
+  expect((await ownPhoto(user)).status).toBe(201)
+  expect((await profilePicture(user)).status).toBe(429)
+
+  await endLimitWindow(rachel, 'upload')
+})
+
+// Better Auth limits requests per IP address. Kept in the database, not in
+// each server instance's memory, its counts hold across instances.
+test('Better Auth counts requests in the database', async () => {
+  await (await signIn(rachel)).fetch('/api/auth/get-session')
+
+  const client = new pg.Client({ connectionString: inject('databaseUrl') })
+  await client.connect()
+  try {
+    const { rows } = await client.query<{ key: string }>('select key from rate_limit')
+    expect(rows.map(r => r.key)).toContainEqual(expect.stringContaining('/get-session'))
+  }
+  finally {
+    await client.end()
+  }
+})

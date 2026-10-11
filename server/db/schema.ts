@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
-import { boolean, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { bigint, boolean, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
 // ./migrations. Every timestamp is `timestamptz`, so values never depend on the
@@ -66,6 +66,16 @@ export const verification = pgTable('verification', {
   updatedAt: updatedAt(),
 }, t => [index('verification_identifier_idx').on(t.identifier)])
 
+// Better Auth's rate limit counts, per IP address and path. In the database,
+// not each server instance's memory, so the limit holds across instances.
+export const rateLimit = pgTable('rate_limit', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  count: integer('count').notNull(),
+  // Milliseconds since the epoch, as Better Auth keeps it.
+  lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
+})
+
 // ---------------------------------------------------------------------------
 // Boards (CONTEXT.md: Board, Member, Owner, Column, Gekocht Column).
 
@@ -103,6 +113,16 @@ export const inviteMiss = pgTable('invite_miss', {
   windowStart: timestamp('window_start', { withTimezone: true }).notNull().defaultNow(),
   misses: integer('misses').notNull().default(1),
 })
+
+// The costly calls a user made since their window started, per limit
+// (server/rate-limits.ts): over the limit, they get 429 for the rest of
+// the window (server/utils/rate-limit.ts).
+export const rateLimitUse = pgTable('rate_limit_use', {
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  limited: text('limited').notNull(),
+  windowStart: timestamp('window_start', { withTimezone: true }).notNull().defaultNow(),
+  calls: integer('calls').notNull().default(1),
+}, t => [primaryKey({ columns: [t.userId, t.limited] })])
 
 export const membership = pgTable('membership', {
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),

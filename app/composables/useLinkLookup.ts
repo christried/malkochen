@@ -14,14 +14,16 @@ import { webLink } from '../utils/web-link'
 // saving needs to copy the image.
 export type LookupAnswer = SourceLookupResult & { imageTicket: string | null }
 
-// Asks Source Lookup about a web link; rejects if it couldn't be asked.
+// Asks Source Lookup about a web link; rejects if it couldn't be asked, with
+// the HTTP status code ($fetch's statusCode) if it was refused.
 export type LookUp = (link: string) => Promise<LookupAnswer>
 
 type State
   = | { status: 'idle' }
     | { status: 'looking' }
     | { status: 'found', result: LookupAnswer }
-    | { status: 'failed' }
+    // tooMany: refused because the user looked up too many links lately.
+    | { status: 'failed', tooMany: boolean }
 
 // How long typing pauses before the link is looked up.
 const TYPING_PAUSE = 300
@@ -42,10 +44,17 @@ export function useLinkLookup(link: Ref<string>, lookUp: LookUp = sourceLookup) 
 
   // Asks Source Lookup, and answers with what it found (null if it failed).
   function run(target: string, change: number): Promise<LookupAnswer | null> {
-    const asking = lookUp(target).catch(() => null).then((answer) => {
-      if (change === latest) state.value = answer ? { status: 'found', result: answer } : { status: 'failed' }
-      return answer
-    })
+    const asking = lookUp(target).then(
+      (answer) => {
+        if (change === latest) state.value = { status: 'found', result: answer }
+        return answer
+      },
+      (error: unknown) => {
+        const tooMany = (error as { statusCode?: number } | null)?.statusCode === 429
+        if (change === latest) state.value = { status: 'failed', tooMany }
+        return null
+      },
+    )
     underWay = asking
     return asking
   }
@@ -78,6 +87,9 @@ export function useLinkLookup(link: Ref<string>, lookUp: LookUp = sourceLookup) 
     status: computed(() => state.value.status),
     result,
     canonicalLink: computed(() => result.value?.canonicalLink ?? null),
+    // Whether the last lookup failed because the user looked up too many
+    // links lately: they are told to wait, not that it went wrong.
+    tooMany: computed(() => state.value.status === 'failed' && state.value.tooMany),
     // The link's answer: the one found, or the one under way, else looked up
     // at once (still in its typing pause, failed, or the link the field
     // started with). Null without a link or if the lookup fails. The answer

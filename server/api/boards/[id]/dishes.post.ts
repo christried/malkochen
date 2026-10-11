@@ -14,6 +14,7 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   const parsed = addDishBody.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A title and a Placeholder Image are required' })
   const user = requireUser(event)
+  await spendRateLimit(user.id, 'add-dish')
   const { source, imageUrl, imageTicket, photo, ...rest } = parsed.data
   // Not copied for a non-Member, whom addDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, async () => boardId, { photo, imageUrl, imageTicket })

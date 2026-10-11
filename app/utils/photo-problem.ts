@@ -7,6 +7,7 @@ export function photoProblemMessage(t: Strings, problem: PhotoProblem): string {
   return ({
     'too-large': t.imageDialog.tooLarge,
     'not-an-image': t.imageDialog.notAnImage,
+    'too-many': t.imageDialog.tooMany,
     'failed': t.imageDialog.failed,
   } satisfies Record<PhotoProblem, string>)[problem]
 }

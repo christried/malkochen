@@ -12,7 +12,7 @@ export default defineEventHandler(async (event): Promise<{ url: string, ticket: 
   const user = requireUser(event)
   if (!await isMember(boardId, user.id)) throw boardNotFound()
 
-  const url = await storeUploadedPhoto(event, storePhoto)
+  const url = await storeUploadedPhoto(event, user.id, storePhoto)
   setResponseStatus(event, 201)
   return { url, ticket: photoTickets.issue(user.id, url) }
 })

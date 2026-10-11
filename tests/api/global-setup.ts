@@ -45,9 +45,11 @@ export default async function setup(project: TestProject) {
   const baseUrl = `http://127.0.0.1:${PORT}`
   // Node itself, not a shell: on Windows killing a `shell: true` child only
   // kills cmd.exe and leaves the server running, which hangs teardown.
+  // NODE_ENV as on Vercel, so what runs in production only runs here too:
+  // Better Auth's rate limit.
   const server = spawn(process.execPath, ['.output/server/index.mjs'], {
     stdio: 'inherit',
-    env: { ...process.env, ...testAuthEnv(baseUrl), DATABASE_URL: database.url, PORT: String(PORT), HOST: '127.0.0.1' },
+    env: { ...process.env, ...testAuthEnv(baseUrl), NODE_ENV: 'production', DATABASE_URL: database.url, PORT: String(PORT), HOST: '127.0.0.1' },
   })
   try {
     await waitForServer(baseUrl, server)
