@@ -11,13 +11,15 @@ import { parseServerEnv } from '../env'
 const APP_ORIGIN = new URL(parseServerEnv(process.env).BETTER_AUTH_URL).origin
 const READS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
+function fromOwnOriginOrNoBrowser(origin: string | undefined, fetchSite: string | undefined): boolean {
+  if (origin !== undefined) return origin === APP_ORIGIN
+  return fetchSite === undefined || fetchSite === 'same-origin'
+}
+
 export default defineEventHandler((event) => {
   if (READS.has(event.method)) return
   const path = getRequestURL(event).pathname
   if (!path.startsWith('/api/') || /^\/api\/auth(\/|$)/.test(path)) return
 
-  const origin = getRequestHeader(event, 'origin')
-  const fetchSite = getRequestHeader(event, 'sec-fetch-site')
-  const sameOrigin = origin !== undefined ? origin === APP_ORIGIN : fetchSite === undefined || fetchSite === 'same-origin'
-  if (!sameOrigin) throw createError({ statusCode: 403, statusMessage: 'Cross-origin write refused' })
+  if (!fromOwnOriginOrNoBrowser(getRequestHeader(event, 'origin'), getRequestHeader(event, 'sec-fetch-site'))) throw createError({ statusCode: 403, statusMessage: 'Cross-origin write refused' })
 })
