@@ -1,9 +1,8 @@
-import { readdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import sharp from 'sharp'
 import { expect, test } from 'vitest'
 import { landingBoard, postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
+import { storedImages } from './server-env'
 
 // A Member's Profile Picture: their own upload (POST /api/me/pictures, then
 // PUT /api/me/picture with its picture ticket), else their Google photo,
@@ -47,8 +46,7 @@ const usePicture = (caller: Caller, picture: unknown) => caller.fetch('/api/me/p
 const removePicture = (caller: Caller) => caller.fetch('/api/me/picture', { method: 'DELETE' })
 const me = async (caller: Caller): Promise<Me> => (await caller.fetch('/api/me')).json()
 
-// Where the test server's disk storage keeps Profile Pictures (server/utils/image-store.ts).
-const storedPictures = () => readdir(resolve('.data/images/pictures')).catch(() => [])
+const storedPictures = () => storedImages('pictures')
 
 test('an uploaded picture is stored as a square JPEG, scaled down, without where it was taken', async () => {
   const { url, ticket } = await uploaded(await grete())

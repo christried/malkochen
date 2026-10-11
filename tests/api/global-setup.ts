@@ -1,8 +1,10 @@
 import 'dotenv/config'
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
+import { rm } from 'node:fs/promises'
 import type { TestProject } from 'vitest/node'
 import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
 import { testAuthEnv } from '../support/test-auth-env'
+import { CRON_SECRET, IMAGE_DIR } from './server-env'
 
 // Seam 1 (the server API): builds the app once, boots the production server
 // against a throwaway local Postgres, and hands its base URL to the tests.
@@ -42,6 +44,9 @@ export default async function setup(project: TestProject) {
     throw new Error('nuxt build failed')
   }
 
+  // Its images start empty each run, like its database.
+  await rm(IMAGE_DIR, { recursive: true, force: true })
+
   const baseUrl = `http://127.0.0.1:${PORT}`
   // Node itself, not a shell: on Windows killing a `shell: true` child only
   // kills cmd.exe and leaves the server running, which hangs teardown.
@@ -49,7 +54,7 @@ export default async function setup(project: TestProject) {
   // Better Auth's rate limit.
   const server = spawn(process.execPath, ['.output/server/index.mjs'], {
     stdio: 'inherit',
-    env: { ...process.env, ...testAuthEnv(baseUrl), NODE_ENV: 'production', DATABASE_URL: database.url, PORT: String(PORT), HOST: '127.0.0.1' },
+    env: { ...process.env, ...testAuthEnv(baseUrl), IMAGE_DIR, CRON_SECRET, NODE_ENV: 'production', DATABASE_URL: database.url, PORT: String(PORT), HOST: '127.0.0.1' },
   })
   try {
     await waitForServer(baseUrl, server)

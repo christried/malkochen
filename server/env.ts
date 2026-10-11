@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // The one list of environment variables the server needs. Every new variable
 // is added here, to .env.example, and to the README's "Environment variables"
-// table -- and set in Vercel for production, preview and development.
+// table -- and set in the Vercel environments the README's table names for it.
 const databaseEnvSchema = z.object({
   // Postgres connection string: Neon in deployed environments, a local
   // Postgres (localhost) in tests and optionally in dev.
@@ -29,6 +29,14 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // Vercel Blob read/write token for the Image Store. Without it, images are
   // stored on disk under .data/images (local dev and tests only).
   BLOB_READ_WRITE_TOKEN: z.string().default(''),
+  // Where the disk keeps images without a Blob token. The API tests give
+  // their server a folder of its own, so its cleanup job never sweeps away
+  // the images of local dev.
+  IMAGE_DIR: z.string().default('').transform(dir => dir || '.data/images'),
+  // Vercel Cron sends it as a bearer token to the daily cleanup job
+  // (/api/cron/cleanup), which refuses every request without it. Empty: the
+  // job never runs.
+  CRON_SECRET: z.union([z.literal(''), z.string().min(16)]).default(''),
   // Set by Vercel itself; used to refuse the dev bypass there and to require
   // the Blob token.
   VERCEL_ENV: z.string().optional(),

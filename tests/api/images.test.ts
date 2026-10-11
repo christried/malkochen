@@ -1,10 +1,9 @@
-import { readdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import { expect, test } from 'vitest'
 import { createImageTickets } from '../../server/image-store/tickets'
 import { testAuthEnv } from '../support/test-auth-env'
 import { landingBoard, postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
+import { storedImages } from './server-env'
 
 // Without a Vercel Blob token (as here) stored images are served from disk.
 // Only names the Image Store writes are ever read.
@@ -20,8 +19,6 @@ test.each([
 // Tickets as GET /api/source-lookup issues them (same secret as the server).
 const tickets = createImageTickets(testAuthEnv('').BETTER_AUTH_SECRET!)
 const me = async (caller: Caller) => ((await (await caller.fetch('/api/me')).json()) as { id: string }).id
-// Where the test server's disk storage keeps copies (server/utils/image-store.ts).
-const storedImages = () => readdir(resolve('.data/images/dishes')).catch(() => [])
 
 // The order (membership before the copy) is covered with a recording Image
 // Store in tests/image-store/found-image.test.ts; here no copy can succeed

@@ -1,9 +1,10 @@
-import { readdir, readFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import sharp from 'sharp'
 import { expect, test } from 'vitest'
 import { landingBoard as landingBoardOf, postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
+import { storedImages } from './server-env'
 
 // "Eigenes Foto": a Member uploads their own photo to a Board they are on
 // (POST /api/boards/:id/photos) and gets back where it is stored, with a
@@ -44,8 +45,6 @@ function editDish(caller: Caller, dishId: string, body: unknown) {
 const onBoard = async (caller: Caller, dishId: string) =>
   (await landingBoard(caller)).columns.flatMap(c => c.dishes).find(d => d.id === dishId)
 
-// Where the test server's disk storage keeps images (server/utils/image-store.ts).
-const storedImages = () => readdir(resolve('.data/images/dishes')).catch(() => [])
 
 test('an uploaded photo is stored as a JPEG, scaled down, without where it was taken', async () => {
   const ada = await signIn(ALLOWLISTED[0])

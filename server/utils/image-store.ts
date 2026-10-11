@@ -6,16 +6,16 @@ import { createImageTickets } from '../image-store/tickets'
 import { parseServerEnv } from '../env'
 import { isMember } from './boards'
 
-const { BLOB_READ_WRITE_TOKEN, BETTER_AUTH_SECRET } = parseServerEnv(process.env)
+const { BLOB_READ_WRITE_TOKEN, BETTER_AUTH_SECRET, IMAGE_DIR: imageDir } = parseServerEnv(process.env)
 
 // The app's one Image Store: Vercel Blob when a token is set (always, in
 // deployed environments), otherwise the disk (local dev and tests).
-export const IMAGE_DIR = resolve('.data/images')
+export const IMAGE_DIR = resolve(imageDir)
 
 // The Member only sees a notice; the reason goes to the runtime logs.
 const logNotCopied = (imageUrl: string, reason: string) => console.warn(`[image-store] not copied: ${reason} (${imageUrl})`)
 
-const storage = BLOB_READ_WRITE_TOKEN ? blobStorage(BLOB_READ_WRITE_TOKEN) : diskStorage(IMAGE_DIR)
+export const storage = BLOB_READ_WRITE_TOKEN ? blobStorage(BLOB_READ_WRITE_TOKEN) : diskStorage(IMAGE_DIR)
 
 export const copyImage: ImageStore = createImageStore({ storage, onFailure: logNotCopied })
 

@@ -11,6 +11,12 @@ export async function backdateCooking(cookingId: string, minutes: number): Promi
   await query(`update cooking set cooked_at = cooked_at - make_interval(mins => $2) where id = $1`, [cookingId, minutes])
 }
 
+// Makes a deleted Dish or Cooking `days` longer deleted, as if it had been
+// deleted that long before.
+export async function backdateDeletion(table: 'dish' | 'cooking', id: string, days: number): Promise<void> {
+  await query(`update ${table} set deleted_at = deleted_at - make_interval(days => $2) where id = $1`, [id, days])
+}
+
 // Uses up `calls` of a user's limit (server/rate-limits.ts) in a window that
 // starts now, as if they had made that many calls just now.
 export async function useUpLimit(email: string, limited: string, calls: number): Promise<void> {
