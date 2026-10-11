@@ -14,7 +14,7 @@ import { PHOTO_NOT_AN_IMAGE, PHOTO_TOO_LARGE } from '../../shared/photo'
 export interface UploadedPhoto { url: string, ticket: string }
 
 // Why a photo wasn't taken, as the Member is told.
-export type PhotoProblem = 'too-large' | 'not-an-image' | 'failed'
+export type PhotoProblem = 'too-large' | 'not-an-image' | 'too-many' | 'failed'
 
 // Where a photo goes: a Board's photos (a Dish's own photo) or the user's
 // Profile Pictures.
@@ -73,6 +73,8 @@ function problemOf(error: unknown): PhotoProblem {
   const code = (error as { statusCode?: number } | null)?.statusCode
   if (code === PHOTO_TOO_LARGE) return 'too-large'
   if (code === PHOTO_NOT_AN_IMAGE) return 'not-an-image'
+  // Over the user's upload limit (server/rate-limits.ts).
+  if (code === 429) return 'too-many'
   return 'failed'
 }
 

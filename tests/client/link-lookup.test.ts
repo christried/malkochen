@@ -19,9 +19,9 @@ function answer(link: string): LookupAnswer {
 }
 
 function setup(start = '') {
-  const asked: { link: string, answer: () => void, fail: () => void }[] = []
+  const asked: { link: string, answer: () => void, fail: (error?: Error) => void }[] = []
   const lookUp = (link: string) => new Promise<LookupAnswer>((resolve, reject) => {
-    asked.push({ link, answer: () => resolve(answer(link)), fail: () => reject(new Error('Lookup failed')) })
+    asked.push({ link, answer: () => resolve(answer(link)), fail: (error = new Error('Lookup failed')) => reject(error) })
   })
   const link = ref(start)
   const lookup = useLinkLookup(link, lookUp)
@@ -98,6 +98,19 @@ test('a lookup that fails gives "failed"', async () => {
 
   expect(lookup.status.value).toBe('failed')
   expect(lookup.result.value).toBeNull()
+  expect(lookup.tooMany.value).toBe(false)
+})
+
+test('a lookup refused for too many lookups fails, and says so', async () => {
+  const { link, lookup, asked } = setup()
+  lookup.pasted()
+  link.value = 'https://koch.example/dal'
+
+  asked[0]!.fail(Object.assign(new Error('HTTP 429'), { statusCode: 429 }))
+  await vi.advanceTimersByTimeAsync(0)
+
+  expect(lookup.status.value).toBe('failed')
+  expect(lookup.tooMany.value).toBe(true)
 })
 
 test('asked for its answer now, a link still in its typing pause is looked up at once', async () => {

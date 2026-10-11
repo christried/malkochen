@@ -84,7 +84,7 @@ const reloadMessage = computed(() => ({
   looking: '',
   found: t.detail.reloadFound,
   nothing: t.detail.reloadNothingFound,
-  failed: t.detail.reloadFailed,
+  failed: lookup.tooMany.value ? t.detail.reloadTooMany : t.detail.reloadFailed,
 } satisfies Record<Reload, string>)[reload.value])
 
 const sourceLink = computed(() => link.value.trim() === '' ? null : webLink(link.value))
