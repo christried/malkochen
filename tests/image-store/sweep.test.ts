@@ -64,6 +64,17 @@ test('Profile Pictures are swept the same way', async () => {
   expect(await left('pictures')).toEqual([PICTURE.slice('pictures/'.length)])
 })
 
+// A reference that matches no stored image at all means the references and
+// the storage disagree on what a URL looks like (say, another Blob host):
+// then every image would look unreferenced, so nothing is deleted.
+test('when references exist but none matches a stored image, nothing is deleted', async () => {
+  await stored(DISH, 48)
+
+  await expect(sweepImages({ storage: diskStorage(dir), isReferenced: () => false, referenceCount: 1, now: NOW })).rejects.toThrow(/no stored image/)
+
+  expect(await left('dishes')).toHaveLength(1)
+})
+
 test('nothing stored yet sweeps nothing', async () => {
   expect(await sweepImages({ storage: diskStorage(dir), isReferenced: () => false, now: NOW })).toEqual([])
 })

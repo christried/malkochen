@@ -1,5 +1,6 @@
 import { readdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import type { ImageFolder } from '../../server/image-store'
 
 // What the API test server runs with besides the auth settings
 // (global-setup.ts), for the tests to see too.
@@ -13,4 +14,4 @@ export const IMAGE_DIR = resolve('.data/api-test-images')
 export const CRON_SECRET = 'test-cron-secret-test-cron-secret'
 
 // The file names stored in one of its folders.
-export const storedImages = (folder: 'dishes' | 'pictures' = 'dishes') => readdir(join(IMAGE_DIR, folder)).catch(() => [])
+export const storedImages = (folder: ImageFolder = 'dishes') => readdir(join(IMAGE_DIR, folder)).catch(() => [])

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // The one list of environment variables the server needs. Every new variable
 // is added here, to .env.example, and to the README's "Environment variables"
-// table -- and set in Vercel for production, preview and development.
+// table -- and set in the Vercel environments the README's table names for it.
 const databaseEnvSchema = z.object({
   // Postgres connection string: Neon in deployed environments, a local
   // Postgres (localhost) in tests and optionally in dev.

@@ -101,18 +101,22 @@ export function blobStorage(token: string): SweptStorage {
       const found: StoredImage[] = []
       let cursor: string | undefined
       do {
-        const page = await list({ prefix: `${folder}/`, cursor, limit: 1000, token })
+        const page = await list({ prefix: `${folder}/`, cursor, limit: BLOB_BATCH, token })
         found.push(...page.blobs.map(b => ({ url: b.url, uploadedAt: b.uploadedAt })))
         cursor = page.hasMore ? page.cursor : undefined
       } while (cursor)
       return found
     },
     async remove(urls) {
-      // Vercel Blob deletes at most 1000 per call.
-      for (let i = 0; i < urls.length; i += 1000) await del(urls.slice(i, i + 1000), { token })
+      for (let i = 0; i < urls.length; i += BLOB_BATCH) await del(urls.slice(i, i + BLOB_BATCH), { token })
     },
   }
 }
+
+// Vercel Blob lists and deletes at most this many per call.
+const BLOB_BATCH = 1000
+
+const DISK_URL_PREFIX = '/images/'
 
 // Files under `dir`, served by server/routes/images/[...name].get.ts. A
 // file's modification time stands in for when it was uploaded.
@@ -125,11 +129,13 @@ export function diskStorage(dir: string): SweptStorage {
       return `${DISK_URL_PREFIX}${name}`
     },
     async list(folder) {
-      const names = await readdir(join(dir, folder)).catch(() => [])
-      return Promise.all(names.map(async name => ({
-        url: `${DISK_URL_PREFIX}${folder}/${name}`,
-        uploadedAt: (await stat(join(dir, folder, name))).mtime,
-      })))
+      const names = await readdir(join(dir, folder)).catch(ignoreMissing([]))
+      // A file gone between the two reads is simply not listed.
+      const images = await Promise.all(names.map(async name => {
+        const stats = await stat(join(dir, folder, name)).catch(ignoreMissing(null))
+        return stats && { url: `${DISK_URL_PREFIX}${folder}/${name}`, uploadedAt: stats.mtime }
+      }))
+      return images.filter(image => image !== null)
     },
     async remove(urls) {
       await Promise.all(urls.map(url => rm(join(dir, url.slice(DISK_URL_PREFIX.length)), { force: true })))
@@ -137,4 +143,10 @@ export function diskStorage(dir: string): SweptStorage {
   }
 }
 
-const DISK_URL_PREFIX = '/images/'
+// A missing file or folder answers `instead`; any other error still throws.
+function ignoreMissing<T>(instead: T) {
+  return (error: unknown): T => {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return instead
+    throw error
+  }
+}
