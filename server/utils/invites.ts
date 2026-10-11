@@ -68,8 +68,8 @@ export async function joinByInvite(secret: string, userId: string): Promise<{ bo
   const now = new Date()
   await db
     .insert(membership)
-    .values({ boardId: found.id, userId, lastOpenedAt: now })
-    .onConflictDoUpdate({ target: [membership.boardId, membership.userId], set: { lastOpenedAt: now } })
+    .values({ boardId: found.id, userId, lastOpenedAt: now, seenAt: now })
+    .onConflictDoUpdate({ target: [membership.boardId, membership.userId], set: { lastOpenedAt: now, seenAt: now } })
   return { boardId: found.id, slug: found.slug }
 }
 

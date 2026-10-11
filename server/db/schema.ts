@@ -108,9 +108,13 @@ export const membership = pgTable('membership', {
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   isOwner: boolean('is_owner').notNull().default(false),
-  // When this Member last had the Board open (opened it, or its polling saw
-  // it): picks the Board a returning user lands on.
+  // When this Member last opened the Board (or followed its Invite Link):
+  // picks the Board a returning user lands on. Polling never moves it, so a
+  // late poll of a Board just left can't put it back in front (#227).
   lastOpenedAt: timestamp('last_opened_at', { withTimezone: true }),
+  // When this Member last had the Board open (opened it, or its polling saw
+  // it): the next open moves newSince here.
+  seenAt: timestamp('seen_at', { withTimezone: true }),
   // When they last had it open before the current open (or joined it, if
   // this is their first): Dishes other Members added since are New Dishes.
   // It stays put while the Board is open, so Dishes added meanwhile are
