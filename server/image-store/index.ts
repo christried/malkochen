@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { put } from '@vercel/blob'
+import { del, list, put } from '@vercel/blob'
 import { createHttp } from '../source-lookup/http'
 import { FOUND_IMAGE_KINDS, preparePhoto } from './photo'
 
@@ -22,6 +22,22 @@ export type ImageStore = (imageUrl: string) => Promise<string | null>
 export interface Storage {
   // Saves the bytes under `name` (e.g. dishes/<uuid>.jpg); returns their public URL.
   save: (name: string, bytes: Uint8Array, contentType: string) => Promise<string>
+}
+
+// The folders the Image Store saves into: Dish images and Profile Pictures.
+export const IMAGE_FOLDERS = ['dishes', 'pictures'] as const
+export type ImageFolder = typeof IMAGE_FOLDERS[number]
+
+export interface StoredImage {
+  // Its public URL, exactly as save() answered it.
+  url: string
+  uploadedAt: Date
+}
+
+// What the daily sweep (sweep.ts) needs of a Storage besides saving.
+export interface SweptStorage extends Storage {
+  list: (folder: ImageFolder) => Promise<StoredImage[]>
+  remove: (urls: string[]) => Promise<void>
 }
 
 export interface ImageStoreOptions {
@@ -75,23 +91,50 @@ export function createImageStore(options: ImageStoreOptions): ImageStore {
   }
 }
 
-export function blobStorage(token: string): Storage {
+export function blobStorage(token: string): SweptStorage {
   return {
     async save(name, bytes, contentType) {
       const blob = await put(name, Buffer.from(bytes), { access: 'public', contentType, token })
       return blob.url
     },
+    async list(folder) {
+      const found: StoredImage[] = []
+      let cursor: string | undefined
+      do {
+        const page = await list({ prefix: `${folder}/`, cursor, limit: 1000, token })
+        found.push(...page.blobs.map(b => ({ url: b.url, uploadedAt: b.uploadedAt })))
+        cursor = page.hasMore ? page.cursor : undefined
+      } while (cursor)
+      return found
+    },
+    async remove(urls) {
+      // Vercel Blob deletes at most 1000 per call.
+      for (let i = 0; i < urls.length; i += 1000) await del(urls.slice(i, i + 1000), { token })
+    },
   }
 }
 
-// Files under `dir`, served by server/routes/images/[...name].get.ts.
-export function diskStorage(dir: string): Storage {
+// Files under `dir`, served by server/routes/images/[...name].get.ts. A
+// file's modification time stands in for when it was uploaded.
+export function diskStorage(dir: string): SweptStorage {
   return {
     async save(name, bytes) {
       const path = join(dir, name)
       await mkdir(dirname(path), { recursive: true })
       await writeFile(path, bytes)
-      return `/images/${name}`
+      return `${DISK_URL_PREFIX}${name}`
+    },
+    async list(folder) {
+      const names = await readdir(join(dir, folder)).catch(() => [])
+      return Promise.all(names.map(async name => ({
+        url: `${DISK_URL_PREFIX}${folder}/${name}`,
+        uploadedAt: (await stat(join(dir, folder, name))).mtime,
+      })))
+    },
+    async remove(urls) {
+      await Promise.all(urls.map(url => rm(join(dir, url.slice(DISK_URL_PREFIX.length)), { force: true })))
     },
   }
 }
+
+const DISK_URL_PREFIX = '/images/'
