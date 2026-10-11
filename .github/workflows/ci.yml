@@ -82,3 +82,15 @@ jobs:
       - if: steps.browsers.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
       - run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+      # The traces of failed tries (playwright.config.ts), also of a flake
+      # the retry rescued, so the job can be green and still upload some.
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces-${{ matrix.shard }}
+          # Playwright writes .last-run.json on every run, failed or not.
+          path: |
+            test-results/
+            !test-results/.last-run.json
+          if-no-files-found: ignore
+          retention-days: 14

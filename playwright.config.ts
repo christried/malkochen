@@ -22,6 +22,10 @@ export default defineConfig({
     // page.route can't see requests that pass through a service worker, and
     // many tests stub the API that way. offline.spec.ts lets it run.
     serviceWorkers: 'block',
+    // A flake that passes on rerun leaves nothing to find its cause in
+    // (#233), so each test's first try is traced and kept if it fails, also
+    // when CI's retry then passes. CI uploads test-results/.
+    trace: 'retain-on-first-failure',
   },
   webServer: {
     command: `pnpm dev --port ${PORT}`,
