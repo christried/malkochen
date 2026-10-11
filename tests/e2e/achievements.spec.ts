@@ -113,6 +113,30 @@ test('the celebration goes by itself, and the Gekocht toast stays after it', asy
   await expect(page.getByRole('status').getByRole('button', { name: 'Rückgängig' })).toBeVisible()
 })
 
+// The undo countdown waits while the celebration shows, and runs on once it
+// closes (#229): recorded after 2.5s, the celebration closes about 6s after
+// the click, past the 5s undo window, yet "Rückgängig" is still offered, and
+// then goes with the rest of its window.
+test('with a slow server, "Rückgängig" is still there after the celebration', async ({ page }) => {
+  await signIn(page, HERTHA)
+  await seedDish(page, { title: 'Shakshuka', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedCookings(page, 'Shakshuka', 9)
+  await gotoHydrated(page, '/')
+  await page.route('**/api/dishes/*/cook', async (route) => {
+    await new Promise(resolve => setTimeout(resolve, 2500))
+    await route.fallback()
+  })
+
+  await page.getByRole('button', { name: 'Gekocht ✓: „Shakshuka“' }).click()
+
+  await expect(milestone(page)).toBeVisible({ timeout: 6000 })
+  await expect(milestone(page)).toBeHidden({ timeout: 6000 })
+  const undo = page.getByRole('status').getByRole('button', { name: 'Rückgängig' })
+  await expect(undo).toBeVisible()
+  await expect(undo).toBeHidden({ timeout: 5000 })
+  await page.unroute('**/api/dishes/*/cook')
+})
+
 test('a 10th Cooking the server refuses doesn’t celebrate', async ({ page }) => {
   await signIn(page, HERTHA)
   await seedDish(page, { title: 'Falafel', sourceLink: TIKTOK, sourceKind: 'tiktok' })
