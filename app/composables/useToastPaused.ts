@@ -3,5 +3,5 @@
 // not a prop: every AppToast showing the same toast (the Board's, the Dish
 // detail's, the celebration's own) runs its own timer, and all must wait.
 export function useToastPaused() {
-  return useState('toast-paused', () => false)
+  return useState<boolean>('toast-paused', () => false)
 }
