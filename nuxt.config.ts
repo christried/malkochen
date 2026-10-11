@@ -3,7 +3,9 @@ import tailwindcss from '@tailwindcss/vite'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  // Off: DevTools pulls in simple-git 3 (critical advisories, #198) and
+  // isn't installed (pnpm-workspace.yaml overrides).
+  devtools: { enabled: false },
   modules: ['@nuxt/eslint', '@nuxt/fonts'],
   css: ['~/assets/css/main.css', '~/assets/css/loops.css'],
   app: {
