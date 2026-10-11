@@ -220,23 +220,25 @@ async function newDishesSince(boardId: string, userId: string, since: Date): Pro
 // Records that the user just opened the Board, which moves on what counts
 // as New Dishes for them. False unless they are a Member.
 export async function markOpened(boardId: string, userId: string): Promise<boolean> {
+  const now = new Date()
   const updated = await db
     .update(membership)
     // The right-hand sides read the row as it was. Never opened before,
     // everything others added since joining is new.
-    .set({ newSince: sql`coalesce(${membership.lastOpenedAt}, ${membership.joinedAt})`, lastOpenedAt: new Date() })
+    .set({ newSince: sql`coalesce(${membership.seenAt}, ${membership.joinedAt})`, seenAt: now, lastOpenedAt: now })
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
     .returning({ boardId: membership.boardId })
   return updated.length > 0
 }
 
 // Records that the user still has the Board open and has seen it up to now,
-// so what they saw while it was open isn't New next time. False unless they
-// are a Member.
+// so what they saw while it was open isn't New next time. It doesn't count
+// as opening it: a poll still out when the user switched Boards mustn't make
+// the app land on the Board they left (#227). False unless they are a Member.
 export async function markSeen(boardId: string, userId: string): Promise<boolean> {
   const updated = await db
     .update(membership)
-    .set({ lastOpenedAt: new Date() })
+    .set({ seenAt: new Date() })
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
     .returning({ boardId: membership.boardId })
   return updated.length > 0

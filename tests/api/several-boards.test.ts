@@ -95,6 +95,19 @@ test('the Board list shows all the user’s Boards, oldest first, however recent
   expect(boards.find(b => b.id === second.id)).toMatchObject({ dishCount: 0 })
 })
 
+test('the app lands on the Board opened last, even when the Board left still polls once after it', async () => {
+  const annie = await signIn(ALLOWLISTED[9])
+  const left = await createBoard(annie, 'Verlassen', '🥟')
+  const opened = await createBoard(annie, 'Daheim', '🌱')
+  await send(annie, 'POST', `/api/boards/${left.id}/open`)
+  await send(annie, 'POST', `/api/boards/${opened.id}/open`)
+
+  // A poll of the Board left that was still out when the user switched.
+  expect((await send(annie, 'POST', `/api/boards/${left.id}/seen`)).status).toBe(200)
+
+  expect((await landingBoard(annie)).id).toBe(opened.id)
+})
+
 // POST /api/dishes/:id/move, answered as is.
 function moveDish(caller: Caller, dishId: string, columnId: string) {
   return send(caller, 'POST', `/api/dishes/${dishId}/move`, { columnId })
