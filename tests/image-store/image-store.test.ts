@@ -34,7 +34,7 @@ function recordingStorage(fail = false): Storage & { saved: Saved[] } {
   }
 }
 
-function storeWith(routes: Route[], options: { storage?: Storage, timeoutMs?: number, maxBytes?: number, maxPixels?: number } = {}) {
+function storeWith(routes: Route[], options: { storage?: ReturnType<typeof recordingStorage>, timeoutMs?: number, maxBytes?: number, maxPixels?: number } = {}) {
   const upstream = fakeUpstream(routes)
   const storage = options.storage ?? recordingStorage()
   return { copy: createImageStore({ fetch: upstream.fetch, ...options, storage }), upstream, storage }
@@ -102,14 +102,14 @@ test.each([
   const { copy, storage } = storeWith([[COVER, () => image(new TextEncoder().encode(body), contentType)]])
 
   expect(await copy(COVER)).toBeNull()
-  expect((storage as ReturnType<typeof recordingStorage>).saved).toEqual([])
+  expect(storage.saved).toEqual([])
 })
 
 test('a JPEG that breaks off in its header is not stored', async () => {
   const { copy, storage } = storeWith([[COVER, () => image(JPEG.slice(0, 100))]])
 
   expect(await copy(COVER)).toBeNull()
-  expect((storage as ReturnType<typeof recordingStorage>).saved).toEqual([])
+  expect(storage.saved).toEqual([])
 })
 
 // A small file can unpack to an enormous image (a "decompression bomb").
@@ -117,7 +117,7 @@ test('an image with more pixels than allowed is not stored', async () => {
   const { copy, storage } = storeWith([[COVER, () => image()]], { maxPixels: 40 * 30 - 1 })
 
   expect(await copy(COVER)).toBeNull()
-  expect((storage as ReturnType<typeof recordingStorage>).saved).toEqual([])
+  expect(storage.saved).toEqual([])
 })
 
 test('redirects are followed to the image', async () => {
@@ -127,7 +127,7 @@ test('redirects are followed to the image', async () => {
   ])
 
   expect(await copy('https://pin.example/short')).not.toBeNull()
-  expect((storage as ReturnType<typeof recordingStorage>).saved).toHaveLength(1)
+  expect(storage.saved).toHaveLength(1)
 })
 
 test.each([
@@ -140,7 +140,7 @@ test.each([
 
   expect(await copy(link)).toBeNull()
   expect(upstream.requested).toEqual([])
-  expect((storage as ReturnType<typeof recordingStorage>).saved).toEqual([])
+  expect(storage.saved).toEqual([])
 })
 
 test('a redirect to a private address is not followed', async () => {
@@ -165,14 +165,14 @@ test.each([
   const { copy, storage } = storeWith([[COVER, reply]])
 
   expect(await copy(COVER)).toBeNull()
-  expect((storage as ReturnType<typeof recordingStorage>).saved).toEqual([])
+  expect(storage.saved).toEqual([])
 })
 
 test('an image over the size limit is not stored', async () => {
   const { copy, storage } = storeWith([[COVER, () => image(new Uint8Array(2048))]], { maxBytes: 1024 })
 
   expect(await copy(COVER)).toBeNull()
-  expect((storage as ReturnType<typeof recordingStorage>).saved).toEqual([])
+  expect(storage.saved).toEqual([])
 })
 
 test('an upstream that never answers gives up after the time budget', async () => {

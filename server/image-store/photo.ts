@@ -72,8 +72,11 @@ function kindOf(bytes: Uint8Array): PhotoKind | null {
   if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'jpeg'
   if (ascii(0, 8) === '\x89PNG\r\n\x1A\n') return 'png'
   if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') return 'webp'
-  if (ascii(4, 8) === 'ftyp' && HEIC_BRANDS.has(ascii(8, 12))) return 'heic'
-  if (ascii(4, 8) === 'ftyp' && AVIF_BRANDS.has(ascii(8, 12))) return 'avif'
+  if (ascii(4, 8) === 'ftyp') {
+    const brand = ascii(8, 12)
+    if (HEIC_BRANDS.has(brand)) return 'heic'
+    if (AVIF_BRANDS.has(brand)) return 'avif'
+  }
   if (ascii(0, 6) === 'GIF87a' || ascii(0, 6) === 'GIF89a') return 'gif'
   return null
 }

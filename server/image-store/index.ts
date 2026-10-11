@@ -9,10 +9,9 @@ import { FOUND_IMAGE_KINDS, preparePhoto } from './photo'
 // saved, because third-party image links expire (TikTok's within ~48 h). A
 // Dish's image is therefore a stored image or a Placeholder, never a
 // third-party link. Downloads go through Source Lookup's Http, so private
-// hosts are refused on every redirect hop. Before it is stored, the copy is
-// prepared like an Own Photo (photo.ts): told apart by its content, never by
-// the type the remote server claims, held to a pixel limit before it is
-// unpacked, scaled down and re-encoded as a still JPEG without its metadata.
+// hosts are refused on every redirect hop. The copy is prepared like an Own
+// Photo before it is stored (photo.ts), never trusting the type the remote
+// server claims.
 
 // Given a third-party image URL, return the URL of our stored copy, or null if
 // it could not be copied. Never rejects.
