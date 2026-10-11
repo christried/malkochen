@@ -113,7 +113,7 @@ export const membership = pgTable('membership', {
   // late poll of a Board just left can't put it back in front (#227).
   lastOpenedAt: timestamp('last_opened_at', { withTimezone: true }),
   // When this Member last had the Board open (opened it, or its polling saw
-  // it): the next open moves newSince here.
+  // it): the next open copies it into newSince.
   seenAt: timestamp('seen_at', { withTimezone: true }),
   // When they last had it open before the current open (or joined it, if
   // this is their first): Dishes other Members added since are New Dishes.
