@@ -4,6 +4,7 @@
 // it stays. A new toast replaces the one showing.
 const toast = defineModel<Toast | null>({ required: true })
 const bar = useTemplateRef<HTMLElement>('bar')
+const paused = useToastPaused()
 
 // The bar's animation is also the timer. A Web Animation, not CSS, so the
 // reduced-motion rule (main.css) doesn't shorten the undo window.
@@ -14,10 +15,16 @@ watch([toast, bar], ([, el]) => {
   if (!el || !toast.value) return
   const shown = toast.value
   timer = el.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: shown.duration, easing: 'linear', fill: 'forwards' })
+  if (paused.value) timer.pause()
   timer.finished.then(() => {
     if (toast.value === shown) toast.value = null
   }, () => {})
 }, { flush: 'post' })
+// While paused (useToastPaused) the bar stops, and it runs on from there.
+watch(paused, (wait) => {
+  if (wait) timer?.pause()
+  else timer?.play()
+})
 onBeforeUnmount(() => timer?.cancel())
 
 // Inside a modal, it's lifted into the top layer (useTopLayerInModal).

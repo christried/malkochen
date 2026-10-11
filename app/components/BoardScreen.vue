@@ -116,6 +116,15 @@ async function celebrateMilestone(dish: DishView, recorded: Promise<CookingView 
 watch(() => milestone.value && !hasCooking(milestone.value.dish, milestone.value.cooking), (undone) => {
   if (undone) milestone.value = null
 })
+// While it shows, the toast's countdown waits, and runs on once it closes:
+// a slow server can't use up "Rückgängig" behind it (#229).
+const toastPaused = useToastPaused()
+watch(milestoneOpen, (open) => {
+  toastPaused.value = open
+})
+onBeforeUnmount(() => {
+  toastPaused.value = false
+})
 // By id: settling to the server's answer brings the Cookings afresh.
 function hasCooking(dish: DishView, cooking: CookingView) {
   return dish.cookings.some(c => c.id === cooking.id)
