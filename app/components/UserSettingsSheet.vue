@@ -48,8 +48,8 @@ const previewShown = ref(false)
 // until it is done.
 const previewOpen = computed({
   get: () => previewShown.value,
-  set: (open) => {
-    if (!saving.value) previewShown.value = open
+  set: (isOpen) => {
+    if (!saving.value) previewShown.value = isOpen
   },
 })
 // Picking, uploading or saving: one thing at a time.
