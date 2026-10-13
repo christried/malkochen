@@ -87,6 +87,9 @@ export const de = {
     emptyColumn: 'Noch nichts hier.',
     columns: 'Spalten',
     loading: 'Board lädt …',
+    // The edge indicators, where the window cuts Columns off.
+    previousColumn: 'Vorherige Spalte',
+    nextColumn: 'Nächste Spalte',
   },
   search: {
     open: 'Gerichte suchen',

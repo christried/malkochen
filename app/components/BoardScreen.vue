@@ -11,8 +11,9 @@ import { boardLabel, dishOnBoard } from '~~/shared/board'
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
 // its name large above the Column tabs (ColumnHeadline), switched with the
 // tabs or by swiping; tablet and desktop show all
-// Columns side by side, scroll-snapping, desktop with an add lane after the
-// last one (AddColumnLane). Dishes can be dragged: within a
+// Columns side by side, scroll-snapping, with an indicator on an edge the
+// window cuts them off at (ColumnScrollButtons), desktop with an add lane
+// after the last one (AddColumnLane). Dishes can be dragged: within a
 // Column, onto a Column tab (phones) or across lanes (from 768px). The Board
 // page (pages/b/[board].vue) shows it once it has loaded, its skeleton until
 // then.
@@ -597,146 +598,157 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       @select="selectTab"
     />
 
+    <!-- Around the Columns, so the edge indicators stay at the window's
+         edges while the Columns scroll under them. -->
     <div
       v-show="!searching"
-      ref="columns"
-      data-testid="columns"
-      class="columns mt-2 tablet:-mx-4 tablet:-mb-6 tablet:mt-5 tablet:snap-x tablet:snap-mandatory tablet:scroll-px-4 tablet:overflow-x-auto tablet:px-4 tablet:pb-10 tablet:pt-3"
+      class="relative tablet:-mx-4"
     >
       <div
-        class="track flex items-start gap-4"
-        :class="{ following }"
-        :style="{ '--active': activeIndex, '--dx': `${dx}px` }"
+        ref="columns"
+        data-testid="columns"
+        class="columns mt-2 tablet:-mb-6 tablet:mt-5 tablet:snap-x tablet:snap-mandatory tablet:scroll-px-4 tablet:overflow-x-auto tablet:px-4 tablet:pb-10 tablet:pt-3"
       >
-        <section
-          v-for="(column, index) in board.columns"
-          :id="`column-${column.id}`"
-          :key="column.id"
-          :aria-label="column.name"
-          tabindex="-1"
-          class="column w-full shrink-0 rounded-panel bg-surface-muted p-3 focus-visible:outline-2 focus-visible:outline-focus tablet:w-[340px] tablet:snap-start desktop:w-[330px] tablet:p-4"
-          :class="{
-            'parked': parked(index),
-            'lane-target': drag?.laneColumnId === column.id,
-            'lane-dimmed': drag?.laneColumnId && drag.laneColumnId !== column.id,
-          }"
-          :style="{ '--accent': columnAccent(index) }"
-          :data-column-id="column.id"
-          data-lane
-          :data-gekocht="column.isGekocht || undefined"
+        <div
+          class="track flex items-start gap-4"
+          :class="{ following }"
+          :style="{ '--active': activeIndex, '--dx': `${dx}px` }"
         >
-          <!-- Phones show it above the tabs (ColumnHeadline) instead. -->
-          <ColumnTitle
-            class="hidden tablet:block"
-            :subtitle="column.subtitle"
+          <section
+            v-for="(column, index) in board.columns"
+            :id="`column-${column.id}`"
+            :key="column.id"
+            :aria-label="column.name"
+            tabindex="-1"
+            class="column w-full shrink-0 rounded-panel bg-surface-muted p-3 focus-visible:outline-2 focus-visible:outline-focus tablet:w-[340px] tablet:snap-start desktop:w-[330px] tablet:p-4"
+            :class="{
+              'parked': parked(index),
+              'lane-target': drag?.laneColumnId === column.id,
+              'lane-dimmed': drag?.laneColumnId && drag.laneColumnId !== column.id,
+            }"
+            :style="{ '--accent': columnAccent(index) }"
+            :data-column-id="column.id"
+            data-lane
+            :data-gekocht="column.isGekocht || undefined"
           >
-            <span
-              :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"
-              class="column-name relative inline-block"
-              :class="columnCue?.value.columnId === column.id && `cue-${columnCue.value.kind}`"
+            <!-- Phones show it above the tabs (ColumnHeadline) instead. -->
+            <ColumnTitle
+              class="hidden tablet:block"
+              :subtitle="column.subtitle"
             >
-              {{ column.name }}
-              <PebbleBurst
-                v-if="columnCue?.value.columnId === column.id && columnCue.value.kind !== 'bump'"
-                :color="columnAccent(index)"
-              />
-            </span>
-          </ColumnTitle>
-          <!-- Never shorter than with only the empty state in it. -->
-          <div class="min-h-[var(--height-empty-column)]">
-            <TransitionGroup
-              tag="ol"
-              name="card"
-              class="relative flex flex-col gap-3"
-              :class="{ 'mt-3': listOf(column).length, 'rising': risingColumnIds.has(column.id) }"
-              data-dish-list
-              @before-leave="onCardLeave"
-            >
-              <li
-                v-for="({ key, dish, state }, i) in listOf(column)"
-                :key="key"
-                :style="{ '--i': i }"
-                class="relative"
-                :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
-                :data-dish-id="dish?.id"
-                :data-drag-state="state"
-                :data-drop-slot="!dish || undefined"
-                @click.capture="dish && openDish($event, dish)"
+              <span
+                :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"
+                class="column-name relative inline-block"
+                :class="columnCue?.value.columnId === column.id && `cue-${columnCue.value.kind}`"
               >
-                <template v-if="dish">
-                  <NuxtLink
-                    :id="`dish-${dish.id}`"
-                    :to="dishPath(address, dish)"
-                    :aria-label="dish.title"
-                    class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                  >
-                    <DishCard
-                      :dish="dish"
-                      :is-new="newDishIds.has(dish.id)"
-                      :motion="state === 'card' ? boardLoop.motionOf(dish.id) : null"
-                      @motion-ended="boardLoop.ended(dish.id)"
+                {{ column.name }}
+                <PebbleBurst
+                  v-if="columnCue?.value.columnId === column.id && columnCue.value.kind !== 'bump'"
+                  :color="columnAccent(index)"
+                />
+              </span>
+            </ColumnTitle>
+            <!-- Never shorter than with only the empty state in it. -->
+            <div class="min-h-[var(--height-empty-column)]">
+              <TransitionGroup
+                tag="ol"
+                name="card"
+                class="relative flex flex-col gap-3"
+                :class="{ 'mt-3': listOf(column).length, 'rising': risingColumnIds.has(column.id) }"
+                data-dish-list
+                @before-leave="onCardLeave"
+              >
+                <li
+                  v-for="({ key, dish, state }, i) in listOf(column)"
+                  :key="key"
+                  :style="{ '--i': i }"
+                  class="relative"
+                  :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
+                  :data-dish-id="dish?.id"
+                  :data-drag-state="state"
+                  :data-drop-slot="!dish || undefined"
+                  @click.capture="dish && openDish($event, dish)"
+                >
+                  <template v-if="dish">
+                    <NuxtLink
+                      :id="`dish-${dish.id}`"
+                      :to="dishPath(address, dish)"
+                      :aria-label="dish.title"
+                      class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    >
+                      <DishCard
+                        :dish="dish"
+                        :is-new="newDishIds.has(dish.id)"
+                        :motion="state === 'card' ? boardLoop.motionOf(dish.id) : null"
+                        @motion-ended="boardLoop.ended(dish.id)"
+                      />
+                    </NuxtLink>
+                    <button
+                      type="button"
+                      class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                      :aria-label="t.dish.menu(dish.title)"
+                      :data-tooltip="t.dish.more"
+                      aria-haspopup="dialog"
+                      @click="menuDish = dish"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="20"
+                        height="20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      ><circle
+                        cx="5"
+                        cy="12"
+                        r="2"
+                      /><circle
+                        cx="12"
+                        cy="12"
+                        r="2"
+                      /><circle
+                        cx="19"
+                        cy="12"
+                        r="2"
+                      /></svg>
+                    </button>
+                    <CookButton
+                      class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
+                      :cooked="dish.cookings.length > 0"
+                      :label="t.dish.cookLabel(dish.title)"
+                      data-cook
+                      @cook="origin => cookFromCard(dish.id, origin)"
                     />
-                  </NuxtLink>
-                  <button
-                    type="button"
-                    class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-                    :aria-label="t.dish.menu(dish.title)"
-                    :data-tooltip="t.dish.more"
-                    aria-haspopup="dialog"
-                    @click="menuDish = dish"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="20"
-                      height="20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    ><circle
-                      cx="5"
-                      cy="12"
-                      r="2"
-                    /><circle
-                      cx="12"
-                      cy="12"
-                      r="2"
-                    /><circle
-                      cx="19"
-                      cy="12"
-                      r="2"
-                    /></svg>
-                  </button>
-                  <CookButton
-                    class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
-                    :cooked="dish.cookings.length > 0"
-                    :label="t.dish.cookLabel(dish.title)"
-                    data-cook
-                    @cook="origin => cookFromCard(dish.id, origin)"
-                  />
-                </template>
-              </li>
-            </TransitionGroup>
-            <template v-if="isColumnEmpty(column)">
-              <EmptyBoard
-                v-if="isEmpty && index === 0"
-                :play="!!boardLoop.motionOf(emptyClipId(column))"
-                :data-empty-clip="emptyClipId(column)"
-              />
-              <EmptyColumn
-                v-else
-                :accent="columnAccentName(index)"
-                :illustration="emptyColumnIllustration(board.id, index)"
-                :play="!!boardLoop.motionOf(emptyClipId(column))"
-                :data-empty-clip="emptyClipId(column)"
-              />
-            </template>
-          </div>
-        </section>
-        <!-- Desktop: a new Column is added here, after the last one. -->
-        <AddColumnLane
-          class="hidden desktop:block"
-          @failed="showNotice(t.settings.failed)"
-        />
+                  </template>
+                </li>
+              </TransitionGroup>
+              <template v-if="isColumnEmpty(column)">
+                <EmptyBoard
+                  v-if="isEmpty && index === 0"
+                  :play="!!boardLoop.motionOf(emptyClipId(column))"
+                  :data-empty-clip="emptyClipId(column)"
+                />
+                <EmptyColumn
+                  v-else
+                  :accent="columnAccentName(index)"
+                  :illustration="emptyColumnIllustration(board.id, index)"
+                  :play="!!boardLoop.motionOf(emptyClipId(column))"
+                  :data-empty-clip="emptyClipId(column)"
+                />
+              </template>
+            </div>
+          </section>
+          <!-- Desktop: a new Column is added here, after the last one. -->
+          <AddColumnLane
+            class="hidden desktop:block"
+            @failed="showNotice(t.settings.failed)"
+          />
+        </div>
       </div>
+      <ColumnScrollButtons
+        class="hidden tablet:block"
+        :scroller="columnsEl"
+        :count="board.columns.length"
+      />
     </div>
 
     <!-- The dragged card, following the pointer above everything. -->
