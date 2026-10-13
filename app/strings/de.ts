@@ -461,6 +461,9 @@ export const de = {
     taken: 'Den Namen gibt es schon. Probier einen anderen.',
     tooMany: 'Das waren viele Namen für einen Tag. Morgen kannst du ihn wieder ändern.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    // What stands for a Member who hasn't picked theirs yet (a new user who
+    // followed an Invite Link is a Member before they have).
+    none: 'Neu dabei',
   },
   // Your own settings (PRD stories 73–75), not a Board's.
   userSettings: {

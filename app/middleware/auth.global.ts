@@ -1,9 +1,9 @@
 // Page guard: signed-out visitors go to /login, someone no longer on the
 // Allowlist to its "Not unlocked" screen, and a signed-in user never sees
 // /login. A signed-in user who is still to pick or confirm their Username
-// goes to /username first, whatever they opened, and is taken on from there;
-// nobody else sees that page. The invite landing is open to everyone and
-// decides for itself.
+// goes to /username first and is taken on from there; nobody else sees that
+// page. The invite landing is open to everyone and decides for itself: it
+// leads to the invited Board, which then sends them to /username.
 // The API has its own boundary (server/middleware/auth.ts); this only
 // decides which page to show.
 export default defineNuxtRouteMiddleware(async (to) => {

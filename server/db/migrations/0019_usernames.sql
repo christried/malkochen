@@ -3,12 +3,13 @@
 ALTER TABLE "user" ADD COLUMN "username" text;--> statement-breakpoint
 ALTER TABLE "user" ADD COLUMN "username_confirmed_at" timestamp with time zone;--> statement-breakpoint
 -- Every user from before gets one made from their Google first name: its
--- first word, without the ASCII characters a Username can't have (letters of
--- any alphabet stay, whatever the database's locale), at most 24 characters;
--- "Koch" if that leaves fewer than 2. The earliest user keeps the plain name,
--- later ones with the same name (whatever the case) get the next free
--- number: "Chris", "Chris2". Not confirmed: each is asked once whether theirs
--- fits ("Passt dein Name?").
+-- first word, without what a Username can't have (letters and digits of any
+-- script stay: "und-x-icu" tells them by Unicode's rules, whatever the
+-- database's locale; normalised, so "ü" is one character), at most 24
+-- characters; "Koch" if that leaves fewer than 2. The earliest user keeps
+-- the plain name, later ones with the same name (whatever the case) get the
+-- next free number: "Chris", "Chris2". Not confirmed: each is asked once
+-- whether theirs fits ("Passt dein Name?").
 DO $$
 DECLARE
   person record;
@@ -17,13 +18,13 @@ DECLARE
   n int;
 BEGIN
   FOR person IN SELECT id, name FROM "user" ORDER BY created_at, id LOOP
-    base := left(regexp_replace(split_part(btrim(regexp_replace(person.name, '\s+', ' ', 'g')), ' ', 1), '[\x01-\x2c\x2f\x3a-\x40\x5b-\x5e\x60\x7b-\x7f]', '', 'g'), 24);
+    base := left(regexp_replace(split_part(btrim(regexp_replace(normalize(person.name, NFC), '[[:space:]]+', ' ', 'g')), ' ', 1) COLLATE "und-x-icu", '[^[:alnum:]_.-]', '', 'g'), 24);
     IF char_length(base) < 2 THEN
       base := 'Koch';
     END IF;
     candidate := base;
     n := 1;
-    WHILE EXISTS (SELECT 1 FROM "user" WHERE lower(username) = lower(candidate)) LOOP
+    WHILE EXISTS (SELECT 1 FROM "user" WHERE lower(username COLLATE "und-x-icu") = lower(candidate COLLATE "und-x-icu")) LOOP
       n := n + 1;
       candidate := left(base, 24 - char_length(n::text)) || n;
     END LOOP;
@@ -31,4 +32,4 @@ BEGIN
   END LOOP;
 END
 $$;--> statement-breakpoint
-CREATE UNIQUE INDEX "user_username_lower_idx" ON "user" USING btree (lower("username"));
+CREATE UNIQUE INDEX "user_username_lower_idx" ON "user" USING btree (lower("username" collate "und-x-icu"));

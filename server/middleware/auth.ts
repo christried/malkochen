@@ -8,6 +8,7 @@ import { auth, signInRefusal } from '../utils/auth'
 // has one too).
 // Page navigation is guarded separately by app/middleware/auth.global.ts.
 const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//, /^\/api\/csp-report$/]
+const BEFORE_USERNAME = [/^\/api\/me(\/username)?$/, /^\/api\/invites\//]
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname
@@ -22,5 +23,12 @@ export default defineEventHandler(async (event) => {
   // does a session made before unverified emails were refused (#191).
   const refusal = signInRefusal(session.user)
   if (refusal) throw createError({ statusCode: 403, statusMessage: refusal.errorDescription })
+
+  // A new user picks their Username before anything else (#209): until then
+  // only who they are, setting it, and following an Invite Link (which the
+  // sign-in itself does too, server/utils/auth.ts) are open to them.
+  if (!session.user.username && !BEFORE_USERNAME.some(p => p.test(path))) {
+    throw createError({ statusCode: 403, statusMessage: 'No Username yet' })
+  }
   event.context.user = session.user
 })

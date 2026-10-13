@@ -1128,7 +1128,7 @@
           "name": "user_username_lower_idx",
           "columns": [
             {
-              "expression": "lower(\"username\")",
+              "expression": "lower(\"username\" collate \"und-x-icu\")",
               "asc": true,
               "isExpression": true,
               "nulls": "last"

@@ -32,7 +32,7 @@ export default defineEventHandler(async (event): Promise<Me> => {
   }
   else {
     if (await usernameTaken(user.id, username)) throw taken()
-    // Counted last, so only a change that can go through uses up the limit.
+    // Counted after the checks, so a refused name doesn't use up the limit.
     await spendRateLimit(user.id, 'username').catch((err: { statusCode?: number }) => {
       throw err.statusCode === 429 ? refusal(429, 'Too many requests', de.username.tooMany) : err
     })

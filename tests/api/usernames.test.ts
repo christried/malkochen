@@ -12,9 +12,10 @@ const TU = ALLOWLISTED[46]
 const CHIEN = ALLOWLISTED[47]
 const NETTIE = ALLOWLISTED[48]
 const GERTY = ALLOWLISTED[49]
-const BARBARA = ALLOWLISTED[50]
+const MCCLINTOCK = ALLOWLISTED[50]
 const ELION = ALLOWLISTED[51]
 const ROSA = ALLOWLISTED[52]
+const MEITNER = ALLOWLISTED[53]
 
 interface Me { id: string, name: string, usernamePrompt: 'pick' | 'confirm' | null }
 interface Refusal { data: { message: string } }
@@ -95,7 +96,7 @@ test.each([
 
 test('a Username someone else has is refused (409), whatever the case', async () => {
   const gerty = await signIn(GERTY, { name: 'Gerty' })
-  const barbara = await signIn(BARBARA, { name: 'Barbara' })
+  const barbara = await signIn(MCCLINTOCK, { name: 'Barbara' })
   expect((await rename(gerty, 'Gerty')).status).toBe(200)
 
   for (const taken of ['Gerty', 'gerty', 'GERTY']) {
@@ -117,7 +118,7 @@ test('a user can change only the case of their own Username', async () => {
 
 test('after a rename, the old Username is free for someone else right away', async () => {
   const gerty = await signIn(GERTY, { name: 'Gerty' })
-  const barbara = await signIn(BARBARA, { name: 'Barbara' })
+  const barbara = await signIn(MCCLINTOCK, { name: 'Barbara' })
   expect((await rename(gerty, 'Cori')).status).toBe(200)
   expect((await rename(barbara, 'Cori')).status).toBe(409)
 
@@ -164,7 +165,10 @@ test('every other Member sees the Username, wherever the user shows, and nowhere
   expect((await rename(owner, 'Artemisia')).status).toBe(200)
   const board = await landingBoard<Board>(owner)
   expect((await other.fetch(`/api/invites/${board.inviteToken}/join`, { method: 'POST' })).status).toBe(200)
-  const dish = await (await postDish(owner, board.id, { title: 'Linsencurry', placeholder: 'bowl' })).json() as Dish
+  const added = await postDish(owner, board.id, { title: 'Linsencurry', placeholder: 'bowl' })
+  const dish = await added.clone().json() as Dish
+  // The Dish as the app shows it straight after adding it.
+  expect(dish.addedBy).toMatchObject({ name: 'Artemisia' })
   expect((await owner.fetch(`/api/dishes/${dish.id}/cook`, { method: 'POST' })).status).toBe(200)
 
   expect((await rename(owner, 'Qinghao')).status).toBe(200)
@@ -180,18 +184,36 @@ test('every other Member sees the Username, wherever the user shows, and nowhere
   expect((await listed.clone().json() as Board[]).find(b => b.id === board.id)!.members.find(m => m.id === ownerId)).toMatchObject({ name: 'Qinghao' })
   const invite = await anonymous().fetch(`/api/invites/${board.inviteToken}`)
   expect(await invite.clone().json()).toMatchObject({ owner: { name: 'Qinghao' } })
-  for (const res of [seen, listed, invite, await owner.fetch('/api/me')]) expect(await res.text()).not.toContain('Youyou')
+  for (const res of [added, seen, listed, invite, await owner.fetch('/api/me')]) expect(await res.text()).not.toContain('Youyou')
+})
+
+test('until a new user has picked a Username, the API lets them do nothing but follow an Invite Link', async () => {
+  const owner = await signIn(CHIEN)
+  const board = await landingBoard<Board>(owner)
+  const lise = await signIn(MEITNER, { name: 'Lise Meitner', username: 'none' })
+
+  expect((await lise.fetch('/api/boards/landing')).status).toBe(403)
+  expect((await lise.fetch('/api/boards')).status).toBe(403)
+  expect((await lise.fetch('/api/boards', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Zu früh', emoji: '🥕' }) })).status).toBe(403)
+  expect((await lise.fetch('/api/me')).status).toBe(200)
+  expect((await lise.fetch(`/api/invites/${board.inviteToken}/join`, { method: 'POST' })).status).toBe(200)
+  // A Member now, but still without a name: the Board stays closed to them.
+  expect((await lise.fetch(`/api/boards/${board.id}`)).status).toBe(403)
+  expect((await postDish(lise, board.id, { title: 'Zu früh', placeholder: 'bowl' })).status).toBe(403)
+
+  expect((await rename(lise, 'Lise')).status).toBe(200)
+  expect((await lise.fetch(`/api/boards/${board.id}`)).status).toBe(200)
 })
 
 test('a Member who hasn’t picked a Username yet shows without their Google name', async () => {
   const owner = await signIn(CHIEN)
   const board = await landingBoard<Board>(owner)
-  const lise = await signIn(ALLOWLISTED[53], { name: 'Lise Meitner', username: 'none' })
-  expect((await lise.fetch(`/api/invites/${board.inviteToken}/join`, { method: 'POST' })).status).toBe(200)
+  const hedwig = await signIn(ALLOWLISTED[58], { name: 'Hedwig Kohn', username: 'none' })
+  expect((await hedwig.fetch(`/api/invites/${board.inviteToken}/join`, { method: 'POST' })).status).toBe(200)
 
   const seen = await (await owner.fetch(`/api/boards/${board.id}`)).text()
 
-  expect(seen).not.toContain('Lise')
+  expect(seen).not.toContain('Hedwig')
   expect((JSON.parse(seen) as Board).members.map(m => m.name)).toContain('Neu dabei')
 })
 

@@ -11,19 +11,21 @@ import { inviteToken } from './invite'
 // user, and their Google name nowhere. The users below are used by this file
 // only.
 
-const EMMY = ALLOWLISTED[54]
-const MARIE = ALLOWLISTED[55]
-const ROSALIND = ALLOWLISTED[56]
-const DOROTHY = ALLOWLISTED[57]
+const ROSA = ALLOWLISTED[52]
+const NOETHER = ALLOWLISTED[54]
+const CURIE = ALLOWLISTED[55]
+const FRANKLIN = ALLOWLISTED[56]
+const HODGKIN = ALLOWLISTED[57]
+const KOHN = ALLOWLISTED[58]
 
 const field = (page: Page) => page.getByRole('textbox', { name: 'Name' })
 const onABoard = /\/b\/[^/]+$/
 
 test('a new user picks a Username before reaching a Board, and can’t go on until it is valid and free', async ({ page, browser }) => {
   // Someone else has "curie" already.
-  await signIn(await newTab(browser), MARIE)
+  await signIn(await newTab(browser), CURIE)
   // As Google creates the user: with its name, and no Username.
-  await signIn(page, EMMY, { name: 'Emmy Noether', username: 'none' })
+  await signIn(page, NOETHER, { name: 'Emmy Noether', username: 'none' })
 
   await gotoHydrated(page, '/')
 
@@ -68,9 +70,32 @@ test('a new user picks a Username before reaching a Board, and can’t go on unt
   await expect(page).toHaveURL(onABoard)
 })
 
+test('a new user who follows an Invite Link picks a Username first, then lands on the invited Board', async ({ page, browser }) => {
+  const owner = await newTab(browser)
+  await signIn(owner, CURIE)
+  const created = await owner.request.post('/api/boards', { data: { name: 'Radiumküche', emoji: '🧪' } })
+  const { id: boardId } = await created.json() as { id: string }
+  await signIn(page, KOHN, { name: 'Hedwig Kohn', username: 'none' })
+
+  await gotoHydrated(page, `/invite/${await inviteToken(owner, boardId)}`)
+
+  await expect(page).toHaveURL('/username?redirect=/b/radiumkueche')
+  // To the others they are a Member already, without a name of their own.
+  await gotoHydrated(owner, `/b/${boardId}/settings`)
+  await expect(owner.getByRole('list', { name: 'Mitglieder' }).getByRole('listitem')).toHaveText([/curie \(du\)/, /Neu dabei/])
+
+  await field(page).fill('Hedwig')
+  await page.getByRole('button', { name: 'Los geht’s' }).click()
+
+  await expect(page).toHaveURL('/b/radiumkueche')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Radiumküche')
+  await reloadHydrated(owner)
+  await expect(owner.getByRole('list', { name: 'Mitglieder' }).getByRole('listitem')).toHaveText([/curie \(du\)/, /Hedwig/])
+})
+
 test('a user from before Usernames is asked once whether theirs fits, and keeps it with one tap', async ({ page }) => {
   // As the migration left them: a Username from their Google first name.
-  await signIn(page, ROSALIND, { name: 'Rosalind Franklin', username: 'suggested' })
+  await signIn(page, FRANKLIN, { name: 'Rosalind Franklin', username: 'suggested' })
 
   await gotoHydrated(page, '/')
 
@@ -83,17 +108,17 @@ test('a user from before Usernames is asked once whether theirs fits, and keeps 
 
   await expect(page).toHaveURL(onABoard)
   await page.getByRole('button', { name: 'Dein Konto' }).click()
-  await expect(page.getByRole('menu', { name: `Rosalind ${ROSALIND}` })).toBeVisible()
+  await expect(page.getByRole('menu', { name: `Rosalind ${FRANKLIN}` })).toBeVisible()
   // Not asked again: not after a reload, not after signing in again.
   await reloadHydrated(page)
   await expect(page).toHaveURL(onABoard)
-  await signIn(page, ROSALIND)
+  await signIn(page, FRANKLIN)
   await gotoHydrated(page, '/')
   await expect(page).toHaveURL(onABoard)
 })
 
 test('a user from before Usernames can change theirs instead of keeping it', async ({ page }) => {
-  await signIn(page, ALLOWLISTED[52], { name: 'Rosa Luxemburg', username: 'suggested' })
+  await signIn(page, ROSA, { name: 'Rosa Luxemburg', username: 'suggested' })
   await gotoHydrated(page, '/')
   await expect(field(page)).toHaveValue('Rosa')
 
@@ -104,7 +129,7 @@ test('a user from before Usernames can change theirs instead of keeping it', asy
 
   await expect(page).toHaveURL(onABoard)
   await page.getByRole('button', { name: 'Dein Konto' }).click()
-  await expect(page.getByRole('menu', { name: `Röschen ${ALLOWLISTED[52]}` })).toBeVisible()
+  await expect(page.getByRole('menu', { name: `Röschen ${ROSA}` })).toBeVisible()
 })
 
 for (const [device, viewport, renamed] of [
@@ -113,14 +138,14 @@ for (const [device, viewport, renamed] of [
 ] as const) {
   test(`the Username is changed in the settings on ${device}, and shows across the app afterwards, for other Members too`, async ({ page, browser }) => {
     await page.setViewportSize(viewport)
-    await signIn(page, DOROTHY)
+    await signIn(page, HODGKIN)
     const created = await page.request.post('/api/boards', { data: { name: `Namen ${renamed}`, emoji: '🥕' } })
     const { id: boardId } = await created.json() as { id: string }
     const dish = await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title: 'Linsencurry', placeholder: 'bowl' } })
     const { id: dishId } = await dish.json() as { id: string }
     expect((await page.request.post(`/api/dishes/${dishId}/cook`)).status()).toBe(200)
     const other = await newTab(browser, { viewport })
-    await signIn(other, MARIE)
+    await signIn(other, CURIE)
     expect((await other.request.post(`/api/invites/${await inviteToken(page, boardId)}/join`)).status()).toBe(200)
 
     await gotoHydrated(page, '/settings')

@@ -1,4 +1,5 @@
 import { and, eq, ne, sql } from 'drizzle-orm'
+import { de } from '../../app/strings/de'
 import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { user } from '../db/schema'
@@ -8,13 +9,10 @@ import { user } from '../db/schema'
 // Google photo; null for neither, and the client draws their initial.
 export const pictureOf = sql<string | null>`coalesce(${user.ownPicture}, ${user.image})`
 
-// What stands for someone who hasn't picked a Username yet (a new user who
-// followed an Invite Link is a Member before they have): never their Google
-// name.
-const NO_USERNAME_YET = 'Neu dabei'
-
-// A person's name wherever the app shows them to others: their Username.
-export const usernameOf = sql<string>`coalesce(${user.username}, ${NO_USERNAME_YET})`
+// A person's name wherever the app shows them to others: their Username,
+// never their Google name. Someone who hasn't picked one yet (a new user who
+// followed an Invite Link is a Member before they have) shows as "Neu dabei".
+export const usernameOf = sql<string>`coalesce(${user.username}, ${de.username.none})`
 
 // The signed-in user as /api/me answers: who they are (`name` is their
 // Username, empty until they have one), the picture shown for them, their
@@ -38,7 +36,13 @@ interface Signed {
   usernameConfirmedAt?: Date | null
 }
 
-// The same for the signed-in user, from their session.
+// The signed-in user as others see them on what they just added: the same
+// name and picture as usernameOf and pictureOf select.
+export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt'>): { id: string, name: string, image: string | null } {
+  return { id, name: username ?? de.username.none, image: ownPicture ?? image ?? null }
+}
+
+// /api/me's answer for the signed-in user, from their session.
 export function meOf(signedIn: Signed): Me {
   const { id, email, image, ownPicture, username, usernameConfirmedAt } = signedIn
   return {
@@ -59,7 +63,8 @@ export async function setOwnPicture(userId: string, url: string | null): Promise
   return updated ? meOf(updated) : null
 }
 
-const sameUsername = (username: string) => sql`lower(${user.username}) = lower(${username})`
+// As the unique index compares them (server/db/schema.ts).
+const sameUsername = (username: string) => sql`lower(${user.username} collate "und-x-icu") = lower(${username} collate "und-x-icu")`
 
 // Whether someone else has the Username, whatever the case.
 export async function usernameTaken(userId: string, username: string): Promise<boolean> {
@@ -69,7 +74,7 @@ export async function usernameTaken(userId: string, username: string): Promise<b
 
 // Makes `username` the user's Username, and theirs for good: they aren't
 // asked about it again. 'taken' if someone else got it first (the unique
-// index on lower(username) decides, not usernameTaken's look before).
+// index decides, not usernameTaken's look before).
 export async function setUsername(userId: string, username: string): Promise<Me | 'taken' | null> {
   try {
     const [updated] = await db

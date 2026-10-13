@@ -37,8 +37,10 @@ export const user = pgTable('user', {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, t => [
-  // No two users share a Username, whatever the case.
-  uniqueIndex('user_username_lower_idx').on(sql`lower(${t.username})`),
+  // No two users share a Username, whatever the case. By Unicode's rules
+  // ("und-x-icu"), not the database's locale: under a C locale lower()
+  // leaves "Ä" as it is.
+  uniqueIndex('user_username_lower_idx').on(sql`lower(${t.username} collate "und-x-icu")`),
 ])
 
 export const session = pgTable('session', {

@@ -20,6 +20,12 @@ const USERS: [name: string, username: string][] = [
   ['Jörg Über', 'Jörg'],
   ['  Anna-Lena Weiß ', 'Anna-Lena'],
   ['O\'Neil, Cathy', 'ONeil'],
+  // What isn't a letter or digit goes, in any script: a curly apostrophe, an emoji.
+  ['D’Artagnan', 'DArtagnan'],
+  ['Ana✨ Lima', 'Ana'],
+  // "ü" sent as u and two dots becomes the one character a keyboard types.
+  ['Müller Lüdenscheidt', 'Müller'],
+  ['MÜLLER', 'MÜLLER2'],
   ['Юлия Петрова', 'Юлия'],
   // Too short once cleaned: a stand-in.
   ['J. Doe', 'J.'],
