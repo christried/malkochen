@@ -341,7 +341,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-board"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.board }}
         </h2>
@@ -382,7 +382,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-columns"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.columns }}
         </h2>
@@ -430,7 +430,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-members"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.members }}
         </h2>
@@ -447,7 +447,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-invite"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.invite }}
         </h2>

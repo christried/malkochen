@@ -72,7 +72,7 @@ async function create() {
         >
       </AppField>
       <div class="flex flex-col gap-2">
-        <span class="text-label">{{ t.boards.emoji }}</span>
+        <span class="section-heading">{{ t.boards.emoji }}</span>
         <EmojiPicker
           v-model="emoji"
           :label="t.boards.emoji"
