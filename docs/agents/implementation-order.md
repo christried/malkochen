@@ -188,6 +188,7 @@ What the security pass (#139) found, most severe first. Each is its own ticket l
 | #195 | Image Store cleanup | Decided: deleted things stay restorable for 30 days. New env var `CRON_SECRET`. Blocks #220 |
 | #198 | Dependency updates from `pnpm audit` | Low. Dev and build tooling only. Before #192, whose CSP depends on what Nuxt inlines |
 | #192 | Response headers (CSP, framing) and no-store | Low. CSP report-only first |
+| #247 | CSP report endpoint | Low. From #192: violations reach Vercel's logs, so the policy can be enforced on evidence. Before #221, which adds `frame-src` |
 
 ### Phase 9: desktop review 2 (#201)
 
