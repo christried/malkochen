@@ -1,7 +1,8 @@
 import type { SourceKind } from '../server/source-lookup'
 
 // The five Source badges (PRD: TikTok, Instagram, YouTube, Pinterest and
-// blog/web). Reels and posts share Instagram's; any web page gets "web".
+// blog/web). Reels and posts share Instagram's; any web page gets "web". Their
+// pills read shorter (strings: sources).
 export type SourceBadgeKind = 'tiktok' | 'instagram' | 'youtube' | 'pinterest' | 'web'
 
 export function badgeKind(kind: SourceKind): SourceBadgeKind {

@@ -222,11 +222,12 @@ export const de = {
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     imageNotStored: (title: string) => `Das neue Bild ließ sich nicht speichern. „${title}“ behält sein bisheriges Bild.`,
   },
+  // The Source pill on a Dish's image: short, so it fits on a card's.
   sources: {
     tiktok: 'TikTok',
-    instagram: 'Instagram',
+    instagram: 'Insta',
     youtube: 'YouTube',
-    pinterest: 'Pinterest',
+    pinterest: 'Pin',
     web: 'Web',
   } satisfies Record<SourceBadgeKind, string>,
   // The image dialog ("Bild wählen") in Add Dish and the Dish detail.
