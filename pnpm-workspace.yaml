@@ -2,3 +2,33 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
   vue-demi: true
+
+# Security (#198): every advisory `pnpm audit` reports is in dev or build
+# tooling. None is in code the server on Vercel runs.
+overrides:
+  # Nuxt DevTools pulls in simple-git 3, which has critical advisories fixed
+  # only in simple-git 4. DevTools imports simple-git's default export, which
+  # 4 removed, so it can't be overridden. DevTools is off (nuxt.config.ts), so
+  # it isn't installed at all.
+  '@nuxt/devtools': '-'
+  source-map-js: '>=1.2.2'
+  # fontless (@nuxt/fonts 0.14) asks for esbuild 0.27 and calls transform();
+  # @esbuild-kit (drizzle-kit, also through better-auth) asks for 0.18 and
+  # calls transform() and transformSync(). 0.28 still has both. @nuxt/fonts 1
+  # drops esbuild, but emits no @font-face with this config: its own ticket.
+  'fontless>esbuild': '^0.28.2'
+  '@esbuild-kit/core-utils>esbuild': '^0.28.2'
+
+auditConfig:
+  # No patched release exists for these two (first_patched_version is null in
+  # the advisory). Both are unreachable here. Drop each entry once a fix is
+  # published and the parent picks it up.
+  ignoreGhsas:
+    # node-forge <=1.4.0: RSA signature verification. Only listhen (the dev
+    # server) imports it, to make a self-signed HTTPS certificate; nothing
+    # verifies a signature.
+    - GHSA-86w9-cpqp-85rv
+    # braces <=3.0.3: stack exhaustion on deeply nested brace patterns. Only
+    # reached through the build's globs (nitropack > globby > fast-glob >
+    # micromatch), whose patterns come from this repo, never from a request.
+    - GHSA-vfj7-8cjw-p6xm
