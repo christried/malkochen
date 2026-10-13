@@ -209,6 +209,7 @@ Everything from the second desktop review (`docs/reviews/desktop-review2.md`), a
 | #215 | Smooth motion 1: celebrations | Sets the SVG pattern for #216 and #217 |
 | #216 | Smooth motion 2: splash and link lookup | After #215 |
 | #217 | Smooth motion 3: remaining clips and the pea | After #215 |
+| #252 | Not-unlocked screen: "Bald" instead of "Gleich" | From #205's open question. After #217, which redraws the not-unlocked clip the sign sits in |
 | #218 | Move or delete several Dishes at once | Server endpoint for several Dishes |
 | #219 | Push notifications | After #210. New env vars `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`; migration |
 | #220 | Daily email digest | After #219 and #195. New env var `RESEND_API_KEY`; the user verifies the sending domain first |
