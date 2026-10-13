@@ -19,10 +19,10 @@ export type RateLimited = keyof typeof RATE_LIMITS
 
 // What one IP address may do of what needs no session, per window. Over the
 // limit a call is dropped without a word (server/utils/rate-limit.ts).
-export const ADDRESS_RATE_LIMITS = {
+export const CLIENT_RATE_LIMITS = {
   // A page that breaks its policy does so a handful of times per load; more
   // than this is someone filling the log (server/api/csp-report.post.ts).
   'csp-report': { calls: 60, window: '10 minutes' },
 } as const
 
-export type AddressRateLimited = keyof typeof ADDRESS_RATE_LIMITS
+export type ClientRateLimited = keyof typeof CLIENT_RATE_LIMITS

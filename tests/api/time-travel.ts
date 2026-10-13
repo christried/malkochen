@@ -37,17 +37,17 @@ export async function endLimitWindow(email: string, limited: string): Promise<vo
   )
 }
 
-// The same two for a limit counted per IP address (ADDRESS_RATE_LIMITS).
-export async function useUpAddressLimit(address: string, limited: string, calls: number): Promise<void> {
+// The same two for a limit counted per IP address (CLIENT_RATE_LIMITS).
+export async function useUpClientLimit(client: string, limited: string, calls: number): Promise<void> {
   await query(
-    `insert into address_limit_use (address, limited, window_start, calls) values ($1, $2, now(), $3)
-     on conflict (address, limited) do update set window_start = now(), calls = $3`,
-    [address, limited, calls],
+    `insert into client_limit_use (client, limited, window_start, calls) values ($1, $2, now(), $3)
+     on conflict (client, limited) do update set window_start = now(), calls = $3`,
+    [client, limited, calls],
   )
 }
 
-export async function endAddressLimitWindow(address: string, limited: string): Promise<void> {
-  await query(`update address_limit_use set window_start = window_start - interval '2 days' where address = $1 and limited = $2`, [address, limited])
+export async function endClientLimitWindow(client: string, limited: string): Promise<void> {
+  await query(`update client_limit_use set window_start = window_start - interval '2 days' where client = $1 and limited = $2`, [client, limited])
 }
 
 async function query(text: string, values: unknown[]): Promise<void> {

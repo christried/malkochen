@@ -1,8 +1,8 @@
 import { and, eq, gt, lt, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { db } from '../db'
-import { addressLimitUse, rateLimitUse } from '../db/schema'
-import { ADDRESS_RATE_LIMITS, RATE_LIMITS, type AddressRateLimited, type RateLimited } from '../rate-limits'
+import { clientLimitUse, rateLimitUse } from '../db/schema'
+import { CLIENT_RATE_LIMITS, RATE_LIMITS, type ClientRateLimited, type RateLimited } from '../rate-limits'
 
 // Counts one more of the user's calls to `limited` before the work is done,
 // so calls sent at once can't all slip under the limit: one more in the
@@ -35,27 +35,27 @@ export async function spendRateLimit(userId: string, limited: RateLimited): Prom
 
 // The same for a caller without a session, told apart by IP address (on
 // Vercel x-forwarded-for is the visitor's, set by Vercel and not by the
-// client): counts one more call to `limited`, and says whether the address
+// client): counts one more call to `limited`, and says whether the client
 // is still within its limit. It doesn't throw: what to do over the limit is
 // the caller's to decide.
-export async function withinAddressLimit(event: H3Event, limited: AddressRateLimited): Promise<boolean> {
-  const { calls, window } = ADDRESS_RATE_LIMITS[limited]
-  const address = getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
+export async function withinClientLimit(event: H3Event, limited: ClientRateLimited): Promise<boolean> {
+  const { calls, window } = CLIENT_RATE_LIMITS[limited]
+  const client = getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
   const windowOver = sql`now() - ${window}::interval`
-  const inWindow = gt(addressLimitUse.windowStart, windowOver)
+  const inWindow = gt(clientLimitUse.windowStart, windowOver)
   const [counted] = await db
-    .insert(addressLimitUse)
-    .values({ address, limited })
+    .insert(clientLimitUse)
+    .values({ client, limited })
     .onConflictDoUpdate({
-      target: [addressLimitUse.address, addressLimitUse.limited],
+      target: [clientLimitUse.client, clientLimitUse.limited],
       set: {
-        calls: sql`case when ${inWindow} then ${addressLimitUse.calls} + 1 else 1 end`,
-        windowStart: sql`case when ${inWindow} then ${addressLimitUse.windowStart} else now() end`,
+        calls: sql`case when ${inWindow} then ${clientLimitUse.calls} + 1 else 1 end`,
+        windowStart: sql`case when ${inWindow} then ${clientLimitUse.windowStart} else now() end`,
       },
     })
-    .returning({ calls: addressLimitUse.calls, newWindow: sql<boolean>`${addressLimitUse.windowStart} = now()` })
+    .returning({ calls: clientLimitUse.calls, newWindow: sql<boolean>`${clientLimitUse.windowStart} = now()` })
   if (counted?.newWindow) {
-    await db.delete(addressLimitUse).where(and(eq(addressLimitUse.limited, limited), lt(addressLimitUse.windowStart, windowOver)))
+    await db.delete(clientLimitUse).where(and(eq(clientLimitUse.limited, limited), lt(clientLimitUse.windowStart, windowOver)))
   }
   return (counted?.calls ?? 0) <= calls
 }

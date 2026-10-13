@@ -1,28 +1,28 @@
 import { readFile } from 'node:fs/promises'
 import { expect, inject, test } from 'vitest'
-import { ADDRESS_RATE_LIMITS } from '../../server/rate-limits'
+import { CLIENT_RATE_LIMITS } from '../../server/rate-limits'
 import { anonymous } from './client'
 import { SERVER_LOG } from './server-env'
-import { endAddressLimitWindow, useUpAddressLimit } from './time-travel'
+import { endClientLimitWindow, useUpClientLimit } from './time-travel'
 
 // POST /api/csp-report (#247): where a browser reports what broke a page's
 // report-only Content Security Policy (server/plugins/headers.ts). Each
 // report becomes one line in the server log and nothing else. Nobody is
 // signed in here: a violation on /login comes from someone who isn't.
-// Every test reports from an address of its own (x-forwarded-for, as Vercel
+// Every test reports as a client of its own (x-forwarded-for, as Vercel
 // sets it), so one test's reports never count towards another's limit.
 
 const REPORT_URI = 'application/csp-report'
 const REPORTING_API = 'application/reports+json'
 
-let addresses = 0
-const newAddress = () => `203.0.113.${++addresses}`
+let clients = 0
+const newClient = () => `203.0.113.${++clients}`
 
 // Sends a report as a browser does: from the app's own origin.
-function report(contentType: string, body: unknown, address = newAddress()) {
+function report(contentType: string, body: unknown, client = newClient()) {
   return anonymous().fetch('/api/csp-report', {
     method: 'POST',
-    headers: { 'content-type': contentType, 'origin': inject('apiBaseUrl'), 'sec-fetch-site': 'same-origin', 'x-forwarded-for': address },
+    headers: { 'content-type': contentType, 'origin': inject('apiBaseUrl'), 'sec-fetch-site': 'same-origin', 'x-forwarded-for': client },
     body: typeof body === 'string' ? body : JSON.stringify(body),
   })
 }
@@ -156,15 +156,15 @@ test('an oversized report is answered 204 and not logged', async () => {
   expect(await loggedAbout('/zu-gross')).toEqual([])
 })
 
-test('reports over the limit of one address are dropped silently, until the next window', async () => {
-  const address = newAddress()
-  await useUpAddressLimit(address, 'csp-report', ADDRESS_RATE_LIMITS['csp-report'].calls - 1)
+test('reports over the limit of one client are dropped silently, until the next window', async () => {
+  const client = newClient()
+  await useUpClientLimit(client, 'csp-report', CLIENT_RATE_LIMITS['csp-report'].calls - 1)
 
-  const last = await report(REPORT_URI, inlineScriptOn('/limit/last'), address)
-  const over = await report(REPORT_URI, inlineScriptOn('/limit/over'), address)
+  const last = await report(REPORT_URI, inlineScriptOn('/limit/last'), client)
+  const over = await report(REPORT_URI, inlineScriptOn('/limit/over'), client)
   const other = await report(REPORT_URI, inlineScriptOn('/limit/other'))
-  await endAddressLimitWindow(address, 'csp-report')
-  const next = await report(REPORT_URI, inlineScriptOn('/limit/next'), address)
+  await endClientLimitWindow(client, 'csp-report')
+  const next = await report(REPORT_URI, inlineScriptOn('/limit/next'), client)
 
   expect([last.status, over.status, other.status, next.status]).toEqual([204, 204, 204, 204])
   const logged = await loggedAbout('/limit/') as { document: string }[]

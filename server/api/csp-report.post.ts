@@ -10,14 +10,15 @@ import { violationsIn } from '../utils/csp-report'
 // It always answers 204, whatever was sent: a browser does nothing with the
 // answer, and anyone else learns nothing from it. Not logged: a body over
 // the size limit or without a Content-Length, anything that isn't a report,
-// and what an address sends over its limit (server/rate-limits.ts).
+// and what one IP address sends over its limit (server/rate-limits.ts).
 const MAX_BYTES = 16 * 1024
 
 export default defineEventHandler(async (event) => {
   setResponseStatus(event, 204)
   const length = getRequestHeader(event, 'content-length') ?? ''
   if (!/^\d+$/.test(length) || Number(length) > MAX_BYTES) return null
-  if (!await withinAddressLimit(event, 'csp-report')) return null
+  // A limit that can't be counted (the database is away) drops the report too.
+  if (!await withinClientLimit(event, 'csp-report').catch(() => false)) return null
 
   const contentType = (getRequestHeader(event, 'content-type') ?? '').split(';')[0]!.trim().toLowerCase()
   // As JSON, so nothing a report says can start a log line of its own.

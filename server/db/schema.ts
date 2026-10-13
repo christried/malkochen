@@ -125,13 +125,13 @@ export const rateLimitUse = pgTable('rate_limit_use', {
 }, t => [primaryKey({ columns: [t.userId, t.limited] })])
 
 // The same per IP address, for what needs no session
-// (ADDRESS_RATE_LIMITS): over the limit, a call is dropped.
-export const addressLimitUse = pgTable('address_limit_use', {
-  address: text('address').notNull(),
+// (CLIENT_RATE_LIMITS): over the limit, a call is dropped.
+export const clientLimitUse = pgTable('client_limit_use', {
+  client: text('client').notNull(),
   limited: text('limited').notNull(),
   windowStart: timestamp('window_start', { withTimezone: true }).notNull().defaultNow(),
   calls: integer('calls').notNull().default(1),
-}, t => [primaryKey({ columns: [t.address, t.limited] })])
+}, t => [primaryKey({ columns: [t.client, t.limited] })])
 
 export const membership = pgTable('membership', {
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),

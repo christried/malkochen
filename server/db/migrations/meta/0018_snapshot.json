@@ -127,12 +127,12 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.address_limit_use": {
-      "name": "address_limit_use",
+    "public.client_limit_use": {
+      "name": "client_limit_use",
       "schema": "",
       "columns": {
-        "address": {
-          "name": "address",
+        "client": {
+          "name": "client",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -161,10 +161,10 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "address_limit_use_address_limited_pk": {
-          "name": "address_limit_use_address_limited_pk",
+        "client_limit_use_client_limited_pk": {
+          "name": "client_limit_use_client_limited_pk",
           "columns": [
-            "address",
+            "client",
             "limited"
           ]
         }
