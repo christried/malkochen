@@ -213,6 +213,15 @@ Everything from the second desktop review (`docs/reviews/desktop-review2.md`), a
 | #220 | Daily email digest | After #219 and #195. New env var `RESEND_API_KEY`; the user verifies the sending domain first |
 | #221 | Click-to-play video embeds | After #192 (CSP) |
 
+### Phase 10: upgrades held back in #198
+
+Both were tried in #198 and reverted (PR #242). Neither fixes an advisory; they are upkeep, after Phase 9.
+
+| # | Ticket | Note |
+|---|---|---|
+| #243 | Upgrade Nuxt to 4.6 | Its dev error overlay is shared by every open page and broke 57 browser tests; keep it out of the test run first |
+| #244 | Migrate @nuxt/fonts to 1.x | 1.0.1 emits no `@font-face` with the current config. Removes the `fontless>esbuild` override |
+
 ## Keeping this file current
 
 When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.
