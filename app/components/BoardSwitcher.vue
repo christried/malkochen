@@ -205,7 +205,7 @@ function newBoard() {
             :class="{ 'mt-1 border-t border-line pt-1': !me }"
             :style="{ '--i': shown.length + 2 }"
           >
-            <LegalLinks @click="close()" />
+            <LegalLinks @chosen="close({ refocus: true })" />
           </li>
         </ul>
       </nav>

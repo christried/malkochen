@@ -172,11 +172,13 @@ watch(() => route.fullPath, () => close())
             role="none"
             class="border-t border-line pt-1"
           >
+            <!-- The page opens in a new tab, so focus stays here: back on
+                 your picture, as after Escape. -->
             <LegalLinks
               menu
               role="none"
               class="px-1"
-              @click="close()"
+              @chosen="close({ refocus: true })"
             />
           </li>
         </ul>

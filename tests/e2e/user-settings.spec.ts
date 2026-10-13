@@ -128,6 +128,27 @@ test('the user menu closes on a press anywhere else', async ({ page }) => {
   await expect(page.getByRole('menu')).toHaveCount(0)
 })
 
+test('a legal page chosen from the user menu opens in a new tab; the menu closes and focus is back on your picture', async ({ page, context }) => {
+  // christried.me is outside the app: answered here, not by the network.
+  await context.route('https://christried.me/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Impressum</title>' }))
+  await gotoHydrated(page, '/')
+  const avatar = page.getByRole('button', { name: 'Dein Konto' })
+  const menu = page.getByRole('menu')
+  await avatar.click()
+
+  // A press beside the two links chooses nothing: the menu stays open.
+  const row = (await menu.getByRole('menuitem', { name: 'Datenschutz' }).locator('xpath=..').boundingBox())!
+  await page.mouse.click(row.x + row.width - 8, row.y + row.height / 2)
+  await expect(avatar).toHaveAttribute('aria-expanded', 'true')
+
+  await menu.getByRole('menuitem', { name: 'Impressum' }).focus()
+  const opened = context.waitForEvent('page')
+  await page.keyboard.press('Enter')
+  expect((await opened).url()).toBe('https://christried.me/impressum')
+  await expect(menu).toHaveCount(0)
+  await expect(avatar).toBeFocused()
+})
+
 test('on a phone your settings and the legal pages are the last rows of the Board switcher', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await gotoHydrated(page, '/')
@@ -135,12 +156,17 @@ test('on a phone your settings and the legal pages are the last rows of the Boar
   await expect(page.getByRole('button', { name: 'Dein Konto' })).toBeHidden()
 
   await page.getByRole('button', { name: /Board wechseln/ }).click()
-  const panel = page.getByRole('navigation')
+  const panel = page.getByRole('navigation', { name: 'Deine Boards' })
   const lastRows = panel.getByRole('link').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })
   await expect(lastRows).toHaveText(['Deine Einstellungen', 'Impressum', 'Datenschutz'])
   await expect(lastRows.nth(1)).toHaveAttribute('href', 'https://christried.me/impressum')
   await expect(lastRows.nth(2)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
-  await expect(panel.getByRole('listitem').last().getByRole('link')).toHaveText(['Impressum', 'Datenschutz'])
+  const legalRow = panel.getByRole('listitem').last()
+  await expect(legalRow.getByRole('link')).toHaveText(['Impressum', 'Datenschutz'])
+  // A press beside the two links chooses nothing: the switcher stays open.
+  const row = (await legalRow.boundingBox())!
+  await page.mouse.click(row.x + row.width - 8, row.y + row.height / 2)
+  await expect(page.getByRole('button', { name: /Board wechseln/ })).toHaveAttribute('aria-expanded', 'true')
   await panel.getByRole('link', { name: 'Deine Einstellungen' }).click()
 
   await expect(page).toHaveURL('/settings')
