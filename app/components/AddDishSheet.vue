@@ -589,8 +589,7 @@ async function save() {
   background: color-mix(in oklch, var(--color-butter) 38%, var(--color-surface-muted));
 }
 /* The hint by the switched-off save button wears the lookup panel's lighter
-   wash, and its arrow nods up toward the warning. Reduced motion (main.css):
-   it nods once and rests. */
+   wash, and its arrow nods up toward the warning. Reduced motion: it rests. */
 .duplicate-hint {
   background: color-mix(in oklch, var(--color-butter) 22%, var(--color-surface-muted));
 }
