@@ -5,20 +5,20 @@ import type { DishSource } from './dishes'
 
 // What adding and editing a Dish accept from the client, shared by both.
 
-export const webLinkInput = z.url({ protocol: /^https?$/ }).max(2048)
+const webLinkInput = z.url({ protocol: /^https?$/ }).max(2048)
 
-export const dishTitle = z.string().trim().min(1).max(200)
+const dishTitle = z.string().trim().min(1).max(200)
 
 // Optional; a blank note is no note.
 export const dishNote = z.string().trim().max(2000).nullish().transform(note => note || null)
 
 // Who published the Source (CONTEXT.md: Creator), as Source Lookup found it
 // or a Member typed it. Optional; a blank one is none.
-export const dishCreator = z.string().trim().max(100).nullish().transform(creator => creator || null)
+const dishCreator = z.string().trim().max(100).nullish().transform(creator => creator || null)
 
 // The canonical link and kind from Source Lookup. The kind is read from the
 // link itself; the one sent only tells a blog from any other web page.
-export const sourceInput = z.object({ link: webLinkInput, kind: z.enum(SOURCE_KINDS).optional() })
+const sourceInput = z.object({ link: webLinkInput, kind: z.enum(SOURCE_KINDS).optional() })
 export type SourceInput = z.infer<typeof sourceInput>
 
 export function sourceOf(input: SourceInput): DishSource {
@@ -29,12 +29,12 @@ export function sourceOf(input: SourceInput): DishSource {
 
 // A Member's own photo ("Eigenes Foto") as POST /api/boards/:id/photos
 // stored it: where it went, and the photo ticket it came with.
-export const photoInput = z.object({ url: z.string().min(1).max(2048), ticket: z.string().max(200) })
+const photoInput = z.object({ url: z.string().min(1).max(2048), ticket: z.string().max(200) })
 
 // Where a Source image or own photo is shifted to (shared/image-focus.ts):
 // a point within the image, kept in whole percent.
 const percent = z.number().min(0).max(100).transform(Math.round)
-export const imageFocusInput = z.object({ x: percent, y: percent })
+const imageFocusInput = z.object({ x: percent, y: percent })
 
 // Adding a Dish (POST /api/boards/:id/dishes).
 export const addDishBody = z.object({

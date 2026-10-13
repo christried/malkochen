@@ -50,6 +50,7 @@ async function saveBoard(changes: BoardChanges) {
   name.value = saved.value.name
   emoji.value = saved.value.emoji
 }
+useEscapeToLeave(() => boardPath(saved.value))
 function saveName() {
   const trimmed = name.value.trim()
   if (!trimmed || trimmed === saved.value.name) name.value = saved.value.name

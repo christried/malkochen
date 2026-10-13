@@ -39,7 +39,7 @@ export function nothingFound(guess: SourceGuess): SourceLookupResult {
 // Given a link, return what we know about it. Never rejects.
 export type SourceLookup = (link: string) => Promise<SourceLookupResult>
 
-export interface StrategyContext {
+interface StrategyContext {
   http: Http
   // The time budget for the whole lookup, shared by all of `http`'s requests.
   timeoutMs: number

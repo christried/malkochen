@@ -30,7 +30,7 @@ export const PICTURE_SIDE = 512
 // over 4 MB shrunk anyway (app/composables/usePhotoUpload.ts).
 const MAX_PIXELS = 50_000_000
 
-export type PhotoRefusal = 'not-an-image' | 'too-large'
+type PhotoRefusal = 'not-an-image' | 'too-large'
 
 export type PreparedPhoto
   = | { ok: true, bytes: Uint8Array, contentType: 'image/jpeg' }

@@ -505,3 +505,26 @@ test('without a share sheet there is no "Link teilen", and "Link kopieren" is th
   })
   await expect(copy).toHaveCSS('background-color', inverse)
 })
+
+test('Escape closes a dialog over Board settings and nothing else; pressed again, it goes back to the Board', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await openSettings(page)
+
+  await page.getByRole('button', { name: 'Emoji ändern' }).click()
+  const picker = page.getByRole('dialog', { name: 'Emoji wählen' })
+  await expect(picker).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(picker).toBeHidden()
+  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await expect(page).toHaveURL(/\/b\/[^/]+\/settings$/)
+
+  // Typing in a field, Escape isn't for the page either.
+  await page.getByLabel('Name', { exact: true }).press('Escape')
+  await expect(page).toHaveURL(/\/b\/[^/]+\/settings$/)
+
+  await page.getByRole('heading', { level: 1 }).click()
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(/\/b\/[^/]+$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🍲 Meine Küche')
+  await expect(page.getByRole('button', { name: 'Gericht hinzufügen' })).toBeVisible()
+})

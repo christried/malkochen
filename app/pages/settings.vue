@@ -11,6 +11,7 @@ const t = useStrings()
 const { signOut } = useAuth()
 
 const { data: me } = await useMe()
+useEscapeToLeave(() => '/')
 
 // Your own Profile Picture: a picked photo is uploaded (checked, cut square
 // and cleaned by the server) and shown round in a preview; only "Übernehmen"

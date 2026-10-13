@@ -111,17 +111,20 @@ test('a pasted link shows a loading state, then a preview with image, editable t
 // second in all) when the test looks.
 const LONG_TITLE = 'Ofengemüse mit Kichererbsen, Tahini-Zitronen-Dressing und Granatapfel'
 
-async function findLongTitle(page: Page) {
-  await stubSourceLookup(page, { kind: 'tiktok', canonicalLink: TIKTOK, suggestedTitle: LONG_TITLE, imageUrl: PORTRAIT, imageTicket: 'fixture-ticket' })
+// Each test finds it at a video of its own: one already on the Board would
+// warn instead of saving.
+async function findLongTitle(page: Page, video: number) {
+  const link = `https://www.tiktok.com/@veganfood/video/730000000000000000${video}`
+  await stubSourceLookup(page, { kind: 'tiktok', canonicalLink: link, suggestedTitle: LONG_TITLE, imageUrl: PORTRAIT, imageTicket: 'fixture-ticket' })
   await stubImage(page, PORTRAIT, 90, 160)
   const sheet = await openAddDish(page)
-  await sheet.getByLabel('Link').fill(TIKTOK)
+  await sheet.getByLabel('Link').fill(link)
   await expect(sheet.getByRole('img', { name: 'Bild vom Link' })).toBeVisible()
   return sheet
 }
 
 test('a found title types in after the image blooms', async ({ page }) => {
-  const sheet = await findLongTitle(page)
+  const sheet = await findLongTitle(page, 1)
   const title = sheet.getByLabel('Titel')
 
   // Empty while the image blooms, then a growing start of the title.
@@ -134,7 +137,7 @@ test('a found title types in after the image blooms', async ({ page }) => {
 })
 
 test('typing into the title while it types in shows all of it, and keeps what was typed', async ({ page }) => {
-  const sheet = await findLongTitle(page)
+  const sheet = await findLongTitle(page, 2)
   const title = sheet.getByLabel('Titel')
   expect(await title.inputValue()).not.toBe(LONG_TITLE)
 
@@ -147,7 +150,7 @@ test('typing into the title while it types in shows all of it, and keeps what wa
 })
 
 test('saving while the title types in saves all of it', async ({ page }) => {
-  const sheet = await findLongTitle(page)
+  const sheet = await findLongTitle(page, 3)
   expect(await sheet.getByLabel('Titel').inputValue()).not.toBe(LONG_TITLE)
 
   const body = savedBody(page)
@@ -280,13 +283,59 @@ test('a link already on the Board warns, naming the Dish and its Column; "Trotzd
 
   await expect(sheet.getByRole('alert')).toContainText('Schon auf dem Board: „Crispy Tofu“ in Ideen')
   await expectCardShape(sheet.locator('[data-duplicate]'))
-  await expect(sheet.getByRole('button', { name: 'Speichern', exact: true })).toHaveCount(0)
+  // "Speichern" stays, switched off, and a hint beside it says why and
+  // points up to the card.
+  const save = sheet.getByRole('button', { name: 'Speichern', exact: true })
+  await expect(save).toBeVisible()
+  await expect(save).toBeDisabled()
+  const hint = sheet.locator('[data-duplicate-hint]')
+  await expect(hint).toHaveText('Schon auf dem Board. Oben kannst du es trotzdem speichern.')
+  await expect(save).toHaveAccessibleDescription('Schon auf dem Board. Oben kannst du es trotzdem speichern.')
+  await expectCardShape(hint)
+  // It sits right above the button, below the card it points to.
+  const cardBox = (await sheet.locator('[data-duplicate]').boundingBox())!
+  const hintBox = (await hint.boundingBox())!
+  const saveBox = (await save.boundingBox())!
+  expect(hintBox.y).toBeGreaterThan(cardBox.y + cardBox.height)
+  expect(saveBox.y - (hintBox.y + hintBox.height)).toBeLessThanOrEqual(12)
   const body = savedBody(page)
   await sheet.getByRole('button', { name: 'Trotzdem speichern' }).click()
 
   expect(await body).toMatchObject({ title: 'Crispy Tofu', source: { link: short } })
   await expect(sheet).toBeHidden()
   await expect(page.getByRole('region', { name: 'Ideen' }).getByRole('article', { name: 'Crispy Tofu' })).toHaveCount(2)
+})
+
+test('changing to a link that isn’t on the Board takes the hint away, and "Speichern" saves again', async ({ page }) => {
+  const onBoard = 'https://kochblog.example/rezept/linsen-dal'
+  const fresh = 'https://kochblog.example/rezept/kichererbsen-curry'
+  await signIn(page, ALLOWLISTED[2])
+  await seedDish(page, { title: 'Linsen-Dal', sourceLink: onBoard, sourceKind: 'blog' })
+  // Each link is found as itself.
+  await page.route('**/api/source-lookup?*', (route) => {
+    const link = new URL(route.request().url()).searchParams.get('link')!
+    return route.fulfill({ json: { kind: 'blog', canonicalLink: link, suggestedTitle: link === onBoard ? 'Linsen-Dal' : 'Kichererbsen-Curry', creator: null, imageUrl: null, imageTicket: null } })
+  })
+  const sheet = await openAddDish(page)
+  const save = sheet.getByRole('button', { name: 'Speichern', exact: true })
+  const hint = sheet.locator('[data-duplicate-hint]')
+
+  await sheet.getByLabel('Link').fill(onBoard)
+  await expect(sheet.getByRole('alert')).toContainText('Schon auf dem Board: „Linsen-Dal“ in Ideen')
+  await expect(hint).toBeVisible()
+  await expect(save).toBeDisabled()
+
+  await sheet.getByLabel('Link').fill(fresh)
+  await expect(sheet.getByLabel('Titel')).toHaveValue('Kichererbsen-Curry')
+  await expect(sheet.getByRole('alert')).toHaveCount(0)
+  await expect(hint).toHaveCount(0)
+  await expect(save).toBeEnabled()
+  const body = savedBody(page)
+  await save.click()
+
+  expect(await body).toMatchObject({ title: 'Kichererbsen-Curry', source: { link: fresh } })
+  await expect(sheet).toBeHidden()
+  await expect(page.getByRole('region', { name: 'Ideen' }).getByRole('article', { name: 'Kichererbsen-Curry' })).toHaveCount(1)
 })
 
 test('"Öffnen" opens the detail of the Dish already on the Board', async ({ page }) => {

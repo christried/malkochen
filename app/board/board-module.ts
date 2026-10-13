@@ -23,7 +23,7 @@ export type FocusTarget = { dish: string } | { column: string }
 // Where focus goes when the Dish at `index` leaves its Column: the Dish
 // that takes its place (the one below, else the one above), or the Column
 // itself if it is left empty.
-export function focusAfterLeaving(column: { id: string, dishes: { id: string }[] }, index: number): FocusTarget {
+function focusAfterLeaving(column: { id: string, dishes: { id: string }[] }, index: number): FocusTarget {
   const next = column.dishes[index + 1] ?? column.dishes[index - 1]
   return next ? { dish: next.id } : { column: column.id }
 }

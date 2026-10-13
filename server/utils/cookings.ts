@@ -77,7 +77,7 @@ export async function cookingDishId(cookingId: string, userId: string): Promise<
 // still take it back. The toast offers it for seconds, but its write waits
 // for the cook's own write to settle first (the client Board module queues
 // each Dish's writes), which a slow connection can hold back for minutes.
-export const UNDO_COOKING_MINUTES = 10
+const UNDO_COOKING_MINUTES = 10
 
 // The Cooking, if "Rückgängig" may take it back (#197): the newest in its
 // Dish's Cooking History, recorded by the user, within UNDO_COOKING_MINUTES.

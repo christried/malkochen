@@ -24,7 +24,7 @@ export const imageTickets = createImageTickets(BETTER_AUTH_SECRET)
 
 // Stores the image Source Lookup found for a Dish on this Board, for creating
 // and editing a Dish alike: the stored image's URL, or null if it wasn't stored.
-export const storeFoundImage = createFoundImageStore({ isMember, copyImage, tickets: imageTickets, onRefused: logNotCopied })
+const storeFoundImage = createFoundImageStore({ isMember, copyImage, tickets: imageTickets, onRefused: logNotCopied })
 
 // "Eigenes Foto": stores a Member's own photo (checked, scaled down and
 // stripped of its metadata first), and signs where it went, so a Dish only

@@ -17,7 +17,7 @@ import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/p
 type Write = keyof BoardTransport
 
 // A call held pending: it does nothing on the server until it succeeds.
-export interface Held {
+interface Held {
   succeed: () => void
 }
 

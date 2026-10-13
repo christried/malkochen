@@ -100,7 +100,7 @@ export async function resetInvite(boardId: string, userId: string): Promise<{ in
 const MISSES_ALLOWED = 30
 const MISS_WINDOW = sql`now() - interval '15 minutes'`
 
-export function tooManyMisses() {
+function tooManyMisses() {
   return createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found' })
 }
 
