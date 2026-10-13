@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { CSP_REPORT_PATH } from '../utils/csp-report'
 
 // The Content Security Policy of a page, naming the nonce its inline scripts
 // carry. default-src covers what isn't listed: the fonts, the service worker
@@ -19,14 +20,27 @@ function contentSecurityPolicy(nonce: string): string {
     'form-action \'self\' https://accounts.google.com',
     'base-uri \'self\'',
     'object-src \'none\'',
+    // Where the browser reports what broke the policy
+    // (server/api/csp-report.post.ts): report-to, today's way, names the
+    // endpoint of the Reporting-Endpoints header; report-uri is the one
+    // browsers without it know.
+    `report-uri ${CSP_REPORT_PATH}`,
+    `report-to ${REPORTING_ENDPOINT}`,
   ].join('; ')
 }
+
+const REPORTING_ENDPOINT = 'csp'
 
 // What a rendered page's answer carries beyond nuxt.config.ts's routeRules
 // (#192).
 export default defineNitroPlugin((nitro) => {
-  // Report-only for now: the browser logs what would be blocked and blocks
-  // nothing. To be enforced once it has run clean in production.
+  // Report-only for now: the browser reports what would be blocked and blocks
+  // nothing. To be enforced once the reports have stayed away in production
+  // (Vercel's logs, "[csp-report]").
+  // public/offline.html has an inline script and style of its own and gets no
+  // report-only policy: it shows only when malkochen can't be reached, so its
+  // reports would have nowhere to go. Its policy comes with enforcing, as
+  // hashes: a static file can't carry a nonce.
   nitro.hooks.hook('render:html', (html, { event }) => {
     // In dev Nuxt wraps the error screen in its own error page, which has
     // inline scripts and a frame of its own.
@@ -42,6 +56,7 @@ export default defineNitroPlugin((nitro) => {
     html.bodyPrepend = html.bodyPrepend.map(withNonce)
     html.bodyAppend = html.bodyAppend.map(withNonce)
     setResponseHeader(event, 'Content-Security-Policy-Report-Only', contentSecurityPolicy(nonce))
+    setResponseHeader(event, 'Reporting-Endpoints', `${REPORTING_ENDPOINT}="${CSP_REPORT_PATH}"`)
   })
 
   nitro.hooks.hook('render:response', (response) => {

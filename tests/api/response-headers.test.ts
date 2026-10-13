@@ -69,7 +69,16 @@ test('a page reports what breaks its Content Security Policy, without enforcing 
     'form-action \'self\' https://accounts.google.com',
     'base-uri \'self\'',
     'object-src \'none\'',
+    'report-uri /api/csp-report',
+    'report-to csp',
   ])
+})
+
+// tests/api/csp-report.test.ts covers the endpoint itself.
+test('a page names where the browser reports what breaks its policy', async () => {
+  const res = await anonymous().fetch('/login')
+
+  expect(res.headers.get('reporting-endpoints')).toBe('csp="/api/csp-report"')
 })
 
 // The error screen too: in production it is a page like any other.

@@ -13,5 +13,9 @@ export const IMAGE_DIR = resolve('.data/api-test-images')
 // Lets the tests call the daily cleanup job (/api/cron/cleanup) like Vercel Cron.
 export const CRON_SECRET = 'test-cron-secret-test-cron-secret'
 
+// Everything the server writes to stderr (console.warn and console.error),
+// kept for the tests that check what was logged (csp-report.test.ts).
+export const SERVER_LOG = resolve('.data/api-test-server.log')
+
 // The file names stored in one of its folders.
 export const storedImages = (folder: ImageFolder = 'dishes') => readdir(join(IMAGE_DIR, folder)).catch(() => [])
