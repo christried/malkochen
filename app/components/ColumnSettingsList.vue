@@ -5,7 +5,8 @@ import { columnDeletion } from '~~/shared/placement'
 
 // Board settings' Columns (PRD stories 57–60): each can be renamed in place,
 // given a Column Subtitle or have it cleared (not the Gekocht Column, whose
-// subtitle is fixed), moved with ↑/↓ or dragged by its grip, and deleted,
+// subtitle is fixed), moved with ↑/↓ or dragged by its grip (the row's left
+// end, up to just before its name), and deleted,
 // except the Gekocht Column (marked) and the last Column besides it. The
 // order changes here while dragging; `reordered` says a move is done, with
 // the order before it.
@@ -48,8 +49,8 @@ const list = useTemplateRef<ComponentPublicInstance>('list')
 const listEl = () => list.value?.$el as HTMLElement | undefined
 
 const STEPS = [
-  { delta: -1, icon: 'up', label: t.settings.moveUp },
-  { delta: 1, icon: 'down', label: t.settings.moveDown },
+  { delta: -1, icon: 'up', label: t.settings.moveUp, tip: t.settings.moveUpTip },
+  { delta: 1, icon: 'down', label: t.settings.moveDown, tip: t.settings.moveDownTip },
 ] as const
 
 // ↑/↓. When the Column reaches either end, focus goes to the other arrow.
@@ -145,28 +146,29 @@ function drop(event?: Event) {
     <li
       v-for="(column, index) in columns"
       :key="column.id"
-      class="row flex items-center gap-2 rounded-field bg-surface-muted py-2 pl-1 pr-2"
+      class="row flex items-center gap-1 rounded-field bg-surface-muted pr-2"
       :class="{ lifted: drag?.id === column.id }"
       :style="drag?.id === column.id ? { translate: `0 ${drag.dy}px` } : undefined"
       :data-column-row="column.id"
     >
+      <!-- The grab area (#206): the row's whole left end, as high as the row,
+           with the Column's accent dot in it, up to just before the name. -->
       <span
         aria-hidden="true"
         data-grip
-        class="grip flex h-11 w-8 shrink-0 cursor-grab items-center justify-center text-text-muted"
+        class="grip flex shrink-0 cursor-grab items-center gap-2 self-stretch pl-2.5 pr-2 text-text-muted"
         @pointerdown="lift(column, $event)"
       >
         <AppIcon
           name="grip"
-          :size="18"
+          :size="24"
+        />
+        <span
+          class="h-3 w-3 shrink-0 rounded-full"
+          :style="{ background: columnAccent(index) }"
         />
       </span>
-      <span
-        aria-hidden="true"
-        class="h-3 w-3 shrink-0 rounded-full"
-        :style="{ background: columnAccent(index) }"
-      />
-      <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div class="flex min-w-0 flex-1 flex-col gap-0.5 py-2">
         <input
           type="text"
           :value="column.name"
@@ -199,11 +201,12 @@ function drop(event?: Event) {
         </span>
       </div>
       <button
-        v-for="{ delta, icon, label } in STEPS"
+        v-for="{ delta, icon, label, tip } in STEPS"
         :key="delta"
         type="button"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="label(column.name)"
+        :data-tooltip="tip"
         :disabled="!columns[index + delta]"
         :data-step="delta"
         @click="step(column, delta)"
@@ -215,6 +218,7 @@ function drop(event?: Event) {
         type="button"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.settings.deleteColumn(column.name)"
+        :data-tooltip="t.settings.deleteColumnTip"
         :aria-describedby="deletable(column) ? undefined : lastHintId"
         :disabled="!deletable(column)"
         @click="emit('delete', column)"
@@ -260,8 +264,22 @@ function drop(event?: Event) {
   position: absolute;
   inset-inline: 0;
 }
+/* The grip takes the row's rounded left end; a finger on it drags the row
+   instead of scrolling the page. Under a mouse it darkens to the text colour. */
 .grip {
   touch-action: none;
+  border-radius: var(--radius-field);
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  transition: color var(--dur-fade) var(--ease-fade);
+}
+@media (hover: hover) and (pointer: fine) {
+  .grip:hover {
+    color: var(--color-text);
+  }
+}
+.lifted .grip {
+  color: var(--color-text);
 }
 .lifted {
   position: relative;

@@ -277,8 +277,8 @@ test('"99× gekocht" shows in full beside a long Creator, an avatar and a note, 
     const parts: Record<string, Locator> = {
       title: card.getByRole('heading', { name: title }),
       creator: shownCreator,
-      avatar: card.getByTitle(/^Hinzugefügt von /),
-      note: card.getByTitle('Mit Notiz'),
+      avatar: card.locator('[data-added-by]'),
+      note: card.locator('[data-note-icon]'),
       count,
       cook: page.getByRole('button', { name: `Gekocht ✓: „${title}“` }),
     }

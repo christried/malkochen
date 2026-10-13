@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A round icon button, 44px: a thumb-sized tap target. Name it with aria-label.
-// `raised`: on surface with the card's shadow, like the Board switcher's pill
-// beside it in the Board's header; otherwise on surface-muted.
+// `raised`: on surface with the card's shadow, as in the Board's header,
+// beside the Board switcher's pill; otherwise on surface-muted.
 defineProps<{ raised?: boolean }>()
 </script>
 

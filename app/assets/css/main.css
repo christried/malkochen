@@ -12,6 +12,18 @@ html {
   -webkit-font-smoothing: antialiased;
 }
 
+/* What can be clicked shows the pointer (#206): every button, and a tile
+   that is a label around its radio, checkbox or file input. Links have it
+   from the browser. A disabled control keeps the default cursor. In the base
+   layer, so a control that says more (the grip's grab) still does. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(input:is([type="radio"], [type="checkbox"], [type="file"]):not(:disabled)) {
+    cursor: pointer;
+  }
+}
+
 /* Dragging a Dish: timings from the handoff's interactions.json that have
    no token in tokens.css. Script reads them too (motionMs), so the two can't
    drift apart. Reduced motion collapses them, like the handoff's own. */
@@ -113,6 +125,56 @@ html {
   .board [data-lane] {
     --color-text-muted: color-mix(in oklab, var(--color-text) 30%, var(--board-muted));
     background-color: color-mix(in oklab, var(--accent) var(--wash-lane), var(--color-bg));
+  }
+}
+/* The Board switcher's pill (#206) is filled in the Board's tint, much fuller
+   than the page wears it (--wash-pill, against the page's 24% and 10%) and
+   washed into the surface colour, so it reads as a button instead of
+   blending into the page. Phones: the active Column's accent (--tint),
+   following it as the page does, also mid-swipe. With every Column showing:
+   the gradient across the Board's Column accents (switcherGradient, as
+   --switcher-gradient). Its name is in the ink that goes on an accent, the
+   same in both themes, which is why dark fills it fuller still: the name
+   keeps WCAG AA on every accent's fill, and the fill stands out from the
+   page behind it (several-boards.spec.ts checks both). Under a mouse it
+   lifts 2px and its shadow deepens, besides growing like every pill (below);
+   reduced motion: the shadow only. */
+:root {
+  --wash-pill: 66%;
+  --shadow-pill-lift: 0 18px 30px -12px rgba(70,55,30,.34), 0 3px 8px rgba(70,55,30,.10);
+}
+[data-theme="dark"] {
+  --wash-pill: 86%;
+  --shadow-pill-lift: 0 18px 30px -12px rgba(0,0,0,.80), 0 3px 8px rgba(0,0,0,.40);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wash-pill: 86%;
+    --shadow-pill-lift: 0 18px 30px -12px rgba(0,0,0,.80), 0 3px 8px rgba(0,0,0,.40);
+  }
+}
+.board-pill {
+  background-color: color-mix(in oklch, var(--tint, var(--color-butter)) var(--wash-pill), var(--color-surface));
+  color: var(--color-on-accent);
+  box-shadow: var(--shadow-card);
+  transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-lift) var(--ease-lift), box-shadow var(--dur-fade) var(--ease-fade), background-color var(--dur-swoosh) var(--ease-fade);
+}
+.board.following .board-pill {
+  transition: none;
+}
+@media (min-width: 768px) {
+  .board-pill {
+    background-image: var(--switcher-gradient);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .board-pill:not(:active):hover {
+    box-shadow: var(--shadow-pill-lift);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .board-pill:not(:active):hover {
+    translate: 0 -2px;
   }
 }
 /* A saved Dish flying onto the Board (handoff "Saved → card flies to
@@ -299,15 +361,32 @@ html[data-theme-reveal="fade"] *::after {
      zero specificity (:where), so the card's move, enter and leave
      transitions (TransitionGroup classes on the same <li>) win over it, and
      a card swooshing out isn't held back by the mouse still over it.
+     A card the search found ([data-dish-results]) does the same, under
+     the mouse itself.
    - With motion, a pill or round button grows to 1.04 (the primary, ink one
-     tilts −1°), but not while pressed: then it shrinks (tap).
-   Reduced motion: the shadow only. */
+     tilts −1°), but not while pressed: then it shrinks (tap). So does a
+     tile (.hover-grow: an emoji, a Placeholder, an image choice), and a
+     label that is one.
+   Reduced motion: the shadow only; and what would have grown shows a ring
+   in the text colour instead (#206), which a focus ring replaces.
+   Everything clickable reacts one of these ways, or with a tint of its own
+   (a menu's rows); a disabled control doesn't (affordances.spec.ts walks
+   them all). */
 @media (hover: hover) and (pointer: fine) {
-  [data-dish-list] > li article {
+  [data-dish-list] > li article,
+  [data-dish-results] > li article {
     transition: box-shadow 280ms var(--ease-fade);
   }
-  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover article {
+  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover article,
+  [data-dish-results] > li > a:hover article {
     box-shadow: var(--shadow-lift);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  @layer components {
+    :where(button, a, label):where(.rounded-pill, .rounded-full, .hover-grow):not(:disabled):hover {
+      outline: 2px solid color-mix(in srgb, var(--color-text) 30%, transparent);
+    }
   }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
@@ -321,10 +400,18 @@ html[data-theme-reveal="fade"] *::after {
   [data-dish-list] > li [data-thumb] > * {
     transition: scale 280ms var(--ease-pop);
   }
-  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover [data-thumb] > * {
+  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover [data-thumb] > *,
+  [data-dish-results] > li > a:hover [data-thumb] > * {
     scale: 1.08;
   }
-  :where(button, a):where(.rounded-pill, .rounded-full):not(:disabled, :active):hover {
+  :where([data-dish-results] > li > a) {
+    transition: translate 280ms var(--ease-pop), rotate 280ms var(--ease-pop), scale var(--dur-tap) var(--ease-tap);
+  }
+  :where([data-dish-results] > li > a:hover) {
+    translate: 0 -4px;
+    rotate: -.6deg;
+  }
+  :where(button, a, label):where(.rounded-pill, .rounded-full, .hover-grow):not(:disabled, :active):hover {
     scale: 1.04;
   }
   :where(button, a).rounded-pill.bg-inverse:not(:disabled, :active):hover {

@@ -96,7 +96,7 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
         <span
           v-if="dish.creator"
           class="truncate"
-          :title="dish.creator"
+          :data-tooltip="dish.creator"
           data-creator
         ><span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}</span>
         <span
@@ -113,8 +113,9 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
       <div class="mt-auto flex min-w-0 items-center gap-2 pr-[108px] text-text-muted">
         <span
           v-if="dish.addedBy"
-          :title="t.dish.addedBy(dish.addedBy.name)"
+          :data-tooltip="t.dish.addedBy(dish.addedBy.name)"
           class="inline-flex"
+          data-added-by
         >
           <UserAvatar
             :name="dish.addedBy.name"
@@ -124,7 +125,7 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
         </span>
         <span
           v-if="dish.note"
-          :title="t.dish.hasNote"
+          :data-tooltip="t.dish.hasNote"
           class="inline-flex"
           data-note-icon
         >

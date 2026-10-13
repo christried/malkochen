@@ -39,6 +39,7 @@ const t = useStrings()
         type="button"
         class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.settings.manageMember(member.name)"
+        :data-tooltip="t.settings.manageMember(member.name)"
         aria-haspopup="dialog"
         @click="$emit('manage', member)"
       >

@@ -63,7 +63,7 @@ function pickPlaceholder() {
   emit('placeholder')
 }
 
-const choice = 'flex min-h-24 flex-col items-center justify-center gap-2 overflow-hidden rounded-thumb bg-surface-muted p-3 text-label text-text transition-transform duration-tap ease-tap active:scale-95'
+const choice = 'hover-grow flex min-h-24 flex-col items-center justify-center gap-2 overflow-hidden rounded-thumb bg-surface-muted p-3 text-label text-text transition-transform duration-tap ease-tap active:scale-95'
 </script>
 
 <template>

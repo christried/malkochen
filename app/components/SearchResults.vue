@@ -46,6 +46,7 @@ const status = computed(() => {
         tag="ol"
         name="result"
         class="flex flex-col gap-4"
+        data-dish-results
       >
         <li
           v-for="({ dish, column, accent }, i) in results"

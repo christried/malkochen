@@ -153,6 +153,13 @@ nav {
 .tab.is-active::before {
   background: transparent;
 }
+/* Under a mouse (a narrow window on a computer), a tab that isn't the
+   active one darkens a little. */
+@media (hover: hover) and (pointer: fine) {
+  .tab:not(.is-active, .is-drop-target):hover::before {
+    background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface-muted));
+  }
+}
 .tab-pebble {
   z-index: -1;
   scale: 1.06;

@@ -31,6 +31,7 @@ defineExpose({ focus: () => field.value?.focus() })
     </div>
     <RoundButton
       :aria-label="t.search.close"
+      :data-tooltip="t.search.close"
       @click="$emit('close')"
     >
       <AppIcon name="close" />

@@ -67,7 +67,7 @@ function move(step: number) {
       :tabindex="tabStop === placeholder ? 0 : -1"
       class="tile relative aspect-square overflow-hidden rounded-thumb bg-surface-muted transition-transform duration-pop ease-pop focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       :style="{ '--i': i }"
-      :class="selected === placeholder ? '-rotate-[1.5deg] scale-105 ring-[3px] ring-inverse' : 'active:scale-95'"
+      :class="selected === placeholder ? '-rotate-[1.5deg] scale-105 ring-[3px] ring-inverse' : 'hover-grow active:scale-95'"
       @click="pick(placeholder)"
     >
       <PlaceholderClip

@@ -203,7 +203,7 @@ watch(dropTint, (tint) => {
 watch(dragging, (isDragging) => {
   if (isDragging) dropWash.value = undefined
 }, { flush: 'sync' })
-const gradient = computed(() => boardGradient(board.value?.columns.length ?? 0))
+const colours = computed(() => boardColours(board.value?.columns.length ?? 0))
 
 const { dx, progress, following } = useColumnSwipe(columnsEl, {
   count: () => board.value?.columns.length ?? 0,
@@ -521,7 +521,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     v-if="board"
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
     :class="{ following, dragging, 'drop-tinted': dropTint }"
-    :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, '--board-gradient': gradient }"
+    :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, ...colours }"
   >
     <header class="flex items-center justify-between gap-3">
       <div class="flex min-w-0 items-center gap-3">
@@ -531,6 +531,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           ref="searchButton"
           raised
           :aria-label="t.search.open"
+          :data-tooltip="t.search.open"
           @click="searchOpen = true"
         >
           <AppIcon
@@ -541,6 +542,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <NuxtLink
           :to="boardSettingsPath(board)"
           :aria-label="t.settings.title"
+          :data-tooltip="t.settings.title"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-text shadow-card transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >
           <AppIcon
@@ -679,6 +681,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                     type="button"
                     class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
                     :aria-label="t.dish.menu(dish.title)"
+                    :data-tooltip="t.dish.more"
                     aria-haspopup="dialog"
                     @click="menuDish = dish"
                   >
@@ -758,6 +761,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
       :aria-label="t.addDish.open"
+      :data-tooltip="t.addDish.open"
       @click="adding = true"
     >
       <svg
@@ -922,7 +926,20 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 .fab {
   isolation: isolate;
   border-radius: var(--radius-blob);
-  transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+  transition: scale var(--dur-tap) var(--ease-tap), rotate var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+}
+/* Under a mouse its pebble lightens, and with motion it grows and tilts as
+   the primary pill does (handoff Button "hover"); not while pressed. */
+@media (hover: hover) and (pointer: fine) {
+  .fab:not(:active):hover::before {
+    background: color-mix(in srgb, var(--color-inverse) 84%, var(--color-bg));
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .fab:not(:active):hover {
+    scale: 1.05;
+    rotate: -1deg;
+  }
 }
 .fab::before {
   content: '';
@@ -932,6 +949,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   border-radius: inherit;
   background: var(--color-inverse);
   box-shadow: var(--shadow-fab);
+  transition: background-color var(--dur-fade) var(--ease-fade);
   animation: fab-breathe 3.6s var(--ease-idle) infinite, fab-morph 8s var(--ease-idle) infinite alternate;
 }
 @keyframes fab-breathe {

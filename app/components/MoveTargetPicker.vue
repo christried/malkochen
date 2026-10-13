@@ -57,7 +57,7 @@ const groups = computed(() => [
         v-for="{ column, accent } in group.columns"
         :key="column.id"
         type="button"
-        class="flex items-center gap-3 rounded-field bg-surface-muted px-5 py-3.5 text-left text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        class="flex items-center gap-3 rounded-field bg-surface-muted px-5 py-3.5 text-left text-button transition-[scale,background-color] duration-tap ease-tap hover:bg-line-strong active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         @click="$emit('move', column.id, group.toBoard)"
       >
         <span

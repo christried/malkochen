@@ -33,7 +33,7 @@ function choose(theme: ThemePreference, option: HTMLElement) {
       role="radio"
       :aria-checked="preference === theme"
       class="relative rounded-[var(--radius-pill)] px-4 py-2.5 text-button transition-colors duration-fade ease-fade focus-visible:outline-2 focus-visible:outline-focus"
-      :class="preference === theme ? 'text-on-inverse' : 'text-text'"
+      :class="preference === theme ? 'text-on-inverse' : 'text-text hover:bg-line'"
       @click="choose(theme, $event.currentTarget as HTMLElement)"
     >
       {{ t.theme[theme] }}
