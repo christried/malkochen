@@ -927,7 +927,20 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 .fab {
   isolation: isolate;
   border-radius: var(--radius-blob);
-  transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+  transition: scale var(--dur-tap) var(--ease-tap), rotate var(--dur-tap) var(--ease-tap), translate var(--dur-settle) var(--ease-settle);
+}
+/* Under a mouse its pebble lightens, and with motion it grows and tilts as
+   the primary pill does (handoff Button "hover"); not while pressed. */
+@media (hover: hover) and (pointer: fine) {
+  .fab:not(:active):hover::before {
+    background: color-mix(in srgb, var(--color-inverse) 84%, var(--color-bg));
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .fab:not(:active):hover {
+    scale: 1.05;
+    rotate: -1deg;
+  }
 }
 .fab::before {
   content: '';
@@ -937,6 +950,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   border-radius: inherit;
   background: var(--color-inverse);
   box-shadow: var(--shadow-fab);
+  transition: background-color var(--dur-fade) var(--ease-fade);
   animation: fab-breathe 3.6s var(--ease-idle) infinite, fab-morph 8s var(--ease-idle) infinite alternate;
 }
 @keyframes fab-breathe {

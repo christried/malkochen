@@ -19,7 +19,7 @@ const name = useId()
     <label
       v-for="(option, index) in shown"
       :key="option"
-      class="tile relative flex aspect-square cursor-pointer items-center justify-center bg-surface-muted text-[26px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-focus"
+      class="tile hover-grow relative flex aspect-square cursor-pointer items-center justify-center bg-surface-muted text-[26px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-focus"
       :class="{ selected: option === emoji }"
       :style="{ '--i': index }"
     >

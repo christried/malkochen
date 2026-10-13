@@ -350,7 +350,7 @@ function confirmDelete() {
           <button
             ref="emojiButton"
             type="button"
-            class="emoji-pebble flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px] transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            class="emoji-pebble hover-grow flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px] transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
             :aria-label="t.settings.emoji"
             :data-tooltip="t.settings.emoji"
             aria-haspopup="dialog"
@@ -697,7 +697,7 @@ function confirmDelete() {
         <label
           v-for="target in targets"
           :key="target.id"
-          class="flex cursor-pointer items-center gap-3 rounded-field bg-surface-muted px-5 py-3.5 text-button has-[:checked]:ring-2 has-[:checked]:ring-text has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-focus"
+          class="flex cursor-pointer items-center gap-3 rounded-field bg-surface-muted px-5 py-3.5 text-button transition-colors duration-fade ease-fade hover:bg-line-strong has-[:checked]:ring-2 has-[:checked]:ring-text has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-focus"
         >
           <input
             v-model="moveTo"

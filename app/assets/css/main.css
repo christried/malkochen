@@ -361,15 +361,33 @@ html[data-theme-reveal="fade"] *::after {
      zero specificity (:where), so the card's move, enter and leave
      transitions (TransitionGroup classes on the same <li>) win over it, and
      a card swooshing out isn't held back by the mouse still over it.
+     A card the search found ([data-dish-results]) does the same, under
+     the mouse itself.
    - With motion, a pill or round button grows to 1.04 (the primary, ink one
-     tilts −1°), but not while pressed: then it shrinks (tap).
-   Reduced motion: the shadow only. */
+     tilts −1°), but not while pressed: then it shrinks (tap). So does a
+     tile (.hover-grow: an emoji, a Placeholder, an image choice), and a
+     label that is one.
+   Reduced motion: the shadow only; and what would have grown, and has no
+   hover colour of its own, shows a ring in the text colour instead (#206),
+   which a focus ring replaces.
+   Everything clickable reacts one of these ways, or with a tint of its own
+   (a menu's rows); a disabled control doesn't (affordances.spec.ts walks
+   them all). */
 @media (hover: hover) and (pointer: fine) {
-  [data-dish-list] > li article {
+  [data-dish-list] > li article,
+  [data-dish-results] > li article {
     transition: box-shadow 280ms var(--ease-fade);
   }
-  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover article {
+  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover article,
+  [data-dish-results] > li > a:hover article {
     box-shadow: var(--shadow-lift);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  @layer components {
+    :where(button, a, label):where(.rounded-pill, .rounded-full, .hover-grow):not(:disabled, [class*="hover:"]):hover {
+      outline: 2px solid color-mix(in srgb, var(--color-text) 30%, transparent);
+    }
   }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
@@ -383,10 +401,18 @@ html[data-theme-reveal="fade"] *::after {
   [data-dish-list] > li [data-thumb] > * {
     transition: scale 280ms var(--ease-pop);
   }
-  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover [data-thumb] > * {
+  .board:not(.dragging) [data-dish-list] > li[data-drag-state="card"]:hover [data-thumb] > *,
+  [data-dish-results] > li > a:hover [data-thumb] > * {
     scale: 1.08;
   }
-  :where(button, a):where(.rounded-pill, .rounded-full):not(:disabled, :active):hover {
+  :where([data-dish-results] > li > a) {
+    transition: translate 280ms var(--ease-pop), rotate 280ms var(--ease-pop), scale var(--dur-tap) var(--ease-tap);
+  }
+  :where([data-dish-results] > li > a:hover) {
+    translate: 0 -4px;
+    rotate: -.6deg;
+  }
+  :where(button, a, label):where(.rounded-pill, .rounded-full, .hover-grow):not(:disabled, :active):hover {
     scale: 1.04;
   }
   :where(button, a).rounded-pill.bg-inverse:not(:disabled, :active):hover {
