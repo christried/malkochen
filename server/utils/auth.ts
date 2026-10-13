@@ -2,12 +2,15 @@ import { betterAuth, type BetterAuthPlugin } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthEndpoint, createAuthMiddleware } from 'better-auth/api'
 import { setSessionCookie } from 'better-auth/cookies'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { USERNAME_MAX, usernameProblem } from '../../shared/username'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { parseServerEnv } from '../env'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
+import { usernameTaken } from './people'
 
 const env = parseServerEnv(process.env)
 
@@ -38,6 +41,19 @@ const onlyUsedEndpoints = {
   },
 } satisfies BetterAuthPlugin
 
+// For the dev sign-in: a Username from the first word of `name`, as
+// migration 0019 makes one, with the next free number when it is taken.
+async function giveUsername(userId: string, name: string, confirmed: boolean) {
+  const first = name.trim().split(/\s+/)[0]!.replace(/[^\p{L}\p{M}\d_.-]/gu, '').slice(0, USERNAME_MAX)
+  const base = usernameProblem(first) ? 'Koch' : first
+  for (let n = 1; ; n++) {
+    const username = n === 1 ? base : `${base.slice(0, USERNAME_MAX - String(n).length)}${n}`
+    if (await usernameTaken(userId, username)) continue
+    await db.update(schema.user).set({ username, usernameConfirmedAt: confirmed ? new Date() : null }).where(eq(schema.user.id, userId))
+    return
+  }
+}
+
 // Local dev and tests only (AUTH_DEV_BYPASS=1, refused on Vercel production
 // and preview by server/env.ts): POST /api/auth/dev/sign-in
 // { email, name?, image?, emailVerified? } signs in without Google. It goes
@@ -55,9 +71,14 @@ const devSignIn = {
         image: z.url().optional(),
         // What Google would say about the email; verified unless told otherwise.
         emailVerified: z.boolean().optional(),
+        // A new user's Username. Unlike after Google ('none': they pick one
+        // first), they get one made from their name, so local dev and the
+        // tests start on a Board; 'suggested' leaves it to be confirmed, as
+        // migration 0019 left the users from before Usernames.
+        username: z.enum(['none', 'suggested', 'picked']).optional(),
       }),
     }, async (ctx) => {
-      const { email, name, image, emailVerified = true } = ctx.body
+      const { email, name, image, emailVerified = true, username = 'picked' } = ctx.body
       const adapter = ctx.context.internalAdapter
       const existing = (await adapter.findUserByEmail(email))?.user
       // A new user goes through validateUserInfo inside createUser, exactly
@@ -68,6 +89,7 @@ const devSignIn = {
 
       const user = existing
         ?? await adapter.createUser({ email, name: name ?? email.split('@')[0]!, image, emailVerified }, { method: 'dev-bypass' })
+      if (!existing && username !== 'none') await giveUsername(user.id, user.name, username === 'picked')
       const session = await adapter.createSession(user.id)
       await setSessionCookie(ctx, { session, user })
       return ctx.json({ userId: user.id })
@@ -98,8 +120,12 @@ export const auth = betterAuth({
     // The user's own Profile Picture (server/utils/people.ts), so the session
     // carries it. Never taken from a sign-in or Better Auth's own endpoints
     // (input: false): only PUT /api/me/picture sets it.
+    // The same for their Username and when they confirmed it: only
+    // PUT /api/me/username sets them.
     additionalFields: {
       ownPicture: { type: 'string', required: false, input: false },
+      username: { type: 'string', required: false, input: false },
+      usernameConfirmedAt: { type: 'date', required: false, input: false },
     },
     // Runs on user creation and, for Google, on every repeat sign-in too, so
     // someone removed from the Allowlist can't sign in again. Gets what Google

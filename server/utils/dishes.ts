@@ -7,7 +7,7 @@ import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, membership, user } from '../db/schema'
 import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
-import { pictureOf } from './people'
+import { pictureOf, shownAs, usernameOf } from './people'
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -110,7 +110,7 @@ function selectDishes() {
       placeholder: dish.placeholder,
       createdAt: dish.createdAt,
       adderId: user.id,
-      adderName: user.name,
+      adderName: usernameOf,
       adderImage: pictureOf,
     })
     .from(dish)
@@ -421,7 +421,7 @@ function escapeLike(text: string): string {
 // of the Board, or if another Member deleted it already.
 export async function addDish(
   boardId: string,
-  adder: Omit<DishAdder, 'image'> & { image?: string | null, ownPicture?: string | null },
+  adder: Parameters<typeof shownAs>[0],
   input: NewDish,
 ): Promise<PlacedDish | null> {
   const columns = await db
@@ -464,8 +464,7 @@ export async function addDish(
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,
-    // Their Profile Picture, picked as everywhere else (server/utils/people.ts).
-    addedBy: { id: adder.id, name: adder.name, image: adder.ownPicture ?? adder.image ?? null },
+    addedBy: shownAs(adder),
     createdAt: created.createdAt.toISOString(),
     cookings: [],
   })

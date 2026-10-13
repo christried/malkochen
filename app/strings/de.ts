@@ -436,6 +436,35 @@ export const de = {
     notFoundBody: 'Diese Seite gibt es nicht, oder du bist dort nicht (mehr) dabei.',
     toApp: 'Zu malkochen',
   },
+  // Your Username (CONTEXT.md): picked before your first Board, confirmed
+  // once if you were here before Usernames, changed in your settings. The
+  // server answers with `problem`, `taken` and `tooMany` as they are
+  // (server/api/me/username.put.ts).
+  username: {
+    label: 'Name',
+    pickHeadline: 'Wie sollen wir dich nennen?',
+    pickBody: 'Such dir einen Namen aus. So sehen dich die anderen auf euren Boards.',
+    pick: 'Los geht’s',
+    confirmHeadline: 'Passt dein Name?',
+    confirmBody: 'So sehen dich die anderen auf euren Boards. Du kannst ihn behalten oder ändern.',
+    keep: 'Passt so',
+    hint: '2 bis 24 Zeichen: Buchstaben, Ziffern und _ . -',
+    later: 'Du kannst ihn später in den Einstellungen ändern.',
+    save: 'Speichern',
+    saving: 'Speichert …',
+    saved: 'Gespeichert.',
+    problem: {
+      short: 'Mindestens 2 Zeichen.',
+      long: 'Höchstens 24 Zeichen.',
+      characters: 'Nur Buchstaben, Ziffern und _ . - sind erlaubt.',
+    },
+    taken: 'Den Namen gibt es schon. Probier einen anderen.',
+    tooMany: 'Das waren viele Namen für einen Tag. Morgen kannst du ihn wieder ändern.',
+    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    // What stands for a Member who hasn't picked theirs yet (a new user who
+    // followed an Invite Link is a Member before they have).
+    none: 'Neu dabei',
+  },
   // Your own settings (PRD stories 73–75), not a Board's.
   userSettings: {
     title: 'Einstellungen',
