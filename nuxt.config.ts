@@ -1,5 +1,14 @@
 import tailwindcss from '@tailwindcss/vite'
 
+const EVERYWHERE = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  // Both keep other sites from framing the app: frame-ancestors is today's
+  // way, X-Frame-Options the one older browsers know.
+  'X-Frame-Options': 'DENY',
+  'Content-Security-Policy': 'frame-ancestors \'none\'',
+}
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -58,6 +67,20 @@ export default defineNuxtConfig({
     nodeTsConfig: {
       include: ['../tests/**/*', '../*.config.ts'],
     },
+  },
+  // Headers for every answer, files from public/ included (#192). What only
+  // a rendered page gets (its own Cache-Control, the nonce'd CSP) is set in
+  // server/plugins/headers.ts.
+  routeRules: {
+    '/**': { headers: EVERYWHERE },
+    // Named again for the built files: Nitro gives them a caching rule of
+    // their own, and for a file Vercel applies the first rule that matches,
+    // not all of them.
+    '/_nuxt/**': { headers: EVERYWHERE },
+    '/_fonts/**': { headers: EVERYWHERE },
+    // Boards, Dishes and /api/me (with the email address) belong in no
+    // cache. Unset, Vercel answers "public, max-age=0, must-revalidate".
+    '/api/**': { headers: { 'Cache-Control': 'private, no-store' } },
   },
   vite: {
     plugins: [tailwindcss()],

@@ -29,19 +29,26 @@ const HOLD_MS = 400
 // through by then (a slow connection) is cut, and the page shown.
 const GIVE_UP_MS = 2000
 
+// Only a page as the server sent it has the splash: app.vue first rendered
+// in the browser (after an error page's way back home) is in-app navigation.
+const fromServer = import.meta.server || useNuxtApp().isHydrating
+
 const key = JSON.stringify(SPLASH_SEEN_KEY)
 useHead({
   style: [{ key: 'splash', innerHTML: 'html[data-splash-seen] [data-splash]{display:none}' }],
-  script: [{
-    key: 'splash',
-    tagPriority: 'critical',
-    innerHTML: `try{if(sessionStorage.getItem(${key}))document.documentElement.dataset.splashSeen="";else sessionStorage.setItem(${key},"1")}catch(e){}`,
-  }],
+  // The script only where the server writes it into the page, with the
+  // Content Security Policy's nonce (server/plugins/headers.ts). Added by the
+  // browser it would have none, and nothing left to do.
+  script: fromServer
+    ? [{
+        key: 'splash',
+        tagPriority: 'critical',
+        innerHTML: `try{if(sessionStorage.getItem(${key}))document.documentElement.dataset.splashSeen="";else sessionStorage.setItem(${key},"1")}catch(e){}`,
+      }]
+    : [],
 })
 
-// Only a page as the server sent it has the splash: app.vue first rendered
-// in the browser (after an error page's way back home) is in-app navigation.
-const state = ref<'showing' | 'leaving' | 'gone'>(import.meta.client && !useNuxtApp().isHydrating ? 'gone' : 'showing')
+const state = ref<'showing' | 'leaving' | 'gone'>(fromServer ? 'showing' : 'gone')
 const play = ref(false)
 const landscape = ref(false)
 const timers: ReturnType<typeof setTimeout>[] = []
