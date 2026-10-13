@@ -47,7 +47,9 @@ async function lastRowColours(page: Page, heading: Locator) {
     clip: { x: Math.ceil(box.x), y: Math.floor(box.y + box.height) - 1, width: Math.floor(box.width) - 1, height: 1 },
   })
   return page.evaluate(async (base64) => {
-    const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob())
+    // Not fetch() of a data: URL: the Content Security Policy only lets the
+    // page connect to its own origin.
+    const bitmap = await createImageBitmap(new Blob([Uint8Array.from(atob(base64), char => char.charCodeAt(0))], { type: 'image/png' }))
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
     const context = canvas.getContext('2d')!
     context.drawImage(bitmap, 0, 0)

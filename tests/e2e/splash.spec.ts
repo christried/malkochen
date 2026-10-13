@@ -1,11 +1,12 @@
-import { expect, test, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, testWithSplash as test } from './fixtures'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
 
 // The splash (handoff "Splash"): on the first load of a tab session the
 // clip plays from frame 10 over the page, then fades to it. Never again in
-// that tab, and never on in-app navigation. This file uses Playwright's own
-// `test`, so its tabs start without the opt-out every other file has.
+// that tab, and never on in-app navigation. This file uses `testWithSplash`,
+// so its tabs start without the opt-out every other file has.
 
 const splash = (page: Page) => page.locator('[data-splash]')
 
