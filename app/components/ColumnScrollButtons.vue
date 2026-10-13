@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // The edge indicators (#208), where the window is too narrow for every
-// Column: a tab on the Board's left or right edge while Columns are cut off
+// Column: a button on the Board's left or right edge while Columns are cut off
 // that way, which scrolls one Column there. Laid over `scroller` (the
 // Columns, scrolling sideways) by a positioned parent; `count` is how many
 // Columns there are. Halfway down the window while the Columns reach that
-// far, and only as wide as the room beside a lane's cards, so no card is
+// far, and only as wide as the room beside a Column's cards, so no card is
 // under them once the Columns have snapped. Clicks and drags elsewhere pass
 // through. Reduced motion: the scroll jumps.
 const props = defineProps<{ scroller: HTMLElement | null, count: number }>()
@@ -43,7 +43,7 @@ watch(() => props.scroller, (el, _, onCleanup) => {
 // A Column added or removed changes what is cut off, not the Columns' box.
 watch(() => props.count, measure, { flush: 'post' })
 
-// One Column on: to the next place a lane snaps to that way, or to the end.
+// One Column on: to the next place a Column snaps to that way, or to the end.
 function step(direction: -1 | 1) {
   const el = props.scroller
   if (!el) return
@@ -72,7 +72,7 @@ watch([before, after], async ([isBefore, isAfter]) => {
   other.value?.focus({ preventScroll: true })
 })
 
-const tab = 'pointer-events-auto flex h-16 w-7 items-center justify-center bg-surface text-text-muted shadow-card transition-[scale,color] duration-tap ease-tap hover:text-text active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
+const edgeButton = 'pointer-events-auto flex h-16 w-7 items-center justify-center bg-surface text-text-muted shadow-card transition-[scale,color] duration-tap ease-tap hover:text-text active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
 </script>
 
 <template>
@@ -84,7 +84,7 @@ const tab = 'pointer-events-auto flex h-16 w-7 items-center justify-center bg-su
           ref="previous"
           type="button"
           class="hover-grow origin-left rounded-r-full"
-          :class="tab"
+          :class="edgeButton"
           :aria-label="t.board.previousColumn"
           :data-tooltip="t.board.previousColumn"
           @click="step(-1)"
@@ -98,7 +98,7 @@ const tab = 'pointer-events-auto flex h-16 w-7 items-center justify-center bg-su
           ref="next"
           type="button"
           class="hover-grow ml-auto origin-right rounded-l-full"
-          :class="tab"
+          :class="edgeButton"
           :aria-label="t.board.nextColumn"
           :data-tooltip="t.board.nextColumn"
           @click="step(1)"

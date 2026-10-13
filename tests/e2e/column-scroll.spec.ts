@@ -15,7 +15,7 @@ const NARROW = { width: 800, height: 600 }
 // Wide enough for three Columns and the add lane.
 const WIDE = { width: 1600, height: 900 }
 const FIVE = ['Ideen', 'Diese Woche', 'Wochenende', 'Für Gäste', 'Gekocht']
-// From one lane's left edge to the next one's: a lane (340px) and the gap.
+// From one Column's left edge to the next one's: a Column (340px) and the gap.
 const STEP = 356
 
 const previous = (page: Page) => page.getByRole('button', { name: 'Vorherige Spalte' })
