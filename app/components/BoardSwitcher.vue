@@ -67,13 +67,14 @@ function newBoard() {
     class="relative min-w-0"
     @keydown.esc="closeOnEscape"
   >
-    <!-- The mockup's pill (column-titles-ideen.png): on surface, the emoji in
-         a round pebble, the name in the button type, a chevron. -->
+    <!-- The mockup's pill (column-titles-ideen.png): the emoji in a round
+         pebble, the name in the button type, a chevron. Filled in the
+         Board's tint (main.css, .board-pill), its pebble on surface. -->
     <h1 class="text-button">
       <button
         ref="pill"
         type="button"
-        class="pill flex h-11 max-w-full items-center gap-2 rounded-pill bg-surface py-1 pl-1 pr-3 text-left shadow-card transition-transform duration-tap ease-tap active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
+        class="board-pill flex h-11 max-w-full items-center gap-2 rounded-pill py-1 pl-1 pr-3 text-left active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.boards.switcher(board.name)"
         :aria-expanded="open"
         :aria-controls="panelId"
@@ -84,7 +85,7 @@ function newBoard() {
              the button type's, so its descenders aren't clipped. -->
         <span
           aria-hidden="true"
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[20px] leading-none"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-[20px] leading-none"
           data-emoji-pebble
         ><span>{{ board.emoji }}</span></span> <span class="truncate leading-[1.3]">{{ board.name }}</span>
         <svg
@@ -97,7 +98,7 @@ function newBoard() {
           stroke-linecap="round"
           stroke-linejoin="round"
           aria-hidden="true"
-          class="chevron shrink-0 text-text-muted"
+          class="chevron shrink-0 opacity-70"
           :class="{ flipped: open }"
         ><path d="M6 9l6 6 6-6" /></svg>
       </button>

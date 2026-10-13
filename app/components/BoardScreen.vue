@@ -204,6 +204,7 @@ watch(dragging, (isDragging) => {
   if (isDragging) dropWash.value = undefined
 }, { flush: 'sync' })
 const gradient = computed(() => boardGradient(board.value?.columns.length ?? 0))
+const switcherFill = computed(() => switcherGradient(board.value?.columns.length ?? 0))
 
 const { dx, progress, following } = useColumnSwipe(columnsEl, {
   count: () => board.value?.columns.length ?? 0,
@@ -521,7 +522,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     v-if="board"
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
     :class="{ following, dragging, 'drop-tinted': dropTint }"
-    :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, '--board-gradient': gradient }"
+    :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, '--board-gradient': gradient, '--switcher-gradient': switcherFill }"
   >
     <header class="flex items-center justify-between gap-3">
       <div class="flex min-w-0 items-center gap-3">

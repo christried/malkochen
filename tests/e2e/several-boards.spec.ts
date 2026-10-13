@@ -2,9 +2,10 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { column, titles } from './board'
+import { column, tab, titles } from './board'
 import { expectCardShape } from './card-shape'
 import { ANY_CHEER, cheer, confetti, confettiOrigin, gekochtPill } from './celebration'
+import { backgroundOf, colourOf, colours, contrast, gradientStops, rgb, tintedWith } from './colour'
 import { gotoHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
 import { removeUsers } from './seed'
@@ -87,19 +88,18 @@ async function headerLooks(page: Page) {
     const pebbleStyle = getComputedStyle(pebble)
     const pebbleBox = pebble.getBoundingClientRect()
     return {
-      pill: { background: style.backgroundColor, shadow: style.boxShadow, family: style.fontFamily, size: style.fontSize, weight: style.fontWeight },
+      pill: { shadow: style.boxShadow, family: style.fontFamily, size: style.fontSize, weight: style.fontWeight },
       pebble: { background: pebbleStyle.backgroundColor, round: Number.parseFloat(pebbleStyle.borderTopLeftRadius) >= pebbleBox.height / 2, emojiInside: inside(range.getBoundingClientRect(), pebbleBox), inPill: inside(pebbleBox, pill.getBoundingClientRect()) },
       chevron: pill.querySelectorAll('svg').length,
       buttons: [...header.querySelectorAll('[aria-label="Gerichte suchen"], [aria-label="Board-Einstellungen"]')].map(b => getComputedStyle(b).backgroundColor),
       surface: token('color', 'var(--color-surface)'),
-      surfaceMuted: token('color', 'var(--color-surface-muted)'),
       cardShadow: token('boxShadow', 'var(--shadow-card)'),
     }
   })
 }
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`the switcher is a pill on surface: the emoji in a round pebble, the name in the button type, a chevron (${scheme})`, async ({ page }) => {
+  test(`the switcher is a pill: the emoji in a round pebble, the name in the button type, a chevron (${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme })
     await signIn(page, ALLOWLISTED[9])
     const name = scheme === 'light' ? 'Keksdose' : 'Keksglas'
@@ -110,8 +110,9 @@ for (const scheme of ['light', 'dark'] as const) {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(`🍪 ${name}`)
       const looks = await headerLooks(page)
       // Tailwind puts its (empty) ring shadows before the card's.
-      expect(looks.pill).toEqual({ background: looks.surface, shadow: expect.stringContaining(looks.cardShadow), family: expect.stringMatching(/^Figtree/), size: '15px', weight: '600' })
-      expect(looks.pebble).toEqual({ background: looks.surfaceMuted, round: true, emojiInside: true, inPill: true })
+      expect(looks.pill).toEqual({ shadow: expect.stringContaining(looks.cardShadow), family: expect.stringMatching(/^Figtree/), size: '15px', weight: '600' })
+      // The pebble is on surface, as the pill around it is filled (#206).
+      expect(looks.pebble).toEqual({ background: looks.surface, round: true, emojiInside: true, inPill: true })
       expect(looks.chevron).toBe(1)
       expect(looks.buttons).toEqual([looks.surface, looks.surface])
     }
@@ -120,6 +121,166 @@ for (const scheme of ['light', 'dark'] as const) {
     await expect(boardList(page).getByRole('link', { name: new RegExp(name) })).toHaveAttribute('aria-current', 'page')
   })
 }
+
+// #206: the pill is filled in the Board's tint, so it reads as a button and
+// doesn't blend into the page. Phones show one Column at a time and the page
+// wears that Column's accent, so the pill does too, fuller; with every Column
+// showing, the page is a gradient across the Board's Column accents, and the
+// pill is filled with that gradient, fuller. Its name stays readable on it
+// (WCAG AA).
+async function deleteColumn(page: Page, boardId: string, name: string) {
+  const board = await (await page.request.get(`/api/boards/${boardId}`)).json() as { columns: { id: string, name: string }[] }
+  const res = await page.request.delete(`/api/columns/${board.columns.find(c => c.name === name)!.id}`)
+  expect(res.ok()).toBe(true)
+}
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`on a phone the switcher pill is filled in the Column's tint the page wears, and follows it (${scheme})`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.emulateMedia({ colorScheme: scheme })
+    await signIn(page, ALLOWLISTED[9])
+    const board = await createBoard(page, 'Keksdose', '🍪')
+    await gotoHydrated(page, `/b/${board}`)
+    const pill = switcher(page)
+    const known = await colours(page, 'surface')
+    const fill = async () => (await rgb(page, [await backgroundOf(pill)]))[0]!
+    const atRest = () => pill.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+
+    expect(tintedWith(await fill(), known)).toBe('butter')
+    // Filled: neither plain surface nor the page behind it.
+    const [behind, ink] = await rgb(page, [await backgroundOf(page.locator('main.board')), await colourOf(pill)])
+    expect(contrast(await fill(), known.background)).toBeGreaterThan(1.15)
+    expect(contrast(await fill(), behind!)).toBeGreaterThan(1.15)
+    expect(contrast(ink!, await fill())).toBeGreaterThanOrEqual(4.5)
+
+    for (const [name, accent] of [['Diese Woche', 'orchid'], ['Gekocht', 'sage']] as const) {
+      await tab(page, name).click()
+      await expect.poll(async () => tintedWith(await fill(), known)).toBe(accent)
+      await atRest()
+      await page.locator('main.board').evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+      const [behindNow] = await rgb(page, [await backgroundOf(page.locator('main.board'))])
+      expect(contrast(await fill(), behindNow!)).toBeGreaterThan(1.15)
+      expect(contrast(ink!, await fill())).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  test(`on a computer the switcher pill is filled with the Board's gradient, and another Board's changes it (${scheme})`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.emulateMedia({ colorScheme: scheme })
+    await signIn(page, ALLOWLISTED[9])
+    const three = await createBoard(page, 'Keksdose', '🍪')
+    const two = await createBoard(page, 'Brotkasten', '🥖')
+    await deleteColumn(page, two, 'Diese Woche')
+    await gotoHydrated(page, `/b/${three}`)
+    const pill = switcher(page)
+    const known = await colours(page, 'surface')
+    const stops = async () => rgb(page, await gradientStops(pill))
+    const [ink] = await rgb(page, [await colourOf(pill)])
+
+    expect((await stops()).map(stop => tintedWith(stop, known))).toEqual(['butter', 'orchid', 'sage'])
+    // Fuller than the page's own gradient behind it, stop for stop.
+    const behind = await rgb(page, await gradientStops(page.locator('main.board')))
+    for (const [i, stop] of (await stops()).entries()) {
+      expect(contrast(stop, known.background)).toBeGreaterThan(1.15)
+      expect(contrast(stop, behind[i]!)).toBeGreaterThan(1.15)
+      expect(contrast(ink!, stop)).toBeGreaterThanOrEqual(4.5)
+    }
+
+    await pill.click()
+    await boardList(page).getByRole('link').filter({ hasText: 'Brotkasten' }).click()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('🥖 Brotkasten')
+    // Not yet while the Board opens: its skeleton takes the pill along.
+    await expect.poll(async () => (await stops().catch(() => [])).map(stop => tintedWith(stop, known))).toEqual(['butter', 'orchid'])
+  })
+}
+
+// The pixels of a part of the page that aren't its background (taken from
+// `backgroundAt`, a point in it), as a box: where something is drawn.
+// `within`: only pixels this near the part's centre count (a round pebble's
+// corners show what is behind it).
+async function inkBox(page: Page, clip: { x: number, y: number, width: number, height: number }, backgroundAt: { x: number, y: number }, within = Infinity) {
+  const png = await page.screenshot({ clip })
+  return page.evaluate(async ({ base64, backgroundAt, within }) => {
+    const bitmap = await createImageBitmap(new Blob([Uint8Array.from(atob(base64), char => char.charCodeAt(0))], { type: 'image/png' }))
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+    const context = canvas.getContext('2d')!
+    context.drawImage(bitmap, 0, 0)
+    const { data, width, height } = context.getImageData(0, 0, bitmap.width, bitmap.height)
+    const at = (x: number, y: number) => [0, 1, 2].map(channel => data[(y * width + x) * 4 + channel]!)
+    const background = at(Math.round(backgroundAt.x), Math.round(backgroundAt.y))
+    const box = { left: width, top: height, right: -1, bottom: -1 }
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (Math.hypot(x + 0.5 - width / 2, y + 0.5 - height / 2) > within) continue
+        if (!at(x, y).some((value, channel) => Math.abs(value - background[channel]!) > 24)) continue
+        box.left = Math.min(box.left, x)
+        box.top = Math.min(box.top, y)
+        box.right = Math.max(box.right, x)
+        box.bottom = Math.max(box.bottom, y)
+      }
+    }
+    return { ...box, width: box.right - box.left + 1, height: box.bottom - box.top + 1 }
+  }, { base64: png.toString('base64'), backgroundAt, within })
+}
+
+for (const [device, width] of [['phone', 390], ['computer', 1440]] as const) {
+  test(`on a ${device} the switcher's emoji is drawn in full, as large as with nothing around it`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await signIn(page, ALLOWLISTED[9])
+    const board = await createBoard(page, 'Keksdose', '🍪')
+    await gotoHydrated(page, `/b/${board}`)
+    const pebble = switcher(page).locator('[data-emoji-pebble]')
+    await expect(pebble).toHaveText('🍪')
+    const box = (await pebble.boundingBox())!
+
+    // The same emoji in the same type, with nothing near that could cut it.
+    const reference = await pebble.evaluate((el) => {
+      const emoji = el.firstElementChild!
+      const style = getComputedStyle(emoji)
+      const probe = document.body.appendChild(document.createElement('div'))
+      Object.assign(probe.style, { position: 'fixed', left: '120px', top: '320px', width: '96px', height: '96px', display: 'grid', placeItems: 'center', zIndex: '9999', background: getComputedStyle(el).backgroundColor, fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight, lineHeight: '96px' })
+      probe.textContent = emoji.textContent
+      const { x, y, width, height } = probe.getBoundingClientRect()
+      return { x, y, width, height }
+    })
+    const drawn = await inkBox(page, box, { x: box.width / 2, y: 2 }, box.width / 2 - 1.5)
+    const free = await inkBox(page, reference, { x: 2, y: 2 })
+
+    expect(free.width).toBeGreaterThan(12)
+    expect(Math.abs(drawn.width - free.width)).toBeLessThanOrEqual(1)
+    expect(Math.abs(drawn.height - free.height)).toBeLessThanOrEqual(1)
+    // With room to spare inside the pebble on every side.
+    for (const gap of [drawn.left, drawn.top, box.width - 1 - drawn.right, box.height - 1 - drawn.bottom]) expect(gap).toBeGreaterThanOrEqual(3)
+  })
+}
+
+test('on a computer the switcher pill lifts under the mouse; with reduced motion only its shadow deepens', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await signIn(page, ALLOWLISTED[9])
+  const board = await createBoard(page, 'Keksdose', '🍪')
+  const atRest = (pill: Locator) => pill.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+  const lift = (pill: Locator) => pill.evaluate((el) => {
+    const style = getComputedStyle(el)
+    return { up: style.translate === 'none' ? 0 : -Number.parseFloat(style.translate.split(' ')[1] ?? '0'), shadow: style.boxShadow, cursor: style.cursor }
+  })
+
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    await page.emulateMedia({ reducedMotion })
+    await gotoHydrated(page, `/b/${board}`)
+    const pill = switcher(page)
+    await page.mouse.move(0, 0)
+    const resting = await lift(pill)
+    expect(resting.up).toBe(0)
+    expect(resting.cursor).toBe('pointer')
+
+    await pill.hover()
+    await atRest(pill)
+    const hovered = await lift(pill)
+    expect(hovered.shadow).not.toBe(resting.shadow)
+    if (reducedMotion === 'reduce') expect(hovered.up).toBe(0)
+    else expect(hovered.up).toBeGreaterThanOrEqual(2)
+  }
+})
 
 test('a Dish moved to another Board from its detail leaves this one and keeps its Cooking History', async ({ page }) => {
   await signIn(page, ALLOWLISTED[9])

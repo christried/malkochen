@@ -14,15 +14,28 @@ export function columnAccent(index: number): string {
   return `var(--color-${columnAccentName(index)})`
 }
 
-// The page behind the lanes once every Column shows (tablet and desktop): a
-// soft gradient across the Column accents from left to right, each washed
-// into the background (--wash-page, main.css).
-export function boardGradient(count: number): string {
+// A gradient across the Column accents from left to right, each washed
+// `wash` far into `into`.
+function accentGradient(count: number, wash: string, into: string): string {
   // A gradient takes two stops: a single Column's accent fills it evenly.
   const last = Math.max(count, 1) - 1
   const stops = Array.from({ length: Math.max(count, 2) }, (_, i) =>
-    `color-mix(in oklab, ${columnAccent(Math.min(i, last))} var(--wash-page), var(--color-bg))`)
+    `color-mix(in oklab, ${columnAccent(Math.min(i, last))} ${wash}, ${into})`)
   return `linear-gradient(to right, ${stops.join(', ')})`
+}
+
+// The page behind the lanes once every Column shows (tablet and desktop): a
+// soft gradient across the Column accents, each washed into the background
+// (--wash-page, main.css).
+export function boardGradient(count: number): string {
+  return accentGradient(count, 'var(--wash-page)', 'var(--color-bg)')
+}
+
+// What fills the Board switcher's pill there: the same accents, fuller
+// (--wash-pill, main.css) and washed into the surface colour, so the pill
+// wears the Board's colours and stands out from the page.
+export function switcherGradient(count: number): string {
+  return accentGradient(count, 'var(--wash-pill)', 'var(--color-surface)')
 }
 
 // A swipe's progress (a Column index, fractional mid-swipe) kept on the

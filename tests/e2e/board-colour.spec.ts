@@ -1,8 +1,9 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
+import { ACCENTS, backgroundOf, colourOf, colours, contrast, gradientStops, rgb, tintedWith } from './colour'
 import { gotoHydrated } from './hydration'
 import { resetBoard, seedDish, setColumns } from './seed'
 
@@ -16,77 +17,6 @@ test.describe.configure({ mode: 'serial' })
 const CHIEN_SHIUNG = ALLOWLISTED[23]
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const DESKTOP = { width: 1280, height: 900 }
-// The Column accents, in the order the Columns take them.
-const ACCENTS = ['butter', 'orchid', 'sage', 'carrot', 'sky'] as const
-
-type Rgb = [number, number, number]
-
-// Any CSS colour (oklab(), color-mix() results, …) as the sRGB the screen
-// shows, by painting it.
-async function rgb(page: Page, colours: string[]): Promise<Rgb[]> {
-  return page.evaluate(colours => colours.map((colour) => {
-    const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!
-    ctx.fillStyle = colour
-    ctx.fillRect(0, 0, 1, 1)
-    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
-    return [r, g, b] as Rgb
-  }), colours)
-}
-
-// The Column accents and the background they are washed into.
-interface Colours { palette: Rgb[], background: Rgb }
-async function colours(page: Page): Promise<Colours> {
-  const values = await page.evaluate(names => names.map(n => getComputedStyle(document.documentElement).getPropertyValue(`--color-${n}`)), [...ACCENTS, 'bg'])
-  const resolved = await rgb(page, values)
-  return { palette: resolved.slice(0, -1), background: resolved.at(-1)! }
-}
-
-// WCAG relative luminance and contrast ratio.
-function contrast(a: Rgb, b: Rgb): number {
-  const luminance = (c: Rgb) => {
-    const [r, g, bl] = c.map((v) => {
-      const s = v / 255
-      return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
-    }) as Rgb
-    return 0.2126 * r + 0.7152 * g + 0.0722 * bl
-  }
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number]
-  return (hi + 0.05) / (lo + 0.05)
-}
-
-// Which accent a tint of the background was mixed from: the one that lies in
-// the direction the tint moved away from the background.
-function tintedWith(tint: Rgb, { palette, background }: Colours): typeof ACCENTS[number] {
-  const away = (c: Rgb) => c.map((v, i) => v - background[i]!)
-  const cosine = (a: number[], b: number[]) => a.reduce((sum, v, i) => sum + v * b[i]!, 0) / (Math.hypot(...a) * Math.hypot(...b))
-  const scores = palette.map(accent => cosine(away(tint), away(accent)))
-  return ACCENTS[scores.indexOf(Math.max(...scores))]!
-}
-
-// The colour stops of an element's background gradient, left to right.
-async function gradientStops(locator: Locator): Promise<string[]> {
-  const image = await locator.evaluate(el => getComputedStyle(el).backgroundImage)
-  expect(image).toMatch(/^linear-gradient\(/)
-  const args: string[] = []
-  let depth = 0
-  let current = ''
-  for (const char of image.slice('linear-gradient('.length, -1)) {
-    if (char === '(') depth++
-    if (char === ')') depth--
-    if (char === ',' && depth === 0) {
-      args.push(current.trim())
-      current = ''
-    }
-    else current += char
-  }
-  args.push(current.trim())
-  expect(args[0]).toBe('to right')
-  // A stop may carry its position after the colour.
-  return args.slice(1).map(stop => stop.replace(/\s+[\d.]+%$/, ''))
-}
-
-const colourOf = (locator: Locator) => locator.evaluate(el => getComputedStyle(el).color)
-const backgroundOf = (locator: Locator) => locator.evaluate(el => getComputedStyle(el).backgroundColor)
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`desktop (${scheme}): each Column is tinted in its own accent, its title, subtitle and empty state readable`, async ({ page }) => {
