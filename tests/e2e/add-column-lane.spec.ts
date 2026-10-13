@@ -79,6 +79,33 @@ test('a Column added from the add lane shows before it at once, in the next acce
   await expect(columnNames(page)).toHaveText(['Ideen', 'Diese Woche', 'Gekocht', 'Wochenende', 'Für Gäste'])
 })
 
+test('the name field suggests another of its ten example names each time the lane opens', async ({ page }) => {
+  await openBoard(page)
+
+  const shown: string[] = []
+  for (let example = 0; example < 10; example++) {
+    // Math.random() answering the middle of each tenth of 0..1 in turn brings
+    // up every example once, in order.
+    await page.evaluate((part) => { Math.random = () => (part + 0.5) / 10 }, example)
+    await addLane(page).click()
+    shown.push((await nameField(page).getAttribute('placeholder'))!)
+    await nameField(page).press('Escape')
+  }
+
+  expect(shown).toEqual([
+    'z. B. „Wochenende“',
+    'z. B. „Meal Prep“',
+    'z. B. „Für Gäste“',
+    'z. B. „Schnell & einfach“',
+    'z. B. „Sonntagsbrunch“',
+    'z. B. „Nachtisch“',
+    'z. B. „Grillsaison“',
+    'z. B. „Lunchbox“',
+    'z. B. „Feierabendküche“',
+    'z. B. „Weihnachten“',
+  ])
+})
+
 test('an empty name can’t be added; Escape, or clicking away from an empty field, leaves nothing behind', async ({ page }) => {
   await openBoard(page)
   const posts: string[] = []

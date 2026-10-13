@@ -60,7 +60,9 @@ export const de = {
   },
   notUnlocked: {
     headline: 'Gleich geht’s los!',
-    body: 'Du bist noch nicht für malkochen freigeschaltet. Sag der Person Bescheid, die malkochen für euch eingerichtet hat, dann kannst du loslegen.',
+    // Chris runs malkochen and keeps its Allowlist, so the name is written
+    // out here (#205).
+    body: 'Du bist noch nicht für malkochen freigeschaltet. Sag Chris Bescheid, dann kannst du loslegen.',
     otherAccount: 'Mit einem anderen Konto anmelden',
     // Arriving through an Invite Link: the Owner is the one to ask.
     invitedBody: (owner: string, board: string) => `Du bist noch nicht für malkochen freigeschaltet. Sag ${owner} Bescheid, dann geht’s los. Deine Einladung zu ${board} merken wir uns.`,
@@ -204,7 +206,7 @@ export const de = {
     editing: 'Gericht bearbeiten',
     title: 'Titel',
     note: 'Notiz',
-    creatorPrompt: 'z. B. @veganschnitzel oder ein Blog',
+    creatorPrompt: 'z. B. @christried oder ein Blog',
     source: 'Link',
     sourcePrompt: 'Link von TikTok, Instagram, YouTube, Pinterest oder einem Blog',
     sourceHint: 'Ein neuer Link ändert das Bild nicht. Dafür gibt es „Bild neu laden“.',
@@ -339,7 +341,20 @@ export const de = {
     deleteColumn: (name: string) => `Spalte „${name}“ löschen`,
     lastColumn: 'Ein Board braucht neben „Gekocht“ noch mindestens eine Spalte.',
     newColumn: 'Neue Spalte',
-    newColumnPrompt: 'z. B. „Wochenende“',
+    // A new Column's name field suggests one of these, a new one each time.
+    newColumnExamples: [
+      'Wochenende',
+      'Meal Prep',
+      'Für Gäste',
+      'Schnell & einfach',
+      'Sonntagsbrunch',
+      'Nachtisch',
+      'Grillsaison',
+      'Lunchbox',
+      'Feierabendküche',
+      'Weihnachten',
+    ],
+    newColumnPrompt: (example: string) => `z. B. „${example}“`,
     add: 'Hinzufügen',
     moveDishes: (count: number, column: string) => `${dishCount(count)} in „${column}“. Wohin verschieben?`,
     moveAndDelete: 'Verschieben und löschen',

@@ -12,6 +12,8 @@ const emit = defineEmits<{ failed: [] }>()
 const t = useStrings()
 const boardModule = useBoardModule()
 const { name, adding, canAdd, submit } = useNewColumn(columnName => boardModule.addColumn(columnName), () => emit('failed'))
+// The name field's made-up example, a new one each time the lane opens.
+const nameExample = useExamplePrompt(t.settings.newColumnExamples, t.settings.newColumnPrompt)
 
 const open = ref(false)
 const form = useTemplateRef<HTMLFormElement>('form')
@@ -19,6 +21,7 @@ const field = useTemplateRef<HTMLInputElement>('field')
 const opener = useTemplateRef<HTMLButtonElement>('opener')
 
 async function start() {
+  nameExample.pickAnother()
   open.value = true
   await nextTick()
   field.value?.focus()
@@ -92,7 +95,7 @@ function leave(event: FocusEvent) {
           maxlength="40"
           autocomplete="off"
           :readonly="adding"
-          :placeholder="t.settings.newColumnPrompt"
+          :placeholder="nameExample.prompt.value"
         >
       </AppField>
       <button
