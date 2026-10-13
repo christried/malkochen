@@ -137,7 +137,7 @@ const AWAY = ['Shakshuka', 'Ofengemüse', 'Bohneneintopf']
 test('every Dish another Member added while I was away is "Neu" when I open the Board; opening it again clears them all', async ({ page, browser }) => {
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Wochenmarkt')
   await gotoHydrated(page, `/b/${boardId}`)
-  await page.goto('/settings')
+  await page.goto('about:blank')
 
   for (const title of AWAY) await addDish(dorothy, boardId, title)
   await gotoHydrated(page, `/b/${boardId}`)

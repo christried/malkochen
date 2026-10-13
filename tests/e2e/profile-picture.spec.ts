@@ -4,9 +4,10 @@ import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
-import { gotoHydrated, reloadHydrated } from './hydration'
+import { gotoHydrated } from './hydration'
 import { inviteToken } from './invite'
 import { landingBoardId, removeUsers } from './seed'
+import { openUserSettings } from './settings-sheet'
 
 // A Profile Picture of your own, uploaded in your settings: seen round in a
 // preview first, then on your badges for every Member, instead of your
@@ -48,7 +49,7 @@ test('a picture uploaded in the settings shows round in a preview, and once used
   // A Dish of Maryam's, so her badge shows on the Board.
   const boardId = await landingBoardId(page)
   expect((await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title: 'Mangold-Galette', placeholder: 'bowl' } })).status()).toBe(201)
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   await expect(shownPicture(page)).toHaveAttribute('src', GOOGLE_PHOTO)
   // Nothing of your own to remove yet.
   await expect(account(page).getByRole('button', { name: 'Eigenes Bild entfernen' })).toHaveCount(0)
@@ -75,7 +76,7 @@ test('a picture uploaded in the settings shows round in a preview, and once used
   await expect(shownPicture(page)).toHaveAttribute('src', PICTURE_URL)
   const picture = (await shownPicture(page).getAttribute('src'))!
   await expect(account(page).getByRole('button', { name: 'Eigenes Bild entfernen' })).toBeVisible()
-  await reloadHydrated(page)
+  await openUserSettings(page)
   await expect(shownPicture(page)).toHaveAttribute('src', picture)
 
   // On the Board, her header photo and the badge on her Dish.
@@ -96,7 +97,7 @@ test('a picture uploaded in the settings shows round in a preview, and once used
 
 test('"Abbrechen" in the preview keeps the picture you had', async ({ page }) => {
   await signIn(page, MARYAM, PROFILE)
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   const before = (await shownPicture(page).getAttribute('src'))!
 
   await account(page).getByLabel('Anderes Bild hochladen').setInputFiles(await phonePhoto('#a74'))
@@ -105,14 +106,14 @@ test('"Abbrechen" in the preview keeps the picture you had', async ({ page }) =>
 
   await expect(preview(page)).toBeHidden()
   await expect(shownPicture(page)).toHaveAttribute('src', before)
-  await reloadHydrated(page)
+  await openUserSettings(page)
   await expect(shownPicture(page)).toHaveAttribute('src', before)
 })
 
 test('signing in again keeps your own picture; removing it brings the Google photo back', async ({ page }) => {
   // As after a new Google sign-in.
   await signIn(page, MARYAM, PROFILE)
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   await expect(shownPicture(page)).toHaveAttribute('src', PICTURE_URL)
 
   await account(page).getByRole('button', { name: 'Eigenes Bild entfernen' }).click()
@@ -125,7 +126,7 @@ test('signing in again keeps your own picture; removing it brings the Google pho
 
 test('a file that isn’t a photo is refused kindly, and nothing changes', async ({ page }) => {
   await signIn(page, MARYAM, PROFILE)
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
 
   await account(page).getByLabel('Eigenes Bild hochladen').setInputFiles({ name: 'rezept.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('Linsen, Reis, Koriander') })
 

@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
+import { openUserSettings } from './settings-sheet'
 
 const token = (page: Page, name: string) =>
   page.evaluate(n => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name)
@@ -52,7 +53,7 @@ test.describe('reduced motion', () => {
 
   test('motion tokens collapse and fades shorten to 200ms', async ({ page }) => {
     await signIn(page)
-    await gotoHydrated(page, '/settings')
+    await openUserSettings(page)
     expect(await token(page, '--dur-pop')).toBe('0ms')
     expect(await token(page, '--dur-fade')).toBe('200ms')
     await expect(page.getByRole('radio', { name: 'Hell' })).toHaveCSS('transition-duration', '0.2s')
@@ -64,7 +65,7 @@ test.describe('full motion', () => {
 
   test('motion tokens keep their handoff values', async ({ page }) => {
     await signIn(page)
-    await gotoHydrated(page, '/settings')
+    await openUserSettings(page)
     expect(await token(page, '--dur-pop')).toBe('460ms')
     await expect(page.getByRole('radio', { name: 'Hell' })).toHaveCSS('transition-duration', '0.24s')
   })

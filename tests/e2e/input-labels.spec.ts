@@ -88,6 +88,8 @@ for (const scheme of ['light', 'dark'] as const) {
     // Board settings.
     await gotoHydrated(page, '/')
     await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
+    // The Board has "Name" fields of its own, in sheets that aren't open.
+    await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
     await expectLabelInBorder(page, page.getByLabel('Name', { exact: true }), 'Name')
     await expectLabelInBorder(page, page.getByLabel('Neue Spalte'), 'Neue Spalte')
     await expectLabelInBorder(page, page.getByLabel('Einladungslink'), 'Einladungslink')

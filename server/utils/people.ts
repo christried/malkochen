@@ -16,7 +16,7 @@ export const usernameOf = sql<string>`coalesce(${user.username}, ${de.username.n
 
 // The signed-in user as /api/me answers: who they are (`name` is their
 // Username, empty until they have one), the picture shown for them, their
-// own Profile Picture, if they have one (for /settings), and what they are
+// own Profile Picture, if they have one (for their settings), and what they are
 // still to be asked about their Username.
 export interface Me {
   id: string

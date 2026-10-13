@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
+import { openUserSettings, settingsSheet } from './settings-sheet'
 
 // Usernames (issue #209): a new user picks theirs before their first Board,
 // a user from before Usernames is asked once whether theirs fits, and anyone
@@ -61,9 +62,10 @@ test('a new user picks a Username before reaching a Board, and can’t go on unt
   await field(page).fill('Amalie')
   await page.getByRole('button', { name: 'Los geht’s' }).click()
 
-  // On to where they were going, with the Username as their name.
-  await expect(page).toHaveURL('/settings')
-  await expect(page.getByRole('region', { name: 'Konto' }).getByText('Amalie', { exact: true })).toBeVisible()
+  // On to where they were going (their settings, over the Board), with the
+  // Username as their name.
+  await expect(page).toHaveURL(onABoard)
+  await expect(settingsSheet(page).getByRole('region', { name: 'Konto' }).getByText('Amalie', { exact: true })).toBeVisible()
   await expect(page.getByText(/Noether/)).toHaveCount(0)
   // The prompt is over for good.
   await gotoHydrated(page, '/username')
@@ -148,7 +150,7 @@ for (const [device, viewport, renamed] of [
     await signIn(other, CURIE)
     expect((await other.request.post(`/api/invites/${await inviteToken(page, boardId)}/join`)).status()).toBe(200)
 
-    await gotoHydrated(page, '/settings')
+    await openUserSettings(page)
     const account = page.getByRole('region', { name: 'Konto' })
     const save = account.getByRole('button', { name: 'Speichern' })
     // Nothing to save until it is another name.

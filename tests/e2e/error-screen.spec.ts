@@ -21,7 +21,8 @@ test('a Board that doesn\'t exist shows the error screen, with a way back', asyn
 
 test('an unexpected error shows the error screen, and "Nochmal versuchen" tries again', async ({ page }) => {
   await signIn(page)
-  await gotoHydrated(page, '/settings')
+  await gotoHydrated(page, '/')
+  await gotoHydrated(page, `${page.url()}/settings`)
   await page.route('**/api/boards/*', route => route.fulfill({ status: 500, body: 'boom' }))
 
   await page.getByRole('link', { name: 'Zurück zum Board' }).click()
