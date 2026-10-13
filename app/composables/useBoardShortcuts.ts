@@ -5,7 +5,8 @@ import type { Shortcut } from '~/utils/shortcuts'
 // did anything; if it did, nothing else happens with the key (so "/" or "n"
 // isn't typed into the field it opens). `blocked` holds them back, e.g.
 // mid-drag. Every modal (sheets, dialogs, the Dish detail) is on the modal
-// stack.
+// stack. The settings pages listen the same way, for Escape only
+// (useEscapeToLeave).
 export function useBoardShortcuts(run: (shortcut: Shortcut) => boolean, blocked: () => boolean) {
   const modalOpen = useAnyModalOpen()
   function onKeydown(event: KeyboardEvent) {

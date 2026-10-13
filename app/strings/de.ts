@@ -279,6 +279,8 @@ export const de = {
     duplicate: (title: string, column: string) => `Schon auf dem Board: „${title}“ in ${column}`,
     openDuplicate: 'Öffnen',
     saveAnyway: 'Trotzdem speichern',
+    // By the switched-off "Speichern", pointing up to the warning above.
+    duplicateHint: 'Schon auf dem Board. Oben kannst du es trotzdem speichern.',
     withoutLink: 'Ohne Link hinzufügen',
     title: 'Titel',
     titlePrompt: 'Wie heißt das Gericht?',

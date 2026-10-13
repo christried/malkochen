@@ -344,3 +344,16 @@ test('"Abmelden" ends the session and returns to the sign-in screen', async ({ p
   await gotoHydrated(page, '/settings')
   await expect(page).toHaveURL('/login')
 })
+
+test('Escape closes your settings, back to the Board', async ({ page }) => {
+  await gotoHydrated(page, '/')
+  const board = page.url()
+  await page.getByRole('button', { name: 'Dein Konto' }).click()
+  await page.getByRole('menuitem', { name: 'Einstellungen' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Einstellungen')
+
+  await page.keyboard.press('Escape')
+
+  await expect(page).toHaveURL(board)
+  await expect(page.getByRole('button', { name: 'Gericht hinzufügen' })).toBeVisible()
+})

@@ -12,7 +12,7 @@ const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍲' }
 
 // Every new Board starts with these Columns; the last is the Gekocht Column,
 // whose Column Subtitle is fixed (GEKOCHT_SUBTITLE).
-export const DEFAULT_COLUMNS = [
+const DEFAULT_COLUMNS = [
   { name: 'Ideen', subtitle: 'Worauf hast du Lust?', isGekocht: false },
   { name: 'Diese Woche', subtitle: 'Das steht an.', isGekocht: false },
   { name: 'Gekocht', subtitle: null, isGekocht: true },

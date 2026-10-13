@@ -85,8 +85,6 @@ export const placement = (svg: Svg, x: number, y: number, width: number) => {
   return `translate(${x} ${y}) scale(${width / w}) translate(${-minX} ${-minY})`;
 };
 
-export const heightFor = (svg: Svg, width: number) => (width * svg.viewBox[3]) / svg.viewBox[2];
-
 // One piece of art at x, y (top-left, canvas px), `width` wide. `pivot` is in
 // the art's viewBox units and defaults to its centre.
 export const Place: React.FC<{

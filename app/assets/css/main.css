@@ -419,6 +419,44 @@ html[data-theme-reveal="fade"] *::after {
   }
 }
 
+/* A sideways scrollbar is the app's, not the browser's grey bar (#207): thin
+   (10px, the thumb 6px in it), a pill, tinted in the text colour, fuller
+   under the mouse. For whatever scrolls sideways with `overflow-x-auto`, at
+   any breakpoint: the Board's Columns, its skeleton, the Column tabs in a
+   narrow window; in a page or a dialog. Only where a mouse is: a touch
+   screen's own bar overlays the content, and this one would take room under
+   it. Firefox knows no ::-webkit-scrollbar and gets its thin bar in the same
+   colour. */
+:root {
+  --scrollbar-thumb: color-mix(in srgb, var(--color-text) 28%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--color-text) 46%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  [class*="overflow-x-auto"]::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+  }
+  [class*="overflow-x-auto"]::-webkit-scrollbar-track,
+  [class*="overflow-x-auto"]::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  [class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-color: var(--scrollbar-thumb);
+    background-clip: padding-box;
+  }
+  [class*="overflow-x-auto"]::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    [class*="overflow-x-auto"] {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+  }
+}
+
 /* A section's heading in a dialog or in settings (#205): "Ausschnitt" and
    "Platzhalter" in the image dialog, "Bild" in Add Dish, "Emoji" for a new
    Board, "Verschieben nach…" in a Dish's menu, and each section of your

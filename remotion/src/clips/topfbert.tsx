@@ -7,7 +7,7 @@ import { placement, poseTransform } from "./draw";
 // lists, retimed to whole fractions of each clip so every loop stays seamless.
 // Frame 0 of each cycle is the still: eyes open, hat as drawn, steam showing.
 
-export const TOPFBERT_VIEWBOX: Svg["viewBox"] = [0, -20, 140, 150];
+const TOPFBERT_VIEWBOX: Svg["viewBox"] = [0, -20, 140, 150];
 
 // Pivots in his viewBox units (layers.json).
 const PIVOTS: Record<string, [number, number]> = {

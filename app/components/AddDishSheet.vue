@@ -52,6 +52,7 @@ const titleId = useId()
 const titleHintId = useId()
 const noteId = useId()
 const boardSelectId = useId()
+const duplicateHintId = useId()
 const choosingImage = ref(false)
 const saving = ref(false)
 const failed = ref(false)
@@ -91,7 +92,8 @@ const sourceLink = computed(() => {
 
 // A Dish with this Source already on the chosen Board (PRD story 24), asked
 // again whenever the link or the Board changes. Saving waits for the answer,
-// and while the warning shows, only "Trotzdem speichern" saves.
+// and while the warning shows, only "Trotzdem speichern" saves: "Speichern"
+// is switched off, with a hint pointing up to the warning.
 const duplicate = ref<DuplicateDish | null>(null)
 const checkingDuplicate = ref(false)
 const saveAnyway = ref(false)
@@ -518,20 +520,41 @@ async function save() {
         </p>
 
         <!-- Saving, it shows its dots undimmed; save() ignores a second
-             submit meanwhile. -->
-        <button
-          v-if="!warnDuplicate"
-          type="submit"
-          class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          :disabled="!canSave && !saving"
-          :aria-busy="saving"
-        >
-          <BusyLabel
-            :label="t.addDish.save"
-            :busy-label="t.addDish.saving"
-            :busy="saving"
-          />
-        </button>
+             submit meanwhile. While the duplicate warning shows, it stays,
+             switched off, and a hint right above it says why and points up
+             to the warning, where "Trotzdem speichern" is (#207). -->
+        <div class="flex flex-col gap-2.5">
+          <p
+            v-if="warnDuplicate"
+            :id="duplicateHintId"
+            class="duplicate-hint flex items-center gap-2.5 rounded-panel px-3 py-2.5 text-small"
+            data-duplicate-hint
+          >
+            <span
+              aria-hidden="true"
+              class="hint-arrow grid size-7 shrink-0 place-items-center rounded-full bg-butter text-on-accent"
+            >
+              <AppIcon
+                name="up"
+                :size="16"
+              />
+            </span>
+            {{ t.addDish.duplicateHint }}
+          </p>
+          <button
+            type="submit"
+            class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            :disabled="!canSave && !saving"
+            :aria-busy="saving"
+            :aria-describedby="warnDuplicate ? duplicateHintId : undefined"
+          >
+            <BusyLabel
+              :label="t.addDish.save"
+              :busy-label="t.addDish.saving"
+              :busy="saving"
+            />
+          </button>
+        </div>
       </template>
     </form>
 
@@ -564,6 +587,17 @@ async function save() {
    decision. */
 .duplicate-panel {
   background: color-mix(in oklch, var(--color-butter) 38%, var(--color-surface-muted));
+}
+/* The hint by the switched-off save button wears the lookup panel's lighter
+   wash, and its arrow nods up toward the warning. Reduced motion: it rests. */
+.duplicate-hint {
+  background: color-mix(in oklch, var(--color-butter) 22%, var(--color-surface-muted));
+}
+.hint-arrow {
+  animation: hint-nod var(--dur-idle) var(--ease-idle) infinite;
+}
+@keyframes hint-nod {
+  50% { translate: 0 -3px; }
 }
 /* What the lookup found comes in (handoff "Image bloom", SourceBadge
    "found"): the image settles from 1.08 as it fades in (1.2s, swoosh), and

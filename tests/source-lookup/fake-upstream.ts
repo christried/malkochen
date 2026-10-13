@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 // answered here from recorded fixtures. An unrouted request fails like a
 // network error would.
 
-export type Reply = Response | 'hang'
+type Reply = Response | 'hang'
 
 // A route matches when the requested URL starts with `url` (so query strings
 // can be left out unless they matter).

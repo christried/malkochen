@@ -11,7 +11,7 @@ import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 // page, on the page's colour (briefs.ts).
 // The Board's emoji and the Member avatars are Vue overlays.
 
-export const INVITE_LOOP_FRAMES = 420;
+const INVITE_LOOP_FRAMES = 420;
 // Topfbert's 78f bob and the pebble's 90f both become 84f: 420 = 5 × 84.
 const BOB = 84;
 const PEBBLE = "shapes/pebble.svg";

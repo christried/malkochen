@@ -28,7 +28,7 @@ export interface Storage {
 export const IMAGE_FOLDERS = ['dishes', 'pictures'] as const
 export type ImageFolder = typeof IMAGE_FOLDERS[number]
 
-export interface StoredImage {
+interface StoredImage {
   // Its public URL, exactly as save() answered it.
   url: string
   uploadedAt: Date

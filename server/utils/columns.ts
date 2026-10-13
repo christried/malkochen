@@ -82,7 +82,7 @@ export async function editColumn(columnId: string, userId: string, changes: Colu
 }
 
 // The Board's Columns in order.
-export async function boardColumns(boardId: string): Promise<ColumnView[]> {
+async function boardColumns(boardId: string): Promise<ColumnView[]> {
   return db.select(columnView).from(boardColumn).where(eq(boardColumn.boardId, boardId)).orderBy(asc(boardColumn.position))
 }
 
