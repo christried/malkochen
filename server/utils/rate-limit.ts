@@ -1,7 +1,8 @@
 import { and, eq, gt, lt, sql } from 'drizzle-orm'
+import type { H3Event } from 'h3'
 import { db } from '../db'
-import { rateLimitUse } from '../db/schema'
-import { RATE_LIMITS, type RateLimited } from '../rate-limits'
+import { addressLimitUse, rateLimitUse } from '../db/schema'
+import { ADDRESS_RATE_LIMITS, RATE_LIMITS, type AddressRateLimited, type RateLimited } from '../rate-limits'
 
 // Counts one more of the user's calls to `limited` before the work is done,
 // so calls sent at once can't all slip under the limit: one more in the
@@ -30,4 +31,31 @@ export async function spendRateLimit(userId: string, limited: RateLimited): Prom
     await db.delete(rateLimitUse).where(and(eq(rateLimitUse.limited, limited), lt(rateLimitUse.windowStart, windowOver)))
   }
   if ((counted?.calls ?? 0) > calls) throw createError({ statusCode: 429, statusMessage: 'Too many requests' })
+}
+
+// The same for a caller without a session, told apart by IP address (on
+// Vercel x-forwarded-for is the visitor's, set by Vercel and not by the
+// client): counts one more call to `limited`, and says whether the address
+// is still within its limit. It doesn't throw: what to do over the limit is
+// the caller's to decide.
+export async function withinAddressLimit(event: H3Event, limited: AddressRateLimited): Promise<boolean> {
+  const { calls, window } = ADDRESS_RATE_LIMITS[limited]
+  const address = getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
+  const windowOver = sql`now() - ${window}::interval`
+  const inWindow = gt(addressLimitUse.windowStart, windowOver)
+  const [counted] = await db
+    .insert(addressLimitUse)
+    .values({ address, limited })
+    .onConflictDoUpdate({
+      target: [addressLimitUse.address, addressLimitUse.limited],
+      set: {
+        calls: sql`case when ${inWindow} then ${addressLimitUse.calls} + 1 else 1 end`,
+        windowStart: sql`case when ${inWindow} then ${addressLimitUse.windowStart} else now() end`,
+      },
+    })
+    .returning({ calls: addressLimitUse.calls, newWindow: sql<boolean>`${addressLimitUse.windowStart} = now()` })
+  if (counted?.newWindow) {
+    await db.delete(addressLimitUse).where(and(eq(addressLimitUse.limited, limited), lt(addressLimitUse.windowStart, windowOver)))
+  }
+  return (counted?.calls ?? 0) <= calls
 }

@@ -3,9 +3,11 @@ import { auth, signInRefusal } from '../utils/auth'
 // The security boundary for /api/**: every route needs a session, except
 // Better Auth's own, the health check, and what the invite landing and "Not
 // unlocked" need before sign-in (seeing an invite, remembering it, the one
-// remembered), and the cron jobs, which check CRON_SECRET themselves.
+// remembered), the cron jobs, which check CRON_SECRET themselves, and a
+// browser's report of what broke a page's Content Security Policy (/login
+// has one too).
 // Page navigation is guarded separately by app/middleware/auth.global.ts.
-const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//]
+const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//, /^\/api\/csp-report$/]
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname

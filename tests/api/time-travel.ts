@@ -37,6 +37,19 @@ export async function endLimitWindow(email: string, limited: string): Promise<vo
   )
 }
 
+// The same two for a limit counted per IP address (ADDRESS_RATE_LIMITS).
+export async function useUpAddressLimit(address: string, limited: string, calls: number): Promise<void> {
+  await query(
+    `insert into address_limit_use (address, limited, window_start, calls) values ($1, $2, now(), $3)
+     on conflict (address, limited) do update set window_start = now(), calls = $3`,
+    [address, limited, calls],
+  )
+}
+
+export async function endAddressLimitWindow(address: string, limited: string): Promise<void> {
+  await query(`update address_limit_use set window_start = window_start - interval '2 days' where address = $1 and limited = $2`, [address, limited])
+}
+
 async function query(text: string, values: unknown[]): Promise<void> {
   const client = new pg.Client({ connectionString: inject('databaseUrl') })
   await client.connect()
