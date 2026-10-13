@@ -48,87 +48,93 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'breakfast', 'burger
 </script>
 
 <template>
-  <main class="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-10 text-center text-text">
-    <template v-if="notUnlocked">
-      <div class="aspect-[22/21] w-[min(80vw,330px)]">
-        <MotionClip
-          src="/clips/not-unlocked"
-          play
-        />
-      </div>
-      <h1 class="mt-8 font-display text-display-m tablet:text-display-l">
-        {{ t.notUnlocked.headline }}
-      </h1>
-      <p class="mt-4 max-w-md text-body text-text-muted">
-        {{ notUnlockedBody }}
-      </p>
-      <button
-        type="button"
-        class="mt-8 rounded-pill bg-surface-muted px-6 py-4 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
-        :disabled="signingIn"
-        :aria-busy="signingIn"
-        @click="startGoogleSignIn"
-      >
-        {{ signingIn ? t.signIn.pending : t.notUnlocked.otherAccount }}
-      </button>
-    </template>
-
-    <template v-else>
-      <div class="relative aspect-square w-[min(88vw,360px)]">
-        <div
-          class="hero-orbit absolute inset-0"
-          data-testid="hero-ring"
-        >
-          <div
-            v-for="(placeholder, i) in HERO_PLACEHOLDERS"
-            :key="placeholder"
-            class="absolute left-1/2 top-1/2 -ml-[11%] -mt-[11%] aspect-square w-[22%]"
-            :style="{ transform: `rotate(${i * 45}deg) translateY(-205%) rotate(${-i * 45}deg)` }"
-          >
-            <div class="hero-orbit hero-upright h-full w-full">
-              <div
-                class="hero-pop h-full w-full overflow-hidden rounded-thumb shadow-card"
-                :style="{ '--i': i }"
-              >
-                <PlaceholderClip
-                  :placeholder="placeholder"
-                  :motion="i % 2 === 0 ? 'loop' : null"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="absolute inset-[27%] overflow-hidden rounded-full">
-          <SvgLoop
-            src="/clips/topfbert-wow"
+  <div class="flex min-h-dvh flex-col bg-bg text-text">
+    <!-- The screen, centred in what the footer leaves of the window. -->
+    <main class="flex flex-1 flex-col items-center justify-center bg-bg px-4 pb-6 pt-10 text-center">
+      <template v-if="notUnlocked">
+        <div class="aspect-[22/21] w-[min(80vw,330px)]">
+          <MotionClip
+            src="/clips/not-unlocked"
             play
           />
         </div>
-      </div>
-      <h1 class="mt-8 font-display text-display-m tablet:text-display-l desktop:text-display-xl">
-        {{ t.signIn.headline.before }}<span class="app-name">{{ t.app.name }}</span>{{ t.signIn.headline.after }}
-      </h1>
-      <p class="mt-4 max-w-md text-body text-text-muted">
-        {{ t.signIn.intro }}
-      </p>
-      <p
-        v-if="failed"
-        role="alert"
-        class="mt-4 text-small text-danger"
-      >
-        {{ t.signIn.failed }}
-      </p>
-      <button
-        type="button"
-        class="mt-8 rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse shadow-fab transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
-        :disabled="signingIn"
-        :aria-busy="signingIn"
-        @click="startGoogleSignIn"
-      >
-        {{ signingIn ? t.signIn.pending : t.signIn.google }}
-      </button>
-    </template>
-  </main>
+        <h1 class="mt-8 font-display text-display-m tablet:text-display-l">
+          {{ t.notUnlocked.headline }}
+        </h1>
+        <p class="mt-4 max-w-md text-body text-text-muted">
+          {{ notUnlockedBody }}
+        </p>
+        <button
+          type="button"
+          class="mt-8 rounded-pill bg-surface-muted px-6 py-4 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+          :disabled="signingIn"
+          :aria-busy="signingIn"
+          @click="startGoogleSignIn"
+        >
+          {{ signingIn ? t.signIn.pending : t.notUnlocked.otherAccount }}
+        </button>
+      </template>
+
+      <template v-else>
+        <div class="relative aspect-square w-[min(88vw,360px)]">
+          <div
+            class="hero-orbit absolute inset-0"
+            data-testid="hero-ring"
+          >
+            <div
+              v-for="(placeholder, i) in HERO_PLACEHOLDERS"
+              :key="placeholder"
+              class="absolute left-1/2 top-1/2 -ml-[11%] -mt-[11%] aspect-square w-[22%]"
+              :style="{ transform: `rotate(${i * 45}deg) translateY(-205%) rotate(${-i * 45}deg)` }"
+            >
+              <div class="hero-orbit hero-upright h-full w-full">
+                <div
+                  class="hero-pop h-full w-full overflow-hidden rounded-thumb shadow-card"
+                  :style="{ '--i': i }"
+                >
+                  <PlaceholderClip
+                    :placeholder="placeholder"
+                    :motion="i % 2 === 0 ? 'loop' : null"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="absolute inset-[27%] overflow-hidden rounded-full">
+            <SvgLoop
+              src="/clips/topfbert-wow"
+              play
+            />
+          </div>
+        </div>
+        <h1 class="mt-8 font-display text-display-m tablet:text-display-l desktop:text-display-xl">
+          {{ t.signIn.headline.before }}<span class="app-name">{{ t.app.name }}</span>{{ t.signIn.headline.after }}
+        </h1>
+        <p class="mt-4 max-w-md text-body text-text-muted">
+          {{ t.signIn.intro }}
+        </p>
+        <p
+          v-if="failed"
+          role="alert"
+          class="mt-4 text-small text-danger"
+        >
+          {{ t.signIn.failed }}
+        </p>
+        <button
+          type="button"
+          class="mt-8 rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse shadow-fab transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+          :disabled="signingIn"
+          :aria-busy="signingIn"
+          @click="startGoogleSignIn"
+        >
+          {{ signingIn ? t.signIn.pending : t.signIn.google }}
+        </button>
+      </template>
+    </main>
+    <footer class="px-4 pb-4">
+      <LegalLinks class="justify-center" />
+    </footer>
+  </div>
 </template>
 
 <style scoped>

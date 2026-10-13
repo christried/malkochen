@@ -5,7 +5,7 @@ import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated } from './hydration'
 import { inviteToken } from './invite'
-import { removeUsers, seedCookings, seedDish } from './seed'
+import { removeStoredImages, removeUsers, seedCookings, seedDish, storedImage } from './seed'
 
 // Text set in the type scale's tokens (tokens.json → type), where the visual
 // check (#138) found it off them (#170). Marie and Émilie are used by this
@@ -17,6 +17,7 @@ const EMILIE = ALLOWLISTED[35]
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
 test.beforeAll(() => removeUsers(MARIE, EMILIE))
+test.afterAll(removeStoredImages)
 
 async function font(locator: Locator) {
   return locator.evaluate((el) => {
@@ -38,27 +39,40 @@ async function expectSmall(locator: Locator) {
   expect(await font(locator)).toMatchObject({ size: '13.5px', weight: '500' })
 }
 
-function sectionLabels(page: Page) {
+// A section's heading in a dialog or in settings (#205): one style for all of
+// them, 16px semibold in the UI font and the text's own colour, written as
+// it is (no capitals), so none gets lost.
+async function expectSectionHeading(locator: Locator) {
+  await expect(locator).toBeVisible()
+  await expect(locator).toHaveCSS('font-family', /^Figtree/)
+  await expect(locator).toHaveCSS('font-size', '16px')
+  await expect(locator).toHaveCSS('font-weight', '600')
+  await expect(locator).toHaveCSS('text-transform', 'none')
+  const colours = await locator.evaluate(el => ({ own: getComputedStyle(el).color, text: getComputedStyle(document.documentElement).color }))
+  expect(colours.own).toBe(colours.text)
+}
+
+function sectionHeadings(page: Page) {
   return page.getByRole('heading', { level: 2 })
 }
 
-test('user settings: the email and the languages note in `small`, the section labels in mono', async ({ page }) => {
+test('user settings: the email and the languages note in `small`, the sections under one heading style', async ({ page }) => {
   await signIn(page, MARIE, { name: 'Marie' })
   await gotoHydrated(page, '/settings')
   await expectSmall(page.getByText(MARIE))
   await expectSmall(page.getByText('Weitere Sprachen kommen später.'))
-  const labels = sectionLabels(page)
-  await expect(labels.first()).toBeVisible()
-  for (const label of await labels.all()) await expectOverline(label)
+  const headings = sectionHeadings(page)
+  await expect(headings).toHaveText(['Konto', 'Darstellung', 'Sprache', 'Tastenkürzel'])
+  for (const heading of await headings.all()) await expectSectionHeading(heading)
 })
 
-test('Board settings: the section labels in mono, "(du)" in the name\'s weight', async ({ page }) => {
+test('Board settings: the sections under the same heading style, "(du)" in the name\'s weight', async ({ page }) => {
   await signIn(page, MARIE, { name: 'Marie' })
   await gotoHydrated(page, '/')
   await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
-  const labels = sectionLabels(page)
-  await expect(labels.first()).toBeVisible()
-  for (const label of await labels.all()) await expectOverline(label)
+  const headings = sectionHeadings(page)
+  await expect(headings).toHaveText(['Board', 'Spalten', 'Mitglieder', 'Einladen'])
+  for (const heading of await headings.all()) await expectSectionHeading(heading)
   // Muted text differs from the name by colour only.
   const you = page.getByText('(du)')
   const name = await font(you.locator('..'))
@@ -115,4 +129,41 @@ test('the Cooking note field in the field font, like the Dish note', async ({ pa
   const note = page.getByRole('dialog', { name: 'Notiz zum Kochen' }).getByLabel('Notiz')
   expect(await font(note)).toMatchObject({ size: '15.5px', weight: '500', lineHeight: '22px' })
   await expect(note).toHaveCSS('font-family', /^Figtree/)
+})
+
+test('the image dialog\'s "Ausschnitt" and "Platzhalter" in the section heading style', async ({ page }) => {
+  await signIn(page, MARIE, { name: 'Marie' })
+  await gotoHydrated(page, '/')
+  await seedDish(page, { title: 'Shakshuka', sourceLink: TIKTOK, sourceKind: 'tiktok', imageUrl: await storedImage(360, 640) })
+  await gotoHydrated(page, '/')
+  await page.getByRole('link', { name: 'Shakshuka' }).click()
+  const detail = page.getByRole('dialog', { name: 'Shakshuka' })
+  await detail.getByRole('button', { name: 'Bearbeiten' }).click()
+  await detail.getByRole('button', { name: 'Bild wählen' }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Bild wählen' })
+  await expect(dialog.getByRole('heading', { level: 3 })).toHaveText(['Ausschnitt', 'Platzhalter'])
+  for (const heading of await dialog.getByRole('heading', { level: 3 }).all()) await expectSectionHeading(heading)
+})
+
+test('Add Dish\'s "Bild", a new Board\'s "Emoji" and the Dish menu\'s "Verschieben nach…" in the section heading style', async ({ page }) => {
+  await signIn(page, MARIE, { name: 'Marie' })
+  await gotoHydrated(page, '/')
+
+  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
+  await page.getByRole('dialog', { name: 'Gericht hinzufügen' }).getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
+  const addDish = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+  await expectSectionHeading(addDish.getByText('Bild', { exact: true }))
+  await addDish.getByRole('button', { name: 'Schließen' }).click()
+
+  await page.getByRole('button', { name: /Board wechseln/ }).click()
+  await page.getByRole('navigation').getByRole('button', { name: 'Neues Board' }).click()
+  const newBoard = page.getByRole('dialog', { name: 'Neues Board' })
+  await expectSectionHeading(newBoard.getByText('Emoji', { exact: true }))
+  await newBoard.getByRole('button', { name: 'Schließen' }).click()
+
+  await page.getByRole('button', { name: 'Mehr zu „Shakshuka“' }).click()
+  const menu = page.getByRole('dialog', { name: 'Shakshuka' })
+  await menu.getByRole('button', { name: 'Verschieben nach…' }).click()
+  await expectSectionHeading(menu.getByText('Verschieben nach…', { exact: true }))
 })

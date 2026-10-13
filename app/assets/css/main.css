@@ -332,6 +332,23 @@ html[data-theme-reveal="fade"] *::after {
   }
 }
 
+/* A section's heading in a dialog or in settings (#205): "Ausschnitt" and
+   "Platzhalter" in the image dialog, "Bild" in Add Dish, "Emoji" for a new
+   Board, "Verschieben nach…" in a Dish's menu, and each section of your
+   settings and a Board's. One style for all of them, 16px semibold in the
+   text's own colour, where they used to be `label` (14px) or `overline`
+   (11px, muted) and got lost. Not for a title in the display type (a sheet's
+   title, the Dish detail's "Gekocht"), nor for the `overline` over a group
+   of choices within a section (MoveTargetPicker's Boards). In the components
+   layer, so spacing utilities still apply. */
+@layer components {
+  .section-heading {
+    font: 600 16px / 1.25 var(--font-ui);
+    letter-spacing: 0;
+    color: var(--color-text);
+  }
+}
+
 /* A field's focus ring comes in over 180ms (handoff Input "focus ring"). */
 :where(input, textarea, select) {
   transition: box-shadow 180ms var(--ease-fade), border-color 180ms var(--ease-fade);

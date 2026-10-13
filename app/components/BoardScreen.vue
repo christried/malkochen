@@ -830,7 +830,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             ><path d="M15 6l-6 6 6 6" /></svg>
             {{ t.dish.back }}
           </button>
-          <p class="px-1 text-overline uppercase text-text-muted">
+          <p class="section-heading px-1">
             {{ t.dish.moveTo }}
           </p>
           <MoveTargetPicker

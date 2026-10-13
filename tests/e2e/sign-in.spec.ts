@@ -71,10 +71,32 @@ test('a refused sign-in shows the friendly "Not unlocked" screen', async ({ page
   await gotoHydrated(page, '/login?error=not_allowed&error_description=Not%20on%20the%20Allowlist')
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gleich geht’s los!')
-  await expect(page.getByText('Du bist noch nicht für malkochen freigeschaltet.')).toBeVisible()
+  // Whom to ask is named.
+  await expect(page.getByText('Du bist noch nicht für malkochen freigeschaltet. Sag Chris Bescheid, dann kannst du loslegen.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mit einem anderen Konto anmelden' })).toBeVisible()
   await expect(page.getByText('Allowlist')).toHaveCount(0)
 })
+
+// The legal pages are on christried.me, outside the app, so anyone can read
+// them without signing in.
+for (const [screen, path] of [['the sign-in screen', '/login'], ['the "Not unlocked" screen', '/login?error=not_allowed']] as const) {
+  test(`${screen} links to Impressum and Datenschutz in its footer, signed out`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await gotoHydrated(page, path)
+
+    const links = page.getByRole('contentinfo').getByRole('link')
+    await expect(links).toHaveText(['Impressum', 'Datenschutz'])
+    await expect(links.nth(0)).toHaveAttribute('href', 'https://christried.me/impressum')
+    await expect(links.nth(1)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
+    // Under the screen's button, and big enough to tap.
+    const button = (await page.getByRole('main').getByRole('button').boundingBox())!
+    for (const link of await links.all()) {
+      const box = (await link.boundingBox())!
+      expect(box.y).toBeGreaterThanOrEqual(button.y + button.height)
+      expect(box.height).toBeGreaterThanOrEqual(44)
+    }
+  })
+}
 
 test('after signing in the app opens "Meine Küche" with its three Columns', async ({ page }) => {
   await signIn(page, ALLOWLISTED[2])

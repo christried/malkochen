@@ -143,7 +143,7 @@ const choice = 'flex min-h-24 flex-col items-center justify-center gap-2 overflo
       class="mt-3 text-small text-text-muted empty:hidden"
     >{{ uploading ? t.imageDialog.uploading : '' }}</p>
 
-    <h3 class="mb-3 mt-5 text-label">
+    <h3 class="section-heading mb-3 mt-5">
       {{ t.imageDialog.placeholders }}
     </h3>
     <PlaceholderPicker

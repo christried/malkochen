@@ -191,7 +191,7 @@ test('image only (a Pin whose page failed): a friendly prompt asks for the title
   // A Placeholder the Member chose is no failure: no notice.
   await expect(card).toBeVisible()
   await expect(page.locator('[data-toast]')).toHaveCount(0)
-  await expect(card.getByText('Pinterest')).toBeVisible()
+  await expect(card.getByText('Pin', { exact: true })).toBeVisible()
   await expect(card.locator('img[src="/placeholders/pasta-light.svg"]')).toBeVisible()
   expect((await body).creator).toBeNull()
   await expect(card.locator('[data-creator]')).toHaveCount(0)
@@ -349,10 +349,10 @@ test('a stored image that fails to load falls back to the Placeholder', async ({
 test('every Source kind gets its badge', async ({ page }) => {
   await signIn(page, ALLOWLISTED[2])
   const badges = [
-    ['Reel', 'instagram-reel', 'https://www.instagram.com/reel/C1a2b3c4d5e/', 'Instagram'],
-    ['Post', 'instagram-post', 'https://www.instagram.com/p/C1a2b3c4d5e/', 'Instagram'],
+    ['Reel', 'instagram-reel', 'https://www.instagram.com/reel/C1a2b3c4d5e/', 'Insta'],
+    ['Post', 'instagram-post', 'https://www.instagram.com/p/C1a2b3c4d5e/', 'Insta'],
     ['Short', 'youtube-short', 'https://www.youtube.com/shorts/aBcDeFgHiJk', 'YouTube'],
-    ['Pin', 'pinterest-pin', 'https://www.pinterest.com/pin/123/', 'Pinterest'],
+    ['Pin', 'pinterest-pin', 'https://www.pinterest.com/pin/123/', 'Pin'],
     ['Video', 'tiktok', TIKTOK, 'TikTok'],
     ['Blog', 'blog', 'https://kochblog.example/b', 'Web'],
     ['Seite', 'other', 'https://example.org/c', 'Web'],
@@ -394,7 +394,7 @@ test('desktop cards show only the badge\'s dot, inside the thumbnail; tablet car
   for (const badge of desktop) {
     // The name stays there for screen readers, out of sight.
     expect(badge, badge.title!).toMatchObject({ inside: true })
-    expect(badge.name, badge.title!).toMatch(/^(Instagram|YouTube|Pinterest|TikTok|Web)$/)
+    expect(badge.name, badge.title!).toMatch(/^(Insta|YouTube|Pin|TikTok|Web)$/)
     expect(badge.nameWidth, badge.title!).toBeLessThanOrEqual(1)
   }
 

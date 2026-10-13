@@ -161,6 +161,8 @@ test('the Creator shows under the title on the card and in the detail, and can b
 
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
   await detail.getByLabel('Veröffentlicht von').fill('')
+  // Empty, the field gives an example.
+  await expect(detail.getByLabel('Veröffentlicht von')).toHaveAttribute('placeholder', 'z. B. @christried oder ein Blog')
   await detail.getByRole('button', { name: 'Speichern' }).click()
   await expect(detail.getByRole('button', { name: 'Bearbeiten' }).first()).toBeVisible()
   await expect(creator).toHaveCount(0)
@@ -196,7 +198,7 @@ test('changing the Source keeps the image; "Bild neu laden" replaces it, or fall
   let body = editedBody(page)
   await detail.getByRole('button', { name: 'Speichern' }).click()
   expect(await body).not.toHaveProperty('imageUrl')
-  await expect(detail.getByText('Instagram')).toBeVisible()
+  await expect(detail.getByText('Insta', { exact: true })).toBeVisible()
   await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveAttribute('href', reel)
   await expect(detail.locator('[data-dish-image]')).toHaveAttribute('src', image)
   await reloadHydrated(page)

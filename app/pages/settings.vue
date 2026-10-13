@@ -108,7 +108,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
       >
         <h2
           id="settings-account"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.userSettings.account }}
         </h2>
@@ -219,7 +219,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
       >
         <h2
           id="settings-theme"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.theme.label }}
         </h2>
@@ -232,7 +232,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
       >
         <h2
           id="settings-language"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.userSettings.language }}
         </h2>
@@ -248,7 +248,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
       >
         <h2
           id="settings-shortcuts"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.shortcuts.title }}
         </h2>

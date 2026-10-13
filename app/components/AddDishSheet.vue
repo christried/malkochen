@@ -449,7 +449,7 @@ async function save() {
           </p>
           <div class="flex items-center justify-between gap-4">
             <span
-              class="text-label"
+              class="section-heading"
               aria-hidden="true"
             >{{ t.addDish.image }}</span>
             <div class="flex flex-wrap justify-end gap-2">

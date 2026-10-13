@@ -105,10 +105,15 @@ async function saveOrder(before: ColumnRow[]) {
   }
 }
 
-// A new Column, at the end; the same as the Board's add lane on desktop.
+// A new Column, at the end; the same as the Board's add lane on desktop. Its
+// name field's made-up example is a new one each time the page opens, and
+// once a Column is added.
+const newColumnExample = useExamplePrompt(t.settings.newColumnExamples, t.settings.newColumnPrompt)
+onMounted(newColumnExample.pickAnother)
 const { name: newColumn, canAdd: canAddColumn, submit: addColumn } = useNewColumn(async (columnName) => {
   const added = await postColumn(id.value, columnName)
   columns.value.push({ ...added, count: 0 })
+  newColumnExample.pickAnother()
 }, failed)
 
 // Deleting: an empty Column goes at once (PRD story 59); one with Dishes
@@ -336,7 +341,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-board"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.board }}
         </h2>
@@ -377,7 +382,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-columns"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.columns }}
         </h2>
@@ -406,7 +411,7 @@ function confirmDelete() {
               type="text"
               maxlength="40"
               autocomplete="off"
-              :placeholder="t.settings.newColumnPrompt"
+              :placeholder="newColumnExample.prompt.value"
             >
           </AppField>
           <button
@@ -425,7 +430,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-members"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.members }}
         </h2>
@@ -442,7 +447,7 @@ function confirmDelete() {
       >
         <h2
           id="settings-invite"
-          class="px-1 text-overline uppercase text-text-muted"
+          class="section-heading px-1"
         >
           {{ t.settings.invite }}
         </h2>

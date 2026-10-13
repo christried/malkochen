@@ -83,7 +83,7 @@ const valueText = computed(() => t.imageDialog.focusValue(Math.round(focus.value
     v-if="!broken"
     class="flex flex-col items-center gap-2"
   >
-    <h3 class="mt-5 self-start text-label">
+    <h3 class="section-heading mt-5 self-start">
       {{ t.imageDialog.focus }}
     </h3>
     <div

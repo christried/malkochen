@@ -52,6 +52,22 @@ test('a Member renames the Board and picks another emoji', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🍜 Kochclub')
 })
 
+test('the new Column field suggests one of its example names, and another once a Column is added', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openSettings(page)
+
+  const field = page.getByLabel('Neue Spalte')
+  await expect(field).toHaveAttribute('placeholder', /^z\. B\. „(Wochenende|Meal Prep|Für Gäste|Schnell & einfach|Sonntagsbrunch|Nachtisch|Grillsaison|Lunchbox|Feierabendküche|Weihnachten)“$/)
+
+  // Math.random() answering .75 picks the eighth of the ten.
+  await page.evaluate(() => { Math.random = () => 0.75 })
+  await field.fill('Vorrat')
+  await page.getByRole('button', { name: 'Hinzufügen' }).click()
+  await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht', 'Vorrat'])
+  await expect(field).toHaveValue('')
+  await expect(field).toHaveAttribute('placeholder', 'z. B. „Lunchbox“')
+})
+
 test('a Member adds, renames and reorders Columns; Gekocht is marked and can’t be deleted', async ({ page }) => {
   await openSettings(page)
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
