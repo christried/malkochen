@@ -532,6 +532,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           ref="searchButton"
           raised
           :aria-label="t.search.open"
+          :data-tooltip="t.search.open"
           @click="searchOpen = true"
         >
           <AppIcon
@@ -542,6 +543,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <NuxtLink
           :to="boardSettingsPath(board)"
           :aria-label="t.settings.title"
+          :data-tooltip="t.settings.title"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-text shadow-card transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >
           <AppIcon
@@ -680,6 +682,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                     type="button"
                     class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
                     :aria-label="t.dish.menu(dish.title)"
+                    :data-tooltip="t.dish.more"
                     aria-haspopup="dialog"
                     @click="menuDish = dish"
                   >
@@ -759,6 +762,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
       :aria-label="t.addDish.open"
+      :data-tooltip="t.addDish.open"
       @click="adding = true"
     >
       <svg

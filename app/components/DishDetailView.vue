@@ -43,6 +43,7 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
       >
         <RoundButton
           :aria-label="t.detail.close"
+          :data-tooltip="t.detail.close"
           @click="$emit('close')"
         >
           <AppIcon name="close" />
@@ -91,6 +92,7 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
           type="button"
           class="flex h-11 w-11 items-center justify-center rounded-full bg-glass text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           :aria-label="t.detail.close"
+          :data-tooltip="t.detail.close"
           @click="$emit('close')"
         >
           <AppIcon name="close" />

@@ -102,6 +102,7 @@ function onHandleUp(event: PointerEvent) {
           type="button"
           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           :aria-label="closeLabel"
+          :data-tooltip="closeLabel"
           @click="open = false"
         >
           <AppIcon

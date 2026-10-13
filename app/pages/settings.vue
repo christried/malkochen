@@ -89,6 +89,7 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
         <NuxtLink
           to="/"
           :aria-label="t.userSettings.back"
+          :data-tooltip="t.userSettings.back"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >
           <AppIcon

@@ -97,6 +97,7 @@ watch(() => route.fullPath, () => close())
       type="button"
       class="block rounded-full transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       :aria-label="t.userSettings.menu"
+      :data-tooltip="t.userSettings.menu"
       aria-haspopup="menu"
       :aria-expanded="open"
       :aria-controls="menuId"

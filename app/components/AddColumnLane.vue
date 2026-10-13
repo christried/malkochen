@@ -102,6 +102,7 @@ function leave(event: FocusEvent) {
         type="submit"
         class="mb-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-inverse text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         :aria-label="t.settings.add"
+        :data-tooltip="t.settings.add"
         :disabled="!canAdd"
       >
         <AppIcon

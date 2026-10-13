@@ -108,6 +108,8 @@ export const de = {
     // The marker on a New Dish (CONTEXT.md).
     new: 'Neu',
     menu: (title: string) => `Mehr zu „${title}“`,
+    // The same button's Tooltip: the card under it already says which Dish.
+    more: 'Mehr',
     closeMenu: 'Schließen',
     delete: 'Löschen',
     deleted: (title: string) => `„${title}“ gelöscht`,
@@ -169,6 +171,9 @@ export const de = {
     addNoteLabel: (date: Date) => `Notiz zum Kochen am ${addedDate(date)} hinzufügen`,
     editNoteLabel: (date: Date) => `Notiz zum Kochen am ${addedDate(date)} bearbeiten`,
     deleteLabel: (date: Date) => `Kochen am ${addedDate(date)} löschen`,
+    // Their Tooltips: the entry they sit in already shows the date.
+    editNoteTip: 'Notiz bearbeiten',
+    deleteTip: 'Kochen löschen',
     deleted: (date: Date) => `Kochen am ${addedDate(date)} gelöscht`,
     deleteFailed: 'Das Löschen hat nicht geklappt. Versuch es gleich noch mal.',
     restoreFailed: 'Das Zurückholen hat nicht geklappt.',
@@ -303,6 +308,8 @@ export const de = {
   } satisfies Record<Placeholder, string>,
   boards: {
     switcher: (board: string) => `Board wechseln, jetzt: ${board}`,
+    // The switcher's Tooltip: it shows the Board's name itself.
+    switch: 'Board wechseln',
     label: 'Deine Boards',
     current: 'Aktuelles Board',
     dishCount,
@@ -345,6 +352,10 @@ export const de = {
     moveUp: (name: string) => `„${name}“ nach oben`,
     moveDown: (name: string) => `„${name}“ nach unten`,
     deleteColumn: (name: string) => `Spalte „${name}“ löschen`,
+    // Their Tooltips: the row they sit in already shows the Column's name.
+    moveUpTip: 'Nach oben',
+    moveDownTip: 'Nach unten',
+    deleteColumnTip: 'Spalte löschen',
     lastColumn: 'Ein Board braucht neben „Gekocht“ noch mindestens eine Spalte.',
     newColumn: 'Neue Spalte',
     // A new Column's name field suggests one of these, a new one each time.

@@ -323,6 +323,7 @@ function confirmDelete() {
         <NuxtLink
           :to="boardPath(saved)"
           :aria-label="t.settings.back"
+          :data-tooltip="t.settings.back"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         >
           <AppIcon
@@ -351,6 +352,7 @@ function confirmDelete() {
             type="button"
             class="emoji-pebble flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px] transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
             :aria-label="t.settings.emoji"
+            :data-tooltip="t.settings.emoji"
             aria-haspopup="dialog"
             @click="choosingEmoji = true"
           >

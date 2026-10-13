@@ -118,6 +118,7 @@ function keyOf(cooking: CookingView): number {
             class="flex h-9 items-center justify-center rounded-pill px-2.5 text-label text-text-muted transition-transform duration-tap ease-tap hover:bg-surface active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-focus"
             :class="{ 'w-9 px-0': cooking.note, 'note-glow relative': !cooking.note && isFresh(cooking) }"
             :aria-label="(cooking.note ? t.cooking.editNoteLabel : t.cooking.addNoteLabel)(new Date(cooking.cookedAt))"
+            :data-tooltip="cooking.note ? t.cooking.editNoteTip : undefined"
             :disabled="!cooking.id"
             @click="$emit('note', cooking)"
           >
@@ -141,6 +142,7 @@ function keyOf(cooking: CookingView): number {
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-focus"
             :aria-label="t.cooking.deleteLabel(new Date(cooking.cookedAt))"
+            :data-tooltip="t.cooking.deleteTip"
             :disabled="!cooking.id"
             @click="$emit('delete', cooking)"
           >

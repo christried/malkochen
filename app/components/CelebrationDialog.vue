@@ -63,6 +63,7 @@ defineExpose({ time: () => motionClip.value?.time() ?? null })
           type="button"
           class="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-glass text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           :aria-label="closeLabel"
+          :data-tooltip="closeLabel"
         >
           <AppIcon name="close" />
         </button>

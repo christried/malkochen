@@ -49,8 +49,8 @@ const list = useTemplateRef<ComponentPublicInstance>('list')
 const listEl = () => list.value?.$el as HTMLElement | undefined
 
 const STEPS = [
-  { delta: -1, icon: 'up', label: t.settings.moveUp },
-  { delta: 1, icon: 'down', label: t.settings.moveDown },
+  { delta: -1, icon: 'up', label: t.settings.moveUp, tip: t.settings.moveUpTip },
+  { delta: 1, icon: 'down', label: t.settings.moveDown, tip: t.settings.moveDownTip },
 ] as const
 
 // ↑/↓. When the Column reaches either end, focus goes to the other arrow.
@@ -201,11 +201,12 @@ function drop(event?: Event) {
         </span>
       </div>
       <button
-        v-for="{ delta, icon, label } in STEPS"
+        v-for="{ delta, icon, label, tip } in STEPS"
         :key="delta"
         type="button"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="label(column.name)"
+        :data-tooltip="tip"
         :disabled="!columns[index + delta]"
         :data-step="delta"
         @click="step(column, delta)"
@@ -217,6 +218,7 @@ function drop(event?: Event) {
         type="button"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.settings.deleteColumn(column.name)"
+        :data-tooltip="t.settings.deleteColumnTip"
         :aria-describedby="deletable(column) ? undefined : lastHintId"
         :disabled="!deletable(column)"
         @click="emit('delete', column)"

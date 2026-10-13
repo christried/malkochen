@@ -76,6 +76,7 @@ function newBoard() {
         type="button"
         class="board-pill flex h-11 max-w-full items-center gap-2 rounded-pill py-1 pl-1 pr-3 text-left active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.boards.switcher(board.name)"
+        :data-tooltip="t.boards.switch"
         :aria-expanded="open"
         :aria-controls="panelId"
         @click="toggle"
