@@ -53,6 +53,12 @@ export function accentAt(progress: number): string {
   return `color-mix(in oklch, ${columnAccent(from)}, ${columnAccent(from + 1)} ${along * 100}%)`
 }
 
+// What a Board's page (and its skeleton) hands down as custom properties,
+// for main.css to colour the page and the Board switcher's pill with.
+export function boardColours(count: number): Record<string, string> {
+  return { '--board-gradient': boardGradient(count), '--switcher-gradient': switcherGradient(count) }
+}
+
 // The pebble shape of a Column's tab: three radii, taken in turn.
 export function tabRadius(index: number): string {
   return `var(--radius-tab-${(index % 3) + 1})`

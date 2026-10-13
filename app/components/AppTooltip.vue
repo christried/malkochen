@@ -5,11 +5,15 @@
 // once (app.vue); it listens on the document, so nothing else has to.
 //
 // Under a mouse it comes up once the pointer has rested on the control for
-// DELAY_MS, and at once when the keyboard focuses it. It goes when the
-// pointer leaves, focus moves on, the control is pressed or clicked, or on
-// Escape; pressed, it stays away until the pointer has left the control.
-// Never for a finger: a touch has no hover, and a tap's focus isn't the
-// keyboard's (:focus-visible). A disabled control has none.
+// DELAY_MS, and at once when Tab brings the keyboard's focus to it; not when
+// focus is put back on a control (a sheet closing, Escape in a menu), which
+// nobody asked about. It goes when the pointer leaves, focus moves on, the
+// control is pressed or clicked, or on Escape; pressed, it stays away until
+// the pointer has left the control. None while a mouse button is held, so
+// none over what a dragged Dish passes. Never for a finger: a touch has no
+// hover, and a tap's focus isn't the keyboard's (:focus-visible). A disabled
+// control has none, and one that is disabled, removed or scrolled off the
+// screen while its Tooltip shows takes it along.
 //
 // For the eyes only (aria-hidden): a control with a Tooltip already has its
 // name for screen readers. It is a manual popover, so it shows in the top
@@ -19,6 +23,8 @@ const DELAY_MS = 400
 // From the control, and from the screen's edges.
 const GAP = 8
 const EDGE = 8
+// How often a showing Tooltip checks that its control is still there.
+const CHECK_MS = 250
 
 const bubble = useTemplateRef<HTMLElement>('bubble')
 const text = ref('')
@@ -28,7 +34,10 @@ const route = useRoute()
 let anchor: HTMLElement | null = null
 // The control that was pressed: none for it until the pointer has left it.
 let pressed: HTMLElement | null = null
+// Whether the last key pressed was Tab: focus that follows came by keyboard.
+let tabbed = false
 let timer: ReturnType<typeof setTimeout> | undefined
+let check: ReturnType<typeof setInterval> | undefined
 
 function controlOf(target: EventTarget | null): HTMLElement | null {
   const control = target instanceof Element ? target.closest<HTMLElement>('[data-tooltip]') : null
@@ -38,6 +47,7 @@ function controlOf(target: EventTarget | null): HTMLElement | null {
 
 function hide() {
   clearTimeout(timer)
+  clearInterval(check)
   anchor = null
   if (bubble.value?.matches(':popover-open')) bubble.value.hidePopover()
 }
@@ -52,18 +62,21 @@ async function show(control: HTMLElement) {
   if (anchor !== control || !control.isConnected) return
   el.showPopover()
   place()
+  check = setInterval(() => {
+    if (anchor && controlOf(anchor) !== anchor) hide()
+  }, CHECK_MS)
 }
 
 // Centred under the control, or above it where there is no room below, and
-// kept on the screen.
+// kept on the screen; gone with a control that has left the screen.
 function place() {
   const el = bubble.value
   if (!el || !anchor) return
-  if (!anchor.isConnected) {
+  const box = anchor.getBoundingClientRect()
+  if (!anchor.isConnected || box.bottom < 0 || box.top > innerHeight || box.right < 0 || box.left > innerWidth) {
     hide()
     return
   }
-  const box = anchor.getBoundingClientRect()
   const { offsetWidth: width, offsetHeight: height } = el
   const above = box.bottom + GAP + height > innerHeight - EDGE && box.top - GAP - height >= EDGE
   const left = Math.max(EDGE, Math.min(box.left + box.width / 2 - width / 2, innerWidth - EDGE - width))
@@ -73,7 +86,7 @@ function place() {
 }
 
 function onPointerOver(event: PointerEvent) {
-  const control = event.pointerType === 'touch' ? null : controlOf(event.target)
+  const control = event.pointerType === 'touch' || event.buttons ? null : controlOf(event.target)
   if (control !== pressed) pressed = null
   if (control === anchor) return
   hide()
@@ -84,12 +97,13 @@ function onPointerOver(event: PointerEvent) {
 
 function onPress(event: Event) {
   hide()
+  tabbed = false
   pressed = controlOf(event.target)
 }
 
 function onFocusIn(event: FocusEvent) {
   const control = event.target instanceof HTMLElement && event.target.dataset.tooltip ? controlOf(event.target) : null
-  if (!control?.matches(':focus-visible')) return
+  if (!tabbed || !control?.matches(':focus-visible')) return
   hide()
   anchor = control
   void show(control)
@@ -99,7 +113,10 @@ function onFocusOut(event: FocusEvent) {
   if (event.target === anchor) hide()
 }
 
+// Tab moves focus as this event ends, so the note of it is gone right after.
 function onKeydown(event: KeyboardEvent) {
+  tabbed = event.key === 'Tab'
+  if (tabbed) setTimeout(() => (tabbed = false))
   if (event.key === 'Escape') hide()
 }
 

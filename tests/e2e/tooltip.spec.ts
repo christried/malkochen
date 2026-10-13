@@ -133,6 +133,34 @@ test('keyboard focus shows a control’s Tooltip at once, focus moving on moves 
   await expect(tooltip(page)).toHaveText('Board wechseln')
   await page.getByRole('link', { name: 'Miso-Ramen', exact: true }).focus()
   await expect(tooltip(page)).toBeHidden()
+
+  // Focus put back on a control isn't asking about it: Escape in the Board
+  // switcher's list hands focus back to the pill, without its Tooltip.
+  const pill = page.getByRole('button', { name: /Board wechseln/ })
+  await pill.focus()
+  await page.keyboard.press('Enter')
+  await expect(pill).toHaveAttribute('aria-expanded', 'true')
+  await page.keyboard.press('Escape')
+  await expect(pill).toBeFocused()
+  await page.waitForTimeout(DELAY_MS + 200)
+  await expect(tooltip(page)).toBeHidden()
+  expect((await watched(page)).opened).toHaveLength(3)
+})
+
+test('a Dish dragged over a control shows no Tooltip', async ({ page }) => {
+  await openBoard(page)
+  const card = (await page.getByRole('link', { name: 'Miso-Ramen', exact: true }).boundingBox())!
+  const settings = (await page.getByRole('link', { name: 'Board-Einstellungen' }).boundingBox())!
+
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(settings.x + settings.width / 2, settings.y + settings.height / 2, { steps: 12 })
+  await expect(page.getByTestId('drag-card')).toBeVisible()
+  await page.waitForTimeout(DELAY_MS + 200)
+  await expect(tooltip(page)).toBeHidden()
+  await page.mouse.up()
+  await expect(page.getByTestId('drag-card')).toHaveCount(0)
+  expect((await watched(page)).opened).toEqual([])
 })
 
 test('clicking a control closes its Tooltip, and it stays closed while the mouse rests there', async ({ page }) => {

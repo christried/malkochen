@@ -27,7 +27,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
 <template>
   <main
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
-    :style="{ '--tint': columnAccent(0), '--board-gradient': boardGradient(columns.length), '--switcher-gradient': switcherGradient(columns.length) }"
+    :style="{ '--tint': columnAccent(0), ...boardColours(columns.length) }"
     :aria-label="t.board.loading"
     aria-busy="true"
     data-board-skeleton

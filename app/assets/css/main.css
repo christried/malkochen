@@ -367,9 +367,8 @@ html[data-theme-reveal="fade"] *::after {
      tilts −1°), but not while pressed: then it shrinks (tap). So does a
      tile (.hover-grow: an emoji, a Placeholder, an image choice), and a
      label that is one.
-   Reduced motion: the shadow only; and what would have grown, and has no
-   hover colour of its own, shows a ring in the text colour instead (#206),
-   which a focus ring replaces.
+   Reduced motion: the shadow only; and what would have grown shows a ring
+   in the text colour instead (#206), which a focus ring replaces.
    Everything clickable reacts one of these ways, or with a tint of its own
    (a menu's rows); a disabled control doesn't (affordances.spec.ts walks
    them all). */
@@ -385,7 +384,7 @@ html[data-theme-reveal="fade"] *::after {
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
   @layer components {
-    :where(button, a, label):where(.rounded-pill, .rounded-full, .hover-grow):not(:disabled, [class*="hover:"]):hover {
+    :where(button, a, label):where(.rounded-pill, .rounded-full, .hover-grow):not(:disabled):hover {
       outline: 2px solid color-mix(in srgb, var(--color-text) 30%, transparent);
     }
   }

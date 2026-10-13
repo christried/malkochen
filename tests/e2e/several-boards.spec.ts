@@ -223,6 +223,10 @@ async function inkBox(page: Page, clip: { x: number, y: number, width: number, h
   }, { base64: png.toString('base64'), backgroundAt, within })
 }
 
+// Nothing of the app's cuts the emoji: it is drawn exactly as large as the
+// same emoji with nothing around it. What the device's own emoji font cuts
+// off a glyph (Windows 11's does, of 🍪 and 🥟) shows the same in both, so
+// this can't see it; no layout of ours changes it either.
 for (const [device, width] of [['phone', 390], ['computer', 1440]] as const) {
   test(`on a ${device} the switcher's emoji is drawn in full, as large as with nothing around it`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
