@@ -25,7 +25,7 @@ test('a new user picks a Username before reaching a Board, and can’t go on unt
   // Someone else has "curie" already.
   await signIn(await newTab(browser), CURIE)
   // As Google creates the user: with its name, and no Username.
-  await signIn(page, NOETHER, { name: 'Emmy Noether', username: 'none' })
+  await signIn(page, NOETHER, { name: 'Amalie Noether', username: 'none' })
 
   await gotoHydrated(page, '/')
 
@@ -34,7 +34,7 @@ test('a new user picks a Username before reaching a Board, and can’t go on unt
   await expect(field(page)).toHaveValue('')
   await expect(page.getByText('2 bis 24 Zeichen: Buchstaben, Ziffern und _ . -')).toBeVisible()
   // Their Google name is nowhere, not even as a suggestion.
-  await expect(page.getByText(/Emmy|Noether/)).toHaveCount(0)
+  await expect(page.getByText(/Amalie|Noether/)).toHaveCount(0)
 
   const go = page.getByRole('button', { name: 'Los geht’s' })
   await go.click()
@@ -42,7 +42,7 @@ test('a new user picks a Username before reaching a Board, and can’t go on unt
   await expect(field(page)).toHaveAttribute('aria-invalid', 'true')
 
   // What is wrong shows while typing.
-  await field(page).fill('Emmy Noether')
+  await field(page).fill('Amalie Noether')
   await expect(page.getByRole('alert')).toHaveText('Nur Buchstaben, Ziffern und _ . - sind erlaubt.')
   await field(page).fill('E'.repeat(25))
   await expect(page.getByRole('alert')).toHaveText('Höchstens 24 Zeichen.')
@@ -58,12 +58,12 @@ test('a new user picks a Username before reaching a Board, and can’t go on unt
   await gotoHydrated(page, '/settings')
   await expect(page).toHaveURL('/username?redirect=/settings')
 
-  await field(page).fill('Emmy')
+  await field(page).fill('Amalie')
   await page.getByRole('button', { name: 'Los geht’s' }).click()
 
   // On to where they were going, with the Username as their name.
   await expect(page).toHaveURL('/settings')
-  await expect(page.getByRole('region', { name: 'Konto' }).getByText('Emmy', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Konto' }).getByText('Amalie', { exact: true })).toBeVisible()
   await expect(page.getByText(/Noether/)).toHaveCount(0)
   // The prompt is over for good.
   await gotoHydrated(page, '/username')
@@ -95,20 +95,20 @@ test('a new user who follows an Invite Link picks a Username first, then lands o
 
 test('a user from before Usernames is asked once whether theirs fits, and keeps it with one tap', async ({ page }) => {
   // As the migration left them: a Username from their Google first name.
-  await signIn(page, FRANKLIN, { name: 'Rosalind Franklin', username: 'suggested' })
+  await signIn(page, FRANKLIN, { name: 'Rosy Franklin', username: 'suggested' })
 
   await gotoHydrated(page, '/')
 
   await expect(page).toHaveURL('/username')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Passt dein Name?')
-  await expect(field(page)).toHaveValue('Rosalind')
+  await expect(field(page)).toHaveValue('Rosy')
   await expect(page.getByText(/Franklin/)).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Passt so' }).click()
 
   await expect(page).toHaveURL(onABoard)
   await page.getByRole('button', { name: 'Dein Konto' }).click()
-  await expect(page.getByRole('menu', { name: `Rosalind ${FRANKLIN}` })).toBeVisible()
+  await expect(page.getByRole('menu', { name: `Rosy ${FRANKLIN}` })).toBeVisible()
   // Not asked again: not after a reload, not after signing in again.
   await reloadHydrated(page)
   await expect(page).toHaveURL(onABoard)
