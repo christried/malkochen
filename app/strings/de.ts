@@ -49,6 +49,12 @@ export const de = {
     ],
     prompt: (example: string) => `Optional, z. B. „${example}“`,
   },
+  // The links to the legal pages (utils/legal.ts), under the sign-in screen
+  // and in the user menu.
+  legal: {
+    impressum: 'Impressum',
+    privacy: 'Datenschutz',
+  },
   signIn: {
     // "Was willst du malkochen?": the app's name (app.name) goes between
     // the two, highlighted.

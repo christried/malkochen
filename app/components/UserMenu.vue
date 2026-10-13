@@ -4,8 +4,9 @@ import type { Me } from '~~/server/utils/people'
 // The user menu (#131, decided on #105 as variant A): your Profile Picture at
 // the top right of the Board opens a list like the Board switcher's panel,
 // popping from its corner: who is signed in, then "Einstellungen" and
-// "Abmelden". Phones don't show it; there your settings are the Board
-// switcher's last row.
+// "Abmelden", and last the legal pages (LegalLinks, #205). Phones don't show
+// it; there your settings and the legal pages are the Board switcher's last
+// rows.
 //
 // A menu button (WAI-ARIA APG): opening puts focus on a row (the last with
 // ArrowUp), the arrows go round the rows, Home and End jump, Enter or Space
@@ -166,6 +167,17 @@ watch(() => route.fullPath, () => close())
               />
               {{ t.userSettings.signOut }}
             </button>
+          </li>
+          <li
+            role="none"
+            class="border-t border-line pt-1"
+          >
+            <LegalLinks
+              menu
+              role="none"
+              class="px-1"
+              @click="close()"
+            />
           </li>
         </ul>
       </div>

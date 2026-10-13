@@ -9,7 +9,8 @@ import { boardPath } from '~~/shared/address'
 // one to reopen next time. The list is fetched each time it opens, so a
 // Board renamed or created meanwhile shows; the Board picked shows its name
 // and Columns from it while it opens (useBoardListings). On phones its last
-// row opens your settings, which the header has no room for there.
+// rows open your settings and the legal pages (LegalLinks), which the header
+// has no room for there: they stand in for the user menu.
 const props = defineProps<{ board: BoardNameAndEmoji }>()
 const t = useStrings()
 const route = useRoute()
@@ -198,6 +199,13 @@ function newBoard() {
               />
               {{ t.userSettings.open }}
             </NuxtLink>
+          </li>
+          <li
+            class="row tablet:hidden"
+            :class="{ 'mt-1 border-t border-line pt-1': !me }"
+            :style="{ '--i': shown.length + 2 }"
+          >
+            <LegalLinks @click="close()" />
           </li>
         </ul>
       </nav>

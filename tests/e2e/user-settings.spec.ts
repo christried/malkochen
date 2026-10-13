@@ -32,7 +32,10 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
   await expect(menu).toBeVisible()
   await expect(avatar).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator(`img[src="${PHOTO}"]`)).toHaveCount(2)
-  await expect(menu.getByRole('menuitem')).toHaveText(['Einstellungen', 'Abmelden'])
+  // Its last rows: the legal pages, on christried.me.
+  await expect(menu.getByRole('menuitem')).toHaveText(['Einstellungen', 'Abmelden', 'Impressum', 'Datenschutz'])
+  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/impressum')
+  await expect(menu.getByRole('menuitem', { name: 'Datenschutz' })).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
 
   await menu.getByRole('menuitem', { name: 'Einstellungen' }).click()
 
@@ -55,6 +58,8 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   const menu = page.getByRole('menu')
   const settings = menu.getByRole('menuitem', { name: 'Einstellungen' })
   const signOut = menu.getByRole('menuitem', { name: 'Abmelden' })
+  const impressum = menu.getByRole('menuitem', { name: 'Impressum' })
+  const privacy = menu.getByRole('menuitem', { name: 'Datenschutz' })
 
   // Opening moves focus onto the first row; the arrows go round.
   await avatar.focus()
@@ -63,13 +68,17 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   await page.keyboard.press('ArrowDown')
   await expect(signOut).toBeFocused()
   await page.keyboard.press('ArrowDown')
+  await expect(impressum).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(privacy).toBeFocused()
+  await page.keyboard.press('ArrowDown')
   await expect(settings).toBeFocused()
   await page.keyboard.press('ArrowUp')
-  await expect(signOut).toBeFocused()
+  await expect(privacy).toBeFocused()
   await page.keyboard.press('Home')
   await expect(settings).toBeFocused()
   await page.keyboard.press('End')
-  await expect(signOut).toBeFocused()
+  await expect(privacy).toBeFocused()
 
   // Escape closes it and hands focus back to your picture.
   await page.keyboard.press('Escape')
@@ -78,6 +87,9 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   await expect(avatar).toHaveAttribute('aria-expanded', 'false')
 
   // ArrowUp opens it on the last row.
+  await page.keyboard.press('ArrowUp')
+  await expect(privacy).toBeFocused()
+  await page.keyboard.press('ArrowUp')
   await page.keyboard.press('ArrowUp')
   await expect(signOut).toBeFocused()
   await page.keyboard.press('Enter')
@@ -116,7 +128,7 @@ test('the user menu closes on a press anywhere else', async ({ page }) => {
   await expect(page.getByRole('menu')).toHaveCount(0)
 })
 
-test('on a phone your settings are the last row of the Board switcher', async ({ page }) => {
+test('on a phone your settings and the legal pages are the last rows of the Board switcher', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await gotoHydrated(page, '/')
   // No room in the header beside the Board's name for your user menu.
@@ -124,7 +136,11 @@ test('on a phone your settings are the last row of the Board switcher', async ({
 
   await page.getByRole('button', { name: /Board wechseln/ }).click()
   const panel = page.getByRole('navigation')
-  await expect(panel.getByRole('listitem').last()).toContainText('Deine Einstellungen')
+  const lastRows = panel.getByRole('link').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })
+  await expect(lastRows).toHaveText(['Deine Einstellungen', 'Impressum', 'Datenschutz'])
+  await expect(lastRows.nth(1)).toHaveAttribute('href', 'https://christried.me/impressum')
+  await expect(lastRows.nth(2)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
+  await expect(panel.getByRole('listitem').last().getByRole('link')).toHaveText(['Impressum', 'Datenschutz'])
   await panel.getByRole('link', { name: 'Deine Einstellungen' }).click()
 
   await expect(page).toHaveURL('/settings')
