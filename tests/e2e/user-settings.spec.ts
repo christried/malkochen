@@ -4,7 +4,7 @@ import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
 
-// User settings (PRD stories 73–75): your Google name and photo, Darstellung
+// User settings (PRD stories 73–75): your Username and Google photo, Darstellung
 // and signing out. Jean is used by this file only.
 const JEAN = ALLOWLISTED[18]
 // Stands in for Google's photo URL; served by the app, so it loads offline.
@@ -28,7 +28,7 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
   await expect(avatar.locator(`img[src="${PHOTO}"]`)).toBeVisible()
   await avatar.click()
 
-  const menu = page.getByRole('menu', { name: `Jean Bartik ${JEAN}` })
+  const menu = page.getByRole('menu', { name: `Jean ${JEAN}` })
   await expect(menu).toBeVisible()
   await expect(avatar).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator(`img[src="${PHOTO}"]`)).toHaveCount(2)
@@ -42,7 +42,7 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
   await expect(page).toHaveURL('/settings')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Einstellungen')
   const account = page.getByRole('region', { name: 'Konto' })
-  await expect(account.getByText('Jean Bartik')).toBeVisible()
+  await expect(account.getByText('Jean', { exact: true })).toBeVisible()
   await expect(account.getByText(JEAN)).toBeVisible()
   await expect(account.locator(`img[src="${PHOTO}"]`)).toBeVisible()
   // German only for now: the language setting has its place but no choice yet.

@@ -3,8 +3,8 @@ import type { Me } from '~~/server/utils/people'
 import { PHOTO_ACCEPT } from '~~/shared/photo'
 import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composables/usePhotoUpload'
 
-// Your own settings (PRD stories 73–75): the Google account you're signed in
-// with and your Profile Picture, Darstellung, a place kept for Sprache
+// Your own settings (PRD stories 73–75): your Username, the Google account
+// you're signed in with and your Profile Picture, Darstellung, a place kept for Sprache
 // (German only for now), the Board's keyboard shortcuts and signing out.
 // Reached from your photo on the Board (on phones, from the Board switcher).
 const t = useStrings()
@@ -12,6 +12,16 @@ const { signOut } = useAuth()
 
 const { data: me } = await useMe()
 useEscapeToLeave(() => '/')
+
+// Your Username: changed here at any time, for every Member to see.
+const username = useUsernameForm(me)
+const usernameId = useId()
+const usernameHintId = useId()
+const usernameSaved = ref(false)
+watch(username.typed, () => (usernameSaved.value = false))
+async function saveUsername() {
+  usernameSaved.value = await username.save()
+}
 
 // Your own Profile Picture: a picked photo is uploaded (checked, cut square
 // and cleaned by the server) and shown round in a preview; only "Übernehmen"
@@ -126,6 +136,49 @@ useHead({ title: () => `${t.userSettings.title} · ${t.app.name}` })
               <span class="truncate text-small text-text-muted">{{ me.email }}</span>
             </div>
           </div>
+          <form
+            class="flex flex-col gap-2"
+            novalidate
+            @submit.prevent="saveUsername"
+          >
+            <div class="flex items-start gap-2">
+              <AppField
+                class="min-w-0 flex-1"
+                :label="t.username.label"
+                :control-id="usernameId"
+              >
+                <input
+                  :id="usernameId"
+                  v-model="username.typed.value"
+                  type="text"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  :aria-invalid="username.message.value ? true : undefined"
+                  :aria-describedby="usernameHintId"
+                >
+              </AppField>
+              <button
+                type="submit"
+                class="mt-[6px] h-(--field-h) shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60"
+                :disabled="!username.changed.value || username.saving.value"
+              >
+                <BusyLabel
+                  :label="t.username.save"
+                  :busy-label="t.username.saving"
+                  :busy="username.saving.value"
+                />
+              </button>
+            </div>
+            <p
+              :id="usernameHintId"
+              class="field-helper -mt-2"
+              :class="{ 'text-danger': username.message.value }"
+              :role="username.message.value ? 'alert' : 'status'"
+            >
+              {{ username.message.value ?? (usernameSaved ? t.username.saved : t.username.hint) }}
+            </p>
+          </form>
           <div class="flex flex-wrap gap-2">
             <!-- A label around the file input: the browser's own picker,
                  which on phones offers the camera too. -->

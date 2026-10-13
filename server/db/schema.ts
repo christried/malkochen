@@ -26,9 +26,20 @@ export const user = pgTable('user', {
   // field it never takes as input), so signing in with Google again never
   // overwrites it. Shown before the Google photo (server/utils/people.ts).
   ownPicture: text('own_picture'),
+  // Their Username (CONTEXT.md): the only name the app shows of them,
+  // `name` (from Google) never. Null until a new user has picked one. Only
+  // PUT /api/me/username sets it; Better Auth just reads it, like ownPicture.
+  username: text('username'),
+  // When they picked it, or kept the one migration 0019 made from their
+  // Google first name. Null with a Username: they are still to be asked
+  // once whether it fits.
+  usernameConfirmedAt: timestamp('username_confirmed_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
-})
+}, t => [
+  // No two users share a Username, whatever the case.
+  uniqueIndex('user_username_lower_idx').on(sql`lower(${t.username})`),
+])
 
 export const session = pgTable('session', {
   id: text('id').primaryKey(),

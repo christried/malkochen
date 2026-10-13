@@ -13,6 +13,9 @@ export const RATE_LIMITS = {
   // does "Bild neu laden" on a Dish, which counts here too.
   'add-dish': { calls: 200, window: '1 hour' },
   'create-board': { calls: 20, window: '1 day' },
+  // Changing your Username (#209). Not costly: so a name others know
+  // someone by doesn't keep changing, and names can't be tried out in bulk.
+  'username': { calls: 10, window: '1 day' },
 } as const
 
 export type RateLimited = keyof typeof RATE_LIMITS
