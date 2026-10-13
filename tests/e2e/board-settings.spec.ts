@@ -243,6 +243,134 @@ test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
 })
 
+// #206: the grip is easy to hit. Its grab area is the row's whole left end,
+// from the row's edge to just before the name field and as high as the row;
+// the name field and the Dish count beside it never start a drag.
+function nameField(page: Page, name: string) {
+  return page.getByRole('textbox', { name: `Name der Spalte „${name}“` })
+}
+
+// The grab area's corners, a few pixels inside it: by the row's left edge at
+// the top, and just before the name field at the bottom. Measured once the
+// rows have settled from a move before.
+async function grabCorners(page: Page, name: string) {
+  await page.getByRole('list', { name: 'Spalten' }).evaluate(list => Promise.all(list.getAnimations({ subtree: true }).map(a => a.finished)))
+  const rowBox = (await row(page, name).boundingBox())!
+  const field = (await nameField(page, name).boundingBox())!
+  return {
+    byTheEdge: { x: rowBox.x + 4, y: rowBox.y + 5 },
+    beforeTheName: { x: field.x - 8, y: rowBox.y + rowBox.height - 5 },
+  }
+}
+
+test('the grip is large, and its grab area reaches from the row’s edge to just before the name field', async ({ page }) => {
+  await openSettings(page)
+  const rowBox = (await row(page, 'Ideen').boundingBox())!
+  const grip = (await row(page, 'Ideen').locator('[data-grip]').boundingBox())!
+  const field = (await nameField(page, 'Ideen').boundingBox())!
+
+  expect(Math.abs(grip.x - rowBox.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(grip.y - rowBox.y)).toBeLessThanOrEqual(1)
+  expect(Math.abs(grip.height - rowBox.height)).toBeLessThanOrEqual(1)
+  // It ends just before the name field, not on it.
+  const before = field.x - (grip.x + grip.width)
+  expect(before).toBeGreaterThanOrEqual(0)
+  expect(before).toBeLessThanOrEqual(8)
+  // The icon itself: 24px, where it was 18px.
+  const icon = (await row(page, 'Ideen').locator('[data-grip] svg').boundingBox())!
+  expect(icon.width).toBeGreaterThanOrEqual(24)
+  expect(icon.height).toBeGreaterThanOrEqual(24)
+})
+
+test('pressing anywhere in the grab area drags the Column, with a mouse', async ({ page }) => {
+  await openSettings(page)
+
+  // By the row's left edge: Gekocht up to the top.
+  let from = (await grabCorners(page, 'Gekocht')).byTheEdge
+  let target = (await row(page, 'Ideen').boundingBox())!
+  const saved = orderSaved(page)
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(from.x, target.y + 4, { steps: 16 })
+  await page.mouse.up()
+  await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
+  await saved
+
+  // Just before the name field, at the row's bottom: Diese Woche up by one
+  // row, above Ideen.
+  from = (await grabCorners(page, 'Diese Woche')).beforeTheName
+  target = (await row(page, 'Ideen').boundingBox())!
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(from.x, from.y - target.height, { steps: 16 })
+  await page.mouse.up()
+  await expectColumnNames(page, ['Gekocht', 'Diese Woche', 'Ideen'])
+})
+
+// A finger pressing at `from` and moving to `to` before it lifts: real touch
+// input, so the page's own handling of touches (scrolling, say) applies.
+async function touchDrag(page: Page, from: { x: number, y: number }, to: { x: number, y: number }) {
+  const touches = await page.context().newCDPSession(page)
+  await touches.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [from] })
+  const steps = 12
+  for (let step = 1; step <= steps; step++) {
+    await touches.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: from.x + (to.x - from.x) * step / steps, y: from.y + (to.y - from.y) * step / steps }],
+    })
+  }
+  await touches.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await touches.detach()
+}
+
+test('pressing anywhere in the grab area drags the Column, with a finger; the name field and the Dish count don’t', async ({ browser }) => {
+  const page = await newTab(browser, { hasTouch: true, viewport: { width: 390, height: 844 } })
+  await openSettings(page)
+  await row(page, 'Gekocht').scrollIntoViewIfNeeded()
+
+  // A tap on the name puts the cursor in it.
+  await nameField(page, 'Ideen').tap()
+  await expect(nameField(page, 'Ideen')).toBeFocused()
+
+  const from = (await grabCorners(page, 'Gekocht')).beforeTheName
+  const target = (await row(page, 'Ideen').boundingBox())!
+  await touchDrag(page, from, { x: from.x, y: target.y + 4 })
+  await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
+  await expectSettled(page, 'Gekocht')
+
+  // A finger moving up from the Dish count scrolls or does nothing: no drag.
+  const count = (await row(page, 'Diese Woche').getByText('0 Gerichte').boundingBox())!
+  const top = (await row(page, 'Gekocht').boundingBox())!
+  await touchDrag(page, { x: count.x + 10, y: count.y + count.height / 2 }, { x: count.x + 10, y: top.y + 4 })
+  await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
+  await page.context().close()
+})
+
+test('the name field and the Dish count are for clicking, not for dragging', async ({ page }) => {
+  await openSettings(page)
+
+  // Pressing the Dish count and moving up past the rows above moves nothing.
+  const count = (await row(page, 'Gekocht').getByText('0 Gerichte').boundingBox())!
+  const top = (await row(page, 'Ideen').boundingBox())!
+  await page.mouse.move(count.x + 10, count.y + count.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(count.x + 10, top.y + 4, { steps: 16 })
+  await expect(row(page, 'Gekocht')).toHaveCSS('box-shadow', 'none')
+  await page.mouse.up()
+  await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
+
+  // Nor does pressing the name field; a click on it puts the cursor in it.
+  const field = (await nameField(page, 'Gekocht').boundingBox())!
+  await page.mouse.move(field.x + 6, field.y + field.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(field.x + 6, top.y + 4, { steps: 16 })
+  await expect(row(page, 'Gekocht')).toHaveCSS('box-shadow', 'none')
+  await page.mouse.up()
+  await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
+  await nameField(page, 'Ideen').click()
+  await expect(nameField(page, 'Ideen')).toBeFocused()
+})
+
 // A let-go Column is back in the list: not shifted, no lift shadow.
 async function expectSettled(page: Page, name: string) {
   await expect(row(page, name)).toHaveCSS('translate', 'none')
