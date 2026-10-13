@@ -471,7 +471,7 @@ export const de = {
     open: 'Deine Einstellungen',
     // Your Profile Picture at the top right of the Board: opens the user menu.
     menu: 'Dein Konto',
-    back: 'Zurück zum Board',
+    close: 'Einstellungen schließen',
     account: 'Konto',
     language: 'Sprache',
     german: 'Deutsch',

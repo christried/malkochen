@@ -5,6 +5,7 @@ import { signIn } from './auth'
 import { cardAtRest } from './board'
 import { gotoHydrated } from './hydration'
 import { removeUsers, resetBoard, seedCookings, seedDish } from './seed'
+import { openUserSettings } from './settings-sheet'
 
 // The Tooltip (#206): one styled Tooltip instead of the browser's own `title`
 // tooltips. On a computer it comes up about 400 ms after the mouse rests on
@@ -270,7 +271,7 @@ test('no native title is left, and every icon button says what it does in a Tool
   await expect(tooltip(page)).toBeHidden()
 
   // Your own settings.
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   expect(await nativeTitles()).toBe(0)
   expect(await unexplained(page)).toEqual([])
 })

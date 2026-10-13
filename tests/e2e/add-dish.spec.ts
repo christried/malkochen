@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { removeUsers } from './seed'
+import { openUserSettings } from './settings-sheet'
 
 // The sheet opens on the link step; "Ohne Link hinzufügen" leads to the form.
 async function addWithoutLink(page: Page) {
@@ -87,7 +88,7 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
 
 test('in the dark theme the card shows the dark still', async ({ page }) => {
   await signIn(page, ALLOWLISTED[1])
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   await page.getByRole('radio', { name: 'Dunkel' }).click()
   // The Theme reveal stores the choice only once it has pictured the old
   // theme; navigating before then renders the Board in the old theme.
@@ -97,7 +98,7 @@ test('in the dark theme the card shows the dark still', async ({ page }) => {
   const card = page.getByRole('article', { name: 'Omas Linsensuppe' })
   await expect(card.locator('img[src="/placeholders/dumplings-dark.svg"]')).toBeVisible()
   await expect(card.locator('img[src="/placeholders/dumplings-light.svg"]')).toBeHidden()
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   await page.getByRole('radio', { name: 'Hell' }).click()
   await expect(page.getByRole('radio', { name: 'Hell' })).toHaveAttribute('aria-checked', 'true')
 })

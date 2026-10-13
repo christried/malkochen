@@ -9,9 +9,11 @@ import { boardPath } from '~~/shared/address'
 // one to reopen next time. The list is fetched each time it opens, so a
 // Board renamed or created meanwhile shows; the Board picked shows its name
 // and Columns from it while it opens (useBoardListings). On phones its last
-// rows open your settings and the legal pages (LegalLinks), which the header
-// has no room for there: they stand in for the user menu.
+// rows open your settings (a sheet over the Board) and the legal pages
+// (LegalLinks), which the header has no room for there: they stand in for
+// the user menu.
 const props = defineProps<{ board: BoardNameAndEmoji }>()
+const emit = defineEmits<{ settings: [] }>()
 const t = useStrings()
 const route = useRoute()
 
@@ -58,6 +60,12 @@ const shown = computed(() => boards.value.length
 function newBoard() {
   close()
   creating.value = true
+}
+
+// Focus goes back to the pill first, where closing the sheet returns it.
+function openSettings() {
+  close({ refocus: true })
+  emit('settings')
 }
 </script>
 
@@ -189,10 +197,11 @@ function newBoard() {
             class="row mt-1 border-t border-line pt-1 tablet:hidden"
             :style="{ '--i': shown.length + 1 }"
           >
-            <NuxtLink
-              to="/settings"
-              class="flex items-center gap-3 rounded-field px-2 py-2 text-button transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
-              @click="close()"
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 rounded-field px-2 py-2 text-left text-button transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
+              aria-haspopup="dialog"
+              @click="openSettings"
             >
               <UserAvatar
                 :name="me.name"
@@ -200,7 +209,7 @@ function newBoard() {
                 :size="44"
               />
               {{ t.userSettings.open }}
-            </NuxtLink>
+            </button>
           </li>
           <li
             class="row tablet:hidden"

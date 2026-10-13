@@ -5,6 +5,7 @@ import { signIn } from './auth'
 import { cardAtRest } from './board'
 import { gotoHydrated } from './hydration'
 import { removeUsers, resetBoard, seedCookings, seedDish } from './seed'
+import { openUserSettings } from './settings-sheet'
 
 // Clickable things look clickable under a mouse (#206): every button, link
 // and clickable tile shows the pointer cursor and reacts to the mouse resting
@@ -219,8 +220,7 @@ test('your settings and the new Board sheet', async ({ page }) => {
   await expect(sheet.locator('button[type="submit"]')).toBeDisabled()
   expect(await affordanceProblems(page, sheet)).toEqual([])
 
-  await gotoHydrated(page, '/settings')
-  expect(await affordanceProblems(page, page.locator('main'))).toEqual([])
+  expect(await affordanceProblems(page, await openUserSettings(page))).toEqual([])
 })
 
 test('the sign-in screen', async ({ browser }) => {

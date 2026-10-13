@@ -36,8 +36,8 @@ const board = opened?.loaded ?? ref<BoardView>()
 const address = useOpenBoardAddress()
 const newDishIds = computed(() => new Set(board.value?.newDishIds))
 
-// You, for your photo in the header, which opens your settings. Phones have
-// no room for it there: the Board switcher has it instead.
+// You, for your photo in the header, which opens the user menu. Phones have
+// no room for it there: the Board switcher has your settings instead.
 const { data: me } = await useMe()
 
 useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
@@ -181,7 +181,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
 // state's loop. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
-  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value || showingShortcuts.value,
+  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value || showingShortcuts.value || showingSettings.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
 useBoardSync(() => id, boardModule, () => dragging.value)
@@ -304,17 +304,27 @@ watch(() => route.params.dish, (dish) => {
 }, { immediate: true })
 
 const adding = ref(false)
+// Your settings (UserSettingsSheet), from the user menu or the Board switcher.
+const showingSettings = ref(false)
 
 // Something shared to malkochen (pages/share.vue) arrives as ?add=<link>,
 // empty if nothing shared was a web link: Add Dish opens with it filled in.
-// The address drops it at once, so going back or reloading doesn't open
-// Add Dish again; the link goes once the sheet has closed.
+// /settings (pages/settings.vue) arrives as ?settings: your settings open.
+// The address drops either at once, so going back or reloading doesn't open
+// the sheet again; the link goes once Add Dish has closed.
 const sharedLink = ref<string | null>(null)
 onMounted(() => {
-  const { add, ...rest } = route.query
-  if (typeof add !== 'string') return
-  sharedLink.value = add
-  adding.value = true
+  const { add, settings, ...rest } = route.query
+  if (typeof add === 'string') {
+    sharedLink.value = add
+    adding.value = true
+  }
+  else if (settings !== undefined) {
+    showingSettings.value = true
+  }
+  else {
+    return
+  }
   void navigateTo({ path: route.path, query: rest, hash: route.hash }, { replace: true })
 })
 watch(adding, (isOpen) => {
@@ -526,7 +536,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   >
     <header class="flex items-center justify-between gap-3">
       <div class="flex min-w-0 items-center gap-3">
-        <BoardSwitcher :board="board" />
+        <BoardSwitcher
+          :board="board"
+          @settings="showingSettings = true"
+        />
         <RoundButton
           v-if="!searchOpen"
           ref="searchButton"
@@ -556,6 +569,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         v-if="me"
         :me="me"
         class="hidden shrink-0 tablet:block"
+        @settings="showingSettings = true"
       />
     </header>
 
@@ -860,6 +874,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     </AppSheet>
 
     <ShortcutsDialog v-model:open="showingShortcuts" />
+    <UserSettingsSheet v-model:open="showingSettings" />
 
     <BoardCreatedCelebration
       v-model:open="celebratingBoard"

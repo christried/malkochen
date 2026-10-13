@@ -5,6 +5,7 @@ import { signIn } from './auth'
 import { column } from './board'
 import { gotoHydrated } from './hydration'
 import { removeUsers, seedDish } from './seed'
+import { openUserSettings } from './settings-sheet'
 
 // The Board's keyboard shortcuts (#182): N, /, Esc, ",", 1–9 and ?, at any
 // width, never while typing in a field or with a dialog or the Dish detail
@@ -153,7 +154,7 @@ test('? lists the shortcuts in a dialog, which OK closes', async ({ page }) => {
 
 test('your settings explain the same shortcuts', async ({ page }) => {
   await signIn(page, FLORENCE)
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
 
   const section = page.getByRole('region', { name: 'Tastenkürzel' })
   await expect(section.getByRole('listitem')).toHaveText(LINES)

@@ -6,6 +6,7 @@ import { column } from './board'
 import { gotoHydrated } from './hydration'
 import { inviteToken } from './invite'
 import { removeStoredImages, removeUsers, seedCookings, seedDish, storedImage } from './seed'
+import { openUserSettings } from './settings-sheet'
 
 // Text set in the type scale's tokens (tokens.json → type), where the visual
 // check (#138) found it off them (#170). Marie and Émilie are used by this
@@ -58,10 +59,11 @@ function sectionHeadings(page: Page) {
 
 test('user settings: the email and the languages note in `small`, the sections under one heading style', async ({ page }) => {
   await signIn(page, MARIE, { name: 'Marie' })
-  await gotoHydrated(page, '/settings')
-  await expectSmall(page.getByText(MARIE))
-  await expectSmall(page.getByText('Weitere Sprachen kommen später.'))
-  const headings = sectionHeadings(page)
+  const sheet = await openUserSettings(page)
+  await expectSmall(sheet.getByText(MARIE))
+  await expectSmall(sheet.getByText('Weitere Sprachen kommen später.'))
+  // Under the sheet's own title.
+  const headings = sheet.getByRole('heading', { level: 3 })
   await expect(headings).toHaveText(['Konto', 'Darstellung', 'Sprache', 'Tastenkürzel'])
   for (const heading of await headings.all()) await expectSectionHeading(heading)
 })

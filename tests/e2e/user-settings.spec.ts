@@ -3,9 +3,11 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
+import { openUserSettings, settingsSheet } from './settings-sheet'
 
 // User settings (PRD stories 73–75): your Username and Google photo, Darstellung
-// and signing out. Jean is used by this file only.
+// and signing out, in a sheet over the Board (#210). Jean is used by this
+// file only.
 const JEAN = ALLOWLISTED[18]
 // Stands in for Google's photo URL; served by the app, so it loads offline.
 const PHOTO = `${E2E_ORIGIN}/icons/icon-192.png`
@@ -20,7 +22,7 @@ test.beforeEach(async ({ page }) => {
   await signIn(page, JEAN, { name: 'Jean Bartik', image: PHOTO })
 })
 
-test('your Profile Picture on the Board opens a menu with who is signed in, and "Einstellungen" opens your settings', async ({ page }) => {
+test('your Profile Picture on the Board opens a menu with who is signed in, and "Einstellungen" opens your settings over the Board', async ({ page }) => {
   await gotoHydrated(page, '/')
   const board = page.url()
 
@@ -31,7 +33,7 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
   const menu = page.getByRole('menu', { name: `Jean ${JEAN}` })
   await expect(menu).toBeVisible()
   await expect(avatar).toHaveAttribute('aria-expanded', 'true')
-  await expect(page.locator(`img[src="${PHOTO}"]`)).toHaveCount(2)
+  await expect(page.locator(`img[src="${PHOTO}"]`).filter({ visible: true })).toHaveCount(2)
   // Its last rows: the legal pages, on christried.me.
   await expect(menu.getByRole('menuitem')).toHaveText(['Einstellungen', 'Abmelden', 'Impressum', 'Datenschutz'])
   await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/impressum')
@@ -39,17 +41,65 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
 
   await menu.getByRole('menuitem', { name: 'Einstellungen' }).click()
 
-  await expect(page).toHaveURL('/settings')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Einstellungen')
-  const account = page.getByRole('region', { name: 'Konto' })
+  // A sheet over the Board, which stays at its address.
+  const sheet = settingsSheet(page)
+  await expect(sheet).toBeVisible()
+  await expect(menu).toHaveCount(0)
+  await expect(page).toHaveURL(board)
+  await expect(page.locator('h1')).toHaveText('🍲 Meine Küche')
+  const account = sheet.getByRole('region', { name: 'Konto' })
   await expect(account.getByText('Jean', { exact: true })).toBeVisible()
   await expect(account.getByText(JEAN)).toBeVisible()
   await expect(account.locator(`img[src="${PHOTO}"]`)).toBeVisible()
   // German only for now: the language setting has its place but no choice yet.
-  await expect(page.getByRole('region', { name: 'Sprache' }).getByText('Deutsch')).toBeVisible()
+  await expect(sheet.getByRole('region', { name: 'Sprache' }).getByText('Deutsch')).toBeVisible()
 
-  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
+  // Closed, focus is back on your picture.
+  await sheet.getByRole('button', { name: 'Einstellungen schließen' }).click()
+  await expect(sheet).toBeHidden()
   await expect(page).toHaveURL(board)
+  await expect(avatar).toBeFocused()
+})
+
+// Where the Board is scrolled: the page down, its Columns sideways.
+function scrolledTo(page: Page) {
+  return page.evaluate(() => ({ top: window.scrollY, left: document.querySelector('[data-testid="columns"]')!.scrollLeft }))
+}
+
+test('closing your settings (Escape, or its close button) leaves the Board as it was: nothing reloads, and it stays where it was scrolled', async ({ page }) => {
+  // Too small for the Board, so it scrolls both ways.
+  await page.setViewportSize({ width: 800, height: 400 })
+  await gotoHydrated(page, '/')
+  const board = page.url()
+  // Gone if the page loads again.
+  await page.evaluate(() => Object.assign(window, { stayed: true }))
+  await page.getByTestId('columns').evaluate(el => el.scrollTo({ left: el.scrollWidth, behavior: 'instant' }))
+  await page.evaluate(() => window.scrollTo({ top: 16, behavior: 'instant' }))
+  await expect.poll(async () => (await scrolledTo(page)).left).toBeGreaterThan(0)
+  const before = await scrolledTo(page)
+  expect(before.top).toBe(16)
+  const sheet = settingsSheet(page)
+
+  for (const close of [() => page.keyboard.press('Escape'), () => sheet.getByRole('button', { name: 'Einstellungen schließen' }).click()]) {
+    await page.getByRole('button', { name: 'Dein Konto' }).click()
+    await page.getByRole('menuitem', { name: 'Einstellungen' }).click()
+    await expect(sheet).toBeVisible()
+    // From 768px a centred dialog.
+    await expect.poll(async () => {
+      const { x, width } = (await sheet.boundingBox())!
+      return Math.round(x + width / 2)
+    }).toBe(400)
+    const box = (await sheet.boundingBox())!
+    expect(box.y).toBeGreaterThan(0)
+    expect(box.y + box.height).toBeLessThan(400)
+
+    await close()
+
+    await expect(sheet).toBeHidden()
+    await expect(page).toHaveURL(board)
+    expect(await page.evaluate(() => (window as unknown as { stayed?: boolean }).stayed)).toBe(true)
+    expect(await scrolledTo(page)).toEqual(before)
+  }
 })
 
 test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs you out', async ({ page }) => {
@@ -114,7 +164,7 @@ test('Tab closes the user menu, and Space chooses "Einstellungen" like Enter', a
   await expect(menu.getByRole('menuitem', { name: 'Einstellungen' })).toBeFocused()
   await page.keyboard.press(' ')
 
-  await expect(page).toHaveURL('/settings')
+  await expect(settingsSheet(page)).toBeVisible()
 })
 
 test('the user menu closes on a press anywhere else', async ({ page }) => {
@@ -123,7 +173,7 @@ test('the user menu closes on a press anywhere else', async ({ page }) => {
   await expect(page.getByRole('menu')).toBeVisible()
 
   // The Board's left edge, far from the menu under the top right corner.
-  await page.getByRole('main').click({ position: { x: 5, y: 400 } })
+  await page.locator('main').click({ position: { x: 5, y: 400 } })
 
   await expect(page.getByRole('menu')).toHaveCount(0)
 })
@@ -149,15 +199,17 @@ test('a legal page chosen from the user menu opens in a new tab; the menu closes
   await expect(avatar).toBeFocused()
 })
 
-test('on a phone your settings and the legal pages are the last rows of the Board switcher', async ({ page }) => {
+test('on a phone your settings and the legal pages are the last rows of the Board switcher, and your settings a bottom sheet', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await gotoHydrated(page, '/')
+  const board = page.url()
   // No room in the header beside the Board's name for your user menu.
   await expect(page.getByRole('button', { name: 'Dein Konto' })).toBeHidden()
 
-  await page.getByRole('button', { name: /Board wechseln/ }).click()
+  const switcher = page.getByRole('button', { name: /Board wechseln/ })
+  await switcher.click()
   const panel = page.getByRole('navigation', { name: 'Deine Boards' })
-  const lastRows = panel.getByRole('link').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })
+  const lastRows = panel.locator('a, button').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })
   await expect(lastRows).toHaveText(['Deine Einstellungen', 'Impressum', 'Datenschutz'])
   await expect(lastRows.nth(1)).toHaveAttribute('href', 'https://christried.me/impressum')
   await expect(lastRows.nth(2)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
@@ -166,15 +218,43 @@ test('on a phone your settings and the legal pages are the last rows of the Boar
   // A press beside the two links chooses nothing: the switcher stays open.
   const row = (await legalRow.boundingBox())!
   await page.mouse.click(row.x + row.width - 8, row.y + row.height / 2)
-  await expect(page.getByRole('button', { name: /Board wechseln/ })).toHaveAttribute('aria-expanded', 'true')
-  await panel.getByRole('link', { name: 'Deine Einstellungen' }).click()
+  await expect(switcher).toHaveAttribute('aria-expanded', 'true')
+  await panel.getByRole('button', { name: 'Deine Einstellungen' }).click()
 
-  await expect(page).toHaveURL('/settings')
+  // A bottom sheet: as wide as the screen, on its bottom edge.
+  const sheet = settingsSheet(page)
+  const atRest = async () => {
+    const { x, y, width, height } = (await sheet.boundingBox())!
+    return { x, width, bottom: y + height }
+  }
+  await expect(sheet).toBeVisible()
+  await expect(panel).toHaveCount(0)
+  await expect(page).toHaveURL(board)
+  await expect.poll(atRest).toEqual({ x: 0, width: 390, bottom: 844 })
+
+  // A tap beside it closes it.
+  await page.mouse.click(195, 20)
+  await expect(sheet).toBeHidden()
+  await expect(page).toHaveURL(board)
+  await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
+
+  // So does dragging it down by its handle.
+  await switcher.click()
+  await panel.getByRole('button', { name: 'Deine Einstellungen' }).click()
+  await expect(sheet).toBeVisible()
+  await expect.poll(atRest).toEqual({ x: 0, width: 390, bottom: 844 })
+  const top = (await sheet.boundingBox())!.y
+  await page.mouse.move(195, top + 12)
+  await page.mouse.down()
+  await page.mouse.move(195, top + 400, { steps: 8 })
+  await page.mouse.up()
+  await expect(sheet).toBeHidden()
+  await expect(page).toHaveURL(board)
 })
 
 test('Darstellung switches between light and dark, and the choice survives a reload', async ({ page }) => {
-  await gotoHydrated(page, '/settings')
-  const main = page.getByRole('main')
+  await openUserSettings(page)
+  const main = page.locator('main')
   await expect(main).toHaveCSS('background-color', LIGHT_BG)
 
   await page.getByRole('radio', { name: 'Dunkel' }).click()
@@ -185,21 +265,21 @@ test('Darstellung switches between light and dark, and the choice survives a rel
   await reloadHydrated(page)
   await expect(main).toHaveCSS('background-color', DARK_BG)
   await gotoHydrated(page, '/')
-  await expect(page.getByRole('main')).toHaveCSS('background-color', DARK_BG)
+  await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
 
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   await page.getByRole('radio', { name: 'Hell' }).click()
-  await expect(page.getByRole('main')).toHaveCSS('background-color', LIGHT_BG)
+  await expect(page.locator('main')).toHaveCSS('background-color', LIGHT_BG)
 })
 
 test('"System" follows the device colour scheme', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
 
   await page.getByRole('radio', { name: 'System' }).click()
 
   await expect(page.locator('html')).not.toHaveAttribute('data-theme')
-  await expect(page.getByRole('main')).toHaveCSS('background-color', DARK_BG)
+  await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
 })
 
 // The Theme reveal (handoff motion.json "Theme reveal"), as the page runs it:
@@ -254,7 +334,7 @@ async function watchTransitions(page: Page) {
 }
 
 test('picking Dunkel reveals it from the tapped option in 600ms (swoosh), and Hell the same way back', async ({ page }) => {
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
 
   for (const [name, background] of [['Dunkel', DARK_BG], ['Hell', LIGHT_BG]] as const) {
     const option = page.getByRole('radio', { name })
@@ -271,13 +351,13 @@ test('picking Dunkel reveals it from the tapped option in 600ms (swoosh), and He
     expect(x).toBeCloseTo(box.x + box.width / 2, 0)
     expect(y).toBeCloseTo(box.y + box.height / 2, 0)
     expect(to).toMatch(/^circle\([\d.]+px at /)
-    await expect(page.getByRole('main')).toHaveCSS('background-color', background)
+    await expect(page.locator('main')).toHaveCSS('background-color', background)
     await expect.poll(() => reveal(page)).toBeNull()
   }
 })
 
 test('"System" reveals nothing when the device already shows the same theme', async ({ page }) => {
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   const watched = await watchTransitions(page)
 
   // Light now, and the device is light too.
@@ -291,26 +371,26 @@ test('"System" reveals nothing when the device already shows the same theme', as
 
 test('"System" reveals the device’s theme when it differs', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   await page.getByRole('radio', { name: 'Hell' }).click()
   await expect.poll(() => reveal(page)).toBeNull()
 
   await page.getByRole('radio', { name: 'System' }).click()
 
   await expect.poll(() => reveal(page)).not.toBeNull()
-  await expect(page.getByRole('main')).toHaveCSS('background-color', DARK_BG)
+  await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
 })
 
 test('without View Transitions, the theme cross-fades', async ({ page }) => {
   await page.addInitScript(() => {
     delete (Document.prototype as { startViewTransition?: unknown }).startViewTransition
   })
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
   const watched = await watchTransitions(page)
 
   await page.getByRole('radio', { name: 'Dunkel' }).click()
 
-  await expect(page.getByRole('main')).toHaveCSS('background-color', DARK_BG)
+  await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
   expect(await watched.reveals()).toEqual(['fade'])
   expect(await watched.fades()).toEqual(['0.24s'])
   // Over once it has faded.
@@ -321,12 +401,12 @@ test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' })
 
   test('the theme switches at once with a 200ms cross-fade, and nothing spreads out', async ({ page }) => {
-    await gotoHydrated(page, '/settings')
+    await openUserSettings(page)
     const watched = await watchTransitions(page)
 
     await page.getByRole('radio', { name: 'Dunkel' }).click()
 
-    await expect(page.getByRole('main')).toHaveCSS('background-color', DARK_BG)
+    await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
     expect(await watched.reveals()).toEqual(['fade'])
     expect(await watched.fades()).toEqual(['0.2s'])
     expect(await reveal(page)).toBeNull()
@@ -335,25 +415,29 @@ test.describe('with reduced motion', () => {
 })
 
 test('"Abmelden" ends the session and returns to the sign-in screen', async ({ page }) => {
-  await gotoHydrated(page, '/settings')
+  await openUserSettings(page)
 
   await page.getByRole('button', { name: 'Abmelden' }).click()
 
   await expect(page).toHaveURL('/login')
   expect((await page.request.get('/api/me')).status()).toBe(401)
+  // Signed out, /settings asks you to sign in, like any other page.
   await gotoHydrated(page, '/settings')
   await expect(page).toHaveURL('/login')
 })
 
-test('Escape closes your settings, back to the Board', async ({ page }) => {
-  await gotoHydrated(page, '/')
-  const board = page.url()
-  await page.getByRole('button', { name: 'Dein Konto' }).click()
-  await page.getByRole('menuitem', { name: 'Einstellungen' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Einstellungen')
+test('/settings forwards to the Board opened last, with your settings open over it', async ({ page }) => {
+  const created = await page.request.post('/api/boards', { data: { name: 'Zweitküche', emoji: '🥘' } })
+  const { id } = await created.json() as { id: string }
+  await gotoHydrated(page, `/b/${id}`)
 
-  await page.keyboard.press('Escape')
+  const sheet = await openUserSettings(page)
 
-  await expect(page).toHaveURL(board)
-  await expect(page.getByRole('button', { name: 'Gericht hinzufügen' })).toBeVisible()
+  // The Board's own address, which a reload opens without the sheet.
+  await expect(page).toHaveURL(/\/b\/zweitkueche$/)
+  await expect(page.locator('h1')).toHaveText('🥘 Zweitküche')
+  await expect(sheet.getByRole('region', { name: 'Konto' }).getByText(JEAN)).toBeVisible()
+  await reloadHydrated(page)
+  await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
+  await expect(sheet).toBeHidden()
 })
