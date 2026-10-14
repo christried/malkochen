@@ -10,13 +10,18 @@ const HASHTAG = /#[\p{L}\p{N}_]+/gu
 // (skin tones, joiners, variation selectors, keycaps, flags).
 const EMOJI = /\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|‍|️|⃣/gu
 
-// Where a title ends at an emoji: a whole sequence, keycaps like 1️⃣ included,
-// but not ©, ® or ™, which belong to the name before them.
-const EMOJI_BREAK = /(?:[#*0-9]\uFE0F?\u20E3|(?![©®™])\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|\u200D|\uFE0F)+/gu
+// Where a title ends at an emoji: a whole sequence of the pieces EMOJI takes
+// out, keycaps like 1️⃣ included, but not ©, ® or ™, which belong to the name
+// before them.
+const EMOJI_BREAK = /(?:[#*0-9]\uFE0F?\u20E3|(?![©®™])\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|\u200D|\uFE0F)+/u
 // Punctuation that may end a sentence, when a space follows.
 const SENTENCE_PUNCTUATION = /[.!?]+(?=\s)/gu
-// Abbreviations of three letters or more that a full stop follows mid-sentence.
-const ABBREVIATIONS = new Set(['bzw', 'usw', 'inkl', 'exkl', 'evtl', 'ggf', 'zzgl', 'min', 'std', 'sek', 'max', 'etc', 'vgl', 'tsp', 'tbsp'])
+const EXCLAIMS_OR_ASKS = /[!?]/
+// Abbreviations a full stop follows mid-sentence, in recipes and around them.
+const ABBREVIATIONS = new Set([
+  'ca', 'nr', 'dr', 'st', 'mr', 'ms', 'mrs', 'jr', 'sr', 'prof', 'vs', 'etc', 'vgl', 'bzw', 'usw', 'inkl', 'exkl', 'evtl', 'ggf', 'zzgl',
+  'el', 'tl', 'gr', 'kg', 'mg', 'ml', 'cl', 'dl', 'msp', 'stk', 'pck', 'pkg', 'pers', 'min', 'std', 'sek', 'max', 'tsp', 'tbsp', 'oz', 'lb', 'lbs',
+])
 
 // Instagram captions pad with the blank Braille pattern, which isn't \s.
 const BLANK = /\u2800/g
@@ -33,14 +38,15 @@ function cleanLine(line: string): string {
     .replace(/^[\s,;:|·•–—-]+/u, '')
 }
 
-// "!" and "?" end a sentence; so does a lone full stop after a word of three
-// letters or more that isn't an abbreviation. "ca. 500 g", "z.B.", "Nr. 1",
-// "30 Min. fertig", "2.0" and "Warte kurz..." go on.
+// "!" and "?" end a sentence; so does a lone full stop after a word (or a
+// bracket or quote closing one) of two letters or more that isn't an
+// abbreviation. "ca. 500 g", "z.B.", "Nr. 1", "30 Min. fertig", "2.0" and
+// "Warte kurz..." go on.
 function endsSentence(text: string, punctuation: string, index: number): boolean {
-  if (/[!?]/.test(punctuation)) return true
+  if (EXCLAIMS_OR_ASKS.test(punctuation)) return true
   if (punctuation !== '.') return false
-  const before = /(?:^|[^\p{L}\p{N}.])(\p{L}+)$/u.exec(text.slice(0, index))?.[1]
-  return !!before && before.length >= 3 && !ABBREVIATIONS.has(before.toLowerCase())
+  const before = /(?:^|[^\p{L}\p{N}.])(\p{L}+)[)\]"'“”’»«]*$/u.exec(text.slice(0, index))?.[1]
+  return !!before && before.length >= 2 && !ABBREVIATIONS.has(before.toLowerCase())
 }
 
 interface Part { text: string, rest: string }
@@ -48,19 +54,16 @@ interface Part { text: string, rest: string }
 // The text up to its first emoji or sentence end, and what comes after.
 // "!" and "?" stay with the text before them; a full stop and an emoji don't.
 function firstPart(text: string): Part {
-  let end: { index: number, length: number, kept: string } | null = null
-  for (const match of text.matchAll(EMOJI_BREAK)) {
-    end = { index: match.index, length: match[0].length, kept: '' }
-    break
-  }
+  const emoji = EMOJI_BREAK.exec(text)
+  let end = emoji && { index: emoji.index, length: emoji[0].length, punctuationKept: '' }
   for (const match of text.matchAll(SENTENCE_PUNCTUATION)) {
     if (end && match.index > end.index) break
     if (!endsSentence(text, match[0], match.index)) continue
-    end = { index: match.index, length: match[0].length, kept: /[!?]/.test(match[0]) ? match[0] : '' }
+    end = { index: match.index, length: match[0].length, punctuationKept: EXCLAIMS_OR_ASKS.test(match[0]) ? match[0] : '' }
     break
   }
   if (!end) return { text, rest: '' }
-  return { text: text.slice(0, end.index) + end.kept, rest: text.slice(end.index + end.length) }
+  return { text: text.slice(0, end.index) + end.punctuationKept, rest: text.slice(end.index + end.length) }
 }
 
 // A word: letters with case and digits, joined by apostrophes ("MOM'S",
@@ -88,56 +91,76 @@ function capitalised(word: string): string {
     .replace(/^(\p{L}['’])(\p{L})(?=\p{L})/u, (_, prefix: string, letter: string) => prefix + letter.toUpperCase())
 }
 
-// "TOFU-NUGGETS AUS DEM AIRFRYER" → "Tofu-Nuggets aus dem Airfryer". A title
-// shouts when at least two of its longer words are in capitals. Then each run
-// of words in capitals (a number doesn't break one) that has a longer word in
-// it is put into normal case: longer words and every part of a hyphenated word
-// capitalised, shorter words lowered unless they open or close the title.
-// Every other word stays as written, and so does a run of short words only
-// ("vom BBQ"), which is how acronyms look. "SS" is never guessed to be "ß".
-function uncapitalise(title: string): string {
-  const words = [...title.matchAll(WORD)].map(match => ({
+// A short word without a vowel ("BBQ", "XXL", "TK") is an acronym.
+const VOWEL = /[aeiouyäöüàáâãåæèéêëìíîïòóôõøœùúûý]/iu
+
+function isAcronym(word: string): boolean {
+  return !isLong(word) && !VOWEL.test(word)
+}
+
+interface Word {
+  text: string
+  start: number
+  end: number
+  caps: boolean
+  // Has letters with case, unlike "15".
+  cased: boolean
+}
+
+function wordsOf(title: string): Word[] {
+  return [...title.matchAll(WORD)].map(match => ({
     text: match[0],
     start: match.index,
     end: match.index + match[0].length,
     caps: inCaps(match[0]),
     cased: /\p{LC}/u.test(match[0]),
   }))
-  if (words.filter(word => word.caps && isLong(word.text)).length < 2) return title
+}
 
-  const joinedByHyphen = (left: typeof words[number] | undefined, right: typeof words[number] | undefined) =>
-    !!left && !!right && right.start === left.end + 1 && HYPHEN.test(title[left.end]!)
-  const cased = words.filter(word => word.cased)
-  const first = cased[0]
-  const last = cased[cased.length - 1]
-
-  const normalised = words.map(word => word.text)
-  for (let start = 0; start < words.length;) {
-    if (!words[start]!.caps) {
-      start++
-      continue
-    }
+// Runs of words in capitals as [first, past-last) positions in `words`. A
+// number doesn't break a run: "ZUTATEN FÜR 2 PORTIONEN" is one.
+function capsRuns(words: Word[]): Array<[number, number]> {
+  const runs: Array<[number, number]> = []
+  for (let start = 0; start < words.length; start++) {
+    if (!words[start]!.caps) continue
     let end = start + 1
     while (end < words.length && (words[end]!.caps || !words[end]!.cased)) end++
-    if (words.slice(start, end).some(word => word.caps && isLong(word.text))) {
-      for (let at = start; at < end; at++) {
-        const word = words[at]!
-        if (!word.caps) continue
-        const capital = isLong(word.text) || word === first || word === last
-          || joinedByHyphen(words[at - 1], word) || joinedByHyphen(word, words[at + 1])
-        normalised[at] = capital ? capitalised(word.text) : word.text.toLowerCase()
-      }
-    }
-    start = end
+    runs.push([start, end])
+    start = end - 1
   }
+  return runs
+}
 
-  let result = ''
-  let from = 0
-  words.forEach((word, at) => {
-    result += title.slice(from, word.start) + normalised[at]
-    from = word.end
-  })
-  return result + title.slice(from)
+// "TOFU-NUGGETS AUS DEM AIRFRYER" → "Tofu-Nuggets aus dem Airfryer". A title
+// shouts when at least two of its longer words are in capitals. Then each run
+// of words in capitals that has a longer word in it is put into normal case:
+// longer words and every part of a hyphenated word capitalised, shorter words
+// lowered unless they open or close the title, acronyms kept. Every other word
+// stays as written, and so does a run of short words only ("vom BBQ"), which
+// is how acronyms look. "SS" is never guessed to be "ß".
+function uncapitalise(title: string): string {
+  const words = wordsOf(title)
+  if (words.filter(word => word.caps && isLong(word.text)).length < 2) return title
+
+  const cased = words.filter(word => word.cased)
+  const opensOrCloses = (word: Word) => word === cased[0] || word === cased[cased.length - 1]
+  const joinedByHyphen = (left: Word | undefined, right: Word | undefined) =>
+    !!left && !!right && right.start === left.end + 1 && HYPHEN.test(title[left.end]!)
+  const hyphenated = (at: number) => joinedByHyphen(words[at - 1], words[at]) || joinedByHyphen(words[at], words[at + 1])
+
+  const normalised = words.map(word => word.text)
+  for (const [start, end] of capsRuns(words)) {
+    if (!words.slice(start, end).some(word => word.caps && isLong(word.text))) continue
+    for (let at = start; at < end; at++) {
+      const word = words[at]!
+      if (!word.caps || isAcronym(word.text)) continue
+      normalised[at] = isLong(word.text) || opensOrCloses(word) || hyphenated(at)
+        ? capitalised(word.text)
+        : word.text.toLowerCase()
+    }
+  }
+  let at = 0
+  return title.replace(WORD, () => normalised[at++]!)
 }
 
 // Text longer than `max` cut to fit with "…": at its last space if that
@@ -158,7 +181,8 @@ export function shortenTitle(raw: string | null | undefined): string {
     while (rest) {
       const part = firstPart(rest)
       const cleaned = cleanLine(part.text)
-      if (/[\p{L}\p{N}]/u.test(cleaned)) return cutText(uncapitalise(cleaned), MAX_LENGTH)
+      // A part without a letter, like a lone "5" before an emoji, is no title.
+      if (/\p{L}/u.test(cleaned)) return cutText(uncapitalise(cleaned), MAX_LENGTH)
       rest = part.rest
     }
   }
