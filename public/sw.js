@@ -1,11 +1,10 @@
 // malkochen's service worker: the fallback page (PRD story 8), and push
-// notifications (#219, at the end). A page
-// that can't be loaded gets offline.html instead of the browser's own error,
-// and that page tells apart the two reasons: the device has no connection
-// ("Du bist offline"), or it has one but malkochen doesn't answer ("nicht
-// erreichbar", our side). Nothing else is cached: Boards and Dishes always
-// come from the network. Bump VERSION when offline.html or what it shows
-// changes.
+// notifications (#219, at the end). A page that can't be loaded gets
+// offline.html instead of the browser's own error, and that page tells apart
+// the two reasons: the device has no connection ("Du bist offline"), or it
+// has one but malkochen doesn't answer ("nicht erreichbar", our side).
+// Nothing else is cached: Boards and Dishes always come from the network.
+// Bump VERSION when offline.html or what it shows changes.
 const VERSION = 'offline-v11'
 const FALLBACK_PAGE = '/offline.html'
 // The offline clip's drawings (both themes), which the app's Offline screen
@@ -74,7 +73,7 @@ self.addEventListener('push', (event) => {
   catch {
     // Not one of the app's pushes.
   }
-  if (typeof message?.title !== 'string') return
+  if (typeof message?.title !== 'string' || typeof message.tag !== 'string') return
   event.waitUntil(self.registration.showNotification(message.title, {
     body: message.body,
     tag: message.tag,

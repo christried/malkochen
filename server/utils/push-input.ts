@@ -14,3 +14,7 @@ export const pushSubscriptionBody = z.object({
   endpoint: pushEndpoint,
   keys: z.object({ p256dh: base64urlKey(65), auth: base64urlKey(16) }),
 })
+
+// Which device: its endpoint, as the browser has it (turning off, or asking
+// whether it is on, takes any; nothing is posted there).
+export const deviceEndpoint = z.object({ endpoint: z.string().max(2048) })

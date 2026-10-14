@@ -28,6 +28,9 @@ async function saveUsername() {
 const push = usePushNotifications()
 const pushLabelId = useId()
 const pushHintId = useId()
+const pushOn = computed(() => push.state.value === 'on')
+// Not while it is checked or turned, nor where only the browser can change it.
+const pushSwitchable = computed(() => !push.busy.value && (push.state.value === 'on' || push.state.value === 'off'))
 const pushMessage = computed(() => {
   if (push.failed.value) return t.push.failed
   if (push.state.value === 'blocked') return t.push.blocked
@@ -246,36 +249,39 @@ function removePicture() {
           {{ t.push.heading }}
         </h3>
         <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
-          <label class="flex cursor-pointer items-center justify-between gap-4 has-[button:disabled]:cursor-default">
+          <!-- The whole row is the switch: its name and what it does are its text. -->
+          <button
+            type="button"
+            role="switch"
+            class="group flex items-center justify-between gap-4 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-default"
+            :aria-checked="pushOn"
+            :aria-labelledby="pushLabelId"
+            :aria-describedby="pushHintId"
+            :aria-busy="push.busy.value || push.state.value === null"
+            :disabled="!pushSwitchable"
+            @click="push.turn(!pushOn)"
+          >
             <span class="flex min-w-0 flex-col gap-1">
               <span
                 :id="pushLabelId"
-                class="text-body"
+                class="text-body text-text"
               >{{ t.push.toggle }}</span>
               <span
                 :id="pushHintId"
                 class="text-small text-text-muted"
               >{{ t.push.hint }}</span>
             </span>
-            <button
-              type="button"
-              role="switch"
-              class="relative h-7 w-12 shrink-0 rounded-pill transition-colors duration-fade ease-fade focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60"
-              :class="push.state.value === 'on' ? 'bg-inverse' : 'bg-line'"
-              :aria-checked="push.state.value === 'on'"
-              :aria-labelledby="pushLabelId"
-              :aria-describedby="pushHintId"
-              :aria-busy="push.busy.value || push.state.value === null"
-              :disabled="push.busy.value || push.state.value === null || push.state.value === 'blocked' || push.state.value === 'unsupported'"
-              @click="push.turn(push.state.value !== 'on')"
+            <span
+              aria-hidden="true"
+              class="relative h-7 w-12 shrink-0 rounded-pill transition-colors duration-fade ease-fade group-disabled:opacity-60"
+              :class="pushOn ? 'bg-inverse' : 'bg-line'"
             >
               <span
-                aria-hidden="true"
                 class="knob absolute top-1 left-1 size-5 rounded-full bg-surface shadow-sm"
-                :class="{ on: push.state.value === 'on' }"
+                :class="{ on: pushOn }"
               />
-            </button>
-          </label>
+            </span>
+          </button>
           <p
             :role="push.failed.value ? 'alert' : 'status'"
             class="text-small empty:hidden"
