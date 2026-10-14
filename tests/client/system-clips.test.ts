@@ -124,8 +124,8 @@ test('not-unlocked: Topfbert holds his sign up in his right handle; it sways abo
 })
 
 test('not-unlocked: the sign reads "Bald!", centred on its board (x 10–110, y 8–48)', () => {
-  const word = layer(drawing('not-unlocked'), 'sign').match(/<path d="([^"]+)"/)![1]!
-  const points = word.match(/-?[\d.]+ -?[\d.]+/g)!.map(pair => pair.split(' ').map(Number) as [number, number])
+  const lettering = layer(drawing('not-unlocked'), 'sign').match(/<path d="([^"]+)"/)![1]!
+  const points = lettering.match(/-?[\d.]+ -?[\d.]+/g)!.map(pair => pair.split(' ').map(Number) as [number, number])
   const [left, right] = [Math.min(...points.map(([x]) => x)), Math.max(...points.map(([x]) => x))]
   const [top, bottom] = [Math.min(...points.map(([, y]) => y)), Math.max(...points.map(([, y]) => y))]
   expect((left + right) / 2).toBeCloseTo(60, 0)
