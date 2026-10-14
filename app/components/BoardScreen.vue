@@ -3,7 +3,7 @@ import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
-import { boardModuleKey, createBoardModule, type BoardResult, type Notice } from '~/board/board-module'
+import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
 import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
@@ -145,6 +145,32 @@ const { cookFromCard, onCardLeave, flight, onFlightLanded } = useGekochtCelebrat
   cue: cueColumn,
 })
 
+// Several Dishes selected (#218): a long-press on phones (let go without
+// dragging) or Ctrl-click on desktop selects a card; while any is selected,
+// tapping or clicking a card selects it or not, instead of opening it, and
+// no card can be dragged. The bar at the bottom moves or deletes them all.
+const selection = useDishSelection(board)
+const selecting = selection.selecting
+
+// A click on a card (or anything on it), before the card's own controls
+// get it: while Dishes are selected it selects the card or not; Ctrl-click
+// on the card selects it; otherwise it opens the Dish (openDish).
+function onCardClick(event: MouseEvent, dish: DishView) {
+  if (selecting.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    selection.toggle(dish.id)
+    return
+  }
+  const onLink = (event.target as Element).closest('.card-link')
+  if (onLink && event.button === 0 && (event.ctrlKey || event.metaKey) && !event.defaultPrevented) {
+    event.preventDefault()
+    selection.toggle(dish.id)
+    return
+  }
+  openDish(event, dish)
+}
+
 // Tapping a card morphs it into its detail (utils/dish-morph.ts). Clicks
 // for a new tab or window are left to the link; so is one swallowed after a
 // drag, which never gets here.
@@ -175,13 +201,15 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
     if (result) void showResult(result, { origin: at, moveFocus: false })
   },
   landed: columnId => cueColumn({ columnId, kind: 'drop' }),
+  press: dishId => selection.toggle(dishId),
+  paused: () => selecting.value,
 })
 // What plays on the Board: the lifted card's Placeholder, the hovered
 // card's, or one where the Board comes to rest; and beside it an empty
 // state's loop. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
-  covered: () => !!route.params.dish || adding.value || menuOpen.value || !!noting.value || showingShortcuts.value || showingSettings.value,
+  covered: () => !!route.params.dish || adding.value || menuOpen.value || choosingTarget.value || !!noting.value || showingShortcuts.value || showingSettings.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
 useBoardSync(() => id, boardModule, () => dragging.value)
@@ -360,6 +388,10 @@ useBoardShortcuts((shortcut) => {
       else searchOpen.value = true
       return true
     case 'close':
+      if (selecting.value) {
+        selection.clear()
+        return true
+      }
       if (!searchOpen.value) return false
       void closeSearch()
       return true
@@ -430,6 +462,63 @@ function deleteFromMenu() {
   menuDish.value = null
   const result = dishId && boardModule.deleteDish(dishId)
   if (result) void showResult(result)
+}
+
+// The selection's "Verschieben": "Verschieben nach…" for all of them, with
+// this Board's Columns (not the one they're all in, if they are) and the
+// user's other Boards; no Gekocht Column, as cooking stays one Dish at a
+// time. Picking one moves them all and ends the selection.
+const choosingTarget = ref(false)
+const selectionColumnId = computed(() => {
+  const columns = new Set(selection.selectedIds.value.map(id => board.value && dishOnBoard(board.value, id)?.column.id))
+  return columns.size === 1 ? [...columns][0] ?? null : null
+})
+function moveSelected(columnId: string, toBoard: BoardListing | null) {
+  choosingTarget.value = false
+  const ids = [...selection.selectedIds.value]
+  const column = (toBoard ?? board.value)?.columns.find(c => c.id === columnId)
+  if (!column) return
+  selection.clear()
+  const result = toBoard
+    ? boardModule.moveDishes(ids, { boardId: toBoard.id, columnId, isGekocht: column.isGekocht })
+    : boardModule.moveDishes(ids, { columnId })
+  const where = toBoard ? { board: boardLabel(toBoard), column: column.name } : { column: column.name }
+  if (result) void showBulkResult(result, where)
+}
+// The selection's "Löschen": all of them at once, with "Rückgängig".
+function deleteSelected() {
+  const result = boardModule.deleteDishes([...selection.selectedIds.value])
+  selection.clear()
+  if (result) void showBulkResult(result)
+}
+
+// Shows what an operation on several Dishes answered, as showResult does
+// for one: haptics for a delete, its notice as a Toast (offering
+// "Rückgängig" with its undo, whose result shows the same way), then what
+// its write ended in, and focus where it says. `where`: the Column (and
+// Board) they were moved to.
+async function showBulkResult(result: BulkResult, where?: { board?: string, column: string }) {
+  const { notice, undo, settled } = result
+  if (notice === 'deletedMany') hapticReject()
+  if (notice) {
+    const text = bulkNoticeText(notice, result.dishes.length, where)
+    showToast(undo
+      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(r => showBulkResult(r)) }] }
+      : { text, duration: NOTICE_MS })
+  }
+  void settled?.then(r => showBulkResult(r))
+  if (result.focus && !route.params.dish) await focusOn(result.focus)
+}
+
+function bulkNoticeText(notice: BulkNotice, count: number, where?: { board?: string, column: string }) {
+  switch (notice) {
+    case 'movedMany': return where?.board ? t.selection.movedToBoard(count, where.board, where.column) : t.selection.moved(count, where?.column ?? '')
+    case 'deletedMany': return t.selection.deleted(count)
+    case 'moveManyFailed': return t.selection.moveFailed(count)
+    case 'deleteManyFailed': return t.selection.deleteFailed(count)
+    case 'restoreManyFailed':
+    case 'returnManyFailed': return t.selection.backFailed(count)
+  }
 }
 
 // Shows what an operation of the Board module answered, from a card or the
@@ -678,17 +767,19 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                   :key="key"
                   :style="{ '--i': i }"
                   class="relative"
-                  :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId }"
+                  :class="{ 'drop-slot h-32 rounded-card': !dish, 'invisible': dish && dish.id === arrivingId, 'card-selected': dish && selection.isSelected(dish.id) }"
                   :data-dish-id="dish?.id"
                   :data-drag-state="state"
                   :data-drop-slot="!dish || undefined"
-                  @click.capture="dish && openDish($event, dish)"
+                  @click.capture="dish && onCardClick($event, dish)"
                 >
                   <template v-if="dish">
                     <NuxtLink
                       :id="`dish-${dish.id}`"
                       :to="dishPath(address, dish)"
                       :aria-label="dish.title"
+                      :role="selecting ? 'checkbox' : undefined"
+                      :aria-checked="selecting ? selection.isSelected(dish.id) : undefined"
                       class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                     >
                       <DishCard
@@ -698,6 +789,22 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                         @motion-ended="boardLoop.ended(dish.id)"
                       />
                     </NuxtLink>
+                    <!-- While Dishes are selected, a tap anywhere on the card
+                         selects it or not: its own controls give way to a
+                         check. -->
+                    <span
+                      v-if="selecting"
+                      aria-hidden="true"
+                      class="selection-check pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full"
+                      data-selection-check
+                    >
+                      <AppIcon
+                        v-if="selection.isSelected(dish.id)"
+                        name="check"
+                        :size="16"
+                      />
+                    </span>
+                    <template v-else>
                     <!-- In the order the card shows them: who added it, then the note. -->
                     <CardPersonButton
                       v-if="dish.addedBy"
@@ -744,6 +851,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       data-cook
                       @cook="origin => cookFromCard(dish.id, origin)"
                     />
+                    </template>
                   </template>
                 </li>
               </TransitionGroup>
@@ -794,6 +902,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     />
 
     <button
+      v-show="!selecting"
       type="button"
       class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
@@ -812,6 +921,28 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         aria-hidden="true"
       ><path d="M12 5v14M5 12h14" /></svg>
     </button>
+
+    <SelectionBar
+      v-if="selecting"
+      :count="selection.selectedIds.value.length"
+      :lifted="!!toast"
+      @move="choosingTarget = true"
+      @delete="deleteSelected"
+      @close="selection.clear()"
+    />
+    <AppSheet
+      v-model:open="choosingTarget"
+      :title="t.dish.moveTo"
+      :close-label="t.dish.closeMenu"
+    >
+      <MoveTargetPicker
+        class="mt-5"
+        :board="board"
+        :from-column-id="selectionColumnId"
+        no-gekocht
+        @move="moveSelected"
+      />
+    </AppSheet>
 
     <template v-if="!route.params.dish">
       <VeggieConfetti />
@@ -1062,6 +1193,21 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     translate: none;
     rotate: none;
   }
+}
+/* A selected card (#218): ringed in its Column's accent, with the check
+   filled in. An unselected one shows an empty check. */
+.card-selected > .card-link {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.selection-check {
+  border: 2px solid color-mix(in srgb, var(--color-text) 35%, transparent);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.card-selected .selection-check {
+  border-color: var(--accent);
+  background: var(--accent);
 }
 /* Dragging a Dish: the dragged card is DragCard. */
 /* A card can't be selected or called up as a link while it may be dragged. */

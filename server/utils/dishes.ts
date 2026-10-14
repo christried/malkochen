@@ -379,6 +379,169 @@ function renumberForDrop(d: Db, dishId: string, columnId: string, index: number,
     ))
 }
 
+// Several Dishes at once (#218): moved to the top of a Column, put back
+// where they were, deleted or restored, all in one step, all or nothing.
+// Every Dish must be on a Board the user is a Member of; `ids` are distinct.
+
+// Whether every Dish of `ids` is on a Board the user is a Member of; not
+// deleted, unless `deleted` says it may be.
+function allOnMembersBoards(ids: string[], userId: string, { deleted = false } = {}) {
+  const counted = db
+    .select({ count: sql<number>`count(*)` })
+    .from(dish)
+    .where(and(
+      inArray(dish.id, ids),
+      inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+      deleted ? undefined : isNull(dish.deletedAt),
+    ))
+  return sql`(${counted}) = ${ids.length}`
+}
+
+// Whether every Column of `ids` is on a Board the user is a Member of, and,
+// with `noGekocht`, none of them a Gekocht Column.
+function allColumnsOfMember(ids: string[], userId: string, { noGekocht = false } = {}) {
+  const counted = db
+    .select({ count: sql<number>`count(*)` })
+    .from(boardColumn)
+    .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
+    .where(and(inArray(boardColumn.id, ids), noGekocht ? eq(boardColumn.isGekocht, false) : undefined))
+  return sql`(${counted}) = ${ids.length}`
+}
+
+// Whether every Dish of `ids` is on a Board the user is a Member of and not
+// deleted: why a bulk write refused tells a missing Dish (404) from a
+// Column the user can't move to (400).
+export function areDishesOfMember(ids: string[], userId: string): Promise<boolean> {
+  return holds(allOnMembersBoards(ids, userId), userId)
+}
+
+// The Dishes placed (PlacedDish), in the order of `ids`; null if one of
+// them is deleted.
+async function placedDishes(ids: string[]): Promise<PlacedDish[] | null> {
+  const live = and(inArray(dish.id, ids), isNull(dish.deletedAt))
+  const views = new Map((await toViews(await selectDishes().where(live))).map(v => [v.id, v]))
+  const locations = new Map((await db.select({ id: dish.id, boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(live)).map(l => [l.id, l]))
+  // Every Dish of their Columns, in Board order, for each one's index.
+  const columnIds = [...new Set([...locations.values()].map(l => l.columnId))]
+  const orders = new Map<string, string[]>()
+  for (const { id, columnId } of await db.select({ id: dish.id, columnId: dish.columnId }).from(dish).where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)) {
+    orders.set(columnId, [...orders.get(columnId) ?? [], id])
+  }
+  const placed: PlacedDish[] = []
+  for (const id of ids) {
+    const view = views.get(id)
+    const location = locations.get(id)
+    if (!view || !location) return null
+    const { boardId, columnId } = location
+    placed.push({ ...view, placement: { boardId, columnId, index: orders.get(columnId)!.indexOf(id) } })
+  }
+  return placed
+}
+
+// Moves Dishes to the top of a Column (the selection's "Verschieben
+// nach…"), on their Board or another one the user is a Member of, in the
+// order of `ids`, keeping their Cooking Histories; one already in that
+// Column stays where it is. Never into a Gekocht Column: cooking stays one
+// Dish at a time, so moving there records no Cookings. Answers them placed,
+// in the order of `ids`; null, moving none, unless every Dish is on a Board
+// the user is a Member of and not deleted, and the Column is on one too and
+// isn't a Gekocht Column.
+export async function moveDishes(ids: string[], userId: string, columnId: string): Promise<PlacedDish[] | null> {
+  const rank = sql.join(ids.map((id, i) => sql`when ${id}::uuid then ${i}::integer`), sql` `)
+  const moved = await db
+    .update(dish)
+    .set({
+      columnId,
+      boardId: boardOf(columnId),
+      position: sql`case when ${dish.columnId} = ${columnId} then ${dish.position}
+        else (select coalesce(min(${dish.position}), 0) from ${dish} where ${dish.columnId} = ${columnId})
+          - ${ids.length}::integer + (case ${dish.id} ${rank} end) end`,
+    })
+    .where(and(
+      inArray(dish.id, ids),
+      allOnMembersBoards(ids, userId),
+      allColumnsOfMember([columnId], userId, { noGekocht: true }),
+    ))
+    .returning({ id: dish.id })
+  return moved.length === ids.length ? placedDishes(ids) : null
+}
+
+// Where a Dish goes back to, undoing a move of several: its Column, and its
+// place among that Column's other Dishes.
+export interface DishPlace {
+  dishId: string
+  columnId: string
+  index: number
+}
+
+// "Rückgängig" after moving several Dishes: each goes back to its place,
+// on its own Board, in one step. Placed Column by Column from the top, so
+// each lands at the index it had, with the others back above it. Moving
+// back records no Cooking, as it undoes a move, so only a Cooked Dish may
+// go back into a Gekocht Column. Answers them placed, in the order of
+// `places`; null, moving none, unless every Dish is on a Board the user is
+// a Member of and not deleted, every Column is on one too, and no Dish that
+// isn't Cooked would go into a Gekocht Column.
+export async function placeDishes(places: DishPlace[], userId: string): Promise<PlacedDish[] | null> {
+  const ids = places.map(p => p.dishId)
+  const allowed = and(
+    allOnMembersBoards(ids, userId),
+    allColumnsOfMember([...new Set(places.map(p => p.columnId))], userId),
+    ...places.map(p => cookedIfGekocht(p.dishId, p.columnId)),
+  )
+  if (!await holds(allowed, userId)) return null
+  const ordered = [...places].sort((a, b) => a.columnId.localeCompare(b.columnId) || a.index - b.index)
+  await runAtomic(d => [
+    // Held until the end, so no other write changes them meanwhile and the
+    // check stays true for every step.
+    d.execute(sql`select ${dish.id} from ${dish} where ${inArray(dish.id, ids)} for update`),
+    ...ordered.map(p => renumberForDrop(d, p.dishId, p.columnId, p.index, and(eq(dish.id, p.dishId), allowed))),
+  ])
+  return placedDishes(ids)
+}
+
+// Whether the Dish may go back into the Column without a Cooking: any
+// Column but a Gekocht one, and a Gekocht one only for a Dish that is
+// Cooked (CONTEXT.md), as one that came out of it is. So putting Dishes
+// back can't mark one as Cooked.
+function cookedIfGekocht(dishId: string, columnId: string) {
+  return or(
+    notExists(db.select({ id: boardColumn.id }).from(boardColumn).where(and(eq(boardColumn.id, columnId), eq(boardColumn.isGekocht, true)))),
+    exists(db.select({ id: cooking.id }).from(cooking).where(eq(cooking.dishId, dishId))),
+  )
+}
+
+// Whether `condition` holds now, asked for the user.
+async function holds(condition: SQL | undefined, userId: string): Promise<boolean> {
+  const [row] = await db.select({ ok: sql<boolean>`${condition}` }).from(user).where(eq(user.id, userId))
+  return row?.ok === true
+}
+
+// Deletes Dishes (the selection's "Löschen"), soft as one is, so they can
+// be restored. False, deleting none, unless every Dish is on a Board the
+// user is a Member of and not deleted yet.
+export async function deleteDishes(ids: string[], userId: string): Promise<boolean> {
+  const deleted = await db
+    .update(dish)
+    .set({ deletedAt: new Date() })
+    .where(and(inArray(dish.id, ids), allOnMembersBoards(ids, userId)))
+    .returning({ id: dish.id })
+  return deleted.length === ids.length
+}
+
+// "Rückgängig" after deleting several Dishes: they are back where they
+// were, as restoreDish puts one back. Answers them placed, in the order of
+// `ids`; null, restoring none, unless every Dish is on a Board the user is
+// a Member of.
+export async function restoreDishes(ids: string[], userId: string): Promise<PlacedDish[] | null> {
+  const restored = await db
+    .update(dish)
+    .set({ deletedAt: null })
+    .where(and(inArray(dish.id, ids), allOnMembersBoards(ids, userId, { deleted: true })))
+    .returning({ id: dish.id })
+  return restored.length === ids.length ? placedDishes(ids) : null
+}
+
 // A Dish already on a Board with the Source being added (PRD story 24).
 export interface DuplicateDish {
   id: string

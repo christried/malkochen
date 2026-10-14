@@ -25,6 +25,11 @@ function dishCount(count: number): string {
   return count === 1 ? '1 Gericht' : `${count} Gerichte`
 }
 
+// "ließ" for one Dish, "ließen" for several.
+function lassenPast(count: number): string {
+  return count === 1 ? 'ließ' : 'ließen'
+}
+
 // "März 2026", in German time like addedDate.
 function monthAndYear(date: Date): string {
   return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' }).format(date)
@@ -179,6 +184,21 @@ export const de = {
     addNote: 'Notiz hinzufügen',
     cookFailed: (title: string) => `„${title}“ ließ sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,
     uncookFailed: (title: string) => `„${title}“ ließ sich nicht zurückholen.`,
+  },
+  // Several Dishes selected at once (#218): a long-press on phones, Ctrl-
+  // click on desktop, and the bar at the bottom.
+  selection: {
+    label: 'Auswahl',
+    count: (count: number) => `${count} ausgewählt`,
+    move: 'Verschieben',
+    delete: 'Löschen',
+    close: 'Auswahl beenden',
+    moved: (count: number, column: string) => `${dishCount(count)} nach „${column}“ verschoben`,
+    movedToBoard: (count: number, board: string, column: string) => `${dishCount(count)} ${count === 1 ? 'ist' : 'sind'} jetzt in ${board} · ${column}`,
+    deleted: (count: number) => `${dishCount(count)} gelöscht`,
+    moveFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht verschieben. Versuch es gleich noch mal.`,
+    deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht löschen. Versuch es gleich noch mal.`,
+    backFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht zurückholen.`,
   },
   cooking: {
     noteHeading: 'Notiz zum Kochen',
@@ -530,7 +550,7 @@ export const de = {
     does: {
       addDish: 'Gericht hinzufügen',
       search: 'Gerichte suchen',
-      close: 'Schließt, was offen ist: Dialog, Gericht oder Suche',
+      close: 'Schließt, was offen ist: Dialog, Gericht, Auswahl oder Suche',
       boardSettings: 'Board-Einstellungen',
       switchBoard: 'Zum 1. bis 9. Board wechseln',
       help: 'Diese Tastenkürzel zeigen',

@@ -7,10 +7,14 @@ import { boardLabel } from '~~/shared/board'
 // first, then each of the user's other Boards with its Columns. Picking one
 // emits `move` with the Column and, for another Board, that Board. The other
 // Boards are fetched when it shows; until they arrive, this Board's Columns
-// are there already. The sheet around it gives the heading.
+// are there already. The sheet around it gives the heading. Several
+// Dishes at once (#218) can't go into a Gekocht Column (`noGekocht`):
+// cooking stays one Dish at a time.
 const props = defineProps<{
   board: { id: string, columns: ColumnView[] }
-  fromColumnId: string
+  // The Column the Dish (or every selected Dish) is in, not offered.
+  fromColumnId?: string | null
+  noGekocht?: boolean
 }>()
 defineEmits<{ move: [columnId: string, toBoard: BoardListing | null] }>()
 const t = useStrings()
@@ -23,18 +27,19 @@ onMounted(async () => {
 
 // One group per Board, each Column with its accent. This Board's group is
 // named only once there are others to tell it from.
+const offered = (column: ColumnView) => column.id !== props.fromColumnId && !(props.noGekocht && column.isGekocht)
 const groups = computed(() => [
   {
     id: props.board.id,
     label: otherBoards.value.length ? t.dish.thisBoard : null,
     toBoard: null,
-    columns: props.board.columns.map((column, index) => ({ column, accent: columnAccent(index) })).filter(({ column }) => column.id !== props.fromColumnId),
+    columns: props.board.columns.map((column, index) => ({ column, accent: columnAccent(index) })).filter(({ column }) => offered(column)),
   },
   ...otherBoards.value.map(other => ({
     id: other.id,
     label: boardLabel(other),
     toBoard: other,
-    columns: other.columns.map((column, index) => ({ column, accent: columnAccent(index) })),
+    columns: other.columns.map((column, index) => ({ column, accent: columnAccent(index) })).filter(({ column }) => offered(column)),
   })),
 ])
 </script>
