@@ -7,13 +7,14 @@ import { loopStyle } from '../../app/utils/svg-loop'
 
 export const THEMES = ['light', 'dark'] as const
 
-export function drawing(clip: string, theme: string) {
-  return readFileSync(`public/clips/${clip}-${theme}.svg`, 'utf8')
+// Without a theme: a drawing the same in both (public/clips/<clip>.svg).
+export function drawing(clip: string, theme?: string) {
+  return readFileSync(`public/clips/${clip}${theme ? `-${theme}` : ''}.svg`, 'utf8')
 }
 
 // Each animated layer's loop, by its `data-layer` name: "keyframes duration
 // easing delay".
-export function loops(clip: string, theme: string) {
+export function loops(clip: string, theme?: string) {
   const layers = new Map<string, string>()
   for (const [tag] of drawing(clip, theme).matchAll(/<g\b[^>]*>/g)) {
     const name = tag.match(/data-layer="([^"]+)"/)?.[1]

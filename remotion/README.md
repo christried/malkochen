@@ -32,20 +32,20 @@ npm run lint                      # ESLint + tsc
 
 | File | What |
 |---|---|
-| `public/clips/<clip>-<theme>.{mp4,webm,png}` | The state, system and celebration clips |
-| `public/clips/splash-landscape-<theme>.{mp4,webm}` | The splash again at 2560×1440, for wide windows |
+| `public/clips/<clip>-<theme>.{mp4,webm,png}` | The state and system clips |
 
 `.mp4` is H.264 and plays everywhere, `.webm` is VP9 and smaller where it is
 supported, and `.png` is the poster: the reduced-motion still (the brief's
-"still"; invite-intro's is invite-loop's frame 0, where it hands off). The splash's stills are WebPs instead, one per
-orientation for both themes: `splash[-landscape]-{poster,still}.webp`.
+"still"; invite-intro's is invite-loop's frame 0, where it hands off).
 
 Commit the rendered files; the app serves them as they are.
 
 Not rendered any more (#111): the Placeholder Images, `empty-column` and
 `topfbert-wow`, since #180 `empty-board` and `search-empty`, and since #215 the
-celebrations `milestone-10x` and `board-created`, whose baked-in background
-showed as a box on the coloured lanes, page and wash. The app draws those
+celebrations `milestone-10x` and `board-created`, and since #216 the link
+lookup's `lookup-stir` and `lookup-failed` and the `splash` (drawn inline by
+`SplashScreen.vue`), whose baked-in background showed as a box on the
+coloured lanes, page and wash. The app draws those
 loops in code from their SVGs
 (`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
 refresh rate and sharp at any size. Their compositions stay in Studio, but
@@ -125,7 +125,9 @@ rendered here:
 3. **Pick what the drawing stands at**, which is its still: a loop stands at
    frame 0 (the keyframes' 0%); a one-shot that comes to rest elsewhere
    stands at its last frame (100%), and plays with `:loop="false"
-   rest="last"` (`CelebrationDialog.vue`).
+   rest="last"` (`CelebrationDialog.vue`). A loop whose still is a frame
+   further in (lookup-failed's f30) gives its layers that much negative delay
+   and draws them in that pose (`app/utils/svg-loop.ts`).
 4. **Text and emoji stay Vue**, in SvgLoop's `over` slot: a still is the SVG
    as an image, which can't load the app's fonts. To move with a part, the
    label takes that part's `data-loop` and `loopStyle()`.

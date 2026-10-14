@@ -189,11 +189,14 @@ test('the link lookup loops Topfbert stirring, then his oops when it fails', asy
   const sheet = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
   await sheet.getByLabel('Link').fill(TIKTOK)
 
-  await expect.poll(() => playing(sheet)).toEqual(['/clips/lookup-stir-light.webm'])
+  await expect.poll(() => playing(sheet)).toEqual(['/clips/lookup-stir.svg'])
+  // Drawn on the panel's wash: no box of its own around Topfbert.
+  expect(await backgroundsBehind(sheet.locator('[data-lookup="looking"] [data-svg-loop]'), '[data-lookup]')).toEqual([])
   answer()
   // Beside the form that opens, whose Placeholder picker loops its choice.
-  await expect.poll(() => playing(sheet)).toContain('/clips/lookup-failed-light.webm')
-  expect(await playing(sheet)).not.toContain('/clips/lookup-stir-light.webm')
+  await expect.poll(() => playing(sheet)).toContain('/clips/lookup-failed.svg')
+  expect(await playing(sheet)).not.toContain('/clips/lookup-stir.svg')
+  expect(await backgroundsBehind(sheet.locator('[data-lookup="failed"] [data-svg-loop]'), '[data-lookup]')).toEqual([])
 })
 
 test('a Dish never cooked loops its own scene in the Cooking History, until it is cooked', async ({ page }) => {

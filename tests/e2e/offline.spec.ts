@@ -56,23 +56,6 @@ test('back online before the connection gets through, the Offline page keeps try
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('malkochen ist gerade nicht erreichbar.')
 })
 
-test('the service worker keeps the splash stills, so a cold launch paints them without the network', async ({ page, context }) => {
-  await gotoHydrated(page, '/login')
-  await serviceWorkerInControl(page)
-
-  await context.setOffline(true)
-  const stills = [
-    '/clips/splash-poster.webp',
-    '/clips/splash-still.webp',
-    '/clips/splash-landscape-poster.webp',
-    '/clips/splash-landscape-still.webp',
-  ]
-  for (const still of stills) {
-    const type = await page.evaluate(async url => (await fetch(url)).headers.get('content-type'), still)
-    expect(type, still).toBe('image/webp')
-  }
-})
-
 // The device is online but malkochen doesn't answer: say it's on our side.
 // context.route sees the service worker's own requests.
 for (const [what, outage] of [
