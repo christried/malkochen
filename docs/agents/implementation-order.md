@@ -204,6 +204,7 @@ Everything from the second desktop review (`docs/reviews/desktop-review2.md`), a
 | #210 | User settings as a sheet | After #207 and #209 |
 | #211 | Board Dish count | Header and switcher |
 | #212 | Note on hover / tap | After #206 |
+| #260 | Flaky browser test: closing your settings scrolls the Board to the top | From #225. Next, since it holds up CI (failed #258 and #259 until rerun). Test or app fix |
 | #213 | User popover | After #206 and #209 |
 | #214 | All-caps Suggested Titles | Source Lookup title rule |
 | #215 | Smooth motion 1: celebrations | Sets the SVG pattern for #216 and #217 |
