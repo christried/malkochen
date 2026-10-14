@@ -1,57 +1,10 @@
-import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
-import { loopStyle } from '../../app/utils/svg-loop'
+import { backgrounds, drawing, keyframes, layer, loops, THEMES } from './drawing'
 
 // The empty Board's and the empty search's clips, drawn in code (SvgLoop)
 // from the handoff's layers, as their briefs (REMOTION.md "empty-board",
 // "search-empty") and the Remotion clips that rendered them before tell. No
 // background of their own: they sit on whatever is behind them.
-
-const THEMES = ['light', 'dark'] as const
-
-function drawing(clip: string, theme: string) {
-  return readFileSync(`public/clips/${clip}-${theme}.svg`, 'utf8')
-}
-
-// Each animated layer's loop, by its `data-layer` name: "keyframes duration
-// easing delay".
-function loops(clip: string, theme: string) {
-  const layers = new Map<string, string>()
-  for (const [tag] of drawing(clip, theme).matchAll(/<g\b[^>]*>/g)) {
-    const name = tag.match(/data-layer="([^"]+)"/)?.[1]
-    const loop = tag.match(/data-loop="([^"]+)"/)?.[1]
-    if (name && loop) layers.set(name, loopStyle(loop, null)?.['--loop'] ?? `unreadable: ${loop}`)
-  }
-  return layers
-}
-
-// One @keyframes block of loops.css, without its spaces.
-function keyframes(name: string) {
-  const css = readFileSync('app/assets/css/loops.css', 'utf8')
-  const block = css.match(new RegExp(`@keyframes ${name}\\s*\\{((?:[^{}]*\\{[^}]*\\})*)\\s*\\}`))?.[1]
-  if (!block) throw new Error(`No @keyframes ${name}`)
-  return block.replace(/\s+/g, '')
-}
-
-// A background, as the videos had baked in: a square-cornered rect from the
-// drawing's corner, or a background style on the drawing itself.
-function backgrounds(svg: string) {
-  const atZero = (rect: string, axis: string) =>
-    (rect.match(new RegExp(`\\b${axis}="([^"]*)"`))?.[1] ?? '0').replace(/(px|%)$/, '') === '0'
-  return [
-    ...[...svg.matchAll(/<rect\b[^>]*>/g)].map(([rect]) => rect)
-      .filter(rect => atZero(rect, 'x') && atZero(rect, 'y') && !/\brx="/.test(rect)),
-    ...(svg.match(/<svg\b[^>]*style="[^"]*background[^"]*"/g) ?? []),
-  ]
-}
-
-// One top-level layer's markup: from its `data-layer` to the next one's.
-function layer(svg: string, name: string) {
-  const start = svg.indexOf(`<g data-layer="${name}"`)
-  if (start === -1) throw new Error(`No layer ${name}`)
-  const next = svg.indexOf('<g data-layer=', start + 1)
-  return svg.slice(start, next === -1 ? undefined : next)
-}
 
 test.each(THEMES)('the empty Board, %s: Topfbert on his butter blob, and nothing behind it', (theme) => {
   const svg = drawing('empty-board', theme)
