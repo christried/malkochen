@@ -12,7 +12,10 @@ import { boardPath } from '~~/shared/address'
 // rows open your settings (a sheet over the Board) and the legal pages
 // (LegalLinks), which the header has no room for there: they stand in for
 // the user menu.
-const props = defineProps<{ board: BoardNameAndEmoji }>()
+// `dishCount`: how many Dishes this Board holds, shown after its name in the
+// pill and on its row (as the Board module counts them, so it follows adds,
+// deletes and polls at once); null while not known.
+const props = defineProps<{ board: BoardNameAndEmoji, dishCount?: number | null }>()
 const emit = defineEmits<{ settings: [] }>()
 const t = useStrings()
 const route = useRoute()
@@ -52,10 +55,12 @@ onMounted(() => document.addEventListener('pointerdown', onPointerDown))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown))
 watch(() => route.params.board, () => close())
 
-// Shown at once, before the list first arrives: this Board.
+// Shown at once, before the list first arrives: this Board. Its own row
+// counts as its pill does, which may be ahead of the list fetched.
+const count = computed(() => props.dishCount ?? null)
 const shown = computed(() => boards.value.length
-  ? boards.value
-  : [{ ...props.board, isOwner: false, dishCount: null, members: [], columns: [] }])
+  ? boards.value.map(b => b.id === props.board.id && count.value !== null ? { ...b, dishCount: count.value } : b)
+  : [{ ...props.board, isOwner: false, dishCount: count.value, members: [], columns: [] }])
 
 function newBoard() {
   close()
@@ -83,7 +88,7 @@ function openSettings() {
         ref="pill"
         type="button"
         class="board-pill flex h-11 max-w-full items-center gap-2 rounded-pill py-1 pl-1 pr-3 text-left active:scale-[.97] focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="t.boards.switcher(board.name)"
+        :aria-label="t.boards.switcher(board.name, count)"
         :data-tooltip="t.boards.switch"
         :aria-expanded="open"
         :aria-controls="panelId"
@@ -91,12 +96,20 @@ function openSettings() {
       >
         <!-- Only the name truncates: clipped to its line, a tall emoji (🍪)
              would lose its top and bottom. The name's line is taller than
-             the button type's, so its descenders aren't clipped. -->
+             the button type's, so its descenders aren't clipped. The
+             Dish count after it stays whole, quieter than the name. It is
+             drawn by CSS, so the heading's text stays the Board's name;
+             the button's label says it. -->
         <span
           aria-hidden="true"
           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-[20px] leading-none"
           data-emoji-pebble
-        ><span>{{ board.emoji }}</span></span> <span class="truncate leading-[1.3]">{{ board.name }}</span>
+        ><span>{{ board.emoji }}</span></span> <span class="truncate leading-[1.3]">{{ board.name }}</span><span
+          v-if="count !== null"
+          aria-hidden="true"
+          class="dish-count -ml-1 shrink-0 leading-[1.3] opacity-70"
+          :data-dish-count="t.boards.count(count)"
+        />
         <svg
           viewBox="0 0 24 24"
           width="18"
@@ -139,12 +152,13 @@ function openSettings() {
               >
                 <span class="hop">{{ listed.emoji }}</span>
               </span>
-              <span class="flex min-w-0 flex-1 flex-col">
-                <span class="truncate text-button">{{ listed.name }}</span>
+              <span class="flex min-w-0 flex-1 items-baseline gap-1 text-button">
+                <span class="truncate">{{ listed.name }}</span>
                 <span
                   v-if="listed.dishCount !== null"
-                  class="text-small text-text-muted"
-                >{{ t.boards.dishCount(listed.dishCount) }}</span>
+                  class="shrink-0 text-text-muted"
+                  data-dish-count
+                >{{ t.boards.count(listed.dishCount) }}</span>
               </span>
               <span
                 v-if="listed.members.length"
@@ -227,6 +241,9 @@ function openSettings() {
 </template>
 
 <style scoped>
+.dish-count::before {
+  content: attr(data-dish-count);
+}
 .chevron {
   transition: rotate var(--dur-tap) var(--ease-tap);
 }

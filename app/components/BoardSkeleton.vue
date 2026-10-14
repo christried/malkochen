@@ -37,6 +37,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
         <BoardSwitcher
           v-if="listing"
           :board="listing"
+          :dish-count="listing.dishCount"
         />
         <span
           v-else

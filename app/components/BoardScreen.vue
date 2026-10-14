@@ -538,6 +538,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       <div class="flex min-w-0 items-center gap-3">
         <BoardSwitcher
           :board="board"
+          :dish-count="boardModule.dishCount.value"
           @settings="showingSettings = true"
         />
         <RoundButton

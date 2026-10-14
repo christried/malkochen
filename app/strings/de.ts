@@ -312,12 +312,14 @@ export const de = {
     eintopf: 'Eintopf',
   } satisfies Record<Placeholder, string>,
   boards: {
-    switcher: (board: string) => `Board wechseln, jetzt: ${board}`,
+    switcher: (board: string, count: number | null) => count === null ? `Board wechseln, jetzt: ${board}` : `Board wechseln, jetzt: ${board}, ${dishCount(count)}`,
+    // How many Dishes a Board holds, after its name in the header and the
+    // switcher: „Kochclub · 23“.
+    count: (count: number) => `· ${count}`,
     // The switcher's Tooltip: it shows the Board's name itself.
     switch: 'Board wechseln',
     label: 'Deine Boards',
     current: 'Aktuelles Board',
-    dishCount,
     newBoard: 'Neues Board',
     name: 'Name',
     // A new Board's name field suggests one of these, a new one each time.
