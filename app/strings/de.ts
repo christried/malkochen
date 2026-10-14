@@ -30,6 +30,11 @@ function lassenPast(count: number): string {
   return count === 1 ? 'ließ' : 'ließen'
 }
 
+// "Ada", "Ada und Linus", "Ada, Linus und Grace".
+function nameList(names: string[]): string {
+  return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} und ${names.at(-1)}`
+}
+
 // "März 2026", in German time like addedDate.
 function monthAndYear(date: Date): string {
   return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' }).format(date)
@@ -539,6 +544,19 @@ export const de = {
     light: 'Hell',
     dark: 'Dunkel',
     system: 'System',
+  },
+  // Push notifications (#219): turned on per device in your settings, sent
+  // when someone else adds a Dish to one of your Boards.
+  push: {
+    heading: 'Benachrichtigungen',
+    toggle: 'Push-Benachrichtigungen',
+    hint: 'Auf diesem Gerät, wenn jemand ein Gericht zu einem deiner Boards hinzufügt.',
+    blocked: 'Dein Browser blockiert Benachrichtigungen von malkochen. Erlaube sie in den Website-Einstellungen, dann kannst du sie hier einschalten.',
+    unsupported: 'Dieser Browser kann keine Push-Benachrichtigungen empfangen.',
+    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    // The notification, one per Board: who added how many Dishes since you
+    // last opened it, the latest adder first. `board` is its emoji and name.
+    added: (names: string[], count: number, board: string) => `${nameList(names)} ${names.length === 1 ? 'hat' : 'haben'} ${dishCount(count)} zu ${board} hinzugefügt`,
   },
   // The Board's keyboard shortcuts (utils/shortcuts.ts): the "?" dialog and
   // the section in your settings.

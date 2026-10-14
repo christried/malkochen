@@ -89,6 +89,21 @@ export const rateLimit = pgTable('rate_limit', {
   lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
 })
 
+// A device a user turned push notifications on for (#219): the browser's
+// push subscription, as PushSubscription.toJSON() hands it over. The endpoint
+// is the device's own address at its push service, so it is the key: a
+// device signed in to by someone else is theirs from then on. Deleted when
+// turned off, or when the push service says the subscription is gone.
+export const pushSubscription = pgTable('push_subscription', {
+  endpoint: text('endpoint').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // The device's public key and auth secret, base64url: what the push is
+  // encrypted for.
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: createdAt(),
+}, t => [index('push_subscription_user_id_idx').on(t.userId)])
+
 // ---------------------------------------------------------------------------
 // Boards (CONTEXT.md: Board, Member, Owner, Column, Gekocht Column).
 

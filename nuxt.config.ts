@@ -62,6 +62,14 @@ export default defineNuxtConfig({
     priority: ['google'],
     processCSSVariables: true,
   },
+  runtimeConfig: {
+    public: {
+      // Push notifications (#219): the VAPID public key a device subscribes
+      // with (server/env.ts). Empty: the settings offer no push
+      // notifications.
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? '',
+    },
+  },
   // `nuxt typecheck` also covers the tests and the root tool configs.
   typescript: {
     nodeTsConfig: {
