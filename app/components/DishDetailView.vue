@@ -160,17 +160,31 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
         </a>
       </div>
 
-      <p
-        class="flex items-center gap-2 text-small text-text-muted"
+      <!-- Who added it opens their popover (#213), picture and line alike. -->
+      <div
+        class="flex text-small text-text-muted"
         data-morph-field="added"
       >
-        <UserAvatar
+        <PersonPopover
           v-if="dish.addedBy"
-          :name="dish.addedBy.name"
-          :image="dish.addedBy.image"
-        />
-        <span>{{ added }}</span>
-      </p>
+          :person="dish.addedBy"
+          :board-id="board.id"
+          class="-mx-2 -my-1 flex items-center gap-2 rounded-pill px-2 py-1 text-left transition-colors duration-tap ease-tap hover:bg-surface-muted hover:text-text focus-visible:outline-2 focus-visible:outline-focus"
+          data-added
+        >
+          <UserAvatar
+            :name="dish.addedBy.name"
+            :image="dish.addedBy.image"
+          />
+          <span>{{ added }}</span>
+        </PersonPopover>
+        <p
+          v-else
+          data-added
+        >
+          {{ added }}
+        </p>
+      </div>
 
       <CookingHistory
         :dish="dish"

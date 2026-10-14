@@ -104,7 +104,9 @@ test('keyboard focus on the note icon shows the note, and moving on or Escape hi
   const icon = noteButton(page, 'Miso-Ramen')
 
   await link.focus()
-  // From the card, Tab reaches its note icon.
+  // From the card, Tab reaches its note icon, after who added it.
+  await page.keyboard.press('Tab')
+  await expect(card(page, 'Miso-Ramen').getByRole('button', { name: /^Hinzugefügt von / })).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(icon).toBeFocused()
   await expect(tooltip(page)).toBeVisible()

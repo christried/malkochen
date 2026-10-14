@@ -189,9 +189,9 @@ test('a Tooltip shows above a sheet, and what used to be a native title is a Too
   await openBoard(page)
   const card = page.getByRole('link', { name: 'Miso-Ramen', exact: true })
 
-  // On the card: the Creator, who added it, and its note (NoteButton, over
-  // the card beside its link).
-  for (const [part, text] of [['[data-creator]', '@nudelliebe'], ['[data-added-by]', 'Hinzugefügt von Vera'], ['[data-note-icon]', 'mit extra Knoblauch']] as const) {
+  // On the card: the Creator and its note (NoteButton, over the card beside
+  // its link). Who added it opens their popover instead (user-popover.spec.ts).
+  for (const [part, text] of [['[data-creator]', '@nudelliebe'], ['[data-note-icon]', 'mit extra Knoblauch']] as const) {
     await card.locator('xpath=..').locator(part).hover()
     await expect(tooltip(page)).toHaveText(text)
     await page.mouse.move(0, 0)
@@ -227,9 +227,11 @@ test('a Tooltip near the screen’s edge stays on the screen', async ({ page }) 
 })
 
 // Every button and link that shows no text of its own, by what it is called.
+// A Profile Picture's button needs none: resting on it opens the user
+// popover, which says who it is (user-popover.spec.ts).
 function unexplained(page: Page) {
   return page.evaluate(() => [...document.querySelectorAll<HTMLElement>('button, a[href], [role="button"]')]
-    .filter(el => el.checkVisibility() && !el.closest('[inert]') && !el.innerText.trim() && !el.dataset.tooltip)
+    .filter(el => el.checkVisibility() && !el.closest('[inert]') && !el.innerText.trim() && !el.dataset.tooltip && !el.matches('[data-person-button]'))
     .map(el => el.getAttribute('aria-label') ?? el.outerHTML.slice(0, 120)))
 }
 

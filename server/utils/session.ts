@@ -30,6 +30,12 @@ export function boardIdParam(event: H3Event): string {
   return id
 }
 
+// The same for someone the caller shares no Board with (the user popover,
+// #213): they look like nobody at all.
+export function personNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Person not found' })
+}
+
 // Same for a Dish: one that doesn't exist and one on someone else's Board look alike.
 export function dishNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Dish not found' })

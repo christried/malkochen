@@ -25,6 +25,11 @@ function dishCount(count: number): string {
   return count === 1 ? '1 Gericht' : `${count} Gerichte`
 }
 
+// "März 2026", in German time like addedDate.
+function monthAndYear(date: Date): string {
+  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' }).format(date)
+}
+
 export const de = {
   app: {
     name: 'malkochen',
@@ -101,6 +106,21 @@ export const de = {
     noResultsTitle: 'Nichts gefunden.',
     noResultsBody: (query: string) => `Kein Gericht mit „${query}“ im Namen.`,
     failed: 'Die Suche hat nicht geklappt. Versuch es gleich noch mal.',
+  },
+  // The user popover (#213): someone's Username, large Profile Picture and
+  // these lines, from their Profile Picture on a card or in the Dish detail.
+  person: {
+    since: (date: Date) => `dabei seit ${monthAndYear(date)}`,
+    // On the Board it was opened on.
+    dishesAdded: (count: number) => `${dishCount(count)} hinzugefügt`,
+    // The Boards the viewer and they both belong to; one's own popover
+    // lists all one's Boards.
+    sharedBoards: 'Gemeinsame Boards',
+    ownBoards: 'Deine Boards',
+    loading: 'Lädt …',
+    // Nothing more to show: no Board shared with them any more (they left
+    // it, and the Dishes they added stayed), or the request failed.
+    unavailable: 'Mehr ist gerade nicht zu sehen.',
   },
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
