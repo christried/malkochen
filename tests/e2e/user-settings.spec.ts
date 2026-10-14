@@ -81,8 +81,15 @@ test('closing your settings (Escape, or its close button) leaves the Board as it
   const sheet = settingsSheet(page)
 
   for (const close of [() => page.keyboard.press('Escape'), () => sheet.getByRole('button', { name: 'Einstellungen schließen' }).click()]) {
-    await page.getByRole('button', { name: 'Dein Konto' }).click()
-    await page.getByRole('menuitem', { name: 'Einstellungen' }).click()
+    // Opened by keyboard: a click retried while the menu pops in (or the
+    // sheet before it moves out) scrolls its target into view with
+    // block 'end', 'center' or 'start', and that alone takes the window
+    // back to the top (#260). The close button sits in the sheet, so its
+    // click can't scroll the Board.
+    await page.getByRole('button', { name: 'Dein Konto' }).evaluate(el => el.focus({ preventScroll: true }))
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('menuitem', { name: 'Einstellungen' })).toBeFocused()
+    await page.keyboard.press('Enter')
     await expect(sheet).toBeVisible()
     // From 768px a centred dialog.
     await expect.poll(async () => {
