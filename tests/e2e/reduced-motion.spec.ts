@@ -2,7 +2,7 @@ import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { ANY_CHEER, cheer, confetti, topfbert } from './celebration'
-import { clipStill, countClips, emptyColumnStill, loopStill, neverCookedClip } from './clips'
+import { clipStill, countClips, emptyColumnStill, loopStill, moving, neverCookedClip } from './clips'
 import { editMorph, slowAnimations } from './edit-morph'
 import { gotoHydrated } from './hydration'
 import { dotsMoving, holdRequests, linkField, linkFound } from './loading'
@@ -144,10 +144,13 @@ test('the achievement badge shows its count at once; both celebrations show thei
   await detail.getByRole('button', { name: 'Schließen' }).first().click()
   await expect(detail).toBeHidden()
 
-  // The 10th Cooking: the milestone's still, until it is closed.
+  // The 10th Cooking: the milestone's still, its pebble resting with its
+  // "10×", nothing moving, until it is closed.
   await page.getByRole('region', { name: 'Gekocht' }).getByRole('button', { name: 'Gekocht ✓: „Ramen“' }).click()
   const milestone = page.getByRole('dialog', { name: 'Klassiker!' })
-  await expect(clipStill(milestone, 'milestone-10x')).toBeVisible()
+  await expect(loopStill(milestone, '/clips/milestone-10x')).toBeVisible()
+  await expect(milestone.getByTestId('celebration-label')).toBeVisible()
+  expect(await moving(milestone.locator('.clip'))).toEqual([])
   await page.waitForTimeout(4000)
   await expect(milestone).toBeVisible()
   await milestone.getByRole('button', { name: 'Schließen' }).click()
@@ -160,8 +163,9 @@ test('the achievement badge shows its count at once; both celebrations show thei
   await sheet.getByLabel('Name').fill('Leise')
   await sheet.getByRole('button', { name: 'Board erstellen' }).click()
   const created = page.getByRole('dialog', { name: '🍜 Leise ist bereit' })
-  await expect(clipStill(created, 'board-created')).toBeVisible()
-  await expect(created.getByTestId('board-created-emoji')).toBeVisible()
+  await expect(loopStill(created, '/clips/board-created')).toBeVisible()
+  await expect(created.getByTestId('celebration-label')).toBeVisible()
+  expect(await moving(created.locator('.clip'))).toEqual([])
   await created.getByRole('button', { name: 'Los geht’s' }).click()
   await expect(created).toBeHidden()
 

@@ -1,14 +1,17 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import { backgroundsBehind, playing } from './clips'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { resetBoard, seedCookings, seedDish } from './seed'
 
 // Celebrating repeat cooking (issue #25): the achievement badge in the Dish
 // detail, levelled by its Cookings, and the full-screen celebration of a
 // Dish's 10th Cooking (milestone-10x); and celebrating a new Board
-// (board-created). All Columns side by side (desktop).
+// (board-created). All Columns side by side (desktop). Both celebrations are
+// drawn in code (#215): played once, then resting on their last frame, with
+// nothing behind them but the wash.
 // Hertha's Board is used by this file only.
 test.describe.configure({ mode: 'serial' })
 test.use({ viewport: { width: 1280, height: 800 } })
@@ -77,6 +80,23 @@ function milestone(page: Page) {
   return page.getByRole('dialog', { name: 'Klassiker!' })
 }
 
+// A celebration's clip plays its drawing once, not a video, with nothing
+// behind it but the celebration's wash; then it rests on its last frame.
+async function expectPlayedOnce(celebration: Locator, clip: string) {
+  const drawn = celebration.locator(`[data-svg-loop][data-clip="/clips/${clip}"]`)
+  await expect(drawn).toBeVisible()
+  await expect(celebration.locator('video')).toHaveCount(0)
+  // Seen playing: polls are at most 1s apart, the clips 1.2s and 1.8s long.
+  await expect.poll(() => playing(celebration, `/clips/${clip}`)).toEqual([`/clips/${clip}-light.svg`])
+  expect(await backgroundsBehind(drawn, 'dialog')).toEqual([])
+  // Played through, it stays up, resting.
+  await expect.poll(() => drawn.evaluate((el) => {
+    const animations = el.getAnimations({ subtree: true })
+    return animations.length > 0 && animations.every(a => a.playState === 'finished')
+  })).toBe(true)
+  await expect(drawn.locator('[data-loop-svg]')).toBeVisible()
+}
+
 test('the 10th Cooking celebrates once; its toast stays on top, and undo there ends it; cooking again doesn’t replay it', async ({ page }) => {
   await signIn(page, HERTHA)
   await seedDish(page, { title: 'Chili sin Carne', sourceLink: TIKTOK, sourceKind: 'tiktok' })
@@ -87,7 +107,8 @@ test('the 10th Cooking celebrates once; its toast stays on top, and undo there e
 
   await expect(milestone(page)).toBeVisible()
   await expect(milestone(page)).toContainText('Chili sin Carne ist jetzt ein Klassiker: 10× gekocht.')
-  await expect(milestone(page).locator('[data-clip="/clips/milestone-10x"]')).toBeVisible()
+  await expectPlayedOnce(milestone(page), 'milestone-10x')
+  await expect(milestone(page).getByTestId('celebration-label')).toHaveText('10×')
   // The Gekocht toast shows over it, with its undo.
   await milestone(page).getByRole('status').getByRole('button', { name: 'Rückgängig' }).click()
 
@@ -181,8 +202,8 @@ test('a new Board celebrates with its emoji; "Los geht’s" goes to it', async (
 
   const celebration = page.getByRole('dialog', { name: '🥟 Kochclub ist bereit' })
   await expect(celebration).toBeVisible()
-  await expect(celebration.locator('[data-clip="/clips/board-created"]')).toBeVisible()
-  await expect(celebration.getByTestId('board-created-emoji')).toHaveText('🥟')
+  await expect(celebration.getByTestId('celebration-label')).toHaveText('🥟')
+  await expectPlayedOnce(celebration, 'board-created')
   // Its Columns build in.
   await expect(celebration.locator('[data-board-created-column]')).toHaveText(['Ideen', 'Diese Woche', 'Gekocht'])
   await celebration.getByRole('button', { name: 'Los geht’s' }).click()

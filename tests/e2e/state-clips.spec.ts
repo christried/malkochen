@@ -1,8 +1,8 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { clipStill, countPeakPlaying, emptyColumnStill, loopStill, neverCookedClip, playing } from './clips'
+import { backgroundsBehind, clipStill, countPeakPlaying, emptyColumnStill, loopStill, neverCookedClip, playing } from './clips'
 import { gotoHydrated } from './hydration'
 import { landingBoardId, removeStoredImages, resetBoard, seedDish, setColumns, storedImage } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
@@ -23,23 +23,6 @@ const EMMY = ALLOWLISTED[19]
 const EMPTY_COLUMN_LIGHT = new RegExp(`^/clips/(${EMPTY_COLUMN_ILLUSTRATIONS.join('|')})-\\w+-light\\.svg$`)
 
 test.afterAll(removeStoredImages)
-
-// The backgrounds a drawn clip paints itself: those of the boxes it is sized
-// in, up to its empty state, and of everything it draws in (its still, the
-// drawing's host and the drawing itself; what the drawing draws inside is
-// tests/client/empty-state-clips.test.ts's).
-function backgroundsBehind(clip: Locator) {
-  return clip.evaluate((el) => {
-    const boxes: Element[] = [...el.querySelectorAll(':scope div, :scope img, :scope > div > svg')]
-    for (let box: Element | null = el; box && !box.matches('[data-empty]'); box = box.parentElement) boxes.push(box)
-    return boxes.flatMap((box) => {
-      const { backgroundColor, backgroundImage } = getComputedStyle(box)
-      return backgroundColor !== 'rgba(0, 0, 0, 0)' || backgroundImage !== 'none'
-        ? [`${box.tagName} ${box.getAttribute('class') ?? ''}: ${backgroundColor} ${backgroundImage}`]
-        : []
-    })
-  })
-}
 
 test('an empty Board loops its clip in the current theme, and only that one', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })

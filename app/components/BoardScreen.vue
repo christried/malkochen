@@ -898,6 +898,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :headline="t.milestone.headline"
       :body="t.milestone.body(milestone?.dish.title ?? '', MILESTONE_COOKINGS)"
       :close-label="t.milestone.close"
+      :label="`${MILESTONE_COOKINGS}×`"
       close-after="milestone-stay"
     >
       <template #toast>

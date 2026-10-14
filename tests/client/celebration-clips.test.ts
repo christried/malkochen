@@ -61,7 +61,7 @@ test.each(THEMES)('a new Board, %s: ten pebbles of confetti and the Board\'s peb
   expect(names).toEqual([...Array.from({ length: 10 }, (_, i) => `confetti_${i + 1}`), 'pebble'])
   expect(layer(svg, 'pebble')).toContain(`fill="${SURFACE[theme]}"`)
   // The confetti in the Column accents, round and round, the same in both themes.
-  const colours = names.slice(0, 10).map(name => layer(svg, name).match(/fill="(#[0-9A-F]{6})"/i)?.[1])
+  const colours = names.slice(0, 10).map(name => layer(svg, name!).match(/fill="(#[0-9A-F]{6})"/i)?.[1])
   expect(colours).toEqual(Array.from({ length: 10 }, (_, i) => ACCENTS[i % 5]))
 })
 
