@@ -15,7 +15,10 @@ import { landingIndex, recordsCooking } from '~~/shared/placement'
 // Near the edges the page (and the lanes) scroll along.
 //
 // Letting go settles the card into its slot, or swallows it into the tab,
-// and only then is it moved, through `drop`.
+// and only then is it moved, through `drop`. A finger that long-presses a
+// card and lets go without moving it selects the card instead (`press`,
+// #218): the card settles back. While `paused` (Dishes are selected),
+// nothing is picked up.
 
 // Where the dragged card would land: `index` among the Column's other Dishes.
 export interface DropPlace {
@@ -74,6 +77,9 @@ export function useDishDrag(
     drop: (dishId: string, place: DropPlace, at: Point) => void
     // A card went into a Column tab (phones), for the tab to react.
     landed: (columnId: string) => void
+    // A long-press let go where it started.
+    press?: (dishId: string) => void
+    paused?: () => boolean
   },
 ) {
   const drag = ref<DishDrag | null>(null)
@@ -93,10 +99,12 @@ export function useDishDrag(
   let samples: { x: number, t: number }[] = []
   // Whether the lifted card has moved yet: until then it keeps the lift's tilt.
   let moved = false
+  // Where a finger's long-press lifted the card (null for a mouse).
+  let pressedAt: { x: number, y: number } | null = null
   let frame = 0
 
   function onDown(event: PointerEvent) {
-    if (drag.value || pending || !event.isPrimary || event.button !== 0) return
+    if (drag.value || pending || !event.isPrimary || event.button !== 0 || options.paused?.()) return
     const target = event.target as Element | null
     if (!target || target.closest('button')) return
     const card = target.closest<HTMLElement>('[data-dish-id]')
@@ -184,6 +192,7 @@ export function useDishDrag(
     }
     samples = []
     moved = false
+    pressedAt = mouse ? null : { x: pointer.x, y: pointer.y }
     swallowClick = true
     if (!mouse) hapticLongPress()
     frame = requestAnimationFrame(tick)
@@ -316,6 +325,10 @@ export function useDishDrag(
     const current = drag.value
     if (!current) return
     stopFollowing()
+    if (pressedAt && Math.hypot(pointer.x - pressedAt.x, pointer.y - pressedAt.y) < LONG_PRESS_SLOP) {
+      putBack()
+      return options.press?.(current.dish.id)
+    }
     if (current.nearTabs && current.tabColumnId) {
       if (current.tabColumnId === current.fromColumnId) {
         current.over = { columnId: current.fromColumnId, index: 0 }
