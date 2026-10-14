@@ -36,7 +36,7 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
   await expect(page.locator(`img[src="${PHOTO}"]`).filter({ visible: true })).toHaveCount(2)
   // Its last rows: the legal pages, on christried.me.
   await expect(menu.getByRole('menuitem')).toHaveText(['Einstellungen', 'Abmelden', 'Impressum', 'Datenschutz'])
-  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/impressum')
+  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/imprint.html')
   await expect(menu.getByRole('menuitem', { name: 'Datenschutz' })).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
 
   await menu.getByRole('menuitem', { name: 'Einstellungen' }).click()
@@ -201,7 +201,7 @@ test('a legal page chosen from the user menu opens in a new tab; the menu closes
   await menu.getByRole('menuitem', { name: 'Impressum' }).focus()
   const opened = context.waitForEvent('page')
   await page.keyboard.press('Enter')
-  expect((await opened).url()).toBe('https://christried.me/impressum')
+  expect((await opened).url()).toBe('https://christried.me/imprint.html')
   await expect(menu).toHaveCount(0)
   await expect(avatar).toBeFocused()
 })
@@ -218,7 +218,7 @@ test('on a phone your settings and the legal pages are the last rows of the Boar
   const panel = page.getByRole('navigation', { name: 'Deine Boards' })
   const lastRows = panel.locator('a, button').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })
   await expect(lastRows).toHaveText(['Deine Einstellungen', 'Impressum', 'Datenschutz'])
-  await expect(lastRows.nth(1)).toHaveAttribute('href', 'https://christried.me/impressum')
+  await expect(lastRows.nth(1)).toHaveAttribute('href', 'https://christried.me/imprint.html')
   await expect(lastRows.nth(2)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
   const legalRow = panel.getByRole('listitem').last()
   await expect(legalRow.getByRole('link')).toHaveText(['Impressum', 'Datenschutz'])
