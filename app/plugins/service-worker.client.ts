@@ -8,4 +8,13 @@ export default defineNuxtPlugin(() => {
   })
   if (document.readyState === 'complete') register()
   else window.addEventListener('load', register, { once: true })
+
+  // A tapped push notification (#219) opens its Dish or Board here when the
+  // app is open already; the service worker only says which.
+  navigator.serviceWorker.addEventListener('message', (event: MessageEvent<{ type?: string, url?: unknown }>) => {
+    const { type, url } = event.data ?? {}
+    if (type === 'open' && typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) void navigateTo(url)
+  })
+  // Not only once the page has loaded: a tap can come before.
+  navigator.serviceWorker.startMessages()
 })

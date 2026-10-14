@@ -1,4 +1,5 @@
-// malkochen's service worker: only the fallback page (PRD story 8). A page
+// malkochen's service worker: the fallback page (PRD story 8), and push
+// notifications (#219, at the end). A page
 // that can't be loaded gets offline.html instead of the browser's own error,
 // and that page tells apart the two reasons: the device has no connection
 // ("Du bist offline"), or it has one but malkochen doesn't answer ("nicht
@@ -60,4 +61,47 @@ self.addEventListener('fetch', (event) => {
   if (PRECACHED.includes(pathname)) {
     event.respondWith(fetch(request).catch(() => fallback(pathname)))
   }
+})
+
+// Push notifications (#219): the server pushes one message per Board
+// (server/push/index.ts), shown as the Board's one notification: a newer one
+// replaces it (same tag) and alerts again.
+self.addEventListener('push', (event) => {
+  let message = null
+  try {
+    message = event.data?.json()
+  }
+  catch {
+    // Not one of the app's pushes.
+  }
+  if (typeof message?.title !== 'string') return
+  event.waitUntil(self.registration.showNotification(message.title, {
+    body: message.body,
+    tag: message.tag,
+    renotify: true,
+    icon: '/icons/icon-192.png',
+    lang: 'de',
+    data: { url: message.url },
+  }))
+})
+
+// Its address in the app, as a path: one elsewhere opens the app's start.
+function appPath(url) {
+  if (typeof url !== 'string') return '/'
+  const target = new URL(url, self.location.origin)
+  return target.origin === self.location.origin ? target.pathname + target.search : '/'
+}
+
+// A tap opens the Dish or Board it is about: in the app window that is open
+// (focused, and told where to go, so it doesn't load again), or a new one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const path = appPath(event.notification.data?.url)
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const open = windows.find(client => new URL(client.url).origin === self.location.origin)
+    if (!open) return self.clients.openWindow(path)
+    await open.focus()
+    open.postMessage({ type: 'open', url: path })
+  })())
 })
