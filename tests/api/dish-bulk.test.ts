@@ -217,6 +217,26 @@ test('putting Dishes back is all or nothing, and only onto the user’s Boards',
   expect((await columnIds(outsider, elsewhere.id)).flat()).not.toContain(a.id)
 })
 
+test('putting back can take a Cooked Dish into its Gekocht Column, but never makes a Dish Cooked', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const home = await createBoard(rosalind, 'Erntedank')
+  const gekocht = home.columns.find(c => c.isGekocht)!
+  const cooked = await addDish(rosalind, 'Apfelstrudel', {}, home.id)
+  await moveDish(rosalind, cooked.id, gekocht.id)
+  const raw = await addDish(rosalind, 'Rohkost', {}, home.id)
+  expect((await bulk(rosalind, { action: 'move', dishIds: [cooked.id], columnId: home.columns[1]!.id })).status).toBe(200)
+
+  expect((await bulk(rosalind, { action: 'place', places: [
+    { dishId: cooked.id, columnId: gekocht.id, index: 0 },
+    { dishId: raw.id, columnId: gekocht.id, index: 1 },
+  ] })).status).toBe(400)
+  expect((await columnIds(rosalind, home.id))[2]).toEqual([])
+
+  expect((await bulk(rosalind, { action: 'place', places: [{ dishId: cooked.id, columnId: gekocht.id, index: 0 }] })).status).toBe(200)
+  const after = await board(rosalind, home.id)
+  expect(after.columns[2]!.dishes.map(d => [d.id, d.cookings.length])).toEqual([[cooked.id, 1]])
+})
+
 test('deleted together, Dishes come back together, where they were and as they were', async () => {
   const rosalind = await signIn(ROSALIND)
   const { id: boardId } = await landingBoard(rosalind)

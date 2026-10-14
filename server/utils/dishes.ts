@@ -418,17 +418,22 @@ export function areDishesOfMember(ids: string[], userId: string): Promise<boolea
 // The Dishes placed (PlacedDish), in the order of `ids`; null if one of
 // them is deleted.
 async function placedDishes(ids: string[]): Promise<PlacedDish[] | null> {
-  const views = await toViews(await selectDishes().where(and(inArray(dish.id, ids), isNull(dish.deletedAt))))
-  const locations = await db.select({ id: dish.id, boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(and(inArray(dish.id, ids), isNull(dish.deletedAt)))
-  const columnIds = [...new Set(locations.map(l => l.columnId))]
-  const orders = await db.select({ id: dish.id, columnId: dish.columnId }).from(dish).where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)
+  const live = and(inArray(dish.id, ids), isNull(dish.deletedAt))
+  const views = new Map((await toViews(await selectDishes().where(live))).map(v => [v.id, v]))
+  const locations = new Map((await db.select({ id: dish.id, boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(live)).map(l => [l.id, l]))
+  // Every Dish of their Columns, in Board order, for each one's index.
+  const columnIds = [...new Set([...locations.values()].map(l => l.columnId))]
+  const orders = new Map<string, string[]>()
+  for (const { id, columnId } of await db.select({ id: dish.id, columnId: dish.columnId }).from(dish).where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)) {
+    orders.set(columnId, [...orders.get(columnId) ?? [], id])
+  }
   const placed: PlacedDish[] = []
   for (const id of ids) {
-    const view = views.find(v => v.id === id)
-    const location = locations.find(l => l.id === id)
+    const view = views.get(id)
+    const location = locations.get(id)
     if (!view || !location) return null
-    const index = orders.filter(o => o.columnId === location.columnId).findIndex(o => o.id === id)
-    placed.push({ ...view, placement: { boardId: location.boardId, columnId: location.columnId, index } })
+    const { boardId, columnId } = location
+    placed.push({ ...view, placement: { boardId, columnId, index: orders.get(columnId)!.indexOf(id) } })
   }
   return placed
 }
@@ -472,15 +477,17 @@ export interface DishPlace {
 // "Rückgängig" after moving several Dishes: each goes back to its place,
 // on its own Board, in one step. Placed Column by Column from the top, so
 // each lands at the index it had, with the others back above it. Moving
-// back records no Cooking, also into a Gekocht Column, as it undoes a move.
-// Answers them placed, in the order of `places`; null, moving none, unless
-// every Dish is on a Board the user is a Member of and not deleted, and
-// every Column is on one too.
+// back records no Cooking, as it undoes a move, so only a Cooked Dish may
+// go back into a Gekocht Column. Answers them placed, in the order of
+// `places`; null, moving none, unless every Dish is on a Board the user is
+// a Member of and not deleted, every Column is on one too, and no Dish that
+// isn't Cooked would go into a Gekocht Column.
 export async function placeDishes(places: DishPlace[], userId: string): Promise<PlacedDish[] | null> {
   const ids = places.map(p => p.dishId)
   const allowed = and(
     allOnMembersBoards(ids, userId),
     allColumnsOfMember([...new Set(places.map(p => p.columnId))], userId),
+    ...places.map(p => cookedIfGekocht(p.dishId, p.columnId)),
   )
   if (!await holds(allowed, userId)) return null
   const ordered = [...places].sort((a, b) => a.columnId.localeCompare(b.columnId) || a.index - b.index)
@@ -491,6 +498,17 @@ export async function placeDishes(places: DishPlace[], userId: string): Promise<
     ...ordered.map(p => renumberForDrop(d, p.dishId, p.columnId, p.index, and(eq(dish.id, p.dishId), allowed))),
   ])
   return placedDishes(ids)
+}
+
+// Whether the Dish may go back into the Column without a Cooking: any
+// Column but a Gekocht one, and a Gekocht one only for a Dish that is
+// Cooked (CONTEXT.md), as one that came out of it is. So putting Dishes
+// back can't mark one as Cooked.
+function cookedIfGekocht(dishId: string, columnId: string) {
+  return or(
+    notExists(db.select({ id: boardColumn.id }).from(boardColumn).where(and(eq(boardColumn.id, columnId), eq(boardColumn.isGekocht, true)))),
+    exists(db.select({ id: cooking.id }).from(cooking).where(eq(cooking.dishId, dishId))),
+  )
 }
 
 // Whether `condition` holds now, asked for the user.

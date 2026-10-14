@@ -99,7 +99,8 @@ export function useDishDrag(
   let samples: { x: number, t: number }[] = []
   // Whether the lifted card has moved yet: until then it keeps the lift's tilt.
   let moved = false
-  // Where a finger's long-press lifted the card (null for a mouse).
+  // Where a finger's long-press lifted the card, until the finger moves away
+  // from there (null for a mouse): letting go before that selects the card.
   let pressedAt: { x: number, y: number } | null = null
   let frame = 0
 
@@ -128,6 +129,8 @@ export function useDishDrag(
     if (!current || current.phase !== 'lifted') return
     samples.push({ x: event.clientX, t: event.timeStamp })
     moved = true
+    // Dragged away, it is a drag, even if it comes back to where it started.
+    if (pressedAt && Math.hypot(pointer.x - pressedAt.x, pointer.y - pressedAt.y) >= LONG_PRESS_SLOP) pressedAt = null
     follow(current)
   }
 
@@ -325,7 +328,7 @@ export function useDishDrag(
     const current = drag.value
     if (!current) return
     stopFollowing()
-    if (pressedAt && Math.hypot(pointer.x - pressedAt.x, pointer.y - pressedAt.y) < LONG_PRESS_SLOP) {
+    if (pressedAt) {
       putBack()
       return options.press?.(current.dish.id)
     }

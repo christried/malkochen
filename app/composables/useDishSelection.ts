@@ -34,9 +34,9 @@ export function useDishSelection(board: Ref<BoardView | undefined>) {
     selectedIds.value = []
   }
 
-  watch(() => board.value?.columns.flatMap(c => c.dishes.map(d => d.id)).join(), () => {
-    const onBoard = new Set(board.value?.columns.flatMap(c => c.dishes.map(d => d.id)))
-    const kept = selectedIds.value.filter(id => onBoard.has(id))
+  const onBoard = computed(() => new Set(board.value?.columns.flatMap(c => c.dishes.map(d => d.id))))
+  watch(onBoard, (ids) => {
+    const kept = selectedIds.value.filter(id => ids.has(id))
     if (kept.length !== selectedIds.value.length) selectedIds.value = kept
   })
 

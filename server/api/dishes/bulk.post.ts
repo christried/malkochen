@@ -7,7 +7,8 @@ import { areDishesOfMember, deleteDishes, moveDishes, placeDishes, restoreDishes
 //   Boards, in the order sent; never a Gekocht Column (400), as cooking
 //   stays one Dish at a time.
 // - `place`: "Rückgängig" after a move: each back to its Column (any of the
-//   user's, a Gekocht one too) at its index.
+//   user's) at its index; a Gekocht Column only for a Dish that is Cooked
+//   (400), as putting back records no Cooking.
 // - `delete`: soft, as one Dish's delete (204); `restore` undoes it.
 // Answers the Dishes placed (PlacedDish), in the order sent. One Dish that
 // is missing, deleted or on a Board the user isn't a Member of refuses all

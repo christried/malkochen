@@ -26,7 +26,7 @@ function dishCount(count: number): string {
 }
 
 // "ließ" for one Dish, "ließen" for several.
-function letThem(count: number): string {
+function lassenPast(count: number): string {
   return count === 1 ? 'ließ' : 'ließen'
 }
 
@@ -196,9 +196,9 @@ export const de = {
     moved: (count: number, column: string) => `${dishCount(count)} nach „${column}“ verschoben`,
     movedToBoard: (count: number, board: string, column: string) => `${dishCount(count)} ${count === 1 ? 'ist' : 'sind'} jetzt in ${board} · ${column}`,
     deleted: (count: number) => `${dishCount(count)} gelöscht`,
-    moveFailed: (count: number) => `${dishCount(count)} ${letThem(count)} sich nicht verschieben. Versuch es gleich noch mal.`,
-    deleteFailed: (count: number) => `${dishCount(count)} ${letThem(count)} sich nicht löschen. Versuch es gleich noch mal.`,
-    backFailed: (count: number) => `${dishCount(count)} ${letThem(count)} sich nicht zurückholen.`,
+    moveFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht verschieben. Versuch es gleich noch mal.`,
+    deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht löschen. Versuch es gleich noch mal.`,
+    backFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht zurückholen.`,
   },
   cooking: {
     noteHeading: 'Notiz zum Kochen',
