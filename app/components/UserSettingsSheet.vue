@@ -23,6 +23,18 @@ watch(username.typed, () => (usernameSaved.value = false))
 async function saveUsername() {
   usernameSaved.value = await username.save()
 }
+// Push notifications (#219), for this device: checked again whenever the
+// sheet opens, since the browser's permission may have changed meanwhile.
+const push = usePushNotifications()
+const pushLabelId = useId()
+const pushHintId = useId()
+const pushMessage = computed(() => {
+  if (push.failed.value) return t.push.failed
+  if (push.state.value === 'blocked') return t.push.blocked
+  if (push.state.value === 'unsupported') return t.push.unsupported
+  return null
+})
+
 // Opened again, it starts from the Username you have, not from what was
 // typed and left unsaved.
 watch(open, (isOpen) => {
@@ -30,6 +42,9 @@ watch(open, (isOpen) => {
   username.typed.value = me.value?.name ?? ''
   usernameSaved.value = false
 })
+watch(open, (isOpen) => {
+  if (isOpen) void push.refresh()
+}, { immediate: true })
 
 // Your own Profile Picture: a picked photo is uploaded (checked, cut square
 // and cleaned by the server) and shown round in a preview; only "Übernehmen"
@@ -220,6 +235,56 @@ function removePicture() {
       </section>
 
       <section
+        v-if="push.offered"
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-push"
+      >
+        <h3
+          id="settings-push"
+          class="section-heading px-1"
+        >
+          {{ t.push.heading }}
+        </h3>
+        <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
+          <label class="flex cursor-pointer items-center justify-between gap-4 has-[button:disabled]:cursor-default">
+            <span class="flex min-w-0 flex-col gap-1">
+              <span
+                :id="pushLabelId"
+                class="text-body"
+              >{{ t.push.toggle }}</span>
+              <span
+                :id="pushHintId"
+                class="text-small text-text-muted"
+              >{{ t.push.hint }}</span>
+            </span>
+            <button
+              type="button"
+              role="switch"
+              class="relative h-7 w-12 shrink-0 rounded-pill transition-colors duration-fade ease-fade focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60"
+              :class="push.state.value === 'on' ? 'bg-inverse' : 'bg-line'"
+              :aria-checked="push.state.value === 'on'"
+              :aria-labelledby="pushLabelId"
+              :aria-describedby="pushHintId"
+              :aria-busy="push.busy.value || push.state.value === null"
+              :disabled="push.busy.value || push.state.value === null || push.state.value === 'blocked' || push.state.value === 'unsupported'"
+              @click="push.turn(push.state.value !== 'on')"
+            >
+              <span
+                aria-hidden="true"
+                class="knob absolute top-1 left-1 size-5 rounded-full bg-surface shadow-sm"
+                :class="{ on: push.state.value === 'on' }"
+              />
+            </button>
+          </label>
+          <p
+            :role="push.failed.value ? 'alert' : 'status'"
+            class="text-small empty:hidden"
+            :class="push.failed.value ? 'text-danger' : 'text-text-muted'"
+          >{{ pushMessage ?? '' }}</p>
+        </div>
+      </section>
+
+      <section
         class="flex flex-col gap-3"
         aria-labelledby="settings-theme"
       >
@@ -320,3 +385,19 @@ function removePicture() {
     </div>
   </AppSheet>
 </template>
+
+<style scoped>
+/* The switch's knob slides over when it is turned on. Reduced motion: it
+   moves at once. */
+.knob {
+  transition: translate 240ms var(--ease-pop);
+}
+.knob.on {
+  translate: 1.25rem 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .knob {
+    transition: none;
+  }
+}
+</style>
