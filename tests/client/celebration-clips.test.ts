@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { backgrounds, drawing, keyframes, layer, layerTag, loops, THEMES } from './drawing'
 
@@ -98,4 +99,20 @@ test.each(THEMES)('a new Board, %s: the still is the last frame, the pebble rest
   const svg = drawing('board-created', theme)
   for (let i = 1; i <= 10; i++) expect(layerTag(svg, `confetti_${i}`)).toContain('opacity="0"')
   expect(layerTag(svg, 'pebble')).not.toContain('opacity=')
+})
+
+test('the celebrations\' old videos and posters are gone; the clips still on video stay', () => {
+  const files = readdirSync('public/clips')
+  expect(files.filter(name => /^(milestone-10x|board-created)-/.test(name)).sort()).toEqual([
+    'board-created-dark.svg',
+    'board-created-light.svg',
+    'milestone-10x-dark.svg',
+    'milestone-10x-light.svg',
+  ])
+  for (const clip of ['lookup-stir', 'lookup-failed', 'invite-intro', 'invite-loop', 'offline', 'error', 'not-unlocked']) {
+    for (const theme of THEMES) {
+      expect(files).toEqual(expect.arrayContaining([`${clip}-${theme}.webm`, `${clip}-${theme}.mp4`, `${clip}-${theme}.png`]))
+    }
+  }
+  expect(files).toEqual(expect.arrayContaining(['splash-light.webm', 'splash-dark.mp4', 'splash-poster.webp', 'splash-still.webp']))
 })

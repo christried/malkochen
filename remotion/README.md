@@ -43,8 +43,9 @@ orientation for both themes: `splash[-landscape]-{poster,still}.webp`.
 Commit the rendered files; the app serves them as they are.
 
 Not rendered any more (#111): the Placeholder Images, `empty-column` and
-`topfbert-wow`, and since #180 `empty-board` and `search-empty`, whose baked-in
-background showed as a box on the coloured lanes and page. The app draws those
+`topfbert-wow`, since #180 `empty-board` and `search-empty`, and since #215 the
+celebrations `milestone-10x` and `board-created`, whose baked-in background
+showed as a box on the coloured lanes, page and wash. The app draws those
 loops in code from their SVGs
 (`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
 refresh rate and sharp at any size. Their compositions stay in Studio, but
@@ -101,9 +102,36 @@ draws them in code the same way.
   video's frame, masked in Vue, rather than drawn.
 - Text is real text in the app's fonts (`@remotion/google-fonts`): the
   "Gleich!" sign, the z's, "10×" and the wordmark.
-- Not here: the Board's emoji (board-created, invite pebble) and the Member
-  avatars are Vue overlays; `gekocht-topfbert` and the particle effects are
+- Not here: the Board's emoji (board-created, invite pebble), the "10×" on
+  milestone-10x's pebble and the Member avatars are Vue overlays; `gekocht-topfbert` and the particle effects are
   built in Vue.
+
+## Turning a clip into a drawing the app plays
+
+How the celebrations were moved off video (#215), for the clips still
+rendered here:
+
+1. **Draw the scene as a layered SVG**, one per theme:
+   `public/clips/<clip>-<theme>.svg`, no background (the app's page, lane or
+   wash shows through). Each moving part of `poses()` is a `<g
+   data-layer="…">` with `data-loop="<keyframes> <length>s linear infinite"`
+   (the clip's whole length) and `data-pivot="x y"` in viewBox units.
+   Transforms a part has at rest go on a parent `<g>`: the animation takes
+   over the part's own `transform`.
+2. **Write the keyframes** in `app/assets/css/loops.css`, from the timeline:
+   each key at `frame / length` percent, its `ease` as that keyframe's
+   `animation-timing-function` (Remotion's `ease-out` is
+   `cubic-bezier(0,0,.58,1)`, `ease-in-out` `cubic-bezier(.42,0,.58,1)`).
+3. **Pick what the drawing stands at**, which is its still: a loop stands at
+   frame 0 (the keyframes' 0%); a one-shot that comes to rest elsewhere
+   stands at its last frame (100%), and plays with `:loop="false"
+   rest="last"` (`CelebrationDialog.vue`).
+4. **Text and emoji stay Vue**, in SvgLoop's `over` slot: a still is the SVG
+   as an image, which can't load the app's fonts. To move with a part, the
+   label takes that part's `data-loop` and `loopStyle()`.
+5. **Test the drawing** in `tests/client/` (`drawing.ts` reads layers, loops
+   and keyframes), add the clip to `DRAWN_IN_APP` in `scripts/render.ts`, and
+   delete its videos and posters.
 
 ## License
 
