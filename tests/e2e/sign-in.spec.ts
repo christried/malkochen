@@ -70,7 +70,7 @@ for (const { label, device, chosen, dark } of THEMES) {
 test('a refused sign-in shows the friendly "Not unlocked" screen', async ({ page }) => {
   await gotoHydrated(page, '/login?error=not_allowed&error_description=Not%20on%20the%20Allowlist')
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gleich geht’s los!')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bald geht’s los!')
   // Whom to ask is named.
   await expect(page.getByText('Du bist noch nicht für malkochen freigeschaltet. Sag Chris Bescheid, dann kannst du loslegen.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mit einem anderen Konto anmelden' })).toBeVisible()

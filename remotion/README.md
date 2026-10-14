@@ -89,7 +89,7 @@ draws them in code the same way.
   background is the blob's own tint (invite), the blob is the
   video's frame, masked in Vue, rather than drawn.
 - Text is real text in the app's fonts (`@remotion/google-fonts`): the
-  "Gleich!" sign, the z's, "10×" and the wordmark.
+  "Bald!" sign, the z's, "10×" and the wordmark.
 - Not here: the Board's emoji (board-created, invite pebble), the "10×" on
   milestone-10x's pebble and the Member avatars are Vue overlays; `gekocht-topfbert` and the particle effects are
   built in Vue.

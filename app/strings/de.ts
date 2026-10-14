@@ -70,7 +70,7 @@ export const de = {
     failed: 'Die Anmeldung hat nicht geklappt. Versuch es gleich noch mal.',
   },
   notUnlocked: {
-    headline: 'Gleich geht’s los!',
+    headline: 'Bald geht’s los!',
     // Chris runs malkochen and keeps its Allowlist, so the name is written
     // out here (#205).
     body: 'Du bist noch nicht für malkochen freigeschaltet. Sag Chris Bescheid, dann kannst du loslegen.',
