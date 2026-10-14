@@ -317,9 +317,11 @@ async function save() {
           data-lookup="looking"
         >
           <div class="aspect-[59/50] w-44">
-            <MotionClip
+            <SvgLoop
               src="/clips/lookup-stir"
               play
+              :themed="false"
+              transparent
             />
           </div>
           <span class="text-body">{{ t.addDish.lookingUp }}</span>
@@ -332,9 +334,11 @@ async function save() {
           data-lookup="failed"
         >
           <div class="aspect-[276/256] w-[72px] shrink-0">
-            <MotionClip
+            <SvgLoop
               src="/clips/lookup-failed"
               play
+              :themed="false"
+              transparent
             />
           </div>
           <span class="text-small">{{ lookupTooMany ? t.addDish.lookupTooMany : t.addDish.lookupFailed }}</span>
@@ -579,7 +583,7 @@ async function save() {
 
 <style scoped>
 /* remotion-briefs.json lookup-stir: butter 22% into surface-muted, the
-   clip's own background, so it sits in the panel without an edge. */
+   panel Topfbert stirs on (his drawing has no background of its own). */
 .lookup-panel {
   background: color-mix(in oklch, var(--color-butter) 22%, var(--color-surface-muted));
 }

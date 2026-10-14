@@ -14,7 +14,7 @@ import { loopStyle } from '~/utils/svg-loop'
 // `src` is the drawing without the theme: '/placeholders/pasta' plays
 // /placeholders/pasta-dark.svg in dark; one drawn the same in both themes
 // (`themed: false`, as Topfbert) is `src` + '.svg'. The still is the default
-// slot, or else that same file as an image.
+// slot, or else that same file as an image (both themes', one shown).
 //
 // A one-shot that comes to rest somewhere else than it starts (a
 // celebration's pop: `rest="last"`, `:loop="false"`) is drawn standing at
@@ -204,12 +204,21 @@ async function animatedSvg(file: string): Promise<SVGSVGElement | null> {
     >
       <slot>
         <img
+          v-if="!themed"
+          :src="`${src}.svg`"
+          alt=""
+          class="h-full w-full object-cover"
+          loading="lazy"
+        >
+        <img
+          v-else
           :src="`${src}-light.svg`"
           alt=""
           class="only-light h-full w-full object-cover"
           loading="lazy"
         >
         <img
+          v-if="themed"
           :src="`${src}-dark.svg`"
           alt=""
           class="only-dark h-full w-full object-cover"

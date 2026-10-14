@@ -39,7 +39,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
   const sheet = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
   await sheet.getByLabel('Link').fill(TIKTOK)
-  await expect(clipStill(sheet, 'lookup-stir')).toBeVisible()
+  await expect(loopStill(sheet, '/clips/lookup-stir', null)).toBeVisible()
   // The link field's dots stand still; its sage border and check simply appear.
   const field = linkField(sheet)
   await expect.poll(() => dotsMoving(field)).toBe(false)
@@ -92,7 +92,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await stubSourceLookup(page, 'fail')
   await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
   await sheet.getByLabel('Link').fill(`${TIKTOK}?kaputt`)
-  await expect(clipStill(sheet, 'lookup-failed')).toBeVisible()
+  await expect(loopStill(sheet, '/clips/lookup-failed', null)).toBeVisible()
 
   // Whatever would load a clip has had its chance.
   await page.waitForLoadState('networkidle')

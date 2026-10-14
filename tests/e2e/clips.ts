@@ -62,9 +62,10 @@ export function clipStill(scope: Page | Locator, id: string, theme: 'light' | 'd
 }
 
 // The still of a loop drawn in code, `src` its drawing without the theme
-// (e.g. '/clips/empty-column-knobi'), loaded.
-export function loopStill(scope: Page | Locator, src: string, theme: 'light' | 'dark' = 'light') {
-  return scope.locator(`img[src="${src}-${theme}.svg"]`)
+// (e.g. '/clips/empty-column-knobi'), loaded. `theme` null: a drawing the
+// same in both themes (`src` + '.svg').
+export function loopStill(scope: Page | Locator, src: string, theme: 'light' | 'dark' | null = 'light') {
+  return scope.locator(`img[src="${src}${theme ? `-${theme}` : ''}.svg"]`)
 }
 
 // The still of an empty Column in `scope` (e.g. one Column), whichever of the
