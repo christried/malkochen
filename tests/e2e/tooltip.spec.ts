@@ -227,9 +227,11 @@ test('a Tooltip near the screen’s edge stays on the screen', async ({ page }) 
 })
 
 // Every button and link that shows no text of its own, by what it is called.
+// A Profile Picture's button needs none: resting on it opens the user
+// popover, which says who it is (user-popover.spec.ts).
 function unexplained(page: Page) {
   return page.evaluate(() => [...document.querySelectorAll<HTMLElement>('button, a[href], [role="button"]')]
-    .filter(el => el.checkVisibility() && !el.closest('[inert]') && !el.innerText.trim() && !el.dataset.tooltip)
+    .filter(el => el.checkVisibility() && !el.closest('[inert]') && !el.innerText.trim() && !el.dataset.tooltip && !el.matches('[data-person-button]'))
     .map(el => el.getAttribute('aria-label') ?? el.outerHTML.slice(0, 120)))
 }
 
