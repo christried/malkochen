@@ -199,7 +199,7 @@ describe('Instagram', () => {
     ['a first line of only hashtags and emojis is skipped', '#vegan #foodie 🌱<br /><br />Linsen-Dal mit Spinat', 'Linsen-Dal mit Spinat'],
     ['linked hashtags count as hashtags', '<a href="/explore/tags/vegan/">#vegan</a> <a href="/explore/tags/dal/">#dal</a><br />Linsen-Dal', 'Linsen-Dal'],
     ['a shouted caption is put into normal case', 'CREMIGE PILZPASTA<br />so gut', 'Cremige Pilzpasta'],
-    ['entities are read as text', 'Mac &amp; Cheese &#x1f9c0; ohne K&#xe4;se', 'Mac & Cheese ohne Käse'],
+    ['entities are read as text', 'Mac &amp; Cheese ohne K&#xe4;se &#x1f9c0;', 'Mac & Cheese ohne Käse'],
     ['a line separator ends the line, like a line break', 'Cremige Pilzpasta\u2028Zutaten: 200 g Nudeln', 'Cremige Pilzpasta'],
     ['Instagram\'s blank padding character is space', '\u2800\u2800<br />Linsen-Dal\u2800\u2800 #vegan', 'Linsen-Dal'],
     ['a verified account\'s name is no title either', 'Linsen-Dal', 'Linsen-Dal', '<a class="CaptionUsername notranslate" href="/vegan_govegan/">vegan_govegan<span class="Verified"></span></a>'],
@@ -603,11 +603,22 @@ describe('Suggested Title shortening', () => {
   test.each([
     ['hashtags go', 'Crispy tofu bowl #vegan #tofu #fyp', 'Crispy tofu bowl'],
     ['hashtags with umlauts go', 'Schnelle Linsensuppe #veganrezepte #gesundessen #küche', 'Schnelle Linsensuppe'],
-    ['emojis go, including skin tones, flags and joined ones', '🔥Spicy 👩🏽‍🍳 noodles 🇯🇵✨', 'Spicy noodles'],
+    ['emojis go, including skin tones, flags and joined ones', '🔥👩🏽‍🍳 Spicy noodles 🇯🇵✨', 'Spicy noodles'],
     ['only the first line is kept', 'Creamy gochujang pasta\n\nIngredients:\n- 200g pasta', 'Creamy gochujang pasta'],
     ['a first line of only hashtags and emojis is skipped', '#recipe #easy 🍝\r\nOne-pot lemon orzo\nmore text', 'One-pot lemon orzo'],
     ['separators left dangling are trimmed', 'Dumplings from scratch — #dumplings', 'Dumplings from scratch'],
     ['nothing usable gives an empty title', '#fyp #foryou 😍🔥', ''],
+    ['it ends before the first emoji', 'Crispy tofu bowl 🔥 so good you will want it every day', 'Crispy tofu bowl'],
+    ['it ends before the first emoji, even one right after a word', 'Linsen-Dal😍 so cremig und so schnell gemacht', 'Linsen-Dal'],
+    ['a sign like ™ is no emoji to end at', 'Brownies mit Nutella™ und Haselnüssen', 'Brownies mit Nutella und Haselnüssen'],
+    ['it ends at the first sentence end', 'Cremige Linsensuppe. Perfekt für kalte Tage.', 'Cremige Linsensuppe'],
+    ['an exclamation or question mark stays', 'Die beste Lasagne der Welt! Mit Spinat und Ricotta', 'Die beste Lasagne der Welt!'],
+    ['a dot in a number or an abbreviation is no sentence end', 'Lasagne 2.0 für 4 Pers. mit ca. 500 g Spinat, z.B. 1 Msp. Muskat, 30 Min. lang', 'Lasagne 2.0 für 4 Pers. mit ca. 500 g Spinat, z.B. 1 Msp. Muskat, 30 Min. lang'],
+    ['a sentence ending in a short word ends there', 'Ich liebe es. Probier es aus', 'Ich liebe es'],
+    ['a sentence ending in a bracket or quote ends there', 'Pasta nach Omas Rezept (super einfach). Lecker', 'Pasta nach Omas Rezept (super einfach)'],
+    ['a bare number is no title', '5 🔥 Tipps für cremige Pasta', 'Tipps für cremige Pasta'],
+    ['an ellipsis is no sentence end', 'Warte kurz... diese Pasta ist es wert', 'Warte kurz... diese Pasta ist es wert'],
+    ['a sentence with nothing in it is skipped', '!!! Knusprige Ofenkartoffeln', 'Knusprige Ofenkartoffeln'],
   ])('%s', async (_, caption, expected) => {
     expect(await captioned(caption)).toBe(expected)
   })
@@ -621,17 +632,25 @@ describe('Suggested Title shortening', () => {
 
   test.each([
     ['all caps get each word capitalised', 'CREMIGE PILZPASTA', 'Cremige Pilzpasta'],
-    ['mostly caps count as caps, the words not in caps stay', 'CREMIGE PILZPASTA in 15 Minuten', 'Cremige Pilzpasta in 15 Minuten'],
-    ['a word not in caps stays in a title in caps', 'PASTA x3', 'Pasta x3'],
+    ['words not in caps stay', 'CREMIGE PILZPASTA in 15 Minuten', 'Cremige Pilzpasta in 15 Minuten'],
+    ['a word not in caps stays in a title in caps', 'VEGANE PASTA x3', 'Vegane Pasta x3'],
+    ['short words inside a caps run are lowered', 'LINSEN MIT REIS UND SPINAT', 'Linsen mit Reis und Spinat'],
+    ['a short word opening or closing the title stays capitalised', 'DIE BESTE PASTA MIT ÖL', 'Die Beste Pasta mit Öl'],
+    ['a number does not end a caps run', 'ZUTATEN FÜR 2 PORTIONEN', 'Zutaten für 2 Portionen'],
+    ['a few words in caps, two of them long', 'Pasta mit CREMIGER PILZSAUCE und Tofu', 'Pasta mit Cremiger Pilzsauce und Tofu'],
+    ['a lone short acronym outside a caps run stays', 'Pulled JACKFRUIT vom BBQ mit EXTRA Sauce', 'Pulled Jackfruit vom BBQ mit Extra Sauce'],
+    ['a short word without vowels inside a caps run is an acronym and stays', 'VEGANE PASTA MIT BBQ SAUCE', 'Vegane Pasta mit BBQ Sauce'],
+    ['an acronym opening a hyphenated word stays', 'BBQ-TOFU MIT REIS', 'BBQ-Tofu mit Reis'],
+    ['each part of a hyphenated word, short ones too', 'ONE-POT PASTA MIT TOFU', 'One-Pot Pasta mit Tofu'],
     ['caps among hashtags and emojis', '🍄 CREMIGE PILZPASTA 🍄 #vegan #pasta', 'Cremige Pilzpasta'],
-    ['umlauts are lowered and raised', 'ÜBERBACKENE ÄPFEL MIT ÖL', 'Überbackene Äpfel Mit Öl'],
-    ['SS stays SS, it is not guessed to be ß', 'SOSSE FÜR NUDELN', 'Sosse Für Nudeln'],
-    ['a capital ß becomes a small one', 'SOẞE FÜR NUDELN', 'Soße Für Nudeln'],
-    ['a small ß among capitals is kept', 'SOßE FÜR NUDELN', 'Soße Für Nudeln'],
-    ['each part of a hyphenated word', 'PILZ-PASTA MIT TOFU-WÜRFELN', 'Pilz-Pasta Mit Tofu-Würfeln'],
+    ['umlauts are lowered and raised', 'ÜBERBACKENE ÄPFEL MIT ÖL', 'Überbackene Äpfel mit Öl'],
+    ['SS stays SS, it is not guessed to be ß', 'SOSSE FÜR NUDELN', 'Sosse für Nudeln'],
+    ['a capital ß becomes a small one', 'SOẞE FÜR NUDELN', 'Soße für Nudeln'],
+    ['a small ß among capitals is kept', 'SOßE FÜR NUDELN', 'Soße für Nudeln'],
+    ['each part of a hyphenated word', 'PILZ-PASTA MIT TOFU-WÜRFELN', 'Pilz-Pasta mit Tofu-Würfeln'],
     ['words after brackets, quotes and numbers', '(VEGAN) „LASAGNE“ 2.0', '(Vegan) „Lasagne“ 2.0'],
     ['nothing after an apostrophe or a digit', 'MOM’S 5MIN PASTA', 'Mom’s 5min Pasta'],
-    ['a name after a one-letter prefix and an apostrophe', "I'M HUNGRY FOR O'BRIEN STEW", "I'm Hungry For O'Brien Stew"],
+    ['a name after a one-letter prefix and an apostrophe', "I'M HUNGRY FOR O'BRIEN STEW", "I'm Hungry for O'Brien Stew"],
     ['a word right after letters without case', '寿司SUSHI BOWL', '寿司Sushi Bowl'],
     ['a normal title stays as it is', 'Cremige Pilzpasta mit Tofu', 'Cremige Pilzpasta mit Tofu'],
     ['a short acronym in a normal title stays', 'Pulled Jackfruit vom BBQ', 'Pulled Jackfruit vom BBQ'],
@@ -640,6 +659,8 @@ describe('Suggested Title shortening', () => {
     ['a lone acronym stays', 'BBQ', 'BBQ'],
     ['a few words in caps in a normal title stay', 'Pasta mit BBQ-TOFU', 'Pasta mit BBQ-TOFU'],
     ['one word in caps of two stays', 'VEGANE Lasagne', 'VEGANE Lasagne'],
+    ['one long word in caps stays', 'PASTA x3', 'PASTA x3'],
+    ['one long word in caps among acronyms stays', 'Die BESTE Pasta vom BBQ', 'Die BESTE Pasta vom BBQ'],
     ['ß in a normal title stays', 'Nudeln mit Soße', 'Nudeln mit Soße'],
     ['a lowercase title stays', 'one-pot lemon orzo', 'one-pot lemon orzo'],
   ])('capitals: %s', async (_, caption, expected) => {
@@ -649,7 +670,14 @@ describe('Suggested Title shortening', () => {
   test('caps are capitalised before an overlong title is cut', async () => {
     const title = await captioned('THIS IS THE ABSOLUTE BEST VEGAN LASAGNA YOU WILL EVER MAKE IN YOUR LIFE AND IT ONLY TAKES THIRTY MINUTES')
 
-    expect(title).toBe('This Is The Absolute Best Vegan Lasagna You Will Ever Make In Your Life And It…')
+    expect(title).toBe('This is the Absolute Best Vegan Lasagna you Will Ever Make in Your Life and it…')
+  })
+
+  test('a caption opening with a headline in caps gives just that headline, out of caps', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-eatthis.json'))]])
+
+    // Recorded: "TOFU-REISPAPIER-NUGGETS AUS DEM AIRFRYER 👀 Der virale Reispapier-Trick, aber vegan! …", all on one line.
+    expect((await lookup('https://www.tiktok.com/@eatthisorg/video/7688042287548370208')).suggestedTitle).toBe('Tofu-Reispapier-Nuggets aus dem Airfryer')
   })
 
   test('a YouTube Short\'s title in caps is capitalised too', async () => {
