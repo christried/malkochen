@@ -16,15 +16,7 @@ const props = withDefaults(defineProps<{
   play?: boolean
   // false: plays through once per `play`, then `ended`.
   loop?: boolean
-  // Where the clip starts, in seconds: what comes before is never shown.
-  start?: number
-  // A play-once clip keeps its last frame up after `ended`, instead of
-  // going back to the still.
-  holdLast?: boolean
-}>(), { play: false, loop: true, start: 0, holdLast: false })
-// The start as the browser's own initial position (a media fragment), so no
-// earlier frame ever reaches the screen while it seeks.
-const fragment = computed(() => props.start > 0 ? `#t=${props.start}` : '')
+}>(), { play: false, loop: true })
 const emit = defineEmits<{ ended: [] }>()
 
 const theme = useResolvedTheme()
@@ -59,12 +51,12 @@ watchEffect(() => {
   el.pause()
   if (!wanted.value) {
     shown.value = false
-    el.currentTime = props.start
+    el.currentTime = 0
   }
 })
 
 function ended() {
-  if (!props.holdLast) shown.value = false
+  shown.value = false
   emit('ended')
 }
 
@@ -110,11 +102,11 @@ defineExpose({ time: (): number | null => (shown.value && video.value ? video.va
       @ended="ended"
     >
       <source
-        :src="`${src}-${theme}.webm${fragment}`"
+        :src="`${src}-${theme}.webm`"
         type="video/webm"
       >
       <source
-        :src="`${src}-${theme}.mp4${fragment}`"
+        :src="`${src}-${theme}.mp4`"
         type="video/mp4"
       >
     </video>

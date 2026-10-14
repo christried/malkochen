@@ -125,7 +125,9 @@ rendered here:
 3. **Pick what the drawing stands at**, which is its still: a loop stands at
    frame 0 (the keyframes' 0%); a one-shot that comes to rest elsewhere
    stands at its last frame (100%), and plays with `:loop="false"
-   rest="last"` (`CelebrationDialog.vue`).
+   rest="last"` (`CelebrationDialog.vue`). A loop whose still is a frame
+   further in (lookup-failed's f30) gives its layers that much negative delay
+   and draws them in that pose (`app/utils/svg-loop.ts`).
 4. **Text and emoji stay Vue**, in SvgLoop's `over` slot: a still is the SVG
    as an image, which can't load the app's fonts. To move with a part, the
    label takes that part's `data-loop` and `loopStyle()`.

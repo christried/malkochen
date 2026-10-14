@@ -7,8 +7,8 @@ import { SPLASH_SEEN_KEY } from '~~/shared/splash'
 // what Android's native splash shows (the manifest's background_color), so
 // native and web are one picture: the lid pops, the wordmark rises and its
 // dot pops (f10–16, 200ms). Then that last frame holds until the splash has
-// been up 2s in all, counted from when the page was asked for, so there is
-// time to see it (#216). It runs on that fixed clock: it never waits for the
+// been up 2s in all, counted from the page's first paint, so there is time to
+// see it (#216). It runs on that fixed clock: it never waits for the
 // page's data, whose own loading state shows beneath it if needed. A tap or
 // click anywhere closes it at once, even before the app has woken up (the
 // script below).
@@ -30,7 +30,7 @@ import { SPLASH_SEEN_KEY } from '~~/shared/splash'
 // can answer a tap. Mounted once from app.vue, so in-app navigation never
 // shows it.
 
-// The least time the splash is up, from when the page was asked for.
+// The least time the splash is up, from the page's first paint.
 const SHOWN_MS = 2000
 
 // Only a page as the server sent it has the splash: app.vue first rendered
@@ -55,6 +55,7 @@ useHead({
 
 const state = ref<'showing' | 'leaving' | 'gone'>(fromServer ? 'showing' : 'gone')
 const timers: ReturnType<typeof setTimeout>[] = []
+let paintWatch: PerformanceObserver | undefined
 
 onMounted(() => {
   if (state.value === 'gone') return
@@ -67,10 +68,26 @@ onMounted(() => {
     leave()
     return
   }
-  // performance.now() counts from when the page was asked for.
-  timers.push(setTimeout(leave, Math.max(0, SHOWN_MS - performance.now())))
+  afterFirstPaint(shownAt => timers.push(setTimeout(leave, Math.max(0, shownAt + SHOWN_MS - performance.now()))))
 })
-onBeforeUnmount(() => timers.forEach(clearTimeout))
+onBeforeUnmount(() => {
+  timers.forEach(clearTimeout)
+  paintWatch?.disconnect()
+})
+
+// Calls back with when the page first painted, on performance.now()'s clock
+// (ms since it was asked for), once that is known: on a busy device the app
+// can be up before the first paint. A browser without paint timing counts
+// from the request.
+function afterFirstPaint(then: (at: number) => void) {
+  if (!PerformanceObserver.supportedEntryTypes?.includes('paint')) return then(0)
+  paintWatch = new PerformanceObserver((entries) => {
+    paintWatch!.disconnect()
+    then(Math.min(...entries.getEntries().map(entry => entry.startTime)))
+  })
+  // Buffered: a paint that came before this still counts.
+  paintWatch.observe({ type: 'paint', buffered: true })
+}
 
 function leave() {
   if (state.value !== 'showing') return

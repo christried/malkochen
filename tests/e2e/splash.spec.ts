@@ -69,6 +69,9 @@ async function watchFirstPaint(page: Page) {
   return () => page.evaluate(() => (window as unknown as { splashAtFirstPaint: boolean | null }).splashAtFirstPaint)
 }
 
+// When the page first painted, in ms as performance.now().
+const firstPaint = (page: Page) => page.evaluate(() => performance.getEntriesByName('first-paint')[0]!.startTime)
+
 // Whether `box` lies within the window, and how far its centre is from the
 // window's middle, across.
 async function placement(page: Page, selector: string) {
@@ -80,7 +83,7 @@ async function placement(page: Page, selector: string) {
   }
 }
 
-test('a fresh tab draws the splash from the first paint, holds its last frame, and shows the page after 2s', async ({ page }) => {
+test('a fresh tab draws the splash from the first paint, holds its last frame, and shows the page 2s on', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await page.emulateMedia({ colorScheme: 'light' })
   const requests = splashFileRequests(page)
@@ -103,7 +106,7 @@ test('a fresh tab draws the splash from the first paint, holds its last frame, a
   // Played through, then stood at its last frame until it was time to go.
   expect(heldAt).not.toBeNull()
   expect(heldAt!).toBeLessThan(leavingAt!)
-  expect(leavingAt!).toBeGreaterThanOrEqual(2000)
+  expect(leavingAt! - await firstPaint(page)).toBeGreaterThanOrEqual(2000)
   expect(goneAt!).toBeGreaterThan(leavingAt!)
   expect(requests).toEqual([])
 })
@@ -172,7 +175,7 @@ test('with reduced motion the splash stands still at its last frame, and shows t
   await expect(splash(page).locator('[data-layer="dot"]')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)')
 
   await expect(splash(page)).toHaveCount(0)
-  expect((await life()).leavingAt!).toBeGreaterThanOrEqual(2000)
+  expect((await life()).leavingAt! - await firstPaint(page)).toBeGreaterThanOrEqual(2000)
 })
 
 test('a fresh tab that lands on the error screen shows no splash on its way back into the app', async ({ page }) => {
