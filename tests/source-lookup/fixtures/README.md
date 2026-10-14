@@ -5,6 +5,7 @@ Upstream responses for Seam 2. Recorded on 2026-09-30 unless noted.
 | File | Origin |
 |---|---|
 | `tiktok-oembed.json` | Recorded: `tiktok.com/oembed` for `@scout2015/video/6718335390845095173`. |
+| `tiktok-oembed-eatthis.json` | Recorded 2026-10-14: `tiktok.com/oembed` for `@eatthisorg/video/7688042287548370208`, whose caption opens with a headline in caps and runs on in one line. |
 | `youtube-oembed.json` | Recorded: `youtube.com/oembed` for Short `tPEE9ZwTmy0`. |
 | `pinterest-oembed.json` | Recorded: `pinterest.com/oembed.json` for Pin `99360735500167749`, with `title` set to `"oEmbed"`, which Pinterest returns for most Pins. |
 | `pinterest-pin-page.html` | Recorded 2026-10-05: the Pin page for Pin `99360735500167749` (`www.pinterest.com` redirects to `de.pinterest.com`) as served to Source Lookup's user agent, reduced to its `<head>` meta tags and title (verbatim). Its `og:title` is "<Pin title> \| <board keywords>". |
