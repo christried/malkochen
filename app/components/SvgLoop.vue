@@ -6,10 +6,10 @@ import { loopStyle } from '~/utils/svg-loop'
 // Played by CSS, it runs at the screen's own refresh rate and is sharp at any
 // size, where a video is 30 fps at the size it was rendered (#111).
 //
-// Like MotionClip: the drawing only comes into the page the first time it is
-// asked to play, in the theme shown; it pauses whenever it is off-screen, and
-// with reduced motion never comes at all: the still stays. It lies exactly
-// over the still, and its frame 0 is the still, so starting never jumps.
+// The drawing only comes into the page the first time it is asked to play,
+// in the theme shown; it pauses whenever it is off-screen, and with reduced
+// motion never comes at all: the still stays. It lies exactly over the
+// still, and its frame 0 is the still, so starting never jumps.
 //
 // `src` is the drawing without the theme: '/placeholders/pasta' plays
 // /placeholders/pasta-dark.svg in dark; one drawn the same in both themes

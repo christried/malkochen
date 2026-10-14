@@ -5,11 +5,12 @@
 // erreichbar", our side). Nothing else is cached: Boards and Dishes always
 // come from the network. Bump VERSION when offline.html or what it shows
 // changes.
-const VERSION = 'offline-v10'
+const VERSION = 'offline-v11'
 const FALLBACK_PAGE = '/offline.html'
-// The offline clip (still and video, both themes) plays on the Offline page
-// and the app's Offline screen, which both show only without a connection.
-const OFFLINE_CLIP = ['light', 'dark'].flatMap(theme => ['png', 'webm', 'mp4'].map(ext => `/clips/offline-${theme}.${ext}`))
+// The offline clip's drawings (both themes), which the app's Offline screen
+// plays (SvgLoop) and shows only without a connection. The Offline page has
+// the drawing in it.
+const OFFLINE_CLIP = ['light', 'dark'].map(theme => `/clips/offline-${theme}.svg`)
 // The fonts the fallback page is set in: fixed copies, as the app's own have
 // hashed names (offline.html).
 const OFFLINE_FONTS = ['figtree', 'petrona'].flatMap(font => ['latin', 'latin-ext'].map(subset => `/fonts/${font}-${subset}.woff2`))
@@ -29,27 +30,6 @@ self.addEventListener('activate', (event) => {
 
 async function fallback(pathname) {
   return (await caches.match(pathname)) ?? Response.error()
-}
-
-// The cached file, or the part a Range request asks for (as video players
-// ask): Safari plays a video only from such 206 answers.
-async function cachedPart(request, pathname) {
-  const response = await fallback(pathname)
-  const range = /^bytes=(\d+)-(\d*)$/.exec(request.headers.get('range') ?? '')
-  if (!range || !response.ok) return response
-  const body = await response.arrayBuffer()
-  const start = Number(range[1])
-  const end = Math.min(range[2] ? Number(range[2]) : body.byteLength - 1, body.byteLength - 1)
-  if (start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${body.byteLength}` } })
-  return new Response(body.slice(start, end + 1), {
-    status: 206,
-    headers: {
-      'Content-Type': response.headers.get('Content-Type') ?? 'application/octet-stream',
-      'Content-Range': `bytes ${start}-${end}/${body.byteLength}`,
-      'Content-Length': String(end - start + 1),
-      'Accept-Ranges': 'bytes',
-    },
-  })
 }
 
 // Vercel's own error pages (the function crashed or timed out, the platform
@@ -78,6 +58,6 @@ self.addEventListener('fetch', (event) => {
   if (origin !== self.location.origin) return
   // What the fallback page itself shows: the network first, so it stays fresh.
   if (PRECACHED.includes(pathname)) {
-    event.respondWith(fetch(request).catch(() => cachedPart(request, pathname)))
+    event.respondWith(fetch(request).catch(() => fallback(pathname)))
   }
 })

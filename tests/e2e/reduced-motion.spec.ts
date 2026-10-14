@@ -3,7 +3,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
 import { ANY_CHEER, cheer, confetti, topfbert } from './celebration'
-import { clipStill, countClips, emptyColumnStill, loopStill, moving, neverCookedClip } from './clips'
+import { countClips, emptyColumnStill, loopStill, moving, neverCookedClip } from './clips'
 import { editMorph, slowAnimations } from './edit-morph'
 import { gotoHydrated } from './hydration'
 import { dotsMoving, holdRequests, linkField, linkFound } from './loading'
@@ -103,7 +103,7 @@ test('Not unlocked, the invite landing and the error screen show stills only', a
   const clips = await countClips(page)
 
   await gotoHydrated(page, '/login?error=not_allowed')
-  await expect(clipStill(page, 'not-unlocked')).toBeVisible()
+  await expect(loopStill(page, '/clips/not-unlocked', null)).toBeVisible()
 
   await signIn(page, LISE)
   const { id: boardId } = await (await page.request.post('/api/boards', { data: { name: 'Ruhig', emoji: '🌿' } })).json() as { id: string }
@@ -112,12 +112,12 @@ test('Not unlocked, the invite landing and the error screen show stills only', a
   await page.context().clearCookies()
   await gotoHydrated(page, link)
   // The intro's still is the loop's first frame.
-  await expect(page.locator('[data-invite-clip] img[src="/clips/invite-loop-light.png"]')).toBeVisible()
+  await expect(loopStill(page.locator('[data-invite-clip]'), '/clips/invite-loop')).toBeVisible()
   await expect(page.getByTestId('invite-emoji')).toHaveText('🌿')
 
   await signIn(page, LISE)
   await gotoHydrated(page, '/b/00000000-0000-4000-8000-000000000000')
-  await expect(clipStill(page, 'error')).toBeVisible()
+  await expect(loopStill(page, '/clips/error')).toBeVisible()
 
   await page.waitForLoadState('networkidle')
   expect(await clips()).toBe(0)

@@ -6,8 +6,8 @@ import { shareReturnPath } from '~/utils/shared-link'
 
 // Sign-in, and the "Not unlocked" screen for a refused one: Better Auth sends
 // a refused Google sign-in back here as /login?error=not_allowed
-// (server/utils/auth.ts). Each loops its clip: Topfbert wow, drawn in code
-// like the tiles' Placeholders (SvgLoop), and not-unlocked.
+// (server/utils/auth.ts). Each loops its clip, drawn in code (SvgLoop):
+// Topfbert wow, like the tiles' Placeholders, and not-unlocked (#217).
 const t = useStrings()
 const { signInWithGoogle } = useAuth()
 
@@ -44,6 +44,10 @@ const notUnlockedBody = computed(() => invite.value
 // Placeholder Images around Topfbert. The tiles pop in one after another,
 // then the ring turns once every 40s, the tiles staying upright, and every
 // second tile loops its Placeholder: the three drawn for Round 11 among them.
+// Not unlocked's sky circle, which Topfbert and his sign sit inside: centre
+// 110 105, r 100 of the 220×210 drawing (public/clips/not-unlocked.svg).
+const NOT_UNLOCKED_CIRCLE = { left: (10 / 220) * 100, top: (5 / 210) * 100, width: (200 / 220) * 100, height: (200 / 210) * 100 }
+
 const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'breakfast', 'burger', 'bowl', 'tacos', 'wok', 'cake']
 </script>
 
@@ -52,10 +56,17 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'breakfast', 'burger
     <!-- The screen, centred in what the footer leaves of the window. -->
     <main class="flex flex-1 flex-col items-center justify-center bg-bg px-4 pb-6 pt-10 text-center">
       <template v-if="notUnlocked">
-        <div class="aspect-[22/21] w-[min(80vw,330px)]">
-          <MotionClip
+        <div class="relative aspect-[22/21] w-[min(80vw,330px)]">
+          <ClipBlob
+            accent="sky"
+            :share="40"
+            :circle="NOT_UNLOCKED_CIRCLE"
+          />
+          <SvgLoop
             src="/clips/not-unlocked"
+            :themed="false"
             play
+            transparent
           />
         </div>
         <h1 class="mt-8 font-display text-display-m tablet:text-display-l">

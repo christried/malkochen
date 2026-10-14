@@ -4,7 +4,9 @@
 // inert meanwhile, so focus can't wander into it. "Nochmal versuchen"
 // reloads; still offline, the service worker answers with
 // public/offline.html. Opening malkochen offline gets that page too. Both
-// play the handoff's "offline" clip, which the service worker keeps.
+// play the handoff's "offline" clip, drawn in code (SvgLoop, #217) on a sky
+// blob in the page's colour: the service worker keeps its drawings, and the
+// page has it drawn in.
 const t = useStrings()
 const online = useOnline()
 const retryButton = useTemplateRef<HTMLButtonElement>('retryButton')
@@ -37,9 +39,15 @@ function retry() {
       :body="t.offline.body"
     >
       <template #illustration>
-        <MotionClip
+        <ClipBlob
+          accent="sky"
+          :share="28"
+          :inset="6"
+        />
+        <SvgLoop
           src="/clips/offline"
           play
+          transparent
         />
       </template>
       <template #actions>

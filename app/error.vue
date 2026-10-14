@@ -4,7 +4,8 @@ import type { NuxtError } from '#app'
 // The error screen, in place of the whole app: "Das gibt's hier nicht" for a
 // page or Board that isn't there (or isn't yours), "Da ist was angebrannt"
 // for anything unexpected, with "Nochmal versuchen", over the handoff's
-// "error" clip.
+// "error" clip, drawn in code (SvgLoop, #217) on a carrot blob in the page's
+// colour.
 // Never shows the error's own message: it is for developers, not people.
 const props = defineProps<{ error: NuxtError }>()
 
@@ -34,9 +35,15 @@ function toApp() {
         :body="notFound ? t.error.notFoundBody : t.error.body"
       >
         <template #illustration>
-          <MotionClip
+          <ClipBlob
+            accent="carrot"
+            :share="24"
+            :inset="6"
+          />
+          <SvgLoop
             src="/clips/error"
             play
+            transparent
           />
         </template>
         <template #actions>
