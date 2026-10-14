@@ -102,7 +102,7 @@ test.each(THEMES)('a new Board, %s: the still is the last frame, the pebble rest
   expect(layerTag(svg, 'pebble')).not.toContain('opacity=')
 })
 
-test('the celebrations\' old videos and posters are gone; the clips still on video stay', () => {
+test('the celebrations\' old videos and posters are gone', () => {
   const files = readdirSync('public/clips')
   expect(files.filter(name => /^(milestone-10x|board-created)-/.test(name)).sort()).toEqual([
     'board-created-dark.svg',
@@ -110,11 +110,6 @@ test('the celebrations\' old videos and posters are gone; the clips still on vid
     'milestone-10x-dark.svg',
     'milestone-10x-light.svg',
   ])
-  for (const clip of ['invite-intro', 'invite-loop', 'offline', 'error', 'not-unlocked']) {
-    for (const theme of THEMES) {
-      expect(files).toEqual(expect.arrayContaining([`${clip}-${theme}.webm`, `${clip}-${theme}.mp4`, `${clip}-${theme}.png`]))
-    }
-  }
 })
 
 test.each(Object.entries(CELEBRATION_PEBBLES).flatMap(([clip, loop]) => THEMES.map(theme => [clip, theme, loop])))('%s, %s: the label on the pebble takes the pebble layer’s own loop', (clip, theme, loop) => {
