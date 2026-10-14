@@ -117,8 +117,8 @@ on the migrated schema until the new one is promoted.
 - UI text: all of it lives in `app/strings/de.ts`, read through `useStrings()`.
 - Public assets: `public/icons/` (app icons and manifest),
   `public/placeholders/<dish>-{light,dark}.svg` (the Placeholder Images), and
-  `public/clips/<clip>-{light,dark}.{mp4,webm,png}` (the state, system and
-  celebration clips, with their reduced-motion posters).
+  `public/clips/<clip>[-{light,dark}].svg` (the state, system and celebration
+  clips, drawn in code since #217; no videos).
 - Loops drawn in code (`SvgLoop.vue`): the Placeholder Images, the empty
   Column's pea (`public/clips/empty-column-<accent>-{light,dark}.svg`) and the
   sign-in's Topfbert wow (`public/clips/topfbert-wow-{light,dark}.svg`) are

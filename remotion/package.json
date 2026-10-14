@@ -1,7 +1,7 @@
 {
   "name": "malkochen-remotion",
   "version": "1.0.0",
-  "description": "Motion graphics for malkochen, rendered to static videos. Never part of the app runtime.",
+  "description": "The timelines malkochen's motion graphics were drawn from (Studio). Never part of the app runtime.",
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {

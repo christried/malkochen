@@ -1,10 +1,5 @@
-// Renders every video into the app's static assets, per theme:
-//   public/clips/<clip>-<theme>.{mp4,webm,png}          the state and system clips
-//
-//   .mp4   H.264, what every browser plays
-//   .webm  VP9, smaller where supported
-//   .png   poster: the reduced-motion still (the brief's still, which for
-//          invite-intro is invite-loop's)
+// Rendered every video into the app's static assets, per theme, as
+// public/clips/<clip>-<theme>.{mp4,webm,png} (H.264, VP9 and the poster).
 //
 // Not the loops the app draws in code from their SVGs since #111 (SvgLoop.vue:
 // sharp at any size, at the screen's refresh rate): the Placeholder Images,
@@ -17,8 +12,7 @@
 // Their compositions stay for Studio, the splash's landscape one too.
 // (Round 11's new loops, like the "never cooked" scenes, never had one.)
 //
-//   npm run render                   everything, light and dark
-//   npm run render -- offline error  only the named clips
+//   npm run render -- <clip>  a clip's composition, were it rendered again
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";

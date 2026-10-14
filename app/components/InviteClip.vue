@@ -22,8 +22,8 @@ const intro = computed(() => phase.value === 'intro')
 const moving = (loop: string) => ({ 'data-loop': loop, 'style': loopStyle(loop, 'center')! })
 const still = { 'data-loop': undefined, 'style': undefined }
 // The pebble's pop (intro) and bob (loop), as the drawing's pebble layer.
-const POP = moving('iv-pebble-pop 1.5s linear infinite')
-const BOB = moving('iv-bob 2.8s linear infinite')
+const PEBBLE_POP = moving('iv-pebble-pop 1.5s linear infinite')
+const PEBBLE_BOB = moving('iv-bob 2.8s linear infinite')
 const AVATARS = [1, 2, 3, 4].map(i => moving(`iv-avatar-${i} 1.5s linear infinite`))
 </script>
 
@@ -60,14 +60,14 @@ const AVATARS = [1, 2, 3, 4].map(i => moving(`iv-avatar-${i} 1.5s linear infinit
         <div
           class="absolute inset-0"
           aria-hidden="true"
-          v-bind="intro ? still : BOB"
+          v-bind="intro ? still : PEBBLE_BOB"
         >
           <!-- Over the clip's pebble: centred, 14% from the top, 42% wide. -->
           <div class="absolute left-[29%] top-[14%] flex aspect-square w-[42%] items-center justify-center">
             <span
               class="text-[17cqw] leading-none"
               data-testid="invite-emoji"
-              v-bind="intro ? POP : still"
+              v-bind="intro ? PEBBLE_POP : still"
             >{{ props.invite.board.emoji }}</span>
           </div>
         </div>

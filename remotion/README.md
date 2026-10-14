@@ -33,10 +33,9 @@ Not rendered any more (#111): the Placeholder Images, `empty-column` and
 celebrations `milestone-10x` and `board-created`, and since #216 the link
 lookup's `lookup-stir` and `lookup-failed` and the `splash` (drawn inline by
 `SplashScreen.vue`), and since #217 the last ones, `invite-intro`,
-`invite-loop`, `offline`, `error` and `not-unlocked`, whose baked-in background showed as a box on the
-coloured lanes, page and wash. The app draws those
-loops in code from their SVGs
-(`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
+`invite-loop`, `offline`, `error` and `not-unlocked`, whose baked-in
+background showed as a box on the coloured lanes, page and wash. The app
+draws those loops in code from their SVGs (`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
 refresh rate and sharp at any size. Their compositions stay in Studio, but
 only for the nine Round 10 Placeholder Images: Round 11's pasta, bowl and
 breakfast were drawn for CSS keyframes (`assets/r11-keyframes.css`) and have
@@ -71,7 +70,7 @@ draws them in code the same way.
   parts (`defineClip<"sign" | …>`), so a misspelt part is a type error, and
   `registry.ts` has one clip per id in `CLIP_IDS`. Timelines count frames,
   never seconds.
-- Canvas, length, loop, background and poster come from the brief
+- Canvas, length, loop, background and still come from the brief
   (`clipBrief` in `src/briefs.ts`), except the background of clips shown on
   another colour in the app, and the splash's landscape render: the same
   timeline on a 2560×1440 canvas (`clipVideo`), for wide windows, where the
