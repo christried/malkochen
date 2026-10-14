@@ -20,6 +20,7 @@ interface PersonCard {
   memberSince: string
   dishesAdded: number
   sharedBoards: { id: string, name: string, emoji: string }[]
+  isYou: boolean
 }
 interface Board { id: string, name: string, inviteToken: string, members: { id: string, name: string }[] }
 
@@ -92,6 +93,7 @@ test('a Member sees another Member: Username, picture, since when, the Dishes th
     // Only what is on this Board now: not the deleted one, nor those on
     // other Boards, nor Easley's.
     dishesAdded: 2,
+    isYou: false,
   })
   // The Google name shows nowhere.
   expect(JSON.stringify(card)).not.toContain('Evelyn')
@@ -104,7 +106,7 @@ test('a Member sees another Member: Username, picture, since when, the Dishes th
   ]))
   expect(card.sharedBoards.map(b => b.id)).not.toContain(kellersOwn.id)
   // Nothing about cooking.
-  expect(Object.keys(card).sort()).toEqual(['dishesAdded', 'id', 'image', 'memberSince', 'name', 'sharedBoards'])
+  expect(Object.keys(card).sort()).toEqual(['dishesAdded', 'id', 'image', 'isYou', 'memberSince', 'name', 'sharedBoards'])
 })
 
 test('one’s own card shows one’s own Boards and the Dishes one added here', async () => {
@@ -115,7 +117,7 @@ test('one’s own card shows one’s own Boards and the Dishes one added here', 
 
   expect(res.status).toBe(200)
   const card = await res.json() as PersonCard
-  expect(card).toMatchObject({ id: easleyId, name: 'Easley', dishesAdded: 1 })
+  expect(card).toMatchObject({ id: easleyId, name: 'Easley', dishesAdded: 1, isYou: true })
   const own = await (await easley.fetch('/api/boards')).json() as { id: string }[]
   expect(card.sharedBoards.map(b => b.id).sort()).toEqual(own.map(b => b.id).sort())
 })

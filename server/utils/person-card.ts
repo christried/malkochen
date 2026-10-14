@@ -17,6 +17,8 @@ export interface PersonCard {
   memberSince: string
   dishesAdded: number
   sharedBoards: { id: string, name: string, emoji: string }[]
+  // One's own popover: its Boards are simply one's own.
+  isYou: boolean
 }
 
 // The popover's card of `personId`, for `viewerId` on their Board `boardId`.
@@ -50,5 +52,5 @@ export async function personCard(boardId: string, viewerId: string, personId: st
   ])
   if (!person) return null
   const { createdAt, ...shown } = person
-  return { ...shown, memberSince: createdAt.toISOString(), dishesAdded: added?.count ?? 0, sharedBoards }
+  return { ...shown, memberSince: createdAt.toISOString(), dishesAdded: added?.count ?? 0, sharedBoards, isYou: person.id === viewerId }
 }

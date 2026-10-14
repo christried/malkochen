@@ -74,6 +74,11 @@ const status = computed(() => {
             :note="dish.note"
             :beside-avatar="!!dish.addedBy"
           />
+          <CardPersonButton
+            v-if="dish.addedBy"
+            :person="dish.addedBy"
+            :board-id="board.id"
+          />
         </li>
       </TransitionGroup>
     </template>

@@ -111,9 +111,10 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
         >{{ t.dish.cookedCount(dish.cookings.length) }}</span>
       </p>
       <div class="mt-auto flex min-w-0 items-center gap-2 pr-[108px] text-text-muted">
+        <!-- Drawn here; the button that opens their popover
+             (CardPersonButton) lies over it, outside the card's link. -->
         <span
           v-if="dish.addedBy"
-          :data-tooltip="t.dish.addedBy(dish.addedBy.name)"
           class="inline-flex"
           data-added-by
         >
