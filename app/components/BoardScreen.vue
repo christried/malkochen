@@ -1140,7 +1140,9 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   }
   .column.lane-target {
     scale: 1.012;
-    background-color: color-mix(in oklab, var(--accent) var(--wash-lane-target), var(--color-bg));
+    /* What is drawn on it fills more too (LaneBlob). */
+    --lane: color-mix(in oklab, var(--accent) var(--wash-lane-target), var(--color-bg));
+    background-color: var(--lane);
     /* Pulled further than at rest (main.css), for AA on the fuller fill. */
     --color-text-muted: color-mix(in oklab, var(--color-text) 40%, var(--board-muted));
     box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent);

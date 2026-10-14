@@ -74,11 +74,11 @@ watch([wanted, file, host], async () => {
     host.value?.replaceChildren()
     drawn.value = null
     finishing.value = false
-    failed.value = false
     return
   }
   if (!host.value || drawn.value === file.value) return
   const wantedFile = file.value
+  failed.value = false
   const svg = await animatedSvg(wantedFile)
   if (!wanted.value || file.value !== wantedFile || !host.value) return
   if (!svg) {
@@ -124,17 +124,17 @@ function animations() {
 
 // Played once: over when every layer's round is, or at once if nothing in
 // the drawing moves. `ended` comes once per play.
-let over = false
+let endSent = false
 function end() {
-  if (over) return
-  over = true
+  if (endSent) return
+  endSent = true
   emit('ended')
 }
 function endIfStill() {
   if ((run.value === 'once' || finishing.value) && animations().every(a => a.playState === 'finished')) end()
 }
 watch(run, async (now) => {
-  over = false
+  endSent = false
   if (now !== 'once') return
   await nextTick()
   requestAnimationFrame(() => {

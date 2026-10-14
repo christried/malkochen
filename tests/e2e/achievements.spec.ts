@@ -82,12 +82,12 @@ function milestone(page: Page) {
 
 // A celebration's clip plays its drawing once, not a video, with nothing
 // behind it but the celebration's wash; then it rests on its last frame.
-async function expectPlayedOnce(celebration: Locator, clip: string) {
+async function expectPlayedOnce(celebration: Locator, clip: string, theme: 'light' | 'dark' = 'light') {
   const drawn = celebration.locator(`[data-svg-loop][data-clip="/clips/${clip}"]`)
   await expect(drawn).toBeVisible()
   await expect(celebration.locator('video')).toHaveCount(0)
   // Seen playing: polls are at most 1s apart, the clips 1.2s and 1.8s long.
-  await expect.poll(() => playing(celebration, `/clips/${clip}`)).toEqual([`/clips/${clip}-light.svg`])
+  await expect.poll(() => playing(celebration, `/clips/${clip}`)).toEqual([`/clips/${clip}-${theme}.svg`])
   expect(await backgroundsBehind(drawn, 'dialog')).toEqual([])
   // Played through, it stays up, resting.
   await expect.poll(() => drawn.evaluate((el) => {
@@ -214,4 +214,25 @@ test('a new Board celebrates with its emoji; "Los geht’s" goes to it', async (
   await reloadHydrated(page)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🥟 Kochclub')
   await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('on a phone in dark, both celebrations play their drawings with nothing behind them', async ({ page }) => {
+  await page.setViewportSize({ width: 400, height: 860 })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await signIn(page, HERTHA)
+  await seedDish(page, { title: 'Tofu Scramble', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedCookings(page, 'Tofu Scramble', 9)
+  await gotoHydrated(page, '/')
+
+  await page.getByRole('button', { name: 'Gekocht ✓: „Tofu Scramble“' }).click()
+  await expectPlayedOnce(milestone(page), 'milestone-10x', 'dark')
+  await milestone(page).getByRole('button', { name: 'Schließen' }).click()
+  await expect(milestone(page)).toBeHidden()
+
+  await page.getByRole('heading', { level: 1 }).getByRole('button').click()
+  await page.getByRole('navigation', { name: 'Deine Boards' }).getByRole('button', { name: 'Neues Board' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Neues Board' })
+  await sheet.getByLabel('Name').fill('Abendbrot')
+  await sheet.getByRole('button', { name: 'Board erstellen' }).click()
+  await expectPlayedOnce(page.getByRole('dialog', { name: /Abendbrot ist bereit/ }), 'board-created', 'dark')
 })

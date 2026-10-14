@@ -27,5 +27,6 @@ defineProps<{ viewBox: string, path: string }>()
 <style scoped>
 .blob {
   fill: color-mix(in oklab, var(--accent) 16%, var(--lane));
+  transition: fill var(--dur-fade) var(--ease-fade);
 }
 </style>

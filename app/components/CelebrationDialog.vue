@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CELEBRATION_PEBBLES, type CelebrationClip } from '~/utils/celebrations'
 import { loopStyle } from '~/utils/svg-loop'
 
 // A full-screen celebration (handoff REMOTION.md, Celebrations): a wash in
@@ -20,10 +21,9 @@ import { loopStyle } from '~/utils/svg-loop'
 // (SvgLoop's `over`). Slots: the default one sits between the clip and the
 // text, `actions` under the text, and `toast` takes the page's Toast: the
 // page behind is inert, so the Toast shows in here, above the wash.
-type Clip = 'milestone-10x' | 'board-created'
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{
-  clip: Clip
+  clip: CelebrationClip
   headline: string
   body: string
   closeLabel: string
@@ -32,12 +32,10 @@ const props = defineProps<{
 }>()
 defineSlots<{ default?: () => unknown, actions?: () => unknown, toast?: () => unknown }>()
 
-// Each clip's pebble, as its drawing animates it (loops.css).
-const PEBBLES: Record<Clip, string> = {
-  'milestone-10x': 'm10-pebble 1.8s linear infinite',
-  'board-created': 'bc-pebble 1.2s linear infinite',
-}
-const pebble = computed(() => ({ loop: PEBBLES[props.clip], style: loopStyle(PEBBLES[props.clip], 'center')! }))
+const pebble = computed(() => {
+  const loop = CELEBRATION_PEBBLES[props.clip]
+  return { loop, style: loopStyle(loop, 'center')! }
+})
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const headlineId = useId()

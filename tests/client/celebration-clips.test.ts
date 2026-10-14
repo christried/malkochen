@@ -1,5 +1,6 @@
 import { readdirSync } from 'node:fs'
 import { expect, test } from 'vitest'
+import { CELEBRATION_PEBBLES } from '../../app/utils/celebrations'
 import { backgrounds, drawing, keyframes, layer, layerTag, loops, THEMES } from './drawing'
 
 // The two celebrations (#215), drawn in code (SvgLoop) where they were 30 fps
@@ -115,4 +116,8 @@ test('the celebrations\' old videos and posters are gone; the clips still on vid
     }
   }
   expect(files).toEqual(expect.arrayContaining(['splash-light.webm', 'splash-dark.mp4', 'splash-poster.webp', 'splash-still.webp']))
+})
+
+test.each(Object.entries(CELEBRATION_PEBBLES).flatMap(([clip, loop]) => THEMES.map(theme => [clip, theme, loop])))('%s, %s: the label on the pebble takes the pebble layer’s own loop', (clip, theme, loop) => {
+  expect(layerTag(drawing(clip!, theme!), 'pebble')).toContain(`data-loop="${loop}"`)
 })
