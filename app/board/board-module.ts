@@ -5,7 +5,7 @@ import type { BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
-import type { AddedDish, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import type { AddedDish, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
 import { landingIndex, recordsCooking } from '../../shared/placement'
 
@@ -53,6 +53,21 @@ export interface BoardResult {
   settled?: Promise<BoardResult>
 }
 
+// What an operation on several Dishes at once (#218) answers, as
+// BoardResult does for one: the Dishes it was about, in Board order, a
+// notice, an undo, where focus goes, and what its write ended in. Its
+// notices are about the Dishes together: `movedMany` and `deletedMany` come
+// with an undo; the others say a write failed.
+export type BulkNotice = 'movedMany' | 'deletedMany' | 'moveManyFailed' | 'deleteManyFailed' | 'restoreManyFailed' | 'returnManyFailed'
+
+export interface BulkResult {
+  dishes: DishView[]
+  notice?: BulkNotice
+  undo?: () => Promise<BulkResult>
+  focus?: FocusTarget
+  settled?: Promise<BulkResult>
+}
+
 // A write the server refused or never answered; `status` is its HTTP status
 // if there was one (404: the Dish is gone there).
 export class WriteFailed extends Error {
@@ -82,6 +97,11 @@ export interface BoardTransport {
   restoreCooking: (cookingId: string) => Promise<CookingView>
   noteCooking: (cookingId: string, note: string) => Promise<CookingView>
   addColumn: (boardId: string, name: string) => Promise<ColumnView>
+  // Several Dishes at once (POST /api/dishes/bulk), all or nothing.
+  moveDishes: (dishIds: string[], columnId: string) => Promise<PlacedDish[]>
+  placeDishes: (places: DishPlace[]) => Promise<PlacedDish[]>
+  deleteDishes: (dishIds: string[]) => Promise<void>
+  restoreDishes: (dishIds: string[]) => Promise<PlacedDish[]>
 }
 
 type BoardColumn = BoardView['columns'][number]
@@ -140,23 +160,34 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // moves it (an edit: `moves: false`) waits its turn, but leaves that to
   // the one before it. A Cooking's delete and restore queue by the
   // Cooking's id instead (`key`): they never move its Dish, so they mustn't
-  // keep a move of it from settling.
+  // keep a move of it from settling. A write of several Dishes queues by
+  // each of their ids (`key` a list), waiting for every one of their writes
+  // before it; `latest` then answers for the Dish asked about.
   const queues = new Map<string, { settled: Promise<unknown> }>()
   const latestMoves = new Map<string, object>()
-  function queued<T>(key: string, write: (latest: () => boolean) => Promise<T>, { moves = true } = {}): Promise<T> {
-    const before = queues.get(key)?.settled
+  function queued<T>(key: string | string[], write: (latest: (dishId?: string) => boolean) => Promise<T>, { moves = true } = {}): Promise<T> {
+    const keys = typeof key === 'string' ? [key] : key
+    // Each settles without rejecting.
+    const before = keys.map(k => queues.get(k)?.settled).filter(settled => settled !== undefined)
     // In the queue before the write can start, so it is the latest at once.
     const entry = { settled: Promise.resolve() as Promise<unknown> }
-    queues.set(key, entry)
-    if (moves) latestMoves.set(key, entry)
-    const run = () => write(() => latestMoves.get(key) === entry)
+    for (const k of keys) {
+      queues.set(k, entry)
+      if (moves) latestMoves.set(k, entry)
+    }
+    const run = () => write((dishId = keys[0]!) => latestMoves.get(dishId) === entry)
     // A write that throws rather than rejecting fails like one that rejects.
-    const next = before ? before.then(run, run) : new Promise<T>(resolve => resolve(run()))
+    // One write before it is waited for directly: as soon as it settles,
+    // this one is under way, so a poll can't slip in between.
+    const waited = before.length > 1 ? Promise.all(before) : before[0]
+    const next = waited ? waited.then(run) : new Promise<T>(resolve => resolve(run()))
     entry.settled = next.catch(() => {}).then(() => {
-      if (queues.get(key) !== entry) return
-      queues.delete(key)
-      latestMoves.delete(key)
-      rolledBackTo.delete(key)
+      for (const k of keys) {
+        if (queues.get(k) !== entry) continue
+        queues.delete(k)
+        latestMoves.delete(k)
+        rolledBackTo.delete(k)
+      }
     })
     return next
   }
@@ -573,6 +604,146 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     return added
   }
 
+  // The Dishes of `dishIds` that are on the Board, in Board order: Column
+  // by Column, each from the top.
+  function inBoardOrder(dishIds: string[]) {
+    const wanted = new Set(dishIds)
+    return board.value?.columns.flatMap(column => column.dishes.filter(d => wanted.has(d.id)).map(dish => ({ dish, column }))) ?? []
+  }
+
+  // Takes several Dishes out of their Columns, answering where each was
+  // (all taken before any goes, to put them back there in Board order), and
+  // where focus goes instead: to the Dish now in the first one's place, the
+  // one above, or that Column.
+  function leaveAll(found: { dish: DishView, column: BoardColumn }[]): { origins: Place[], focus: FocusTarget } {
+    const origins = found.map(({ dish, column }) => placeOf(column, column.dishes.indexOf(dish)))
+    for (const { dish, column } of found) column.dishes.splice(column.dishes.indexOf(dish), 1)
+    const first = found[0]!.column
+    const at = origins[0]!.index
+    const next = first.dishes[at] ?? first.dishes[at - 1]
+    return { origins, focus: next ? { dish: next.id } : { column: first.id } }
+  }
+
+  // Puts several Dishes back at their places, wherever they are now, in
+  // Board order, so each finds the ones above it back already.
+  function putAllBack(dishes: DishView[], places: Place[], latest: (dishId: string) => boolean = () => true) {
+    dishes.forEach((dish, i) => {
+      if (latest(dish.id)) moveBack(dish, places[i]!)
+    })
+  }
+
+  // Settles each placed Dish that is still the latest to move to where the
+  // server put it.
+  function settleAll(dishes: DishView[], placed: PlacedDish[], latest: (dishId: string) => boolean) {
+    for (const answer of placed) {
+      const dish = dishes.find(d => d.id === answer.id)
+      if (dish && latest(dish.id)) settle(dish, answer)
+    }
+  }
+
+  // Moving several selected Dishes (#218) to the top of a Column, of this
+  // Board or of another of the Member's Boards (`boardId`), in Board order;
+  // one already in that Column stays where it is. They go there at once,
+  // then where the server put them. Never into a Gekocht Column: cooking
+  // stays one Dish at a time. If the move fails, every Dish goes back
+  // exactly where it was, with a notice. Null if none would move.
+  function moveDishes(dishIds: string[], to: Destination | BoardDestination): BulkResult | null {
+    const here = 'boardId' in to ? null : column(to.columnId)
+    if ('boardId' in to ? to.isGekocht : !here || here.isGekocht) return null
+    const moving = inBoardOrder(dishIds).filter(f => f.column !== here)
+    if (moving.length === 0) return null
+    const dishes = moving.map(f => f.dish)
+    const ids = dishes.map(d => d.id)
+    const { origins, focus } = leaveAll(moving)
+    // Where the move puts them, as this Board shows it: at the top of
+    // `here`, or off the Board.
+    function moveOn() {
+      for (const id of ids) takeOut(id)
+      if (here) dishes.forEach((dish, i) => insert(here, i, dish))
+      else for (const id of ids) focusWhenGone.set(id, focus)
+    }
+    moveOn()
+
+    const settled = queued(ids, async (latest): Promise<BulkResult> => {
+      try {
+        settleAll(dishes, await transport.moveDishes(ids, to.columnId), latest)
+        for (const id of ids) rolledBackTo.delete(id)
+        return { dishes }
+      }
+      catch {
+        // Back where the server still has them.
+        putAllBack(dishes, dishes.map((dish, i) => rollBackTo(dish.id, origins[i]!)), latest)
+        return { dishes, notice: 'moveManyFailed' }
+      }
+    })
+
+    // "Rückgängig": once the move has settled, every Dish is back where it
+    // was at once, with focus on the first, and then where the server put
+    // them back. If that fails, they go where the move had put them, with a
+    // notice.
+    async function undo(): Promise<BulkResult> {
+      if ((await settled).notice) return { dishes } // Never moved, and back already.
+      putAllBack(dishes, origins)
+      const places = origins.map((origin, i) => ({ dishId: ids[i]!, columnId: origin.columnId, index: origin.index }))
+      const returned = queued(ids, async (latest): Promise<BulkResult> => {
+        try {
+          settleAll(dishes, await transport.placeDishes(places), latest)
+          return { dishes }
+        }
+        catch {
+          moveOn()
+          return { dishes, notice: 'returnManyFailed' }
+        }
+      })
+      return { dishes, focus: { dish: ids[0]! }, settled: returned }
+    }
+
+    return { dishes, notice: 'movedMany', undo, focus: here ? { column: here.id } : focus, settled }
+  }
+
+  // Deleting several selected Dishes (#218): their cards go at once. If the
+  // delete fails, they come back with a notice.
+  function deleteDishes(dishIds: string[]): BulkResult | null {
+    const found = inBoardOrder(dishIds)
+    if (found.length === 0) return null
+    const dishes = found.map(f => f.dish)
+    const ids = dishes.map(d => d.id)
+    const { origins, focus } = leaveAll(found)
+    for (const id of ids) focusWhenGone.set(id, focus)
+
+    const settled = queued(ids, async (): Promise<BulkResult> => {
+      try {
+        await transport.deleteDishes(ids)
+        return { dishes }
+      }
+      catch {
+        putAllBack(dishes, origins)
+        return { dishes, notice: 'deleteManyFailed' }
+      }
+    })
+
+    // "Rückgängig": once the delete has settled, every Dish is back at
+    // once, with focus on the first, and then where the server restored
+    // them. If that fails, they go again, with a notice.
+    async function undo(): Promise<BulkResult> {
+      if ((await settled).notice) return { dishes } // Never deleted, and back already.
+      putAllBack(dishes, origins)
+      const restored = queued(ids, async (latest): Promise<BulkResult> => {
+        try {
+          settleAll(dishes, await transport.restoreDishes(ids), latest)
+          return { dishes }
+        }
+        catch {
+          for (const id of ids) takeOut(id)
+          return { dishes, notice: 'restoreManyFailed' }
+        }
+      })
+      return { dishes, focus: { dish: ids[0]! }, settled: restored }
+    }
+
+    return { dishes, notice: 'deletedMany', undo, focus, settled }
+  }
+
   // Others' changes (PRD story 38), from polling (useBoardSync), which asks
   // the server for the Board with `ask`: what it answers is merged into the
   // Board. Dropped if one of the module's writes was under way when it
@@ -590,7 +761,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, sync, focusAfterDetail, dishCount }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

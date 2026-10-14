@@ -1,20 +1,5 @@
-import { z } from 'zod'
+import { bulkBody } from '../../utils/dish-input'
 import { areDishesOfMember, deleteDishes, moveDishes, placeDishes, restoreDishes, type PlacedDish } from '../../utils/dishes'
-
-// Each Dish once: a selection is a set.
-const dishIds = z.array(z.uuid()).min(1).max(500).refine(ids => new Set(ids).size === ids.length)
-
-const body = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('move'), dishIds, columnId: z.uuid() }),
-  z.object({
-    action: z.literal('place'),
-    places: z.array(z.object({ dishId: z.uuid(), columnId: z.uuid(), index: z.int().min(0).max(100_000) }))
-      .min(1).max(500).refine(places => new Set(places.map(p => p.dishId)).size === places.length),
-  }),
-  z.object({ action: z.literal('delete'), dishIds }),
-  z.object({ action: z.literal('restore'), dishIds }),
-])
-export type BulkBody = z.input<typeof body>
 
 // POST /api/dishes/bulk — several Dishes selected on a Board (#218), in one
 // step, all or nothing:
@@ -28,7 +13,7 @@ export type BulkBody = z.input<typeof body>
 // is missing, deleted or on a Board the user isn't a Member of refuses all
 // (404); so does a Column on a Board the user isn't a Member of (400).
 export default defineEventHandler(async (event): Promise<PlacedDish[] | null> => {
-  const parsed = body.safeParse(await readBody(event).catch(() => null))
+  const parsed = bulkBody.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid bulk request' })
   const userId = requireUser(event).id
   const request = parsed.data

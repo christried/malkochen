@@ -76,3 +76,21 @@ export const dishEditBody = z.object({
   imageFocus: imageFocusInput.optional(),
 })
 export type DishEditBody = z.input<typeof dishEditBody>
+
+// Several Dishes at once (POST /api/dishes/bulk, #218), each Dish once: a
+// selection is a set.
+const dishIds = z.array(z.uuid()).min(1).max(500).refine(ids => new Set(ids).size === ids.length)
+
+export const bulkBody = z.discriminatedUnion('action', [
+  // To the top of a Column.
+  z.object({ action: z.literal('move'), dishIds, columnId: z.uuid() }),
+  // Each back to its Column, at its index.
+  z.object({
+    action: z.literal('place'),
+    places: z.array(z.object({ dishId: z.uuid(), columnId: z.uuid(), index: z.int().min(0).max(100_000) }))
+      .min(1).max(500).refine(places => new Set(places.map(p => p.dishId)).size === places.length),
+  }),
+  z.object({ action: z.literal('delete'), dishIds }),
+  z.object({ action: z.literal('restore'), dishIds }),
+])
+export type BulkBody = z.input<typeof bulkBody>

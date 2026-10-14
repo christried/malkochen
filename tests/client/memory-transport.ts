@@ -4,7 +4,7 @@ import type { BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
-import type { AddedDish, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import type { AddedDish, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
 // The in-memory transport for the client Board module's tests: a small fake
@@ -189,6 +189,79 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return structuredClone(gone.cooking)
   }
 
+  // Several Dishes at once (#218), all or nothing as on the server: one
+  // the server doesn't have refuses all (404), so does a Column it doesn't
+  // have, or a Gekocht Column to move several into (400).
+  function columnOnServer(columnId: string) {
+    const onto = [server, ...others].find(b => b.columns.some(c => c.id === columnId))
+    const column = onto?.columns.find(c => c.id === columnId)
+    return onto && column ? { onto, column } : null
+  }
+
+  function allLocated(ids: string[]) {
+    const found = ids.map(id => located(d => d.id === id))
+    return found.every(f => f !== null) ? found as NonNullable<ReturnType<typeof located>>[] : null
+  }
+
+  function placedOnServer(ids: string[]): PlacedDish[] {
+    return ids.map((id) => {
+      const { dish, column } = located(d => d.id === id)!
+      const onto = [server, ...others].find(b => b.columns.includes(column))!
+      return { ...structuredClone(dish), placement: { boardId: onto.id, columnId: column.id, index: column.dishes.indexOf(dish) } }
+    })
+  }
+
+  function moveManyOnServer(ids: string[], columnId: string): PlacedDish[] | null {
+    const found = allLocated(ids)
+    if (!found) return null
+    const target = columnOnServer(columnId)
+    if (!target || target.column.isGekocht) throw new WriteFailed(400)
+    const moving = found.filter(f => f.column !== target.column)
+    for (const { dish, column } of moving) column.dishes.splice(column.dishes.indexOf(dish), 1)
+    target.column.dishes.unshift(...moving.map(f => f.dish))
+    return placedOnServer(ids)
+  }
+
+  function placeManyOnServer(places: DishPlace[]): PlacedDish[] | null {
+    const found = allLocated(places.map(p => p.dishId))
+    if (!found) return null
+    if (places.some(p => !columnOnServer(p.columnId))) throw new WriteFailed(400)
+    const ordered = places.map((place, i) => ({ place, ...found[i]! }))
+      .sort((a, b) => a.place.columnId.localeCompare(b.place.columnId) || a.place.index - b.place.index)
+    for (const { place, dish } of ordered) {
+      const now = located(d => d.id === dish.id)!
+      now.column.dishes.splice(now.column.dishes.indexOf(dish), 1)
+      const into = columnOnServer(place.columnId)!.column
+      into.dishes.splice(Math.min(place.index, into.dishes.length), 0, dish)
+    }
+    return placedOnServer(places.map(p => p.dishId))
+  }
+
+  // Each keeps the index it had before any of them went, so restoring them
+  // from the top puts each back at its own.
+  function deleteManyOnServer(ids: string[]): true | null {
+    const found = ids.map(id => server.columns.find(c => c.dishes.some(d => d.id === id)))
+    if (found.some(c => !c)) return null
+    const indexes = ids.map((id, i) => found[i]!.dishes.findIndex(d => d.id === id))
+    ids.forEach((id, i) => {
+      const column = found[i]!
+      const [dish] = column.dishes.splice(column.dishes.findIndex(d => d.id === id), 1)
+      deleted.set(id, { dish: dish!, columnId: column.id, index: indexes[i]! })
+    })
+    return true
+  }
+
+  function restoreManyOnServer(ids: string[]): PlacedDish[] | null {
+    if (ids.some(id => !deleted.has(id))) return null
+    const gone = ids.map(id => deleted.get(id)!).sort((a, b) => a.index - b.index)
+    for (const id of ids) deleted.delete(id)
+    for (const { dish, columnId, index } of gone) {
+      const column = server.columns.find(c => c.id === columnId)!
+      column.dishes.splice(Math.min(index, column.dishes.length), 0, dish)
+    }
+    return placedOnServer(ids)
+  }
+
   // Adds a Column at the end of the Board, as the server does.
   function addColumnOnServer(boardId: string, name: string): ColumnView | null {
     if (boardId !== server.id) return null
@@ -244,6 +317,10 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     deleteCooking: cookingId => answer('deleteCooking', cookingId, () => deleteCookingOnServer(cookingId) || null).then(() => undefined),
     restoreCooking: cookingId => answer('restoreCooking', cookingId, () => restoreCookingOnServer(cookingId)),
     noteCooking: (cookingId, note) => answer('noteCooking', cookingId, () => noteOnServer(cookingId, note)),
+    moveDishes: (ids, columnId) => answer('moveDishes', `${ids.join()} ${columnId}`, () => moveManyOnServer(ids, columnId)),
+    placeDishes: places => answer('placeDishes', places.map(p => `${p.dishId}:${p.columnId}:${p.index}`).join(), () => placeManyOnServer(places)),
+    deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),
+    restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
   }
 

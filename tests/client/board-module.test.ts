@@ -807,3 +807,120 @@ test('the Dish count follows other Members’ adds and deletes through a poll', 
 
   expect(module.dishCount.value).toBe(5)
 })
+
+// Several Dishes at once (#218): the selection's "Verschieben nach…" and
+// "Löschen", one write for all of them, with one "Rückgängig".
+
+test('Dishes selected across Columns move to the top of a Column together, in Board order; one already there stays', async () => {
+  const { fake, module, shown } = setup()
+
+  const result = module.moveDishes(['d', 'c', 'a'], { columnId: 'woche' })!
+
+  expect(shown()).toMatchObject({ ideen: ['b'], woche: ['a', 'c', 'd'] })
+  expect(result).toMatchObject({ notice: 'movedMany', dishes: [{ id: 'a' }, { id: 'c' }] })
+  expect(await result.settled).not.toHaveProperty('notice')
+  expect(shown()).toMatchObject({ ideen: ['b'], woche: ['a', 'c', 'd'] })
+  expect(fake.sent).toEqual(['moveDishes a,c woche'])
+})
+
+test('a move of several that fails puts every Dish back exactly where it was, with a notice', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('moveDishes', 404)
+
+  const result = module.moveDishes(['a', 'b', 'd'], { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!
+  expect(shown()).toMatchObject({ ideen: ['c'], woche: [] })
+
+  expect(await result.settled).toMatchObject({ notice: 'moveManyFailed' })
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
+})
+
+test('several Dishes never move into a Gekocht Column, here or on another Board', () => {
+  const { fake, module, shown } = setup()
+
+  expect(module.moveDishes(['a', 'b'], { columnId: 'gekocht' })).toBeNull()
+  expect(module.moveDishes(['a', 'b'], { boardId: 'feierabend', columnId: 'f-gekocht', isGekocht: true })).toBeNull()
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+  expect(fake.sent).toEqual([])
+})
+
+test('"Rückgängig" after moving several puts each back in its Column and place at once, and as the server put them', async () => {
+  const { fake, module, shown } = setup()
+  const result = module.moveDishes(['a', 'c', 'd'], { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!
+  expect(shown()).toMatchObject({ ideen: ['b'], woche: [] })
+  await result.settled
+
+  const undone = await result.undo!()
+
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
+  expect(undone).toMatchObject({ focus: { dish: 'a' } })
+  expect(await undone.settled).not.toHaveProperty('notice')
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
+  expect(fake.sent).toEqual(['moveDishes a,c,d f-ideen', 'placeDishes a:ideen:0,c:ideen:2,d:woche:0'])
+})
+
+test('an undo of a move of several that fails puts them where the move had put them, with a notice', async () => {
+  const { fake, module, shown } = setup()
+  const result = module.moveDishes(['a', 'c'], { columnId: 'woche' })!
+  await result.settled
+  fake.failNext('placeDishes', 500)
+
+  const undone = await result.undo!()
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
+
+  expect(await undone.settled).toMatchObject({ notice: 'returnManyFailed' })
+  expect(shown()).toMatchObject({ ideen: ['b'], woche: ['a', 'c', 'd'] })
+})
+
+test('a move of several waits for a write of one of them still under way', async () => {
+  const { fake, module, shown } = setup()
+  const moving = fake.holdNext('moveDish')
+  module.moveDish('b', { columnId: 'woche' })
+
+  const result = module.moveDishes(['a', 'b'], { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!
+  await Promise.resolve()
+  expect(fake.sent).toEqual(['moveDish b woche'])
+
+  moving.succeed()
+  await result.settled
+  expect(fake.sent).toEqual(['moveDish b woche', 'moveDishes a,b f-ideen'])
+  expect(shown()).toMatchObject({ ideen: ['c'], woche: ['d'] })
+})
+
+test('Dishes deleted together go at once and come back together where they were', async () => {
+  const { fake, module, shown } = setup()
+
+  const result = module.deleteDishes(['c', 'a', 'd'])!
+
+  expect(shown()).toMatchObject({ ideen: ['b'], woche: [] })
+  expect(result).toMatchObject({ notice: 'deletedMany', dishes: [{ id: 'a' }, { id: 'c' }, { id: 'd' }], focus: { dish: 'b' } })
+  expect(await result.settled).not.toHaveProperty('notice')
+
+  const undone = await result.undo!()
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
+  expect(await undone.settled).not.toHaveProperty('notice')
+  expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'] })
+  expect(fake.sent).toEqual(['deleteDishes a,c,d', 'restoreDishes a,c,d'])
+})
+
+test('a delete of several that fails puts every Dish back, with a notice; an undo that fails takes them off again', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('deleteDishes', 500)
+
+  expect(await module.deleteDishes(['a', 'b'])!.settled).toMatchObject({ notice: 'deleteManyFailed' })
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+
+  const result = module.deleteDishes(['a', 'b'])!
+  await result.settled
+  fake.failNext('restoreDishes', 500)
+  expect(await (await result.undo!()).settled).toMatchObject({ notice: 'restoreManyFailed' })
+  expect(shown().ideen).toEqual(['c'])
+})
+
+test('the Dish count follows a move of several to another Board and a delete of several', async () => {
+  const { module } = setup()
+
+  await module.moveDishes(['a', 'b'], { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })!.settled
+  expect(module.dishCount.value).toBe(2)
+  await module.deleteDishes(['c'])!.settled
+  expect(module.dishCount.value).toBe(1)
+})

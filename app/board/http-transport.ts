@@ -1,5 +1,6 @@
 import type { ColumnView } from '~~/server/utils/columns'
 import type { CookingView } from '~~/server/utils/cookings'
+import type { BulkBody } from '~~/server/utils/dish-input'
 import type { AddedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import { WriteFailed, type BoardTransport } from './board-module'
 
@@ -18,7 +19,16 @@ export function httpTransport(): BoardTransport {
     restoreCooking: cookingId => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}/restore`, { method: 'POST' })),
     noteCooking: (cookingId, note) => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}`, { method: 'PATCH', body: { note } })),
     addColumn: (boardId, name) => asWrite(postColumn(boardId, name)),
+    moveDishes: (dishIds, columnId) => asWrite(bulk({ action: 'move', dishIds, columnId })),
+    placeDishes: places => asWrite(bulk({ action: 'place', places })),
+    deleteDishes: dishIds => asWrite(bulk({ action: 'delete', dishIds })).then(() => undefined),
+    restoreDishes: dishIds => asWrite(bulk({ action: 'restore', dishIds })),
   }
+}
+
+// Several Dishes at once (#218); a delete answers nothing.
+function bulk(body: BulkBody): Promise<PlacedDish[]> {
+  return $fetch<PlacedDish[]>('/api/dishes/bulk', { method: 'POST', body })
 }
 
 // Adds a Column at the end of a Board: from the Board's add lane (through
