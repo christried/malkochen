@@ -237,3 +237,25 @@ test('in the Dish detail on a phone, tapping who added it shows the popover; a t
   expect(page.url()).toBe(url)
   await page.context().close()
 })
+
+test('someone who left every Board shared with you still shows by name and picture, and nothing more', async ({ browser, page }) => {
+  const johnson = await newTab(browser)
+  await signIn(johnson, JOHNSON)
+  const { id } = await (await johnson.request.get('/api/me')).json() as { id: string }
+  const boards = await (await johnson.request.get('/api/boards')).json() as { id: string, name: string }[]
+  for (const board of boards.filter(b => b.name !== 'Geheimrezepte')) {
+    expect((await johnson.request.delete(`/api/boards/${board.id}/members/${id}`)).ok()).toBe(true)
+  }
+  await johnson.context().close()
+  await page.setViewportSize(DESKTOP)
+  await openBoard(page)
+
+  // The Dishes she added stay, with her picture.
+  await personButton(page, 'Linsencurry').hover()
+
+  const shown = popover(page)
+  await expect(shown.getByText('Mehr ist gerade nicht zu sehen.', { exact: true })).toBeVisible()
+  await expect(shown.getByText('Johnson', { exact: true })).toBeVisible()
+  await expect(shown).not.toContainText('Geheimrezepte')
+  await expect(shown).not.toContainText('hinzugefügt')
+})

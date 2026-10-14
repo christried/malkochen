@@ -118,6 +118,9 @@ export const de = {
     sharedBoards: 'Gemeinsame Boards',
     ownBoards: 'Deine Boards',
     loading: 'Lädt …',
+    // Nothing more to show: no Board shared with them any more (they left
+    // it, and the Dishes they added stayed), or the request failed.
+    unavailable: 'Mehr ist gerade nicht zu sehen.',
   },
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,

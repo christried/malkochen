@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DishAdder } from '~~/server/utils/dishes'
+
 // Who added a Dish, on its card (#213): the button lying over the Profile
 // Picture the card draws (DishCard), outside the card's link like the note's
 // (NoteButton), so hovering it or tapping it opens their popover
@@ -11,7 +13,7 @@
 // padding, 4px), as high as the picture (22px). user-popover.spec.ts checks
 // the two line up.
 defineProps<{
-  person: { id: string, name: string, image: string | null }
+  person: DishAdder
   boardId: string
 }>()
 const t = useStrings()

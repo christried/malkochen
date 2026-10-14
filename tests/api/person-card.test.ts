@@ -17,7 +17,7 @@ interface PersonCard {
   id: string
   name: string
   image: string | null
-  memberSince: string
+  accountCreatedAt: string
   dishesAdded: number
   sharedBoards: { id: string, name: string, emoji: string }[]
   isYou: boolean
@@ -98,7 +98,7 @@ test('a Member sees another Member: Username, picture, since when, the Dishes th
   // The Google name shows nowhere.
   expect(JSON.stringify(card)).not.toContain('Evelyn')
   // When the account was made: just now.
-  expect(Math.abs(Date.parse(card.memberSince) - Date.now())).toBeLessThan(10 * 60_000)
+  expect(Math.abs(Date.parse(card.accountCreatedAt) - Date.now())).toBeLessThan(10 * 60_000)
   // Both Boards they share, never Keller's own.
   expect(card.sharedBoards).toEqual(expect.arrayContaining([
     { id: shared.id, name: 'Mittagstisch', emoji: '🥗' },
@@ -106,7 +106,7 @@ test('a Member sees another Member: Username, picture, since when, the Dishes th
   ]))
   expect(card.sharedBoards.map(b => b.id)).not.toContain(kellersOwn.id)
   // Nothing about cooking.
-  expect(Object.keys(card).sort()).toEqual(['dishesAdded', 'id', 'image', 'isYou', 'memberSince', 'name', 'sharedBoards'])
+  expect(Object.keys(card).sort()).toEqual(['accountCreatedAt', 'dishesAdded', 'id', 'image', 'isYou', 'name', 'sharedBoards'])
 })
 
 test('one’s own card shows one’s own Boards and the Dishes one added here', async () => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DishAdder } from '~~/server/utils/dishes'
 import type { PersonCard } from '~~/server/utils/person-card'
 
 // The user popover (#213): a button on someone's Profile Picture (a Dish
@@ -21,7 +22,7 @@ import type { PersonCard } from '~~/server/utils/person-card'
 // below never see it).
 defineOptions({ inheritAttrs: false })
 const props = defineProps<{
-  person: { id: string, name: string, image: string | null }
+  person: DishAdder
   boardId: string
 }>()
 const t = useStrings()
@@ -69,6 +70,7 @@ async function show() {
   closeOther?.()
   closeOther = hide
   open.value = true
+  listen(true)
   void load()
   await nextTick()
   if (!open.value || !panel.value || !trigger.value?.isConnected) return
@@ -84,6 +86,7 @@ function hide() {
   if (closeOther === hide) closeOther = null
   resized?.disconnect()
   resized = undefined
+  listen(false)
   if (!open.value) return
   open.value = false
   if (panel.value?.matches(':popover-open')) panel.value.hidePopover()
@@ -147,19 +150,24 @@ function onKeydown(event: KeyboardEvent) {
   hide()
 }
 
-onMounted(() => {
-  document.addEventListener('pointerdown', onPressAnywhere, true)
-  window.addEventListener('keydown', onKeydown, true)
-  document.addEventListener('scroll', place, { capture: true, passive: true })
-  window.addEventListener('resize', place)
-})
-onBeforeUnmount(() => {
-  hide()
-  document.removeEventListener('pointerdown', onPressAnywhere, true)
-  window.removeEventListener('keydown', onKeydown, true)
-  document.removeEventListener('scroll', place, { capture: true })
-  window.removeEventListener('resize', place)
-})
+// Only while it shows: a Board has one of these per card.
+function listen(on: boolean) {
+  if (on) {
+    document.addEventListener('pointerdown', onPressAnywhere, true)
+    window.addEventListener('keydown', onKeydown, true)
+    // It stays by its button while the page scrolls under it.
+    document.addEventListener('scroll', place, { capture: true, passive: true })
+    window.addEventListener('resize', place)
+  }
+  else {
+    document.removeEventListener('pointerdown', onPressAnywhere, true)
+    window.removeEventListener('keydown', onKeydown, true)
+    document.removeEventListener('scroll', place, { capture: true })
+    window.removeEventListener('resize', place)
+  }
+}
+
+onBeforeUnmount(hide)
 watch(() => route.fullPath, hide)
 
 const boardsLabel = computed(() => card.value?.isYou ? t.person.ownBoards : t.person.sharedBoards)
@@ -221,7 +229,7 @@ let closeOther: (() => void) | null = null
           class="text-small text-text-muted"
           data-person-since
         >
-          {{ t.person.since(new Date(card.memberSince)) }}
+          {{ t.person.since(new Date(card.accountCreatedAt)) }}
         </p>
       </div>
     </div>
@@ -253,7 +261,14 @@ let closeOther: (() => void) | null = null
       </ul>
     </template>
     <p
-      v-else-if="!failed"
+      v-else-if="failed"
+      class="mt-3 text-small text-text-muted"
+      data-person-failed
+    >
+      {{ t.person.unavailable }}
+    </p>
+    <p
+      v-else
       class="mt-3 flex items-center gap-2 text-small text-text-muted"
     >
       <LoadingDots />

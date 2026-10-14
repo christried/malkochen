@@ -8,6 +8,6 @@ import { personCard, type PersonCard } from '../../../../utils/person-card'
 export default defineEventHandler(async (event): Promise<PersonCard> => {
   const found = await personCard(boardIdParam(event), requireUser(event).id, getRouterParam(event, 'userId') ?? '')
   if (found === 'not-member') throw boardNotFound()
-  if (!found) throw createError({ statusCode: 404, statusMessage: 'Person not found' })
+  if (!found) throw personNotFound()
   return found
 })
