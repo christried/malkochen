@@ -6,7 +6,7 @@
 // nothing; being a button, it starts no drag either (useDishDrag).
 // Screen readers get the note in its name.
 //
-// It goes in the box the card fills. Where the icon is follows DishCard's
+// It goes in the box the card fills, or one it ends (bottom-aligned). Where the icon is follows DishCard's
 // layout: the text column starts at 108px (10px padding, the 86px thumb, a
 // 12px gap), and the bottom line ends 14px above the card's bottom (10px
 // padding, 4px), its items centred. With "Hinzugefügt von" before it, the

@@ -14,9 +14,9 @@
 // hover, and a tap's focus isn't the keyboard's (:focus-visible). Except
 // where the Tooltip is what the control is for (a Dish's note, NoteButton),
 // which says so with `data-tooltip-tap`: a tap on it shows its Tooltip at
-// once, and the next tap, on it or anywhere else, takes it away. A disabled
-// control has none, and one that is disabled, removed or scrolled off the
-// screen while its Tooltip shows takes it along.
+// once (a pen's too), and the next tap, on it or anywhere else, takes it
+// away. A disabled control has none, and one that is disabled, removed or
+// scrolled off the screen while its Tooltip shows takes it along.
 //
 // For the eyes only (aria-hidden): a control with a Tooltip already has its
 // name for screen readers. It is a manual popover, so it shows in the top
