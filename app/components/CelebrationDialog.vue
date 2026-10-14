@@ -1,32 +1,43 @@
 <script setup lang="ts">
+import { CELEBRATION_PEBBLES, type CelebrationClip } from '~/utils/celebrations'
+import { loopStyle } from '~/utils/svg-loop'
+
 // A full-screen celebration (handoff REMOTION.md, Celebrations): a wash in
 // its clip's background colour, the one-shot clip in the middle, and a
 // headline and a line of text over the wash, rising in as the clip plays.
+// The clip is drawn in code (SvgLoop, #215), on nothing but the wash: it
+// pops in from its first frame, plays once at the screen's refresh rate
+// and holds its last frame, which is also its still.
 // A native modal <dialog>, so it shows over whatever is open, the Dish
 // detail included; a tap anywhere, Escape or "Schließen" closes it, as does
 // the time `closeAfter` (a duration token) if given. Reduced motion: the
 // clip's still and the text, at once, and it stays until closed (the
 // tokens are 0 then).
 //
-// `clip` names the clip ('milestone-10x' plays /clips/milestone-10x-*); the
-// wash and when the text comes follow from it (the styles below). Slots:
-// `clip` draws over the clip (sized in cqw of it, following its `time()`),
-// the default one sits between the clip and the text, `actions` under the
-// text, and `toast` takes the page's Toast: the page behind is inert, so
-// the Toast shows in here, above the wash.
-type Clip = 'milestone-10x' | 'board-created'
+// `clip` names the clip ('milestone-10x' draws /clips/milestone-10x-*.svg);
+// the wash and when the text comes follow from it (the styles below).
+// `label` goes on the clip's pebble ("10×", the Board's emoji), taking the
+// pebble's keyframes, so it pops in step with the drawing and rests with it
+// (SvgLoop's `over`). Slots: the default one sits between the clip and the
+// text, `actions` under the text, and `toast` takes the page's Toast: the
+// page behind is inert, so the Toast shows in here, above the wash.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{
-  clip: Clip
+  clip: CelebrationClip
   headline: string
   body: string
   closeLabel: string
   closeAfter?: DurationToken
+  label?: string
 }>()
-defineSlots<{ clip?: () => unknown, default?: () => unknown, actions?: () => unknown, toast?: () => unknown }>()
+defineSlots<{ default?: () => unknown, actions?: () => unknown, toast?: () => unknown }>()
+
+const pebble = computed(() => {
+  const loop = CELEBRATION_PEBBLES[props.clip]
+  return { loop, style: loopStyle(loop, 'center')! }
+})
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
-const motionClip = useTemplateRef<{ time: () => number | null }>('motionClip')
 const headlineId = useId()
 useModalStack(open)
 
@@ -43,8 +54,6 @@ watch(open, (isOpen) => {
   if (!isOpen && el.open) el.close()
 }, { flush: 'post' })
 onBeforeUnmount(() => clearTimeout(closing))
-
-defineExpose({ time: () => motionClip.value?.time() ?? null })
 </script>
 
 <template>
@@ -68,13 +77,31 @@ defineExpose({ time: () => motionClip.value?.time() ?? null })
           <AppIcon name="close" />
         </button>
         <div class="clip relative aspect-square w-[min(78vw,48dvh,420px)]">
-          <MotionClip
-            ref="motionClip"
+          <SvgLoop
             :src="`/clips/${clip}`"
             :loop="false"
+            rest="last"
+            transparent
             play
-          />
-          <slot name="clip" />
+          >
+            <template
+              v-if="label"
+              #over
+            >
+              <!-- On the pebble, in the middle. -->
+              <div
+                class="absolute inset-0 flex items-center justify-center"
+                aria-hidden="true"
+              >
+                <span
+                  class="label leading-none"
+                  :data-loop="pebble.loop"
+                  :style="pebble.style"
+                  data-testid="celebration-label"
+                >{{ label }}</span>
+              </div>
+            </template>
+          </SvgLoop>
         </div>
         <slot />
         <h2
@@ -109,6 +136,17 @@ defineExpose({ time: () => motionClip.value?.time() ?? null })
 }
 .celebration {
   background: var(--wash);
+}
+/* The pebble's label, sized to the pebble (cqw of the clip): the milestone's
+   "10×" set as Remotion drew it (Petrona 500, .36 of a pebble .42 wide),
+   the Board's emoji as big as before. */
+.celebration[data-clip-wash="milestone-10x"] .label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15.12cqw;
+}
+.celebration[data-clip-wash="board-created"] .label {
+  font-size: 16cqw;
 }
 .clip {
   container-type: inline-size;

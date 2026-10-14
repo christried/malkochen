@@ -117,14 +117,21 @@ html {
   --wash-lane: 24%;
   --wash-lane-target: 36%;
 }
+/* What a lane is filled with, as `--lane`, for what is drawn on it to take
+   (LaneBlob): on phones the plain surface-muted (the page wears the tint),
+   once every Column shows its accent's tint. */
+[data-lane] {
+  --lane: var(--color-surface-muted);
+}
 @media (min-width: 768px) {
   .board {
     --board-muted: var(--color-text-muted);
     background-image: var(--board-gradient);
   }
   .board [data-lane] {
+    --lane: color-mix(in oklab, var(--accent) var(--wash-lane), var(--color-bg));
     --color-text-muted: color-mix(in oklab, var(--color-text) 30%, var(--board-muted));
-    background-color: color-mix(in oklab, var(--accent) var(--wash-lane), var(--color-bg));
+    background-color: var(--lane);
   }
 }
 /* The Board switcher's pill (#206) is filled in the Board's tint, much fuller

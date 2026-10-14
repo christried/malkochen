@@ -39,21 +39,38 @@ export async function countPeakPlaying(page: Page, dir = '/') {
   return () => page.evaluate(() => (window as unknown as { peakPlaying: number }).peakPlaying)
 }
 
+// The backgrounds a drawn clip paints itself: those of the boxes it is sized
+// in, up to `upTo` (its empty state, its celebration), and of everything it
+// draws in (its still, the drawing's host and the drawing itself; what the
+// drawing draws inside is tests/client's).
+export function backgroundsBehind(clip: Locator, upTo = '[data-empty]') {
+  return clip.evaluate((el, upTo) => {
+    const boxes: Element[] = [...el.querySelectorAll(':scope div, :scope img, :scope > div > svg')]
+    for (let box: Element | null = el; box && !box.matches(upTo); box = box.parentElement) boxes.push(box)
+    return boxes.flatMap((box) => {
+      const { backgroundColor, backgroundImage } = getComputedStyle(box)
+      return backgroundColor !== 'rgba(0, 0, 0, 0)' || backgroundImage !== 'none'
+        ? [`${box.tagName} ${box.getAttribute('class') ?? ''}: ${backgroundColor} ${backgroundImage}`]
+        : []
+    })
+  }, upTo)
+}
+
 // The still shown for clip `id` (its poster, /clips/<id>-<theme>.png), loaded.
 export function clipStill(scope: Page | Locator, id: string, theme: 'light' | 'dark' = 'light') {
   return scope.locator(`img[src="/clips/${id}-${theme}.png"]`)
 }
 
 // The still of a loop drawn in code, `src` its drawing without the theme
-// (e.g. '/clips/empty-column-butter'), loaded.
+// (e.g. '/clips/empty-column-knobi'), loaded.
 export function loopStill(scope: Page | Locator, src: string, theme: 'light' | 'dark' = 'light') {
   return scope.locator(`img[src="${src}-${theme}.svg"]`)
 }
 
-// The still of an empty Column in Columns of `accent`, whichever of the three
-// illustrations its Board gives it (utils/empty-column.ts), loaded.
-export function emptyColumnStill(scope: Page | Locator, accent: string, theme: 'light' | 'dark' = 'light') {
-  return scope.locator(`img[src^="/clips/empty-column"][src$="-${accent}-${theme}.svg"]`)
+// The still of an empty Column in `scope` (e.g. one Column), whichever of the
+// three illustrations its Board gives it (utils/empty-column.ts), loaded.
+export function emptyColumnStill(scope: Page | Locator, theme: 'light' | 'dark' = 'light') {
+  return scope.locator(`img[src^="/clips/empty-column"][src$="-${theme}.svg"]`)
 }
 
 // The "never cooked" scene of the Dish whose card link is `card`, its own by
@@ -81,4 +98,11 @@ export async function countClips(page: Page) {
     }).observe(document, { childList: true, subtree: true })
   }, CLIP)
   return () => page.evaluate(() => (window as unknown as { clips: number }).clips)
+}
+
+// The animations running in `scope`, by name: none with reduced motion.
+export function moving(scope: Locator) {
+  return scope.evaluate(el => el.getAnimations({ subtree: true })
+    .filter(animation => animation.playState === 'running')
+    .map(animation => (animation as CSSAnimation).animationName ?? animation.id))
 }

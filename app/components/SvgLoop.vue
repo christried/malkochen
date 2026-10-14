@@ -15,6 +15,17 @@ import { loopStyle } from '~/utils/svg-loop'
 // /placeholders/pasta-dark.svg in dark; one drawn the same in both themes
 // (`themed: false`, as Topfbert) is `src` + '.svg'. The still is the default
 // slot, or else that same file as an image.
+//
+// A one-shot that comes to rest somewhere else than it starts (a
+// celebration's pop: `rest="last"`, `:loop="false"`) is drawn standing at
+// its last frame, which is its still, and its keyframes start from its first
+// (#215). While it is on its way to play, nothing shows rather than the
+// end before the beginning; after its round it holds its last frame.
+//
+// The `over` slot is Vue drawn over the drawing, moving in step with it: an
+// element there with `data-loop` and loopStyle()'s style (a label on a
+// pebble, taking the pebble's keyframes) runs, pauses and rests with the
+// drawing's layers, on the same clock.
 const props = withDefaults(defineProps<{
   src: string
   play?: boolean
@@ -30,7 +41,10 @@ const props = withDefaults(defineProps<{
   sync?: boolean
   // How much of it must be on screen for it to run (else it pauses).
   visibleShare?: number
-}>(), { play: false, loop: true, transparent: false, themed: true, sync: false, visibleShare: 0 })
+  // Which frame the drawing stands at, its still: the first (a loop, or a
+  // play-once that ends where it began), or the last (see above).
+  rest?: 'first' | 'last'
+}>(), { play: false, loop: true, transparent: false, themed: true, sync: false, visibleShare: 0, rest: 'first' })
 const emit = defineEmits<{ ended: [] }>()
 
 const theme = useResolvedTheme()
@@ -40,10 +54,15 @@ const file = computed(() => props.themed ? `${props.src}-${theme.value}.svg` : `
 
 const root = useTemplateRef<HTMLElement>('root')
 const host = useTemplateRef<HTMLElement>('host')
+const overlay = useTemplateRef<HTMLElement>('overlay')
 const onScreen = useOnScreen(root, props.visibleShare)
 // The file drawn in `host`, once it is.
 const drawn = ref<string | null>(null)
 const shown = computed(() => wanted.value && drawn.value === file.value)
+// The drawing couldn't load: the still stays.
+const failed = ref(false)
+// Resting at its last frame, it shows nothing until the drawing is up.
+const waiting = computed(() => props.rest === 'last' && wanted.value && !shown.value && !failed.value)
 // A loop asked to stop looping goes on to the end of the round it is in,
 // as a video does, rather than snapping to rest (finishRound).
 const finishing = ref(false)
@@ -59,10 +78,12 @@ watch([wanted, file, host], async () => {
   }
   if (!host.value || drawn.value === file.value) return
   const wantedFile = file.value
+  failed.value = false
   const svg = await animatedSvg(wantedFile)
   if (!wanted.value || file.value !== wantedFile || !host.value) return
   if (!svg) {
     // Couldn't load: the still simply stays, and a play-once is over.
+    failed.value = true
     if (!props.loop) end()
     return
   }
@@ -96,23 +117,24 @@ watch(() => props.sync && run.value === 'loop' && onScreen.value, async (running
   }
 })
 
+// The drawing's layers' and the `over` slot's (not the still's).
 function animations() {
-  return host.value?.getAnimations({ subtree: true }) ?? []
+  return [host.value, overlay.value].flatMap(el => el?.getAnimations({ subtree: true }) ?? [])
 }
 
 // Played once: over when every layer's round is, or at once if nothing in
 // the drawing moves. `ended` comes once per play.
-let over = false
+let endSent = false
 function end() {
-  if (over) return
-  over = true
+  if (endSent) return
+  endSent = true
   emit('ended')
 }
 function endIfStill() {
   if ((run.value === 'once' || finishing.value) && animations().every(a => a.playState === 'finished')) end()
 }
 watch(run, async (now) => {
-  over = false
+  endSent = false
   if (now !== 'once') return
   await nextTick()
   requestAnimationFrame(() => {
@@ -178,7 +200,7 @@ async function animatedSvg(file: string): Promise<SVGSVGElement | null> {
   >
     <div
       class="h-full w-full"
-      :class="{ invisible: transparent && shown }"
+      :class="{ invisible: (transparent && shown) || waiting }"
     >
       <slot>
         <img
@@ -201,5 +223,14 @@ async function animatedSvg(file: string): Promise<SVGSVGElement | null> {
       :class="{ invisible: !shown }"
       @animationend="endIfStill"
     />
+    <div
+      v-if="$slots.over"
+      ref="overlay"
+      class="absolute inset-0"
+      :class="{ invisible: waiting }"
+      @animationend="endIfStill"
+    >
+      <slot name="over" />
+    </div>
   </div>
 </template>

@@ -1,0 +1,10 @@
+<!-- The 10th Cooking's celebration (handoff REMOTION.md "milestone-10x", as
+     remotion/src/clips/milestone-10x.tsx drew it, at a third of its 1080
+     canvas): the pebble pops in from nothing with a twist at f4, overshoots
+     at f18 and rests from f26; pebbles burst out of it from f8, gone by f35;
+     a ring pulses out from f15 to f42. 54 frames (1.8s), played once. No
+     background: it sits on the celebration's wash. The drawing as it stands
+     is the last frame, the still: the pebble resting alone. Its "10×" is Vue
+     text (CelebrationDialog). Played by SvgLoop; keyframes in
+     app/assets/css/loops.css. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" width="1080" height="1080" data-clip="milestone-10x" data-theme="light"><g data-layer="ring" data-loop="m10-ring 1.8s linear infinite" data-pivot="180 180" opacity="0"><circle cx="180" cy="180" r="78.624" fill="none" stroke="#FFFFFF" stroke-width="3.33"/></g><g data-layer="burst" data-loop="m10-burst 1.8s linear infinite" data-pivot="180 180" opacity="0"><g transform="translate(36 36) scale(2.4)"><ellipse cx="104" cy="60" rx="7" ry="6" fill="#F7B94A"/><ellipse cx="91.1" cy="91.1" rx="5" ry="4" fill="#8DB596"/><ellipse cx="60" cy="104" rx="7" ry="6" fill="#F08A5D"/><ellipse cx="28.9" cy="91.1" rx="5" ry="4" fill="#DE8CF2"/><ellipse cx="16" cy="60" rx="7" ry="6" fill="#F7B94A"/><ellipse cx="28.9" cy="28.9" rx="5" ry="4" fill="#8DB596"/><ellipse cx="60" cy="16" rx="7" ry="6" fill="#F08A5D"/><ellipse cx="91.1" cy="28.9" rx="5" ry="4" fill="#DE8CF2"/></g></g><g data-layer="pebble" data-loop="m10-pebble 1.8s linear infinite" data-pivot="180 180"><g style="filter:drop-shadow(0 4px 6px rgba(70,55,30,.18))"><path transform="translate(104.4 104.4) scale(1.512)" d="M50 6C76 4 96 22 94 50C92 78 74 96 48 94C22 92 4 74 6 48C8 24 26 8 50 6Z" fill="#FFFFFF"/></g></g></svg>
