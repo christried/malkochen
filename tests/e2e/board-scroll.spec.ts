@@ -43,7 +43,7 @@ test('opening a Dish and closing it leaves the Board where it was scrolled, down
   const place = await scrollBoard(page)
 
   // The Dish at the very bottom of the last Column. Opened by keyboard: a
-  // click retried while the card isn't yet still scrolls it into view
+  // click retried while the card is still settling scrolls it into view
   // (block 'end', 'center' or 'start'), and that alone moves the Board
   // (#260).
   await page.getByRole('link', { name: 'Eintopf 1', exact: true }).evaluate(el => el.focus({ preventScroll: true }))

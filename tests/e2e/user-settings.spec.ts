@@ -86,7 +86,7 @@ test('closing your settings (Escape, or its close button) leaves the Board as it
     // block 'end', 'center' or 'start', and that alone takes the window
     // back to the top (#260). The close button sits in the sheet, so its
     // click can't scroll the Board.
-    await page.getByRole('button', { name: 'Dein Konto' }).focus()
+    await page.getByRole('button', { name: 'Dein Konto' }).evaluate(el => el.focus({ preventScroll: true }))
     await page.keyboard.press('Enter')
     await expect(page.getByRole('menuitem', { name: 'Einstellungen' })).toBeFocused()
     await page.keyboard.press('Enter')
