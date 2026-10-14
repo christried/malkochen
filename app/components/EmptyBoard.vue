@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // A Board with no Dishes: the handoff's "empty-board" clip (Topfbert with
-// veggies hopping out of his pot, on a butter blob), looping while `play`
-// asks: it is the Board's one loop when nothing else plays (useBoardLoop).
-// Drawn in code (SvgLoop), its still is the loop's frame 0. No background of
-// its own: it sits on the first Column's, which is butter like its blob
-// (utils/columns.ts), in light and dark (#180).
+// veggies hopping out of his pot), on a blob in the lane's own colour
+// (LaneBlob), looping while `play` asks: it is the Board's one loop when
+// nothing else plays (useBoardLoop). Drawn in code (SvgLoop), its still is
+// the loop's frame 0. No background of its own: it sits on the first
+// Column's (#180).
 defineProps<{ play: boolean }>()
 const t = useStrings()
 </script>
@@ -14,7 +14,11 @@ const t = useStrings()
     class="flex flex-col items-center px-2 py-6 text-center"
     data-empty="board"
   >
-    <div class="aspect-[660/588] w-[min(70vw,240px)]">
+    <div class="relative aspect-[660/588] w-[min(70vw,240px)]">
+      <LaneBlob
+        view-box="0 0 220 196"
+        path="M106.13 11.76A100.67 86.24 0 0 1 206.8 98A89.06 86.24 0 0 1 117.74 184.24A104.54 77.62 0 0 1 13.2 106.62A92.93 94.86 0 0 1 106.13 11.76Z"
+      />
       <SvgLoop
         src="/clips/empty-board"
         :play="play"

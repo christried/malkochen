@@ -755,7 +755,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                 />
                 <EmptyColumn
                   v-else
-                  :accent="columnAccentName(index)"
                   :illustration="emptyColumnIllustration(board.id, index)"
                   :play="!!boardLoop.motionOf(emptyClipId(column))"
                   :data-empty-clip="emptyClipId(column)"

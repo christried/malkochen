@@ -2,11 +2,11 @@ import type { Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import { column } from './board'
 import { backgroundsBehind, clipStill, countPeakPlaying, emptyColumnStill, loopStill, neverCookedClip, playing } from './clips'
 import { gotoHydrated } from './hydration'
 import { landingBoardId, removeStoredImages, resetBoard, seedDish, setColumns, storedImage } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
-import { columnAccentName } from '../../app/utils/columns'
 import { EMPTY_COLUMN_ILLUSTRATIONS, emptyColumnIllustration } from '../../app/utils/empty-column'
 
 // The state and system clips (PRD story 82; handoff REMOTION.md): empty
@@ -19,8 +19,8 @@ test.describe.configure({ mode: 'serial' })
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const EMMY = ALLOWLISTED[19]
-// An empty Column's loop: any of the three illustrations, in any accent.
-const EMPTY_COLUMN_LIGHT = new RegExp(`^/clips/(${EMPTY_COLUMN_ILLUSTRATIONS.join('|')})-\\w+-light\\.svg$`)
+// An empty Column's loop: any of the three illustrations.
+const EMPTY_COLUMN_LIGHT = new RegExp(`^/clips/(${EMPTY_COLUMN_ILLUSTRATIONS.join('|')})-light\\.svg$`)
 
 test.afterAll(removeStoredImages)
 
@@ -36,7 +36,7 @@ test('an empty Board loops its clip in the current theme, and only that one', as
   // Drawn on the lane itself: no box of its own around Topfbert.
   expect(await backgroundsBehind(page.locator('[data-empty="board"] [data-svg-loop]'))).toEqual([])
   // The other, empty Columns show their still.
-  await expect(emptyColumnStill(page, 'orchid', 'dark')).toBeVisible()
+  await expect(emptyColumnStill(column(page, 'Diese Woche'), 'dark')).toBeVisible()
   expect(await peak()).toBe(1)
 })
 
@@ -48,14 +48,14 @@ test('empty Columns show the Board\'s own order of the three illustrations, and 
   await setColumns(page, ['Ideen', 'Diese Woche', 'Später', 'Gekocht'])
   await seedDish(page, { title: 'Mit Foto', imageUrl: await storedImage(400, 500), sourceLink: TIKTOK, sourceKind: 'tiktok' })
   const boardId = await landingBoardId(page)
-  const expected = [1, 2, 3].map(index => `/clips/${emptyColumnIllustration(boardId, index)}-${columnAccentName(index)}`)
+  const expected = [1, 2, 3].map(index => `/clips/${emptyColumnIllustration(boardId, index)}`)
   const shown = () => page.locator('[data-empty="column"] [data-svg-loop]')
     .evaluateAll(loops => loops.map(loop => loop.getAttribute('data-clip')))
 
   await gotoHydrated(page, '/')
   // Three empty Columns, three different illustrations: the Board's order.
   expect(await shown()).toEqual(expected)
-  expect(new Set(expected.map(src => src.replace(/-\w+$/, ''))).size).toBe(3)
+  expect(new Set(expected).size).toBe(3)
   await expect.poll(() => playing(page, '/clips/empty-column')).toHaveLength(1)
 
   // A reload shows the same.
@@ -143,7 +143,7 @@ test('an empty Column\'s loop starts from where its still rests', async ({ page 
 
   // Attached, not visible: once its loop is drawn over it, the still hides,
   // and the loop may already be up.
-  await expect(emptyColumnStill(page, 'orchid')).toBeAttached()
+  await expect(emptyColumnStill(column(page, 'Diese Woche'))).toBeAttached()
   await expect.poll(() => playing(page)).toEqual([expect.stringMatching(EMPTY_COLUMN_LIGHT)])
   type Moved = { shift: number, turn: number }
   const loop = () => page.evaluate(() => (window as unknown as { loop: { first: Moved, furthest: Moved } | null }).loop)

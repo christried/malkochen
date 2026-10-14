@@ -62,15 +62,15 @@ export function clipStill(scope: Page | Locator, id: string, theme: 'light' | 'd
 }
 
 // The still of a loop drawn in code, `src` its drawing without the theme
-// (e.g. '/clips/empty-column-butter'), loaded.
+// (e.g. '/clips/empty-column-knobi'), loaded.
 export function loopStill(scope: Page | Locator, src: string, theme: 'light' | 'dark' = 'light') {
   return scope.locator(`img[src="${src}-${theme}.svg"]`)
 }
 
-// The still of an empty Column in Columns of `accent`, whichever of the three
-// illustrations its Board gives it (utils/empty-column.ts), loaded.
-export function emptyColumnStill(scope: Page | Locator, accent: string, theme: 'light' | 'dark' = 'light') {
-  return scope.locator(`img[src^="/clips/empty-column"][src$="-${accent}-${theme}.svg"]`)
+// The still of an empty Column in `scope` (e.g. one Column), whichever of the
+// three illustrations its Board gives it (utils/empty-column.ts), loaded.
+export function emptyColumnStill(scope: Page | Locator, theme: 'light' | 'dark' = 'light') {
+  return scope.locator(`img[src^="/clips/empty-column"][src$="-${theme}.svg"]`)
 }
 
 // The "never cooked" scene of the Dish whose card link is `card`, its own by

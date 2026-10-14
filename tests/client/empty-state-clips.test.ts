@@ -1,17 +1,27 @@
 import { expect, test } from 'vitest'
+import { EMPTY_COLUMN_ILLUSTRATIONS } from '../../app/utils/empty-column'
 import { backgrounds, drawing, keyframes, layer, loops, THEMES } from './drawing'
 
-// The empty Board's and the empty search's clips, drawn in code (SvgLoop)
-// from the handoff's layers, as their briefs (REMOTION.md "empty-board",
-// "search-empty") and the Remotion clips that rendered them before tell. No
-// background of their own: they sit on whatever is behind them.
+// The empty Board's, the empty Columns' and the empty search's clips, drawn
+// in code (SvgLoop) from the handoff's layers, as their briefs (REMOTION.md
+// "empty-board", "search-empty") and the Remotion clips that rendered them
+// before tell. No background of their own: they sit on whatever is behind
+// them.
 
-test.each(THEMES)('the empty Board, %s: Topfbert on his butter blob, and nothing behind it', (theme) => {
+test.each(THEMES)('the empty Board, %s: Topfbert, and nothing behind him, not even his blob', (theme) => {
   const svg = drawing('empty-board', theme)
   expect(backgrounds(svg)).toEqual([])
-  // The blob comes first: the empty Column's butter blob in this theme.
-  const blob = svg.match(/<g data-layer="blob">\s*<path [^>]*fill="(#[0-9A-F]{6})"/i)?.[1]
-  expect(blob).toBe(theme === 'light' ? '#FDE4BD' : '#6C5631')
+  // The blob is drawn in the lane's colour by the page (LaneBlob, #215).
+  expect(svg).not.toContain('data-layer="blob"')
+})
+
+// The empty Column's three illustrations, one drawing per theme for every
+// Column: their blob is the page's, in the lane's colour (LaneBlob, #215).
+test.each(EMPTY_COLUMN_ILLUSTRATIONS.flatMap(clip => THEMES.map(theme => [clip, theme])))('%s, %s: in its bowl, and nothing behind it, not even its blob', (clip, theme) => {
+  const svg = drawing(clip, theme)
+  expect(backgrounds(svg)).toEqual([])
+  expect(svg).not.toContain('id="blob"')
+  expect(svg).toContain(`data-clip="${clip}"`)
 })
 
 test.each(THEMES)('the empty Board, %s: four veggies hop out of the pot in turn, 18 of 72 frames apart', (theme) => {

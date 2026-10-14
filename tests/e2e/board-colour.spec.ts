@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { column } from './board'
-import { ACCENTS, backgroundOf, colourOf, colours, contrast, gradientStops, rgb, tintedWith } from './colour'
+import { column, tab } from './board'
+import { ACCENTS, backgroundOf, colourOf, colours, contrast, gradientStops, rgb, tintedWith, type Rgb } from './colour'
 import { gotoHydrated } from './hydration'
 import { resetBoard, seedDish, setColumns } from './seed'
 
@@ -105,4 +105,43 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(page.getByTestId('drag-card')).toHaveCount(0)
     await expect.poll(async () => (await dropWash(page)).opacity).toBe('0')
   })
+}
+
+// How far a colour lies from `from` toward `to` (`share` of the way), and how
+// far off that line it is.
+function along(colour: Rgb, from: Rgb, to: Rgb) {
+  const way = to.map((v, i) => v - from[i]!)
+  const moved = colour.map((v, i) => v - from[i]!)
+  const share = moved.reduce((sum, v, i) => sum + v * way[i]!, 0) / way.reduce((sum, v) => sum + v * v, 0)
+  return { share, off: Math.hypot(...moved.map((v, i) => v - share * way[i]!)) }
+}
+
+// The blob behind „Noch nichts hier." (#215), the empty Board's and the
+// empty Columns', is the colour of its lane, a little fuller toward the
+// lane's accent: on the tinted lanes once every Column shows, and on the
+// phone's plain ones, in light and dark.
+for (const scheme of ['light', 'dark'] as const) {
+  for (const [layout, size] of [['desktop', DESKTOP], ['phone', { width: 400, height: 860 }]] as const) {
+    test(`${layout} (${scheme}): the blob behind an empty Column's „Noch nichts hier." is its lane's colour`, async ({ page }) => {
+      await page.setViewportSize(size)
+      await page.emulateMedia({ colorScheme: scheme })
+      await signIn(page, CHIEN_SHIUNG)
+      await resetBoard(page)
+      await gotoHydrated(page, '/')
+      const { palette } = await colours(page)
+
+      // The empty Board's in the first, the empty Columns' in the others.
+      for (const [i, name] of ['Ideen', 'Diese Woche', 'Gekocht'].entries()) {
+        if (layout === 'phone') await tab(page, `${name} 0`).click()
+        const lane = column(page, name)
+        const blob = lane.locator('[data-blob]')
+        await expect(blob).toBeVisible()
+        const [fill, behind] = await rgb(page, [await blob.evaluate(el => getComputedStyle(el).fill), await backgroundOf(lane)])
+        const { share, off } = along(fill!, behind!, palette[i]!)
+        expect(share, `${name}: toward its accent`).toBeGreaterThan(0.05)
+        expect(share, `${name}: still near its lane`).toBeLessThan(0.25)
+        expect(off, `${name}: no other colour`).toBeLessThan(8)
+      }
+    })
+  }
 }
