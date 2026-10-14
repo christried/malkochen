@@ -123,6 +123,17 @@ test('not-unlocked: Topfbert holds his sign up in his right handle; it sways abo
   expect(keyframes('nu-sign')).toMatch(/^0%\{transform:rotate\(0deg\).*25%\{transform:rotate\(8deg\).*75%\{transform:rotate\(-8deg\).*100%\{transform:rotate\(0deg\)\}$/)
 })
 
+test('not-unlocked: the sign reads "Bald!", centred on its board (x 10–110, y 8–48)', () => {
+  const lettering = layer(drawing('not-unlocked'), 'sign').match(/<path d="([^"]+)"/)![1]!
+  const points = lettering.match(/-?[\d.]+ -?[\d.]+/g)!.map(pair => pair.split(' ').map(Number) as [number, number])
+  const [left, right] = [Math.min(...points.map(([x]) => x)), Math.max(...points.map(([x]) => x))]
+  const [top, bottom] = [Math.min(...points.map(([, y]) => y)), Math.max(...points.map(([, y]) => y))]
+  expect((left + right) / 2).toBeCloseTo(60, 0)
+  expect((top + bottom) / 2).toBeCloseTo(28, 0)
+  // "Bald!" in Figtree 700 at 19 is 40.8 wide; "Gleich!" was 59.3.
+  expect(right - left).toBeCloseTo(40.8, 0)
+})
+
 test('not-unlocked: Topfbert and his sign sit inside the circle (centre 110 105, r 100), even swung', () => {
   const svg = drawing('not-unlocked')
   const [x, y, w, h] = svg.match(/<svg x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" viewBox="0 -20 140 150"/)!.slice(1).map(Number) as [number, number, number, number]

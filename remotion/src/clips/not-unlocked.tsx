@@ -3,7 +3,7 @@ import { defineClip, swing } from "./clip";
 import { ACCENT, Blob, Place, Stage } from "./draw";
 import { Topfbert, type TopfbertPart, topfbertPoses } from "./topfbert";
 
-// Account not unlocked: Topfbert happy beside his "Gleich!" sign, which sways
+// Account not unlocked: Topfbert happy beside his "Bald!" sign, which sways
 // −8° ↔ +8° on its post. Laid out like the still on the login page.
 
 const FRAMES = 84;
