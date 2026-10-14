@@ -298,3 +298,140 @@
   30.5556%, 80.5556% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(.42, 0, 1, 1) }
   100% { transform: translateY(10px); opacity: 0 }
 }
+
+/* The system clips and the invite landing (#217): offline-*.svg, error-*.svg,
+   not-unlocked.svg, invite-intro-*.svg and invite-loop-*.svg, timed as
+   remotion/src/clips/offline.tsx, error.tsx, not-unlocked.tsx,
+   invite-intro.tsx and invite-loop.tsx played their briefs (REMOTION.md)
+   when they were videos. Topfbert's bob, hat and steam are tb-bob, tb-hat
+   and tb-steam, his blink eb-blink, his oops wobble and drop lf-wobble and
+   lf-drop. A segment's ease is Remotion's default ease-in-out unless it says
+   otherwise; sines are drawn with the sine eases, as for the link lookup. */
+/* Offline, 72 frames: the Wi-Fi sign's outer arc fades to 12% at f20–29,
+   the inner one at f31–40, and both come back by f72. */
+@keyframes of-arc-outer {
+  0%, 27.7778% { opacity: 1 }
+  40.2778%, 86.1111% { opacity: .12 }
+  100% { opacity: 1 }
+}
+@keyframes of-arc-inner {
+  0%, 43.0556% { opacity: 1 }
+  55.5556%, 86.1111% { opacity: .12 }
+  100% { opacity: 1 }
+}
+/* A sleeping "z" drifts in from below left, up and right, and fades. */
+@keyframes of-z {
+  0% { transform: translate(-4px, 4px); opacity: 0 }
+  25% { transform: translate(0px, 0px); opacity: 1 }
+  100% { transform: translate(6px, -8px); opacity: 0 }
+}
+/* The error, 72 frames: a puff of smoke rises from the pot, grows and fades
+   over the whole loop (ease-out, of a third of the 660 canvas), and the
+   carrot spill under Topfbert swells to 1.12 wide at f36. */
+@keyframes er-puff {
+  0% { transform: translateY(0px) scale(.4); opacity: 0 }
+  16.6667% { transform: translateY(-4.6667px) scale(.7); opacity: 1 }
+  100% { transform: translateY(-30px) scale(1.5); opacity: 0 }
+}
+@keyframes er-spill {
+  0%, 100% { transform: scale(1, 1); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+  50% { transform: scale(1.12, 1); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+}
+/* Not unlocked, 84 frames: the sign Topfbert holds up sways ±8° about his
+   grip, a sine. It starts straight, the brief's still (f21 of the old clip,
+   where it swung from −8° at f0 to +8° at f42). */
+@keyframes nu-sign {
+  0% { transform: rotate(0deg); animation-timing-function: cubic-bezier(.61, 1, .88, 1) }
+  25% { transform: rotate(8deg); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+  75% { transform: rotate(-8deg); animation-timing-function: cubic-bezier(.12, 0, .39, 0) }
+  100% { transform: rotate(0deg) }
+}
+/* The invite landing's intro, 45 frames, played once: the Board's pebble
+   pops in with a twist at f6–27, Topfbert rises from below at f21–39, the
+   six veggies pop in 2 frames apart from f26, and the Member avatars (Vue,
+   InviteClip) 3 frames apart from f28. It ends on the loop's frame 0. */
+@keyframes iv-pebble-pop {
+  0%, 13.3333% { transform: rotate(-12deg) scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  40% { transform: rotate(4deg) scale(1.1); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  60%, 100% { transform: rotate(0deg) scale(1) }
+}
+@keyframes iv-rise {
+  0%, 46.6667% { transform: translate(-20px, 160px); opacity: 0; animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  48.8889% { transform: translate(-19px, 150px); opacity: 1; animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  86.6667%, 100% { transform: translate(0px, 0px); opacity: 1 }
+}
+/* Something popping in from nothing at frame s of the 45: overshoots to
+   1.15 at s+5, rests from s+8. */
+@keyframes iv-veggie-1 {
+  0%, 57.7778% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  68.8889% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  75.5556%, 100% { transform: scale(1) }
+}
+@keyframes iv-veggie-2 {
+  0%, 62.2222% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  73.3333% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  80%, 100% { transform: scale(1) }
+}
+@keyframes iv-veggie-3 {
+  0%, 66.6667% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  77.7778% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  84.4444%, 100% { transform: scale(1) }
+}
+@keyframes iv-veggie-4 {
+  0%, 71.1111% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  82.2222% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  88.8889%, 100% { transform: scale(1) }
+}
+@keyframes iv-veggie-5 {
+  0%, 75.5556% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  86.6667% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  93.3333%, 100% { transform: scale(1) }
+}
+@keyframes iv-veggie-6 {
+  0%, 80% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  91.1111% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  97.7778%, 100% { transform: scale(1) }
+}
+@keyframes iv-avatar-1 {
+  0%, 62.2222% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  73.3333% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  80%, 100% { transform: scale(1) }
+}
+@keyframes iv-avatar-2 {
+  0%, 68.8889% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  80% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  86.6667%, 100% { transform: scale(1) }
+}
+@keyframes iv-avatar-3 {
+  0%, 75.5556% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  86.6667% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  93.3333%, 100% { transform: scale(1) }
+}
+@keyframes iv-avatar-4 {
+  0%, 82.2222% { transform: scale(0); animation-timing-function: cubic-bezier(0, 0, .58, 1) }
+  93.3333% { transform: scale(1.15); animation-timing-function: cubic-bezier(.42, 0, .58, 1) }
+  100% { transform: scale(1) }
+}
+/* The invite loop, 420 frames: the pebble (and the Board's emoji on it)
+   bobs ±8 of the 750 canvas's height every 84 frames, a sine; as a share of
+   the clip's height, so the emoji Vue draws over it moves the same. */
+@keyframes iv-bob {
+  0% { transform: translateY(0%); animation-timing-function: cubic-bezier(.61, 1, .88, 1) }
+  25% { transform: translateY(-1.0667%); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+  75% { transform: translateY(1.0667%); animation-timing-function: cubic-bezier(.12, 0, .39, 0) }
+  100% { transform: translateY(0%) }
+}
+/* A veggie's lap round the pebble, once per loop, staying upright: x a sine
+   and y a cosine round an ellipse 110.7×70.3 of the 260×250 drawing, the
+   brief's r = 354px circle squashed to what the canvas leaves. Veggie 1
+   starts at the top. */
+@keyframes iv-orbit-x {
+  0% { transform: translateX(0px); animation-timing-function: cubic-bezier(.61, 1, .88, 1) }
+  25% { transform: translateX(110.7px); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+  75% { transform: translateX(-110.7px); animation-timing-function: cubic-bezier(.12, 0, .39, 0) }
+  100% { transform: translateX(0px) }
+}
+@keyframes iv-orbit-y {
+  0%, 100% { transform: translateY(-70.3px); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+  50% { transform: translateY(70.3px); animation-timing-function: cubic-bezier(.37, 0, .63, 1) }
+}

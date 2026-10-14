@@ -1,21 +1,18 @@
 import type { Locator, Page } from '@playwright/test'
 import { neverCookedScene } from '../../app/utils/never-cooked'
 
-// Motion clips in the browser tests: videos (MotionClip.vue) and loops drawn
-// in code (SvgLoop.vue).
+// Motion clips in the browser tests: loops drawn in code (SvgLoop.vue), the
+// only clips since the last videos went (#217).
 
-// The clips playing inside `scope`, by the file they play (a video's, or a
-// loop's SVG); only those under `dir` (e.g. '/placeholders/') if given.
+// The clips playing inside `scope`, by the SVG they play; only those under
+// `dir` (e.g. '/placeholders/') if given.
 export function playing(scope: Page | Locator, dir = '/') {
-  return scope.locator('video, [data-svg-loop][data-playing]').evaluateAll((clips, dir) => clips
+  return scope.locator('[data-svg-loop][data-playing]').evaluateAll((clips, dir) => clips
     .map((clip) => {
       // A loop plays its file while its layers' animations run (and one that
       // stopped since it was found has no file any more).
-      if (!(clip instanceof HTMLVideoElement)) {
-        const running = clip.getAnimations({ subtree: true }).some(a => a.playState === 'running')
-        return running ? clip.getAttribute('data-playing') : null
-      }
-      return !clip.paused && !clip.ended && clip.currentTime > 0 ? new URL(clip.currentSrc).pathname : null
+      const running = clip.getAnimations({ subtree: true }).some(a => a.playState === 'running')
+      return running ? clip.getAttribute('data-playing') : null
     })
     .filter((path): path is string => path !== null && path.startsWith(dir)), dir)
 }
@@ -27,13 +24,10 @@ export async function countPeakPlaying(page: Page, dir = '/') {
     const w = window as unknown as { peakPlaying: number }
     w.peakPlaying = 0
     const count = () => {
-      const videos = [...document.querySelectorAll('video')]
-        .filter(v => !v.paused && new URL(v.currentSrc).pathname.startsWith(dir))
       const loops = [...document.querySelectorAll<HTMLElement>('[data-svg-loop][data-playing]')]
         .filter(loop => loop.dataset.playing?.startsWith(dir))
-      w.peakPlaying = Math.max(w.peakPlaying, videos.length + loops.length)
+      w.peakPlaying = Math.max(w.peakPlaying, loops.length)
     }
-    document.addEventListener('playing', count, true)
     new MutationObserver(count).observe(document, { subtree: true, attributeFilter: ['data-playing'] })
   }, dir)
   return () => page.evaluate(() => (window as unknown as { peakPlaying: number }).peakPlaying)
@@ -54,11 +48,6 @@ export function backgroundsBehind(clip: Locator, upTo = '[data-empty]') {
         : []
     })
   }, upTo)
-}
-
-// The still shown for clip `id` (its poster, /clips/<id>-<theme>.png), loaded.
-export function clipStill(scope: Page | Locator, id: string, theme: 'light' | 'dark' = 'light') {
-  return scope.locator(`img[src="/clips/${id}-${theme}.png"]`)
 }
 
 // The still of a loop drawn in code, `src` its drawing without the theme
@@ -82,8 +71,8 @@ export async function neverCookedClip(card: Locator) {
   return `/clips/${neverCookedScene(id.slice('dish-'.length))}`
 }
 
-// What loads a clip: a video, or a loop's animated drawing.
-const CLIP = 'video, [data-loop-svg]'
+// What loads a clip: a loop's animated drawing.
+const CLIP = '[data-loop-svg]'
 
 // Counts, in the page, every clip that ever comes into it.
 export async function countClips(page: Page) {

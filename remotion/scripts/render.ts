@@ -1,10 +1,5 @@
-// Renders every video into the app's static assets, per theme:
-//   public/clips/<clip>-<theme>.{mp4,webm,png}          the state and system clips
-//
-//   .mp4   H.264, what every browser plays
-//   .webm  VP9, smaller where supported
-//   .png   poster: the reduced-motion still (the brief's still, which for
-//          invite-intro is invite-loop's)
+// Rendered every video into the app's static assets, per theme, as
+// public/clips/<clip>-<theme>.{mp4,webm,png} (H.264, VP9 and the poster).
 //
 // Not the loops the app draws in code from their SVGs since #111 (SvgLoop.vue:
 // sharp at any size, at the screen's refresh rate): the Placeholder Images,
@@ -12,12 +7,12 @@
 // the empty search's, which sit on the lane and the page without a box, and
 // since #215 the two celebrations' (milestone-10x, board-created), on their
 // wash, and since #216 the link lookup's (lookup-stir, lookup-failed) and
-// the splash, which SplashScreen.vue draws inline. Their compositions stay
-// for Studio, the splash's landscape one too.
+// the splash, which SplashScreen.vue draws inline, and since #217 the last
+// ones, invite, offline, error and not-unlocked: nothing is rendered any more.
+// Their compositions stay for Studio, the splash's landscape one too.
 // (Round 11's new loops, like the "never cooked" scenes, never had one.)
 //
-//   npm run render                   everything, light and dark
-//   npm run render -- offline error  only the named clips
+//   npm run render -- <clip>  a clip's composition, were it rendered again
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -67,6 +62,11 @@ const DRAWN_IN_APP = new Set([
   "lookup-stir",
   "lookup-failed",
   "splash",
+  "invite-intro",
+  "invite-loop",
+  "not-unlocked",
+  "offline",
+  "error",
 ]);
 const drawnInApp = (props: PlaceholderProps | ClipProps) => "dish" in props || DRAWN_IN_APP.has(props.clip);
 
@@ -76,7 +76,9 @@ const compositions = all.filter((c) => {
   if (drawnInApp(props)) return false;
   return only.length === 0 || only.includes(output(props).name);
 });
-if (compositions.length === 0) throw new Error(`Nothing matches ${only.join(", ")}`);
+// Since #217 every clip is drawn in the app: nothing is left to render.
+if (compositions.length === 0 && only.length === 0) console.log("Every clip is drawn in the app (#217): nothing to render.");
+else if (compositions.length === 0) throw new Error(`Nothing matches ${only.join(", ")}`);
 
 for (const composition of compositions) {
   const { dir, file, poster } = output(composition.props as PlaceholderProps | ClipProps);

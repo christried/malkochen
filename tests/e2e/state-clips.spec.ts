@@ -3,7 +3,7 @@ import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
-import { backgroundsBehind, clipStill, countPeakPlaying, emptyColumnStill, loopStill, neverCookedClip, playing } from './clips'
+import { backgroundsBehind, countPeakPlaying, emptyColumnStill, loopStill, neverCookedClip, playing } from './clips'
 import { gotoHydrated } from './hydration'
 import { landingBoardId, removeStoredImages, resetBoard, seedDish, setColumns, storedImage } from './seed'
 import { stubSourceLookup } from './source-lookup-stub'
@@ -248,24 +248,27 @@ test('the sign-in hero loops Topfbert, and every second tile of its turning ring
   await expect.poll(turn).not.toBe(before)
 })
 
-test('Not unlocked loops its clip', async ({ page }) => {
+test('Not unlocked loops its clip, on its circle, with no box of its own', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await gotoHydrated(page, '/login?error=not_allowed')
 
-  await expect.poll(() => playing(page)).toEqual(['/clips/not-unlocked-dark.webm'])
+  await expect.poll(() => playing(page)).toEqual(['/clips/not-unlocked.svg'])
+  expect(await backgroundsBehind(page.locator('[data-svg-loop]'), 'main')).toEqual([])
+  await expect(page.locator('main [data-blob]')).toHaveClass(/rounded-full/)
 })
 
-// What shows of the invite clip, sampled every frame: whether a video frame
+// What shows of the invite clip, sampled every frame: whether its drawing
 // or the still covers it. Once something first does (the still may take a
 // while to load), true as soon as neither does: a flash.
 async function watchForFlash(page: Page) {
   await page.addInitScript(() => {
     const w = window as unknown as { clipFlashed: boolean }
     w.clipFlashed = false
+    const seen = (el: Element) => el.checkVisibility({ visibilityProperty: true })
     const covered = (clip: Element) => {
-      const video = clip.querySelector('video')
-      if (video && getComputedStyle(video).opacity === '1' && video.readyState >= 2) return true
-      return [...clip.querySelectorAll('img')].some(img => img.complete && img.naturalWidth > 0 && img.checkVisibility())
+      const drawing = clip.querySelector('[data-loop-svg]')
+      if (drawing && seen(drawing)) return true
+      return [...clip.querySelectorAll('img')].some(img => img.complete && img.naturalWidth > 0 && seen(img))
     }
     let shown = false
     const sample = () => {
@@ -287,15 +290,16 @@ test('the invite landing plays its intro, then hands over to the loop without a 
 
   const invited = await newTab(browser, { colorScheme: 'light' })
   const flashed = await watchForFlash(invited)
-  // A slow still, as on a slow connection: the hand-over must not wait on it.
-  await invited.route('**/clips/invite-loop-*.png', async (route) => {
+  // A slow loop, as on a slow connection: the hand-over shows the still
+  // meanwhile.
+  await invited.route('**/clips/invite-loop-*.svg', async (route) => {
     await new Promise(resolve => setTimeout(resolve, 800))
     await route.continue()
   })
   await gotoHydrated(invited, link)
 
-  await expect.poll(() => playing(invited), { intervals: [50] }).toEqual(['/clips/invite-intro-light.webm'])
-  await expect.poll(() => playing(invited)).toEqual(['/clips/invite-loop-light.webm'])
+  await expect.poll(() => playing(invited), { intervals: [50] }).toEqual(['/clips/invite-intro-light.svg'])
+  await expect.poll(() => playing(invited)).toEqual(['/clips/invite-loop-light.svg'])
   // The Board's emoji rides on the clip's pebble.
   await expect(invited.getByTestId('invite-emoji')).toHaveText('🍜')
   expect(await flashed()).toBe(false)
@@ -316,7 +320,8 @@ test('the error screen loops its clip, which takes its still\'s place without mo
   await gotoHydrated(page, '/b/00000000-0000-4000-8000-000000000000')
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Das gibt’s hier nicht.')
-  await expect.poll(() => playing(page)).toEqual(['/clips/error-light.webm'])
-  expect(await page.locator('video').boundingBox()).toEqual(await clipStill(page, 'error').boundingBox())
+  await expect.poll(() => playing(page)).toEqual(['/clips/error-light.svg'])
+  expect(await page.locator('[data-loop-svg]').boundingBox()).toEqual(await loopStill(page, '/clips/error').boundingBox())
+  expect(await backgroundsBehind(page.locator('[data-svg-loop]'), '.bg-bg')).toEqual([])
   expect(await page.evaluate(() => (window as unknown as { layoutShift: number }).layoutShift)).toBe(0)
 })
