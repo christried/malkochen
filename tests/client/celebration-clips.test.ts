@@ -110,12 +110,11 @@ test('the celebrations\' old videos and posters are gone; the clips still on vid
     'milestone-10x-dark.svg',
     'milestone-10x-light.svg',
   ])
-  for (const clip of ['lookup-stir', 'lookup-failed', 'invite-intro', 'invite-loop', 'offline', 'error', 'not-unlocked']) {
+  for (const clip of ['invite-intro', 'invite-loop', 'offline', 'error', 'not-unlocked']) {
     for (const theme of THEMES) {
       expect(files).toEqual(expect.arrayContaining([`${clip}-${theme}.webm`, `${clip}-${theme}.mp4`, `${clip}-${theme}.png`]))
     }
   }
-  expect(files).toEqual(expect.arrayContaining(['splash-light.webm', 'splash-dark.mp4', 'splash-poster.webp', 'splash-still.webp']))
 })
 
 test.each(Object.entries(CELEBRATION_PEBBLES).flatMap(([clip, loop]) => THEMES.map(theme => [clip, theme, loop])))('%s, %s: the label on the pebble takes the pebble layer’s own loop', (clip, theme, loop) => {

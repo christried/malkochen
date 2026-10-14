@@ -1,6 +1,5 @@
 // Renders every video into the app's static assets, per theme:
-//   public/clips/<clip>-<theme>.{mp4,webm,png}          the state, system and celebration clips
-//   public/clips/<clip>-landscape-<theme>.{mp4,webm}    a clip's 16:9 render for wide windows
+//   public/clips/<clip>-<theme>.{mp4,webm,png}          the state and system clips
 //
 //   .mp4   H.264, what every browser plays
 //   .webm  VP9, smaller where supported
@@ -12,14 +11,10 @@
 // the empty Column's and Topfbert wow's, since #180 the empty Board's and
 // the empty search's, which sit on the lane and the page without a box, and
 // since #215 the two celebrations' (milestone-10x, board-created), on their
-// wash. Their compositions stay for Studio.
+// wash, and since #216 the link lookup's (lookup-stir, lookup-failed) and
+// the splash, which SplashScreen.vue draws inline. Their compositions stay
+// for Studio, the splash's landscape one too.
 // (Round 11's new loops, like the "never cooked" scenes, never had one.)
-//
-// The splash has no PNGs: from frame 10 on the butter covers the Board's
-// background, so its stills are one WebP each for both themes, small enough
-// for the service worker to precache (public/clips/splash[-landscape]-<still>.webp):
-//   splash-poster.webp  frame 10, what shows until the clip has a frame
-//   splash-still.webp   frame 16, the reduced-motion still
 //
 //   npm run render                   everything, light and dark
 //   npm run render -- offline error  only the named clips
@@ -36,15 +31,6 @@ import { clipName, HANDOFF_DIR, RSPACK, VIDEO_IMAGE_FORMAT } from "../src/render
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "../public");
 const only = process.argv.slice(2);
-
-// Clips whose stills are theme-independent WebPs in place of the PNG poster.
-// Named <clip>[-landscape]-<name>.webp.
-const WEBP_STILLS: Record<string, { name: string; frame: number }[]> = {
-  splash: [
-    { name: "poster", frame: 10 },
-    { name: "still", frame: 16 },
-  ],
-};
 
 // Where a composition's files go, and the composition and frame of its poster.
 // `name` is what the command line picks it by: a clip's landscape render
@@ -78,6 +64,9 @@ const DRAWN_IN_APP = new Set([
   "topfbert-wow",
   "milestone-10x",
   "board-created",
+  "lookup-stir",
+  "lookup-failed",
+  "splash",
 ]);
 const drawnInApp = (props: PlaceholderProps | ClipProps) => "dish" in props || DRAWN_IN_APP.has(props.clip);
 
@@ -97,29 +86,14 @@ for (const composition of compositions) {
 
   const posterComposition = all.find((c) => c.id === poster.id);
   if (!posterComposition) throw new Error(`No composition ${poster.id} for ${file}'s poster`);
-  const clip = "clip" in composition.props ? (composition.props as ClipProps) : undefined;
-  const webpStills = clip && WEBP_STILLS[clip.clip];
-  if (!webpStills) {
-    await renderStill({
-      composition: posterComposition,
-      serveUrl,
-      inputProps: posterComposition.props,
-      frame: poster.frame,
-      output: `${name}.png`,
-      imageFormat: "png",
-    });
-  } else if (clip?.theme === "light") {
-    for (const { name: still, frame } of webpStills) {
-      await renderStill({
-        composition,
-        serveUrl,
-        inputProps: composition.props,
-        frame,
-        output: join(publicDir, dir, `${clipName(clip.clip, clip.landscape)}-${still}.webp`),
-        imageFormat: "webp",
-      });
-    }
-  }
+  await renderStill({
+    composition: posterComposition,
+    serveUrl,
+    inputProps: posterComposition.props,
+    frame: poster.frame,
+    output: `${name}.png`,
+    imageFormat: "png",
+  });
   for (const [codec, extension] of [["h264", "mp4"], ["vp9", "webm"]] as const) {
     await renderMedia({
       ...common,
