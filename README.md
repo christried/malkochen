@@ -130,13 +130,14 @@ on the migrated schema until the new one is promoted.
 
 ## Motion graphics (Remotion)
 
-The other clips (scenes with a timeline of their own) are rendered by a separate Remotion project in
-[`remotion/`](remotion/README.md), outside the pnpm workspace; the app build
-never installs or imports it. To re-render after changing a loop:
+Every clip is drawn in the app since #217: layered SVGs in `public/clips/`
+played by `SvgLoop.vue`, keyframes in `app/assets/css/loops.css`. The
+separate Remotion project in [`remotion/`](remotion/README.md), outside the
+pnpm workspace, renders none of them any more; its Studio still shows the
+scenes the drawings were timed from:
 
 ```bash
 cd remotion
 npm install
-npm run dev      # Remotion Studio, to check the clips by eye
-npm run render   # writes public/clips/*
+npm run dev      # Remotion Studio, to check the scenes by eye
 ```

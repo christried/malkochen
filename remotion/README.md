@@ -1,7 +1,9 @@
 # malkochen · Remotion
 
 The motion graphics from the design handoff (`docs/design handoff/REMOTION.md`),
-rendered to static video files the app serves from `public/`. A separate
+once rendered to static video files the app served from `public/`. Since #217
+the app draws every one of them in code, so nothing is rendered any more; the
+timelines here are what the drawings were timed from. A separate
 project: it is not in the pnpm workspace, the app never imports it, and the
 Vercel build never installs it.
 
@@ -22,29 +24,16 @@ The first render downloads Chrome Headless Shell (~110 MB) once.
 
 ```bash
 npm run dev                       # Remotion Studio: check every clip by eye before rendering
-npm run render                    # render every clip into public/clips/
-npm run render -- offline error   # only the named clips
 npm test                          # timelines: seamless loops, no jumps, the briefs' key moments
 npm run lint                      # ESLint + tsc
 ```
-
-`npm run render` writes, per video and theme:
-
-| File | What |
-|---|---|
-| `public/clips/<clip>-<theme>.{mp4,webm,png}` | The state and system clips |
-
-`.mp4` is H.264 and plays everywhere, `.webm` is VP9 and smaller where it is
-supported, and `.png` is the poster: the reduced-motion still (the brief's
-"still"; invite-intro's is invite-loop's frame 0, where it hands off).
-
-Commit the rendered files; the app serves them as they are.
 
 Not rendered any more (#111): the Placeholder Images, `empty-column` and
 `topfbert-wow`, since #180 `empty-board` and `search-empty`, and since #215 the
 celebrations `milestone-10x` and `board-created`, and since #216 the link
 lookup's `lookup-stir` and `lookup-failed` and the `splash` (drawn inline by
-`SplashScreen.vue`), whose baked-in background showed as a box on the
+`SplashScreen.vue`), and since #217 the last ones, `invite-intro`,
+`invite-loop`, `offline`, `error` and `not-unlocked`, whose baked-in background showed as a box on the
 coloured lanes, page and wash. The app draws those
 loops in code from their SVGs
 (`SvgLoop.vue`, keyframes in `app/assets/css/loops.css`), at the screen's
@@ -108,8 +97,8 @@ draws them in code the same way.
 
 ## Turning a clip into a drawing the app plays
 
-How the celebrations were moved off video (#215), for the clips still
-rendered here:
+How the clips were moved off video (#215–#217), for a scene drawn here
+that the app should play:
 
 1. **Draw the scene as a layered SVG**, one per theme:
    `public/clips/<clip>-<theme>.svg`, no background (the app's page, lane or
