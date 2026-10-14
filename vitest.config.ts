@@ -30,6 +30,14 @@ export default defineConfig({
       },
       {
         test: {
+          // Seam 5: push notifications' messages and sending, against a
+          // faked push service.
+          name: 'push',
+          include: ['tests/push/**/*.test.ts'],
+        },
+      },
+      {
+        test: {
           // Seam 4: client modules, with their I/O faked: the Board module
           // through its operations with an in-memory transport, the link
           // lookup module with fake timers and a fake Source Lookup, the
