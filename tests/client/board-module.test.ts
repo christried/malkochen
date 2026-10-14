@@ -770,3 +770,40 @@ test('an add that fails rejects, and the Board stays as it was', async () => {
 
   expect(shown()).toEqual({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: [] })
 })
+
+test('the Dish count is every Dish on the Board, the Gekocht Column’s included; an empty Board counts 0', () => {
+  expect(setup(board => board.columns[2]!.dishes.push(dish('g'))).module.dishCount.value).toBe(5)
+  expect(setup(board => board.columns.forEach(c => (c.dishes = []))).module.dishCount.value).toBe(0)
+})
+
+test('the Dish count rises with an add and falls with a delete, and moves within the Board leave it', async () => {
+  const { module } = setup()
+
+  await module.addDish('board', { title: 'Chana Masala', placeholder: 'bowl' })
+  expect(module.dishCount.value).toBe(5)
+
+  module.deleteDish('a')
+  expect(module.dishCount.value).toBe(4)
+
+  module.moveDish('b', { columnId: 'woche' })
+  module.cookDish('c')
+  expect(module.dishCount.value).toBe(4)
+})
+
+test('the Dish count falls when a Dish moves to another Board', () => {
+  const { module } = setup()
+
+  module.moveToBoard('b', { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })
+
+  expect(module.dishCount.value).toBe(3)
+})
+
+test('the Dish count follows other Members’ adds and deletes through a poll', async () => {
+  const { fake, module } = setup()
+  fake.server.columns[0]!.dishes.unshift(dish('y'), dish('z'))
+  fake.deleteDishElsewhere('d')
+
+  await module.sync(askServer(fake))
+
+  expect(module.dishCount.value).toBe(5)
+})

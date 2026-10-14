@@ -1,4 +1,4 @@
-import type { InjectionKey, Ref } from 'vue'
+import { computed, type InjectionKey, type Ref } from 'vue'
 // Relative imports, not `~~`: the module's tests run in plain Node (the
 // "client" Vitest project), which knows no Nuxt aliases.
 import type { BoardView } from '../../server/utils/boards'
@@ -586,7 +586,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     if (!writesSince(asked) && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
   }
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, sync, focusAfterDetail }
+  // How many Dishes are on the Board, the Gekocht Column's included: it
+  // follows every operation and poll, as the cards do.
+  const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
+
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, sync, focusAfterDetail, dishCount }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for
