@@ -86,7 +86,7 @@ for (const [screen, path] of [['the sign-in screen', '/login'], ['the "Not unloc
 
     const links = page.getByRole('contentinfo').getByRole('link')
     await expect(links).toHaveText(['Impressum', 'Datenschutz'])
-    await expect(links.nth(0)).toHaveAttribute('href', 'https://christried.me/impressum')
+    await expect(links.nth(0)).toHaveAttribute('href', 'https://christried.me/imprint.html')
     await expect(links.nth(1)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
     // Under the screen's button, and big enough to tap.
     const button = (await page.getByRole('main').getByRole('button').boundingBox())!
