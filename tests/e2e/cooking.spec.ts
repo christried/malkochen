@@ -278,7 +278,7 @@ test('"99× gekocht" shows in full beside a long Creator, an avatar and a note, 
       title: card.getByRole('heading', { name: title }),
       creator: shownCreator,
       avatar: card.locator('[data-added-by]'),
-      note: card.locator('[data-note-icon]'),
+      note: card.locator('[data-note-drawn]'),
       count,
       cook: page.getByRole('button', { name: `Gekocht ✓: „${title}“` }),
     }

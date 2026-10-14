@@ -104,7 +104,9 @@ export const de = {
   },
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
-    hasNote: 'Mit Notiz',
+    // The note icon on a card, read out with the note itself; its Tooltip
+    // is the note alone.
+    note: (note: string) => `Notiz: ${note}`,
     // The Creator's field in edit mode, and read out before the Creator
     // (CONTEXT.md) where it shows as just its name.
     creator: 'Veröffentlicht von',

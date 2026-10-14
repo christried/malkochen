@@ -123,11 +123,13 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
           />
           <span class="sr-only">{{ t.dish.addedBy(dish.addedBy.name) }}</span>
         </span>
+        <!-- Drawn only: the card is inside the Dish's link, so the control
+             for the note (NoteButton) lies over it, outside the link. -->
         <span
           v-if="dish.note"
-          :data-tooltip="t.dish.hasNote"
+          aria-hidden="true"
           class="inline-flex"
-          data-note-icon
+          data-note-drawn
         >
           <svg
             viewBox="0 0 24 24"
@@ -143,7 +145,6 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
             <path d="M5 4h11l3 3v13H5z" />
             <path d="M9 10h6M9 14h6M9 18h3" />
           </svg>
-          <span class="sr-only">{{ t.dish.hasNote }}</span>
         </span>
       </div>
     </div>

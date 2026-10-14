@@ -52,6 +52,7 @@ const status = computed(() => {
           v-for="({ dish, column, accent }, i) in results"
           :key="`${answer.round}-${dish.id}`"
           :style="{ '--i': i }"
+          class="relative"
         >
           <p class="mb-1.5 flex items-center gap-2 px-1 text-label text-text-muted">
             <span
@@ -68,6 +69,11 @@ const status = computed(() => {
           >
             <DishCard :dish="dish" />
           </NuxtLink>
+          <NoteButton
+            v-if="dish.note"
+            :note="dish.note"
+            :beside-avatar="!!dish.addedBy"
+          />
         </li>
       </TransitionGroup>
     </template>
