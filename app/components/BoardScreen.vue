@@ -698,6 +698,11 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                         @motion-ended="boardLoop.ended(dish.id)"
                       />
                     </NuxtLink>
+                    <NoteButton
+                      v-if="dish.note"
+                      :note="dish.note"
+                      :beside-avatar="!!dish.addedBy"
+                    />
                     <button
                       type="button"
                       class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"

@@ -66,7 +66,7 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   await expect(sheet).toBeHidden()
   const card = ideen.getByRole('article').first()
   await expect(card).toHaveAccessibleName('Omas Linsensuppe')
-  await expect(card.getByText('Mit Notiz')).toBeAttached()
+  await expect(ideen.getByRole('listitem').first().getByRole('button', { name: 'Notiz: mit Räuchertofu und Frühlingszwiebeln' })).toBeAttached()
   // No Source, no Source badge.
   await expect(card.locator('[data-source-badge]')).toHaveCount(0)
   await expect(card.locator('img[src="/placeholders/dumplings-light.svg"]')).toBeVisible()
@@ -79,7 +79,7 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   await sheet.getByRole('button', { name: 'Speichern' }).click()
   const titles = ideen.getByRole('heading', { level: 3 })
   await expect(titles).toHaveText(['Pad Thai', 'Omas Linsensuppe'])
-  await expect(ideen.getByRole('article').first().getByText('Mit Notiz')).toHaveCount(0)
+  await expect(ideen.getByRole('listitem').first().getByRole('button', { name: /^Notiz:/ })).toHaveCount(0)
 
   await reloadHydrated(page)
   await expect(titles).toHaveText(['Pad Thai', 'Omas Linsensuppe'])

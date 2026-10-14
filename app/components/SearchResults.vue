@@ -61,13 +61,20 @@ const status = computed(() => {
             />
             {{ column.name }}
           </p>
-          <NuxtLink
-            :to="dishPath(address, dish)"
-            :aria-label="`${dish.title}, ${column.name}`"
-            class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            <DishCard :dish="dish" />
-          </NuxtLink>
+          <div class="relative">
+            <NuxtLink
+              :to="dishPath(address, dish)"
+              :aria-label="`${dish.title}, ${column.name}`"
+              class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              <DishCard :dish="dish" />
+            </NuxtLink>
+            <NoteButton
+              v-if="dish.note"
+              :note="dish.note"
+              :beside-avatar="!!dish.addedBy"
+            />
+          </div>
         </li>
       </TransitionGroup>
     </template>

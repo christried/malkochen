@@ -10,8 +10,11 @@
 // nobody asked about. It goes when the pointer leaves, focus moves on, the
 // control is pressed or clicked, or on Escape; pressed, it stays away until
 // the pointer has left the control. None while a mouse button is held, so
-// none over what a dragged Dish passes. Never for a finger: a touch has no
-// hover, and a tap's focus isn't the keyboard's (:focus-visible). A disabled
+// none over what a dragged Dish passes. Not for a finger: a touch has no
+// hover, and a tap's focus isn't the keyboard's (:focus-visible). Except
+// where the Tooltip is what the control is for (a Dish's note, NoteButton),
+// which says so with `data-tooltip-tap`: a tap on it shows its Tooltip at
+// once, and the next tap, on it or anywhere else, takes it away. A disabled
 // control has none, and one that is disabled, removed or scrolled off the
 // screen while its Tooltip shows takes it along.
 //
@@ -36,6 +39,9 @@ let anchor: HTMLElement | null = null
 let pressed: HTMLElement | null = null
 // Whether the last key pressed was Tab: focus that follows came by keyboard.
 let tabbed = false
+// Whether the finger that just came down is on the control whose Tooltip
+// shows: lifted, it takes the Tooltip away instead of showing it anew.
+let tapShowing = false
 let timer: ReturnType<typeof setTimeout> | undefined
 let check: ReturnType<typeof setInterval> | undefined
 
@@ -56,6 +62,10 @@ async function show(control: HTMLElement) {
   const el = bubble.value
   if (!el) return
   text.value = control.dataset.tooltip ?? ''
+  // A note on a Board wears its Column's accent along its edge.
+  const accent = control.dataset.tooltipTap === undefined ? '' : getComputedStyle(control).getPropertyValue('--accent').trim()
+  el.style.setProperty('--tooltip-accent', accent)
+  el.dataset.tinted = String(!!accent)
   if (el.matches(':popover-open')) el.hidePopover()
   await nextTick()
   // Gone or left meanwhile.
@@ -86,7 +96,9 @@ function place() {
 }
 
 function onPointerOver(event: PointerEvent) {
-  const control = event.pointerType === 'touch' || event.buttons ? null : controlOf(event.target)
+  // A finger coming down is a press (onPress).
+  if (event.pointerType === 'touch') return
+  const control = event.buttons ? null : controlOf(event.target)
   if (control !== pressed) pressed = null
   if (control === anchor) return
   hide()
@@ -96,9 +108,16 @@ function onPointerOver(event: PointerEvent) {
 }
 
 function onPress(event: Event) {
+  const control = controlOf(event.target)
+  if (event.type === 'pointerdown') tapShowing = !!control && control === anchor && !!bubble.value?.matches(':popover-open')
   hide()
   tabbed = false
-  pressed = controlOf(event.target)
+  pressed = control
+  const finger = event instanceof PointerEvent && (event.pointerType === 'touch' || event.pointerType === 'pen')
+  if (event.type === 'click' && finger && control?.dataset.tooltipTap !== undefined && !tapShowing) {
+    anchor = control
+    void show(control)
+  }
 }
 
 function onFocusIn(event: FocusEvent) {
@@ -175,6 +194,12 @@ watch(() => route.fullPath, hide)
   white-space: pre-line;
   overflow-wrap: anywhere;
   pointer-events: none;
+}
+/* A note on a Board (#212): its Column's accent as a stripe along the left
+   edge, the same in both themes, as the accents are. */
+.tooltip[data-tinted="true"] {
+  box-shadow: inset 4px 0 0 var(--tooltip-accent), var(--shadow-card);
+  padding-left: 18px;
 }
 .tooltip:popover-open {
   animation: tooltip-in var(--dur-fade) var(--ease-fade);
