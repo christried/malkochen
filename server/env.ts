@@ -37,6 +37,15 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // (/api/cron/cleanup), which refuses every request without it. Empty: the
   // job never runs.
   CRON_SECRET: z.union([z.literal(''), z.string().min(16)]).default(''),
+  // Push notifications (server/utils/push.ts): the VAPID key pair the app
+  // signs its pushes with, base64url as `web-push generate-vapid-keys` prints
+  // them, and who the push services can contact about them (mailto: or
+  // https:). The public key also reaches the client, which subscribes with
+  // it (nuxt.config.ts runtimeConfig). All three or none: without them the
+  // settings offer no push notifications and nothing is sent.
+  VAPID_PUBLIC_KEY: z.union([z.literal(''), z.string().regex(/^[\w-]{87}$/, 'must be a base64url P-256 public key')]).default(''),
+  VAPID_PRIVATE_KEY: z.union([z.literal(''), z.string().regex(/^[\w-]{43}$/, 'must be a base64url P-256 private key')]).default(''),
+  VAPID_SUBJECT: z.union([z.literal(''), z.string().regex(/^(mailto:\S+@\S+|https:\/\/\S+)$/, 'must be a mailto: or https: address')]).default(''),
   // Set by Vercel itself; used to refuse the dev bypass there and to require
   // the Blob token.
   VERCEL_ENV: z.string().optional(),
@@ -46,6 +55,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
 ).refine(
   env => env.BLOB_READ_WRITE_TOKEN !== '' || !isDeployed(env.VERCEL_ENV),
   { path: ['BLOB_READ_WRITE_TOKEN'], message: 'is required in Vercel production and preview' },
+).refine(
+  env => new Set([env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT].map(value => value === '')).size === 1,
+  { path: ['VAPID_PUBLIC_KEY'], message: 'VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT must be set together, or none of them' },
 )
 
 type Source = Record<string, string | undefined>

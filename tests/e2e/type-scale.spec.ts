@@ -64,7 +64,7 @@ test('user settings: the email and the languages note in `small`, the sections u
   await expectSmall(sheet.getByText('Weitere Sprachen kommen später.'))
   // Under the sheet's own title.
   const headings = sheet.getByRole('heading', { level: 3 })
-  await expect(headings).toHaveText(['Konto', 'Darstellung', 'Sprache', 'Tastenkürzel'])
+  await expect(headings).toHaveText(['Konto', 'Benachrichtigungen', 'Darstellung', 'Sprache', 'Tastenkürzel'])
   for (const heading of await headings.all()) await expectSectionHeading(heading)
 })
 

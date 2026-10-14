@@ -72,6 +72,10 @@ _Avoid_: Inferred title, auto title
 A Dish another Member added to a Board since you last opened that Board (or joined it, if you never opened it), including ones added while you have it open. Marked "Neu" until you open the Board again; coming back to the app after half an hour or more away counts as opening it.
 _Avoid_: Unread, notification
 
+**Push Notification**:
+A notification on a Member's device that other Members added Dishes to one of their Boards, sent only to devices the Member turned push notifications on for in their settings (off by default). One per Board, replaced as more Dishes come in: it counts the Dishes others added since the Member last had the Board open and names who added them; about one Dish, tapping it opens that Dish, else the Board. Nothing but adding a Dish sends one.
+_Avoid_: Alert, reminder
+
 **Placeholder Image**:
 One of a fixed set of illustrations of vegan dishes, used as a Dish's image when the Source provides no thumbnail or the user prefers one. Every Dish keeps one, shown whenever its other image can't be.
 _Avoid_: Default image, fallback image, stock photo

@@ -345,6 +345,8 @@ test('picking Dunkel reveals it from the tapped option in 600ms (swoosh), and He
 
   for (const [name, background] of [['Dunkel', DARK_BG], ['Hell', LIGHT_BG]] as const) {
     const option = page.getByRole('radio', { name })
+    // Measured where the click finds it: the settings run taller than the sheet.
+    await option.scrollIntoViewIfNeeded()
     const box = (await option.boundingBox())!
     await option.click()
 

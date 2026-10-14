@@ -30,5 +30,13 @@ export function testAuthEnv(baseUrl: string): Record<string, string> {
     // Spaces around entries on purpose: the Allowlist must ignore them.
     ALLOWLIST_EMAILS: ALLOWLISTED.join(' , '),
     AUTH_DEV_BYPASS: '1',
+    // A VAPID key pair for tests only (made with web-push's
+    // generateVAPIDKeys), so push notifications are on. No push service
+    // ever sees it: the tests' subscriptions point at a fake one.
+    VAPID_PUBLIC_KEY: TEST_VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: 'JNU3GrAgBSIppqVi0CPJWJGluyMLazk2eUdxmB4gSEg',
+    VAPID_SUBJECT: 'mailto:push@example.com',
   }
 }
+
+export const TEST_VAPID_PUBLIC_KEY = 'BPCfxKRCZj0q7rdmViuJLFJEjxRwx-HMi02GzIogk8vL_vKRTFN59vN5eienDkg3E4IAPZ4mYZLd2RyyL9CUSks'
