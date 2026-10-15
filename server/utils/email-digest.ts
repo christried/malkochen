@@ -53,26 +53,42 @@ export interface DigestReport {
 // run instead.
 export async function sendDigests(): Promise<DigestReport> {
   if (!sendEmails) return { covered: 0, sent: 0, failed: 0 }
-  const windows = await claimWindows()
-  if (windows.length === 0) return { covered: 0, sent: 0, failed: 0 }
+  const covered = await claimCoverage()
+  if (covered.length === 0) return { covered: 0, sent: 0, failed: 0 }
 
-  const news = await newsFor(windows)
-  const recipients = news.size === 0
-    ? []
-    : await db.select({ id: user.id, email: user.email, emailVerified: user.emailVerified }).from(user).where(inArray(user.id, [...news.keys()]))
-  const origin = env.BETTER_AUTH_URL.replace(/\/+$/, '')
-  // Someone taken off the Allowlist since gets nothing either.
-  const emails: (Email & { userId: string })[] = recipients
-    .filter(r => !signInRefusal(r))
-    .map(r => ({ userId: r.id, ...digestEmail(r.email, news.get(r.id)!, origin) }))
+  let emails: Map<string, Email>
+  try {
+    emails = await digestEmails(covered)
+  }
+  catch (err) {
+    // Nothing went out: the next run covers it all again.
+    await uncover(covered)
+    throw err
+  }
 
-  const { failed } = await sendEmails(emails.map(({ userId: _, ...email }) => email))
+  const { failed } = await sendEmails([...emails.values()])
   const notSent = new Set(failed)
-  await uncover(windows.filter(w => emails.some(e => e.userId === w.userId && notSent.has(e.to))))
-  return { covered: windows.length, sent: emails.length - notSent.size, failed: notSent.size }
+  await uncover(covered.filter(c => notSent.has(emails.get(c.userId)?.to ?? '')))
+  return { covered: covered.length, sent: emails.size - notSent.size, failed: notSent.size }
 }
 
-interface Window {
+// Each digest to send, by user id: everyone with news who may still sign
+// in. Someone taken off the Allowlist since gets nothing.
+async function digestEmails(covered: Coverage[]): Promise<Map<string, Email>> {
+  const news = await newsFor(covered)
+  if (news.size === 0) return new Map()
+  const recipients = await db
+    .select({ id: user.id, email: user.email, emailVerified: user.emailVerified })
+    .from(user)
+    .where(inArray(user.id, [...news.keys()]))
+  const origin = env.BETTER_AUTH_URL.replace(/\/+$/, '')
+  return new Map(recipients
+    .filter(r => !signInRefusal(r))
+    .map(r => [r.id, digestEmail(r.email, news.get(r.id)!, origin)]))
+}
+
+// What one run covers for a Member: the Dishes added in (since, until].
+interface Coverage {
   userId: string
   since: Date
   until: Date
@@ -82,7 +98,7 @@ interface Window {
 // what each run covers for them: (since, until]. All in one statement: a run
 // started at the same time covers each of them at most once, as only one of
 // the two finds coveredUntil still where it read it.
-async function claimWindows(): Promise<Window[]> {
+async function claimCoverage(): Promise<Coverage[]> {
   const before = alias(emailDigest, 'before')
   return db
     .update(emailDigest)
@@ -96,20 +112,20 @@ async function claimWindows(): Promise<Window[]> {
     .returning({ userId: emailDigest.userId, since: before.coveredUntil, until: emailDigest.coveredUntil })
 }
 
-// A digest that didn't go out: its window is covered again by the next run.
-// Unless they switched it off (and on) meanwhile.
-async function uncover(windows: Window[]): Promise<void> {
-  if (windows.length === 0) return
-  await Promise.all(windows.map(w => db
+// A digest that didn't go out: what it covered is covered again by the next run,
+// unless they switched it off (and on) meanwhile.
+async function uncover(covered: Coverage[]): Promise<void> {
+  if (covered.length === 0) return
+  await Promise.all(covered.map(c => db
     .update(emailDigest)
-    .set({ coveredUntil: w.since })
-    .where(and(eq(emailDigest.userId, w.userId), eq(emailDigest.coveredUntil, w.until)))))
+    .set({ coveredUntil: c.since })
+    .where(and(eq(emailDigest.userId, c.userId), eq(emailDigest.coveredUntil, c.until)))))
 }
 
 // What each Member gets, by user id: per Board they are on (by name), the
-// Dishes other Members added in their window, newest first. Members with
+// Dishes other Members added in what this run covers for them, newest first. Members with
 // nothing new are left out.
-async function newsFor(windows: Window[]): Promise<Map<string, BoardNews[]>> {
+async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
   const rows = await db
     .select({
       recipient: membership.userId,
@@ -128,7 +144,7 @@ async function newsFor(windows: Window[]): Promise<Map<string, BoardNews[]>> {
       gt(dish.createdAt, membership.joinedAt),
     ))
     .innerJoin(user, eq(user.id, dish.addedBy))
-    .where(or(...windows.map(w => and(eq(membership.userId, w.userId), gt(dish.createdAt, w.since), lte(dish.createdAt, w.until)))))
+    .where(or(...covered.map(c => and(eq(membership.userId, c.userId), gt(dish.createdAt, c.since), lte(dish.createdAt, c.until)))))
     .orderBy(desc(dish.createdAt), desc(dish.id))
 
   const byRecipient = new Map<string, Map<string, BoardNews>>()

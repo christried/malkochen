@@ -244,10 +244,10 @@ function removePicture() {
       <section
         v-if="push.offered || digest.offered"
         class="flex flex-col gap-3"
-        aria-labelledby="settings-push"
+        aria-labelledby="settings-notifications"
       >
         <h3
-          id="settings-push"
+          id="settings-notifications"
           class="section-heading px-1"
         >
           {{ t.push.heading }}

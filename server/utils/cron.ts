@@ -9,10 +9,10 @@ import { parseServerEnv } from '../env'
 const { CRON_SECRET } = parseServerEnv(process.env)
 
 // Compared as hashes, so the comparison takes as long whatever was sent.
-const digest = (value: string) => createHash('sha256').update(value).digest()
+const sha256 = (value: string) => createHash('sha256').update(value).digest()
 
 export function requireCronSecret(event: H3Event): void {
   const authorization = getRequestHeader(event, 'authorization') ?? ''
-  const sent = CRON_SECRET !== '' && timingSafeEqual(digest(authorization), digest(`Bearer ${CRON_SECRET}`))
+  const sent = CRON_SECRET !== '' && timingSafeEqual(sha256(authorization), sha256(`Bearer ${CRON_SECRET}`))
   if (!sent) throw createError({ statusCode: 401, statusMessage: 'Not the cron job' })
 }

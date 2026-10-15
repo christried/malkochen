@@ -38,7 +38,7 @@ export function digestEmail(to: string, boards: BoardNews[], origin: string): Em
   const boardName = (board: BoardNews['board']) => `${board.emoji} ${board.name}`
 
   const text = [
-    `${t.heading}`,
+    t.heading,
     ...boards.flatMap(({ board, dishes }) => [
       '',
       boardName(board),
@@ -94,7 +94,7 @@ interface MailSenderOptions {
 }
 
 // The most emails one call to Resend's batch endpoint takes.
-const BATCH = 100
+const BATCH_SIZE = 100
 
 export function createMailSender({ apiKey, baseUrl = 'https://api.resend.com', fetch = globalThis.fetch, timeoutMs = 10_000, onFailure = () => {} }: MailSenderOptions): MailSender {
   async function sendBatch(emails: Email[]): Promise<boolean> {
@@ -118,8 +118,8 @@ export function createMailSender({ apiKey, baseUrl = 'https://api.resend.com', f
   return async (emails) => {
     const outcome: SendOutcome = { sent: [], failed: [] }
     // One batch after the other: Resend limits requests per second.
-    for (let i = 0; i < emails.length; i += BATCH) {
-      const batch = emails.slice(i, i + BATCH)
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const batch = emails.slice(i, i + BATCH_SIZE)
       outcome[await sendBatch(batch) ? 'sent' : 'failed'].push(...batch.map(e => e.to))
     }
     return outcome
