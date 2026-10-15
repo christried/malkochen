@@ -72,10 +72,12 @@ onBeforeUnmount(() => {
     v-else
     class="relative flex w-full justify-center"
   >
+    <!-- Named by aria-label: a title would bring the browser's tooltip
+         back (#206). -->
     <iframe
       ref="iframe"
       :src="embed.src"
-      :title="t.detail.videoPlayer(embed.platform)"
+      :aria-label="t.detail.videoPlayer(embed.platform)"
       allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
       allowfullscreen
       referrerpolicy="strict-origin-when-cross-origin"
