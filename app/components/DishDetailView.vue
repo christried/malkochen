@@ -2,6 +2,7 @@
 import type { BoardSummary } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
+import { videoEmbed } from '~/utils/video-embed'
 
 // The Dish detail's contents: a large image, the title with the Creator
 // under it, the note, the Source
@@ -24,6 +25,15 @@ const t = useStrings()
 const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, new Date(props.dish.createdAt)))
 
 const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useTemplateRef('bar'))
+
+// Click-to-play video (#221): a TikTok, YouTube Short or Instagram Dish shows
+// its image with "Video abspielen"; tapping it puts the platform's player in
+// the image's place (DishVideo). Nothing from the platform loads before. The
+// detail closing takes the player with it; another Dish starts with its
+// image again.
+const video = computed(() => videoEmbed(props.dish.source))
+const playing = ref(false)
+watch(() => video.value?.src, () => playing.value = false)
 </script>
 
 <template>
@@ -63,15 +73,24 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
 
     <div class="relative">
       <!-- Portrait (TikTok, Reels, Shorts) and landscape (blogs) both fill
-           the frame; a tall image is cropped to at most 60% of the screen. -->
+           the frame; a tall image is cropped to at most 60% of the screen.
+           Playing, the frame holds the player under the buttons instead,
+           as tall as the player is. -->
       <div
         ref="frame"
-        class="detail-image aspect-[4/3] max-h-[60dvh] w-full overflow-hidden bg-surface-muted"
+        class="detail-image w-full overflow-hidden bg-surface-muted"
+        :class="playing && video ? 'pb-4 pt-[4.75rem]' : 'aspect-[4/3] max-h-[60dvh]'"
         :data-scroll-driven="scrollDriven || undefined"
         data-detail-image
         data-morph-field="image"
       >
+        <DishVideo
+          v-if="playing && video && dish.source"
+          :embed="video"
+          :link="dish.source.link"
+        />
         <div
+          v-else
           class="parallax h-full w-full"
           data-parallax
         >
@@ -106,6 +125,16 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
           {{ t.detail.edit }}
         </button>
       </div>
+      <button
+        v-if="video && !playing"
+        type="button"
+        class="absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        data-play-video
+        @click="playing = true"
+      >
+        <AppIcon name="play" />
+        {{ t.detail.playVideo }}
+      </button>
     </div>
 
     <div

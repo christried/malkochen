@@ -44,6 +44,12 @@ export function videoEmbed(source: DishSource | null): VideoEmbed | null {
   }
 }
 
+// How long Instagram's embed gets to show its post once its page has loaded
+// (it says so before its load event, checked 2026-10-15), and in all, in
+// case it never loads. Past either, the post counts as not embeddable.
+export const INSTAGRAM_GRACE_MS = 3000
+export const INSTAGRAM_LIMIT_MS = 15_000
+
 // What a message from Instagram's embed says about the post (checked
 // 2026-10-15): it posts "LOADING" first, then "MEASURE" (with the height it
 // needs) and "MOUNTED" once the post shows. One it can't embed (private,
