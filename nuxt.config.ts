@@ -52,6 +52,9 @@ export default defineNuxtConfig({
   // through CSS variables (--font-display, --font-ui), so those are scanned
   // too: that's where the size-adjusted fallback faces are added, which keep
   // the text from jumping when the font arrives (font-display: swap).
+  // In a build the @font-face rules aren't in the CSS files: @nuxt/fonts 1
+  // puts them in an inline <style> in each rendered page's <head>, and the
+  // files under /_nuxt/fonts/ (#244). In dev they stay in the CSS.
   fonts: {
     families: [
       { name: 'Petrona', weights: ['100 900'], styles: ['normal', 'italic'], subsets: ['latin', 'latin-ext'], fallbacks: ['Georgia', 'Noto Serif'] },
@@ -92,7 +95,6 @@ export default defineNuxtConfig({
     // their own, and for a file Vercel applies the first rule that matches,
     // not all of them.
     '/_nuxt/**': { headers: EVERYWHERE },
-    '/_fonts/**': { headers: EVERYWHERE },
     // Boards, Dishes and /api/me (with the email address) belong in no
     // cache. Unset, Vercel answers "public, max-age=0, must-revalidate".
     '/api/**': { headers: { 'Cache-Control': 'private, no-store' } },
