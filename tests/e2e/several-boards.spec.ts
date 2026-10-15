@@ -60,6 +60,9 @@ test('a Member creates a Board from the switcher, switches between Boards, and t
   await links.filter({ hasText: 'Daheim' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
   await expect(boardList(page)).toHaveCount(0)
+  // The skeleton already names the Board; it's opened once the skeleton has
+  // gone. A visit before that races the open (#243).
+  await expect(page.locator('[data-board-skeleton]')).toHaveCount(0)
 
   // A new visit opens the Board used last.
   await gotoHydrated(page, '/')

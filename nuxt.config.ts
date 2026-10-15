@@ -60,7 +60,10 @@ export default defineNuxtConfig({
     // From Google Fonts. Not named on each family: Google then picks the
     // fallbacks itself (the generic "serif"), not the ones above.
     priority: ['google'],
-    processCSSVariables: true,
+    // Only the --font* variables: `true` reads every custom property as a
+    // font name, and since Nuxt 4.6 its CSS minifier hands it a calc() (for
+    // --height-empty-column, main.css) to look up as one (#243).
+    processCSSVariables: 'font-prefixed-only',
   },
   runtimeConfig: {
     public: {
@@ -96,5 +99,18 @@ export default defineNuxtConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+  },
+  hooks: {
+    // Nuxt 4.6's dev error overlay (#243) shows a client error on every page
+    // open on the dev server until it is cleared, with an <h1>, a <main> and
+    // inline scripts of its own. The browser tests run against `pnpm dev` and
+    // cause errors on purpose (error-screen.spec.ts), so later tests' pages
+    // would carry it. Nuxt has no option to turn it off: the browser tests
+    // leave its client plugin out. Their own assertions still see each error.
+    'app:resolve'(app) {
+      if (!process.env.MALKOCHEN_E2E) return
+      const devErrorOverlay = /[\\/]dev-error-overlay\.client(\.[jt]s)?$/
+      app.plugins = app.plugins.filter(plugin => !devErrorOverlay.test(plugin.src))
+    },
   },
 })
