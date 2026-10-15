@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // A switch row in your settings (push notifications, the Email Digest): the
-// whole row is the switch, its name and what it does are its text.
+// whole row is the switch, its name and what it does are its text. Under a
+// mouse its track takes a tint of its own (main.css: everything clickable
+// reacts), with reduced motion too; disabled, it doesn't.
 defineProps<{
   label: string
   hint: string
@@ -40,7 +42,7 @@ const hintId = useId()
     <span
       aria-hidden="true"
       class="relative h-7 w-12 shrink-0 rounded-pill transition-colors duration-fade ease-fade group-disabled:opacity-60"
-      :class="checked ? 'bg-inverse' : 'bg-line'"
+      :class="checked ? 'bg-inverse group-enabled:group-hover:bg-inverse/85' : 'bg-line group-enabled:group-hover:bg-line-strong'"
     >
       <span
         class="knob absolute top-1 left-1 size-5 rounded-full bg-surface shadow-sm"
