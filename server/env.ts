@@ -33,9 +33,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // their server a folder of its own, so its cleanup job never sweeps away
   // the images of local dev.
   IMAGE_DIR: z.string().default('').transform(dir => dir || '.data/images'),
-  // Vercel Cron sends it as a bearer token to the daily cleanup job
-  // (/api/cron/cleanup), which refuses every request without it. Empty: the
-  // job never runs.
+  // Vercel Cron sends it as a bearer token to the daily jobs under
+  // /api/cron/ (server/utils/cron.ts), which refuse every request without
+  // it. Empty: they never run.
   CRON_SECRET: z.union([z.literal(''), z.string().min(16)]).default(''),
   // Push notifications (server/utils/push.ts): the VAPID key pair the app
   // signs its pushes with, base64url as `web-push generate-vapid-keys` prints
@@ -46,12 +46,23 @@ const serverEnvSchema = databaseEnvSchema.extend({
   VAPID_PUBLIC_KEY: z.union([z.literal(''), z.string().regex(/^[\w-]{87}$/, 'must be a base64url P-256 public key')]).default(''),
   VAPID_PRIVATE_KEY: z.union([z.literal(''), z.string().regex(/^[\w-]{43}$/, 'must be a base64url P-256 private key')]).default(''),
   VAPID_SUBJECT: z.union([z.literal(''), z.string().regex(/^(mailto:\S+@\S+|https:\/\/\S+)$/, 'must be a mailto: or https: address')]).default(''),
+  // The Email Digest (#220, server/utils/email-digest.ts): the Resend API key
+  // it is sent with, from the verified christried.me domain. Whether it is
+  // set also reaches the client (nuxt.config.ts runtimeConfig). Empty: the
+  // settings offer no digest and nothing is sent.
+  RESEND_API_KEY: z.union([z.literal(''), z.string().regex(/^re_\w+$/, 'must be a Resend API key (re_…)')]).default(''),
+  // Tests only: where Resend's API is instead (a stand-in that keeps what is
+  // sent). Empty: Resend itself.
+  RESEND_BASE_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
   // Set by Vercel itself; used to refuse the dev bypass there and to require
   // the Blob token.
   VERCEL_ENV: z.string().optional(),
 }).refine(
   env => !(env.AUTH_DEV_BYPASS === '1' && isDeployed(env.VERCEL_ENV)),
   { path: ['AUTH_DEV_BYPASS'], message: 'must never be set in Vercel production or preview' },
+).refine(
+  env => !(env.RESEND_BASE_URL !== '' && isDeployed(env.VERCEL_ENV)),
+  { path: ['RESEND_BASE_URL'], message: 'must never be set in Vercel production or preview' },
 ).refine(
   env => env.BLOB_READ_WRITE_TOKEN !== '' || !isDeployed(env.VERCEL_ENV),
   { path: ['BLOB_READ_WRITE_TOKEN'], message: 'is required in Vercel production and preview' },

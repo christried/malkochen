@@ -38,6 +38,14 @@ export default defineConfig({
       },
       {
         test: {
+          // Seam 6: the Email Digest's email and its sending, against a
+          // faked Resend.
+          name: 'email',
+          include: ['tests/email/**/*.test.ts'],
+        },
+      },
+      {
+        test: {
           // Seam 4: client modules, with their I/O faked: the Board module
           // through its operations with an in-memory transport, the link
           // lookup module with fake timers and a fake Source Lookup, the

@@ -35,14 +35,16 @@ variables are validated at startup by `server/env.ts` — add new ones there too
 | `ALLOWLIST_EMAILS` | The Allowlist: comma-separated emails allowed to sign in at all. | `.env` locally; Vercel **production and development**. |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token: the Image Store copies each Dish's Source image there on save, and keeps Members' own photos ("Eigenes Foto") there. Required in Vercel production and preview (the server refuses to start without it). Empty locally stores images on disk under `.data/images`, served at `/images/…`. | Vercel **production and development**, set by connecting the project's Blob store. Optional in `.env`. Never in CI (tests store on disk). |
 | `IMAGE_DIR` | Where images are stored on disk without a Blob token. Defaults to `.data/images`. | Optional in `.env`. The API tests set their own (`tests/api/server-env.ts`), so their cleanup job never touches local dev's images. Never in Vercel. |
-| `CRON_SECRET` | Vercel Cron sends it as a bearer token to the daily cleanup job (`/api/cron/cleanup`, scheduled in `vercel.json`), which refuses every request without it. At least 16 random characters. Empty: the job never runs. | Vercel **production** only. The API tests set their own. |
+| `CRON_SECRET` | Vercel Cron sends it as a bearer token to the daily jobs (the cleanup, `/api/cron/cleanup`, and the Email Digest, `/api/cron/email-digest`, both scheduled in `vercel.json`), which refuse every request without it. At least 16 random characters. Empty: the jobs never run. | Vercel **production** only. The API tests set their own. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Push notifications: the VAPID key pair the server signs its pushes with (base64url, as `npx web-push generate-vapid-keys` prints them) and a contact for the push services (`mailto:you@example.com` or an `https:` URL). The public key also reaches the browser, which subscribes with it (`runtimeConfig.public.vapidPublicKey`, read at build time). All three or none: without them the settings offer no push notifications. With `AUTH_DEV_BYPASS=1` a subscription may point at any push service, so the tests can stand one in. | Vercel **production and development**, the same key pair in both or one each; a new key pair makes every device turn push on again. Optional in `.env`. The test runners set test keys themselves. |
+| `RESEND_API_KEY` | The Email Digest: the [Resend](https://resend.com) API key the daily email (`/api/cron/email-digest`, 16:00 UTC in `vercel.json`) is sent with, from `malkochen@christried.me` (christried.me must be a verified sending domain at Resend). Whether it is set also reaches the browser (`runtimeConfig.public.emailDigest`, read at build time); the key itself never does. Empty: the settings offer no digest and nothing is sent. | Vercel **production and development**. Optional in `.env`. The test runners set a dummy key and send to a stand-in. |
+| `RESEND_BASE_URL` | Where Resend's API is instead of `https://api.resend.com`: the test runners point it at a stand-in (`tests/api/resend-service.ts`) that keeps what is sent. The server refuses to start with it on Vercel production or preview. | Tests only. **Never** in Vercel. |
 | `AUTH_DEV_BYPASS` | `1` enables `POST /api/auth/dev/sign-in` (below). The server refuses to start with it on Vercel production or preview. | `.env` locally, optional. The test runners set it themselves. **Never** in Vercel. |
 | `VERCEL_ENV` | Set by Vercel itself; `server/env.ts` reads it only to refuse `AUTH_DEV_BYPASS` and require `BLOB_READ_WRITE_TOKEN` in production and preview. | Never set by hand. |
 | `TEST_DATABASE_ADMIN_URL` | Superuser URL of the **local** Postgres. `pnpm test` and `pnpm test:e2e` use it to create and drop a throwaway database per run. | `.env` locally; `env:` of `.github/workflows/ci.yml` (points at the job's Postgres service, no secret). Never in Vercel. |
 
 The test runners (`tests/api/global-setup.ts`, `tests/e2e/run.ts`) override
-all auth variables and the VAPID keys with fixed test values
+all auth variables, the VAPID keys and the Resend key with fixed test values
 (`tests/support/test-auth-env.ts`), so CI needs no secrets.
 
 ### Signing in locally without Google
@@ -63,7 +65,8 @@ Google sign-in; only the trip to Google is skipped.
 pnpm test       # Vitest: tests/api (builds the app, boots it on a throwaway local database)
                 #   tests/source-lookup (Source Lookup against recorded upstream fixtures, no network)
                 #   tests/image-store (Image Store against a faked upstream and storage)
-                #   and tests/push (push messages and sending against a faked push service)
+                #   tests/push (push messages and sending against a faked push service)
+                #   and tests/email (the Email Digest and sending it against a faked Resend)
 pnpm test:e2e   # Playwright: dev server on a throwaway local database, runs tests/e2e
 pnpm typecheck
 pnpm lint

@@ -148,6 +148,13 @@
       "when": 1791998473356,
       "tag": "0020_push_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792044570071,
+      "tag": "0021_email_digest",
+      "breakpoints": true
     }
   ]
 }
