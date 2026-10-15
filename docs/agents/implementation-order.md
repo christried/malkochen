@@ -227,10 +227,11 @@ Both were tried in #198 and reverted (PR #242). Neither fixes an advisory; they 
 
 ### Phase 11: review 3 (#278)
 
-From the third review (`docs/reviews/review3.md`), decided in a grilling session on 2026-10-15. Small changes are always bundled, leftovers too, however few. The share sheet needs no ticket (see #278), and the test-suite audit is a research document, not a ticket.
+From the third review (`docs/reviews/review3.md`), decided in a grilling session on 2026-10-15. Small changes are always bundled, leftovers too, however few. The share sheet needs no ticket (see #278), and the test-suite audit (`docs/research/test-suite-audit.md`) led to #287.
 
 | # | Ticket | Note |
 |---|---|---|
+| #287 | CI: eight browser shards, low-risk test cuts, open flakes | First: every later PR's CI gets about 2 minutes faster. Test and CI only, plus a test-only poll setting |
 | #279 | Instagram video in older Dishes opens Instagram instead of playing | Bug. Reproduce first; a fix for every existing Dish, no re-adding by hand |
 | #280 | Bundle: review 3 small fixes | Nine changes. The nav bar part needs the user's device check after deploy |
 | #281 | Prototype: Board Switcher pill fade, settings placement, Board Settings cards | Done 2026-10-15; decisions in its comment, prototype on branch `issue-281-prototype` |
