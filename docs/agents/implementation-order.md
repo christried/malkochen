@@ -233,9 +233,10 @@ From the third review (`docs/reviews/review3.md`), decided in a grilling session
 |---|---|---|
 | #279 | Instagram video in older Dishes opens Instagram instead of playing | Bug. Reproduce first; a fix for every existing Dish, no re-adding by hand |
 | #280 | Bundle: review 3 small fixes | Nine changes. The nav bar part needs the user's device check after deploy |
-| #281 | Prototype: Board Switcher pill fade, settings placement, Board Settings cards | `ready-for-human`: skip, the user runs it with the agent. Blocks #282 and #283; its decisions also create a bundle for the pill fade and the cards, added here |
-| #282 | Board Settings in the Board Switcher, cogwheel opens Your Settings | From spec #277. One ticket, so Board Settings are never reachable only by `,` |
-| #283 | Your Settings as a right side sheet from 768px up | From spec #277. Relies on #280's vertical scrollbars |
+| #281 | Prototype: Board Switcher pill fade, settings placement, Board Settings cards | Done 2026-10-15; decisions in its comment, prototype on branch `issue-281-prototype` |
+| #282 | Board Settings in the Board Switcher, cogwheel opens Your Settings | From spec #277. One ticket, so Board Settings are never reachable only by `,`. Cogwheel always visible on each row (#281: A) |
+| #283 | Your Settings as a right side sheet from 768px up | From spec #277. 420px, slides from the right (#281: B). Relies on #280's vertical scrollbars |
+| #285 | Bundle: aura on the pill and the add button, Board Settings Columns as a list | From #281 (F, D). After #282, which also changes the Board Switcher |
 
 ## Keeping this file current
 
