@@ -59,9 +59,11 @@ export default defineNitroPlugin((nitro) => {
     setResponseHeader(event, 'Reporting-Endpoints', `${REPORTING_ENDPOINT}="${CSP_REPORT_PATH}"`)
   })
 
-  nitro.hooks.hook('render:response', (response) => {
+  nitro.hooks.hook('render:response', (response, { event }) => {
     const headers = response.headers ??= {}
-    // Nuxt's renderer names itself on every page.
+    // Nuxt's renderer names itself on every page: since Nuxt 4.6 (#243) on
+    // the event, before this hook, rather than in the response.
+    removeResponseHeader(event, 'x-powered-by')
     delete headers['x-powered-by']
     // A page can hold a signed-in user's Board. Set here and not by a route
     // rule: '/**' would take the caching from the files in public/ too.
