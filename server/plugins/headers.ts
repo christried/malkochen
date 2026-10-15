@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { VIDEO_PLAYER_ORIGINS } from '../../shared/video-embed'
 import { CSP_REPORT_PATH } from '../utils/csp-report'
 
 // The Content Security Policy of a page, naming the nonce its inline scripts
@@ -17,6 +18,10 @@ function contentSecurityPolicy(nonce: string): string {
     'img-src \'self\' https:',
     'media-src \'self\'',
     'connect-src \'self\'',
+    // Click-to-play video in the Dish detail (#221, shared/
+    // video-embed.ts): the embedded players of TikTok, YouTube (its no-cookie
+    // domain) and Instagram. No other frame, not even the app's own.
+    `frame-src ${Object.values(VIDEO_PLAYER_ORIGINS).join(' ')}`,
     'form-action \'self\' https://accounts.google.com',
     'base-uri \'self\'',
     'object-src \'none\'',
@@ -30,6 +35,7 @@ function contentSecurityPolicy(nonce: string): string {
 }
 
 const REPORTING_ENDPOINT = 'csp'
+
 
 // What a rendered page's answer carries beyond nuxt.config.ts's routeRules
 // (#192).

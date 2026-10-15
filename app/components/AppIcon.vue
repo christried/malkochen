@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The line icons buttons share: a 24-unit grid, drawn in the text colour.
-withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip' | 'check' | 'camera' | 'link' | 'sign-out' | 'plus', size?: number }>(), { size: 18 })
+withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip' | 'check' | 'camera' | 'link' | 'sign-out' | 'plus' | 'play', size?: number }>(), { size: 18 })
 </script>
 
 <template>
@@ -51,6 +51,12 @@ withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up'
     <path
       v-else-if="name === 'plus'"
       d="M12 5v14M5 12h14"
+    />
+    <!-- A play triangle, filled: an outline alone reads thin at button size. -->
+    <path
+      v-else-if="name === 'play'"
+      d="M8 5.5v13l10.5-6.5z"
+      fill="currentColor"
     />
     <path
       v-else-if="name === 'grip'"

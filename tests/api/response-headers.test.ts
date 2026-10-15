@@ -66,6 +66,9 @@ test('a page reports what breaks its Content Security Policy, without enforcing 
     'img-src \'self\' https:',
     'media-src \'self\'',
     'connect-src \'self\'',
+    // Click-to-play video (#221): the embedded players of TikTok, YouTube
+    // (its no-cookie domain) and Instagram, and no other frame at all.
+    'frame-src https://www.tiktok.com https://www.youtube-nocookie.com https://www.instagram.com',
     'form-action \'self\' https://accounts.google.com',
     'base-uri \'self\'',
     'object-src \'none\'',
