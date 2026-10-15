@@ -34,3 +34,26 @@ test('an unexpected error shows the error screen, and "Nochmal versuchen" tries 
   await page.getByRole('button', { name: 'Nochmal versuchen' }).click()
   await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
 })
+
+// In dev (`pnpm dev`, which the browser tests run against), Nuxt 4.6 reports
+// a client error to the dev server, and its error overlay then shows it on
+// every page open on that server (#243). The browser tests leave the overlay
+// out, so an error a test causes on purpose stays on its own page.
+test('an unexpected error stays on its own page: the next page shows no dev error overlay', async ({ page, context }) => {
+  await signIn(page)
+  await gotoHydrated(page, '/')
+  await gotoHydrated(page, `${page.url()}/settings`)
+  await page.route('**/api/boards/*', route => route.fulfill({ status: 500, body: 'boom' }))
+  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Da ist was angebrannt.')
+
+  const next = await context.newPage()
+  await gotoHydrated(next, '/')
+  await expect(next.getByRole('region', { name: 'Ideen' })).toBeVisible()
+  // The overlay would come a moment after hydration: the page asks the dev
+  // server for the current error, then fetches and mounts the overlay.
+  await next.waitForTimeout(2000)
+  await expect(next.locator('[data-nuxt-dev-error], nuxt-error-overlay')).toHaveCount(0)
+  await expect(next.getByRole('heading', { level: 1 })).toHaveCount(1)
+  await expect(next.getByRole('main')).toHaveCount(1)
+})

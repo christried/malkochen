@@ -97,4 +97,16 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+  hooks: {
+    // Nuxt 4.6's dev error overlay (#243) shows a client error on every page
+    // open on the dev server until it is cleared, with an <h1>, a <main> and
+    // inline scripts of its own. The browser tests run against `pnpm dev` and
+    // cause errors on purpose (error-screen.spec.ts), so later tests' pages
+    // would carry it. Nuxt has no option to turn it off: the browser tests
+    // leave its client plugin out. Their own assertions still see each error.
+    'app:resolve'(app) {
+      if (!process.env.MALKOCHEN_E2E) return
+      app.plugins = app.plugins.filter(plugin => !/[\\/]dev-error-overlay\.client(\.[jt]s)?$/.test(plugin.src))
+    },
+  },
 })
