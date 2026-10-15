@@ -4,7 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
 import { resetBoard, seedDish } from './seed'
-import { INSTAGRAM_GRACE_MS } from '../../app/utils/video-embed'
+import { INSTAGRAM_GRACE_MS } from '../../shared/video-embed'
 
 // Click-to-play video (#221): a TikTok, YouTube Short or Instagram Dish
 // shows its image and "Video abspielen" in the Dish detail, and nothing

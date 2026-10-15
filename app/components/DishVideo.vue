@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { INSTAGRAM_GRACE_MS, INSTAGRAM_LIMIT_MS, instagramEmbedState, type VideoEmbed } from '~/utils/video-embed'
+import { INSTAGRAM_GRACE_MS, INSTAGRAM_LIMIT_MS, instagramPostShown, VIDEO_PLAYER_ORIGINS, type VideoEmbed } from '~~/shared/video-embed'
 
 // A Dish's video in the platform's embedded player (#221), in the Dish
 // detail's image frame once "Video abspielen" is tapped. Mounting it is what
@@ -7,8 +7,8 @@ import { INSTAGRAM_GRACE_MS, INSTAGRAM_LIMIT_MS, instagramEmbedState, type Video
 // upright, like their videos; Instagram's embed is a card as tall as it says
 // it needs. A post Instagram can't embed (private, removed, blocked) never
 // says it shows: it stays hidden behind loading dots and gives way to a link
-// to the post on Instagram. `link`: the Dish's Source.
-const props = defineProps<{ embed: VideoEmbed, link: string }>()
+// to the post on Instagram.
+const props = defineProps<{ embed: VideoEmbed }>()
 const t = useStrings()
 
 const iframe = useTemplateRef<HTMLIFrameElement>('iframe')
@@ -26,11 +26,11 @@ function giveUpAfter(ms: number) {
 }
 
 function onMessage(event: MessageEvent) {
-  if (event.source !== iframe.value?.contentWindow || event.origin !== new URL(props.embed.src).origin) return
-  const state = instagramEmbedState(event.data)
-  if (!state) return
+  if (event.source !== iframe.value?.contentWindow || event.origin !== VIDEO_PLAYER_ORIGINS.instagram) return
+  const post = instagramPostShown(event.data)
+  if (!post) return
   shown.value = true
-  if (state.height) height.value = state.height
+  if (post.height) height.value = post.height
 }
 
 function onLoad() {
@@ -60,7 +60,7 @@ onBeforeUnmount(() => {
       {{ t.detail.videoUnavailable }}
     </p>
     <a
-      :href="link"
+      :href="embed.link"
       target="_blank"
       rel="noopener noreferrer"
       class="rounded-pill bg-inverse px-5 py-3 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"

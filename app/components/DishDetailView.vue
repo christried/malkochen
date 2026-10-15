@@ -2,7 +2,7 @@
 import type { BoardSummary } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
-import { videoEmbed } from '~/utils/video-embed'
+import { videoEmbed } from '~~/shared/video-embed'
 
 // The Dish detail's contents: a large image, the title with the Creator
 // under it, the note, the Source
@@ -33,6 +33,7 @@ const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useT
 // image again.
 const video = computed(() => videoEmbed(props.dish.source))
 const playing = ref(false)
+const player = computed(() => playing.value ? video.value : null)
 watch(() => video.value?.src, () => playing.value = false)
 </script>
 
@@ -74,20 +75,20 @@ watch(() => video.value?.src, () => playing.value = false)
     <div class="relative">
       <!-- Portrait (TikTok, Reels, Shorts) and landscape (blogs) both fill
            the frame; a tall image is cropped to at most 60% of the screen.
-           Playing, the frame holds the player under the buttons instead,
-           as tall as the player is. -->
+           Playing, the frame holds the player under the buttons instead
+           (their row: 44px with 16px around, 4.75rem), as tall as the
+           player is. -->
       <div
         ref="frame"
         class="detail-image w-full overflow-hidden bg-surface-muted"
-        :class="playing && video ? 'pb-4 pt-[4.75rem]' : 'aspect-[4/3] max-h-[60dvh]'"
+        :class="player ? 'pb-4 pt-[4.75rem]' : 'aspect-[4/3] max-h-[60dvh]'"
         :data-scroll-driven="scrollDriven || undefined"
         data-detail-image
         data-morph-field="image"
       >
         <DishVideo
-          v-if="playing && video && dish.source"
-          :embed="video"
-          :link="dish.source.link"
+          v-if="player"
+          :embed="player"
         />
         <div
           v-else

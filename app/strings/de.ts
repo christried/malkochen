@@ -6,7 +6,7 @@
 import type { AchievementLevel } from '../utils/achievement'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
-import type { VideoPlatform } from '../utils/video-embed'
+import type { VideoPlatform } from '../../shared/video-embed'
 
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
