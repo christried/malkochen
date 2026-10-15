@@ -26,8 +26,6 @@ async function saveUsername() {
 // Push notifications (#219), for this device: checked again whenever the
 // sheet opens, since the browser's permission may have changed meanwhile.
 const push = usePushNotifications()
-const pushLabelId = useId()
-const pushHintId = useId()
 const pushOn = computed(() => push.state.value === 'on')
 // Not while it is checked or turned, nor where only the browser can change it.
 const pushSwitchable = computed(() => !push.busy.value && (push.state.value === 'on' || push.state.value === 'off'))
@@ -37,6 +35,10 @@ const pushMessage = computed(() => {
   if (push.state.value === 'unsupported') return t.push.unsupported
   return null
 })
+// The Email Digest (#220): one switch for all your Boards and devices, so
+// it is read again whenever the sheet opens, in case it was switched
+// elsewhere.
+const digest = useEmailDigest()
 
 // Opened again, it starts from the Username you have, not from what was
 // typed and left unsaved.
@@ -46,7 +48,9 @@ watch(open, (isOpen) => {
   usernameSaved.value = false
 })
 watch(open, (isOpen) => {
-  if (isOpen) void push.refresh()
+  if (!isOpen) return
+  void push.refresh()
+  void digest.refresh()
 }, { immediate: true })
 
 // Your own Profile Picture: a picked photo is uploaded (checked, cut square
@@ -238,7 +242,7 @@ function removePicture() {
       </section>
 
       <section
-        v-if="push.offered"
+        v-if="push.offered || digest.offered"
         class="flex flex-col gap-3"
         aria-labelledby="settings-push"
       >
@@ -249,44 +253,35 @@ function removePicture() {
           {{ t.push.heading }}
         </h3>
         <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
-          <!-- The whole row is the switch: its name and what it does are its text. -->
-          <button
-            type="button"
-            role="switch"
-            class="group flex items-center justify-between gap-4 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-default"
-            :aria-checked="pushOn"
-            :aria-labelledby="pushLabelId"
-            :aria-describedby="pushHintId"
-            :aria-busy="push.busy.value || push.state.value === null"
-            :disabled="!pushSwitchable"
-            @click="push.turn(!pushOn)"
-          >
-            <span class="flex min-w-0 flex-col gap-1">
-              <span
-                :id="pushLabelId"
-                class="text-body text-text"
-              >{{ t.push.toggle }}</span>
-              <span
-                :id="pushHintId"
-                class="text-small text-text-muted"
-              >{{ t.push.hint }}</span>
-            </span>
-            <span
-              aria-hidden="true"
-              class="relative h-7 w-12 shrink-0 rounded-pill transition-colors duration-fade ease-fade group-disabled:opacity-60"
-              :class="pushOn ? 'bg-inverse' : 'bg-line'"
-            >
-              <span
-                class="knob absolute top-1 left-1 size-5 rounded-full bg-surface shadow-sm"
-                :class="{ on: pushOn }"
-              />
-            </span>
-          </button>
-          <p
-            :role="push.failed.value ? 'alert' : 'status'"
-            class="text-small empty:hidden"
-            :class="push.failed.value ? 'text-danger' : 'text-text-muted'"
-          >{{ pushMessage ?? '' }}</p>
+          <template v-if="push.offered">
+            <SettingsSwitch
+              :label="t.push.toggle"
+              :hint="t.push.hint"
+              :checked="pushOn"
+              :busy="push.busy.value || push.state.value === null"
+              :disabled="!pushSwitchable"
+              @toggle="push.turn(!pushOn)"
+            />
+            <p
+              :role="push.failed.value ? 'alert' : 'status'"
+              class="text-small empty:hidden"
+              :class="push.failed.value ? 'text-danger' : 'text-text-muted'"
+            >{{ pushMessage ?? '' }}</p>
+          </template>
+          <template v-if="digest.offered">
+            <SettingsSwitch
+              :label="t.emailDigest.toggle"
+              :hint="t.emailDigest.hint"
+              :checked="digest.on.value === true"
+              :busy="digest.busy.value || digest.on.value === null"
+              :disabled="digest.busy.value || digest.on.value === null"
+              @toggle="digest.turn(!digest.on.value)"
+            />
+            <p
+              :role="digest.failed.value ? 'alert' : 'status'"
+              class="text-small text-danger empty:hidden"
+            >{{ digest.failed.value ? t.emailDigest.failed : '' }}</p>
+          </template>
         </div>
       </section>
 
@@ -391,19 +386,3 @@ function removePicture() {
     </div>
   </AppSheet>
 </template>
-
-<style scoped>
-/* The switch's knob slides over when it is turned on. Reduced motion: it
-   moves at once. */
-.knob {
-  transition: translate 240ms var(--ease-pop);
-}
-.knob.on {
-  translate: 1.25rem 0;
-}
-@media (prefers-reduced-motion: reduce) {
-  .knob {
-    transition: none;
-  }
-}
-</style>
