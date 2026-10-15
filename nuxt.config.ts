@@ -60,7 +60,10 @@ export default defineNuxtConfig({
     // From Google Fonts. Not named on each family: Google then picks the
     // fallbacks itself (the generic "serif"), not the ones above.
     priority: ['google'],
-    processCSSVariables: true,
+    // Only the --font* variables: `true` reads every custom property as a
+    // font name, and since Nuxt 4.6 its CSS minifier hands it a calc() (for
+    // --height-empty-column, main.css) to look up as one (#243).
+    processCSSVariables: 'font-prefixed-only',
   },
   runtimeConfig: {
     public: {
