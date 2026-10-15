@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session, on its own branch, through a PR.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -224,6 +224,18 @@ Both were tried in #198 and reverted (PR #242). Neither fixes an advisory; they 
 |---|---|---|
 | #243 | Upgrade Nuxt to 4.6 | Its dev error overlay is shared by every open page and broke 57 browser tests; keep it out of the test run first |
 | #244 | Migrate @nuxt/fonts to 1.x | 1.0.1 emits no `@font-face` with the current config. Removes the `fontless>esbuild` override |
+
+### Phase 11: review 3 (#278)
+
+From the third review (`docs/reviews/review3.md`), decided in a grilling session on 2026-10-15. Small changes are always bundled, leftovers too, however few. The share sheet needs no ticket (see #278), and the test-suite audit is a research document, not a ticket.
+
+| # | Ticket | Note |
+|---|---|---|
+| #279 | Instagram video in older Dishes opens Instagram instead of playing | Bug. Reproduce first; a fix for every existing Dish, no re-adding by hand |
+| #280 | Bundle: review 3 small fixes | Nine changes. The nav bar part needs the user's device check after deploy |
+| #281 | Prototype: Board Switcher pill fade, settings placement, Board Settings cards | `ready-for-human`: skip, the user runs it with the agent. Blocks #282 and #283; its decisions also create a bundle for the pill fade and the cards, added here |
+| #282 | Board Settings in the Board Switcher, cogwheel opens Your Settings | From spec #277. One ticket, so Board Settings are never reachable only by `,` |
+| #283 | Your Settings as a right side sheet from 768px up | From spec #277. Relies on #280's vertical scrollbars |
 
 ## Keeping this file current
 

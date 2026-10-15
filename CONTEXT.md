@@ -10,6 +10,18 @@ A shared board for collecting food people find online (TikTok, Instagram, food b
 A named space (with an emoji) of Columns holding Dishes. A user can belong to many Boards; a Board with more than one Member is simply a shared Board.
 _Avoid_: List, workspace, personal board
 
+**Board Switcher**:
+The Board's emoji and name at the top of a Board, which lists all of a user's Boards to switch between and starts a new one.
+_Avoid_: Board picker, board menu, dropdown
+
+**Board Settings**:
+One Board's Columns, Members and Invite Link, which its Members change for everyone, some parts only its Owner ("Board-Einstellungen").
+_Avoid_: Board config, board options
+
+**Your Settings**:
+One user's own Username, Profile Picture, notifications, Darstellung and shortcuts, the same on every Board ("Deine Einstellungen").
+_Avoid_: User settings, account, profile
+
 **Column**:
 A named, ordered stage on a Board (default: Ideen, Diese Woche, Gekocht). Members can rename, add, reorder and delete Columns.
 _Avoid_: Lane, list, status
