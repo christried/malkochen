@@ -567,6 +567,20 @@ export const de = {
     // last opened it, the latest adder first. `board` is its emoji and name.
     added: (names: string[], count: number, board: string) => `${nameList(names)} ${names.length === 1 ? 'hat' : 'haben'} ${dishCount(count)} zu ${board} hinzugefügt`,
   },
+  // The Email Digest (#220): switched on in your settings, for all your
+  // Boards; one email in the evening listing the Dishes others added since
+  // the last one (server/email/index.ts).
+  emailDigest: {
+    toggle: 'Tägliche E-Mail',
+    hint: 'Abends an deine E-Mail-Adresse, wenn andere neue Gerichte zu deinen Boards hinzugefügt haben. Für alle deine Geräte.',
+    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    subject: (count: number) => `Neu auf deinen Boards: ${dishCount(count)}`,
+    heading: 'Neu auf deinen Boards',
+    addedBy: (name: string) => `von ${name}`,
+    openBoard: 'Board öffnen',
+    why: 'Du bekommst diese E-Mail, weil du die tägliche E-Mail in deinen malkochen-Einstellungen eingeschaltet hast.',
+    turnOff: 'Ausschalten',
+  },
   // The Board's keyboard shortcuts (utils/shortcuts.ts): the "?" dialog and
   // the section in your settings.
   shortcuts: {

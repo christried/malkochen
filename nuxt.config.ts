@@ -68,6 +68,10 @@ export default defineNuxtConfig({
       // with (server/env.ts). Empty: the settings offer no push
       // notifications.
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? '',
+      // The Email Digest (#220): whether the server has a Resend API key
+      // (RESEND_API_KEY, server/env.ts) to send it with. The key itself
+      // never leaves the server. False: the settings offer no digest.
+      emailDigest: Boolean(process.env.RESEND_API_KEY),
     },
   },
   // `nuxt typecheck` also covers the tests and the root tool configs.

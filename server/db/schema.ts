@@ -104,6 +104,16 @@ export const pushSubscription = pgTable('push_subscription', {
   createdAt: createdAt(),
 }, t => [index('push_subscription_user_id_idx').on(t.userId)])
 
+// A user who switched the Email Digest on (#220), for all their Boards; off,
+// they have no row. coveredUntil: how far the digests have covered, so each
+// Dish is listed once. Switching it on starts there, and each daily run
+// moves it on (server/utils/email-digest.ts). Always whole milliseconds, so
+// it reads back into a JS Date unchanged.
+export const emailDigest = pgTable('email_digest', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  coveredUntil: timestamp('covered_until', { withTimezone: true }).notNull(),
+})
+
 // ---------------------------------------------------------------------------
 // Boards (CONTEXT.md: Board, Member, Owner, Column, Gekocht Column).
 
