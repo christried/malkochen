@@ -109,7 +109,8 @@ export default defineNuxtConfig({
     // leave its client plugin out. Their own assertions still see each error.
     'app:resolve'(app) {
       if (!process.env.MALKOCHEN_E2E) return
-      app.plugins = app.plugins.filter(plugin => !/[\\/]dev-error-overlay\.client(\.[jt]s)?$/.test(plugin.src))
+      const devErrorOverlay = /[\\/]dev-error-overlay\.client(\.[jt]s)?$/
+      app.plugins = app.plugins.filter(plugin => !devErrorOverlay.test(plugin.src))
     },
   },
 })

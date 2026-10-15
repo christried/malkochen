@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
@@ -18,7 +19,8 @@ test('a Board that doesn\'t exist shows the error screen, with a way back', asyn
   await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
 })
 
-test('an unexpected error shows the error screen, and "Nochmal versuchen" tries again', async ({ page }) => {
+// The Board fails to load, unexpectedly: the error screen shows.
+async function failBoardLoad(page: Page) {
   await signIn(page)
   await gotoHydrated(page, '/')
   await gotoHydrated(page, `${page.url()}/settings`)
@@ -27,6 +29,10 @@ test('an unexpected error shows the error screen, and "Nochmal versuchen" tries 
   await page.getByRole('link', { name: 'Zurück zum Board' }).click()
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Da ist was angebrannt.')
+}
+
+test('an unexpected error shows the error screen, and "Nochmal versuchen" tries again', async ({ page }) => {
+  await failBoardLoad(page)
   await expect(page.getByText('Das liegt an uns, nicht an dir.')).toBeVisible()
   await expect(page.getByText('boom')).toHaveCount(0)
 
@@ -35,25 +41,18 @@ test('an unexpected error shows the error screen, and "Nochmal versuchen" tries 
   await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
 })
 
-// In dev (`pnpm dev`, which the browser tests run against), Nuxt 4.6 reports
-// a client error to the dev server, and its error overlay then shows it on
-// every page open on that server (#243). The browser tests leave the overlay
-// out, so an error a test causes on purpose stays on its own page.
+// Nuxt 4.6's dev error overlay would show that error on every page open on
+// the dev server; the browser tests leave it out (nuxt.config.ts, #243).
 test('an unexpected error stays on its own page: the next page shows no dev error overlay', async ({ page, context }) => {
-  await signIn(page)
-  await gotoHydrated(page, '/')
-  await gotoHydrated(page, `${page.url()}/settings`)
-  await page.route('**/api/boards/*', route => route.fulfill({ status: 500, body: 'boom' }))
-  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Da ist was angebrannt.')
+  await failBoardLoad(page)
 
-  const next = await context.newPage()
-  await gotoHydrated(next, '/')
-  await expect(next.getByRole('region', { name: 'Ideen' })).toBeVisible()
+  const nextPage = await context.newPage()
+  await gotoHydrated(nextPage, '/')
+  await expect(nextPage.getByRole('region', { name: 'Ideen' })).toBeVisible()
   // The overlay would come a moment after hydration: the page asks the dev
   // server for the current error, then fetches and mounts the overlay.
-  await next.waitForTimeout(2000)
-  await expect(next.locator('[data-nuxt-dev-error], nuxt-error-overlay')).toHaveCount(0)
-  await expect(next.getByRole('heading', { level: 1 })).toHaveCount(1)
-  await expect(next.getByRole('main')).toHaveCount(1)
+  await nextPage.waitForTimeout(2000)
+  await expect(nextPage.locator('[data-nuxt-dev-error], nuxt-error-overlay')).toHaveCount(0)
+  await expect(nextPage.getByRole('heading', { level: 1 })).toHaveCount(1)
+  await expect(nextPage.getByRole('main')).toHaveCount(1)
 })
