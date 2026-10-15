@@ -76,6 +76,10 @@ _Avoid_: Unread, notification
 A notification on a Member's device that other Members added Dishes to one of their Boards, sent only to devices the Member turned push notifications on for in their settings (off by default). One per Board, replaced as more Dishes come in: it counts the Dishes others added since the Member last had the Board open and names who added them; about one Dish, tapping it opens that Dish, else the Board. Nothing but adding a Dish sends one.
 _Avoid_: Alert, reminder
 
+**Email Digest**:
+One email in the evening ("Tägliche E-Mail") listing the Dishes other Members added to a user's Boards since the last one, each with its Board and who added it, sent only to users who switched it on in their settings (off by default; one switch for all their Boards and devices). Nothing new, no email; a Dish is never listed twice, nor one added to a Board before they joined it.
+_Avoid_: Newsletter, summary, report
+
 **Placeholder Image**:
 One of a fixed set of illustrations of vegan dishes, used as a Dish's image when the Source provides no thumbnail or the user prefers one. Every Dish keeps one, shown whenever its other image can't be.
 _Avoid_: Default image, fallback image, stock photo

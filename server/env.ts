@@ -33,9 +33,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // their server a folder of its own, so its cleanup job never sweeps away
   // the images of local dev.
   IMAGE_DIR: z.string().default('').transform(dir => dir || '.data/images'),
-  // Vercel Cron sends it as a bearer token to the daily cleanup job
-  // (/api/cron/cleanup), which refuses every request without it. Empty: the
-  // job never runs.
+  // Vercel Cron sends it as a bearer token to the daily jobs under
+  // /api/cron/ (server/utils/cron.ts), which refuse every request without
+  // it. Empty: they never run.
   CRON_SECRET: z.union([z.literal(''), z.string().min(16)]).default(''),
   // Push notifications (server/utils/push.ts): the VAPID key pair the app
   // signs its pushes with, base64url as `web-push generate-vapid-keys` prints
