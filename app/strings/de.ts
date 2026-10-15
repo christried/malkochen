@@ -6,6 +6,10 @@
 import type { AchievementLevel } from '../utils/achievement'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
+import type { VideoPlatform } from '../../shared/video-embed'
+
+// The video platforms' names in full, as a player's title says them.
+const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // "3. Sept.", with the year only when it isn't this year. Always in German
 // time, so the server and the browser render the same day.
@@ -255,6 +259,11 @@ export const de = {
     close: 'Schließen',
     goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',
+    // Click-to-play video (#221).
+    playVideo: 'Video abspielen',
+    videoPlayer: (platform: VideoPlatform) => `Video von ${VIDEO_PLATFORMS[platform]}`,
+    videoUnavailable: 'Dieses Video lässt sich hier nicht abspielen.',
+    openOnInstagram: 'Auf Instagram öffnen',
     noSource: 'Ohne Link',
     placement: (board: string, column: string) => `${board} · ${column}`,
     added: (name: string | null, date: Date) => {
