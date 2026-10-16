@@ -32,6 +32,8 @@ const newCardStep = (page: Page) => page.getByRole('dialog', { name: 'Da ist es!
 const columnsStep = (page: Page) => page.getByRole('dialog', { name: 'Deine Spalten' })
 const addDish = (page: Page) => page.getByRole('dialog', { name: 'Gericht hinzufügen' })
 const switcherStep = (page: Page) => page.getByRole('dialog', { name: 'Kocht zusammen' })
+const installStep = (page: Page) => page.getByRole('dialog', { name: 'Hol dir malkochen aufs Handy' })
+const shareTipStep = (page: Page) => page.getByRole('dialog', { name: 'Noch ein Trick' })
 const layer = (page: Page) => page.locator('[data-tour-layer]')
 const bubble = (page: Page) => page.locator('[data-tour-step]')
 const ended = (page: Page) => page.getByText('Den Rundgang kannst du jederzeit in deinen Einstellungen wieder starten.')
@@ -84,6 +86,8 @@ test('a first visit shows the Tour; going through it to the end records it and s
   await columnsStep(page).getByRole('button', { name: 'Weiter' }).click()
 
   await expect(switcherStep(page)).toContainText('lädst du andere zu deinem Board ein')
+  // Side by side, the Board Switcher is the last step: no share tip, nothing
+  // to install.
   await switcherStep(page).getByRole('button', { name: 'Fertig' }).click()
 
   await expect(layer(page)).toBeHidden()
@@ -254,7 +258,7 @@ test.describe('on a 360px phone', () => {
     await gotoHydrated(page, '/')
     const topfbert = page.locator('[data-tour-layer] [data-topfbert-idle]')
 
-    for (const [step, target] of [[hello(page), null], [addStep(page), 'add-button'], [columnsStep(page), 'columns'], [switcherStep(page), 'board-switcher']] as const) {
+    for (const [step, target] of [[hello(page), null], [addStep(page), 'add-button'], [columnsStep(page), 'columns'], [switcherStep(page), 'board-switcher'], [installStep(page), null]] as const) {
       await expect(step).toBeVisible()
       await expect.poll(() => onScreen(page, bubble(page))).toBe(true)
       await expect.poll(() => onScreen(page, topfbert)).toBe(true)
@@ -275,6 +279,69 @@ test.describe('on a 360px phone', () => {
     await expect.poll(() => onScreen(page, page.locator('[data-tour-step]:visible'))).toBe(true)
     await expect.poll(() => onScreen(page, page.locator('[data-tour-layer] [data-topfbert-idle]:visible'))).toBe(true)
     await expect.poll(() => bubbleOnTop(page)).toBe(true)
+  })
+
+  // The Tour as far as its last step, past the Dish steps.
+  async function toLastStep(page: Page) {
+    await hello(page).getByRole('button', { name: 'Weiter' }).click()
+    await addStep(page).getByRole('button', { name: 'Ohne Gericht weiter' }).click()
+    await columnsStep(page).getByRole('button', { name: 'Weiter' }).click()
+    await switcherStep(page).getByRole('button', { name: 'Weiter' }).click()
+  }
+
+  test('in a browser tab that offered no install, the last step says where Chrome\'s menu has it', async ({ page }) => {
+    await gotoHydrated(page, '/')
+    await toLastStep(page)
+
+    await expect(installStep(page)).toContainText('Tipp oben rechts auf ⋮ und dann auf „Zum Startbildschirm hinzufügen“.')
+    await expect(installStep(page)).toContainText('TikTok')
+    await expect(installStep(page).getByRole('button', { name: 'Installieren' })).toHaveCount(0)
+    await expect.poll(() => onScreen(page, bubble(page))).toBe(true)
+    await installStep(page).getByRole('button', { name: 'Fertig' }).click()
+
+    await expect(layer(page)).toBeHidden()
+    await expect(ended(page)).toBeVisible()
+  })
+
+  test('the install offer, kept from the page\'s load, gives the last step "Installieren"; once its dialog is answered the Tour ends', async ({ page }) => {
+    // The browser's offer, as Chrome makes it once the page has loaded.
+    await page.addInitScript(() => {
+      addEventListener('load', () => {
+        const offer = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+          prompt: async () => {
+            (window as { e2eInstallPrompted?: boolean }).e2eInstallPrompted = true
+          },
+          userChoice: Promise.resolve({ outcome: 'dismissed' }),
+        })
+        dispatchEvent(offer)
+      })
+    })
+    await gotoHydrated(page, '/')
+    await toLastStep(page)
+
+    await expect(installStep(page)).toContainText('Installiert kannst du Links direkt aus TikTok')
+    await installStep(page).getByRole('button', { name: 'Installieren' }).click()
+
+    await expect(layer(page)).toBeHidden()
+    expect(await page.evaluate(() => (window as { e2eInstallPrompted?: boolean }).e2eInstallPrompted)).toBe(true)
+    await expect(ended(page)).toBeVisible()
+    await expect.poll(() => tourSeen(page)).toBe(1)
+  })
+
+  test('installed, the last step is the share tip', async ({ page }) => {
+    // Run as an installed app (display-mode: standalone). Chromium's
+    // emulation takes no display-mode, so the query answers so itself.
+    await page.addInitScript(() => {
+      const matchMedia = window.matchMedia.bind(window)
+      window.matchMedia = query => matchMedia(query === '(display-mode: standalone)' ? 'all' : query)
+    })
+    await gotoHydrated(page, '/')
+    await toLastStep(page)
+
+    await expect(shareTipStep(page)).toContainText('Teilen → malkochen')
+    await expect(installStep(page)).toBeHidden()
+    await shareTipStep(page).getByRole('button', { name: 'Fertig' }).click()
+    await expect(layer(page)).toBeHidden()
   })
 })
 

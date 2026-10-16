@@ -107,3 +107,23 @@ test('a target partly off screen is spotlit where it shows', () => {
 
   expect(hole).toEqual(box(894, 114, 392, 52))
 })
+
+test.each([
+  ['top right', 'top-right', 'top'],
+  ['bottom right', 'bottom-right', 'bottom'],
+] as const)('pointing towards the browser\'s menu %s: nothing spotlit, no tail, the bubble at that end, Topfbert left of it pointing right', (_, corner, end) => {
+  const { hole, tail, bubble, topfbert } = placeTour({ viewport: PHONE, target: null, corner, bubbleHeight: 150 })
+
+  expect(hole).toBeNull()
+  expect(tail).toBeNull()
+  if (end === 'top') expect(bubble.top).toBeLessThan(120)
+  else expect(bubble.top + 150).toBeGreaterThan(PHONE.height - 120)
+  expect(topfbert.mirrored).toBe(false)
+  expect(topfbert.left).toBe(bubble.left - 54)
+  for (const [left, top, width, height] of [[bubble.left, bubble.top, bubble.width, 150], [topfbert.left, topfbert.top, 64, 69]] as const) {
+    expect(left).toBeGreaterThanOrEqual(12)
+    expect(left + width).toBeLessThanOrEqual(PHONE.width - 12)
+    expect(top).toBeGreaterThanOrEqual(0)
+    expect(top + height).toBeLessThanOrEqual(PHONE.height)
+  }
+})

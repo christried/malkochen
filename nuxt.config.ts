@@ -47,6 +47,15 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'mobile-web-app-capable', content: 'yes' },
       ],
+      // The browser's offer to install malkochen, kept from the first moment
+      // for the Tour's last step (useInstallPrompt): it can come before the
+      // app's own code has loaded. Given the CSP's nonce like every inline
+      // script in the head (server/plugins/headers.ts).
+      script: [{
+        key: 'install-prompt',
+        tagPriority: 'critical',
+        innerHTML: 'addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__installPrompt=e})',
+      }],
     },
   },
   // tokens.json → font.load: Petrona (display) and Figtree (UI), both

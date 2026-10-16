@@ -25,8 +25,8 @@ const holeStyle = computed(() => {
   return hole ? { left: `${hole.left}px`, top: `${hole.top}px`, width: `${hole.width}px`, height: `${hole.height}px`, borderRadius: props.holeRadius } : undefined
 })
 
-// Weiter, or Fertig on the last step.
-const forward = computed(() => props.step.buttons.find(b => b === 'next' || b === 'finish'))
+// Weiter, or Fertig on the last step, or Installieren there instead.
+const forward = computed(() => props.step.buttons.find(b => b === 'next' || b === 'finish' || b === 'install'))
 
 const bubble = useTemplateRef<HTMLElement>('bubble')
 defineExpose({ bubble })
@@ -116,7 +116,7 @@ defineExpose({ bubble })
           class="rounded-pill bg-inverse px-4 py-2 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           @click="emit('choose', forward)"
         >
-          {{ t.tour[forward] }}
+          {{ forward === 'install' ? t.tour.installButton : t.tour[forward] }}
         </button>
       </div>
     </div>

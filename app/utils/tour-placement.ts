@@ -4,6 +4,8 @@
 // standing on the bubble's bottom edge, on the side away from the tail. All
 // in px of the window.
 
+import type { TourCorner } from '../tour/tour'
+
 export interface Box {
   left: number
   top: number
@@ -38,13 +40,23 @@ const TAIL_CORNER = 28
 // Without a target, the bubble's bottom above the window's (clear of the add
 // button's top half).
 const NO_TARGET_BOTTOM = 40
+// A browser's menu button, in its corner of the window.
+const MENU_BUTTON = 48
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max))
 
 // `target`: the spotlit elements' box (null for none); `bubbleHeight`: the
-// bubble as laid out at its width.
-export function placeTour({ viewport, target, bubbleHeight }: { viewport: { width: number, height: number }, target: Box | null, bubbleHeight: number }): TourPlacement {
+// bubble as laid out at its width; `corner`: without a target, the corner
+// Topfbert points to (a browser's menu).
+export function placeTour({ viewport, target, corner = null, bubbleHeight }: { viewport: { width: number, height: number }, target: Box | null, corner?: TourCorner | null, bubbleHeight: number }): TourPlacement {
   const width = Math.min(MAX_BUBBLE, viewport.width - 2 * MARGIN - BESIDE)
+
+  // Placed as for a target in that corner, but nothing spotlit, no tail.
+  if (!target && corner) {
+    const top = corner === 'top-right' ? 0 : viewport.height - MENU_BUTTON
+    const placed = placeTour({ viewport, target: { left: viewport.width - MENU_BUTTON, top, width: MENU_BUTTON, height: MENU_BUTTON }, bubbleHeight })
+    return { ...placed, hole: null, tail: null }
+  }
 
   if (!target) {
     const groupLeft = Math.max(MARGIN, (viewport.width - width - BESIDE) / 2)
