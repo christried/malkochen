@@ -110,7 +110,7 @@ for (const scheme of ['light', 'dark'] as const) {
   test(`with a mouse, the vertical scrollbars are the app’s: the page, Your Settings and the Board Switcher (${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme })
     await page.setViewportSize({ width: 800, height: 320 })
-    for (const name of ['Vorrat', 'Grillen', 'Brunch']) {
+    for (const name of ['Bildlauf A', 'Bildlauf B', 'Bildlauf C']) {
       expect((await page.request.post('/api/boards', { data: { name, emoji: '🥕' } })).status()).toBe(201)
     }
     await gotoHydrated(page, '/')

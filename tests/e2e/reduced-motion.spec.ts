@@ -154,7 +154,7 @@ test('the achievement badge shows its count at once; both celebrations show thei
   expect(await moving(milestone.locator('.clip'))).toEqual([])
   await page.waitForTimeout(4000)
   await expect(milestone).toBeVisible()
-  await milestone.getByRole('button', { name: 'Schließen' }).click()
+  await milestone.getByRole('button', { name: 'Überspringen' }).click()
   await expect(milestone).toBeHidden()
 
   // A new Board: its still, with the emoji resting on the pebble.

@@ -21,9 +21,9 @@ import { loopStyle } from '~/utils/svg-loop'
 // pebble's keyframes, so it pops in step with the drawing and rests with it
 // (SvgLoop's `over`). With `pulse`, once the clip has played, it keeps a
 // gentle pulse, which by then is the pebble's alone (#280); reduced motion:
-// no pulse (main.css's global rule). Slots: the default one sits between
-// the clip and the text, `actions` under the text, and `toast` takes the page's Toast: the
-// page behind is inert, so the Toast shows in here, above the wash.
+// no pulse. Slots: the default one sits between the clip and the text,
+// `actions` under the text, and `toast` takes the page's Toast: the page
+// behind is inert, so the Toast shows in here, above the wash.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{
   clip: CelebrationClip
@@ -171,6 +171,11 @@ onBeforeUnmount(() => clearTimeout(closing))
 /* Once the 1.8s clip has played, its pebble ("10×" on it) breathes. */
 .clip[data-idle-pulse] {
   animation: idle-pulse 2.4s var(--ease-idle) 1.8s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clip[data-idle-pulse] {
+    animation: none;
+  }
 }
 @keyframes idle-pulse {
   50% { scale: 1.04; }
