@@ -24,7 +24,8 @@ const after = (tour: Tour, ...events: Happening[]) =>
 const step = (tour: Tour) => tourStep(tour, de.tour)
 const stepId = (tour: Tour) => step(tour)?.id ?? null
 
-const added = (dishId: string): TourEvent => ({ type: 'dishAdded', dishId })
+// Added: by default it lands in the first Column, Ideen.
+const added = (dishId: string, columnId = IDEEN.id): TourEvent => ({ type: 'dishAdded', dishId, columnId })
 // The Tour as far as the Columns, past the Dish steps.
 const atColumns = (change: Partial<TourSituation> = {}) => after(startTour(situation(change)), 'next', 'withoutDish')
 
@@ -90,7 +91,7 @@ test('the Dish saved: its new card is spotlit, "Da ist es!", and Weiter goes on 
   expect(tour.dishId).toBe('dish-1')
   // Add Dish closes right after saving: that doesn't take the Tour back.
   expect(stepId(after(tour, 'addDishClosed'))).toBe('newCard')
-  expect(stepId(after(tour, 'next'))).toBe('columns')
+  expect(stepId(after(tour, 'next'))).toBe('moveDish')
 })
 
 test('Add Dish closed without saving goes back to the add button, to try again', () => {
@@ -127,7 +128,7 @@ test('happenings on the Board that a step isn\'t waiting for change nothing', ()
   expect(after(columns, 'addDishOpened', added('x'), 'addDishClosed')).toEqual(columns)
 })
 
-test('Zurück from the Columns goes to the new card when a Dish was added, else to the add button', () => {
+test('Zurück from the move step goes to the new card; from the Columns, without a Dish, to the add button', () => {
   const withDish = after(startTour(situation()), 'next', 'addDishOpened', added('dish-4'), 'next')
 
   expect(stepId(after(withDish, 'back'))).toBe('newCard')
@@ -249,6 +250,150 @@ test('side by side with no targets on the page, the greeting is all there is, an
 
   expect(step(tour)?.buttons).toEqual(['finish', 'skip'])
   expect(after(tour, 'next').status).toBe('finished')
+})
+
+// Steps 5 and 6: moving the Tour's Dish to the next Column, and deleting it.
+const atMove = (change: Partial<TourSituation> = {}, landed = IDEEN.id) =>
+  after(startTour(situation(change)), 'next', 'addDishOpened', added('dish', landed), 'addDishClosed', 'next')
+
+test('with a Dish added, step 5 asks to move it to the next Column by its name: card and Column spotlit, no Weiter', () => {
+  const tour = atMove()
+
+  expect(step(tour)).toMatchObject({
+    id: 'moveDish',
+    target: 'dish',
+    dishId: 'dish',
+    also: 'column',
+    columnId: 'woche',
+    handsOn: true,
+    live: true,
+    pose: 'pointing',
+    faces: 'target',
+    title: 'Zieh es auf „Diese Woche“',
+    buttons: ['back', 'skip'],
+  })
+  expect(stepId(after(tour, 'next'))).toBe('moveDish')
+})
+
+const BALD: TourColumn = { id: 'bald', name: 'Bald', isGekocht: false }
+const moveTitle = (tour: Tour) => step(tour)?.id === 'moveDish' ? step(tour)?.title : null
+
+test.each([
+  ['renamed', [IDEEN, { ...WOCHE, name: 'Nächste Woche' }, GEKOCHT], 'Zieh es auf „Nächste Woche“'],
+  ['reordered, Gekocht in between', [IDEEN, GEKOCHT, WOCHE], 'Zieh es auf „Diese Woche“'],
+  ['the next one deleted', [IDEEN, BALD, GEKOCHT], 'Zieh es auf „Bald“'],
+  ['landed in a later Column', [BALD, IDEEN, WOCHE, GEKOCHT], 'Zieh es auf „Diese Woche“'],
+] as const)('step 5 names the first Column after where the Dish landed that isn\'t Gekocht: %s', (_, columns, title) => {
+  expect(moveTitle(atMove({ columns: [...columns] }))).toBe(title)
+})
+
+test.each([
+  ['only one Column besides Gekocht', [IDEEN, GEKOCHT]],
+  ['only Gekocht after it', [WOCHE, IDEEN, GEKOCHT]],
+] as const)('with no such Column (%s), step 5 just explains the Columns: never into Gekocht', (_, columns) => {
+  const tour = atMove({ columns: [...columns] })
+
+  expect(step(tour)).toMatchObject({ id: 'columns', target: 'columns', handsOn: false, buttons: ['back', 'next', 'skip'] })
+})
+
+test('a Column renamed or deleted during the Tour: step 5 follows the Board', () => {
+  const tour = atMove({ columns: [IDEEN, WOCHE, BALD, GEKOCHT] })
+
+  const renamed = after(tour, { type: 'columnsChanged', columns: [IDEEN, { ...WOCHE, name: 'Demnächst' }, BALD, GEKOCHT] })
+  const deleted = after(tour, { type: 'columnsChanged', columns: [IDEEN, BALD, GEKOCHT] })
+
+  expect(moveTitle(renamed)).toBe('Zieh es auf „Demnächst“')
+  expect(moveTitle(deleted)).toBe('Zieh es auf „Bald“')
+})
+
+const moved = (columnId: string): TourEvent => ({ type: 'dishMoved', dishId: 'dish', columnId })
+const menu = (open: 'closed' | 'actions' | 'columns'): TourEvent => ({ type: 'dishMenu', dishId: 'dish', menu: open })
+
+test('dragged into that Column, the Dish is there and step 6 shows', () => {
+  expect(stepId(after(atMove(), moved('woche')))).toBe('deleteDish')
+})
+
+test('through the ⋯ menu: the bubble follows onto "Verschieben nach…", then that Column, and the move counts the same', () => {
+  const inMenu = after(atMove(), menu('actions'))
+  const choosing = after(inMenu, menu('columns'))
+
+  expect(step(inMenu)).toMatchObject({ id: 'moveDish', target: 'menu-move', also: null, live: false, handsOn: true, text: 'Tipp auf „Verschieben nach…“.', buttons: ['skip'] })
+  expect(step(choosing)).toMatchObject({ id: 'moveDish', target: 'menu-column', columnId: 'woche', text: 'Und jetzt auf „Diese Woche“.', buttons: ['skip'] })
+  // The menu closed without moving: back to the card.
+  expect(step(after(choosing, menu('closed')))).toMatchObject({ target: 'dish', also: 'column' })
+  expect(stepId(after(choosing, menu('closed'), moved('woche')))).toBe('deleteDish')
+})
+
+test('moved to a different Column doesn\'t count; neither does another Dish moved there', () => {
+  const tour = atMove({ columns: [IDEEN, WOCHE, BALD, GEKOCHT] })
+
+  expect(moveTitle(after(tour, moved('bald')))).toBe('Zieh es auf „Diese Woche“')
+  expect(moveTitle(after(tour, { type: 'dishMoved', dishId: 'other', columnId: 'woche' }))).toBe('Zieh es auf „Diese Woche“')
+  expect(stepId(after(tour, moved('bald'), moved('woche')))).toBe('deleteDish')
+})
+
+const atDelete = () => after(atMove(), moved('woche'))
+
+test('step 6 spotlights the card\'s ⋯, "Und wieder weg", mentioning Rückgängig: Behalten instead of Weiter', () => {
+  const tour = atDelete()
+
+  expect(step(tour)).toMatchObject({
+    id: 'deleteDish',
+    target: 'dish-menu',
+    dishId: 'dish',
+    handsOn: true,
+    live: false,
+    pose: 'pointing',
+    title: 'Und wieder weg',
+    buttons: ['back', 'keep', 'skip'],
+  })
+  expect(step(tour)?.text).toContain('„Rückgängig“')
+  expect(stepId(after(tour, 'next'))).toBe('deleteDish')
+})
+
+test('in the ⋯ menu, the bubble follows onto Löschen; deleted, the Tour goes on to the Board Switcher', () => {
+  const inMenu = after(atDelete(), menu('actions'))
+
+  expect(step(inMenu)).toMatchObject({ id: 'deleteDish', target: 'menu-delete', buttons: ['keep', 'skip'] })
+  expect(stepId(after(inMenu, menu('closed'), { type: 'dishGone', dishId: 'dish' }))).toBe('boardSwitcher')
+})
+
+test('"Behalten" keeps the Dish and moves on; going back doesn\'t ask to delete it again', () => {
+  const kept = after(atDelete(), 'keep')
+
+  expect(stepId(kept)).toBe('boardSwitcher')
+  expect(step(after(kept, 'back'))).toMatchObject({ id: 'columns', handsOn: false })
+  expect(stepId(after(kept, 'back', 'next'))).toBe('boardSwitcher')
+})
+
+test('a delete undone: the Dish comes back and the Tour carries on', () => {
+  const deleted = after(atDelete(), { type: 'dishGone', dishId: 'dish' })
+  const undone = after(deleted, moved('woche'))
+
+  expect(stepId(undone)).toBe('boardSwitcher')
+  expect(undone.status).toBe('running')
+  expect(stepId(after(deleted, 'back'))).toBe('columns')
+})
+
+test('the Dish gone during step 5 (deleted, or to another Board): the Tour goes past deleting it', () => {
+  const tour = after(atMove(), { type: 'dishGone', dishId: 'dish' })
+
+  expect(stepId(tour)).toBe('boardSwitcher')
+  expect(step(after(tour, 'back'))).toMatchObject({ id: 'columns', handsOn: false })
+})
+
+test('Zurück from step 6 explains the Columns, where the Dish already is; not from inside the ⋯ menu', () => {
+  expect(step(after(atDelete(), 'back'))).toMatchObject({ id: 'columns', handsOn: false })
+  expect(stepId(after(atDelete(), menu('actions'), 'back'))).toBe('deleteDish')
+  expect(stepId(after(atMove(), menu('actions'), 'back'))).toBe('moveDish')
+})
+
+test.each([
+  ['step 5', atMove],
+  ['step 5 in the menu', () => after(atMove(), menu('columns'))],
+  ['step 6', atDelete],
+] as const)('Überspringen on %s ends the Tour as skipped', (_, at) => {
+  expect(after(at(), 'skip').status).toBe('skipped')
 })
 
 // Step 8, phones only: the share tip once installed, else how to install.

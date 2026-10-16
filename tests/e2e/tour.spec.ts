@@ -55,13 +55,14 @@ async function onScreen(page: Page, locator: Locator) {
 }
 
 // Whether the spotlight's hole holds every element of `target` on screen
-// (the card of the Dish `dishId`), with 6px to spare (to the window's edge,
-// where it is cut off there).
-async function holeRound(page: Page, target: string, dishId?: string) {
+// (the card of the Dish `dishId`; the one of the Column `columnId`), with
+// 6px to spare (to the window's edge, where it is cut off there).
+async function holeRound(page: Page, target: string, dishId?: string, columnId?: string) {
   const hole = (await page.locator('[data-tour-spot]:visible').boundingBox())!
   const { width } = page.viewportSize()!
   const within = dishId ? `[data-dish-id="${dishId}"] ` : ''
-  const boxes = await page.locator(`${within}[data-tour="${target}"]:visible`).evaluateAll(els => els.map((el) => {
+  const ofColumn = columnId ? `[data-tour-column-id="${columnId}"]` : ''
+  const boxes = await page.locator(`${within}[data-tour="${target}"]${ofColumn}:visible`).evaluateAll(els => els.map((el) => {
     const { left, top, right, bottom } = el.getBoundingClientRect()
     return { left, top, right, bottom }
   }))
@@ -227,9 +228,119 @@ test('the Tour has the user add a Dish: the add button, Add Dish, then the new c
   await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
 
   await newCardStep(page).getByRole('button', { name: 'Weiter' }).click()
-  await expect(columnsStep(page)).toBeVisible()
-  await columnsStep(page).getByRole('button', { name: 'Zurück' }).click()
+  await expect(moveStep(page)).toBeVisible()
+  await moveStep(page).getByRole('button', { name: 'Zurück' }).click()
   await expect(newCardStep(page)).toBeVisible()
+})
+
+const moveStep = (page: Page) => page.getByRole('dialog', { name: 'Zieh es auf „Diese Woche“' })
+const deleteStep = (page: Page) => page.getByRole('dialog', { name: 'Und wieder weg' })
+const dishMenu = (page: Page) => page.getByRole('dialog', { name: 'Tour-Bohnen' })
+const inColumn = (page: Page, column: string, dishId: string) => page.locator(`section[aria-label="${column}"] li[data-dish-id="${dishId}"]`)
+
+// The Tour as far as moving its Dish: one added without a link, the new
+// card's Weiter tapped. The Dish's id.
+async function toMoveStep(page: Page) {
+  await gotoHydrated(page, '/')
+  await hello(page).getByRole('button', { name: 'Weiter' }).click()
+  await tapAddButton(page)
+  await expect.poll(() => holeRound(page, 'add-dish-link')).toBe(true)
+  await tapOn(page, addDish(page).getByRole('button', { name: 'Ohne Link hinzufügen' }))
+  const form = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+  await form.getByLabel('Titel').fill('Tour-Bohnen')
+  await form.getByRole('button', { name: 'Speichern' }).click()
+  await newCardStep(page).getByRole('button', { name: 'Weiter' }).click()
+  await expect(moveStep(page)).toBeVisible()
+  return (await page.locator('li[data-dish-id]', { hasText: 'Tour-Bohnen' }).getAttribute('data-dish-id'))!
+}
+
+// Whether the Gekocht pill showed: nothing the Tour asks for records a
+// Cooking.
+const cooked = (page: Page) => page.locator('[data-gekocht-pill]:visible')
+
+test('from 768px, the Tour\'s Dish is dragged across to the next lane; "Behalten" keeps it', async ({ page }) => {
+  const dishId = await toMoveStep(page)
+  await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
+  // A tap on the card doesn't open it while the Tour moves it.
+  await tapOn(page, page.locator(`[data-dish-id="${dishId}"] [data-tour="dish"]`))
+  await page.waitForTimeout(300)
+  await expect(page).toHaveURL(/\/b\/[^/]+$/)
+
+  // Through the hole, the card is picked up and dropped on the lane.
+  const card = (await page.locator(`[data-dish-id="${dishId}"] [data-tour="dish"]`).boundingBox())!
+  const lane = (await page.locator('section[aria-label="Diese Woche"]').boundingBox())!
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(lane.x + lane.width / 2, card.y + card.height / 2, { steps: 12 })
+  await page.mouse.up()
+
+  await expect(deleteStep(page)).toContainText('„Rückgängig“')
+  await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
+  await deleteStep(page).getByRole('button', { name: 'Behalten' }).click()
+
+  await expect(switcherStep(page)).toBeVisible()
+  await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
+  await expect(cooked(page)).toHaveCount(0)
+})
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true })
+
+  test('the Tour\'s Dish is moved through ⋯ → Verschieben, then deleted through ⋯ → Löschen, and "Rückgängig" brings it back', async ({ page }) => {
+    const dishId = await toMoveStep(page)
+    await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
+
+    // Its ⋯, through the hole; the bubble follows into the menu.
+    await tapOn(page, page.locator(`[data-dish-id="${dishId}"] [data-tour="dish-menu"]`))
+    await expect(dishMenu(page)).toBeVisible()
+    await expect(moveStep(page)).toContainText('Tipp auf „Verschieben nach…“.')
+    await expect.poll(() => holeRound(page, 'menu-move')).toBe(true)
+    await tapOn(page, dishMenu(page).getByRole('button', { name: 'Verschieben nach…' }))
+    await expect(moveStep(page)).toContainText('Und jetzt auf „Diese Woche“.')
+    const woche = (await dishMenu(page).getByRole('button', { name: 'Diese Woche' }).getAttribute('data-tour-column-id'))!
+    await expect.poll(() => holeRound(page, 'menu-column', undefined, woche)).toBe(true)
+    await tapOn(page, dishMenu(page).getByRole('button', { name: 'Diese Woche' }))
+
+    await expect(dishMenu(page)).toBeHidden()
+    await expect(deleteStep(page)).toBeVisible()
+    await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
+
+    // The spotlit ⋯ takes the tap; the bubble follows onto Löschen.
+    await expect.poll(() => holeRound(page, 'dish-menu', dishId)).toBe(true)
+    await tapOn(page, page.locator(`[data-dish-id="${dishId}"] [data-tour="dish-menu"]`))
+    await expect(deleteStep(page)).toContainText('Tipp auf „Löschen“.')
+    await expect.poll(() => holeRound(page, 'menu-delete')).toBe(true)
+    await tapOn(page, dishMenu(page).getByRole('button', { name: 'Löschen' }))
+
+    await expect(switcherStep(page)).toBeVisible()
+    await expect(page.locator(`li[data-dish-id="${dishId}"]`)).toHaveCount(0)
+    // Over the Tour, the Toast's "Rückgängig" still works, and the Tour
+    // carries on.
+    await page.getByRole('button', { name: 'Rückgängig' }).click()
+    await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
+    await expect(switcherStep(page)).toBeVisible()
+    await expect(cooked(page)).toHaveCount(0)
+  })
+
+  test('the Tour\'s Dish long-pressed and dragged onto the Column\'s tab counts too', async ({ page }) => {
+    const dishId = await toMoveStep(page)
+    await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
+    const woche = (await page.getByRole('button', { name: /^Diese Woche/ }).getAttribute('data-tour-column-id'))!
+    await expect.poll(() => holeRound(page, 'column', undefined, woche)).toBe(true)
+
+    // Through the hole: held, then dragged up onto the tab.
+    const card = (await page.locator(`[data-dish-id="${dishId}"] [data-tour="dish"]`).boundingBox())!
+    const tab = (await page.getByRole('button', { name: /^Diese Woche/ }).boundingBox())!
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(450)
+    await page.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2, { steps: 12 })
+    await page.mouse.up()
+
+    await expect(deleteStep(page)).toBeVisible()
+    await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
+    await expect.poll(() => holeRound(page, 'dish-menu', dishId)).toBe(true)
+  })
 })
 
 test('Add Dish closed without saving goes back to the add button; "Ohne Gericht weiter" there closes it and goes on', async ({ page }) => {

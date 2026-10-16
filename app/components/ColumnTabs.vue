@@ -100,6 +100,8 @@ watch(() => props.active, index => tabs[index]?.scrollIntoView({
       :aria-pressed="active === index"
       :aria-controls="`column-${column.id}`"
       :data-tab-column-id="column.id"
+      data-tour="column"
+      :data-tour-column-id="column.id"
       class="tab relative shrink-0 px-4 py-2.5 text-button transition-[scale,rotate,color] duration-settle ease-settle focus-visible:outline-2 focus-visible:outline-focus"
       :class="[
         active === index ? 'is-active text-on-accent' : 'text-text',

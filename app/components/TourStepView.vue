@@ -111,6 +111,14 @@ defineExpose({ bubble })
           {{ t.tour.withoutDish }}
         </button>
         <button
+          v-if="step.buttons.includes('keep')"
+          type="button"
+          class="rounded-pill px-2.5 py-2 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+          @click="emit('choose', 'keep')"
+        >
+          {{ t.tour.keep }}
+        </button>
+        <button
           v-if="forward"
           type="button"
           class="rounded-pill bg-inverse px-4 py-2 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"

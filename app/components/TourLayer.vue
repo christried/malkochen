@@ -14,6 +14,12 @@ import { HOLE_PADDING, placeTour, type TourPlacement } from '~/utils/tour-placem
 //   popover, so it shows above the sheet while the sheet keeps its own focus
 //   and Esc. Its taps reach the target through the hole; elsewhere they do
 //   nothing.
+// - On the Board, live (a step whose target is dragged, like the Tour's Dish
+//   to another Column): a manual popover over the page, which stays live, so
+//   a drag that starts in the hole reaches the page; taps elsewhere do
+//   nothing. Esc and Android's back button skip the Tour (a CloseWatcher).
+// While the layer is modal on the Board (`modal`), what must stay reachable
+// over it goes into its `data-tour-overlays` (the Toast's "Rückgängig").
 // A step the user acts on whose target has gone (they're busy with what it
 // opened) steps aside: nothing shows until the next step. → and ← go
 // forwards and back. It follows its target on every frame, through
@@ -32,9 +38,15 @@ const textId = useId()
 // Where the step shows: on the Board, in the sheet its target is in, or
 // nowhere (not measured yet, or stepped aside).
 const where = shallowRef<'board' | HTMLDialogElement | null>(null)
-const sheet = computed(() => where.value === 'board' ? null : where.value)
-const onBoard = computed(() => !!props.step && where.value === 'board')
+const live = computed(() => !!props.step?.live && where.value === 'board')
+const onBoard = computed(() => !!props.step && where.value === 'board' && !live.value)
 useModalStack(onBoard)
+defineExpose({ modal: onBoard })
+// Where the popover goes: into the sheet, or over the live Board. A new one
+// for each place, shown as it's added.
+const popoverHost = computed(() => live.value ? 'body' : where.value === 'board' ? null : where.value)
+const popoverKey = ref(0)
+watch(popoverHost, () => popoverKey.value++)
 
 // The step shown last, kept while the layer closes.
 const shown = shallowRef<TourStep | null>(null)
@@ -69,8 +81,9 @@ function follow() {
     ? null
     : first?.closest<HTMLDialogElement>('dialog[open]:not([data-tour-layer])') ?? 'board'
   if (next !== where.value) where.value = next
-  const host = next === 'board' ? dialog.value : popover.value
-  const bubble = (next === 'board' ? pageView.value : sheetView.value)?.bubble
+  const modal = next === 'board' && !step.live
+  const host = modal ? dialog.value : popover.value
+  const bubble = (modal ? pageView.value : sheetView.value)?.bubble
   if (!next || !host || !bubble) return
   const size = { width: host.clientWidth, height: host.clientHeight }
   if (size.width !== viewport.value.width || size.height !== viewport.value.height) viewport.value = size
@@ -100,8 +113,22 @@ watch([() => props.step?.id, where], async ([id, at]) => {
   await nextTick()
   const step = props.step
   if (step && at === 'board') tourTargetElements(step)[0]?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  ;(at === 'board' ? pageView.value : sheetView.value)?.bubble?.focus()
+  ;(onBoard.value ? pageView.value : sheetView.value)?.bubble?.focus()
 }, { flush: 'post' })
+
+// Live on the Board, Esc and Android's back button skip the Tour, as they
+// do while it's modal; a sheet opened over it gets them first.
+interface CloseWatcher { onclose: (() => void) | null, destroy: () => void }
+let closeWatcher: CloseWatcher | null = null
+watch(live, (isLive) => {
+  closeWatcher?.destroy()
+  closeWatcher = null
+  const Watcher = (window as { CloseWatcher?: new () => CloseWatcher }).CloseWatcher
+  if (!isLive || !Watcher) return
+  closeWatcher = new Watcher()
+  closeWatcher.onclose = () => choose('skip')
+})
+onBeforeUnmount(() => closeWatcher?.destroy())
 
 function choose(button: TourButton) {
   emit('choose', button)
@@ -123,12 +150,16 @@ function onKey(event: KeyboardEvent) {
     event.preventDefault()
     choose('back')
   }
+  else if (event.key === 'Escape' && live.value && !closeWatcher) {
+    event.preventDefault()
+    choose('skip')
+  }
 }
 
 // Esc and the back button close the dialog on the Board: that skips the
-// Tour. Closed because the step moved into a sheet, it goes on.
+// Tour. Closed because the step moved into a sheet or went live, it goes on.
 function onClosed() {
-  if (props.step && where.value === 'board') choose('skip')
+  if (onBoard.value) choose('skip')
 }
 
 const holeRadius = computed(() => `${targetRadius.value + HOLE_PADDING}px`)
@@ -154,7 +185,7 @@ const throughHole = computed(() => {
     @keydown="onKey"
   >
     <TourStepView
-      v-if="shown && where !== null && !sheet"
+      v-if="shown && where === 'board' && !live"
       ref="pageView"
       :step="shown"
       :placement="placement"
@@ -165,13 +196,15 @@ const throughHole = computed(() => {
       @choose="choose"
       @press="press"
     />
+    <div data-tour-overlays />
   </dialog>
   <Teleport
-    v-if="shown && sheet"
-    :to="sheet"
+    v-if="shown && popoverHost"
+    :to="popoverHost"
   >
     <div
       ref="popover"
+      :key="popoverKey"
       popover="manual"
       class="tour"
       role="dialog"
