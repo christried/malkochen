@@ -46,7 +46,7 @@ const t = useStrings()
     </button>
     <button
       type="button"
-      class="delete shrink-0 rounded-pill px-3.5 py-2 text-button transition-[scale,background-color] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+      class="danger-fill shrink-0 rounded-pill px-3.5 py-2 text-button transition-[scale,background-color] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
       @click="$emit('delete')"
     >
       {{ t.selection.delete }}
@@ -74,19 +74,6 @@ const t = useStrings()
     from {
       opacity: 0;
     }
-  }
-}
-/* "Löschen": a filled danger-red pill with white text, darker on hover
-   (#280). The light theme's danger red in both themes: dark's coral is too
-   light to carry white text (5.3:1 here, 2.3:1 on the coral). */
-.delete {
-  --fill: #C23B22;
-  color: #FFFFFF;
-  background: var(--fill);
-}
-@media (hover: hover) and (pointer: fine) {
-  .delete:hover {
-    background: color-mix(in oklab, var(--fill) 80%, black);
   }
 }
 </style>

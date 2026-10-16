@@ -3,13 +3,15 @@ import type { ComponentPublicInstance } from 'vue'
 import type { ColumnView } from '~~/server/utils/columns'
 import { columnDeletion } from '~~/shared/placement'
 
-// Board settings' Columns (PRD stories 57–60): each can be renamed in place,
-// given a Column Subtitle or have it cleared (not the Gekocht Column, whose
-// subtitle is fixed), moved with ↑/↓ or dragged by its grip (the row's left
-// end, up to just before its name), and deleted,
-// except the Gekocht Column (marked) and the last Column besides it. The
-// order changes here while dragging; `reordered` says a move is done, with
-// the order before it.
+// Board settings' Columns (PRD stories 57–60), as a list that opens (#285):
+// each Column is a compact row (its name, Column Subtitle and Dish count)
+// that opens, one at a time, to be renamed, given a Column Subtitle or have
+// it cleared (not the Gekocht Column, whose subtitle is fixed), moved with
+// "Nach oben" / "Nach unten", and deleted, except the Gekocht Column
+// (marked) and the last Column besides it. Open or not, a row is dragged by
+// its grip (its left end, up to just before its name). The order changes
+// here while dragging; `reordered` says a move is done, with the order
+// before it.
 export type ColumnRow = ColumnView & { count: number }
 
 const columns = defineModel<ColumnRow[]>({ required: true })
@@ -49,9 +51,16 @@ const list = useTemplateRef<ComponentPublicInstance>('list')
 const listEl = () => list.value?.$el as HTMLElement | undefined
 
 const STEPS = [
-  { delta: -1, icon: 'up', label: t.settings.moveUp, tip: t.settings.moveUpTip },
-  { delta: 1, icon: 'down', label: t.settings.moveDown, tip: t.settings.moveDownTip },
+  { delta: -1, icon: 'up', label: t.settings.moveUp, text: t.settings.moveUpText },
+  { delta: 1, icon: 'down', label: t.settings.moveDown, text: t.settings.moveDownText },
 ] as const
+
+// The open row, one at a time (#285).
+const panelId = useId()
+const opened = ref<string | null>(null)
+function toggle(column: ColumnRow) {
+  opened.value = opened.value === column.id ? null : column.id
+}
 
 // ↑/↓. When the Column reaches either end, focus goes to the other arrow.
 async function step(column: ColumnRow, delta: -1 | 1) {
@@ -146,93 +155,144 @@ function drop(event?: Event) {
     <li
       v-for="(column, index) in columns"
       :key="column.id"
-      class="row flex items-center gap-1 rounded-field bg-surface-muted pr-2"
+      class="row flex flex-col rounded-field bg-surface-muted"
       :class="{ lifted: drag?.id === column.id }"
       :style="drag?.id === column.id ? { translate: `0 ${drag.dy}px` } : undefined"
       :data-column-row="column.id"
     >
-      <!-- The grab area (#206): the row's whole left end, as high as the row,
-           with the Column's accent dot in it, up to just before the name. -->
-      <span
-        aria-hidden="true"
-        data-grip
-        class="grip flex shrink-0 cursor-grab items-center gap-2 self-stretch pl-2.5 pr-2 text-text-muted"
-        @pointerdown="lift(column, $event)"
-      >
-        <AppIcon
-          name="grip"
-          :size="24"
-        />
+      <div class="flex">
+        <!-- The grab area (#206): the row's whole left end, as high as the
+             row, with the Column's accent dot in it, up to just before the
+             name. Its click listener makes it a target of its own to
+             Chrome's touch adjustment, which would otherwise move a finger
+             near its end onto the row's button beside it. -->
         <span
-          class="h-3 w-3 shrink-0 rounded-full"
-          :style="{ background: columnAccent(index) }"
-        />
-      </span>
-      <div class="flex min-w-0 flex-1 flex-col gap-0.5 py-2">
-        <input
-          type="text"
-          :value="column.name"
-          :aria-label="t.settings.columnName(column.name)"
-          required
-          maxlength="40"
-          autocomplete="off"
-          class="w-full rounded-field bg-transparent px-2 py-1.5 font-display text-title-s text-text focus:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-          @change="rename(column, $event)"
-          @keydown.enter="($event.target as HTMLInputElement).blur()"
+          aria-hidden="true"
+          data-grip
+          class="grip flex shrink-0 cursor-grab items-center gap-2 pl-2.5 pr-2 text-text-muted"
+          @pointerdown="lift(column, $event)"
+          @click.stop
         >
-        <input
-          v-if="!column.isGekocht"
-          type="text"
-          :value="column.subtitle ?? ''"
-          :aria-label="t.settings.columnSubtitle(column.name)"
-          :placeholder="t.settings.subtitlePrompt"
-          maxlength="40"
-          autocomplete="off"
-          class="w-full rounded-field bg-transparent px-2 py-1 font-display text-body-serif italic text-text-muted placeholder:text-text-muted/70 focus:bg-surface focus:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-          @change="setSubtitle(column, $event)"
-          @keydown.enter="($event.target as HTMLInputElement).blur()"
-        >
-        <span
-          v-else
-          class="px-2 py-1 font-display text-body-serif italic text-text-muted"
-        >{{ column.subtitle }}</span>
-        <span class="px-2 text-small text-text-muted">
-          {{ t.settings.dishCount(column.count) }}<template v-if="column.isGekocht"> · {{ t.settings.notDeletable }}</template>
+          <AppIcon
+            name="grip"
+            :size="24"
+          />
+          <span
+            class="h-3 w-3 shrink-0 rounded-full"
+            :style="{ background: columnAccent(index) }"
+          />
         </span>
+        <button
+          type="button"
+          class="toggle flex min-w-0 flex-1 items-center gap-3 py-3 pl-1 pr-3 text-left focus-visible:outline-2 focus-visible:outline-focus"
+          :aria-expanded="opened === column.id"
+          :aria-controls="opened === column.id ? `${panelId}-${column.id}` : undefined"
+          @click="toggle(column)"
+        >
+          <span class="flex min-w-0 flex-1 flex-col">
+            <span
+              class="truncate font-display text-title-s text-text"
+              data-column-name
+            >{{ column.name }}</span>
+            <span class="truncate font-display text-body-serif italic text-text-muted">{{ column.subtitle ?? t.settings.subtitlePrompt }}</span>
+          </span>
+          <span
+            aria-hidden="true"
+            class="shrink-0 text-small text-text-muted"
+            data-dish-count
+          >{{ column.count }}</span>
+          <span class="sr-only">{{ t.settings.dishCount(column.count) }}</span>
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="chevron shrink-0"
+            :class="{ flipped: opened === column.id }"
+          ><path d="M6 9l6 6 6-6" /></svg>
+        </button>
       </div>
-      <button
-        v-for="{ delta, icon, label, tip } in STEPS"
-        :key="delta"
-        type="button"
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="label(column.name)"
-        :data-tooltip="tip"
-        :disabled="!columns[index + delta]"
-        :data-step="delta"
-        @click="step(column, delta)"
+      <div
+        v-if="opened === column.id"
+        :id="`${panelId}-${column.id}`"
+        class="panel flex flex-col gap-4 px-4 pb-4 pt-2"
       >
-        <AppIcon :name="icon" />
-      </button>
-      <button
-        v-if="!column.isGekocht"
-        type="button"
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="t.settings.deleteColumn(column.name)"
-        :data-tooltip="t.settings.deleteColumnTip"
-        :aria-describedby="deletable(column) ? undefined : lastHintId"
-        :disabled="!deletable(column)"
-        @click="emit('delete', column)"
-      >
-        <AppIcon
-          name="close"
-          :size="16"
-        />
-      </button>
-      <span
-        v-else
-        aria-hidden="true"
-        class="h-9 w-9 shrink-0"
-      />
+        <AppField
+          :label="t.settings.columnNameLabel"
+          :control-id="`${panelId}-${column.id}-name`"
+        >
+          <input
+            :id="`${panelId}-${column.id}-name`"
+            type="text"
+            :value="column.name"
+            :aria-label="t.settings.columnName(column.name)"
+            required
+            maxlength="40"
+            autocomplete="off"
+            class="font-display text-title-s"
+            @change="rename(column, $event)"
+            @keydown.enter="($event.target as HTMLInputElement).blur()"
+          >
+        </AppField>
+        <AppField
+          v-if="!column.isGekocht"
+          :label="t.settings.subtitleLabel"
+          :control-id="`${panelId}-${column.id}-subtitle`"
+        >
+          <input
+            :id="`${panelId}-${column.id}-subtitle`"
+            type="text"
+            :value="column.subtitle ?? ''"
+            :aria-label="t.settings.columnSubtitle(column.name)"
+            :placeholder="t.settings.subtitlePrompt"
+            maxlength="40"
+            autocomplete="off"
+            class="font-display italic"
+            @change="setSubtitle(column, $event)"
+            @keydown.enter="($event.target as HTMLInputElement).blur()"
+          >
+        </AppField>
+        <p
+          v-else
+          class="text-small text-text-muted"
+        >
+          {{ t.settings.fixedSubtitle(column.subtitle ?? '') }} · {{ t.settings.notDeletable }}
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="{ delta, icon, label, text } in STEPS"
+            :key="delta"
+            type="button"
+            class="flex h-10 items-center gap-1.5 rounded-pill bg-surface px-4 text-small text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
+            :aria-label="label(column.name)"
+            :disabled="!columns[index + delta]"
+            :data-step="delta"
+            @click="step(column, delta)"
+          >
+            <AppIcon
+              :name="icon"
+              :size="16"
+            />
+            {{ text }}
+          </button>
+          <button
+            v-if="!column.isGekocht"
+            type="button"
+            class="danger-fill ml-auto flex h-10 items-center rounded-pill px-4 text-small transition-[scale,background-color] duration-tap ease-tap active:scale-95 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
+            :aria-label="t.settings.deleteColumn(column.name)"
+            :aria-describedby="deletable(column) ? undefined : lastHintId"
+            :disabled="!deletable(column)"
+            @click="emit('delete', column)"
+          >
+            {{ t.settings.deleteColumnText }}
+          </button>
+        </div>
+      </div>
     </li>
   </TransitionGroup>
   <p
@@ -280,6 +340,33 @@ function drop(event?: Event) {
 }
 .lifted .grip {
   color: var(--color-text);
+}
+/* The rest of the row opens it: darker under a mouse, its chevron turning
+   over while open. */
+.toggle {
+  border-radius: var(--radius-field);
+  transition: background-color var(--dur-fade) var(--ease-fade);
+}
+@media (hover: hover) and (pointer: fine) {
+  .toggle:hover {
+    background-color: color-mix(in oklab, var(--color-text) 6%, transparent);
+  }
+}
+.chevron {
+  transition: rotate var(--dur-tap) var(--ease-tap);
+}
+.chevron.flipped {
+  rotate: 180deg;
+}
+/* An open row's fields fade in while the rows below make room for them
+   (settle, as `.row-move`), so those don't seem to slide over them. */
+.panel {
+  animation: panel-in var(--dur-settle) var(--ease-fade);
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+  }
 }
 .lifted {
   position: relative;

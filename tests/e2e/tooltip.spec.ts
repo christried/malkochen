@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { cardAtRest, openBoardSettings } from './board'
+import { cardAtRest, openBoardSettings, openColumnRow } from './board'
 import { gotoHydrated } from './hydration'
 import { removeUsers, resetBoard, seedCookings, seedDish } from './seed'
 import { openUserSettings } from './settings-sheet'
@@ -257,20 +257,28 @@ test('no native title is left, and every icon button says what it does in a Tool
   await detail.getByRole('button', { name: 'Schließen' }).first().click()
   await expect(detail).toHaveCount(0)
 
-  // Board settings: the arrows and the ✕ of a Column.
+  // A disabled button has nothing to say: the new Column's "Hinzufügen"
+  // while its name is empty.
+  await page.getByRole('button', { name: 'Neue Spalte' }).click()
+  const add = page.getByRole('button', { name: 'Hinzufügen', exact: true })
+  await expect(add).toBeDisabled()
+  await page.mouse.move(0, 0)
+  await expect(tooltip(page)).toBeHidden()
+  await add.hover({ force: true })
+  await page.waitForTimeout(DELAY_MS + 200)
+  await expect(tooltip(page)).toBeHidden()
+  await page.getByLabel('Neue Spalte').press('Escape')
+
+  // Board settings, a Column's row open: its buttons say what they do in
+  // words (#285), so need no Tooltip.
   await openBoardSettings(page)
+  await openColumnRow(page, 'Ideen')
   expect(await nativeTitles()).toBe(0)
   expect(await unexplained(page)).toEqual([])
-  for (const [name, text] of [['„Ideen“ nach unten', 'Nach unten'], ['„Diese Woche“ nach oben', 'Nach oben'], ['Spalte „Ideen“ löschen', 'Spalte löschen'], ['Zurück zum Board', 'Zurück zum Board'], ['Emoji ändern', 'Emoji ändern']] as const) {
+  for (const [name, text] of [['Zurück zum Board', 'Zurück zum Board'], ['Emoji ändern', 'Emoji ändern']] as const) {
     await page.getByRole(name === 'Zurück zum Board' ? 'link' : 'button', { name }).hover()
     await expect(tooltip(page)).toHaveText(text)
   }
-  // A disabled arrow has nothing to say.
-  await page.mouse.move(0, 0)
-  await expect(tooltip(page)).toBeHidden()
-  await page.getByRole('button', { name: '„Ideen“ nach oben' }).hover({ force: true })
-  await page.waitForTimeout(DELAY_MS + 200)
-  await expect(tooltip(page)).toBeHidden()
 
   // Your own settings.
   await openUserSettings(page)

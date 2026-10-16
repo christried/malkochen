@@ -413,16 +413,23 @@ export const de = {
     columns: 'Spalten',
     columnName: (name: string) => `Name der Spalte „${name}“`,
     columnSubtitle: (name: string) => `Untertitel der Spalte „${name}“`,
+    // A Column's row, which opens to its fields and buttons.
+    columnRow: (name: string) => `Spalte „${name}“`,
+    // The labels of its fields once open; the names readers get say which
+    // Column (columnName, columnSubtitle).
+    columnNameLabel: 'Name',
+    subtitleLabel: 'Untertitel',
     subtitlePrompt: 'Untertitel (optional)',
+    fixedSubtitle: (subtitle: string) => `Untertitel fest: „${subtitle}“`,
     notDeletable: 'Kann nicht gelöscht werden',
     dishCount,
     moveUp: (name: string) => `„${name}“ nach oben`,
     moveDown: (name: string) => `„${name}“ nach unten`,
     deleteColumn: (name: string) => `Spalte „${name}“ löschen`,
-    // Their Tooltips: the row they sit in already shows the Column's name.
-    moveUpTip: 'Nach oben',
-    moveDownTip: 'Nach unten',
-    deleteColumnTip: 'Spalte löschen',
+    // What their buttons say: the open row already shows the Column's name.
+    moveUpText: 'Nach oben',
+    moveDownText: 'Nach unten',
+    deleteColumnText: 'Spalte löschen',
     lastColumn: 'Ein Board braucht neben „Gekocht“ noch mindestens eine Spalte.',
     newColumn: 'Neue Spalte',
     // A new Column's name field suggests one of these, a new one each time.
