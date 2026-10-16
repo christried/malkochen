@@ -321,6 +321,26 @@ test.describe('on a phone', () => {
     await expect(switcherStep(page)).toBeVisible()
     await expect(cooked(page)).toHaveCount(0)
   })
+
+  test('the Tour\'s Dish long-pressed and dragged onto the Column\'s tab counts too', async ({ page }) => {
+    const dishId = await toMoveStep(page)
+    await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
+    const woche = (await page.getByRole('button', { name: /^Diese Woche/ }).getAttribute('data-tour-column-id'))!
+    await expect.poll(() => holeRound(page, 'column', undefined, woche)).toBe(true)
+
+    // Through the hole: held, then dragged up onto the tab.
+    const card = (await page.locator(`[data-dish-id="${dishId}"] [data-tour="dish"]`).boundingBox())!
+    const tab = (await page.getByRole('button', { name: /^Diese Woche/ }).boundingBox())!
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(450)
+    await page.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2, { steps: 12 })
+    await page.mouse.up()
+
+    await expect(deleteStep(page)).toBeVisible()
+    await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
+    await expect.poll(() => holeRound(page, 'dish-menu', dishId)).toBe(true)
+  })
 })
 
 test('Add Dish closed without saving goes back to the add button; "Ohne Gericht weiter" there closes it and goes on', async ({ page }) => {

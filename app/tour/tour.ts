@@ -174,11 +174,15 @@ export function tourAfter(tour: Tour, event: TourEvent): Tour {
     case 'dishMoved':
     case 'dishGone': {
       if (event.dishId !== tour.dishId) return tour
-      const was = moveTo(tour)
-      const onDish = !!was || id === 'deleteDish'
-      const now: Tour = event.type === 'dishMoved' ? { ...tour, dishIn: event.columnId } : { ...tour, dishIn: null, dishMenu: 'closed' }
-      const arrived = event.type === 'dishMoved' && event.columnId === was?.id
-      return arrived || (event.type === 'dishGone' && onDish) ? forward(now) : now
+      const asked = moveTo(tour)
+      const aboutDish = !!asked || id === 'deleteDish'
+      // Moved through the ⋯ menu, it has closed by then.
+      if (event.type === 'dishMoved') {
+        const placed: Tour = { ...tour, dishIn: event.columnId }
+        return event.columnId === asked?.id ? forward({ ...placed, dishMenu: 'closed' }) : placed
+      }
+      const gone: Tour = { ...tour, dishIn: null, dishMenu: 'closed' }
+      return aboutDish ? forward(gone) : gone
     }
     case 'dishMenu':
       return event.dishId === tour.dishId ? { ...tour, dishMenu: event.menu } : tour
