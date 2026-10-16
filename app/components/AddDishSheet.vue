@@ -504,8 +504,9 @@ async function save() {
           />
         </AppField>
 
+        <!-- During the Tour, the Dish goes onto the Board the Tour is on. -->
         <AppField
-          v-if="boards.length > 1"
+          v-if="boards.length > 1 && !forTour"
           :label="t.addDish.board"
           :control-id="boardSelectId"
         >

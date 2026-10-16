@@ -367,7 +367,7 @@ watch(adding, (isOpen) => {
 // drag. "Rundgang starten" in Your Settings starts it again: the sheet
 // closes and the Tour starts on this Board.
 const anyModalOpen = useAnyModalOpen()
-const boardTour = useTemplateRef<{ start: () => void, dishAdded: (dishId: string) => void, forDish: boolean }>('boardTour')
+const boardTour = useTemplateRef<{ start: () => void, dishAdded: (dishId: string) => void, addingTourDish: boolean }>('boardTour')
 async function startTour() {
   showingSettings.value = false
   await nextTick()
@@ -995,7 +995,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-model:open="adding"
       :board-id="board.id"
       :shared-link="sharedLink"
-      :for-tour="boardTour?.forDish ?? false"
+      :for-tour="boardTour?.addingTourDish ?? false"
       @added="onAdded"
     />
 

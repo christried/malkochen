@@ -19,6 +19,12 @@ const props = defineProps<{
 const emit = defineEmits<{ choose: [button: TourButton], press: [] }>()
 const t = useStrings()
 
+// Where the hole is: the dimming's and the button over it.
+const holeStyle = computed(() => {
+  const hole = props.placement?.hole
+  return hole ? { left: `${hole.left}px`, top: `${hole.top}px`, width: `${hole.width}px`, height: `${hole.height}px`, borderRadius: props.holeRadius } : undefined
+})
+
 // Weiter, or Fertig on the last step.
 const forward = computed(() => props.step.buttons.find(b => b === 'next' || b === 'finish'))
 
@@ -32,9 +38,7 @@ defineExpose({ bubble })
   <div
     class="spot"
     :class="{ 'no-target': !placement?.hole }"
-    :style="placement?.hole
-      ? { left: `${placement.hole.left}px`, top: `${placement.hole.top}px`, width: `${placement.hole.width}px`, height: `${placement.hole.height}px`, borderRadius: holeRadius }
-      : undefined"
+    :style="holeStyle"
     aria-hidden="true"
     data-tour-spot
   />
@@ -42,7 +46,7 @@ defineExpose({ bubble })
     v-if="press && placement?.hole"
     type="button"
     class="press"
-    :style="{ left: `${placement.hole.left}px`, top: `${placement.hole.top}px`, width: `${placement.hole.width}px`, height: `${placement.hole.height}px`, borderRadius: holeRadius }"
+    :style="holeStyle"
     :aria-label="press.label"
     data-tour-press
     @click="emit('press')"

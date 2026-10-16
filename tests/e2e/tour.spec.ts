@@ -182,16 +182,20 @@ const bubbleOnTop = (page: Page) => page.locator('[data-tour-step]:visible').eva
   return el.contains(document.elementFromPoint(left + width / 2, top + height / 2))
 })
 
-const addButton = (page: Page) => page.locator('[data-tour="add-button"]')
+// The spotlit add button, tapped once the hole sits on it (a frame after
+// its step shows, the hole passes taps on).
+async function tapAddButton(page: Page) {
+  await expect.poll(() => holeRound(page, 'add-button')).toBe(true)
+  await tapOn(page, page.locator('[data-tour="add-button"]'))
+}
 
 test('the Tour has the user add a Dish: the add button, Add Dish, then the new card spotlit', async ({ page }) => {
   await gotoHydrated(page, '/')
   await hello(page).getByRole('button', { name: 'Weiter' }).click()
   await expect(addStep(page)).toContainText('Tipp aufs Plus.')
-  await expect.poll(() => holeRound(page, 'add-button')).toBe(true)
 
   // The spotlit add button takes the tap.
-  await tapOn(page, addButton(page))
+  await tapAddButton(page)
 
   // The bubble follows into Add Dish, above it, onto its link field.
   await expect(addDish(page)).toBeVisible()
@@ -227,7 +231,7 @@ test('the Tour has the user add a Dish: the add button, Add Dish, then the new c
 test('Add Dish closed without saving goes back to the add button; "Ohne Gericht weiter" there closes it and goes on', async ({ page }) => {
   await gotoHydrated(page, '/')
   await hello(page).getByRole('button', { name: 'Weiter' }).click()
-  await tapOn(page, addButton(page))
+  await tapAddButton(page)
   await expect(linkStep(page)).toBeVisible()
 
   // Esc is Add Dish's own: it closes, and the Tour goes back a step.
@@ -236,7 +240,7 @@ test('Add Dish closed without saving goes back to the add button; "Ohne Gericht 
   await expect(addStep(page)).toBeVisible()
   await expect(bubble(page)).toBeFocused()
 
-  await tapOn(page, addButton(page))
+  await tapAddButton(page)
   await linkStep(page).getByRole('button', { name: 'Ohne Gericht weiter' }).click()
 
   await expect(addDish(page)).toBeHidden()
@@ -265,7 +269,7 @@ test.describe('on a 360px phone', () => {
   test('the bubble over Add Dish is fully on screen, and above the sheet', async ({ page }) => {
     await gotoHydrated(page, '/')
     await hello(page).getByRole('button', { name: 'Weiter' }).click()
-    await tapOn(page, addButton(page))
+    await tapAddButton(page)
 
     await expect(linkStep(page)).toBeVisible()
     await expect.poll(() => onScreen(page, page.locator('[data-tour-step]:visible'))).toBe(true)

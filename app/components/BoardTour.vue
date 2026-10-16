@@ -15,7 +15,9 @@ import { startTour, tourAfter, tourStep, TOUR_VERSION, type Tour, type TourButto
 // by itself, unless the test page turned that on (window.e2eTourAutoStart).
 // It follows Add Dish (`adding`): opened, closed, and closed by "Ohne
 // Gericht weiter"; and is told of the Dish saved there (`dishAdded`).
-// `forDish`: the Dish saved now is the Tour's, which notifies nobody.
+// `addingTourDish`: the Dish saved now is the Tour's, which notifies nobody.
+// Add Dish says it was added before it closes, so the Tour is at the new
+// card by then and the closing doesn't take it back.
 const props = defineProps<{ board: BoardView, idle: boolean, autoStart: boolean }>()
 const adding = defineModel<boolean>('adding', { required: true })
 const emit = defineEmits<{ ended: [] }>()
@@ -42,8 +44,8 @@ function start() {
 function dishAdded(dishId: string) {
   happened({ type: 'dishAdded', dishId })
 }
-const forDish = computed(() => step.value?.id === 'addDishLink')
-defineExpose({ start, dishAdded, forDish })
+const addingTourDish = computed(() => step.value?.id === 'addDishLink')
+defineExpose({ start, dishAdded, addingTourDish })
 
 watch(adding, isOpen => happened({ type: isOpen ? 'addDishOpened' : 'addDishClosed' }))
 
