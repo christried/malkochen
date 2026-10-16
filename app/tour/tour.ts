@@ -2,22 +2,25 @@ import type { Strings } from '../strings/de'
 
 // The Tour (CONTEXT.md, #296): Topfbert's short walk through a Board. This is
 // its brain, a step machine that knows nothing of the page: the situation it
-// starts in and the user's choices go in, the step to show comes out (what
-// it spotlights, by its `data-tour` name; Topfbert's pose and where he
-// faces; its words and buttons), and whether it still runs. The Board's
-// BoardTour feeds it and TourLayer draws what it answers.
+// starts in, the user's choices and what happened on the Board go in, the
+// step to show comes out (what it spotlights, by its `data-tour` name;
+// Topfbert's pose and where he faces; its words and buttons), and whether it
+// still runs. The Board's BoardTour feeds it and TourLayer draws what it
+// answers.
 
 // The Tour's version. A user who finished or skipped a lower one (or none)
 // gets this one once; raising it shows the next Tour to everyone again.
 export const TOUR_VERSION = 1
 
-// What a step spotlights: the elements marked `data-tour="<name>"`.
-export type TourTarget = 'columns' | 'board-switcher'
+// What a step spotlights: the elements marked `data-tour="<name>"`. 'dish'
+// is a Dish's card, the one with the step's `dishId`.
+export type TourTarget = 'add-button' | 'add-dish-link' | 'dish' | 'columns' | 'board-switcher'
 export type TourPose = 'waving' | 'pointing' | 'wink'
 // Pointing, Topfbert faces what he points at; otherwise the user.
 export type TourFacing = 'target' | 'front'
-export type TourButton = 'back' | 'next' | 'finish' | 'skip'
-export type TourStepId = 'hello' | 'columns' | 'boardSwitcher'
+// 'withoutDish': "Ohne Gericht weiter", past the steps about adding a Dish.
+export type TourButton = 'back' | 'next' | 'finish' | 'skip' | 'withoutDish'
+export type TourStepId = 'hello' | 'addButton' | 'addDishLink' | 'newCard' | 'columns' | 'boardSwitcher'
 
 export interface TourColumn {
   id: string
@@ -36,7 +39,11 @@ export interface TourSituation {
   targets: readonly TourTarget[]
 }
 
-export type TourEvent = { type: 'next' } | { type: 'back' } | { type: 'skip' }
+export type TourEvent
+  = | { type: 'next' } | { type: 'back' } | { type: 'skip' } | { type: 'withoutDish' }
+  // What happened on the Board: Add Dish opened or closed, a Dish added (by
+  // its id, from the client Board module's result).
+    | { type: 'addDishOpened' } | { type: 'addDishClosed' } | { type: 'dishAdded', dishId: string }
 
 export interface Tour {
   status: 'running' | 'finished' | 'skipped'
@@ -44,11 +51,19 @@ export interface Tour {
   // The steps this Tour shows, in order, and the one showing.
   steps: TourStepId[]
   at: number
+  // The Dish the user added during the Tour; null before, or without one.
+  dishId: string | null
 }
 
 export interface TourStep {
   id: TourStepId
   target: TourTarget | null
+  // The Dish whose card the target is.
+  dishId: string | null
+  // The user does something to the target and the step moves on once they
+  // have: taps on the target reach it, and once it's gone (the user is busy
+  // with what it opened) the bubble steps aside.
+  handsOn: boolean
   pose: TourPose
   faces: TourFacing
   title: string
@@ -56,29 +71,67 @@ export interface TourStep {
   buttons: TourButton[]
 }
 
-// Every step, in the order they show; `target`: the one it can't do without.
-const STEPS: { id: TourStepId, target: TourTarget | null }[] = [
-  { id: 'hello', target: null },
-  { id: 'columns', target: 'columns' },
-  { id: 'boardSwitcher', target: 'board-switcher' },
+// Every step, in the order they show: what it spotlights, and the target on
+// the page it can't do without (the Dish steps all start at the add button).
+const STEPS: { id: TourStepId, target: TourTarget | null, needs: TourTarget | null }[] = [
+  { id: 'hello', target: null, needs: null },
+  { id: 'addButton', target: 'add-button', needs: 'add-button' },
+  { id: 'addDishLink', target: 'add-dish-link', needs: 'add-button' },
+  { id: 'newCard', target: 'dish', needs: 'add-button' },
+  { id: 'columns', target: 'columns', needs: 'columns' },
+  { id: 'boardSwitcher', target: 'board-switcher', needs: 'board-switcher' },
 ]
+// The steps about adding a Dish, which "Ohne Gericht weiter" goes past.
+const DISH_STEPS: TourStepId[] = ['addButton', 'addDishLink', 'newCard']
+// The steps that wait for the user to do something: no Weiter.
+const WAITING: TourStepId[] = ['addButton', 'addDishLink']
 
 export function startTour(situation: TourSituation): Tour {
-  const steps = STEPS.filter(s => !s.target || situation.targets.includes(s.target)).map(s => s.id)
-  return { status: 'running', situation, steps, at: 0 }
+  const steps = STEPS.filter(s => !s.needs || situation.targets.includes(s.needs)).map(s => s.id)
+  return { status: 'running', situation, steps, at: 0, dishId: null }
 }
 
-// The Tour after `event`. An ended Tour stays as it ended.
+// The Tour after `event`. An ended Tour stays as it ended, and an event a
+// step has no use for changes nothing.
 export function tourAfter(tour: Tour, event: TourEvent): Tour {
   if (tour.status !== 'running') return tour
+  const id = tour.steps[tour.at]!
+  const to = (step: TourStepId, change: Partial<Tour> = {}): Tour => ({ ...tour, ...change, at: tour.steps.indexOf(step) })
   switch (event.type) {
     case 'skip':
       return { ...tour, status: 'skipped' }
     case 'back':
-      return { ...tour, at: Math.max(0, tour.at - 1) }
+      return canGoBack(tour) ? { ...tour, at: backFrom(tour) } : tour
     case 'next':
+      if (WAITING.includes(id)) return tour
       return tour.at + 1 < tour.steps.length ? { ...tour, at: tour.at + 1 } : { ...tour, status: 'finished' }
+    case 'withoutDish': {
+      if (!WAITING.includes(id)) return tour
+      const past = tour.steps.findIndex(s => s !== 'hello' && !DISH_STEPS.includes(s))
+      return past < 0 ? { ...tour, status: 'finished' } : { ...tour, at: past }
+    }
+    case 'addDishOpened':
+      return id === 'addButton' ? to('addDishLink') : tour
+    case 'addDishClosed':
+      return id === 'addDishLink' ? to('addButton') : tour
+    case 'dishAdded':
+      return id === 'addDishLink' ? to('newCard', { dishId: event.dishId }) : tour
   }
+}
+
+// Zurück, from every step but the first: not from inside Add Dish (closing
+// it does that), nor from the new card, which can't be added again.
+function canGoBack(tour: Tour): boolean {
+  const id = tour.steps[tour.at]
+  return tour.at > 0 && id !== 'addDishLink' && id !== 'newCard'
+}
+
+// The step before, but never back into Add Dish (a step to do, not to read
+// again), nor to a new card when no Dish was added.
+function backFrom({ steps, at, dishId }: Tour): number {
+  let back = at - 1
+  while (back > 0 && (steps[back] === 'addDishLink' || (steps[back] === 'newCard' && !dishId))) back--
+  return back
 }
 
 // The step showing, in `t`'s words; null once the Tour has ended.
@@ -87,16 +140,23 @@ export function tourStep(tour: Tour, t: Strings['tour']): TourStep | null {
   const id = tour.steps[tour.at]
   if (!id) return null
   const target = STEPS.find(s => s.id === id)?.target ?? null
-  const last = tour.at === tour.steps.length - 1
-  const buttons: TourButton[] = [...tour.at > 0 ? ['back' as const] : [], last ? 'finish' : 'next', 'skip']
-  const pointing = { pose: 'pointing', faces: 'target' } as const
+  const forward = tour.at === tour.steps.length - 1 ? 'finish' : 'next'
+  const buttons: TourButton[] = canGoBack(tour) ? ['back', forward, 'skip'] : [forward, 'skip']
+  const shown = { id, target, dishId: null, handsOn: false }
+  const pointing = { ...shown, pose: 'pointing', faces: 'target' } as const
   switch (id) {
     case 'hello':
-      return { id, target, pose: 'waving', faces: 'front', ...t.hello, buttons }
+      return { ...shown, pose: 'waving', faces: 'front', ...t.hello, buttons }
+    case 'addButton':
+      return { ...pointing, handsOn: true, ...t.addButton, buttons: ['back', 'withoutDish', 'skip'] }
+    case 'addDishLink':
+      return { ...pointing, handsOn: true, ...t.addDishLink, buttons: ['withoutDish', 'skip'] }
+    case 'newCard':
+      return { ...pointing, dishId: tour.dishId, ...t.newCard, buttons }
     case 'columns':
-      return { id, target, ...pointing, title: t.columns.title, text: columnsText(tour.situation, t), buttons }
+      return { ...pointing, title: t.columns.title, text: columnsText(tour.situation, t), buttons }
     case 'boardSwitcher':
-      return { id, target, ...pointing, ...t.boardSwitcher, buttons }
+      return { ...pointing, ...t.boardSwitcher, buttons }
   }
 }
 

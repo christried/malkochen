@@ -617,6 +617,18 @@ export const de = {
       title: 'Hallo, ich bin Topfbert!',
       text: 'Ich zeig dir kurz, wie malkochen funktioniert. Dauert nicht lange.',
     },
+    addButton: {
+      title: 'Dein erstes Gericht',
+      text: 'Tipp aufs Plus.',
+    },
+    addDishLink: {
+      title: 'Hast du einen Link?',
+      text: 'Füg hier einen Link von TikTok, Instagram und Co. ein. Keinen zur Hand? Dann „Ohne Link hinzufügen“.',
+    },
+    newCard: {
+      title: 'Da ist es!',
+      text: 'Alle auf diesem Board sehen dein Gericht sofort.',
+    },
     columns: {
       title: 'Deine Spalten',
       // The Board's own Column names: the first two that aren't the Gekocht
@@ -635,6 +647,7 @@ export const de = {
     back: 'Zurück',
     skip: 'Überspringen',
     finish: 'Fertig',
+    withoutDish: 'Ohne Gericht weiter',
     // The Toast once it has ended, finished or skipped.
     ended: 'Den Rundgang kannst du jederzeit in deinen Einstellungen wieder starten.',
     // Your Settings.

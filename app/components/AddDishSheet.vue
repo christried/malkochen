@@ -20,8 +20,9 @@ import { webLink } from '~/utils/web-link'
 // the image showed, for the Dish to fly onto the Board from there.
 const open = defineModel<boolean>('open', { required: true })
 // `sharedLink`: a link shared to malkochen (BoardScreen), filled in when the
-// sheet opens and looked up at once, as if pasted.
-const props = defineProps<{ boardId: string, sharedLink?: string | null }>()
+// sheet opens and looked up at once, as if pasted. `forTour`: the Dish is
+// the one added during the Tour, which notifies nobody (ADR 0006).
+const props = defineProps<{ boardId: string, sharedLink?: string | null, forTour?: boolean }>()
 const emit = defineEmits<{ added: [result: BoardResult, from: DOMRect | null] }>()
 const t = useStrings()
 const boardModule = useBoardModule()
@@ -221,6 +222,7 @@ async function save() {
       imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
       photo: photo.value,
       ...shownImage.value && { imageFocus: imageFocus.value },
+      ...props.forTour && { tour: true },
     })
     const image = form.value?.querySelector('[data-source-image], [role="radio"][aria-checked="true"]')
     emit('added', added, image?.getBoundingClientRect() ?? null)
@@ -249,66 +251,73 @@ async function save() {
     >
       <template v-if="!withoutLink">
         <!-- Input "valid" and "loading": dots while the link is looked up,
-             then, once found, a sage border and a check. -->
-        <AppField
-          :label="t.addDish.link"
-          :control-id="linkId"
-          :valid="!!result"
+             then, once found, a sage border and a check. Until there's a
+             link to look up, it and "Ohne Link hinzufügen" are where the
+             Tour points. -->
+        <div
+          class="flex flex-col gap-5"
+          :data-tour="lookupStatus === 'idle' ? 'add-dish-link' : undefined"
         >
-          <span
-            class="field-row"
-            data-link-field
+          <AppField
+            :label="t.addDish.link"
+            :control-id="linkId"
+            :valid="!!result"
           >
             <span
-              v-if="result"
-              aria-hidden="true"
-              class="source-dot found-pop h-2.5 w-2.5 shrink-0 rounded-full"
-              :data-source="badgeKind(result.kind)"
-            />
-            <input
-              :id="linkId"
-              v-model="link"
-              type="url"
-              inputmode="url"
-              autocomplete="off"
-              maxlength="2048"
-              :placeholder="t.addDish.linkPrompt"
-              @paste="lookup.pasted()"
+              class="field-row"
+              data-link-field
             >
-            <LoadingDots
-              v-if="lookupStatus === 'looking'"
-              class="shrink-0 text-text-muted"
-            />
-            <span
-              v-else-if="result"
-              aria-hidden="true"
-              class="found-pop grid size-6 shrink-0 place-items-center rounded-full bg-sage text-sage-ink"
-              data-link-found
-            >
-              <AppIcon
-                name="check"
-                :size="14"
+              <span
+                v-if="result"
+                aria-hidden="true"
+                class="source-dot found-pop h-2.5 w-2.5 shrink-0 rounded-full"
+                :data-source="badgeKind(result.kind)"
               />
+              <input
+                :id="linkId"
+                v-model="link"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                maxlength="2048"
+                :placeholder="t.addDish.linkPrompt"
+                @paste="lookup.pasted()"
+              >
+              <LoadingDots
+                v-if="lookupStatus === 'looking'"
+                class="shrink-0 text-text-muted"
+              />
+              <span
+                v-else-if="result"
+                aria-hidden="true"
+                class="found-pop grid size-6 shrink-0 place-items-center rounded-full bg-sage text-sage-ink"
+                data-link-found
+              >
+                <AppIcon
+                  name="check"
+                  :size="14"
+                />
+              </span>
+              <button
+                v-if="canPaste"
+                type="button"
+                class="shrink-0 rounded-pill bg-surface-muted px-3.5 py-2 text-label text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                @click="pasteFromClipboard"
+              >
+                {{ t.addDish.paste }}
+              </button>
             </span>
-            <button
-              v-if="canPaste"
-              type="button"
-              class="shrink-0 rounded-pill bg-surface-muted px-3.5 py-2 text-label text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-              @click="pasteFromClipboard"
-            >
-              {{ t.addDish.paste }}
-            </button>
-          </span>
-        </AppField>
+          </AppField>
 
-        <button
-          v-if="lookupStatus === 'idle'"
-          type="button"
-          class="self-start rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          @click="withoutLink = true"
-        >
-          {{ t.addDish.withoutLink }}
-        </button>
+          <button
+            v-if="lookupStatus === 'idle'"
+            type="button"
+            class="self-start rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            @click="withoutLink = true"
+          >
+            {{ t.addDish.withoutLink }}
+          </button>
+        </div>
 
         <div
           v-if="lookupStatus === 'looking'"

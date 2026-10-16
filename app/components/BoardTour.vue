@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { Me } from '~~/server/utils/people'
-import { startTour, tourAfter, tourStep, TOUR_VERSION, type Tour, type TourButton, type TourTarget } from '~/tour/tour'
+import { startTour, tourAfter, tourStep, TOUR_VERSION, type Tour, type TourButton, type TourEvent, type TourTarget } from '~/tour/tour'
 
 // The Tour (CONTEXT.md, #298) on the Board: feeds the Tour module what the
 // Board is like and what the user chooses, and draws its steps (TourLayer).
@@ -13,7 +13,11 @@ import { startTour, tourAfter, tourStep, TOUR_VERSION, type Tour, type TourButto
 // where to start it again (`ended`). A reload halfway through records
 // nothing, so it starts over next time. In the browser tests it never starts
 // by itself, unless the test page turned that on (window.e2eTourAutoStart).
+// It follows Add Dish (`adding`): opened, closed, and closed by "Ohne
+// Gericht weiter"; and is told of the Dish saved there (`dishAdded`).
+// `forDish`: the Dish saved now is the Tour's, which notifies nobody.
 const props = defineProps<{ board: BoardView, idle: boolean, autoStart: boolean }>()
+const adding = defineModel<boolean>('adding', { required: true })
 const emit = defineEmits<{ ended: [] }>()
 const t = useStrings()
 const { data: me } = useMe()
@@ -22,7 +26,7 @@ const splashUp = useSplashUp()
 // How long the Board stays idle before the Tour starts by itself: its cards
 // have risen in by then.
 const SETTLE_MS = 1200
-const TARGETS: TourTarget[] = ['columns', 'board-switcher']
+const TARGETS: TourTarget[] = ['add-button', 'columns', 'board-switcher']
 
 const tour = shallowRef<Tour | null>(null)
 const step = computed(() => tour.value && tourStep(tour.value, t.tour))
@@ -31,14 +35,27 @@ function start() {
   tour.value = startTour({
     layout: isPhoneLayout() ? 'phone' : 'larger',
     columns: props.board.columns,
-    targets: TARGETS.filter(target => tourTargetElements(target).length > 0),
+    targets: TARGETS.filter(target => tourTargetElements({ target, dishId: null }).length > 0),
   })
 }
-defineExpose({ start })
+
+function dishAdded(dishId: string) {
+  happened({ type: 'dishAdded', dishId })
+}
+const forDish = computed(() => step.value?.id === 'addDishLink')
+defineExpose({ start, dishAdded, forDish })
+
+watch(adding, isOpen => happened({ type: isOpen ? 'addDishOpened' : 'addDishClosed' }))
 
 function onChoose(button: TourButton) {
+  // Past the Dish steps, Add Dish closes if it's open.
+  if (button === 'withoutDish') adding.value = false
+  happened({ type: button === 'finish' ? 'next' : button })
+}
+
+function happened(event: TourEvent) {
   if (!tour.value) return
-  const after = tourAfter(tour.value, { type: button === 'finish' ? 'next' : button })
+  const after = tourAfter(tour.value, event)
   if (after.status === 'running') {
     tour.value = after
     return

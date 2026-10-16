@@ -367,7 +367,7 @@ watch(adding, (isOpen) => {
 // drag. "Rundgang starten" in Your Settings starts it again: the sheet
 // closes and the Tour starts on this Board.
 const anyModalOpen = useAnyModalOpen()
-const boardTour = useTemplateRef<{ start: () => void }>('boardTour')
+const boardTour = useTemplateRef<{ start: () => void, dishAdded: (dishId: string) => void, forDish: boolean }>('boardTour')
 async function startTour() {
   showingSettings.value = false
   await nextTick()
@@ -438,6 +438,7 @@ async function switchBoard(index: number) {
 // stored, a notice says which image the Dish has instead.
 function onAdded(result: BoardResult, from: DOMRect | null) {
   void showResult(result)
+  boardTour.value?.dishAdded(result.dish.id)
   const shown = board.value && dishOnBoard(board.value, result.dish.id)
   if (!shown) return
   const slides = isPhoneLayout() && activeColumnId.value !== shown.column.id
@@ -809,6 +810,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       :aria-label="dish.title"
                       :role="selecting ? 'checkbox' : undefined"
                       :aria-checked="selecting ? selection.isSelected(dish.id) : undefined"
+                      data-tour="dish"
                       class="card-link block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                     >
                       <DishCard
@@ -937,6 +939,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
       :aria-label="t.addDish.open"
       :data-tooltip="t.addDish.open"
+      data-tour="add-button"
       @click="adding = true"
     >
       <svg
@@ -992,6 +995,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-model:open="adding"
       :board-id="board.id"
       :shared-link="sharedLink"
+      :for-tour="boardTour?.forDish ?? false"
       @added="onAdded"
     />
 
@@ -1055,6 +1059,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     />
     <BoardTour
       ref="boardTour"
+      v-model:adding="adding"
       :board="board"
       :idle="!anyModalOpen && !searchOpen && !selecting && !dragging && !route.params.dish"
       :auto-start="!openedToAdd"

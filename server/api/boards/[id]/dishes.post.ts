@@ -12,14 +12,15 @@ import { notifyNewDish } from '../../../utils/push'
 // already stored by the upload, is used instead, if its ticket is valid.
 // The Board's other Members who turned push notifications on are notified
 // before the answer (a serverless function may stop right after it); that
-// never fails the request.
+// never fails the request. Not for a Dish added during the Tour (ADR 0006),
+// which may be deleted again seconds later.
 export default defineEventHandler(async (event): Promise<AddedDish> => {
   const boardId = boardIdParam(event)
   const parsed = addDishBody.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A title and a Placeholder Image are required' })
   const user = requireUser(event)
   await spendRateLimit(user.id, 'add-dish')
-  const { source, imageUrl, imageTicket, photo, ...rest } = parsed.data
+  const { source, imageUrl, imageTicket, photo, tour, ...rest } = parsed.data
   // Not copied for a non-Member, whom addDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, async () => boardId, { photo, imageUrl, imageTicket })
   const created = await addDish(boardId, user, {
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
     imageUrl: stored,
   })
   if (!created) throw boardNotFound()
-  await notifyNewDish(boardId, created.id, user.id)
+  if (!tour) await notifyNewDish(boardId, created.id, user.id)
   setResponseStatus(event, 201)
   return refused ? { ...created, imageNotStored: true } : created
 })

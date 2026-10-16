@@ -6,8 +6,9 @@ import { gotoHydrated, reloadHydrated } from './hydration'
 import { removeUsers } from './seed'
 import { settingsSheet, openUserSettings } from './settings-sheet'
 
-// The Tour (CONTEXT.md, #298): Topfbert's walk through the Board, once per
-// person, the first time they open a Board, and again from Your Settings.
+// The Tour (CONTEXT.md, #298, #299): Topfbert's walk through the Board, once
+// per person, the first time they open a Board, and again from Your
+// Settings. The user adds a real Dish in it.
 // In every other spec it never starts by itself; here the pages turn that
 // on. Somerville is used by this file only, and starts each test new, as
 // if she had never seen the Tour.
@@ -25,7 +26,11 @@ test.beforeEach(async ({ page }) => {
 const SETTLE_MS = 2500
 
 const hello = (page: Page) => page.getByRole('dialog', { name: 'Hallo, ich bin Topfbert!' })
+const addStep = (page: Page) => page.getByRole('dialog', { name: 'Dein erstes Gericht' })
+const linkStep = (page: Page) => page.getByRole('dialog', { name: 'Hast du einen Link?' })
+const newCardStep = (page: Page) => page.getByRole('dialog', { name: 'Da ist es!' })
 const columnsStep = (page: Page) => page.getByRole('dialog', { name: 'Deine Spalten' })
+const addDish = (page: Page) => page.getByRole('dialog', { name: 'Gericht hinzufügen' })
 const switcherStep = (page: Page) => page.getByRole('dialog', { name: 'Kocht zusammen' })
 const layer = (page: Page) => page.locator('[data-tour-layer]')
 const bubble = (page: Page) => page.locator('[data-tour-step]')
@@ -47,12 +52,14 @@ async function onScreen(page: Page, locator: Locator) {
   return box.x >= 0 && box.y >= 0 && box.x + box.width <= width && box.y + box.height <= height
 }
 
-// Whether the spotlight's hole holds every element of `target` on screen,
-// with 6px to spare (to the window's edge, where it is cut off there).
-async function holeRound(page: Page, target: string) {
-  const hole = (await page.locator('[data-tour-spot]').boundingBox())!
+// Whether the spotlight's hole holds every element of `target` on screen
+// (the card of the Dish `dishId`), with 6px to spare (to the window's edge,
+// where it is cut off there).
+async function holeRound(page: Page, target: string, dishId?: string) {
+  const hole = (await page.locator('[data-tour-spot]:visible').boundingBox())!
   const { width } = page.viewportSize()!
-  const boxes = await page.locator(`[data-tour="${target}"]:visible`).evaluateAll(els => els.map((el) => {
+  const within = dishId ? `[data-dish-id="${dishId}"] ` : ''
+  const boxes = await page.locator(`${within}[data-tour="${target}"]:visible`).evaluateAll(els => els.map((el) => {
     const { left, top, right, bottom } = el.getBoundingClientRect()
     return { left, top, right, bottom }
   }))
@@ -67,12 +74,13 @@ test('a first visit shows the Tour; going through it to the end records it and s
   await expect(hello(page)).toBeVisible()
   await expect(hello(page)).toContainText('Ich zeig dir kurz')
   await hello(page).getByRole('button', { name: 'Weiter' }).click()
+  await addStep(page).getByRole('button', { name: 'Ohne Gericht weiter' }).click()
 
   // The Board's own Columns, in their order.
   await expect(columnsStep(page)).toContainText('Gerichte wandern von „Ideen“ über „Diese Woche“ nach „Gekocht“.')
   // A tap beside the spotlight does nothing: the add button stays shut.
   await page.mouse.click(1240, 680)
-  await expect(page.getByRole('dialog', { name: 'Gericht hinzufügen' })).toBeHidden()
+  await expect(addDish(page)).toBeHidden()
   await columnsStep(page).getByRole('button', { name: 'Weiter' }).click()
 
   await expect(switcherStep(page)).toContainText('lädst du andere zu deinem Board ein')
@@ -90,7 +98,7 @@ test('Überspringen mid-Tour ends it for good: a reload doesn\'t start it again'
   await gotoHydrated(page, '/')
   await hello(page).getByRole('button', { name: 'Weiter' }).click()
 
-  await columnsStep(page).getByRole('button', { name: 'Überspringen' }).click()
+  await addStep(page).getByRole('button', { name: 'Überspringen' }).click()
 
   await expect(layer(page)).toBeHidden()
   await expect(ended(page)).toBeVisible()
@@ -102,7 +110,7 @@ test('Überspringen mid-Tour ends it for good: a reload doesn\'t start it again'
 test('a reload halfway through records nothing: the Tour starts over', async ({ page }) => {
   await gotoHydrated(page, '/')
   await hello(page).getByRole('button', { name: 'Weiter' }).click()
-  await expect(columnsStep(page)).toBeVisible()
+  await expect(addStep(page)).toBeVisible()
 
   await reloadHydrated(page)
 
@@ -112,10 +120,9 @@ test('a reload halfway through records nothing: the Tour starts over', async ({ 
 
 test('opened to add something shared, the Board doesn\'t start the Tour; the next plain open does', async ({ page }) => {
   await gotoHydrated(page, `/share?${new URLSearchParams({ text: 'Schau mal' })}`)
-  const addDish = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
-  await expect(addDish).toBeVisible()
-  await addDish.getByRole('button', { name: 'Schließen' }).click()
-  await expect(addDish).toBeHidden()
+  await expect(addDish(page)).toBeVisible()
+  await addDish(page).getByRole('button', { name: 'Schließen' }).click()
+  await expect(addDish(page)).toBeHidden()
 
   await notStarted(page)
 
@@ -141,6 +148,12 @@ test('→ and ← go forwards and back, focus is in each bubble, and Esc ends th
   await expect(bubble(page)).toBeFocused()
 
   await page.keyboard.press('ArrowRight')
+  await expect(addStep(page)).toBeVisible()
+  await expect(bubble(page)).toBeFocused()
+  // A step to do has no Weiter: → doesn't go past it.
+  await page.keyboard.press('ArrowRight')
+  await expect(addStep(page)).toBeVisible()
+  await addStep(page).getByRole('button', { name: 'Ohne Gericht weiter' }).click()
   await expect(columnsStep(page)).toBeVisible()
   await expect(bubble(page)).toBeFocused()
   await page.keyboard.press('ArrowRight')
@@ -156,6 +169,80 @@ test('→ and ← go forwards and back, focus is in each bubble, and Esc ends th
   await expect.poll(() => tourSeen(page)).toBe(1)
 })
 
+// Taps the middle of what `locator` finds, as a finger would: whatever is
+// on top there gets it.
+async function tapOn(page: Page, locator: Locator) {
+  const box = (await locator.boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+}
+
+// Whether the bubble showing is on top at its own middle.
+const bubbleOnTop = (page: Page) => page.locator('[data-tour-step]:visible').evaluate((el) => {
+  const { left, top, width, height } = el.getBoundingClientRect()
+  return el.contains(document.elementFromPoint(left + width / 2, top + height / 2))
+})
+
+const addButton = (page: Page) => page.locator('[data-tour="add-button"]')
+
+test('the Tour has the user add a Dish: the add button, Add Dish, then the new card spotlit', async ({ page }) => {
+  await gotoHydrated(page, '/')
+  await hello(page).getByRole('button', { name: 'Weiter' }).click()
+  await expect(addStep(page)).toContainText('Tipp aufs Plus.')
+  await expect.poll(() => holeRound(page, 'add-button')).toBe(true)
+
+  // The spotlit add button takes the tap.
+  await tapOn(page, addButton(page))
+
+  // The bubble follows into Add Dish, above it, onto its link field.
+  await expect(addDish(page)).toBeVisible()
+  await expect(linkStep(page)).toContainText('TikTok, Instagram')
+  await expect(bubble(page)).toBeFocused()
+  await expect.poll(() => bubbleOnTop(page)).toBe(true)
+  await expect.poll(() => holeRound(page, 'add-dish-link')).toBe(true)
+  // A tap beside the link field does nothing: Add Dish stays open.
+  await tapOn(page, addDish(page).getByRole('button', { name: 'Schließen' }))
+  await expect(addDish(page)).toBeVisible()
+
+  // Through the hole, "Ohne Link hinzufügen" works; the bubble steps aside.
+  await tapOn(page, addDish(page).getByRole('button', { name: 'Ohne Link hinzufügen' }))
+  const form = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+  await expect(linkStep(page)).toBeHidden()
+  await form.getByLabel('Titel').fill('Tour-Linsen')
+  const saved = page.waitForRequest(req => req.method() === 'POST' && /\/api\/boards\/[^/]+\/dishes$/.test(req.url()))
+  await form.getByRole('button', { name: 'Speichern' }).click()
+
+  // Added during the Tour: it notifies nobody (ADR 0006).
+  expect((await saved).postDataJSON()).toMatchObject({ title: 'Tour-Linsen', tour: true })
+  await expect(form).toBeHidden()
+  await expect(newCardStep(page)).toContainText('Alle auf diesem Board sehen dein Gericht sofort.')
+  const dishId = (await page.locator('li[data-dish-id]', { hasText: 'Tour-Linsen' }).getAttribute('data-dish-id'))!
+  await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
+
+  await newCardStep(page).getByRole('button', { name: 'Weiter' }).click()
+  await expect(columnsStep(page)).toBeVisible()
+  await columnsStep(page).getByRole('button', { name: 'Zurück' }).click()
+  await expect(newCardStep(page)).toBeVisible()
+})
+
+test('Add Dish closed without saving goes back to the add button; "Ohne Gericht weiter" there closes it and goes on', async ({ page }) => {
+  await gotoHydrated(page, '/')
+  await hello(page).getByRole('button', { name: 'Weiter' }).click()
+  await tapOn(page, addButton(page))
+  await expect(linkStep(page)).toBeVisible()
+
+  // Esc is Add Dish's own: it closes, and the Tour goes back a step.
+  await page.keyboard.press('Escape')
+  await expect(addDish(page)).toBeHidden()
+  await expect(addStep(page)).toBeVisible()
+  await expect(bubble(page)).toBeFocused()
+
+  await tapOn(page, addButton(page))
+  await linkStep(page).getByRole('button', { name: 'Ohne Gericht weiter' }).click()
+
+  await expect(addDish(page)).toBeHidden()
+  await expect(columnsStep(page)).toBeVisible()
+})
+
 test.describe('on a 360px phone', () => {
   test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true })
 
@@ -163,16 +250,27 @@ test.describe('on a 360px phone', () => {
     await gotoHydrated(page, '/')
     const topfbert = page.locator('[data-tour-layer] [data-topfbert-idle]')
 
-    for (const [step, target] of [[hello(page), null], [columnsStep(page), 'columns'], [switcherStep(page), 'board-switcher']] as const) {
+    for (const [step, target] of [[hello(page), null], [addStep(page), 'add-button'], [columnsStep(page), 'columns'], [switcherStep(page), 'board-switcher']] as const) {
       await expect(step).toBeVisible()
       await expect.poll(() => onScreen(page, bubble(page))).toBe(true)
       await expect.poll(() => onScreen(page, topfbert)).toBe(true)
       // The hole, once it has glided there: round every element of the
       // target, and 6px more.
       if (target) await expect.poll(() => holeRound(page, target)).toBe(true)
-      await step.getByRole('button', { name: /^(Weiter|Fertig)$/ }).click()
+      await step.getByRole('button', { name: /^(Weiter|Fertig|Ohne Gericht weiter)$/ }).click()
     }
     await expect(layer(page)).toBeHidden()
+  })
+
+  test('the bubble over Add Dish is fully on screen, and above the sheet', async ({ page }) => {
+    await gotoHydrated(page, '/')
+    await hello(page).getByRole('button', { name: 'Weiter' }).click()
+    await tapOn(page, addButton(page))
+
+    await expect(linkStep(page)).toBeVisible()
+    await expect.poll(() => onScreen(page, page.locator('[data-tour-step]:visible'))).toBe(true)
+    await expect.poll(() => onScreen(page, page.locator('[data-tour-layer] [data-topfbert-idle]:visible'))).toBe(true)
+    await expect.poll(() => bubbleOnTop(page)).toBe(true)
   })
 })
 
@@ -183,7 +281,7 @@ test.describe('with reduced motion', () => {
     await gotoHydrated(page, '/')
     await expect(hello(page)).toBeVisible()
     await hello(page).getByRole('button', { name: 'Weiter' }).click()
-    await expect(columnsStep(page)).toBeVisible()
+    await expect(addStep(page)).toBeVisible()
 
     expect(await layer(page).evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0)
     await expect(page.locator('[data-tour-spot]')).toHaveCSS('transition-duration', '0s')
