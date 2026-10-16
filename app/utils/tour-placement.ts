@@ -4,14 +4,16 @@
 // standing on the bubble's bottom edge, on the side away from the tail. All
 // in px of the window.
 
-import type { TourCorner } from '../tour/tour'
-
 export interface Box {
   left: number
   top: number
   width: number
   height: number
 }
+
+// The corner of the window a browser's menu sits in, which the Tour's
+// install step points to.
+export type TourCorner = 'top-right' | 'bottom-right'
 
 export interface TourPlacement {
   // The target and 6px around it; null for a step without one.

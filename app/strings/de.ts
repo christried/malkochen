@@ -649,9 +649,10 @@ export const de = {
       title: 'Noch ein Trick',
       text: 'Teil einen Link direkt aus TikTok oder Instagram: Teilen → malkochen. Schon landet das Gericht hier.',
     },
+    // Installing, what it unlocks.
+    sharing: 'Installiert kannst du Links direkt aus TikTok und Instagram mit malkochen teilen.',
     install: {
       title: 'Hol dir malkochen aufs Handy',
-      text: 'Installiert kannst du Links direkt aus TikTok und Instagram mit malkochen teilen.',
     },
     installHow: {
       title: 'Hol dir malkochen aufs Handy',
@@ -663,7 +664,6 @@ export const de = {
         firefox: 'Tipp oben rechts auf ⋮ und dann auf „Zum Startbildschirm hinzufügen“.',
         other: 'Such im Menü deines Browsers nach „Zum Startbildschirm hinzufügen“.',
       },
-      sharing: 'Installiert kannst du Links direkt aus TikTok und Instagram mit malkochen teilen.',
       // Firefox and any other browser: only Chrome's install shares.
       chromeOnly: 'Teilen aus TikTok klappt aber nur, wenn du malkochen aus Chrome installierst.',
     },

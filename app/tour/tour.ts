@@ -1,4 +1,5 @@
 import type { Strings } from '../strings/de'
+import type { TourCorner } from '../utils/tour-placement'
 
 // The Tour (CONTEXT.md, #296): Topfbert's short walk through a Board. This is
 // its brain, a step machine that knows nothing of the page: the situation it
@@ -21,14 +22,14 @@ export type TourFacing = 'target' | 'front'
 // 'withoutDish': "Ohne Gericht weiter", past the steps about adding a Dish.
 // 'install': the browser's own install dialog.
 export type TourButton = 'back' | 'next' | 'finish' | 'skip' | 'withoutDish' | 'install'
-// The last step, on phones only, is one of 'shareTip' (installed),
-// 'install' (the browser offered installing) or 'installHow' (it didn't:
-// where its menu has it).
-export type TourStepId = 'hello' | 'addButton' | 'addDishLink' | 'newCard' | 'columns' | 'boardSwitcher' | 'shareTip' | 'install' | 'installHow'
+// The Tour's steps in its order. The last, on phones only, shows as one of
+// three as it comes (tourStep): 'shareTip' (installed), 'install' (the
+// browser offered installing) or 'installHow' (it didn't: where its menu
+// has it).
+export type TourSlot = 'hello' | 'addButton' | 'addDishLink' | 'newCard' | 'columns' | 'boardSwitcher' | 'last'
+export type TourStepId = Exclude<TourSlot, 'last'> | 'shareTip' | 'install' | 'installHow'
 // The browser family, read from the user agent (tourBrowser).
 export type TourBrowser = 'chrome' | 'samsung' | 'edge' | 'firefox' | 'other'
-// The corner of the screen a browser's menu sits in.
-export type TourCorner = 'top-right' | 'bottom-right'
 
 // Whether malkochen runs installed (display-mode: standalone), whether the
 // browser offered installing it (beforeinstallprompt), and which browser.
@@ -69,7 +70,7 @@ export interface Tour {
   status: 'running' | 'finished' | 'skipped'
   situation: TourSituation
   // The steps this Tour shows, in order, and the one showing.
-  steps: TourStepId[]
+  steps: TourSlot[]
   at: number
   // The Dish the user added during the Tour; null before, or without one.
   dishId: string | null
@@ -95,26 +96,26 @@ export interface TourStep {
 
 // Every step, in the order they show: what it spotlights, and the target on
 // the page it can't do without (the Dish steps all start at the add button).
-const STEPS: { id: TourStepId, target: TourTarget | null, needs: TourTarget | null }[] = [
+const STEPS: { id: TourSlot, target: TourTarget | null, needs: TourTarget | null }[] = [
   { id: 'hello', target: null, needs: null },
   { id: 'addButton', target: 'add-button', needs: 'add-button' },
   { id: 'addDishLink', target: 'add-dish-link', needs: 'add-button' },
   { id: 'newCard', target: 'dish', needs: 'add-button' },
   { id: 'columns', target: 'columns', needs: 'columns' },
   { id: 'boardSwitcher', target: 'board-switcher', needs: 'board-switcher' },
-  // Its variant is picked as it shows (tourStep): installing can be offered
-  // meanwhile.
-  { id: 'shareTip', target: null, needs: null },
+  // Which of three it shows is picked as it comes: installing can be
+  // offered meanwhile.
+  { id: 'last', target: null, needs: null },
 ]
 // The steps about adding a Dish, which "Ohne Gericht weiter" goes past.
-const DISH_STEPS: TourStepId[] = ['addButton', 'addDishLink', 'newCard']
+const DISH_STEPS: TourSlot[] = ['addButton', 'addDishLink', 'newCard']
 // The steps that wait for the user to do something: no Weiter.
-const WAITING: TourStepId[] = ['addButton', 'addDishLink']
+const WAITING: TourSlot[] = ['addButton', 'addDishLink']
 
 export function startTour(situation: TourSituation): Tour {
   const steps = STEPS
     .filter(s => !s.needs || situation.targets.includes(s.needs))
-    .filter(s => s.id !== 'shareTip' || situation.layout === 'phone')
+    .filter(s => s.id !== 'last' || situation.layout === 'phone')
     .map(s => s.id)
   return { status: 'running', situation, steps, at: 0, dishId: null }
 }
@@ -124,7 +125,7 @@ export function startTour(situation: TourSituation): Tour {
 export function tourAfter(tour: Tour, event: TourEvent): Tour {
   if (tour.status !== 'running') return tour
   const id = tour.steps[tour.at]!
-  const to = (step: TourStepId, change: Partial<Tour> = {}): Tour => ({ ...tour, ...change, at: tour.steps.indexOf(step) })
+  const to = (step: TourSlot, change: Partial<Tour> = {}): Tour => ({ ...tour, ...change, at: tour.steps.indexOf(step) })
   switch (event.type) {
     case 'skip':
       return { ...tour, status: 'skipped' }
@@ -147,7 +148,7 @@ export function tourAfter(tour: Tour, event: TourEvent): Tour {
     case 'installOffered':
       return { ...tour, situation: { ...tour.situation, install: { ...tour.situation.install, offered: true } } }
     case 'installAnswered':
-      return id === 'shareTip' ? { ...tour, status: 'finished' } : tour
+      return id === 'last' ? { ...tour, status: 'finished' } : tour
   }
 }
 
@@ -174,6 +175,7 @@ export function tourStep(tour: Tour, t: Strings['tour']): TourStep | null {
   const target = STEPS.find(s => s.id === id)?.target ?? null
   const forward = tour.at === tour.steps.length - 1 ? 'finish' : 'next'
   const buttons: TourButton[] = canGoBack(tour) ? ['back', forward, 'skip'] : [forward, 'skip']
+  if (id === 'last') return lastStep(tour.situation.install, buttons, t)
   const shown = { id, target, dishId: null, corner: null, handsOn: false }
   const pointing = { ...shown, pose: 'pointing', faces: 'target' } as const
   switch (id) {
@@ -189,8 +191,6 @@ export function tourStep(tour: Tour, t: Strings['tour']): TourStep | null {
       return { ...pointing, title: t.columns.title, text: columnsText(tour.situation, t), buttons }
     case 'boardSwitcher':
       return { ...pointing, ...t.boardSwitcher, buttons }
-    default:
-      return lastStep(tour.situation.install, buttons, t)
   }
 }
 
@@ -210,7 +210,7 @@ function lastStep({ installed, offered, browser }: TourInstall, buttons: TourBut
   if (installed) return { ...shown, id: 'shareTip', pose: 'wink', faces: 'front', ...t.shareTip }
   // Installieren in place of Fertig: the dialog's answer ends the Tour.
   const install = buttons.map(b => b === 'finish' ? 'install' : b)
-  if (offered) return { ...shown, id: 'install', pose: 'waving', faces: 'front', ...t.install, buttons: install }
+  if (offered) return { ...shown, id: 'install', pose: 'waving', faces: 'front', title: t.install.title, text: t.sharing, buttons: install }
   return { ...shown, id: 'installHow', corner: MENU_CORNER[browser], pose: 'pointing', faces: 'target', title: t.installHow.title, text: installHowText(browser, t) }
 }
 
@@ -224,9 +224,9 @@ const MENU_CORNER: Record<TourBrowser, TourCorner> = {
 }
 
 // Firefox and any other browser: sharing from TikTok needs Chrome's install.
-function installHowText(browser: TourBrowser, { installHow }: Strings['tour']): string {
+function installHowText(browser: TourBrowser, { installHow, sharing }: Strings['tour']): string {
   const shares = browser !== 'firefox' && browser !== 'other'
-  return [installHow.menu[browser], installHow.sharing, shares ? null : installHow.chromeOnly].filter(Boolean).join(' ')
+  return [installHow.menu[browser], sharing, shares ? null : installHow.chromeOnly].filter(Boolean).join(' ')
 }
 
 // The browser family a user agent names. Chrome's look-alikes (Samsung
@@ -234,7 +234,7 @@ function installHowText(browser: TourBrowser, { installHow }: Strings['tour']): 
 export function tourBrowser(userAgent: string): TourBrowser {
   if (/SamsungBrowser\//.test(userAgent)) return 'samsung'
   if (/EdgA?\//.test(userAgent)) return 'edge'
-  if (/Firefox\/|FxiOS\//.test(userAgent)) return 'firefox'
+  if (/Firefox\//.test(userAgent)) return 'firefox'
   if (/OPR\/|Opera|YaBrowser|UCBrowser|MiuiBrowser|Vivaldi|DuckDuckGo|Version\/[\d.]+ Chrome|; wv\)/.test(userAgent)) return 'other'
-  return /Chrome\/|CriOS\//.test(userAgent) ? 'chrome' : 'other'
+  return /Chrome\//.test(userAgent) ? 'chrome' : 'other'
 }

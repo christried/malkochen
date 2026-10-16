@@ -304,9 +304,12 @@ test.describe('on a 360px phone', () => {
   })
 
   test('the install offer, kept from the page\'s load, gives the last step "Installieren"; once its dialog is answered the Tour ends', async ({ page }) => {
-    // The browser's offer, as Chrome makes it once the page has loaded.
+    // The browser's offer, made as early as Chrome can: once the page is
+    // parsed, before the app's own code has run, so only the head's inline
+    // script is there to keep it.
     await page.addInitScript(() => {
-      addEventListener('load', () => {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState !== 'interactive') return
         const offer = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
           prompt: async () => {
             (window as { e2eInstallPrompted?: boolean }).e2eInstallPrompted = true
