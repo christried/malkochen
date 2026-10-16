@@ -1039,6 +1039,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :body="t.milestone.body(milestone?.dish.title ?? '', MILESTONE_COOKINGS)"
       :close-label="t.milestone.close"
       close-as="pill"
+      pulse
       :label="`${MILESTONE_COOKINGS}×`"
       close-after="milestone-stay"
     >

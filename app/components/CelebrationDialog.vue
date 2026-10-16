@@ -19,9 +19,10 @@ import { loopStyle } from '~/utils/svg-loop'
 // the wash and when the text comes follow from it (the styles below).
 // `label` goes on the clip's pebble ("10×", the Board's emoji), taking the
 // pebble's keyframes, so it pops in step with the drawing and rests with it
-// (SvgLoop's `over`). The milestone's pebble then keeps a gentle pulse
-// (#280); reduced motion: no pulse (main.css's global rule). Slots: the default one sits between the clip and the
-// text, `actions` under the text, and `toast` takes the page's Toast: the
+// (SvgLoop's `over`). With `pulse`, once the clip has played, it keeps a
+// gentle pulse, which by then is the pebble's alone (#280); reduced motion:
+// no pulse (main.css's global rule). Slots: the default one sits between
+// the clip and the text, `actions` under the text, and `toast` takes the page's Toast: the
 // page behind is inert, so the Toast shows in here, above the wash.
 const open = defineModel<boolean>('open', { required: true })
 const props = defineProps<{
@@ -32,6 +33,7 @@ const props = defineProps<{
   closeAs?: 'icon' | 'pill'
   closeAfter?: DurationToken
   label?: string
+  pulse?: boolean
 }>()
 defineSlots<{ default?: () => unknown, actions?: () => unknown, toast?: () => unknown }>()
 
@@ -82,7 +84,7 @@ onBeforeUnmount(() => clearTimeout(closing))
         </button>
         <div
           class="clip relative aspect-square w-[min(78vw,48dvh,420px)]"
-          :data-idle-pulse="clip === 'milestone-10x' || undefined"
+          :data-idle-pulse="pulse || undefined"
         >
           <SvgLoop
             :src="`/clips/${clip}`"
