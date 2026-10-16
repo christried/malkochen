@@ -250,6 +250,7 @@ From the grilling session on 2026-10-16 (`CONTEXT.md` → Tour, ADR 0006, design
 | #299 | Tour: add a Dish | Push exception for the Tour's Dish |
 | #301 | Tour: share tip or install step | Only needs #298 |
 | #300 | Tour: move and delete the Dish | After #299 |
+| #309 | Bundle: Tour spotlight, rounded cutout, round glide, Topfbert stays put, the ring draws in | Found in #302's device check; #302 resumes after it |
 | #302 | Device check: Tour on Android | `ready-for-human`: skip, the user does it |
 
 ## Keeping this file current
