@@ -16,6 +16,7 @@
 // Below 48px wide he only breathes and blinks (loops.css).
 const props = defineProps<{
   mood: 'happy' | 'wow' | 'oops' | 'waving' | 'pointing' | 'wink'
+  // Pointing only: the others have one-sided steam, hat or arm.
   mirrored?: boolean
   // Drawn above every modal (the Gekocht pill): one opening never stills him.
   ignoresModals?: boolean
@@ -28,9 +29,8 @@ const play = computed(() => props.ignoresModals || !covered.value)
   <!-- His drawing's shape (viewBox 140×150); the caller sets his width. -->
   <div
     class="aspect-[140/150]"
-    :class="{ '-scale-x-100': mirrored }"
+    :class="{ '-scale-x-100': mirrored && mood === 'pointing' }"
     data-topfbert-idle
-    :data-mood="mood"
   >
     <SvgLoop
       :src="`/clips/topfbert-idle-${mood}`"
