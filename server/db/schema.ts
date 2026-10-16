@@ -34,6 +34,10 @@ export const user = pgTable('user', {
   // Google first name. Null with a Username: they are still to be asked
   // once whether it fits.
   usernameConfirmedAt: timestamp('username_confirmed_at', { withTimezone: true }),
+  // The highest Tour version (CONTEXT.md → Tour) they finished or skipped;
+  // null for none. Below the app's current one, the Tour starts by itself.
+  // Only PUT /api/me/tour raises it; Better Auth just reads it.
+  tourSeen: integer('tour_seen'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, t => [

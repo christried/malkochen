@@ -609,6 +609,38 @@ export const de = {
     click: 'Klick',
     selectSeveral: 'Mehrere auswählen',
   },
+  // The Tour (CONTEXT.md, #296): Topfbert's walk through the Board, step by
+  // step (app/tour/tour.ts). "Rundgang" in the UI.
+  tour: {
+    label: 'Rundgang',
+    hello: {
+      title: 'Hallo, ich bin Topfbert!',
+      text: 'Ich zeig dir kurz, wie malkochen funktioniert. Dauert nicht lange.',
+    },
+    columns: {
+      title: 'Deine Spalten',
+      // The Board's own Column names: the first two that aren't the Gekocht
+      // Column (`next` is null when there is only one), then that one.
+      text: (first: string, next: string | null, gekocht: string | null, phone: boolean) => [
+        next ? `Gerichte wandern von „${first}“ über „${next}“` : `Neue Gerichte landen in „${first}“`,
+        gekocht ? `${next ? ' nach' : ', und was ihr gekocht habt, kommt nach'} „${gekocht}“.` : '.',
+        phone ? ' Wisch zur Seite oder tipp oben auf eine Spalte, um sie zu sehen.' : '',
+      ].join(''),
+    },
+    boardSwitcher: {
+      title: 'Kocht zusammen',
+      text: 'Hier lädst du andere zu deinem Board ein, wechselst zwischen deinen Boards oder fängst ein neues an.',
+    },
+    next: 'Weiter',
+    back: 'Zurück',
+    skip: 'Überspringen',
+    finish: 'Fertig',
+    // The Toast once it has ended, finished or skipped.
+    ended: 'Den Rundgang kannst du jederzeit in deinen Einstellungen wieder starten.',
+    // Your Settings.
+    start: 'Rundgang starten',
+    startHint: 'Topfbert zeigt dir das Board noch einmal.',
+  },
 }
 
 export type Strings = typeof de

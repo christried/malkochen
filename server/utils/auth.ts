@@ -126,6 +126,7 @@ export const auth = betterAuth({
       ownPicture: { type: 'string', required: false, input: false },
       username: { type: 'string', required: false, input: false },
       usernameConfirmedAt: { type: 'date', required: false, input: false },
+      tourSeen: { type: 'number', required: false, input: false },
     },
     // Runs on user creation and, for Google, on every repeat sign-in too, so
     // someone removed from the Allowlist can't sign in again. Gets what Google

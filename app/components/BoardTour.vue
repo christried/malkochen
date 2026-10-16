@@ -1,0 +1,90 @@
+<script setup lang="ts">
+import type { BoardView } from '~~/server/utils/boards'
+import type { Me } from '~~/server/utils/people'
+import { startTour, tourAfter, tourStep, TOUR_VERSION, type Tour, type TourButton, type TourTarget } from '~/tour/tour'
+
+// The Tour (CONTEXT.md, #298) on the Board: feeds the Tour module what the
+// Board is like and what the user chooses, and draws its steps (TourLayer).
+// It starts by itself for a user who hasn't seen this version yet, once the
+// Board is idle (`idle`: nothing open over it, no search, no selection, no
+// drag) and the splash has gone, unless the Board opened to add a shared
+// link (`autoStart` false), and starts again from Your Settings (`start`).
+// Finishing or skipping it records the version, for every device, and says
+// where to start it again (`ended`). A reload halfway through records
+// nothing, so it starts over next time. In the browser tests it never starts
+// by itself, unless the test page turned that on (window.e2eTourAutoStart).
+const props = defineProps<{ board: BoardView, idle: boolean, autoStart: boolean }>()
+const emit = defineEmits<{ ended: [] }>()
+const t = useStrings()
+const { data: me } = useMe()
+const splashUp = useSplashUp()
+
+// How long the Board stays idle before the Tour starts by itself: its cards
+// have risen in by then.
+const SETTLE_MS = 1200
+const TARGETS: TourTarget[] = ['columns', 'board-switcher']
+
+const tour = shallowRef<Tour | null>(null)
+const step = computed(() => tour.value && tourStep(tour.value, t.tour))
+
+function start() {
+  tour.value = startTour({
+    layout: isPhoneLayout() ? 'phone' : 'larger',
+    columns: props.board.columns,
+    targets: TARGETS.filter(onPage),
+  })
+}
+defineExpose({ start })
+
+function onChoose(button: TourButton) {
+  if (!tour.value) return
+  const after = tourAfter(tour.value, { type: button === 'finish' ? 'next' : button })
+  if (after.status === 'running') {
+    tour.value = after
+    return
+  }
+  tour.value = null
+  emit('ended')
+  void recordSeen()
+}
+
+// Seen at once on this device (the Board switched to doesn't start it
+// again), and for good on the server; if that fails, it starts again on the
+// next visit.
+async function recordSeen() {
+  if (me.value) me.value = { ...me.value, tourSeen: Math.max(me.value.tourSeen ?? 0, TOUR_VERSION) }
+  try {
+    me.value = await $fetch<Me>('/api/me/tour', { method: 'PUT', body: { version: TOUR_VERSION } })
+  }
+  catch {
+    // Offline or signed out meanwhile.
+  }
+}
+
+const e2e = useRuntimeConfig().public.e2e
+const due = computed(() => props.autoStart && props.idle && !splashUp.value && !tour.value
+  && !!me.value && (me.value.tourSeen ?? 0) < TOUR_VERSION)
+let timer: ReturnType<typeof setTimeout> | undefined
+onMounted(() => {
+  if (e2e && !(window as { e2eTourAutoStart?: boolean }).e2eTourAutoStart) return
+  watch(due, (isDue) => {
+    clearTimeout(timer)
+    if (isDue) timer = setTimeout(() => due.value && start(), SETTLE_MS)
+  }, { immediate: true })
+})
+onBeforeUnmount(() => clearTimeout(timer))
+</script>
+
+<script lang="ts">
+// A target is on the page when one of its elements is laid out.
+function onPage(target: TourTarget): boolean {
+  return [...document.querySelectorAll<HTMLElement>(`[data-tour="${target}"]`)].some(el => el.offsetWidth > 0)
+}
+</script>
+
+<template>
+  <TourLayer
+    :step="step"
+    @choose="onChoose"
+  />
+</template>

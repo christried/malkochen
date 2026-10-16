@@ -7,10 +7,12 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // from 768px on its right edge (#283):
 // your Username, the Google account you're signed in with and your Profile
 // Picture, Darstellung, a place kept for Sprache (German only for now), the
-// Board's keyboard shortcuts (where there's a keyboard and mouse) and signing
-// out. Opened by the cogwheel in the Board's header (#282), and by /settings
-// (pages/settings.vue).
+// Board's keyboard shortcuts (where there's a keyboard and mouse),
+// "Rundgang starten", which starts the Tour again (`startTour`: the Board
+// closes the sheet and starts it), and signing out. Opened by the cogwheel
+// in the Board's header (#282), and by /settings (pages/settings.vue).
 const open = defineModel<boolean>('open', { required: true })
+const emit = defineEmits<{ startTour: [] }>()
 const t = useStrings()
 const { signOut } = useAuth()
 
@@ -333,6 +335,30 @@ function removePicture() {
             {{ t.shortcuts.intro }}
           </p>
           <ShortcutList />
+        </div>
+      </section>
+
+      <section
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-tour"
+      >
+        <h3
+          id="settings-tour"
+          class="section-heading px-1"
+        >
+          {{ t.tour.label }}
+        </h3>
+        <div class="flex flex-col items-start gap-3 rounded-card bg-surface-muted p-4">
+          <p class="text-small text-text-muted">
+            {{ t.tour.startHint }}
+          </p>
+          <button
+            type="button"
+            class="rounded-pill bg-surface px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            @click="emit('startTour')"
+          >
+            {{ t.tour.start }}
+          </button>
         </div>
       </section>
 
