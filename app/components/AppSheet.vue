@@ -213,7 +213,8 @@ function onHandleUp(event: PointerEvent) {
 /* Tablet and up, a side sheet: 420px wide on the right edge, full height,
    its left corners rounded like a dialog. It moves in from the right edge
    like a sheet from the bottom (440ms, sheet) and out the same way (320ms,
-   ease-in), past its shadow. */
+   ease-in), past its shadow. Covered, it only dims: scaled, it would pull
+   away from the edges. */
 @media (min-width: 768px) {
   .sheet.is-side {
     margin: 0 0 0 auto;
@@ -224,6 +225,9 @@ function onHandleUp(event: PointerEvent) {
   }
   .sheet.is-side[open] {
     animation: side-in var(--dur-sheet) var(--ease-sheet);
+  }
+  .sheet.is-side[data-covered] {
+    scale: none;
   }
   .sheet.is-side:not([open]) {
     opacity: 1;
