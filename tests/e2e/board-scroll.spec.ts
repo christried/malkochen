@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
+import { openBoardSettings } from './board'
 import { gotoHydrated } from './hydration'
 import { resetBoard, seedDish } from './seed'
 
@@ -63,8 +64,7 @@ test('opening a Dish and closing it leaves the Board where it was scrolled, down
 test('another page still starts at the top', async ({ page }) => {
   await scrollBoard(page)
 
-  await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await openBoardSettings(page)
 
   expect(await page.evaluate(() => scrollY)).toBe(0)
 })

@@ -37,7 +37,7 @@ const address = useOpenBoardAddress()
 const newDishIds = computed(() => new Set(board.value?.newDishIds))
 
 // You, for your photo in the header, which opens the user menu. Phones have
-// no room for it there: the Board switcher has your settings instead.
+// no room for it there.
 const { data: me } = await useMe()
 
 useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
@@ -332,7 +332,7 @@ watch(() => route.params.dish, (dish) => {
 }, { immediate: true })
 
 const adding = ref(false)
-// Your settings (UserSettingsSheet), from the user menu or the Board switcher.
+// Your settings (UserSettingsSheet), from the header's cogwheel (#282).
 const showingSettings = ref(false)
 
 // Something shared to malkochen (pages/share.vue) arrives as ?add=<link>,
@@ -628,7 +628,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <BoardSwitcher
           :board="board"
           :dish-count="boardModule.dishCount.value"
-          @settings="showingSettings = true"
         />
         <RoundButton
           v-if="!searchOpen"
@@ -643,23 +642,25 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             :size="20"
           />
         </RoundButton>
-        <NuxtLink
-          :to="boardSettingsPath(board)"
-          :aria-label="t.settings.title"
-          :data-tooltip="t.settings.title"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-text shadow-card transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        <!-- Your settings; a Board's are on its row in the Board switcher.
+             The sheet hands focus back here when it closes. -->
+        <RoundButton
+          raised
+          aria-haspopup="dialog"
+          :aria-label="t.userSettings.title"
+          :data-tooltip="t.userSettings.title"
+          @click="showingSettings = true"
         >
           <AppIcon
             name="settings"
             :size="20"
           />
-        </NuxtLink>
+        </RoundButton>
       </div>
       <UserMenu
         v-if="me"
         :me="me"
         class="hidden shrink-0 tablet:block"
-        @settings="showingSettings = true"
       />
     </header>
 

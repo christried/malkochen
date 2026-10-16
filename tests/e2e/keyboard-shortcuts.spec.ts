@@ -102,6 +102,27 @@ test('"," opens the Board settings', async ({ page }) => {
   await expect(page).toHaveURL(/\/b\/[^/]+\/settings$/)
 })
 
+test('in the open Board switcher, Tab reaches a row and then its Board Settings button, which Enter opens', async ({ page }) => {
+  await signIn(page, FLORENCE)
+  await gotoHydrated(page, '/')
+
+  const pill = page.getByRole('heading', { level: 1 }).getByRole('button')
+  await pill.focus()
+  await page.keyboard.press('Enter')
+  const firstRow = page.getByRole('navigation', { name: 'Deine Boards' }).getByRole('listitem').first()
+  await page.keyboard.press('Tab')
+  await expect(firstRow.getByRole('link').first()).toBeFocused()
+  await page.keyboard.press('Tab')
+  const settings = firstRow.getByRole('link', { name: /^Board-Einstellungen: / })
+  await expect(settings).toBeFocused()
+  const name = (await settings.getAttribute('aria-label'))!.replace('Board-Einstellungen: ', '')
+  await page.keyboard.press('Enter')
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await expect(page).toHaveURL(/\/b\/[^/]+\/settings$/)
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue(name)
+})
+
 test('1 to 9 switch to the Boards in the switcher\'s order; a number with no Board does nothing', async ({ page }) => {
   await signIn(page, FLORENCE)
   const res = await page.request.post('/api/boards', { data: { name: 'Daheim', emoji: '🌱' } })
@@ -110,7 +131,8 @@ test('1 to 9 switch to the Boards in the switcher\'s order; a number with no Boa
 
   await page.getByRole('heading', { level: 1 }).getByRole('button').click()
   // Florence's starter Board and Daheim, in the switcher's order.
-  const rows = page.getByRole('navigation', { name: 'Deine Boards' }).getByRole('link')
+  // The Boards' rows, not their Board Settings buttons.
+  const rows = page.getByRole('navigation', { name: 'Deine Boards' }).getByRole('link', { name: /^(?!Board-Einstellungen: )/ })
   await expect(rows).toHaveText([/Meine Küche|Daheim/, /Meine Küche|Daheim/])
   const [first, second] = (await rows.allTextContents()).map(row => row.includes('Daheim') ? 'Daheim' : 'Meine Küche')
   expect(first).not.toBe(second)

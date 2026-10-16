@@ -69,6 +69,55 @@ test('a Member creates a Board from the switcher, switches between Boards, and t
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
 })
 
+test('each row of the switcher has a Board Settings button for its Board: it opens that Board\'s Board Settings without switching to it, and the row still switches', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page, ALLOWLISTED[9])
+  const home = await createBoard(page, 'Daheim', '🌱')
+  await createBoard(page, 'Kochclub', '🥟')
+  await gotoHydrated(page, `/b/${home}`)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
+
+  await switcher(page).click()
+  const buttons = boardList(page).getByRole('link', { name: /^Board-Einstellungen: / })
+  // One per Board, named after it.
+  await expect(buttons).toHaveCount(2)
+  expect((await buttons.evaluateAll(els => els.map(el => el.getAttribute('aria-label')))).sort()).toEqual(['Board-Einstellungen: Daheim', 'Board-Einstellungen: Kochclub'])
+  // A comfortable tap target on a phone, beside the row's own: measured once
+  // the panel has popped in (the emojis hop for ever).
+  await boardList(page).evaluate(el => Promise.all(el.getAnimations({ subtree: true }).filter(a => a.effect?.getTiming().iterations !== Infinity).map(a => a.finished)))
+  for (const button of await buttons.all()) {
+    const box = (await button.boundingBox())!
+    expect(box.width).toBeGreaterThanOrEqual(44)
+    expect(box.height).toBeGreaterThanOrEqual(44)
+  }
+  const kochclubSettings = boardList(page).getByRole('link', { name: 'Board-Einstellungen: Kochclub' })
+  await expect(kochclubSettings).toHaveAttribute('data-tooltip', 'Board-Einstellungen: Kochclub')
+
+  // Kochclub's Board Settings, straight from Daheim.
+  await kochclubSettings.click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Kochclub')
+  // Daheim is still the Board you were on: back is Daheim.
+  await page.goBack()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
+
+  // Leaving Board Settings lands on the Board they were for.
+  await switcher(page).click()
+  await boardList(page).getByRole('link', { name: 'Board-Einstellungen: Kochclub' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Kochclub')
+  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🥟 Kochclub')
+
+  // The row itself switches, as before.
+  await expect(page.locator('[data-board-skeleton]')).toHaveCount(0)
+  await switcher(page).click()
+  await boardList(page).getByRole('link').filter({ hasText: 'Daheim' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
+  await expect(page).not.toHaveURL(/\/settings$/)
+})
+
 // How the header's switcher and round buttons look, next to the theme's
 // tokens.
 async function headerLooks(page: Page) {
@@ -94,7 +143,7 @@ async function headerLooks(page: Page) {
       pill: { shadow: style.boxShadow, family: style.fontFamily, size: style.fontSize, weight: style.fontWeight },
       pebble: { background: pebbleStyle.backgroundColor, round: Number.parseFloat(pebbleStyle.borderTopLeftRadius) >= pebbleBox.height / 2, emojiInside: inside(range.getBoundingClientRect(), pebbleBox), inPill: inside(pebbleBox, pill.getBoundingClientRect()) },
       chevron: pill.querySelectorAll('svg').length,
-      buttons: [...header.querySelectorAll('[aria-label="Gerichte suchen"], [aria-label="Board-Einstellungen"]')].map(b => getComputedStyle(b).backgroundColor),
+      buttons: [...header.querySelectorAll('[aria-label="Gerichte suchen"], [aria-label="Einstellungen"]')].map(b => getComputedStyle(b).backgroundColor),
       surface: token('color', 'var(--color-surface)'),
       cardShadow: token('boxShadow', 'var(--shadow-card)'),
     }
@@ -121,7 +170,7 @@ for (const scheme of ['light', 'dark'] as const) {
     }
     // It still opens the list.
     await switcher(page).click()
-    await expect(boardList(page).getByRole('link', { name: new RegExp(name) })).toHaveAttribute('aria-current', 'page')
+    await expect(boardList(page).getByRole('link', { name: new RegExp(`^${name}`) })).toHaveAttribute('aria-current', 'page')
   })
 }
 

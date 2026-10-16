@@ -22,9 +22,8 @@ test.beforeEach(async ({ page }) => {
   await signIn(page, JEAN, { name: 'Jean Bartik', image: PHOTO })
 })
 
-test('your Profile Picture on the Board opens a menu with who is signed in, and "Einstellungen" opens your settings over the Board', async ({ page }) => {
+test('your Profile Picture on the Board opens a menu with who is signed in, signing out and the legal pages, and no way into your settings', async ({ page }) => {
   await gotoHydrated(page, '/')
-  const board = page.url()
 
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
   await expect(avatar.locator(`img[src="${PHOTO}"]`)).toBeVisible()
@@ -34,17 +33,22 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
   await expect(menu).toBeVisible()
   await expect(avatar).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator(`img[src="${PHOTO}"]`).filter({ visible: true })).toHaveCount(2)
-  // Its last rows: the legal pages, on christried.me.
-  await expect(menu.getByRole('menuitem')).toHaveText(['Einstellungen', 'Abmelden', 'Impressum', 'Datenschutz'])
+  // Your settings are the cogwheel's (#282). Its last rows: the legal pages,
+  // on christried.me.
+  await expect(menu.getByRole('menuitem')).toHaveText(['Abmelden', 'Impressum', 'Datenschutz'])
   await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/imprint.html')
   await expect(menu.getByRole('menuitem', { name: 'Datenschutz' })).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
+})
 
-  await menu.getByRole('menuitem', { name: 'Einstellungen' }).click()
+test('the cogwheel in the Board\'s header opens your settings over the Board, and closing them puts focus back on it', async ({ page }) => {
+  await gotoHydrated(page, '/')
+  const board = page.url()
+  const cogwheel = page.locator('header').getByRole('button', { name: 'Einstellungen', exact: true })
+  await cogwheel.click()
 
   // A sheet over the Board, which stays at its address.
   const sheet = settingsSheet(page)
   await expect(sheet).toBeVisible()
-  await expect(menu).toHaveCount(0)
   await expect(page).toHaveURL(board)
   await expect(page.locator('h1')).toHaveText('🍲 Meine Küche')
   const account = sheet.getByRole('region', { name: 'Konto' })
@@ -54,11 +58,11 @@ test('your Profile Picture on the Board opens a menu with who is signed in, and 
   // German only for now: the language setting has its place but no choice yet.
   await expect(sheet.getByRole('region', { name: 'Sprache' }).getByText('Deutsch')).toBeVisible()
 
-  // Closed, focus is back on your picture.
+  // Closed, focus is back on the cogwheel.
   await sheet.getByRole('button', { name: 'Einstellungen schließen' }).click()
   await expect(sheet).toBeHidden()
   await expect(page).toHaveURL(board)
-  await expect(avatar).toBeFocused()
+  await expect(cogwheel).toBeFocused()
 })
 
 // Where the Board is scrolled: the page down, its Columns sideways.
@@ -81,14 +85,11 @@ test('closing your settings (Escape, or its close button) leaves the Board as it
   const sheet = settingsSheet(page)
 
   for (const close of [() => page.keyboard.press('Escape'), () => sheet.getByRole('button', { name: 'Einstellungen schließen' }).click()]) {
-    // Opened by keyboard: a click retried while the menu pops in (or the
-    // sheet before it moves out) scrolls its target into view with
-    // block 'end', 'center' or 'start', and that alone takes the window
-    // back to the top (#260). The close button sits in the sheet, so its
-    // click can't scroll the Board.
-    await page.getByRole('button', { name: 'Dein Konto' }).evaluate(el => el.focus({ preventScroll: true }))
-    await page.keyboard.press('Enter')
-    await expect(page.getByRole('menuitem', { name: 'Einstellungen' })).toBeFocused()
+    // Opened by keyboard: a click retried while the sheet moves out scrolls
+    // its target into view with block 'end', 'center' or 'start', and that
+    // alone takes the window back to the top (#260). The close button sits
+    // in the sheet, so its click can't scroll the Board.
+    await page.locator('header').getByRole('button', { name: 'Einstellungen', exact: true }).evaluate(el => el.focus({ preventScroll: true }))
     await page.keyboard.press('Enter')
     await expect(sheet).toBeVisible()
     // From 768px a centred dialog.
@@ -113,7 +114,6 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   await gotoHydrated(page, '/')
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
   const menu = page.getByRole('menu')
-  const settings = menu.getByRole('menuitem', { name: 'Einstellungen' })
   const signOut = menu.getByRole('menuitem', { name: 'Abmelden' })
   const impressum = menu.getByRole('menuitem', { name: 'Impressum' })
   const privacy = menu.getByRole('menuitem', { name: 'Datenschutz' })
@@ -121,19 +121,17 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   // Opening moves focus onto the first row; the arrows go round.
   await avatar.focus()
   await page.keyboard.press('Enter')
-  await expect(settings).toBeFocused()
-  await page.keyboard.press('ArrowDown')
   await expect(signOut).toBeFocused()
   await page.keyboard.press('ArrowDown')
   await expect(impressum).toBeFocused()
   await page.keyboard.press('ArrowDown')
   await expect(privacy).toBeFocused()
   await page.keyboard.press('ArrowDown')
-  await expect(settings).toBeFocused()
+  await expect(signOut).toBeFocused()
   await page.keyboard.press('ArrowUp')
   await expect(privacy).toBeFocused()
   await page.keyboard.press('Home')
-  await expect(settings).toBeFocused()
+  await expect(signOut).toBeFocused()
   await page.keyboard.press('End')
   await expect(privacy).toBeFocused()
 
@@ -146,8 +144,7 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   // ArrowUp opens it on the last row.
   await page.keyboard.press('ArrowUp')
   await expect(privacy).toBeFocused()
-  await page.keyboard.press('ArrowUp')
-  await page.keyboard.press('ArrowUp')
+  await page.keyboard.press('Home')
   await expect(signOut).toBeFocused()
   await page.keyboard.press('Enter')
 
@@ -155,7 +152,9 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   expect((await page.request.get('/api/me')).status()).toBe(401)
 })
 
-test('Tab closes the user menu, and Space chooses "Einstellungen" like Enter', async ({ page }) => {
+test('Tab closes the user menu, and Space chooses a legal page like Enter', async ({ page, context }) => {
+  // christried.me is outside the app: answered here, not by the network.
+  await context.route('https://christried.me/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Impressum</title>' }))
   await gotoHydrated(page, '/')
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
   const menu = page.getByRole('menu')
@@ -168,10 +167,13 @@ test('Tab closes the user menu, and Space chooses "Einstellungen" like Enter', a
 
   await avatar.focus()
   await page.keyboard.press('Enter')
-  await expect(menu.getByRole('menuitem', { name: 'Einstellungen' })).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toBeFocused()
+  const opened = context.waitForEvent('page')
   await page.keyboard.press(' ')
 
-  await expect(settingsSheet(page)).toBeVisible()
+  expect((await opened).url()).toBe('https://christried.me/imprint.html')
+  await expect(menu).toHaveCount(0)
 })
 
 test('the user menu closes on a press anywhere else', async ({ page }) => {
@@ -206,7 +208,7 @@ test('a legal page chosen from the user menu opens in a new tab; the menu closes
   await expect(avatar).toBeFocused()
 })
 
-test('on a phone your settings and the legal pages are the last rows of the Board switcher, and your settings a bottom sheet', async ({ page }) => {
+test('on a phone the legal pages are the last rows of the Board switcher, and the cogwheel opens your settings as a bottom sheet', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await gotoHydrated(page, '/')
   const board = page.url()
@@ -216,17 +218,21 @@ test('on a phone your settings and the legal pages are the last rows of the Boar
   const switcher = page.getByRole('button', { name: /Board wechseln/ })
   await switcher.click()
   const panel = page.getByRole('navigation', { name: 'Deine Boards' })
-  const lastRows = panel.locator('a, button').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })
-  await expect(lastRows).toHaveText(['Deine Einstellungen', 'Impressum', 'Datenschutz'])
-  await expect(lastRows.nth(1)).toHaveAttribute('href', 'https://christried.me/imprint.html')
-  await expect(lastRows.nth(2)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
+  // Your settings are the cogwheel's, so the switcher is only about Boards
+  // (#282): no settings row before the legal pages.
+  await expect(panel.locator('a, button').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })).toHaveText(['Impressum', 'Datenschutz'])
   const legalRow = panel.getByRole('listitem').last()
   await expect(legalRow.getByRole('link')).toHaveText(['Impressum', 'Datenschutz'])
+  await expect(legalRow.getByRole('link', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/imprint.html')
+  await expect(legalRow.getByRole('link', { name: 'Datenschutz' })).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
   // A press beside the two links chooses nothing: the switcher stays open.
   const row = (await legalRow.boundingBox())!
   await page.mouse.click(row.x + row.width - 8, row.y + row.height / 2)
   await expect(switcher).toHaveAttribute('aria-expanded', 'true')
-  await panel.getByRole('button', { name: 'Deine Einstellungen' }).click()
+  await switcher.click()
+  await expect(panel).toHaveCount(0)
+  const cogwheel = page.locator('header').getByRole('button', { name: 'Einstellungen', exact: true })
+  await cogwheel.click()
 
   // A bottom sheet: as wide as the screen, on its bottom edge.
   const sheet = settingsSheet(page)
@@ -235,7 +241,6 @@ test('on a phone your settings and the legal pages are the last rows of the Boar
     return { x, width, bottom: y + height }
   }
   await expect(sheet).toBeVisible()
-  await expect(panel).toHaveCount(0)
   await expect(page).toHaveURL(board)
   await expect.poll(atRest).toEqual({ x: 0, width: 390, bottom: 844 })
 
@@ -246,8 +251,7 @@ test('on a phone your settings and the legal pages are the last rows of the Boar
   await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
 
   // So does dragging it down by its handle.
-  await switcher.click()
-  await panel.getByRole('button', { name: 'Deine Einstellungen' }).click()
+  await cogwheel.click()
   await expect(sheet).toBeVisible()
   await expect.poll(atRest).toEqual({ x: 0, width: 390, bottom: 844 })
   const top = (await sheet.boundingBox())!.y

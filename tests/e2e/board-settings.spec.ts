@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { column } from './board'
+import { column, openBoardSettings } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { landingBoardId, resetBoard, seedDish } from './seed'
 
@@ -23,14 +23,13 @@ function row(page: Page, name: string) {
 }
 
 // Signs in as Ida with a fresh Board, `before` it is shown (e.g. to seed
-// Dishes), and opens its settings from the Board.
+// Dishes), and opens its settings from its row in the Board Switcher.
 async function openSettings(page: Page, before?: () => Promise<void>) {
   await signIn(page, ALLOWLISTED[8])
   await resetBoard(page)
   await before?.()
   await gotoHydrated(page, '/')
-  await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await openBoardSettings(page)
   // Its own page: nothing of the Board behind it.
   await expect(page.getByRole('button', { name: 'Gericht hinzufügen' })).toHaveCount(0)
 }

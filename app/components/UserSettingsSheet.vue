@@ -7,8 +7,8 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // your Username, the Google account you're signed in with and your Profile
 // Picture, Darstellung, a place kept for Sprache (German only for now), the
 // Board's keyboard shortcuts (where there's a keyboard and mouse) and signing
-// out. Opened from the user menu (on phones, from the Board switcher), and
-// by /settings (pages/settings.vue).
+// out. Opened by the cogwheel in the Board's header (#282), and by /settings
+// (pages/settings.vue).
 const open = defineModel<boolean>('open', { required: true })
 const t = useStrings()
 const { signOut } = useAuth()

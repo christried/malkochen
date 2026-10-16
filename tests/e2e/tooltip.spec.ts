@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { cardAtRest } from './board'
+import { cardAtRest, openBoardSettings } from './board'
 import { gotoHydrated } from './hydration'
 import { removeUsers, resetBoard, seedCookings, seedDish } from './seed'
 import { openUserSettings } from './settings-sheet'
@@ -110,8 +110,8 @@ test('on a computer an icon button’s Tooltip comes up about 400 ms after the m
   expect((await watched(page)).opened).toHaveLength(1)
 
   // The next icon button has its own.
-  await page.getByRole('link', { name: 'Board-Einstellungen' }).hover()
-  await expect(tooltip(page)).toHaveText('Board-Einstellungen')
+  await page.getByRole('button', { name: 'Einstellungen', exact: true }).hover()
+  await expect(tooltip(page)).toHaveText('Einstellungen')
 })
 
 test('keyboard focus shows a control’s Tooltip at once, focus moving on moves it, and Escape closes it', async ({ page }) => {
@@ -151,7 +151,7 @@ test('keyboard focus shows a control’s Tooltip at once, focus moving on moves 
 test('a Dish dragged over a control shows no Tooltip', async ({ page }) => {
   await openBoard(page)
   const card = (await page.getByRole('link', { name: 'Miso-Ramen', exact: true }).boundingBox())!
-  const settings = (await page.getByRole('link', { name: 'Board-Einstellungen' }).boundingBox())!
+  const settings = (await page.getByRole('button', { name: 'Einstellungen', exact: true }).boundingBox())!
 
   await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2)
   await page.mouse.down()
@@ -258,8 +258,7 @@ test('no native title is left, and every icon button says what it does in a Tool
   await expect(detail).toHaveCount(0)
 
   // Board settings: the arrows and the ✕ of a Column.
-  await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await openBoardSettings(page)
   expect(await nativeTitles()).toBe(0)
   expect(await unexplained(page)).toEqual([])
   for (const [name, text] of [['„Ideen“ nach unten', 'Nach unten'], ['„Diese Woche“ nach oben', 'Nach oben'], ['Spalte „Ideen“ löschen', 'Spalte löschen'], ['Zurück zum Board', 'Zurück zum Board'], ['Emoji ändern', 'Emoji ändern']] as const) {
@@ -285,7 +284,7 @@ test('on a touch screen, tapping or long-pressing an icon button never shows a T
   await gotoHydrated(page, '/')
   await cardAtRest(page.getByRole('link', { name: 'Miso-Ramen', exact: true }))
   await watchTooltip(page)
-  const settings = page.getByRole('link', { name: 'Board-Einstellungen' })
+  const settings = page.getByRole('button', { name: 'Einstellungen', exact: true })
   const search = page.getByRole('button', { name: 'Gerichte suchen' })
 
   // A long press: a finger down on the icon button for a second, then up.

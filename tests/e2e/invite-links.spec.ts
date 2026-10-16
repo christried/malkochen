@@ -51,7 +51,8 @@ test('a first-time user opens the Invite Link, signs in, and lands on the Board 
   await expect(invited).toHaveURL(new RegExp(`/b/${slug}$`))
   await expect(invited.getByRole('heading', { level: 1 })).toHaveText('🍜 Kochclub')
   await invited.getByRole('heading', { level: 1 }).getByRole('button').click()
-  await expect(invited.getByRole('navigation', { name: 'Deine Boards' }).getByRole('link')).toHaveText([/Kochclub/])
+  // The Boards' rows, not their Board Settings buttons.
+  await expect(invited.getByRole('navigation', { name: 'Deine Boards' }).getByRole('link', { name: /^(?!Board-Einstellungen: )/ })).toHaveText([/Kochclub/])
 })
 
 test('a signed-in user opening the link joins at once, and a reset link stops working', async ({ page, browser }) => {
