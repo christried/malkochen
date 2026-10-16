@@ -751,6 +751,16 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                   :color="columnAccent(index)"
                 />
               </span>
+              <!-- Its Dish count, quiet like the Board's in the switcher;
+                   drawn by CSS, so the heading stays the name. -->
+              <RollingCount
+                class="ml-2 opacity-70"
+                aria-hidden="true"
+                data-lane-count
+                :value="column.dishes.length"
+                :text="t.boards.count(column.dishes.length)"
+                drawn
+              />
             </ColumnTitle>
             <!-- Never shorter than with only the empty state in it. -->
             <div class="min-h-[var(--height-empty-column)]">
@@ -1028,6 +1038,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :headline="t.milestone.headline"
       :body="t.milestone.body(milestone?.dish.title ?? '', MILESTONE_COOKINGS)"
       :close-label="t.milestone.close"
+      close-as="pill"
       :label="`${MILESTONE_COOKINGS}×`"
       close-after="milestone-stay"
     >

@@ -109,6 +109,9 @@ test('the 10th Cooking celebrates once; its toast stays on top, and undo there e
   await expect(milestone(page)).toContainText('Chili sin Carne ist jetzt ein Klassiker: 10× gekocht.')
   await expectPlayedOnce(milestone(page), 'milestone-10x')
   await expect(milestone(page).getByTestId('celebration-label')).toHaveText('10×')
+  // Played through, the pebble with "10×" keeps a gentle pulse (#280).
+  await expect.poll(() => milestone(page).locator('[data-idle-pulse]').evaluate(el => el.getAnimations()
+    .some(a => a.playState === 'running' && a.effect?.getComputedTiming().iterations === Infinity))).toBe(true)
   // The Gekocht toast shows over it, with its undo.
   await milestone(page).getByRole('status').getByRole('button', { name: 'Rückgängig' }).click()
 
@@ -121,7 +124,9 @@ test('the 10th Cooking celebrates once; its toast stays on top, and undo there e
   await expect(milestone(page)).toHaveCount(0)
 })
 
-test('the celebration goes by itself, and the Gekocht toast stays after it', async ({ page }) => {
+// It stays 6.8s (#280): still up well past the old 3.4s, gone by itself
+// after, and the Gekocht toast's countdown, paused meanwhile, runs on.
+test('the celebration goes by itself after 6.8s, and the Gekocht toast stays after it', async ({ page }) => {
   await signIn(page, HERTHA)
   await seedDish(page, { title: 'Bohnensalat', sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await seedCookings(page, 'Bohnensalat', 9)
@@ -130,12 +135,39 @@ test('the celebration goes by itself, and the Gekocht toast stays after it', asy
   await page.getByRole('button', { name: 'Gekocht ✓: „Bohnensalat“' }).click()
 
   await expect(milestone(page)).toBeVisible()
-  await expect(milestone(page)).toBeHidden({ timeout: 6000 })
+  await page.waitForTimeout(5000)
+  await expect(milestone(page)).toBeVisible()
+  await expect(milestone(page)).toBeHidden({ timeout: 4000 })
   await expect(page.getByRole('status').getByRole('button', { name: 'Rückgängig' })).toBeVisible()
 })
 
+// "Überspringen", Escape and a tap anywhere each close it, and every way
+// leaves "Rückgängig" offered, its countdown running on (#229, #280).
+test('"Überspringen", Escape and a tap anywhere close the celebration; "Rückgängig" stays after each', async ({ page }) => {
+  await signIn(page, HERTHA)
+  const titles = ['Hummus', 'Tabouleh', 'Baba Ganoush']
+  for (const title of titles) {
+    await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+    await seedCookings(page, title, 9)
+  }
+  await gotoHydrated(page, '/')
+  const closings: ((celebration: Locator) => Promise<void>)[] = [
+    celebration => celebration.getByRole('button', { name: 'Überspringen' }).click(),
+    () => page.keyboard.press('Escape'),
+    () => page.mouse.click(24, 400),
+  ]
+
+  for (const [i, title] of titles.entries()) {
+    await page.getByRole('button', { name: `Gekocht ✓: „${title}“` }).click()
+    await expect(milestone(page)).toBeVisible()
+    await closings[i]!(milestone(page))
+    await expect(milestone(page)).toBeHidden()
+    await expect(page.getByRole('status').getByRole('button', { name: 'Rückgängig' })).toBeVisible()
+  }
+})
+
 // The undo countdown waits while the celebration shows, and runs on once it
-// closes (#229): recorded after 2.5s, the celebration closes about 6s after
+// closes (#229): recorded after 2.5s, the celebration closes about 10s after
 // the click, past the 5s undo window, yet "Rückgängig" is still offered, and
 // then goes with the rest of its window.
 test('with a slow server, "Rückgängig" is still there after the celebration', async ({ page }) => {
@@ -151,7 +183,7 @@ test('with a slow server, "Rückgängig" is still there after the celebration', 
   await page.getByRole('button', { name: 'Gekocht ✓: „Shakshuka“' }).click()
 
   await expect(milestone(page)).toBeVisible({ timeout: 6000 })
-  await expect(milestone(page)).toBeHidden({ timeout: 6000 })
+  await expect(milestone(page)).toBeHidden({ timeout: 9000 })
   const undo = page.getByRole('status').getByRole('button', { name: 'Rückgängig' })
   await expect(undo).toBeVisible()
   await expect(undo).toBeHidden({ timeout: 5000 })
@@ -183,7 +215,7 @@ test('the 10th Cooking from the Dish detail celebrates over it; closing returns 
   await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
 
   await expect(milestone(page)).toBeVisible()
-  await milestone(page).getByRole('button', { name: 'Schließen' }).click()
+  await milestone(page).getByRole('button', { name: 'Überspringen' }).click()
   await expect(milestone(page)).toBeHidden()
   await expect(detail).toBeVisible()
   await expect(badge(detail)).toHaveAccessibleName('Klassiker: 10× gekocht')
@@ -226,7 +258,7 @@ test('on a phone in dark, both celebrations play their drawings with nothing beh
 
   await page.getByRole('button', { name: 'Gekocht ✓: „Tofu Scramble“' }).click()
   await expectPlayedOnce(milestone(page), 'milestone-10x', 'dark')
-  await milestone(page).getByRole('button', { name: 'Schließen' }).click()
+  await milestone(page).getByRole('button', { name: 'Überspringen' }).click()
   await expect(milestone(page)).toBeHidden()
 
   await page.getByRole('heading', { level: 1 }).getByRole('button').click()

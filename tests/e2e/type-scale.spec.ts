@@ -164,8 +164,13 @@ test('Add Dish\'s "Bild", a new Board\'s "Emoji" and the Dish menu\'s "Verschieb
   await expectSectionHeading(newBoard.getByText('Emoji', { exact: true }))
   await newBoard.getByRole('button', { name: 'Schließen' }).click()
 
+  // Another Board, so the picker groups its Columns by Board, each group
+  // under the same heading style (#280).
+  expect((await page.request.post('/api/boards', { data: { name: 'Zweitküche', emoji: '🥕' } })).status()).toBe(201)
   await page.getByRole('button', { name: 'Mehr zu „Shakshuka“' }).click()
   const menu = page.getByRole('dialog', { name: 'Shakshuka' })
   await menu.getByRole('button', { name: 'Verschieben nach…' }).click()
   await expectSectionHeading(menu.getByText('Verschieben nach…', { exact: true }))
+  await expectSectionHeading(menu.getByText('Dieses Board', { exact: true }))
+  await expectSectionHeading(menu.getByText('🥕 Zweitküche', { exact: true }))
 })

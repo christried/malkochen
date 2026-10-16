@@ -76,14 +76,17 @@ const t = useStrings()
     }
   }
 }
-/* "Löschen" in the danger colour, made light enough for the inverse bar. */
+/* "Löschen": a filled danger-red pill with white text, darker on hover
+   (#280). The light theme's danger red in both themes: dark's coral is too
+   light to carry white text (5.3:1 here, 2.3:1 on the coral). */
 .delete {
-  color: color-mix(in oklab, var(--color-danger) 55%, var(--color-on-inverse));
-  background: color-mix(in oklab, var(--color-danger) 22%, transparent);
+  --fill: #C23B22;
+  color: #FFFFFF;
+  background: var(--fill);
 }
 @media (hover: hover) and (pointer: fine) {
   .delete:hover {
-    background: color-mix(in oklab, var(--color-danger) 34%, transparent);
+    background: color-mix(in oklab, var(--fill) 80%, black);
   }
 }
 </style>

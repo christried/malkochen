@@ -9,16 +9,18 @@ import { loopStyle } from '~/utils/svg-loop'
 // pops in from its first frame, plays once at the screen's refresh rate
 // and holds its last frame, which is also its still.
 // A native modal <dialog>, so it shows over whatever is open, the Dish
-// detail included; a tap anywhere, Escape or "Schließen" closes it, as does
-// the time `closeAfter` (a duration token) if given. Reduced motion: the
-// clip's still and the text, at once, and it stays until closed (the
-// tokens are 0 then).
+// detail included; a tap anywhere, Escape or its close button closes it, as
+// does the time `closeAfter` (a duration token) if given. The close button
+// is a ✕ in the corner, or with `closeAs: 'pill'` a pill under the text
+// saying `closeLabel`. Reduced motion: the clip's still and the text, at
+// once, and it stays until closed (the tokens are 0 then).
 //
 // `clip` names the clip ('milestone-10x' draws /clips/milestone-10x-*.svg);
 // the wash and when the text comes follow from it (the styles below).
 // `label` goes on the clip's pebble ("10×", the Board's emoji), taking the
 // pebble's keyframes, so it pops in step with the drawing and rests with it
-// (SvgLoop's `over`). Slots: the default one sits between the clip and the
+// (SvgLoop's `over`). The milestone's pebble then keeps a gentle pulse
+// (#280); reduced motion: no pulse (main.css's global rule). Slots: the default one sits between the clip and the
 // text, `actions` under the text, and `toast` takes the page's Toast: the
 // page behind is inert, so the Toast shows in here, above the wash.
 const open = defineModel<boolean>('open', { required: true })
@@ -27,6 +29,7 @@ const props = defineProps<{
   headline: string
   body: string
   closeLabel: string
+  closeAs?: 'icon' | 'pill'
   closeAfter?: DurationToken
   label?: string
 }>()
@@ -69,6 +72,7 @@ onBeforeUnmount(() => clearTimeout(closing))
     <template v-if="open">
       <div class="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
         <button
+          v-if="closeAs !== 'pill'"
           type="button"
           class="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-glass text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           :aria-label="closeLabel"
@@ -76,7 +80,10 @@ onBeforeUnmount(() => clearTimeout(closing))
         >
           <AppIcon name="close" />
         </button>
-        <div class="clip relative aspect-square w-[min(78vw,48dvh,420px)]">
+        <div
+          class="clip relative aspect-square w-[min(78vw,48dvh,420px)]"
+          :data-idle-pulse="clip === 'milestone-10x' || undefined"
+        >
           <SvgLoop
             :src="`/clips/${clip}`"
             :loop="false"
@@ -115,6 +122,14 @@ onBeforeUnmount(() => clearTimeout(closing))
         </p>
         <div class="rise-actions mt-8 empty:hidden">
           <slot name="actions" />
+          <!-- A tap anywhere closes it, this one included. -->
+          <button
+            v-if="closeAs === 'pill'"
+            type="button"
+            class="rounded-pill bg-glass px-6 py-3.5 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            {{ closeLabel }}
+          </button>
         </div>
       </div>
       <slot name="toast" />
@@ -150,6 +165,13 @@ onBeforeUnmount(() => clearTimeout(closing))
 }
 .clip {
   container-type: inline-size;
+}
+/* Once the 1.8s clip has played, its pebble ("10×" on it) breathes. */
+.clip[data-idle-pulse] {
+  animation: idle-pulse 2.4s var(--ease-idle) 1.8s infinite;
+}
+@keyframes idle-pulse {
+  50% { scale: 1.04; }
 }
 .celebration::backdrop {
   background: transparent;

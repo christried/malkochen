@@ -131,7 +131,7 @@ function openSettings() {
         v-if="open"
         :id="panelId"
         :aria-label="t.boards.label"
-        class="panel absolute left-0 top-full z-dialog mt-2 w-[min(360px,calc(100vw-2rem))] rounded-card bg-surface p-2 shadow-dialog"
+        class="panel absolute left-0 top-full z-dialog mt-2 max-h-[calc(100dvh-6rem)] w-[min(360px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-card bg-surface p-2 shadow-dialog"
       >
         <ul class="flex flex-col gap-1">
           <li

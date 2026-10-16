@@ -3,6 +3,7 @@ import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { tab, titles } from './board'
+import { contrast, rgb } from './colour'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
 import { landingBoardId, removeUsers, seedDish } from './seed'
@@ -70,6 +71,20 @@ test('desktop: Ctrl-click selects Dishes across Columns, the bar counts them, Es
   // No bulk "Gekocht": cooking stays one Dish at a time.
   await expect(bar(page).getByRole('button')).toHaveText(['', 'Verschieben', 'Löschen'])
   await expect(page.getByRole('button', { name: /^Gekocht/ })).toHaveCount(0)
+  // "Löschen" is a filled red pill with white text, readable (AA) in both
+  // themes, so it doesn't look disabled (#280).
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme })
+    const drawn = await bar(page).getByRole('button', { name: 'Löschen' }).evaluate((el) => {
+      const style = getComputedStyle(el)
+      return { text: style.color, fill: style.backgroundColor }
+    })
+    const [text, fill] = await rgb(page, [drawn.text, drawn.fill])
+    expect(text, scheme).toEqual([255, 255, 255])
+    expect(fill![0], scheme).toBeGreaterThan(fill![1]! + 80)
+    expect(contrast(text!, fill!), scheme).toBeGreaterThanOrEqual(4.5)
+  }
+  await page.emulateMedia({ colorScheme: 'light' })
 
   await page.keyboard.press('Escape')
 

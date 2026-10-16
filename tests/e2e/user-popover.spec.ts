@@ -52,6 +52,9 @@ async function expectJohnson(page: Page) {
   await expect(shown.getByText(SINCE, { exact: true })).toBeVisible()
   await expect(shown.getByText('2 Gerichte hinzugefügt', { exact: true })).toBeVisible()
   await expect(shown.getByText('Gemeinsame Boards', { exact: true })).toBeVisible()
+  // In Your Settings' section heading style, no capitals (#280).
+  await expect(shown.getByText('Gemeinsame Boards', { exact: true })).toHaveCSS('text-transform', 'none')
+  await expect(shown.getByText('Gemeinsame Boards', { exact: true })).toHaveCSS('font-size', '16px')
   await expect(shown.getByRole('listitem')).toHaveText(['🍲 Meine Küche', '🍜 Kochclub'])
   // Her own Board never shows, nor her Google name, nor anything cooked.
   await expect(shown).not.toContainText('Geheimrezepte')
