@@ -267,9 +267,16 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Settles a Dish to where the server says it is: its fields as the server
   // has them, at its index in its Column, both found by id now. A Column
   // the Board doesn't show yet (another Member just added it) leaves the
-  // Dish where it is until the next poll brings that Column.
-  function settle(dish: DishView, { placement, cooking: _, ...fields }: MovedDish) {
+  // Dish where it is until the next poll brings that Column. Its Cooking
+  // History keeps the Cookings it shows as they are, filled in (the pending
+  // one with the Cooking the server recorded): the detail keys its entries
+  // by them, and new ones would redraw them all.
+  function settle(dish: DishView, { placement, cooking, cookings, ...fields }: MovedDish) {
     Object.assign(dish, fields)
+    dish.cookings = cookings.map((settled) => {
+      const shown = dish.cookings.find(c => c.id === settled.id || (!c.id && settled.id === cooking?.id))
+      return shown ? Object.assign(shown, settled) : settled
+    })
     const into = column(placement.columnId)
     if (!into) return
     takeOut(dish.id)

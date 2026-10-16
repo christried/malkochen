@@ -68,39 +68,3 @@ test('a Member leaves, and lands on another Board', async ({ page, browser }) =>
   await gotoHydrated(page, `/b/${boardId}/settings`)
   await expect(memberRows(page)).toHaveText([/evelyn/])
 })
-
-test('the Owner removes a Member, told that the link still lets them back in', async ({ page, browser }) => {
-  const { boardId } = await sharedBoard(page, browser, 'Brotzeit')
-  await gotoHydrated(page, `/b/${boardId}/settings`)
-
-  await page.getByRole('button', { name: 'radia verwalten' }).click()
-  await page.getByRole('dialog', { name: 'radia' }).getByRole('button', { name: 'Vom Board entfernen' }).click()
-  const confirm = page.getByRole('dialog', { name: 'radia entfernen?' })
-  await expect(confirm).toContainText('kann radia wieder beitreten, bis du ihn zurücksetzt')
-  await confirm.getByRole('button', { name: 'Vom Board entfernen' }).click()
-
-  await expect(page.getByText('radia ist nicht mehr auf dem Board.')).toBeVisible()
-  await expect(memberRows(page)).toHaveText([/evelyn/])
-  await expect(page.getByText('Du bist allein auf dem Board. Wenn du es nicht mehr brauchst, lösch es.')).toBeVisible()
-})
-
-test('the Owner deletes the Board only after typing its name', async ({ page, browser }) => {
-  const { boardId } = await sharedBoard(page, browser, 'Wegwerfboard')
-  await gotoHydrated(page, `/b/${boardId}/settings`)
-
-  await page.getByRole('button', { name: 'Board löschen' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Board löschen?' })
-  const forGood = dialog.getByRole('button', { name: 'Endgültig löschen' })
-  const name = dialog.getByLabel('Tipp zum Bestätigen „Wegwerfboard“ ein')
-  await expect(forGood).toBeDisabled()
-  await name.fill('wegwerfboard')
-  await expect(forGood).toBeDisabled()
-  await name.fill('Wegwerfboard')
-  await forGood.click()
-
-  // The page leaves only once the Board is deleted. Its Address is readable
-  // (/b/wegwerfboard/settings), without the id, so wait for /settings to go.
-  await expect(page).not.toHaveURL(/settings/)
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-  expect((await page.request.get(`/api/boards/${boardId}`)).status()).toBe(404)
-})

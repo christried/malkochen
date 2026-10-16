@@ -289,15 +289,28 @@ test('on a computer the switcher pill lifts under the mouse; with reduced motion
   }
 })
 
-test('a Dish moved to another Board from its detail leaves this one and keeps its Cooking History', async ({ page }) => {
+// The two ways to another Board: the card's menu and the detail's
+// "Verschieben nach…".
+test('a Dish moved to another Board, from the card’s menu or from its detail, leaves this one and keeps its Cooking History', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
   await signIn(page, ALLOWLISTED[9])
   const from = await createBoard(page, 'Zuhause', '🏡')
   const to = await createBoard(page, 'WG-Küche', '🍲')
+  await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Focaccia', placeholder: 'bread' } })
   const res = await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Linsen-Dal', placeholder: 'bowl' } })
   const { id: dishId } = await res.json()
   await page.request.post(`/api/dishes/${dishId}/cook`)
-  await gotoHydrated(page, `/b/${from}/d/${dishId}`)
+  await gotoHydrated(page, `/b/${from}`)
 
+  await page.getByRole('button', { name: 'Mehr zu „Focaccia“' }).click()
+  await page.getByRole('button', { name: 'Verschieben nach…' }).click()
+  const menu = page.getByRole('dialog', { name: 'Focaccia' })
+  // This Board's other Columns first, then the other Boards.
+  await expect(menu.getByText('Dieses Board')).toBeVisible()
+  await menu.getByRole('region', { name: 'WG-Küche' }).getByRole('button', { name: 'Ideen' }).click()
+  await expect(page.getByRole('link', { name: 'Focaccia' })).toHaveCount(0)
+
+  await page.getByRole('link', { name: 'Linsen-Dal' }).click()
   const detail = page.getByRole('dialog', { name: 'Linsen-Dal' })
   await detail.getByRole('button', { name: 'Verschieben nach…' }).click()
   const picker = page.getByRole('dialog', { name: 'Verschieben nach…' })
@@ -308,28 +321,9 @@ test('a Dish moved to another Board from its detail leaves this one and keeps it
   await expect(page.getByRole('link', { name: 'Linsen-Dal' })).toHaveCount(0)
 
   await gotoHydrated(page, `/b/${to}`)
+  await expect(titles(page, 'Ideen')).toHaveText(['Focaccia'])
   await expect(titles(page, 'Diese Woche')).toHaveText(['Linsen-Dal'])
   await expect(column(page, 'Diese Woche')).toContainText('1× gekocht')
-})
-
-test('the card’s menu moves a Dish to a Column on another Board', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 })
-  await signIn(page, ALLOWLISTED[9])
-  const from = await createBoard(page, 'Büro', '🥪')
-  const to = await createBoard(page, 'Party', '🎉')
-  await page.request.post(`/api/boards/${from}/dishes`, { data: { title: 'Focaccia', placeholder: 'bread' } })
-  await gotoHydrated(page, `/b/${from}`)
-
-  await page.getByRole('button', { name: 'Mehr zu „Focaccia“' }).click()
-  await page.getByRole('button', { name: 'Verschieben nach…' }).click()
-  const menu = page.getByRole('dialog', { name: 'Focaccia' })
-  // This Board's other Columns first, then the other Boards.
-  await expect(menu.getByText('Dieses Board')).toBeVisible()
-  await menu.getByRole('region', { name: 'Party' }).getByRole('button', { name: 'Ideen' }).click()
-
-  await expect(titles(page, 'Ideen')).toHaveCount(0)
-  await gotoHydrated(page, `/b/${to}`)
-  await expect(titles(page, 'Ideen')).toHaveText(['Focaccia'])
 })
 
 // #129: "Verschieben nach…" into another Board's Gekocht Column records a

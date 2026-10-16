@@ -65,39 +65,28 @@ test.beforeEach(async ({ page }) => {
   await signIn(page, CHIEN)
 })
 
-for (const [device, viewport] of [['phone', { width: 390, height: 844 }], ['desktop', { width: 1280, height: 900 }]] as const) {
-  test(`on the ${device}, push notifications are off until turned on, and stay on for this device`, async ({ page }) => {
-    await page.setViewportSize(viewport)
-    const { endpoint } = await fakePushBrowser(page, 'granted')
+// On a computer only: the phone shows the same settings in a bottom sheet,
+// and tests/client/push-switch.test.ts has the switch's rules, the browser
+// blocking notifications too.
+test('push notifications are off until turned on, and stay on for this device', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const { endpoint } = await fakePushBrowser(page, 'granted')
 
-    let sheet = await openUserSettings(page)
-    const push = sheet.getByRole('region', { name: 'Benachrichtigungen' })
-    const toggle = push.getByRole('switch', { name: 'Push-Benachrichtigungen' })
-    await expect(toggle).toHaveAttribute('aria-checked', 'false')
-    await expect(toggle).toBeEnabled()
-
-    await toggle.click()
-    await expect(toggle).toHaveAttribute('aria-checked', 'true')
-    expect(await isOnAtServer(page, endpoint)).toBe(true)
-
-    // Back later: still on.
-    sheet = await openUserSettings(page)
-    await expect(sheet.getByRole('switch', { name: 'Push-Benachrichtigungen' })).toHaveAttribute('aria-checked', 'true')
-
-    await sheet.getByRole('switch', { name: 'Push-Benachrichtigungen' }).click()
-    await expect(sheet.getByRole('switch', { name: 'Push-Benachrichtigungen' })).toHaveAttribute('aria-checked', 'false')
-    expect(await isOnAtServer(page, endpoint)).toBe(false)
-  })
-}
-
-test('when the browser blocks notifications, the switch stays off and the sheet says why', async ({ page }) => {
-  await fakePushBrowser(page, 'denied')
-  const sheet = await openUserSettings(page)
-  const toggle = sheet.getByRole('switch', { name: 'Push-Benachrichtigungen' })
+  let sheet = await openUserSettings(page)
+  const push = sheet.getByRole('region', { name: 'Benachrichtigungen' })
+  const toggle = push.getByRole('switch', { name: 'Push-Benachrichtigungen' })
+  await expect(toggle).toHaveAttribute('aria-checked', 'false')
+  await expect(toggle).toBeEnabled()
 
   await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-checked', 'true')
+  expect(await isOnAtServer(page, endpoint)).toBe(true)
 
-  await expect(toggle).toHaveAttribute('aria-checked', 'false')
-  await expect(toggle).toBeDisabled()
-  await expect(sheet.getByText('Dein Browser blockiert Benachrichtigungen von malkochen.', { exact: false })).toBeVisible()
+  // Back later: still on.
+  sheet = await openUserSettings(page)
+  await expect(sheet.getByRole('switch', { name: 'Push-Benachrichtigungen' })).toHaveAttribute('aria-checked', 'true')
+
+  await sheet.getByRole('switch', { name: 'Push-Benachrichtigungen' }).click()
+  await expect(sheet.getByRole('switch', { name: 'Push-Benachrichtigungen' })).toHaveAttribute('aria-checked', 'false')
+  expect(await isOnAtServer(page, endpoint)).toBe(false)
 })

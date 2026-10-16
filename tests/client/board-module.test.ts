@@ -278,6 +278,22 @@ test('"Gekocht ✓" on a Dish already in the Gekocht Column records another Cook
   expect(result.dish.cookings).toHaveLength(2)
 })
 
+// The detail's Cooking History keys its entries by these objects: new ones
+// for the same Cookings would redraw every entry, and the detail would jump
+// as they leave and come in again (#287).
+test('"Gekocht ✓" settled keeps the Cookings the Cooking History showed, the new one filled in, as the same objects', async () => {
+  const { board, module } = setup(cookedTwice)
+  const shownCookings = () => board.value!.columns.flatMap(c => c.dishes).find(d => d.id === 'd')!.cookings
+
+  const result = module.cookDish('d')!
+  const before = [...shownCookings()]
+  expect(before).toHaveLength(3)
+
+  const recorded = (await result.settled)!.cooking!
+  expect(shownCookings().map(c => c.id)).toEqual([recorded.id, 'sept-20', 'sept-1'])
+  shownCookings().forEach((cooking, i) => expect(cooking).toBe(before[i]))
+})
+
 test('"Gekocht ✓" then a move of the same Dish are sent and applied in that order', async () => {
   const { fake, module, shown } = setup()
   const cooking = fake.holdNext('cookDish')

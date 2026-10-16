@@ -34,6 +34,16 @@ async function addDish(page: Page, boardId: string, title: string): Promise<stri
   return (await res.json()).id
 }
 
+// The open Board polls every second instead of every 5 (useBoardSync's
+// test-only setting), for the tests that wait for polls. Not for those
+// where a poll arriving early would pass for the refresh they check.
+const FAST_POLL_MS = 1_000
+async function fastPolls(page: Page) {
+  await page.addInitScript((ms) => {
+    (window as { e2ePollMs?: number }).e2ePollMs = ms
+  }, FAST_POLL_MS)
+}
+
 function card(page: Page, columnName: string, title: string) {
   return column(page, columnName).getByRole('article', { name: title })
 }
@@ -49,9 +59,10 @@ async function setVisibility(page: Page, state: 'visible' | 'hidden') {
 }
 
 test('another Member\'s new Dish, edit and move show up without a reload, their Dish marked "Neu"', async ({ page, browser }) => {
-  // Three changes, each waiting for a poll (up to 5s apart), after two
-  // sign-ins: on a busy machine more than the default 30s.
+  // Three changes, each waiting for a poll, after two sign-ins: on a busy
+  // machine more than the default 30s.
   test.slow()
+  await fastPolls(page)
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Kochclub')
   await addDish(page, boardId, 'Alans Auflauf')
   await gotoHydrated(page, `/b/${boardId}`)
@@ -72,6 +83,7 @@ test('another Member\'s new Dish, edit and move show up without a reload, their 
 })
 
 test('another Member’s change to a Dish’s Creator shows up without a reload, and so does clearing it', async ({ page, browser }) => {
+  await fastPolls(page)
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Kochclub')
   const dishId = await addDish(page, boardId, 'Alans Auflauf')
   await gotoHydrated(page, `/b/${boardId}`)
@@ -87,6 +99,7 @@ test('another Member’s change to a Dish’s Creator shows up without a reload,
 
 test('another Member’s change to a Column Subtitle shows up without a reload', async ({ page, browser }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
+  await fastPolls(page)
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Kochclub')
   await gotoHydrated(page, `/b/${boardId}`)
   const subtitle = column(page, 'Ideen').locator('[data-column-subtitle]')
@@ -101,13 +114,16 @@ test('another Member’s change to a Column Subtitle shows up without a reload',
 })
 
 test('polling stops while the Board is in the background, and coming back refreshes it at once', async ({ page, browser }) => {
+  await fastPolls(page)
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Suppenküche')
   await gotoHydrated(page, `/b/${boardId}`)
   await setVisibility(page, 'hidden')
+  // A poll already out comes back first.
+  await page.waitForTimeout(FAST_POLL_MS)
 
   await addDish(dorothy, boardId, 'Linsensuppe')
-  // Longer than the polling interval: nothing arrives while hidden.
-  await page.waitForTimeout(7_000)
+  // A few polling intervals: nothing arrives while hidden.
+  await page.waitForTimeout(3 * FAST_POLL_MS)
   await expect(titles(page, 'Ideen')).toHaveCount(0)
 
   await setVisibility(page, 'visible')
@@ -217,6 +233,7 @@ test('coming back after half an hour while still offline reopens the Board once 
 })
 
 test('a Dish open in the detail that another Member deletes closes it and says so', async ({ page, browser }) => {
+  await fastPolls(page)
   const { boardId, dorothy } = await sharedBoard(page, browser, 'Resteessen')
   const dishId = await addDish(dorothy, boardId, 'Bratreis')
   await gotoHydrated(page, `/b/${boardId}/d/${dishId}`)

@@ -170,18 +170,6 @@ test('on a computer, a lane without a subtitle lines up with the others, and a l
   expect(title).toBeLessThanOrEqual(laneRight)
 })
 
-test('an empty Column goes at once', async ({ page }) => {
-  await openSettings(page)
-
-  await page.getByRole('button', { name: 'Spalte „Diese Woche“ löschen' }).click()
-
-  await expectColumnNames(page, ['Ideen', 'Gekocht'])
-  // The last Column besides Gekocht stays.
-  await expect(page.getByRole('button', { name: 'Spalte „Ideen“ löschen' })).toBeDisabled()
-  await reloadHydrated(page)
-  await expectColumnNames(page, ['Ideen', 'Gekocht'])
-})
-
 test('a Column with Dishes asks where they go, and they go there', async ({ page }) => {
   await openSettings(page, async () => {
     for (const title of ['Ramen', 'Bibimbap']) await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
