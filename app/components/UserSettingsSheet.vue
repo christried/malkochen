@@ -3,7 +3,8 @@ import type { Me } from '~~/server/utils/people'
 import { PHOTO_ACCEPT } from '~~/shared/photo'
 import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composables/usePhotoUpload'
 
-// Your own settings (PRD stories 73–75), in a sheet over the Board (#210):
+// Your own settings (PRD stories 73–75), in a sheet over the Board (#210),
+// from 768px on its right edge (#283):
 // your Username, the Google account you're signed in with and your Profile
 // Picture, Darstellung, a place kept for Sprache (German only for now), the
 // Board's keyboard shortcuts (where there's a keyboard and mouse) and signing
@@ -126,6 +127,7 @@ function removePicture() {
 <template>
   <AppSheet
     v-model:open="open"
+    variant="side"
     :title="t.userSettings.title"
     :close-label="t.userSettings.close"
   >

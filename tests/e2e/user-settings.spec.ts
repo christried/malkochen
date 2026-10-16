@@ -70,7 +70,7 @@ function scrolledTo(page: Page) {
   return page.evaluate(() => ({ top: window.scrollY, left: document.querySelector('[data-testid="columns"]')!.scrollLeft }))
 }
 
-test('closing your settings (Escape, or its close button) leaves the Board as it was: nothing reloads, and it stays where it was scrolled', async ({ page }) => {
+test('closing your settings (Escape, a click on the dimmed Board, or its close button) leaves the Board as it was: nothing reloads, it stays where it was scrolled, and focus is back on the cogwheel', async ({ page }) => {
   // Too small for the Board, so it scrolls both ways.
   await page.setViewportSize({ width: 800, height: 400 })
   await gotoHydrated(page, '/')
@@ -83,31 +83,56 @@ test('closing your settings (Escape, or its close button) leaves the Board as it
   const before = await scrolledTo(page)
   expect(before.top).toBe(16)
   const sheet = settingsSheet(page)
+  const cogwheel = page.locator('header').getByRole('button', { name: 'Einstellungen', exact: true })
+  const closes = [
+    () => page.keyboard.press('Escape'),
+    // The dimmed Board, left of the sheet.
+    () => page.mouse.click(100, 200),
+    () => sheet.getByRole('button', { name: 'Einstellungen schließen' }).click(),
+  ]
 
-  for (const close of [() => page.keyboard.press('Escape'), () => sheet.getByRole('button', { name: 'Einstellungen schließen' }).click()]) {
+  for (const close of closes) {
     // Opened by keyboard: a click retried while the sheet moves out scrolls
     // its target into view with block 'end', 'center' or 'start', and that
     // alone takes the window back to the top (#260). The close button sits
     // in the sheet, so its click can't scroll the Board.
-    await page.locator('header').getByRole('button', { name: 'Einstellungen', exact: true }).evaluate(el => el.focus({ preventScroll: true }))
+    await cogwheel.evaluate(el => el.focus({ preventScroll: true }))
     await page.keyboard.press('Enter')
     await expect(sheet).toBeVisible()
-    // From 768px a centred dialog.
-    await expect.poll(async () => {
-      const { x, width } = (await sheet.boundingBox())!
-      return Math.round(x + width / 2)
-    }).toBe(400)
-    const box = (await sheet.boundingBox())!
-    expect(box.y).toBeGreaterThan(0)
-    expect(box.y + box.height).toBeLessThan(400)
+    // From 768px a side sheet: on the right edge, 420px wide, full height (#283).
+    await expect.poll(async () => sheet.boundingBox()).toEqual({ x: 380, y: 0, width: 420, height: 400 })
 
     await close()
 
     await expect(sheet).toBeHidden()
     await expect(page).toHaveURL(board)
+    await expect(cogwheel).toBeFocused()
     expect(await page.evaluate(() => (window as unknown as { stayed?: boolean }).stayed)).toBe(true)
     expect(await scrolledTo(page)).toEqual(before)
   }
+})
+
+test('from 768px only your settings sit on the right edge, scrolling inside; other sheets stay centred dialogs', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 500 })
+  const sheet = await openUserSettings(page)
+  await expect.poll(async () => sheet.boundingBox()).toEqual({ x: 860, y: 0, width: 420, height: 500 })
+  // Taller than the window, they scroll inside the sheet, with the app's
+  // thin scrollbar (board-scroll.spec.ts).
+  expect(await sheet.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(sheet).toBeHidden()
+
+  // Add Dish: still in the middle of the window, clear of its edges.
+  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
+  const addDish = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
+  await expect(addDish).toBeVisible()
+  await expect.poll(async () => {
+    const { x, width } = (await addDish.boundingBox())!
+    return Math.round(x + width / 2)
+  }).toBe(640)
+  const box = (await addDish.boundingBox())!
+  expect(box.y).toBeGreaterThan(0)
+  expect(box.y + box.height).toBeLessThan(500)
 })
 
 test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs you out', async ({ page }) => {
@@ -410,6 +435,32 @@ test('without View Transitions, the theme cross-fades', async ({ page }) => {
 
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' })
+
+  test('your settings appear and disappear on the right edge without sliding', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 500 })
+    await gotoHydrated(page, '/')
+    // In the page while closed too, so it can be watched from the first frame.
+    const dialog = page.locator('dialog:has(h2:text-is("Einstellungen"))')
+
+    // What moves the sheet itself (rather than fading it), two frames after
+    // the cogwheel or the close button is pressed.
+    const moving = (act: 'open' | 'close') => dialog.evaluate(async (el, act) => {
+      const button = act === 'open'
+        ? document.querySelector('header button[aria-label="Einstellungen"]')
+        : el.querySelector('button[aria-label="Einstellungen schließen"]')
+      ;(button as HTMLElement).click()
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+      return el.getAnimations().flatMap(a => (a.effect as KeyframeEffect).getKeyframes()
+        .flatMap(k => Object.keys(k).filter(p => ['transform', 'translate', 'scale'].includes(p))))
+    }, act)
+
+    expect(await moving('open')).toEqual([])
+    const sheet = settingsSheet(page)
+    await expect(sheet).toBeVisible()
+    await expect.poll(async () => sheet.boundingBox()).toEqual({ x: 860, y: 0, width: 420, height: 500 })
+    expect(await moving('close')).toEqual([])
+    await expect(sheet).toBeHidden()
+  })
 
   test('the theme switches at once with a short cross-fade, and nothing spreads out', async ({ page }) => {
     await openUserSettings(page)
