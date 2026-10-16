@@ -17,5 +17,7 @@ Upstream responses for Seam 2. Recorded on 2026-09-30 unless noted.
 | `instagram-embed-captioned.html` | Recorded 2026-10-05: `instagram.com/reel/C0WUh-tqkxU/embed/captioned/` as served to Source Lookup's user agent, reduced to its `<body>` markup (verbatim; the scripts are left out). `/p/C0WUh-tqkxU/embed/captioned/` serves the same. |
 | `instagram-embed-no-caption.html` | Hand-made from `instagram-embed-captioned.html`: the caption's text removed, the account's name and the comments link kept. |
 | `instagram-embed-broken.html` | Recorded 2026-10-05: `instagram.com/p/AAAAAAAAAAA/embed/captioned/` (no such post), reduced to its `<body>` markup. Instagram answers 200 with an `EmbedBrokenMedia` block. |
+| `instagram-embed-video.html` | Recorded 2026-10-16: `instagram.com/reel/Cw2sj1dqqLh/embed/` as served to Source Lookup's user agent, reduced to its `<body>` markup (verbatim; scripts and styles left out). A Reel Instagram's embed plays in place. |
+| `instagram-embed-watch-on-instagram.html` | Recorded 2026-10-16 like the one above, for `/reel/DFvsVH_OD9h/embed/`: a Reel Instagram's embed only shows with "Auf Instagram ansehen" (a `WatchOnInstagramContainer` block), which opens Instagram (#279). |
 | `instagram-login-page.html` | Hand-made: what a login wall offers (no image). |
 | other `blog-*.html`, `broken-page.html` | Hand-made to cover one metadata shape each. |

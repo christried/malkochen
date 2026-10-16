@@ -264,6 +264,8 @@ export const de = {
     videoPlayer: (platform: VideoPlatform) => `Video von ${VIDEO_PLATFORMS[platform]}`,
     videoUnavailable: 'Dieses Video lässt sich hier nicht abspielen.',
     openOnInstagram: 'Auf Instagram öffnen',
+    // In place of "Video abspielen" for a Reel Instagram won't play here (#279).
+    watchOnInstagram: 'Auf Instagram ansehen',
     noSource: 'Ohne Link',
     placement: (board: string, column: string) => `${board} · ${column}`,
     added: (name: string | null, date: Date) => {

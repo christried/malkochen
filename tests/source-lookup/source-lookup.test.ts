@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createSourceLookup } from '../../server/source-lookup'
+import { createInstagramPlayCheck, createSourceLookup } from '../../server/source-lookup'
 import { fakeUpstream, fixture, html, json, redirect, status, type Route } from './fake-upstream'
 
 function lookupWith(routes: Route[], options: { timeoutMs?: number } = {}) {
@@ -233,6 +233,52 @@ describe('Instagram', () => {
       creator: null,
       imageUrl: null,
     })
+  })
+})
+
+describe('whether Instagram plays a video in place (#279)', () => {
+  const REEL_EMBED = 'https://www.instagram.com/reel/DFvsVH_OD9h/embed/'
+
+  function checkWith(routes: Route[], options: { timeoutMs?: number } = {}) {
+    const upstream = fakeUpstream(routes)
+    return { check: createInstagramPlayCheck({ fetch: upstream.fetch, ...options }), upstream }
+  }
+
+  test('a Reel Instagram only shows with "Auf Instagram ansehen" doesn\'t play in place', async () => {
+    const { check, upstream } = checkWith([[REEL_EMBED, () => html(fixture('instagram-embed-watch-on-instagram.html'))]])
+
+    expect(await check('https://www.instagram.com/reel/DFvsVH_OD9h/')).toBe(false)
+    expect(upstream.requested).toEqual([REEL_EMBED])
+  })
+
+  test('a Reel with Instagram\'s player plays in place, under its post link too', async () => {
+    const { check, upstream } = checkWith([['https://www.instagram.com/p/DFvsVH_OD9h/embed/', () => html(fixture('instagram-embed-video.html'))]])
+
+    expect(await check('https://www.instagram.com/p/DFvsVH_OD9h/')).toBe(true)
+    expect(upstream.requested).toEqual(['https://www.instagram.com/p/DFvsVH_OD9h/embed/'])
+  })
+
+  test.each<[string, Route[]]>([
+    ['shows a broken embed', [[REEL_EMBED, () => html(fixture('instagram-embed-broken.html'))]]],
+    ['answers with an error', [[REEL_EMBED, () => status(500)]]],
+    ['is unreachable', []],
+    ['stalls', [[REEL_EMBED, () => 'hang']]],
+  ])('when the embed page %s, it is unknown', async (_, routes) => {
+    const { check } = checkWith(routes, { timeoutMs: 200 })
+
+    expect(await check('https://www.instagram.com/reel/DFvsVH_OD9h/')).toBeNull()
+  })
+
+  test.each([
+    'https://www.tiktok.com/@scout2015/video/6718335390845095173',
+    'https://www.instagram.com/share/reel/BAbc123/',
+    'https://instagram.evil.example/reel/DFvsVH_OD9h/',
+    'kein Link',
+  ])('%s is no Instagram post: unknown, and nothing is requested', async (link) => {
+    const { check, upstream } = checkWith([])
+
+    expect(await check(link)).toBeNull()
+    expect(upstream.requested).toEqual([])
   })
 })
 

@@ -85,6 +85,29 @@ async function postPageImage(http: Http, post: SourceGuess): Promise<string | nu
   return httpUrl(meta.get('og:image')) ?? httpUrl(meta.get('twitter:image'))
 }
 
+// Whether Instagram's embed plays a post's video in place (#279), as the
+// Dish detail's player would load it (shared/video-embed.ts). For some
+// Reels, often ones with licensed music, Instagram's embed shows only the
+// cover and "Auf Instagram ansehen", which opens Instagram; it says so in a
+// "WatchOnInstagramContainer" block (checked 2026-10-16). The embed page
+// tells the player nothing different, so only the page shows it. Null: not
+// an Instagram post, or the page showed neither (broken, unreachable), and
+// the player finds out itself.
+export async function playsInPlace(http: Http, link: string): Promise<boolean | null> {
+  let url: URL
+  try {
+    url = new URL(link)
+  }
+  catch {
+    return null
+  }
+  const post = HOST.test(url.hostname) ? postLink(url) : null
+  if (!post) return null
+  const html = (await http.page(`${post.canonicalLink}embed/`)).html ?? ''
+  if (findTag(html, 'div', 'WatchOnInstagramContainer')) return false
+  return findTag(html, 'a', 'EmbeddedMedia') ? true : null
+}
+
 export const instagram: Strategy = {
   match(url) {
     if (!HOST.test(url.hostname)) return null

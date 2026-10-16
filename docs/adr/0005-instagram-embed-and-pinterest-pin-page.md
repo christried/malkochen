@@ -13,3 +13,4 @@ Pinterest's oEmbed title is unusable (usually the literal "oEmbed"), but the Pin
 - The embed page isn't an official interface, so Instagram can change it without notice. When it does, the lookup quietly falls back to the post page: an image, no title, exactly as before. It never errors.
 - Still no Meta app and no token (ADR 0001 stands on that).
 - The title stays required whenever no Suggested Title comes back, so a broken lookup costs typing, nothing more.
+- The Dish detail reads the embed page too (#279, 2026-10-16): for some Reels, often ones with licensed music, Instagram's embed shows only the cover and "Auf Instagram ansehen" (a `WatchOnInstagramContainer` block), whatever the link form. The server checks `/<reel|p>/<code>/embed/` as the detail opens, never stored, since Instagram can change its mind about a post, and the detail then links to the post instead of offering "Video abspielen". When the check can't tell, the player is offered as before.

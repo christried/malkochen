@@ -35,6 +35,33 @@ const video = computed(() => videoEmbed(props.dish.source))
 const playing = ref(false)
 const player = computed(() => playing.value ? video.value : null)
 watch(() => video.value?.src, () => playing.value = false)
+
+// Some Reels Instagram's embed only shows with "Auf Instagram ansehen"
+// (#279): for those the detail links to the post instead of offering a
+// player that would only send the Member to Instagram. The server asks
+// Instagram as the detail opens, so a post Instagram changes its mind about
+// is never stuck either way. Until it answers there is no button; when it
+// can't tell, "Video abspielen" as before.
+const instagramLink = computed(() => video.value?.platform === 'instagram' ? video.value.link : null)
+const playsInPlace = ref<boolean | null | undefined>()
+watch(instagramLink, async (link, _, onCleanup) => {
+  playsInPlace.value = undefined
+  if (!link || import.meta.server) return
+  let stale = false
+  onCleanup(() => stale = true)
+  const answer = await $fetch<{ playsInPlace: boolean | null }>('/api/instagram-plays', { query: { link } })
+    .then(({ playsInPlace }) => playsInPlace, () => null)
+  if (!stale) playsInPlace.value = answer
+}, { immediate: true })
+// What the pill on the image offers: the player, the post on Instagram, or
+// nothing yet.
+const videoAction = computed<'play' | 'instagram' | null>(() => {
+  if (!video.value || playing.value) return null
+  if (!instagramLink.value) return 'play'
+  if (playsInPlace.value === undefined) return null
+  return playsInPlace.value === false ? 'instagram' : 'play'
+})
+const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
 </script>
 
 <template>
@@ -127,15 +154,26 @@ watch(() => video.value?.src, () => playing.value = false)
         </button>
       </div>
       <button
-        v-if="video && !playing"
+        v-if="videoAction === 'play'"
         type="button"
-        class="absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        :class="videoPill"
         data-play-video
         @click="playing = true"
       >
         <AppIcon name="play" />
         {{ t.detail.playVideo }}
       </button>
+      <a
+        v-else-if="videoAction === 'instagram' && video"
+        :href="video.link"
+        target="_blank"
+        rel="noopener noreferrer"
+        :class="videoPill"
+        data-play-video
+      >
+        <AppIcon name="play" />
+        {{ t.detail.watchOnInstagram }}
+      </a>
     </div>
 
     <div

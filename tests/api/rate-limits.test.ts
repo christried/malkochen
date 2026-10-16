@@ -45,6 +45,7 @@ function reloadImage(c: Caller) {
 // Each limited call, made once, with what it answers when it goes through.
 const calls: [string, RateLimited, number, (caller: Caller) => Promise<Response>][] = [
   ['Source Lookup', 'source-lookup', 200, lookUp],
+  ['asking whether Instagram plays a video', 'instagram-plays', 200, c => c.fetch(`/api/instagram-plays?${new URLSearchParams({ link: 'http://127.0.0.1/reel/abc/' })}`)],
   ['an Own Photo', 'upload', 201, ownPhoto],
   ['a Profile Picture', 'upload', 201, profilePicture],
   ['adding a Dish', 'add-dish', 201, async c => postDish(c, (await landingBoard(c)).id, { title: 'Dal', placeholder: 'bowl' })],
