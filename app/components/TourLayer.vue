@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TourButton, TourStep, TourTarget } from '~/tour/tour'
+import type { TourButton, TourStep } from '~/tour/tour'
 import { HOLE_PADDING, placeTour, type TourPlacement } from '~/utils/tour-placement'
 
 // Draws the Tour's step (app/tour/tour.ts; handoff R12 "Placement"): the
@@ -37,7 +37,8 @@ watch(open, (isOpen) => {
 }, { flush: 'post' })
 
 // Where everything goes, measured again every frame while it's open; null
-// until the step's target is laid out.
+// until it first is. A target gone since the Tour started (a rotation
+// swapped the Columns' tabs for their titles): the step shows unspotlit.
 const placement = shallowRef<TourPlacement | null>(null)
 let frame = 0
 function follow() {
@@ -45,10 +46,8 @@ function follow() {
   const step = props.step
   const el = dialog.value
   if (!step || !el || !bubble.value) return
-  const target = step.target ? targetBox(step.target) : null
-  const next = step.target && !target
-    ? null
-    : placeTour({ viewport: { width: el.clientWidth, height: el.clientHeight }, target, bubbleHeight: bubble.value.offsetHeight })
+  const target = step.target ? tourTargetBox(step.target) : null
+  const next = placeTour({ viewport: { width: el.clientWidth, height: el.clientHeight }, target, bubbleHeight: bubble.value.offsetHeight })
   if (JSON.stringify(next) !== JSON.stringify(placement.value)) placement.value = next
 }
 watch(open, (isOpen) => {
@@ -63,7 +62,7 @@ onBeforeUnmount(() => cancelAnimationFrame(frame))
 watch(() => props.step?.id, async (id) => {
   if (!id) return
   await nextTick()
-  if (props.step?.target) targetElements(props.step.target)[0]?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  if (props.step?.target) tourTargetElements(props.step.target)[0]?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   bubble.value?.focus()
 }, { flush: 'post' })
 
@@ -94,35 +93,10 @@ const hole = computed(() => placement.value?.hole ?? null)
 const holeRadius = computed(() => `${targetRadius.value + HOLE_PADDING}px`)
 const targetRadius = ref(0)
 watch(() => props.step?.target, (target) => {
-  const el = target && targetElements(target)[0]
+  const el = target && tourTargetElements(target)[0]
   targetRadius.value = el ? Number.parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 : 0
 }, { flush: 'post' })
 
-const label: Record<TourButton, () => string> = {
-  back: () => t.tour.back,
-  next: () => t.tour.next,
-  finish: () => t.tour.finish,
-  skip: () => t.tour.skip,
-}
-</script>
-
-<script lang="ts">
-// The elements a target names that are laid out (on phones the Columns'
-// tabs, on larger screens their titles, for instance).
-function targetElements(target: TourTarget): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>(`[data-tour="${target}"]`)].filter(el => el.getClientRects().length > 0 && el.offsetWidth > 0)
-}
-
-// The box round all of them, in the window.
-function targetBox(target: TourTarget) {
-  const boxes = targetElements(target).map(el => el.getBoundingClientRect())
-  if (!boxes.length) return null
-  const left = Math.min(...boxes.map(b => b.left))
-  const top = Math.min(...boxes.map(b => b.top))
-  const right = Math.max(...boxes.map(b => b.right))
-  const bottom = Math.max(...boxes.map(b => b.bottom))
-  return { left, top, width: right - left, height: bottom - top }
-}
 </script>
 
 <template>
@@ -186,7 +160,7 @@ function targetBox(target: TourTarget) {
             class="rounded-pill py-2 pr-2 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
             @click="choose('skip')"
           >
-            {{ label.skip() }}
+            {{ t.tour.skip }}
           </button>
           <!-- Kept together: short of room, they move under "Überspringen". -->
           <div class="ml-auto flex items-center gap-0.5">
@@ -196,7 +170,7 @@ function targetBox(target: TourTarget) {
               class="rounded-pill px-2.5 py-2 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
               @click="choose('back')"
             >
-              {{ label.back() }}
+              {{ t.tour.back }}
             </button>
             <button
               v-if="forward"
@@ -204,7 +178,7 @@ function targetBox(target: TourTarget) {
               class="rounded-pill bg-inverse px-4 py-2 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               @click="choose(forward)"
             >
-              {{ label[forward]() }}
+              {{ t.tour[forward] }}
             </button>
           </div>
         </div>

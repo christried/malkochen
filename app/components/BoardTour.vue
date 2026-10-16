@@ -31,7 +31,7 @@ function start() {
   tour.value = startTour({
     layout: isPhoneLayout() ? 'phone' : 'larger',
     columns: props.board.columns,
-    targets: TARGETS.filter(onPage),
+    targets: TARGETS.filter(target => tourTargetElements(target).length > 0),
   })
 }
 defineExpose({ start })
@@ -73,13 +73,6 @@ onMounted(() => {
   }, { immediate: true })
 })
 onBeforeUnmount(() => clearTimeout(timer))
-</script>
-
-<script lang="ts">
-// A target is on the page when one of its elements is laid out.
-function onPage(target: TourTarget): boolean {
-  return [...document.querySelectorAll<HTMLElement>(`[data-tour="${target}"]`)].some(el => el.offsetWidth > 0)
-}
 </script>
 
 <template>
