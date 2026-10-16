@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { Me } from '~~/server/utils/people'
-import { startTour, tourAfter, tourStep, TOUR_VERSION, type Tour, type TourButton, type TourEvent, type TourTarget } from '~/tour/tour'
+import { startTour, tourAfter, tourBrowser, tourStep, TOUR_VERSION, type Tour, type TourButton, type TourEvent, type TourTarget } from '~/tour/tour'
 
 // The Tour (CONTEXT.md, #298) on the Board: feeds the Tour module what the
 // Board is like and what the user chooses, and draws its steps (TourLayer).
@@ -18,12 +18,16 @@ import { startTour, tourAfter, tourStep, TOUR_VERSION, type Tour, type TourButto
 // `addingTourDish`: the Dish saved now is the Tour's, which notifies nobody.
 // Add Dish says it was added before it closes, so the Tour is at the new
 // card by then and the closing doesn't take it back.
+// On phones its last step depends on how malkochen runs: installed, in a
+// browser that offered installing (useInstallPrompt; an offer coming
+// during the Tour counts), or one that didn't.
 const props = defineProps<{ board: BoardView, idle: boolean, autoStart: boolean }>()
 const adding = defineModel<boolean>('adding', { required: true })
 const emit = defineEmits<{ ended: [] }>()
 const t = useStrings()
 const { data: me } = useMe()
 const splashUp = useSplashUp()
+const installPrompt = useInstallPrompt()
 
 // How long the Board stays idle before the Tour starts by itself: its cards
 // have risen in by then.
@@ -38,6 +42,11 @@ function start() {
     layout: isPhoneLayout() ? 'phone' : 'larger',
     columns: props.board.columns,
     targets: TARGETS.filter(target => tourTargetElements({ target, dishId: null }).length > 0),
+    install: {
+      installed: matchMedia('(display-mode: standalone)').matches,
+      offered: installPrompt.offered.value,
+      browser: tourBrowser(navigator.userAgent),
+    },
   })
 }
 
@@ -48,8 +57,17 @@ const addingTourDish = computed(() => step.value?.id === 'addDishLink')
 defineExpose({ start, dishAdded, addingTourDish })
 
 watch(adding, isOpen => happened({ type: isOpen ? 'addDishOpened' : 'addDishClosed' }))
+watch(installPrompt.offered, (offered) => {
+  if (offered) happened({ type: 'installOffered' })
+})
 
-function onChoose(button: TourButton) {
+async function onChoose(button: TourButton) {
+  // The browser's install dialog; its answer, either way, ends the Tour.
+  if (button === 'install') {
+    await installPrompt.install()
+    happened({ type: 'installAnswered' })
+    return
+  }
   // Past the Dish steps, Add Dish closes if it's open.
   if (button === 'withoutDish') adding.value = false
   happened({ type: button === 'finish' ? 'next' : button })

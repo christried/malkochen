@@ -643,6 +643,31 @@ export const de = {
       title: 'Kocht zusammen',
       text: 'Hier lädst du andere zu deinem Board ein, wechselst zwischen deinen Boards oder fängst ein neues an.',
     },
+    // The last step, on phones only: installed, the share tip; else how to
+    // install malkochen.
+    shareTip: {
+      title: 'Noch ein Trick',
+      text: 'Teil einen Link direkt aus TikTok oder Instagram: Teilen → malkochen. Schon landet das Gericht hier.',
+    },
+    // Installing, what it unlocks.
+    sharing: 'Installiert kannst du Links direkt aus TikTok und Instagram mit malkochen teilen.',
+    install: {
+      title: 'Hol dir malkochen aufs Handy',
+    },
+    installHow: {
+      title: 'Hol dir malkochen aufs Handy',
+      // Where the browser's menu has it, by browser family.
+      menu: {
+        chrome: 'Tipp oben rechts auf ⋮ und dann auf „Zum Startbildschirm hinzufügen“.',
+        samsung: 'Tipp unten rechts auf ≡, dann auf „Seite hinzufügen zu“ und „Startbildschirm“.',
+        edge: 'Tipp oben rechts auf … und dann auf „Zum Telefon hinzufügen“.',
+        firefox: 'Tipp oben rechts auf ⋮ und dann auf „Zum Startbildschirm hinzufügen“.',
+        other: 'Such im Menü deines Browsers nach „Zum Startbildschirm hinzufügen“.',
+      },
+      // Firefox and any other browser: only Chrome's install shares.
+      chromeOnly: 'Teilen aus TikTok klappt aber nur, wenn du malkochen aus Chrome installierst.',
+    },
+    installButton: 'Installieren',
     next: 'Weiter',
     back: 'Zurück',
     skip: 'Überspringen',

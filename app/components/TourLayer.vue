@@ -74,7 +74,7 @@ function follow() {
   if (!next || !host || !bubble) return
   const size = { width: host.clientWidth, height: host.clientHeight }
   if (size.width !== viewport.value.width || size.height !== viewport.value.height) viewport.value = size
-  const placed = placeTour({ viewport: size, target: tourTargetBox(elements), bubbleHeight: bubble.offsetHeight })
+  const placed = placeTour({ viewport: size, target: tourTargetBox(elements), corner: step.corner, bubbleHeight: bubble.offsetHeight })
   if (JSON.stringify(placed) !== JSON.stringify(placement.value)) placement.value = placed
   targetRadius.value = first ? Number.parseFloat(getComputedStyle(first).borderTopLeftRadius) || 0 : 0
   pressLabel.value = first ? first.getAttribute('aria-label') ?? first.textContent?.trim() ?? '' : ''

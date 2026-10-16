@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { de } from '../../app/strings/de'
-import { startTour, tourAfter, tourStep, type Tour, type TourColumn, type TourEvent, type TourSituation } from '../../app/tour/tour'
+import { startTour, tourAfter, tourBrowser, tourStep, type Tour, type TourColumn, type TourEvent, type TourInstall, type TourSituation } from '../../app/tour/tour'
 
 // Seam 4: the Tour module (CONTEXT.md → Tour, #298, #299), a step machine
 // with no DOM. The situation the Tour starts in, the user's choices and what
@@ -11,9 +11,11 @@ import { startTour, tourAfter, tourStep, type Tour, type TourColumn, type TourEv
 const IDEEN: TourColumn = { id: 'ideen', name: 'Ideen', isGekocht: false }
 const WOCHE: TourColumn = { id: 'woche', name: 'Diese Woche', isGekocht: false }
 const GEKOCHT: TourColumn = { id: 'gekocht', name: 'Gekocht', isGekocht: true }
+// In Chrome's tab, which hasn't offered installing.
+const NOT_OFFERED: TourInstall = { installed: false, offered: false, browser: 'chrome' }
 
 function situation(change: Partial<TourSituation> = {}): TourSituation {
-  return { layout: 'phone', columns: [IDEEN, WOCHE, GEKOCHT], targets: ['add-button', 'columns', 'board-switcher'], ...change }
+  return { layout: 'phone', columns: [IDEEN, WOCHE, GEKOCHT], targets: ['add-button', 'columns', 'board-switcher'], install: NOT_OFFERED, ...change }
 }
 
 type Happening = TourEvent['type'] | TourEvent
@@ -133,8 +135,8 @@ test('Zurück from the Columns goes to the new card when a Dish was added, else 
   expect(stepId(after(atColumns(), 'back', 'back'))).toBe('hello')
 })
 
-test('Weiter goes from the Columns to the Board Switcher, which finishes it', () => {
-  const tour = atColumns()
+test('Weiter goes from the Columns to the Board Switcher, which finishes it side by side', () => {
+  const tour = atColumns({ layout: 'larger' })
 
   expect(stepId(after(tour, 'next'))).toBe('boardSwitcher')
   const finished = after(tour, 'next', 'next')
@@ -144,7 +146,7 @@ test('Weiter goes from the Columns to the Board Switcher, which finishes it', ()
 
 test('the Columns step points at the Columns, and the Board Switcher step at the switcher', () => {
   const columns = step(atColumns())
-  const switcher = step(after(atColumns(), 'next'))
+  const switcher = step(after(atColumns({ layout: 'larger' }), 'next'))
 
   expect(columns).toMatchObject({ target: 'columns', pose: 'pointing', faces: 'target', handsOn: false, buttons: ['back', 'next', 'skip'] })
   expect(switcher).toMatchObject({ target: 'board-switcher', pose: 'pointing', faces: 'target', buttons: ['back', 'finish', 'skip'] })
@@ -178,7 +180,7 @@ test.each([
 })
 
 test('an ended Tour ignores what comes after', () => {
-  const finished = after(atColumns(), 'next', 'next')
+  const finished = after(atColumns(), 'next', 'next', 'next')
   const skipped = after(startTour(situation()), 'skip')
 
   expect(after(finished, 'back', 'skip').status).toBe('finished')
@@ -237,14 +239,95 @@ test('without the add button on the page, the Dish steps are all left out', () =
 })
 
 test('"Ohne Gericht weiter" with nothing after the Dish steps finishes the Tour', () => {
-  const tour = after(startTour(situation({ targets: ['add-button'] })), 'next', 'withoutDish')
+  const tour = after(startTour(situation({ layout: 'larger', targets: ['add-button'] })), 'next', 'withoutDish')
 
   expect(tour.status).toBe('finished')
 })
 
-test('with no targets on the page, the greeting is all there is, and Weiter finishes it', () => {
-  const tour = startTour(situation({ targets: [] }))
+test('side by side with no targets on the page, the greeting is all there is, and Weiter finishes it', () => {
+  const tour = startTour(situation({ layout: 'larger', targets: [] }))
 
   expect(step(tour)?.buttons).toEqual(['finish', 'skip'])
   expect(after(tour, 'next').status).toBe('finished')
+})
+
+// Step 8, phones only: the share tip once installed, else how to install.
+const atLast = (change: Partial<TourSituation> = {}) => after(atColumns(change), 'next', 'next')
+
+test('installed on a phone, the last step is the share tip, Topfbert winking: Teilen → malkochen', () => {
+  const tour = atLast({ install: { installed: true, offered: false, browser: 'chrome' } })
+
+  expect(step(tour)).toMatchObject({ id: 'shareTip', target: null, corner: null, pose: 'wink', faces: 'front', buttons: ['back', 'finish', 'skip'] })
+  expect(step(tour)?.text).toMatch(/TikTok/)
+  expect(step(tour)?.text).toContain('Teilen → malkochen')
+  expect(step(after(atColumns(), 'next'))?.buttons).toEqual(['back', 'next', 'skip'])
+  expect(after(tour, 'next').status).toBe('finished')
+})
+
+test('in a browser that offered installing, the last step has "Installieren"; answering its dialog finishes the Tour', () => {
+  const tour = atLast({ install: { installed: false, offered: true, browser: 'chrome' } })
+
+  expect(step(tour)).toMatchObject({ id: 'install', target: null, corner: null, buttons: ['back', 'install', 'skip'] })
+  expect(step(tour)?.text).toMatch(/Installiert .* TikTok/)
+  // Answered: installed or not, the Tour ends as usual.
+  expect(after(tour, 'installAnswered').status).toBe('finished')
+  // Anywhere else, an answer changes nothing.
+  expect(after(atColumns(), 'installAnswered')).toEqual(atColumns())
+})
+
+test('installing offered during the Tour: the last step uses it', () => {
+  const tour = after(atColumns(), 'installOffered', 'next', 'next')
+
+  expect(step(tour)?.id).toBe('install')
+  expect(step(after(atColumns(), 'next', 'next'))?.id).toBe('installHow')
+})
+
+test.each([
+  ['chrome', 'top-right', /oben rechts auf ⋮ .*„Zum Startbildschirm hinzufügen“/],
+  ['samsung', 'bottom-right', /unten rechts auf ≡.*„Seite hinzufügen zu“.*„Startbildschirm“/],
+  ['edge', 'top-right', /oben rechts auf … .*„Zum Telefon hinzufügen“/],
+  ['firefox', 'top-right', /oben rechts auf ⋮ .*„Zum Startbildschirm hinzufügen“/],
+  ['other', 'top-right', /Menü deines Browsers .*„Zum Startbildschirm hinzufügen“/],
+] as const)('in %s without the offer, the last step says where its menu has installing, Topfbert pointing there', (browser, corner, where) => {
+  const tour = atLast({ install: { installed: false, offered: false, browser } })
+
+  expect(step(tour)).toMatchObject({ id: 'installHow', target: null, corner, pose: 'pointing', faces: 'target', buttons: ['back', 'finish', 'skip'] })
+  expect(step(tour)?.text).toMatch(where)
+})
+
+test.each([
+  ['chrome', false],
+  ['samsung', false],
+  ['edge', false],
+  ['firefox', true],
+  ['other', true],
+] as const)('in %s, sharing from TikTok only working when installed from Chrome is said: %s', (browser, said) => {
+  const text = step(atLast({ install: { installed: false, offered: false, browser } }))?.text ?? ''
+
+  expect(text).toMatch(/TikTok/)
+  expect(/nur, wenn du malkochen aus Chrome installierst/.test(text)).toBe(said)
+})
+
+test('side by side, there is no last step: no share tip and nothing to install', () => {
+  for (const install of [
+    { installed: true, offered: false, browser: 'chrome' },
+    { installed: false, offered: true, browser: 'chrome' },
+    { installed: false, offered: false, browser: 'firefox' },
+  ] as const) {
+    const tour = atColumns({ layout: 'larger', install })
+
+    expect(stepId(after(tour, 'next'))).toBe('boardSwitcher')
+    expect(after(tour, 'next', 'next').status).toBe('finished')
+  }
+})
+
+test.each([
+  ['Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36', 'chrome'],
+  ['Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Mobile Safari/537.36', 'samsung'],
+  ['Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36 EdgA/129.0.0.0', 'edge'],
+  ['Mozilla/5.0 (Android 14; Mobile; rv:131.0) Gecko/131.0 Firefox/131.0', 'firefox'],
+  ['Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36 OPR/84.0.0', 'other'],
+  ['Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0.0.0 Mobile Safari/537.36 DuckDuckGo/5', 'other'],
+] as const)('the browser family is read from the user agent: %s', (userAgent, browser) => {
+  expect(tourBrowser(userAgent)).toBe(browser)
 })
