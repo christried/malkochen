@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session, on its own branch, through a PR.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -238,6 +238,19 @@ From the third review (`docs/reviews/review3.md`), decided in a grilling session
 | #282 | Board Settings in the Board Switcher, cogwheel opens Your Settings | From spec #277. One ticket, so Board Settings are never reachable only by `,`. Cogwheel always visible on each row (#281: A) |
 | #283 | Your Settings as a right side sheet from 768px up | From spec #277. 420px, slides from the right (#281: B). Relies on #280's vertical scrollbars |
 | #285 | Bundle: aura on the pill and the add button, Board Settings Columns as a list | From #281 (F, D). After #282, which also changes the Board Switcher |
+
+### Phase 12: Tour (#296)
+
+From the grilling session on 2026-10-16 (`CONTEXT.md` → Tour, ADR 0006, design handoff R12).
+
+| # | Ticket | Note |
+|---|---|---|
+| #297 | Topfbert's Tour poses drawn in code | Groundwork, nothing user-facing |
+| #298 | Tour engine: a Tour that only points, seen once, replayable | Biggest. Migration. Auto-start stays off under `MALKOCHEN_E2E` |
+| #299 | Tour: add a Dish | Push exception for the Tour's Dish |
+| #301 | Tour: share tip or install step | Only needs #298 |
+| #300 | Tour: move and delete the Dish | After #299 |
+| #302 | Device check: Tour on Android | `ready-for-human`: skip, the user does it |
 
 ## Keeping this file current
 
