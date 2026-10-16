@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BoardListing, BoardNameAndEmoji } from '~~/server/utils/boards'
-import { boardPath } from '~~/shared/address'
+import { boardPath, boardSettingsPath } from '~~/shared/address'
 
 // The handoff's BoardSwitcher (PRD story 39): the Board's emoji and name at
 // the top of the Board, as a pill that opens a dropdown of the user's Boards
@@ -8,15 +8,14 @@ import { boardPath } from '~~/shared/address'
 // "Neues Board". Picking a Board opens it; the Board page remembers it as the
 // one to reopen next time. The list is fetched each time it opens, so a
 // Board renamed or created meanwhile shows; the Board picked shows its name
-// and Columns from it while it opens (useBoardListings). On phones its last
-// rows open your settings (a sheet over the Board) and the legal pages
-// (LegalLinks), which the header has no room for there: they stand in for
-// the user menu.
+// and Columns from it while it opens (useBoardListings). Each Board's row
+// ends in a cogwheel (#282, decided on #281 as A) that opens that Board's
+// Board Settings without switching to it. On phones its last row has the
+// legal pages (LegalLinks), which the header has no room for there.
 // `dishCount`: how many Dishes this Board holds, shown after its name in the
 // pill and on its row (as the Board module counts them, so it follows adds,
 // deletes and polls at once); null while not known.
 const props = defineProps<{ board: BoardNameAndEmoji, dishCount?: number | null }>()
-const emit = defineEmits<{ settings: [] }>()
 const t = useStrings()
 const route = useRoute()
 
@@ -26,7 +25,6 @@ const creating = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const pill = useTemplateRef<HTMLButtonElement>('pill')
 const panelId = useId()
-const { data: me } = useMe()
 
 async function toggle() {
   open.value = !open.value
@@ -65,12 +63,6 @@ const shown = computed(() => boards.value.length
 function newBoard() {
   close()
   creating.value = true
-}
-
-// Focus goes back to the pill first, where closing the sheet returns it.
-function openSettings() {
-  close({ refocus: true })
-  emit('settings')
 }
 </script>
 
@@ -137,13 +129,13 @@ function openSettings() {
           <li
             v-for="(listed, index) in shown"
             :key="listed.id"
-            class="row"
+            class="row flex items-center gap-1"
             :style="{ '--i': index }"
           >
             <NuxtLink
               :to="boardPath(listed)"
               :aria-current="listed.id === board.id ? 'page' : undefined"
-              class="flex items-center gap-3 rounded-field px-2 py-2 transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
+              class="flex min-w-0 flex-1 items-center gap-3 rounded-field px-2 py-2 transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
               @click="close()"
             >
               <span
@@ -188,6 +180,20 @@ function openSettings() {
                 :aria-label="t.boards.current"
               ><path d="M5 12l5 5 9-10" /></svg>
             </NuxtLink>
+            <!-- Its own link beside the row's, so it opens that Board's
+                 Board Settings and doesn't switch to the Board. -->
+            <NuxtLink
+              :to="boardSettingsPath(listed)"
+              :aria-label="t.boards.settings(listed.name)"
+              :data-tooltip="t.boards.settings(listed.name)"
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-muted transition-[color,background-color,transform] duration-tap ease-tap hover:bg-surface-muted hover:text-text active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              @click="close()"
+            >
+              <AppIcon
+                name="settings"
+                :size="20"
+              />
+            </NuxtLink>
           </li>
           <li
             class="row"
@@ -207,28 +213,8 @@ function openSettings() {
             </button>
           </li>
           <li
-            v-if="me"
             class="row mt-1 border-t border-line pt-1 tablet:hidden"
             :style="{ '--i': shown.length + 1 }"
-          >
-            <button
-              type="button"
-              class="flex w-full items-center gap-3 rounded-field px-2 py-2 text-left text-button transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
-              aria-haspopup="dialog"
-              @click="openSettings"
-            >
-              <UserAvatar
-                :name="me.name"
-                :image="me.image"
-                :size="44"
-              />
-              {{ t.userSettings.open }}
-            </button>
-          </li>
-          <li
-            class="row tablet:hidden"
-            :class="{ 'mt-1 border-t border-line pt-1': !me }"
-            :style="{ '--i': shown.length + 2 }"
           >
             <LegalLinks @chosen="close({ refocus: true })" />
           </li>

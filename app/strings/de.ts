@@ -378,6 +378,8 @@ export const de = {
     switch: 'Board wechseln',
     label: 'Deine Boards',
     current: 'Aktuelles Board',
+    // The cogwheel on each Board's row in the switcher (#282).
+    settings: (board: string) => `Board-Einstellungen: ${board}`,
     newBoard: 'Neues Board',
     name: 'Name',
     // A new Board's name field suggests one of these, a new one each time.
@@ -528,7 +530,6 @@ export const de = {
   // Your own settings (PRD stories 73–75), not a Board's.
   userSettings: {
     title: 'Einstellungen',
-    open: 'Deine Einstellungen',
     // Your Profile Picture at the top right of the Board: opens the user menu.
     menu: 'Dein Konto',
     close: 'Einstellungen schließen',

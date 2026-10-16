@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { column } from './board'
+import { column, openBoardSettings } from './board'
 import { gotoHydrated } from './hydration'
 import { inviteToken } from './invite'
 import { removeStoredImages, removeUsers, seedCookings, seedDish, storedImage } from './seed'
@@ -71,7 +71,7 @@ test('user settings: the email and the languages note in `small`, the sections u
 test('Board settings: the sections under the same heading style, "(du)" in the name\'s weight', async ({ page }) => {
   await signIn(page, MARIE, { name: 'Marie' })
   await gotoHydrated(page, '/')
-  await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
+  await openBoardSettings(page)
   const headings = sectionHeadings(page)
   await expect(headings).toHaveText(['Board', 'Spalten', 'Mitglieder', 'Einladen'])
   for (const heading of await headings.all()) await expectSectionHeading(heading)

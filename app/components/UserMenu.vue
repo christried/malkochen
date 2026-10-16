@@ -3,17 +3,16 @@ import type { Me } from '~~/server/utils/people'
 
 // The user menu (#131, decided on #105 as variant A): your Profile Picture at
 // the top right of the Board opens a list like the Board switcher's panel,
-// popping from its corner: who is signed in, then "Einstellungen" (your
-// settings, a sheet over the Board) and "Abmelden", and last the legal pages
-// (LegalLinks, #205). Phones don't show it; there your settings and the legal
-// pages are the Board switcher's last rows.
+// popping from its corner: who is signed in, then "Abmelden", and last the
+// legal pages (LegalLinks, #205). Your settings are the header's cogwheel
+// (#282). Phones don't show it; there the legal pages are the Board
+// switcher's last row, and signing out is in your settings.
 //
 // A menu button (WAI-ARIA APG): opening puts focus on a row (the last with
 // ArrowUp), the arrows go round the rows, Home and End jump, Enter or Space
 // choose, Escape closes and hands focus back to the picture. Tab and a press
 // anywhere else close it.
 defineProps<{ me: Pick<Me, 'name' | 'email' | 'image'> }>()
-const emit = defineEmits<{ settings: [] }>()
 const t = useStrings()
 const { signOut } = useAuth()
 const route = useRoute()
@@ -71,12 +70,6 @@ function onMenuKeydown(event: KeyboardEvent) {
   if (next === undefined) return
   event.preventDefault()
   all[next]?.focus()
-}
-
-// Focus goes back to your picture first, where closing the sheet returns it.
-function chooseSettings() {
-  close({ refocus: true })
-  emit('settings')
 }
 
 // Closed first, so the row can't be chosen twice while signing out.
@@ -147,22 +140,6 @@ watch(() => route.fullPath, () => close())
           @keydown="onMenuKeydown"
           @keydown.tab="close()"
         >
-          <li role="none">
-            <button
-              type="button"
-              role="menuitem"
-              tabindex="-1"
-              aria-haspopup="dialog"
-              class="flex w-full items-center gap-3 rounded-field px-3 py-2.5 text-left text-button transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
-              @click="chooseSettings"
-            >
-              <AppIcon
-                name="settings"
-                :size="20"
-              />
-              {{ t.userSettings.title }}
-            </button>
-          </li>
           <li role="none">
             <button
               type="button"

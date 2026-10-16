@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { cardAtRest } from './board'
+import { cardAtRest, openBoardSettings } from './board'
 import { gotoHydrated } from './hydration'
 import { removeUsers, resetBoard, seedCookings, seedDish } from './seed'
 import { openUserSettings } from './settings-sheet'
@@ -133,7 +133,8 @@ test('the Board switcher’s and the user menu’s rows', async ({ page }) => {
 
   await page.getByRole('button', { name: /Board wechseln/ }).click()
   const boards = page.getByRole('navigation', { name: 'Deine Boards' })
-  await expect(boards.getByRole('link')).toHaveCount(2)
+  // Two Boards: each row and its Board Settings button.
+  await expect(boards.getByRole('link')).toHaveCount(4)
   expect(await affordanceProblems(page, boards)).toEqual([])
   await page.keyboard.press('Escape')
 
@@ -193,8 +194,7 @@ test('the search and what it finds', async ({ page }) => {
 
 test('Board settings, with a disabled arrow, and its dialogs', async ({ page }) => {
   await openBoard(page)
-  await page.getByRole('link', { name: 'Board-Einstellungen' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' })).toBeVisible()
+  await openBoardSettings(page)
   await expect(page.getByRole('button', { name: '„Ideen“ nach oben' })).toBeDisabled()
   expect(await affordanceProblems(page, page.locator('main'))).toEqual([])
 

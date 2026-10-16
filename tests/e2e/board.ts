@@ -60,3 +60,12 @@ export async function swipe(board: Locator, dx: number, { slow = false, hold = f
   if (!hold) await lift()
   return lift
 }
+
+// Opens the open Board's Board Settings the way a user does: from its row in
+// the Board Switcher, by the row's Board Settings button (#282).
+export async function openBoardSettings(page: Page) {
+  await page.getByRole('heading', { level: 1 }).getByRole('button').click()
+  const current = page.getByRole('navigation', { name: 'Deine Boards' }).getByRole('listitem').filter({ has: page.locator('[aria-current="page"]') })
+  await current.getByRole('link', { name: /^Board-Einstellungen: / }).click()
+  await page.getByRole('heading', { level: 1, name: 'Board-Einstellungen' }).waitFor()
+}
