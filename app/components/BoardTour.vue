@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardView } from '~~/server/utils/boards'
 import type { Me } from '~~/server/utils/people'
+import { dishOnBoard } from '~~/shared/board'
 import { startTour, tourAfter, tourBrowser, tourStep, TOUR_VERSION, type Tour, type TourButton, type TourEvent, type TourTarget } from '~/tour/tour'
 
 // The Tour (CONTEXT.md, #298) on the Board: feeds the Tour module what the
@@ -18,12 +19,25 @@ import { startTour, tourAfter, tourBrowser, tourStep, TOUR_VERSION, type Tour, t
 // `addingTourDish`: the Dish saved now is the Tour's, which notifies nobody.
 // Add Dish says it was added before it closes, so the Tour is at the new
 // card by then and the closing doesn't take it back.
+// It follows the Tour's Dish on the Board, whichever way it moves (dragged,
+// through its ⋯ menu, by someone else): the Column it's in, or gone; its ⋯
+// menu (`menu`: the Dish it's open for, and whether it shows the Columns);
+// and the Board's Columns. While the Tour moves or deletes that Dish
+// (`heldDishId`), a tap on its card doesn't open it. "Behalten" in the ⋯
+// menu closes the menu (`closeMenu`). `modal`: its layer makes the Board
+// behind inert, so what must stay reachable (the Toast's "Rückgängig")
+// goes into it.
 // On phones its last step depends on how malkochen runs: installed, in a
 // browser that offered installing (useInstallPrompt; an offer coming
 // during the Tour counts), or one that didn't.
-const props = defineProps<{ board: BoardView, idle: boolean, autoStart: boolean }>()
+const props = defineProps<{
+  board: BoardView
+  idle: boolean
+  autoStart: boolean
+  menu: { dishId: string, choosing: boolean } | null
+}>()
 const adding = defineModel<boolean>('adding', { required: true })
-const emit = defineEmits<{ ended: [] }>()
+const emit = defineEmits<{ ended: [], closeMenu: [] }>()
 const t = useStrings()
 const { data: me } = useMe()
 const splashUp = useSplashUp()
@@ -41,7 +55,7 @@ function start() {
   tour.value = startTour({
     layout: isPhoneLayout() ? 'phone' : 'larger',
     columns: props.board.columns,
-    targets: TARGETS.filter(target => tourTargetElements({ target, dishId: null }).length > 0),
+    targets: TARGETS.filter(target => tourTargetElements({ target, also: null, dishId: null, columnId: null }).length > 0),
     install: {
       installed: matchMedia('(display-mode: standalone)').matches,
       offered: installPrompt.offered.value,
@@ -50,13 +64,32 @@ function start() {
   })
 }
 
-function dishAdded(dishId: string) {
-  happened({ type: 'dishAdded', dishId })
+function dishAdded(dishId: string, columnId: string) {
+  happened({ type: 'dishAdded', dishId, columnId })
 }
 const addingTourDish = computed(() => step.value?.id === 'addDishLink')
-defineExpose({ start, dishAdded, addingTourDish })
+const heldDishId = computed(() => step.value?.id === 'moveDish' || step.value?.id === 'deleteDish' ? tour.value?.dishId ?? null : null)
+const layer = useTemplateRef<{ modal: boolean }>('layer')
+const modal = computed(() => layer.value?.modal ?? false)
+defineExpose({ start, dishAdded, addingTourDish, heldDishId, modal })
 
 watch(adding, isOpen => happened({ type: isOpen ? 'addDishOpened' : 'addDishClosed' }))
+// Where the Tour's Dish is: the Column, or null once it's gone.
+const dishIn = computed(() => {
+  const dishId = tour.value?.dishId
+  return dishId ? dishOnBoard(props.board, dishId)?.column.id ?? null : null
+})
+watch(dishIn, (columnId) => {
+  const dishId = tour.value?.dishId
+  if (dishId) happened(columnId ? { type: 'dishMoved', dishId, columnId } : { type: 'dishGone', dishId })
+})
+watch(() => props.menu, (menu, before) => {
+  const shown = menu ?? before
+  if (shown) happened({ type: 'dishMenu', dishId: shown.dishId, menu: menu ? (menu.choosing ? 'columns' : 'actions') : 'closed' })
+})
+watch(() => props.board.columns.map(({ id, name, isGekocht }) => ({ id, name, isGekocht })), (columns) => {
+  if (tour.value && JSON.stringify(columns) !== JSON.stringify(tour.value.situation.columns)) happened({ type: 'columnsChanged', columns })
+})
 watch(installPrompt.offered, (offered) => {
   if (offered) happened({ type: 'installOffered' })
 })
@@ -70,6 +103,8 @@ async function onChoose(button: TourButton) {
   }
   // Past the Dish steps, Add Dish closes if it's open.
   if (button === 'withoutDish') adding.value = false
+  // Kept from inside the ⋯ menu, the menu closes.
+  if (button === 'keep' && props.menu) emit('closeMenu')
   happened({ type: button === 'finish' ? 'next' : button })
 }
 
@@ -114,6 +149,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
 <template>
   <TourLayer
+    ref="layer"
     :step="step"
     @choose="onChoose"
   />

@@ -14,20 +14,28 @@ import type { TourCorner } from '../utils/tour-placement'
 export const TOUR_VERSION = 1
 
 // What a step spotlights: the elements marked `data-tour="<name>"`. 'dish'
-// is a Dish's card, the one with the step's `dishId`.
-export type TourTarget = 'add-button' | 'add-dish-link' | 'dish' | 'columns' | 'board-switcher'
+// is a Dish's card and 'dish-menu' its ⋯, the one with the step's `dishId`;
+// 'column' is a Column's tab (phones) or lane, and 'menu-column' its choice
+// in the ⋯ menu's "Verschieben nach…", the one with the step's `columnId`.
+// 'menu-move' and 'menu-delete' are the ⋯ menu's two choices.
+export type TourTarget = 'add-button' | 'add-dish-link' | 'dish' | 'dish-menu' | 'column' | 'menu-move' | 'menu-column' | 'menu-delete' | 'columns' | 'board-switcher'
 export type TourPose = 'waving' | 'pointing' | 'wink'
 // Pointing, Topfbert faces what he points at; otherwise the user.
 export type TourFacing = 'target' | 'front'
 // 'withoutDish': "Ohne Gericht weiter", past the steps about adding a Dish.
-// 'install': the browser's own install dialog.
-export type TourButton = 'back' | 'next' | 'finish' | 'skip' | 'withoutDish' | 'install'
-// The Tour's steps in its order. The last, on phones only, shows as one of
-// three as it comes (tourStep): 'shareTip' (installed), 'install' (the
-// browser offered installing) or 'installHow' (it didn't: where its menu
-// has it).
-export type TourSlot = 'hello' | 'addButton' | 'addDishLink' | 'newCard' | 'columns' | 'boardSwitcher' | 'last'
-export type TourStepId = Exclude<TourSlot, 'last'> | 'shareTip' | 'install' | 'installHow'
+// 'install': the browser's own install dialog. 'keep': "Behalten", past
+// deleting the Tour's Dish.
+export type TourButton = 'back' | 'next' | 'finish' | 'skip' | 'withoutDish' | 'install' | 'keep'
+// The Tour's steps in its order. 'columns' shows as 'moveDish' while the
+// Tour's Dish is to be moved to the next Column, else it just explains the
+// Columns. The last, on phones only, shows as one of three as it comes
+// (tourStep): 'shareTip' (installed), 'install' (the browser offered
+// installing) or 'installHow' (it didn't: where its menu has it).
+export type TourSlot = 'hello' | 'addButton' | 'addDishLink' | 'newCard' | 'columns' | 'deleteDish' | 'boardSwitcher' | 'last'
+export type TourStepId = Exclude<TourSlot, 'last'> | 'moveDish' | 'shareTip' | 'install' | 'installHow'
+// The Tour's Dish's ⋯ menu: closed, showing its choices, or showing the
+// Columns of "Verschieben nach…".
+export type TourDishMenu = 'closed' | 'actions' | 'columns'
 // The browser family, read from the user agent (tourBrowser).
 export type TourBrowser = 'chrome' | 'samsung' | 'edge' | 'firefox' | 'other'
 
@@ -59,9 +67,16 @@ export interface TourSituation {
 
 export type TourEvent
   = | { type: 'next' } | { type: 'back' } | { type: 'skip' } | { type: 'withoutDish' }
+    | { type: 'keep' }
   // What happened on the Board: Add Dish opened or closed, a Dish added (by
-  // its id, from the client Board module's result).
-    | { type: 'addDishOpened' } | { type: 'addDishClosed' } | { type: 'dishAdded', dishId: string }
+  // its id, from the client Board module's result, and the Column it
+  // landed in); a Dish now in a Column (moved there, or back on the Board),
+  // or gone from it (deleted, or moved to another Board); a Dish's ⋯ menu;
+  // the Board's Columns changed (renamed, reordered, added or deleted).
+    | { type: 'addDishOpened' } | { type: 'addDishClosed' } | { type: 'dishAdded', dishId: string, columnId: string }
+    | { type: 'dishMoved', dishId: string, columnId: string } | { type: 'dishGone', dishId: string }
+    | { type: 'dishMenu', dishId: string, menu: TourDishMenu }
+    | { type: 'columnsChanged', columns: TourColumn[] }
   // The browser offered installing (beforeinstallprompt), and the user
   // answered its install dialog, either way.
     | { type: 'installOffered' } | { type: 'installAnswered' }
@@ -74,19 +89,30 @@ export interface Tour {
   at: number
   // The Dish the user added during the Tour; null before, or without one.
   dishId: string | null
+  // The Column it landed in, the one it's in now (null once it's gone from
+  // the Board), its ⋯ menu, and whether the user chose to keep it.
+  landedIn: string | null
+  dishIn: string | null
+  dishMenu: TourDishMenu
+  kept: boolean
 }
 
 export interface TourStep {
   id: TourStepId
   target: TourTarget | null
-  // The Dish whose card the target is.
+  // A second target spotlit with it (the Column to move a Dish to).
+  also: TourTarget | null
+  // The Dish whose card the target is, and the Column a Column target is.
   dishId: string | null
+  columnId: string | null
   // Without a target: the corner Topfbert points to (a browser's menu).
   corner: TourCorner | null
   // The user does something to the target and the step moves on once they
   // have: taps on the target reach it, and once it's gone (the user is busy
   // with what it opened) the bubble steps aside.
   handsOn: boolean
+  // The page behind stays live: the target can be dragged, not just tapped.
+  live: boolean
   pose: TourPose
   faces: TourFacing
   title: string
@@ -102,22 +128,21 @@ const STEPS: { id: TourSlot, target: TourTarget | null, needs: TourTarget | null
   { id: 'addDishLink', target: 'add-dish-link', needs: 'add-button' },
   { id: 'newCard', target: 'dish', needs: 'add-button' },
   { id: 'columns', target: 'columns', needs: 'columns' },
+  { id: 'deleteDish', target: 'dish-menu', needs: 'add-button' },
   { id: 'boardSwitcher', target: 'board-switcher', needs: 'board-switcher' },
   // Which of three it shows is picked as it comes: installing can be
   // offered meanwhile.
   { id: 'last', target: null, needs: null },
 ]
 // The steps about adding a Dish, which "Ohne Gericht weiter" goes past.
-const DISH_STEPS: TourSlot[] = ['addButton', 'addDishLink', 'newCard']
-// The steps that wait for the user to do something: no Weiter.
-const WAITING: TourSlot[] = ['addButton', 'addDishLink']
+const DISH_STEPS: TourSlot[] = ['addButton', 'addDishLink', 'newCard', 'deleteDish']
 
 export function startTour(situation: TourSituation): Tour {
   const steps = STEPS
     .filter(s => !s.needs || situation.targets.includes(s.needs))
     .filter(s => s.id !== 'last' || situation.layout === 'phone')
     .map(s => s.id)
-  return { status: 'running', situation, steps, at: 0, dishId: null }
+  return { status: 'running', situation, steps, at: 0, dishId: null, landedIn: null, dishIn: null, dishMenu: 'closed', kept: false }
 }
 
 // The Tour after `event`. An ended Tour stays as it ended, and an event a
@@ -132,10 +157,9 @@ export function tourAfter(tour: Tour, event: TourEvent): Tour {
     case 'back':
       return canGoBack(tour) ? { ...tour, at: backFrom(tour) } : tour
     case 'next':
-      if (WAITING.includes(id)) return tour
-      return tour.at + 1 < tour.steps.length ? { ...tour, at: tour.at + 1 } : { ...tour, status: 'finished' }
+      return waiting(tour) ? tour : forward(tour)
     case 'withoutDish': {
-      if (!WAITING.includes(id)) return tour
+      if (id !== 'addButton' && id !== 'addDishLink') return tour
       const past = tour.steps.findIndex(s => s !== 'hello' && !DISH_STEPS.includes(s))
       return past < 0 ? { ...tour, status: 'finished' } : { ...tour, at: past }
     }
@@ -144,7 +168,24 @@ export function tourAfter(tour: Tour, event: TourEvent): Tour {
     case 'addDishClosed':
       return id === 'addDishLink' ? to('addButton') : tour
     case 'dishAdded':
-      return id === 'addDishLink' ? to('newCard', { dishId: event.dishId }) : tour
+      return id === 'addDishLink' ? to('newCard', { dishId: event.dishId, landedIn: event.columnId, dishIn: event.columnId }) : tour
+    // Arrived in the Column step 5 asks for, or gone while a step was about
+    // it, the Tour moves on; anything else is just where the Dish is now.
+    case 'dishMoved':
+    case 'dishGone': {
+      if (event.dishId !== tour.dishId) return tour
+      const was = moveTo(tour)
+      const onDish = !!was || id === 'deleteDish'
+      const now: Tour = event.type === 'dishMoved' ? { ...tour, dishIn: event.columnId } : { ...tour, dishIn: null, dishMenu: 'closed' }
+      const arrived = event.type === 'dishMoved' && event.columnId === was?.id
+      return arrived || (event.type === 'dishGone' && onDish) ? forward(now) : now
+    }
+    case 'dishMenu':
+      return event.dishId === tour.dishId ? { ...tour, dishMenu: event.menu } : tour
+    case 'keep':
+      return id === 'deleteDish' ? forward({ ...tour, kept: true }) : tour
+    case 'columnsChanged':
+      return { ...tour, situation: { ...tour.situation, columns: event.columns } }
     case 'installOffered':
       return { ...tour, situation: { ...tour.situation, install: { ...tour.situation.install, offered: true } } }
     case 'installAnswered':
@@ -152,19 +193,51 @@ export function tourAfter(tour: Tour, event: TourEvent): Tour {
   }
 }
 
-// Zurück, from every step but the first: not from inside Add Dish (closing
-// it does that), nor from the new card, which can't be added again.
-function canGoBack(tour: Tour): boolean {
+// The steps that wait for the user to do something: no Weiter.
+function waiting(tour: Tour): boolean {
   const id = tour.steps[tour.at]
-  return tour.at > 0 && id !== 'addDishLink' && id !== 'newCard'
+  return id === 'addButton' || id === 'addDishLink' || id === 'deleteDish' || (id === 'columns' && !!moveTo(tour))
 }
 
-// The step before, but never back into Add Dish (a step to do, not to read
-// again), nor to a new card when no Dish was added.
-function backFrom({ steps, at, dishId }: Tour): number {
-  let back = at - 1
-  while (back > 0 && (steps[back] === 'addDishLink' || (steps[back] === 'newCard' && !dishId))) back--
+// Zurück, from every step but the first: not from inside Add Dish or the ⋯
+// menu (closing it does that), nor from the new card, which can't be added
+// again.
+function canGoBack(tour: Tour): boolean {
+  const id = tour.steps[tour.at]
+  const inMenu = tour.dishMenu !== 'closed' && (id === 'deleteDish' || (id === 'columns' && !!moveTo(tour)))
+  return tour.at > 0 && id !== 'addDishLink' && id !== 'newCard' && !inMenu
+}
+
+// Whether Weiter or Zurück can land on a step: never in Add Dish (a step to
+// do, not to read again); on the new card only once a Dish was added; on
+// deleting it only while it's on the Board and wasn't kept.
+function reachable(tour: Tour, slot: TourSlot): boolean {
+  if (slot === 'addDishLink') return false
+  if (slot === 'newCard') return !!tour.dishId
+  if (slot === 'deleteDish') return !!tour.dishIn && !tour.kept
+  return true
+}
+
+// The next step that can show; past the last, the Tour is finished.
+function forward(tour: Tour): Tour {
+  const next = tour.steps.findIndex((slot, i) => i > tour.at && reachable(tour, slot))
+  return next < 0 ? { ...tour, status: 'finished' } : { ...tour, at: next }
+}
+
+function backFrom(tour: Tour): number {
+  let back = tour.at - 1
+  while (back > 0 && !reachable(tour, tour.steps[back]!)) back--
   return back
+}
+
+// Step 5's Column: the first after the one the Tour's Dish landed in that
+// isn't the Gekocht Column (moving there would record a Cooking), while the
+// Dish is on the Board and not there yet; else null, and step 5 just
+// explains the Columns.
+function moveTo({ situation: { columns }, landedIn, dishIn }: Tour): TourColumn | null {
+  const landed = columns.findIndex(c => c.id === landedIn)
+  const column = landed < 0 ? null : columns.slice(landed + 1).find(c => !c.isGekocht)
+  return column && dishIn && dishIn !== column.id ? column : null
 }
 
 // The step showing, in `t`'s words; null once the Tour has ended.
@@ -176,7 +249,7 @@ export function tourStep(tour: Tour, t: Strings['tour']): TourStep | null {
   const forward = tour.at === tour.steps.length - 1 ? 'finish' : 'next'
   const buttons: TourButton[] = canGoBack(tour) ? ['back', forward, 'skip'] : [forward, 'skip']
   if (id === 'last') return lastStep(tour.situation.install, buttons, t)
-  const shown = { id, target, dishId: null, corner: null, handsOn: false }
+  const shown = { id, target, also: null, dishId: null, columnId: null, corner: null, handsOn: false, live: false }
   const pointing = { ...shown, pose: 'pointing', faces: 'target' } as const
   switch (id) {
     case 'hello':
@@ -187,10 +260,34 @@ export function tourStep(tour: Tour, t: Strings['tour']): TourStep | null {
       return { ...pointing, handsOn: true, ...t.addDishLink, buttons: ['withoutDish', 'skip'] }
     case 'newCard':
       return { ...pointing, dishId: tour.dishId, ...t.newCard, buttons }
-    case 'columns':
-      return { ...pointing, title: t.columns.title, text: columnsText(tour.situation, t), buttons }
+    case 'columns': {
+      const column = moveTo(tour)
+      return column
+        ? moveStep(tour, column, pointing, buttons, t)
+        : { ...pointing, title: t.columns.title, text: columnsText(tour.situation, t), buttons }
+    }
+    case 'deleteDish':
+      return tour.dishMenu === 'closed'
+        ? { ...pointing, dishId: tour.dishId, handsOn: true, ...t.deleteDish, buttons: ['back', 'keep', 'skip'] }
+        // In the menu: its Löschen (not there while it shows the Columns).
+        : { ...pointing, target: 'menu-delete', handsOn: true, title: t.deleteDish.title, text: t.deleteDish.menu, buttons: ['keep', 'skip'] }
     case 'boardSwitcher':
       return { ...pointing, ...t.boardSwitcher, buttons }
+  }
+}
+
+// Step 5 to do: the card and the Column (its tab on phones, else its lane)
+// while the card can be dragged there; the bubble follows into the ⋯ menu,
+// onto "Verschieben nach…" and then the Column there.
+function moveStep(tour: Tour, column: TourColumn, pointing: Omit<TourStep, 'title' | 'text' | 'buttons'>, buttons: TourButton[], t: Strings['tour']): TourStep {
+  const doing = { ...pointing, id: 'moveDish', handsOn: true, title: t.moveDish.title(column.name) } as const
+  switch (tour.dishMenu) {
+    case 'closed':
+      return { ...doing, target: 'dish', dishId: tour.dishId, also: 'column', columnId: column.id, live: true, text: t.moveDish.text(tour.situation.layout === 'phone'), buttons: buttons.filter(b => b !== 'next') }
+    case 'actions':
+      return { ...doing, target: 'menu-move', text: t.moveDish.menu, buttons: ['skip'] }
+    case 'columns':
+      return { ...doing, target: 'menu-column', columnId: column.id, text: t.moveDish.pick(column.name), buttons: ['skip'] }
   }
 }
 
@@ -206,7 +303,7 @@ function columnsText({ columns, layout }: TourSituation, t: Strings['tour']): st
 // Step 8: the share tip once installed; else Installieren, when the browser
 // offered it; else where that browser's menu has it, Topfbert pointing there.
 function lastStep({ installed, offered, browser }: TourInstall, buttons: TourButton[], t: Strings['tour']): TourStep {
-  const shown = { target: null, dishId: null, corner: null, handsOn: false, buttons }
+  const shown = { target: null, also: null, dishId: null, columnId: null, corner: null, handsOn: false, live: false, buttons }
   if (installed) return { ...shown, id: 'shareTip', pose: 'wink', faces: 'front', ...t.shareTip }
   // Installieren in place of Fertig: the dialog's answer ends the Tour.
   const install = buttons.map(b => b === 'finish' ? 'install' : b)

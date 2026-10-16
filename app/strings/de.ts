@@ -639,6 +639,23 @@ export const de = {
         phone ? ' Wisch zur Seite oder tipp oben auf eine Spalte, um sie zu sehen.' : '',
       ].join(''),
     },
+    // Step 5: the Tour's Dish to the next Column, by its name; by dragging
+    // (onto its tab on phones) or through the card's ⋯.
+    moveDish: {
+      title: (column: string) => `Zieh es auf „${column}“`,
+      text: (phone: boolean) => phone
+        ? 'Halt die Karte gedrückt und zieh sie oben auf die Spalte. Oder über ⋯ → „Verschieben nach…“.'
+        : 'Zieh die Karte rüber in die Spalte. Oder über ⋯ → „Verschieben nach…“.',
+      menu: 'Tipp auf „Verschieben nach…“.',
+      pick: (column: string) => `Und jetzt auf „${column}“.`,
+    },
+    // Step 6: deleting it again, or "Behalten".
+    deleteDish: {
+      title: 'Und wieder weg',
+      text: 'Über ⋯ löschst du ein Gericht. Keine Sorge: Mit „Rückgängig“ holst du es gleich wieder zurück.',
+      menu: 'Tipp auf „Löschen“. Mit „Rückgängig“ ist es gleich wieder da.',
+    },
+    keep: 'Behalten',
     boardSwitcher: {
       title: 'Kocht zusammen',
       text: 'Hier lädst du andere zu deinem Board ein, wechselst zwischen deinen Boards oder fängst ein neues an.',

@@ -162,6 +162,12 @@ function onCardClick(event: MouseEvent, dish: DishView) {
     selection.toggle(dish.id)
     return
   }
+  // The Tour moving or deleting this Dish: only its ⋯ menu answers a tap.
+  if (boardTour.value?.heldDishId === dish.id && !(event.target as Element).closest('[data-tour="dish-menu"]')) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   const onLink = (event.target as Element).closest('.card-link')
   if (onLink && event.button === 0 && (event.ctrlKey || event.metaKey) && !event.defaultPrevented) {
     event.preventDefault()
@@ -367,12 +373,27 @@ watch(adding, (isOpen) => {
 // drag. "Rundgang starten" in Your Settings starts it again: the sheet
 // closes and the Tour starts on this Board.
 const anyModalOpen = useAnyModalOpen()
-const boardTour = useTemplateRef<{ start: () => void, dishAdded: (dishId: string) => void, addingTourDish: boolean }>('boardTour')
+const boardTour = useTemplateRef<{
+  start: () => void
+  dishAdded: (dishId: string, columnId: string) => void
+  addingTourDish: boolean
+  heldDishId: string | null
+  modal: boolean
+}>('boardTour')
 async function startTour() {
   showingSettings.value = false
   await nextTick()
   boardTour.value?.start()
 }
+// On phones, the Column of the Dish the Tour moves or deletes comes to the
+// front, so its card is there to point at (moved to the next Column, say).
+watch(() => {
+  const held = boardTour.value?.heldDishId
+  return held && board.value ? dishOnBoard(board.value, held)?.column.id : null
+}, (columnId) => {
+  const index = board.value?.columns.findIndex(c => c.id === columnId) ?? -1
+  if (index >= 0 && isPhoneLayout()) selectTab(index)
+})
 
 // Search (PRD story 36): the magnifier opens a field; while it holds a
 // query, what the search found takes the place of the Columns.
@@ -438,9 +459,9 @@ async function switchBoard(index: number) {
 // stored, a notice says which image the Dish has instead.
 function onAdded(result: BoardResult, from: DOMRect | null) {
   void showResult(result)
-  boardTour.value?.dishAdded(result.dish.id)
   const shown = board.value && dishOnBoard(board.value, result.dish.id)
   if (!shown) return
+  boardTour.value?.dishAdded(result.dish.id, shown.column.id)
   const slides = isPhoneLayout() && activeColumnId.value !== shown.column.id
   activeColumnId.value = shown.column.id
   if (from) flyIn(shown.dish.id, from, { slides })
@@ -752,6 +773,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             :style="{ '--accent': columnAccent(index) }"
             :data-column-id="column.id"
             data-lane
+            data-tour="column"
+            :data-tour-column-id="column.id"
             :data-gekocht="column.isGekocht || undefined"
           >
             <!-- Phones show it above the tabs (ColumnHeadline) instead. -->
@@ -853,6 +876,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       :aria-label="t.dish.menu(dish.title)"
                       :data-tooltip="t.dish.more"
                       aria-haspopup="dialog"
+                      data-tour="dish-menu"
                       @click="menuDish = dish"
                     >
                       <svg
@@ -983,7 +1007,15 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <template v-if="!route.params.dish">
       <VeggieConfetti />
       <GekochtPill below-tabs />
-      <AppToast v-model="toast" />
+      <!-- Over the Tour's layer while it makes the Board inert, so
+           "Rückgängig" still works. -->
+      <Teleport
+        defer
+        to="[data-tour-overlays]"
+        :disabled="!boardTour?.modal"
+      >
+        <AppToast v-model="toast" />
+      </Teleport>
     </template>
 
     <CookingNoteSheet
@@ -1012,11 +1044,15 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           <button
             type="button"
             class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            data-tour="menu-move"
             @click="chooseColumn(true)"
           >
             {{ t.dish.moveTo }}
           </button>
-          <DangerButton @click="deleteFromMenu">
+          <DangerButton
+            data-tour="menu-delete"
+            @click="deleteFromMenu"
+          >
             {{ t.dish.delete }}
           </DangerButton>
         </template>
@@ -1063,6 +1099,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :board="board"
       :idle="!anyModalOpen && !searchOpen && !selecting && !dragging && !route.params.dish"
       :auto-start="!openedToAdd"
+      :menu="menuDish && { dishId: menuDish.id, choosing: choosingColumn }"
+      @close-menu="menuDish = null"
       @ended="showNotice(t.tour.ended)"
     />
 
