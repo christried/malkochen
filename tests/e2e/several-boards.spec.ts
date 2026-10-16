@@ -5,7 +5,7 @@ import { signIn } from './auth'
 import { column, tab, titles } from './board'
 import { expectCardShape } from './card-shape'
 import { ANY_CHEER, cheer, confetti, confettiOrigin, gekochtPill } from './celebration'
-import { backgroundOf, colourOf, colours, contrast, gradientStops, rgb, tintedWith } from './colour'
+import { auraAngle, auraColours, backgroundOf, colourOf, colours, contrast, rgb, tintedWith } from './colour'
 import { gotoHydrated } from './hydration'
 import { clickAndExpectSaving, holdRequests } from './loading'
 import { removeUsers } from './seed'
@@ -145,6 +145,7 @@ async function headerLooks(page: Page) {
       chevron: pill.querySelectorAll('svg').length,
       buttons: [...header.querySelectorAll('[aria-label="Gerichte suchen"], [aria-label="Einstellungen"]')].map(b => getComputedStyle(b).backgroundColor),
       surface: token('color', 'var(--color-surface)'),
+      surfaceMuted: token('color', 'var(--color-surface-muted)'),
       cardShadow: token('boxShadow', 'var(--shadow-card)'),
     }
   })
@@ -161,10 +162,13 @@ for (const scheme of ['light', 'dark'] as const) {
       await gotoHydrated(page, `/b/${board}`)
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(`🍪 ${name}`)
       const looks = await headerLooks(page)
-      // Tailwind puts its (empty) ring shadows before the card's.
-      expect(looks.pill).toEqual({ shadow: expect.stringContaining(looks.cardShadow), family: expect.stringMatching(/^Figtree/), size: '15px', weight: '600' })
-      // The pebble is on surface, as the pill around it is filled (#206).
-      expect(looks.pebble).toEqual({ background: looks.surface, round: true, emojiInside: true, inPill: true })
+      // Phones: Tailwind puts its (empty) ring shadows before the card's.
+      // From 768px the pill sits in its aura, with no shadow (#285).
+      const phone = width < 768
+      expect(looks.pill).toEqual({ shadow: phone ? expect.stringContaining(looks.cardShadow) : 'none', family: expect.stringMatching(/^Figtree/), size: '15px', weight: '600' })
+      // The pebble is on surface where the pill around it is filled (#206),
+      // on surface-muted where it is white (#285).
+      expect(looks.pebble).toEqual({ background: phone ? looks.surface : looks.surfaceMuted, round: true, emojiInside: true, inPill: true })
       expect(looks.chevron).toBe(1)
       expect(looks.buttons).toEqual([looks.surface, looks.surface])
     }
@@ -174,12 +178,11 @@ for (const scheme of ['light', 'dark'] as const) {
   })
 }
 
-// #206: the pill is filled in the Board's tint, so it reads as a button and
-// doesn't blend into the page. Phones show one Column at a time and the page
-// wears that Column's accent, so the pill does too, fuller; with every Column
-// showing, the page is a gradient across the Board's Column accents, and the
-// pill is filled with that gradient, fuller. Its name stays readable on it
-// (WCAG AA).
+// #206: on phones the pill is filled in the Board's tint, so it reads as a
+// button and doesn't blend into the page: they show one Column at a time and
+// the page wears that Column's accent, so the pill does too, fuller. With
+// every Column showing (#285), the pill is white in an aura of the Board's
+// Column accents. Its name stays readable on it (WCAG AA).
 async function deleteColumn(page: Page, boardId: string, name: string) {
   const board = await (await page.request.get(`/api/boards/${boardId}`)).json() as { columns: { id: string, name: string }[] }
   const res = await page.request.delete(`/api/columns/${board.columns.find(c => c.name === name)!.id}`)
@@ -216,7 +219,7 @@ for (const scheme of ['light', 'dark'] as const) {
     }
   })
 
-  test(`on a computer the switcher pill is filled with the Board's gradient, and another Board's changes it (${scheme})`, async ({ page }) => {
+  test(`on a computer the switcher pill is white in the Board's aura, and another Board's changes it (${scheme})`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.emulateMedia({ colorScheme: scheme })
     await signIn(page, ALLOWLISTED[9])
@@ -225,26 +228,78 @@ for (const scheme of ['light', 'dark'] as const) {
     await deleteColumn(page, two, 'Diese Woche')
     await gotoHydrated(page, `/b/${three}`)
     const pill = switcher(page)
+    const aura = page.getByRole('heading', { level: 1 })
     const known = await colours(page, 'surface')
-    const stops = async () => rgb(page, await gradientStops(pill))
-    const [ink] = await rgb(page, [await colourOf(pill)])
+    const auraOf = async () => (await rgb(page, await auraColours(aura))).map(colour => tintedWith(colour, known))
 
-    expect((await stops()).map(stop => tintedWith(stop, known))).toEqual(['butter', 'orchid', 'sage'])
-    // Fuller than the page's own gradient behind it, stop for stop.
-    const behind = await rgb(page, await gradientStops(page.locator('main.board')))
-    for (const [i, stop] of (await stops()).entries()) {
-      expect(contrast(stop, known.background)).toBeGreaterThan(1.15)
-      expect(contrast(stop, behind[i]!)).toBeGreaterThan(1.15)
-      expect(contrast(ink!, stop)).toBeGreaterThanOrEqual(4.5)
-    }
+    // White, its name in the text colour (AA), no shadow; its pebble on
+    // surface-muted.
+    const [fill, ink, surface, pebble, muted] = await rgb(page, [
+      await backgroundOf(pill),
+      await colourOf(pill),
+      await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-surface')),
+      await backgroundOf(pill.locator('[data-emoji-pebble]')),
+      await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-surface-muted')),
+    ])
+    expect(fill).toEqual(surface)
+    expect(contrast(ink!, fill!)).toBeGreaterThanOrEqual(4.5)
+    expect(pebble).toEqual(muted)
+    await expect(pill).toHaveCSS('box-shadow', 'none')
+
+    // A 1.5px rim of the Board's Column accents, turning.
+    expect(await auraOf()).toEqual(['butter', 'orchid', 'sage'])
+    const [rim, inner] = await Promise.all([aura.boundingBox(), pill.boundingBox()])
+    expect(inner!.x - rim!.x).toBeCloseTo(1.5, 0)
+    const angle = await auraAngle(aura)
+    await expect.poll(() => auraAngle(aura)).not.toBe(angle)
 
     await pill.click()
     await boardList(page).getByRole('link').filter({ hasText: 'Brotkasten' }).click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('🥖 Brotkasten')
     // Not yet while the Board opens: its skeleton takes the pill along.
-    await expect.poll(async () => (await stops().catch(() => [])).map(stop => tintedWith(stop, known))).toEqual(['butter', 'orchid'])
+    await expect.poll(async () => auraOf().catch(() => [])).toEqual(['butter', 'orchid'])
   })
 }
+
+// #285: the add button wears the Board's aura at every width, a 3px rim
+// just outside it; reduced motion stands every aura still.
+for (const [device, width] of [['phone', 390], ['computer', 1440]] as const) {
+  test(`on a ${device} the add button has the Board's 3px aura, and the pill ${device === 'phone' ? 'none' : 'its own'}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await signIn(page, ALLOWLISTED[9])
+    const board = await createBoard(page, 'Keksdose', '🍪')
+    await gotoHydrated(page, `/b/${board}`)
+    const add = page.getByRole('button', { name: 'Gericht hinzufügen' })
+    const aura = add.locator('.aura')
+    const known = await colours(page, 'surface')
+
+    expect((await rgb(page, await auraColours(aura))).map(colour => tintedWith(colour, known))).toEqual(['butter', 'orchid', 'sage'])
+    const [rim, button] = await Promise.all([aura.boundingBox(), add.boundingBox()])
+    expect(button!.x - rim!.x).toBeCloseTo(3, 0)
+    expect(rim!.width - button!.width).toBeCloseTo(6, 0)
+    const angle = await auraAngle(aura)
+    await expect.poll(() => auraAngle(aura)).not.toBe(angle)
+
+    const heading = page.getByRole('heading', { level: 1 })
+    if (device === 'phone') await expect(heading).toHaveCSS('background-image', 'none')
+    else expect(await auraColours(heading)).toHaveLength(3)
+  })
+}
+
+test('with reduced motion neither aura turns', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await signIn(page, ALLOWLISTED[9])
+  const board = await createBoard(page, 'Keksdose', '🍪')
+  await gotoHydrated(page, `/b/${board}`)
+
+  for (const aura of [page.getByRole('heading', { level: 1 }), page.getByRole('button', { name: 'Gericht hinzufügen' }).locator('.aura')]) {
+    expect(await auraColours(aura)).toHaveLength(3)
+    const angle = await auraAngle(aura)
+    await page.waitForTimeout(500)
+    expect(await auraAngle(aura)).toBe(angle)
+  }
+})
 
 // The pixels of a part of the page that aren't its background (taken from
 // `backgroundAt`, a point in it), as a box: where something is drawn.

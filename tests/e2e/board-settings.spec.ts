@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { column, openBoardSettings } from './board'
+import { column, columnRow as row, openBoardSettings, openColumnRow } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { landingBoardId, resetBoard, seedDish } from './seed'
 
@@ -14,12 +14,12 @@ const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
 // The Column names in settings, top to bottom, until they are `expected`.
 async function expectColumnNames(page: Page, expected: string[]) {
-  const fields = page.getByRole('list', { name: 'Spalten' }).getByRole('textbox', { name: /^Name der Spalte/ })
-  await expect.poll(() => fields.evaluateAll(els => els.map(el => (el as HTMLInputElement).value))).toEqual(expected)
+  await expect(page.getByRole('list', { name: 'Spalten' }).locator('[data-column-name]')).toHaveText(expected)
 }
 
-function row(page: Page, name: string) {
-  return page.getByRole('listitem').filter({ has: page.getByRole('textbox', { name: `Name der Spalte „${name}“` }) })
+// A Column's row button, which opens it.
+function toggle(page: Page, name: string) {
+  return row(page, name).locator('button[aria-expanded]')
 }
 
 // Signs in as Ida with a fresh Board, `before` it is shown (e.g. to seed
@@ -67,10 +67,34 @@ test('the new Column field suggests one of its example names, and another once a
   await expect(field).toHaveAttribute('placeholder', 'z. B. „Lunchbox“')
 })
 
+test('each Column is a row with its subtitle and Dish count, and opens, one at a time, to labelled fields', async ({ page }) => {
+  await openSettings(page, async () => {
+    await seedDish(page, { title: 'Ramen', sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
+  })
+  await expect(toggle(page, 'Diese Woche')).toContainText('Das steht an.')
+  await expect(row(page, 'Diese Woche').locator('[data-dish-count]')).toHaveText('1')
+  await expect(toggle(page, 'Diese Woche')).toHaveAccessibleName(/1 Gericht$/)
+  await expect(page.getByRole('list', { name: 'Spalten' }).getByRole('textbox')).toHaveCount(0)
+
+  await toggle(page, 'Ideen').click()
+  await expect(toggle(page, 'Ideen')).toHaveAttribute('aria-expanded', 'true')
+  await expect(row(page, 'Ideen').locator('label')).toHaveText(['Name', 'Untertitel'])
+  await expect(nameField(page, 'Ideen')).toHaveValue('Ideen')
+  await expect(row(page, 'Ideen').getByRole('button', { name: 'Spalte „Ideen“ löschen' })).toHaveText('Spalte löschen')
+
+  // Opening another closes it; tapping an open one closes it.
+  await toggle(page, 'Diese Woche').click()
+  await expect(nameField(page, 'Ideen')).toHaveCount(0)
+  await expect(nameField(page, 'Diese Woche')).toBeVisible()
+  await toggle(page, 'Diese Woche').click()
+  await expect(nameField(page, 'Diese Woche')).toHaveCount(0)
+})
+
 test('a Member adds, renames and reorders Columns; Gekocht is marked and can’t be deleted', async ({ page }) => {
   await openSettings(page)
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
-  await expect(row(page, 'Gekocht')).toContainText('Kann nicht gelöscht werden')
+  await openColumnRow(page, 'Gekocht')
+  await expect(row(page, 'Gekocht')).toContainText('Untertitel fest: „Schon geschafft!“ · Kann nicht gelöscht werden')
   await expect(page.getByRole('button', { name: 'Spalte „Gekocht“ löschen' })).toHaveCount(0)
 
   await page.getByLabel('Neue Spalte').fill('Wochenende')
@@ -84,6 +108,7 @@ test('a Member adds, renames and reorders Columns; Gekocht is marked and can’t
   await page.getByRole('button', { name: 'Hinzufügen' }).click()
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht', 'Wochenende'])
 
+  await openColumnRow(page, 'Wochenende')
   const renamed = page.getByRole('textbox', { name: 'Name der Spalte „Wochenende“' })
   await renamed.fill('Für Gäste')
   await renamed.press('Enter')
@@ -96,12 +121,13 @@ test('a Member adds, renames and reorders Columns; Gekocht is marked and can’t
   await expect(page.getByRole('region').getByRole('heading', { level: 2 })).toHaveText(['Ideen', 'Diese Woche', 'Für Gäste', 'Gekocht'])
 })
 
-// A Column's subtitle field in settings.
+// A Column's subtitle field in settings, once its row is open.
 function subtitleField(page: Page, name: string) {
   return page.getByRole('textbox', { name: `Untertitel der Spalte „${name}“` })
 }
 
 async function setSubtitle(page: Page, name: string, subtitle: string) {
+  await openColumnRow(page, name)
   const field = subtitleField(page, name)
   await field.fill(subtitle)
   const saved = page.waitForResponse(r => r.request().method() === 'PATCH' && r.url().includes('/api/columns/') && r.ok())
@@ -111,18 +137,26 @@ async function setSubtitle(page: Page, name: string, subtitle: string) {
 
 test('a Member sets and clears Column Subtitles; the Gekocht Column’s is fixed', async ({ page }) => {
   await openSettings(page)
+  await openColumnRow(page, 'Ideen')
   await expect(subtitleField(page, 'Ideen')).toHaveValue('Worauf hast du Lust?')
-  await expect(subtitleField(page, 'Diese Woche')).toHaveValue('Das steht an.')
   await expect(subtitleField(page, 'Ideen')).toHaveAttribute('maxlength', '40')
+  await openColumnRow(page, 'Diese Woche')
+  await expect(subtitleField(page, 'Diese Woche')).toHaveValue('Das steht an.')
+  await openColumnRow(page, 'Gekocht')
   await expect(subtitleField(page, 'Gekocht')).toHaveCount(0)
   await expect(row(page, 'Gekocht')).toContainText('Schon geschafft!')
 
   await setSubtitle(page, 'Ideen', '  Was wir mal kochen wollen ')
-  await setSubtitle(page, 'Diese Woche', '')
   await expect(subtitleField(page, 'Ideen')).toHaveValue('Was wir mal kochen wollen')
+  await expect(toggle(page, 'Ideen')).toContainText('Was wir mal kochen wollen')
+  await setSubtitle(page, 'Diese Woche', '')
+  // Without one, the closed row prompts for it.
+  await expect(toggle(page, 'Diese Woche')).toContainText('Untertitel (optional)')
 
   await reloadHydrated(page)
+  await openColumnRow(page, 'Ideen')
   await expect(subtitleField(page, 'Ideen')).toHaveValue('Was wir mal kochen wollen')
+  await openColumnRow(page, 'Diese Woche')
   await expect(subtitleField(page, 'Diese Woche')).toHaveValue('')
   await page.getByRole('link', { name: 'Zurück zum Board' }).click()
   await expect(column(page, 'Ideen')).toContainText('Was wir mal kochen wollen')
@@ -151,6 +185,7 @@ test('on a computer, a lane without a subtitle lines up with the others, and a l
   await page.setViewportSize({ width: 1280, height: 800 })
   await openSettings(page)
   await setSubtitle(page, 'Diese Woche', '')
+  await openColumnRow(page, 'Gekocht')
   const renamed = page.getByRole('textbox', { name: 'Name der Spalte „Gekocht“' })
   await renamed.fill('Wochenendeinkaufsplanungfürdiegroßefeier')
   const saved = page.waitForResponse(r => r.request().method() === 'PATCH' && r.url().includes('/api/columns/') && r.ok())
@@ -174,6 +209,7 @@ test('a Column with Dishes asks where they go, and they go there', async ({ page
     for (const title of ['Ramen', 'Bibimbap']) await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
   })
 
+  await openColumnRow(page, 'Diese Woche')
   await page.getByRole('button', { name: 'Spalte „Diese Woche“ löschen' }).click()
   const dialog = page.getByRole('dialog', { name: '2 Gerichte in „Diese Woche“. Wohin verschieben?' })
   await expect(dialog.getByRole('radio', { name: 'Ideen' })).toBeChecked()
@@ -190,9 +226,11 @@ test('with Gekocht first, the Dishes of a deleted Column go to the first other C
   await openSettings(page, async () => {
     await seedDish(page, { title: 'Pho', sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
   })
+  await openColumnRow(page, 'Gekocht')
   for (let i = 0; i < 2; i++) await page.getByRole('button', { name: '„Gekocht“ nach oben' }).click()
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
 
+  await openColumnRow(page, 'Diese Woche')
   await page.getByRole('button', { name: 'Spalte „Diese Woche“ löschen' }).click()
 
   await expect(page.getByRole('dialog', { name: '1 Gericht in „Diese Woche“. Wohin verschieben?' }).getByRole('radio', { name: 'Ideen' })).toBeChecked()
@@ -202,6 +240,7 @@ test('a Column that got Dishes since settings opened asks where they go instead 
   await openSettings(page)
   await seedDish(page, { title: 'Laksa', sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
 
+  await openColumnRow(page, 'Diese Woche')
   await page.getByRole('button', { name: 'Spalte „Diese Woche“ löschen' }).click()
 
   await expect(page.getByRole('dialog', { name: '1 Gericht in „Diese Woche“. Wohin verschieben?' })).toBeVisible()
@@ -213,8 +252,9 @@ function orderSaved(page: Page) {
   return page.waitForResponse(r => r.request().method() === 'PUT' && /\/api\/boards\/[^/]+\/columns$/.test(r.url()) && r.ok())
 }
 
-test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page }) => {
+test('a Column dragged by its grip moves, the Gekocht Column too, open or not', async ({ page }) => {
   await openSettings(page)
+  await openColumnRow(page, 'Gekocht')
   const grip = (await row(page, 'Gekocht').locator('[data-grip]').boundingBox())!
   const target = (await row(page, 'Ideen').boundingBox())!
   const saved = orderSaved(page)
@@ -231,36 +271,37 @@ test('a Column dragged by its grip moves, the Gekocht Column too', async ({ page
 })
 
 // #206: the grip is easy to hit. Its grab area is the row's whole left end,
-// from the row's edge to just before the name field and as high as the row;
-// the name field and the Dish count beside it never start a drag.
+// from the row's edge to just before the name and as high as the row; the
+// rest of the row, the name and the Dish count, opens it instead and never
+// starts a drag.
 function nameField(page: Page, name: string) {
   return page.getByRole('textbox', { name: `Name der Spalte „${name}“` })
 }
 
 // The grab area's corners, a few pixels inside it: by the row's left edge at
-// the top, and just before the name field at the bottom. Measured once the
-// rows have settled from a move before.
+// the top, and just before the name at the bottom of the closed row.
+// Measured once the rows have settled from a move before.
 async function grabCorners(page: Page, name: string) {
   await page.getByRole('list', { name: 'Spalten' }).evaluate(list => Promise.all(list.getAnimations({ subtree: true }).map(a => a.finished)))
-  const rowBox = (await row(page, name).boundingBox())!
-  const field = (await nameField(page, name).boundingBox())!
+  const rowBox = (await toggle(page, name).boundingBox())!
+  const grip = (await row(page, name).locator('[data-grip]').boundingBox())!
   return {
-    byTheEdge: { x: rowBox.x + 4, y: rowBox.y + 5 },
-    beforeTheName: { x: field.x - 8, y: rowBox.y + rowBox.height - 5 },
+    byTheEdge: { x: grip.x + 4, y: rowBox.y + 5 },
+    beforeTheName: { x: grip.x + grip.width - 8, y: rowBox.y + rowBox.height - 5 },
   }
 }
 
-test('the grip is large, and its grab area reaches from the row’s edge to just before the name field', async ({ page }) => {
+test('the grip is large, and its grab area reaches from the row’s edge to just before the name', async ({ page }) => {
   await openSettings(page)
   const rowBox = (await row(page, 'Ideen').boundingBox())!
   const grip = (await row(page, 'Ideen').locator('[data-grip]').boundingBox())!
-  const field = (await nameField(page, 'Ideen').boundingBox())!
+  const name = (await row(page, 'Ideen').locator('[data-column-name]').boundingBox())!
 
   expect(Math.abs(grip.x - rowBox.x)).toBeLessThanOrEqual(1)
   expect(Math.abs(grip.y - rowBox.y)).toBeLessThanOrEqual(1)
   expect(Math.abs(grip.height - rowBox.height)).toBeLessThanOrEqual(1)
-  // It ends just before the name field, not on it.
-  const before = field.x - (grip.x + grip.width)
+  // It ends just before the name, not on it.
+  const before = name.x - (grip.x + grip.width)
   expect(before).toBeGreaterThanOrEqual(0)
   expect(before).toBeLessThanOrEqual(8)
   // The icon itself: 24px, where it was 18px.
@@ -310,14 +351,16 @@ async function touchDrag(page: Page, from: { x: number, y: number }, to: { x: nu
   await touches.detach()
 }
 
-test('pressing anywhere in the grab area drags the Column, with a finger; the name field and the Dish count don’t', async ({ browser }) => {
+test('pressing anywhere in the grab area drags the Column, with a finger; the name and the Dish count don’t', async ({ browser }) => {
   const page = await newTab(browser, { hasTouch: true, viewport: { width: 390, height: 844 } })
   await openSettings(page)
   await row(page, 'Gekocht').scrollIntoViewIfNeeded()
 
-  // A tap on the name puts the cursor in it.
-  await nameField(page, 'Ideen').tap()
-  await expect(nameField(page, 'Ideen')).toBeFocused()
+  // A tap on the name opens the row; another closes it.
+  await row(page, 'Ideen').locator('[data-column-name]').tap()
+  await expect(nameField(page, 'Ideen')).toBeVisible()
+  await row(page, 'Ideen').locator('[data-column-name]').tap()
+  await expect(nameField(page, 'Ideen')).toHaveCount(0)
 
   const from = (await grabCorners(page, 'Gekocht')).beforeTheName
   const target = (await row(page, 'Ideen').boundingBox())!
@@ -326,18 +369,18 @@ test('pressing anywhere in the grab area drags the Column, with a finger; the na
   await expectSettled(page, 'Gekocht')
 
   // A finger moving up from the Dish count scrolls or does nothing: no drag.
-  const count = (await row(page, 'Diese Woche').getByText('0 Gerichte').boundingBox())!
+  const count = (await row(page, 'Diese Woche').locator('[data-dish-count]').boundingBox())!
   const top = (await row(page, 'Gekocht').boundingBox())!
   await touchDrag(page, { x: count.x + 10, y: count.y + count.height / 2 }, { x: count.x + 10, y: top.y + 4 })
   await expectColumnNames(page, ['Gekocht', 'Ideen', 'Diese Woche'])
   await page.context().close()
 })
 
-test('the name field and the Dish count are for clicking, not for dragging', async ({ page }) => {
+test('the name and the Dish count are for clicking, not for dragging', async ({ page }) => {
   await openSettings(page)
 
   // Pressing the Dish count and moving up past the rows above moves nothing.
-  const count = (await row(page, 'Gekocht').getByText('0 Gerichte').boundingBox())!
+  const count = (await row(page, 'Gekocht').locator('[data-dish-count]').boundingBox())!
   const top = (await row(page, 'Ideen').boundingBox())!
   await page.mouse.move(count.x + 10, count.y + count.height / 2)
   await page.mouse.down()
@@ -346,16 +389,16 @@ test('the name field and the Dish count are for clicking, not for dragging', asy
   await page.mouse.up()
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
 
-  // Nor does pressing the name field; a click on it puts the cursor in it.
-  const field = (await nameField(page, 'Gekocht').boundingBox())!
-  await page.mouse.move(field.x + 6, field.y + field.height / 2)
+  // Nor does pressing the name; a click on it opens the row.
+  const name = (await row(page, 'Gekocht').locator('[data-column-name]').boundingBox())!
+  await page.mouse.move(name.x + 6, name.y + name.height / 2)
   await page.mouse.down()
-  await page.mouse.move(field.x + 6, top.y + 4, { steps: 16 })
+  await page.mouse.move(name.x + 6, top.y + 4, { steps: 16 })
   await expect(row(page, 'Gekocht')).toHaveCSS('box-shadow', 'none')
   await page.mouse.up()
   await expectColumnNames(page, ['Ideen', 'Diese Woche', 'Gekocht'])
-  await nameField(page, 'Ideen').click()
-  await expect(nameField(page, 'Ideen')).toBeFocused()
+  await row(page, 'Ideen').locator('[data-column-name]').click()
+  await expect(nameField(page, 'Ideen')).toBeVisible()
 })
 
 // A let-go Column is back in the list: not shifted, no lift shadow.

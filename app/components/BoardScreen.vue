@@ -931,6 +931,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         stroke-linecap="round"
         aria-hidden="true"
       ><path d="M12 5v14M5 12h14" /></svg>
+      <span
+        class="fab-aura aura"
+        aria-hidden="true"
+      />
     </button>
 
     <SelectionBar
@@ -1145,9 +1149,23 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 .fab-lifted {
   translate: 0 -76px;
 }
+/* Its aura (#285, main.css `.aura`): a 3px rim just outside the pebble, at
+   every width, behind it. */
+.fab-aura {
+  position: absolute;
+  inset: -3px;
+  z-index: -2;
+  border-radius: inherit;
+}
 /* On an empty Board the add action is highlighted: a butter ring breathes
-   around it. Reduced motion (main.css) stops it after one pass. */
-.fab-prompt {
+   around it, on top of the aura. Reduced motion (main.css) stops it after
+   one pass. */
+.fab-prompt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
   animation: fab-prompt var(--dur-idle) var(--ease-idle) infinite;
 }
 /* Cards rising in (see `rise`). */

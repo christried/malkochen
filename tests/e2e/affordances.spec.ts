@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
-import { cardAtRest, openBoardSettings } from './board'
+import { cardAtRest, openBoardSettings, openColumnRow } from './board'
 import { gotoHydrated } from './hydration'
 import { removeUsers, resetBoard, seedCookings, seedDish } from './seed'
 import { openUserSettings } from './settings-sheet'
@@ -195,10 +195,13 @@ test('the search and what it finds', async ({ page }) => {
 test('Board settings, with a disabled arrow, and its dialogs', async ({ page }) => {
   await openBoard(page)
   await openBoardSettings(page)
+  // One Column's row open with its buttons, the others closed.
+  await openColumnRow(page, 'Ideen')
   await expect(page.getByRole('button', { name: '„Ideen“ nach oben' })).toBeDisabled()
   expect(await affordanceProblems(page, page.locator('main'))).toEqual([])
 
   // Where a Column's Dishes go when it is deleted: a row per Column.
+  await openColumnRow(page, 'Diese Woche')
   await page.getByRole('button', { name: 'Spalte „Diese Woche“ löschen' }).click()
   const moving = page.getByRole('dialog', { name: /Wohin verschieben/ })
   await expect(moving.getByRole('radio', { name: 'Ideen' })).toBeChecked()

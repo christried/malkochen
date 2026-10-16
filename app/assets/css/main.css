@@ -135,18 +135,18 @@ html {
     background-color: var(--lane);
   }
 }
-/* The Board switcher's pill (#206) is filled in the Board's tint, much fuller
-   than the page wears it (--wash-pill, against the page's 24% and 10%) and
-   washed into the surface colour, so it reads as a button instead of
-   blending into the page. Phones: the active Column's accent (--tint),
-   following it as the page does, also mid-swipe. With every Column showing:
-   the gradient across the Board's Column accents (switcherGradient, as
-   --switcher-gradient). Its name is in the ink that goes on an accent, the
-   same in both themes, which is why dark fills it fuller still: the name
+/* The Board switcher's pill (#206). Phones: filled in the active Column's
+   accent (--tint), much fuller than the page wears it (--wash-pill, against
+   the page's 24% and 10%) and washed into the surface colour, so it reads as
+   a button instead of blending into the page; it follows the Column as the
+   page does, also mid-swipe. Its name is in the ink that goes on an accent,
+   the same in both themes, which is why dark fills it fuller still: the name
    keeps WCAG AA on every accent's fill, and the fill stands out from the
-   page behind it (several-boards.spec.ts checks both). Under a mouse it
-   lifts 2px and its shadow deepens, besides growing like every pill (below);
-   reduced motion: the shadow only. */
+   page behind it (several-boards.spec.ts checks both). With every Column
+   showing (#285): white, in the text colour, its pebble on surface-muted,
+   inside a 1.5px aura (`.aura`, below) in the Board's Column accents. Under
+   a mouse it lifts 2px and its shadow deepens, besides growing like every
+   pill (below); reduced motion: the shadow only. */
 :root {
   --wash-pill: 66%;
   --shadow-pill-lift: 0 18px 30px -12px rgba(70,55,30,.34), 0 3px 8px rgba(70,55,30,.10);
@@ -172,7 +172,64 @@ html {
 }
 @media (min-width: 768px) {
   .board-pill {
-    background-image: var(--switcher-gradient);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: none;
+  }
+  .board-pill [data-emoji-pebble] {
+    background-color: var(--color-surface-muted);
+  }
+}
+/* The aura (#285), after daisyUI's (components/aura.css): one tail of light
+   in the Board's Column accents (--aura-colours, from boardColours) running
+   round every 6s. The element draws it as its background, so what it holds
+   covers the middle and its padding is the rim: 1.5px round the Board
+   switcher's pill, 3px round the add button. Two blurred copies behind what
+   it holds are the glow. The angle turns on the element itself; its glow
+   inherits it. Reduced motion stands it still (the global rule below ends
+   it after one instant pass, back at its start). */
+@property --aura-angle {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+@keyframes aura {
+  to { --aura-angle: 360deg; }
+}
+@utility aura {
+  position: relative;
+  isolation: isolate;
+  background-image: conic-gradient(from var(--aura-angle), transparent 180deg, var(--aura-colours));
+  animation: aura 6s linear infinite;
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: inherit;
+    opacity: .7;
+    filter: blur(.25rem);
+    pointer-events: none;
+  }
+  &::after {
+    opacity: .3;
+    filter: blur(1rem);
+  }
+}
+/* A destructive button: a filled danger-red pill with white text, darker on
+   hover (#280: the selection's "Löschen"; #285: "Spalte löschen"). The light
+   theme's danger red in both themes: dark's coral is too light to carry
+   white text (5.3:1 here, 2.3:1 on the coral). */
+.danger-fill {
+  --fill: #C23B22;
+  color: #FFFFFF;
+  background: var(--fill);
+}
+@media (hover: hover) and (pointer: fine) {
+  .danger-fill:not(:disabled):hover {
+    background: color-mix(in oklab, var(--fill) 80%, black);
   }
 }
 @media (hover: hover) and (pointer: fine) {

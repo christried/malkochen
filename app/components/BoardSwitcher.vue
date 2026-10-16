@@ -73,9 +73,10 @@ function newBoard() {
     @keydown.esc="closeOnEscape"
   >
     <!-- The mockup's pill (column-titles-ideen.png): the emoji in a round
-         pebble, the name in the button type, a chevron. Filled in the
-         Board's tint (main.css, .board-pill), its pebble on surface. -->
-    <h1 class="text-button">
+         pebble, the name in the button type, a chevron. On phones filled in
+         the Board's tint (main.css, .board-pill), its pebble on surface;
+         from 768px white in the Board's aura (#285). -->
+    <h1 class="text-button tablet:aura tablet:rounded-pill tablet:p-[1.5px]">
       <button
         ref="pill"
         type="button"

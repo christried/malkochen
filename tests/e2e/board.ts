@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from './fixtures'
 
 // Finding a Board's parts the way a user sees them.
 
@@ -63,6 +64,20 @@ export async function swipe(board: Locator, dx: number, { slow = false, hold = f
 
 // Opens the open Board's Board Settings the way a user does: from its row in
 // the Board Switcher, by the row's Board Settings button (#282).
+// A Column's row in Board settings, found by its name (#285).
+export function columnRow(page: Page, name: string) {
+  return page.getByRole('list', { name: 'Spalten' }).getByRole('listitem')
+    .filter({ has: page.locator('[data-column-name]').getByText(name, { exact: true }) })
+}
+
+// Opens a Column's row in Board settings to its fields and buttons, unless
+// it is open already.
+export async function openColumnRow(page: Page, name: string) {
+  const toggle = columnRow(page, name).locator('button[aria-expanded]')
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+}
+
 export async function openBoardSettings(page: Page) {
   await page.getByRole('heading', { level: 1 }).getByRole('button').click()
   const current = page.getByRole('navigation', { name: 'Deine Boards' }).getByRole('listitem').filter({ has: page.locator('[aria-current="page"]') })

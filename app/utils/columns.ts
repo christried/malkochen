@@ -31,11 +31,10 @@ export function boardGradient(count: number): string {
   return accentGradient(count, 'var(--wash-page)', 'var(--color-bg)')
 }
 
-// What fills the Board switcher's pill there: the same accents, fuller
-// (--wash-pill, main.css) and washed into the surface colour, so the pill
-// wears the Board's colours and stands out from the page.
-export function switcherGradient(count: number): string {
-  return accentGradient(count, 'var(--wash-pill)', 'var(--color-surface)')
+// The colours of the aura (#285, main.css `.aura`) round the Board
+// switcher's pill and the add button: the Board's Column accents, one each.
+export function auraColours(count: number): string {
+  return Array.from({ length: Math.max(count, 1) }, (_, i) => columnAccent(i)).join(', ')
 }
 
 // A swipe's progress (a Column index, fractional mid-swipe) kept on the
@@ -54,9 +53,10 @@ export function accentAt(progress: number): string {
 }
 
 // What a Board's page (and its skeleton) hands down as custom properties,
-// for main.css to colour the page and the Board switcher's pill with.
+// for main.css to colour the page and the auras with. Only the colours come
+// down: the aura's turning angle is read where it is drawn.
 export function boardColours(count: number): Record<string, string> {
-  return { '--board-gradient': boardGradient(count), '--switcher-gradient': switcherGradient(count) }
+  return { '--board-gradient': boardGradient(count), '--aura-colours': auraColours(count) }
 }
 
 // The pebble shape of a Column's tab: three radii, taken in turn.
