@@ -52,6 +52,9 @@ export const addDishBody = z.object({
   photo: photoInput.nullish(),
   // Its focus point; left out, or without an image, the centre.
   imageFocus: imageFocusInput.optional(),
+  // Added during the Tour (ADR 0006): the other Members get no Push
+  // Notification for it; nothing else changes.
+  tour: z.boolean().optional(),
 })
 export type AddDishBody = z.input<typeof addDishBody>
 

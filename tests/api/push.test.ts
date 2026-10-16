@@ -210,6 +210,25 @@ test('one notification per Board counts the Dishes added since the Member last o
   }])
 })
 
+test('a Dish added during the Tour notifies nobody, and is a New Dish for the other Members all the same', async () => {
+  const katalin = await signIn(KATALIN)
+  const hypatia = await signIn(HYPATIA)
+  const board = await sharedBoard(katalin, [hypatia], 'Rundgang', '🧭')
+  await subscribed(hypatia, 'hypatia-tour')
+
+  const res = await postDish(katalin, board.id, { title: 'Probegericht', placeholder: 'bowl', tour: true })
+  expect(res.status).toBe(201)
+  const dish = await res.json() as Dish
+
+  expect(pushService.deliveries).toEqual([])
+  const seen = await getBoard(hypatia, board.id) as Board & { newDishIds: string[] }
+  expect(seen.newDishIds).toEqual([dish.id])
+
+  // Without the flag, as before.
+  await addDish(katalin, board.id, 'Echtes Gericht')
+  expect(devicesReached()).toEqual(['hypatia-tour'])
+})
+
 test('moving, editing, cooking or deleting a Dish notifies nobody', async () => {
   const katalin = await signIn(KATALIN)
   const hypatia = await signIn(HYPATIA)
