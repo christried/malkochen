@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes sy-orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes sy-counter{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+@keyframes sy-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes sy-fade{from{opacity:0}to{opacity:1}}
+@keyframes sy-pop{0%{opacity:0;transform:scale(.4) rotate(-14deg)}65%{opacity:1;transform:scale(1.12) rotate(4deg)}100%{opacity:1;transform:none}}
+@keyframes sy-sign{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes sy-arc{0%,100%{opacity:.9}40%,70%{opacity:.12}}
+@keyframes sy-arc2{0%,20%,100%{opacity:.9}55%,85%{opacity:.12}}
+@keyframes sy-z{0%{opacity:0;transform:translate(0,0) scale(.6)}30%{opacity:1}100%{opacity:0;transform:translate(14px,-26px) scale(1.1)}}
+@keyframes sy-spill{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.12)}}
+@keyframes sy-smoke{0%{opacity:0;transform:translateY(4px) scale(.7)}40%{opacity:.7}100%{opacity:0;transform:translateY(-22px) scale(1.3)}}
+@keyframes sy-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes sy-sp-bg{0%,8%{clip-path:circle(0% at 50% 46%)}30%,100%{clip-path:circle(150% at 50% 46%)}}
+@keyframes sy-sp-icon{0%,6%{transform:scale(.2) rotate(-30deg);opacity:0}22%{transform:scale(1.14) rotate(6deg);opacity:1}30%,74%{transform:none;opacity:1}88%,100%{transform:scale(1.9);opacity:0}}
+@keyframes sy-sp-lid{0%,30%{transform:none}38%{transform:translateY(-14px) rotate(-12deg)}46%{transform:translateY(2px) rotate(4deg)}52%,100%{transform:none}}
+@keyframes sy-sp-word{0%,40%{opacity:0;transform:translateY(12px)}52%,76%{opacity:1;transform:none}88%,100%{opacity:0}}
+@keyframes sy-sp-dot{0%,50%{transform:scale(0)}58%{transform:scale(1.3)}64%,76%{transform:scale(1)}86%,100%{transform:scale(0)}}
+@keyframes sy-sp-app{0%,80%{opacity:0}92%,100%{opacity:1}}
+@keyframes sy-fadeout{0%,80%{opacity:1}92%,100%{opacity:0}}
+@keyframes sy-reveal{from{clip-path:circle(0px at var(--cx) 330px)}to{clip-path:circle(920px at var(--cx) 330px)}}
+@keyframes sy-sun{from{transform:rotate(-90deg) scale(.4)}to{transform:none}}
+@keyframes sy-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+</style></helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:47px;background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;user-select:none;transition:background-color calc(450ms * var(--spd, 1)) ease, color calc(450ms * var(--spd, 1)) ease;{{ themeVars }}">
+
+<sc-if value="{{ isSignin }}">
+  <div style="position:absolute;inset:0;background:color-mix(in oklch, #F7B94A 22%, var(--bg))"></div>
+  <div style="position:absolute;left:50%;top:320px;width:0;height:0">
+    <div style="position:absolute;left:-150px;top:-150px;width:300px;height:300px;border-radius:50%;border:1.5px dashed color-mix(in oklch, var(--ink) 18%, transparent)"></div>
+    <div style="position:absolute;left:0;top:0;width:0;height:0;animation:sy-orbit calc(40s * var(--spd, 1)) linear infinite">
+      <sc-for list="{{ orbit }}" as="o" hint-placeholder-count="8">
+        <div style="position:absolute;left:{{ o.x }};top:{{ o.y }};width:66px;height:66px;margin:-33px">
+          <div style="width:66px;height:66px;border-radius:22px 18px 23px 19px;overflow:hidden;box-shadow:0 12px 22px -12px rgba(0,0,0,.4);animation:sy-counter calc(40s * var(--spd, 1)) linear infinite, sy-pop calc(500ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) {{ o.d }} both"><dc-import name="Illus" kind="{{ o.k }}" play="{{ o.play }}" style="display:block;width:100%;height:100%" hint-size="66px,66px"></dc-import></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="position:absolute;left:-58px;top:-58px;width:116px;height:108px;animation:sy-pop calc(640ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(150ms * var(--spd, 1)) both"><dc-import name="Mascot" mood="wow" size="{{ 116 }}" style="width:116px;height:108px" hint-size="116px,108px"></dc-import></div>
+  </div>
+  <div style="position:absolute;left:28px;right:28px;top:530px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+    <span style="font:400 54px/1 'Newsreader',Georgia,serif;letter-spacing:-.035em;animation:sy-rise calc(560ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(700ms * var(--spd, 1)) both">malkochen</span>
+    <span style="font:italic 400 21px/1.25 'Newsreader',Georgia,serif;color:var(--ink2);animation:sy-rise calc(500ms * var(--spd, 1)) ease-out calc(850ms * var(--spd, 1)) both">Rezepte sammeln. Zusammen kochen.</span>
+  </div>
+  <div style="position:absolute;left:22px;right:22px;bottom:44px;display:flex;flex-direction:column;align-items:center;gap:12px">
+    <div style="width:100%;height:58px;border-radius:29px;background:var(--surface);box-shadow:0 14px 30px -12px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:12px;font:600 16.5px/1 'Hanken Grotesk',system-ui;animation:sy-rise calc(520ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(1s * var(--spd, 1)) both">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"></path><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"></path><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"></path><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"></path></svg>Mit Google anmelden
+    </div>
+    <span style="font:500 12px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2);animation:sy-fade calc(400ms * var(--spd, 1)) ease calc(1.2s * var(--spd, 1)) both">Nur für freigeschaltete Accounts</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isOnboard }}">
+  <div style="position:absolute;inset:0;padding:110px 22px 44px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:10px;animation:sy-rise calc(420ms * var(--spd, 1)) ease-out both"><span style="width:40px;height:40px;border-radius:50%;background:#A8BEE3;color:#0F2340;display:grid;place-items:center;font:700 14px/1 'Hanken Grotesk',system-ui">S</span><span style="font:500 15px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">Hallo Sam!</span></div>
+    <span style="font:400 38px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em;text-wrap:balance;animation:sy-rise calc(480ms * var(--spd, 1)) ease-out calc(80ms * var(--spd, 1)) both">Wo wird bei dir gekocht?</span>
+    <div style="flex:1;display:grid;place-items:center"><dc-import name="Mascot" mood="happy" size="{{ 150 }}" style="width:150px;height:139px;animation:sy-bob calc(3s * var(--spd, 1)) ease-in-out infinite" hint-size="150px,139px"></dc-import></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;border-radius:28px 24px 30px 26px;background:var(--surface);box-shadow:var(--shadow);animation:sy-rise calc(460ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(200ms * var(--spd, 1)) both"><span style="width:52px;height:50px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#F7B94A;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:#1F1E1C;stroke-width:2.8;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg></span><div style="flex:1;display:flex;flex-direction:column;gap:5px"><span style="font:600 16.5px/1 'Hanken Grotesk',system-ui">Board erstellen</span><span style="font:500 13px/1.3 'Hanken Grotesk',system-ui;color:var(--ink2)">Für dich, deine WG oder Familie</span></div></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;border-radius:28px 24px 30px 26px;background:var(--surface);box-shadow:var(--shadow);animation:sy-rise calc(460ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(280ms * var(--spd, 1)) both"><span style="width:52px;height:50px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#DE8CF2;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:#1F1E1C;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span><div style="flex:1;display:flex;flex-direction:column;gap:5px"><span style="font:600 16.5px/1 'Hanken Grotesk',system-ui">Einladungslink einfügen</span><span style="font:500 13px/1.3 'Hanken Grotesk',system-ui;color:var(--ink2)">Jemand hat dir einen Link geschickt?</span></div></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isLocked }}">
+  <div style="position:absolute;inset:0;padding:120px 26px 44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+    <div style="position:relative;width:220px;height:210px;flex:none">
+      <div style="position:absolute;left:14px;top:14px;width:192px;height:180px;border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;background:color-mix(in oklch, #A8BEE3 40%, var(--surface))"></div>
+      <dc-import name="Mascot" mood="happy" size="{{ 130 }}" style="position:absolute;left:20px;top:74px;width:130px;height:121px" hint-size="130px,121px"></dc-import>
+      <div style="position:absolute;left:128px;top:70px;width:80px;height:60px;transform-origin:50% 0;animation:sy-sign calc(2.8s * var(--spd, 1)) ease-in-out infinite">
+        <i style="position:absolute;left:18px;top:0;width:2px;height:22px;background:var(--ink);transform:rotate(-24deg);transform-origin:top"></i><i style="position:absolute;right:18px;top:0;width:2px;height:22px;background:var(--ink);transform:rotate(24deg);transform-origin:top"></i>
+        <div style="position:absolute;left:0;top:18px;width:80px;height:36px;border:2.5px solid var(--ink);box-sizing:border-box;border-radius:10px;background:var(--surface);display:grid;place-items:center;font:700 12px/1 'Hanken Grotesk',system-ui">Gleich!</div>
+      </div>
+    </div>
+    <span style="font:400 30px/1.12 'Newsreader',Georgia,serif;letter-spacing:-.015em;text-wrap:balance;animation:sy-rise calc(500ms * var(--spd, 1)) ease-out calc(200ms * var(--spd, 1)) both">Du bist noch nicht für malkochen freigeschaltet.</span>
+    <span style="font:500 16px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);animation:sy-rise calc(500ms * var(--spd, 1)) ease-out calc(300ms * var(--spd, 1)) both">Sag Lisa Bescheid – dann geht’s los.</span>
+    <sc-if value="{{ lockInvite }}">
+      <div style="width:100%;display:flex;align-items:center;gap:12px;margin-top:8px;padding:12px 14px 12px 10px;box-sizing:border-box;border-radius:24px;background:var(--surface);box-shadow:var(--shadow);text-align:left;animation:sy-rise calc(500ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(420ms * var(--spd, 1)) both">
+        <span style="width:50px;height:48px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:color-mix(in oklch, #F7B94A 40%, var(--surface2));display:grid;place-items:center;font-size:26px">🍜</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px"><span style="font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:var(--ink2)">EINGELADEN ZU</span><span style="font:600 16px/1 'Hanken Grotesk',system-ui">WG-Küche <span style="font-weight:500;color:var(--ink2)">von Lisa</span></span></div>
+        <span style="width:30px;height:30px;border-radius:50%;background:#F7C85C;color:#2B1E04;display:grid;place-items:center;font:700 12px/1 'Hanken Grotesk',system-ui">L</span>
+      </div>
+      <span style="font:500 13px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2);animation:sy-fade calc(400ms * var(--spd, 1)) ease calc(600ms * var(--spd, 1)) both">Die Einladung bleibt gespeichert. Sobald du freigeschaltet bist, landest du direkt im Board.</span>
+    </sc-if>
+    <div style="flex:1"></div>
+    <div style="width:100%;height:56px;border-radius:28px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;justify-content:center;gap:10px;font:600 16px/1 'Hanken Grotesk',system-ui"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><circle cx="18" cy="5" r="2.6"></circle><circle cx="6" cy="12" r="2.6"></circle><circle cx="18" cy="19" r="2.6"></circle><path d="M8.3 10.8l7.4-4.3M8.3 13.2l7.4 4.3"></path></svg>Lisa Bescheid sagen</div>
+    <span style="font:600 14px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">Anderes Konto verwenden</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}">
+  <sc-for list="{{ layers }}" as="ly" hint-placeholder-count="1">
+  <div style="position:absolute;inset:0;padding:62px 16px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px;background:var(--bg);color:var(--ink);{{ ly.vars }}--cx:{{ ly.cx }};animation:{{ ly.anim }};pointer-events:{{ ly.pe }}">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="width:42px;height:42px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M15 6l-6 6 6 6"></path></svg></span>
+      <span style="font:600 15px/1 'Hanken Grotesk',system-ui">Einstellungen</span><span style="width:42px"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;padding:14px;border-radius:28px;background:var(--surface);box-shadow:var(--shadow)">
+      <span style="position:relative;width:60px;height:60px;border-radius:50%;background:linear-gradient(140deg,#A8BEE3,#6F8FC4);color:#0F2340;display:grid;place-items:center;font:700 22px/1 'Hanken Grotesk',system-ui">S<span style="position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--surface);display:grid;place-items:center"><svg width="12" height="12" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"></path><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"></path><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"></path><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"></path></svg></span></span>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><span style="font:400 24px/1 'Newsreader',Georgia,serif">Sam Becker</span><span style="font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">sam.becker@gmail.com</span></div>
+    </div>
+    <span style="margin:-8px 8px 0;font:500 12px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2)">Name und Bild kommen von deinem Google-Konto.</span>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">DARSTELLUNG</span>
+      <div style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+        <div style="position:absolute;top:6px;bottom:6px;left:calc(6px + (100% - 12px) / 3 * {{ thIdx }});width:calc((100% - 12px) / 3);border-radius:20px;background:var(--surface2);box-shadow:0 0 0 2px var(--ink);transition:left calc(420ms * var(--spd, 1)) cubic-bezier(.34,1.4,.64,1)"></div>
+        <sc-for list="{{ themes }}" as="t" hint-placeholder-count="3">
+          <button onClick="{{ t.onTap }}" style="position:relative;height:84px;border:none;background:transparent;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;font:600 14px/1 'Hanken Grotesk',system-ui">
+            <span style="display:block;width:34px;height:34px;border-radius:12px;overflow:hidden;background:{{ t.sw }};box-shadow:inset 0 0 0 1.5px var(--line2);animation:{{ t.anim }}"></span>{{ t.l }}
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">SPRACHE</span>
+      <div style="height:56px;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:22px;background:var(--surface);box-shadow:var(--shadow)"><span style="font-size:18px">🇩🇪</span><span style="flex:1;font:600 15.5px/1 'Hanken Grotesk',system-ui">Deutsch</span><span style="height:22px;padding:0 9px;border-radius:11px;background:var(--surface2);display:grid;place-items:center;font:600 11.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">weitere bald</span></div>
+    </div>
+    <div style="flex:1"></div>
+    <div style="height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui;color:var(--danger);background:color-mix(in oklch, var(--danger) 10%, transparent)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"></path></svg>Abmelden</div>
+    <span style="align-self:center;font:500 11.5px/1 ui-monospace,Menlo,monospace;color:var(--ink2)">malkochen 1.0 (42)</span>
+  </div>
+  </sc-for>
+</sc-if>
+
+<sc-if value="{{ isOffline }}">
+  <div style="position:absolute;inset:0;padding:130px 26px 44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+    <div style="position:relative;width:220px;height:200px;flex:none">
+      <div style="position:absolute;left:14px;top:20px;width:192px;height:170px;border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;background:color-mix(in oklch, #A8BEE3 36%, var(--surface))"></div>
+      <div style="position:absolute;left:78px;top:6px;width:64px;height:64px">
+        <div style="position:absolute;left:0;top:0;width:64px;height:64px;border-radius:50%;border:5px solid var(--ink);border-color:var(--ink) transparent transparent transparent;box-sizing:border-box;animation:sy-arc calc(2.4s * var(--spd, 1)) ease-in-out infinite"></div>
+        <div style="position:absolute;left:12px;top:14px;width:40px;height:40px;border-radius:50%;border:5px solid var(--ink);border-color:var(--ink) transparent transparent transparent;box-sizing:border-box;animation:sy-arc2 calc(2.4s * var(--spd, 1)) ease-in-out infinite"></div>
+        <div style="position:absolute;left:26px;top:30px;width:12px;height:12px;border-radius:50%;background:var(--ink)"></div>
+      </div>
+      <dc-import name="Mascot" mood="sleep" size="{{ 130 }}" style="position:absolute;left:45px;top:66px;width:130px;height:121px;filter:saturate(.6)" hint-size="130px,121px"></dc-import>
+      <span style="position:absolute;left:170px;top:70px;font:700 16px/1 'Hanken Grotesk',system-ui;animation:sy-z calc(2.4s * var(--spd, 1)) ease-out infinite">z</span>
+      <span style="position:absolute;left:180px;top:60px;font:700 12px/1 'Hanken Grotesk',system-ui;animation:sy-z calc(2.4s * var(--spd, 1)) ease-out calc(1.2s * var(--spd, 1)) infinite">z</span>
+    </div>
+    <span style="font:400 32px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.015em">Du bist offline</span>
+    <span style="font:500 15.5px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">Topfbert macht kurz Pause. Deine Boards sind gespeichert – Änderungen werden synchronisiert, sobald du wieder Netz hast.</span>
+    <div style="flex:1"></div>
+    <div style="width:100%;height:56px;border-radius:28px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;justify-content:center;gap:9px;font:600 16px/1 'Hanken Grotesk',system-ui"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Erneut versuchen</div>
+    <span style="font:600 14px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">Offline weiter ansehen</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isError }}">
+  <div style="position:absolute;inset:0;padding:130px 26px 44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+    <div style="position:relative;width:220px;height:200px;flex:none">
+      <div style="position:absolute;left:14px;top:20px;width:192px;height:170px;border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;background:color-mix(in oklch, #F08A5D 34%, var(--surface))"></div>
+      <div style="position:absolute;left:46px;top:170px;width:128px;height:18px;border-radius:50%;background:#6B4A34;opacity:.55;transform-origin:center;animation:sy-spill calc(2.6s * var(--spd, 1)) ease-in-out infinite"></div>
+      <sc-for list="{{ smoke }}" as="s" hint-placeholder-count="3"><div style="position:absolute;left:{{ s.x }};top:40px;width:{{ s.w }};height:{{ s.w }};border-radius:50%;background:color-mix(in oklch, var(--ink) 35%, transparent);animation:sy-smoke calc(2.4s * var(--spd, 1)) ease-out {{ s.d }} infinite"></div></sc-for>
+      <dc-import name="Mascot" mood="oops" size="{{ 130 }}" style="position:absolute;left:45px;top:56px;width:130px;height:121px" hint-size="130px,121px"></dc-import>
+    </div>
+    <span style="font:400 32px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.015em">Da ist was angebrannt.</span>
+    <span style="font:500 15.5px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">Etwas hat nicht geklappt. Deine Daten sind sicher – versuch es einfach nochmal.</span>
+    <div style="flex:1"></div>
+    <div style="width:100%;height:56px;border-radius:28px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;justify-content:center;gap:9px;font:600 16px/1 'Hanken Grotesk',system-ui"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;animation:sy-spin calc(1.4s * var(--spd, 1)) cubic-bezier(.5,0,.3,1) infinite"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Nochmal versuchen</div>
+    <span style="font:500 11.5px/1 ui-monospace,Menlo,monospace;color:var(--ink2)">Fehler 503 · a7f2-19c</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSplash }}">
+  <div style="position:absolute;inset:0;background:var(--bg)">
+    <div style="position:absolute;inset:0;animation:sy-sp-app calc(3s * var(--spd, 1)) ease infinite;isolation:isolate"><dc-import name="StatePhone" screen="static" style="position:absolute;inset:0" hint-size="390px,844px"></dc-import></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(160deg,#FCD980,#F29B32);animation:sy-sp-bg calc(3s * var(--spd, 1)) cubic-bezier(.5,0,.2,1) infinite, sy-fadeout calc(3s * var(--spd, 1)) linear infinite"></div>
+    <div style="position:absolute;left:131px;top:330px;width:128px;height:128px;animation:sy-sp-icon calc(3s * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) infinite">
+      <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#FFFBF2;box-shadow:0 20px 40px -16px rgba(120,60,0,.55)"></div>
+      <div style="position:absolute;left:10px;top:10px;width:108px;height:108px">
+        <div style="position:absolute;left:28px;top:51px;width:52px;height:36px;border-radius:0 0 22px 22px / 0 0 20px 20px;background:#F29B32"><i style="position:absolute;left:14px;top:12px;width:6px;height:7px;border-radius:50%;background:#FFFBF2"></i><i style="position:absolute;right:14px;top:12px;width:6px;height:7px;border-radius:50%;background:#FFFBF2"></i><i style="position:absolute;left:21px;top:21px;width:10px;height:5px;border:2.5px solid #FFFBF2;border-top:none;border-radius:0 0 7px 7px;box-sizing:border-box"></i></div>
+        <div style="position:absolute;left:18px;top:52px;width:12px;height:7px;border-radius:4px;background:#F29B32"></div><div style="position:absolute;right:18px;top:52px;width:12px;height:7px;border-radius:4px;background:#F29B32"></div>
+        <div style="position:absolute;left:24px;top:44px;width:60px;height:9px;border-radius:5px;background:#F29B32;transform-origin:10% 100%;animation:sy-sp-lid calc(3s * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) infinite"></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:486px;display:flex;justify-content:center;align-items:baseline;gap:2px;font:400 44px/1 'Newsreader',Georgia,serif;letter-spacing:-.03em;color:#2A1A03;animation:sy-sp-word calc(3s * var(--spd, 1)) ease-out infinite">malkochen<i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#FFFBF2;animation:sy-sp-dot calc(3s * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) infinite"></i></div>
+  </div>
+</sc-if>
+
+<div style="position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 38px;z-index:70;opacity:{{ sbOp }};font:600 16px/1 'Hanken Grotesk',system-ui;color:{{ sbInk }};pointer-events:none">
+  <span>9:41</span>
+  <div style="position:absolute;left:50%;top:15px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:#000"></div>
+  <div style="display:flex;gap:6px;align-items:center"><sc-if value="{{ offBars }}"><svg width="18" height="12" viewBox="0 0 18 12" style="fill:currentColor;opacity:.35"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg></sc-if><sc-if value="{{ onBars }}"><svg width="18" height="12" viewBox="0 0 18 12" style="fill:currentColor"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg></sc-if><div style="width:25px;height:12px;border:1.5px solid currentColor;border-radius:4px;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;background:currentColor;border-radius:1.5px"></div></div></div>
+</div>
+<div style="position:absolute;left:50%;bottom:8px;width:108px;height:4px;margin-left:-54px;border-radius:2px;background:var(--ink);opacity:.9;z-index:70;pointer-events:none"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;splash&quot;,&quot;signin&quot;,&quot;onboard&quot;,&quot;locked&quot;,&quot;locked-invite&quot;,&quot;settings&quot;,&quot;offline&quot;,&quot;error&quot;],&quot;default&quot;:&quot;signin&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const T = s => `calc(${s} * var(--spd, 1))`;
+const LIGHT = '--bg:#F7F6F2;--surface:#FFFFFF;--surface2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--pill:#1F1E1C;--pillInk:#FFFFFF;--danger:#C23B22;--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);';
+const DARK = '--bg:#131211;--surface:#1E1C1A;--surface2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--pill:#F3EFE8;--pillInk:#131211;--danger:#FF8A70;--shadow:0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);';
+const KINDS = ['ramen', 'pizza', 'bowl', 'tacos', 'cake', 'wok', 'pasta', 'curry'];
+class Component extends DCLogic {
+  state = { th: 'System', from: null, bloom: 0, bIdx: 0 };
+  pick(t, i) {
+    if (t === this.state.th) return;
+    this.setState(s => ({ from: s.th, th: t, bloom: s.bloom + 1, bIdx: i }));
+    clearTimeout(this.bt); this.bt = setTimeout(() => this.setState({ from: null }), 620 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spd')) || 1));
+  }
+  componentWillUnmount() { clearTimeout(this.bt); }
+  renderVals() {
+    const sc = this.props.screen ?? 'signin', th = this.state.th;
+    const V = t => t === 'Hell' ? LIGHT : t === 'Dunkel' ? DARK : '';
+    const cx = (16 + 60 + (this.state.bIdx || 0) * 119) + 'px';
+    const layers = this.state.from ? [{ vars: V(this.state.from), anim: 'none', cx, pe: 'none' }, { vars: V(th), anim: `sy-reveal ${T('600ms')} cubic-bezier(.5,0,.2,1) both`, cx, pe: 'auto' }] : [{ vars: V(th), anim: 'none', cx, pe: 'auto' }];
+    const R = 150;
+    return {
+      themeVars: '', layers,
+      isSignin: sc === 'signin', isOnboard: sc === 'onboard', isLocked: sc === 'locked' || sc === 'locked-invite', lockInvite: sc === 'locked-invite',
+      isSettings: sc === 'settings', isOffline: sc === 'offline', isError: sc === 'error', isSplash: sc === 'splash',
+      sbInk: 'var(--ink)', sbOp: sc === 'splash' ? 0 : 1, offBars: sc === 'offline', onBars: sc !== 'offline',
+      orbit: KINDS.map((k, i) => { const a = (i / KINDS.length) * Math.PI * 2 - Math.PI / 2; return { k, play: i % 2 === 0, x: (Math.cos(a) * R).toFixed(1) + 'px', y: (Math.sin(a) * R).toFixed(1) + 'px', d: T((300 + i * 70) + 'ms') }; }),
+      thIdx: ['Hell', 'Dunkel', 'System'].indexOf(th),
+      themes: [['Hell', 'linear-gradient(135deg,#FFFFFF 0 50%,#EFEDE8 50%)'], ['Dunkel', 'linear-gradient(135deg,#2A2825 0 50%,#131211 50%)'], ['System', 'linear-gradient(135deg,#FFFFFF 0 50%,#131211 50%)']].map(([l, sw], i) => ({ l, sw, anim: l === th && this.state.bloom ? `sy-sun ${T('420ms')} cubic-bezier(.34,1.56,.64,1)` : 'none', onTap: () => this.pick(l, i) })),
+      
+      smoke: [['96px', '16px', 0], ['116px', '22px', 0.8], ['134px', '14px', 1.6]].map(([x, w, d]) => ({ x, w, d: T(d + 's') }))
+    };
+  }
+}
+</script>
+</body>
+</html>

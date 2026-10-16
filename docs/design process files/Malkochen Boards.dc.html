@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#EDEAE3}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="padding:40px 44px 60px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:860px">
+    <div style="display:flex;gap:14px;font:600 12px/1 system-ui"><a href="Malkochen Dish Detail.dc.html" style="text-decoration:none;opacity:.6">← Round 5 · Dish detail</a></div>
+    <div style="font:400 44px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em">Round 6 · Boards, Teilen &amp; Einstellungen</div>
+    <div style="font:14px/1.55 system-ui;color:#55524C;text-wrap:pretty">One-shot entrances replay with ↻; the rest loop (Column drag, copied, build-in, type-to-confirm). In the new-Board sheet you can tap emojis.</div>
+  </div>
+  <sc-for list="{{ states }}" as="s" hint-placeholder-count="8">
+    <div id="{{ s.key }}" data-screen-label="{{ s.n }} {{ s.title }}" style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;padding:28px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">HELL</div><div style="--bg:#F7F6F2;--surface:#FFFFFF;--surface2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--pill:#1F1E1C;--pillInk:#FFFFFF;--danger:#C23B22;--glass:rgba(255,255,255,.8);--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="BoardsPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">DUNKEL</div><div style="--bg:#131211;--surface:#1E1C1A;--surface2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--pill:#F3EFE8;--pillInk:#131211;--danger:#FF8A70;--glass:rgba(30,28,26,.75);--shadow:0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="BoardsPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="width:320px;display:flex;flex-direction:column;gap:4px;padding-top:24px">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ s.n }}</span><span style="font:400 28px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.01em">{{ s.title }}</span></div>
+        <button onClick="{{ s.onReplay }}" style="align-self:flex-start;margin-top:8px;font:600 11px system-ui;padding:5px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.15);background:#fff;cursor:pointer">↻ Replay</button>
+        <sc-for list="{{ s.notes }}" as="m" hint-placeholder-count="1">
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)">
+            <span style="font:600 10px ui-monospace,monospace;padding:4px 7px;border-radius:5px;background:{{ m.tagBg }};color:{{ m.tagInk }}">{{ m.tag }}</span>
+            <div style="font:600 13.5px/1.4 system-ui;margin-top:8px">{{ m.t }}</div>
+            <div style="font:12.5px/1.55 system-ui;color:#55524C;text-wrap:pretty">{{ m.d }}</div>
+            <div style="font:11px ui-monospace,monospace;color:#8A857D;margin-top:4px">{{ m.tm }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motionSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1,0.5,0.25],&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+const N = (g, t, d, tm) => ({ tag: g ? 'MOTION GRAPHIC' : 'UI MOTION', tagBg: g ? '#E7D2F7' : '#1F1E1C', tagInk: g ? '#4A1470' : '#fff', t, d, tm });
+const STATES = [
+  ['switcher', 'Board-Switcher', [N(0, 'Drop-down', 'Tapping the Board pill drops the list down from it (origin top-left, slight overshoot) while the Board dims. Rows fade up 50ms apart. Each Board emoji hops and tilts every 4s, offset so they never move together. Tapping a Board: the list folds back into the pill and the Board cross-fades with its colour bloom.', '420ms drop · 50ms stagger · 4s idle')]],
+  ['new', 'Neues Board', [N(0, 'Name + emoji', 'The name field is focused. The emoji grid pops in 18ms per tile. The picked emoji tilts and gets an ink ring, and the big preview pebble bobs with a pulsing ring. The three default Columns are shown as their pebble tabs.', '360ms pop · 2.4s bob')]],
+  ['created', 'Board erstellt', [N(1, 'Build-in celebration', 'The emoji pops in with a pebble burst, then the Columns build themselves one by one: each rises from below, overshoots with a tilt and settles. The headline and "Ersten Link einfügen" follow. It then lands on the empty Board (Round 2, state 02).', '~2.4s one-shot · 100ms per Column')]],
+  ['settings', 'Einstellungen (Member)', [N(0, 'Columns reorder', 'Same lift as the cards: long-press, then 1.03×, −1.5°, deep shadow. The neighbour springs out of the way. "Gekocht" carries a lock badge "Besonders": it can be renamed and moved, but has no delete icon. There is no Column limit. New Columns get the next palette colour automatically, and tapping the colour pebble lets you pick one.', '320ms spring'), N(0, 'Copied!', 'Tap Kopieren: the button turns sage, the label flips to "Kopiert! ✓" with a spring, 5 pebbles burst, and the link gets a sage highlight sweep. Resets after 2s. Teilen opens the Android share sheet (WhatsApp etc.).', '200ms flip · 620ms burst')]],
+  ['owner', 'Einstellungen (Owner)', [N(0, 'Owner extras', 'Owners also see: "Link zurücksetzen" (the old link stops working, confirm toast), "Entfernen" on each Member (the row collapses, toast with undo), "Besitz übertragen" (Member picker, confirm) and "Board löschen". The crown badge moves to the new Owner with a hop.', '280ms collapse · 420ms crown hop')]],
+  ['transfer', 'Besitz übertragen', [N(0, 'Member picker', 'A sheet lists all Members, with the longest-standing one preselected. The confirm button has a bouncing crown. On confirm, the crown badge hops from your row to theirs and a toast confirms. If the Owner leaves the Board, ownership passes automatically to the longest-standing Member.', '440ms sheet · 420ms crown hop')]],
+  ['remove', 'Member entfernen', [N(0, 'Confirm + collapse', 'The avatar dialog pops in. Their Dishes and cookings stay on the Board. On confirm, the row collapses sideways and a "Mia wurde entfernt · Rückgängig" toast appears (4s).', '420ms pop · 280ms collapse')]],
+  ['reset', 'Link & Ablauf', [N(0, 'Expiry + reset', 'The Owner chooses how long the link stays valid: Nie / 24 h / 7 Tage / 30 Tage (the segment is tappable). Resetting blurs the old code out and the new one in, followed by a "Neuer Link erstellt" toast with Kopieren. Members who are already signed in see the same invite landing with a "Beitreten" button instead of Google.', '360ms scramble · toast 3s')]],
+  ['delete-column', 'Column löschen', [N(0, 'Move dialog', 'The dialog pops in (spring from 0.4). The first remaining Column is preselected and its dot pops. On confirm, the Dishes fly as a stack into the chosen tab, whose count ticks up, then the Column row collapses.', '420ms pop · 640ms fly')]],
+  ['delete-board', 'Board löschen', [N(0, 'Type to confirm', 'The emoji shakes once. The button stays dimmed until the typed name matches exactly. Then the field ring turns sage, a check pops and the button activates. A wrong name nudges the field sideways.', '500ms shake · 250ms enable')]],
+  ['invite', 'Einladung', [N(1, 'Warm welcome', 'The Board emoji pops into a big pebble, and veggies slowly orbit it. Topfbert pops up from the left. The Members’ avatars pop in, and Lisa waves. Then the lines and "Mit Google anmelden" rise in sequence. After sign-in, the pebble zooms into the Board.', '~1.5s intro · 14s orbit · 3.2s wave')]]
+];
+class Component extends DCLogic {
+  state = { rep: {} };
+  applySpd() { document.documentElement.style.setProperty('--spd', String(1 / (this.props.motionSpeed ?? 1))); }
+  componentDidMount() { this.applySpd(); }
+  componentDidUpdate() { this.applySpd(); }
+  renderVals() {
+    return { states: STATES.map(([key, title, notes], i) => ({ key, title, notes, n: String(i + 1).padStart(2, '0'), rep: this.state.rep[key] || 0, onReplay: () => this.setState(s => ({ rep: { ...s.rep, [key]: (s.rep[key] || 0) + 1 } })) })) };
+  }
+}
+</script>
+</body>
+</html>

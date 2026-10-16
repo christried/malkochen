@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./r11-art.js"></script></helmet>
+<div style="position:relative;width:100%;height:100%;overflow:hidden;--r11ps:{{ ps }}">{{ art }}</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:380,&quot;height&quot;:300},&quot;clip&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;empty-column&quot;,&quot;empty-column-knobi&quot;,&quot;empty-column-schoti&quot;,&quot;never-cooked-hut&quot;,&quot;never-cooked-sprung&quot;,&quot;never-cooked-dampf&quot;,&quot;topfbert-idle&quot;,&quot;dish:pasta&quot;,&quot;dish:bowl&quot;,&quot;dish:breakfast&quot;,&quot;char:pea&quot;,&quot;char:knobi&quot;,&quot;char:schoti&quot;],&quot;default&quot;:&quot;empty-column&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;acc&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;butter&quot;,&quot;orchid&quot;,&quot;sage&quot;,&quot;carrot&quot;,&quot;sky&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;play&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;small&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { if (!window.R11) this.t = setInterval(() => { if (window.R11) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const R = window.R11, id = this.props.clip ?? 'empty-column', th = this.props.theme ?? 'light';
+    let html = '';
+    if (R) {
+      if (id.startsWith('dish:')) html = R.dishSvg(id.slice(5), th).replace('<svg ', '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" ');
+      else if (id.startsWith('char:')) html = R.charSvg(id.slice(5), 'live', an => id === 'char:knobi' ? { eyes: an('blink', 4.4, 'ease-in-out', 0, [24, 30.5]), sprout: an('wiggle', 2.4, 'ease-in-out', 0, [24, 8]) } : id === 'char:schoti' ? { eyes: an('look', 4.4, 'ease-in-out', 0, null) } : {});
+      else if (R.CLIPS[id]) html = R.clipSvg(id, th, { acc: this.props.acc, small: !!this.props.small });
+    }
+    return {
+      ps: (this.props.play ?? true) ? 'running' : 'paused',
+      art: React.createElement('div', { style: { position: 'absolute', inset: 0 }, dangerouslySetInnerHTML: { __html: html } })
+    };
+  }
+}
+</script>
+</body>
+</html>

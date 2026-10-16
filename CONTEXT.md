@@ -22,6 +22,10 @@ _Avoid_: Board config, board options
 One user's own Username, Profile Picture, notifications, Darstellung and shortcuts, the same on every Board ("Deine Einstellungen").
 _Avoid_: User settings, account, profile
 
+**Tour**:
+A short walk through a Board, told step by step by Topfbert, pointing at what a user needs first ("Rundgang"). Every user gets it once, the first time they open any Board, whether their own or one they joined, and can start it again from Your Settings. A new version of the Tour is shown once again to everyone.
+_Avoid_: Onboarding, walkthrough, coach marks, tutorial, intro
+
 **Column**:
 A named, ordered stage on a Board (default: Ideen, Diese Woche, Gekocht). Members can rename, add, reorder and delete Columns.
 _Avoid_: Lane, list, status

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#F7F6F2}a{color:#1F1E1C}a:hover{color:#9B32D8}
+@keyframes ms-demo{0%,15%{transform:translateX(0)}55%,100%{transform:translateX(120px)}}
+@keyframes ms-demoF{0%,15%{opacity:0}55%,100%{opacity:1}}
+@keyframes ms-demoS{0%,15%{transform:scale(.4)}55%,100%{transform:scale(1)}}</style></helmet>
+<div style="--ink:#1F1E1C;--ink2:#6F6B65;--surface:#FFFFFF;--surface2:#EFEDE8;--bg:#F7F6F2;max-width:1280px;margin:0 auto;padding:48px 40px 80px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:44px">
+  <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end">
+    <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:14px;font:600 12px/1 system-ui"><a href="Malkochen Desktop.dc.html" style="text-decoration:none;opacity:.6">← Round 8 · Desktop</a><a href="handoff/motion.json" style="text-decoration:none;opacity:.6">motion.json →</a></div>
+      <div style="font:400 56px/1 'Newsreader',Georgia,serif;letter-spacing:-.03em">Motion-System</div>
+      <div style="font:15px/1.55 system-ui;color:#55524C;max-width:720px;text-wrap:pretty">Everything that moves in malkochen, in one place: the personality, the tokens, every animation with its reduced-motion fallback, the performance rules and the clip backgrounds.</div>
+    </div>
+    <dc-import name="Mascot" mood="wow" size="{{ 120 }}" style="width:120px;height:111px;--ink:#1F1E1C" hint-size="120px,111px"></dc-import>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">01</span><span style="font:400 34px/1 'Newsreader',Georgia,serif">Prinzipien</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
+      <sc-for list="{{ principles }}" as="p" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:26px 22px 28px 24px;background:{{ p.bg }}"><span style="font:400 24px/1.1 'Newsreader',Georgia,serif">{{ p.t }}</span><span style="font:13px/1.55 system-ui;color:#3F3C37;text-wrap:pretty">{{ p.d }}</span></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:18px 20px;border-radius:22px;border:2px solid #1F1E1C">
+      <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em">NIE ANIMIEREN</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 24px">
+        <sc-for list="{{ never }}" as="n" hint-placeholder-count="7"><div style="display:flex;gap:8px;font:13.5px/1.45 system-ui"><span style="flex:none;font-weight:700;color:#C23B22">✕</span><span>{{ n }}</span></div></sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">02</span><span style="font:400 34px/1 'Newsreader',Georgia,serif">Tokens</span><span style="font:13px system-ui;color:#6F6B65">Hover a row to replay its demo</span></div>
+    <div style="overflow-x:auto;border-radius:20px;border:1px solid rgba(0,0,0,.1);background:#fff"><div style="display:grid;grid-template-columns:140px 110px minmax(180px,1.1fr) minmax(160px,1fr) minmax(200px,1.4fr) 170px;min-width:max-content">
+      <sc-for list="{{ tokHead }}" as="h" hint-placeholder-count="6"><span style="padding:12px 14px;font:600 10.5px ui-monospace,monospace;letter-spacing:.06em;color:#8A857D;background:#EFEDE8">{{ h }}</span></sc-for>
+      <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="11">
+        <span onMouseEnter="{{ t.on }}" style="padding:12px 14px;border-top:1px solid rgba(0,0,0,.06);font:700 14px/1.3 ui-monospace,monospace">{{ t.n }}</span>
+        <span onMouseEnter="{{ t.on }}" style="padding:12px 14px;border-top:1px solid rgba(0,0,0,.06);font:500 13px/1.3 ui-monospace,monospace">{{ t.d }}</span>
+        <span onMouseEnter="{{ t.on }}" style="padding:12px 14px;border-top:1px solid rgba(0,0,0,.06);font:500 12px/1.4 ui-monospace,monospace;color:#55524C;word-break:break-all">{{ t.e }}</span>
+        <span onMouseEnter="{{ t.on }}" style="padding:12px 14px;border-top:1px solid rgba(0,0,0,.06);font:500 12px/1.4 ui-monospace,monospace;color:#55524C">{{ t.sp }}</span>
+        <span onMouseEnter="{{ t.on }}" style="padding:12px 14px;border-top:1px solid rgba(0,0,0,.06);font:13px/1.45 system-ui;color:#3F3C37">{{ t.use }}</span>
+        <span onMouseEnter="{{ t.on }}" style="padding:12px 14px;border-top:1px solid rgba(0,0,0,.06);display:flex;align-items:center"><span style="position:relative;display:block;width:150px;height:22px;border-radius:11px;background:#F2EFE9"><i style="position:absolute;left:4px;top:3px;width:16px;height:16px;border-radius:48% 52% 46% 54%;background:{{ t.c }};animation:{{ t.anim }}"></i></span></span>
+      </sc-for>
+    </div></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">03</span><span style="font:400 34px/1 'Newsreader',Georgia,serif">Katalog</span><span style="font:13px system-ui;color:#6F6B65">{{ countLabel }}</span><span style="flex:1"></span>
+      <div style="display:flex;gap:4px;padding:4px;border-radius:18px;background:#EFEDE8"><sc-for list="{{ filters }}" as="f" hint-placeholder-count="3"><button onClick="{{ f.onTap }}" style="height:34px;padding:0 14px;border:none;border-radius:14px;font:600 13px/1 system-ui;cursor:pointer;background:{{ f.bg }};color:#1F1E1C;box-shadow:{{ f.sh }}">{{ f.l }}</button></sc-for></div>
+    </div>
+    <div style="overflow-x:auto;border-radius:20px;border:1px solid rgba(0,0,0,.1);background:#fff"><div style="display:grid;grid-template-columns:minmax(150px,1fr) minmax(190px,1.3fr) 118px 150px minmax(220px,1.7fr) minmax(200px,1.3fr) 150px 150px;min-width:max-content">
+      <sc-for list="{{ catHead }}" as="h" hint-placeholder-count="7"><span style="position:sticky;top:0;padding:12px 12px;font:600 10.5px ui-monospace,monospace;letter-spacing:.06em;color:#8A857D;background:#EFEDE8">{{ h }}</span></sc-for>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="12">
+        <div style="padding:12px;border-top:1px solid rgba(0,0,0,.06);display:flex;flex-direction:column;gap:4px"><span style="font:600 13.5px/1.3 system-ui">{{ r.name }}</span><span style="font:500 11px/1.2 ui-monospace,monospace;color:#8A857D">{{ r.round }}</span></div>
+        <span style="padding:12px;border-top:1px solid rgba(0,0,0,.06);font:12.5px/1.5 system-ui;color:#3F3C37">{{ r.where }}</span>
+        <div style="padding:12px;border-top:1px solid rgba(0,0,0,.06)"><span style="display:inline-block;font:600 9.5px/1.2 ui-monospace,monospace;padding:4px 6px;border-radius:5px;background:{{ r.tagBg }};color:{{ r.tagInk }}">{{ r.type }}</span></div>
+        <div style="padding:12px;border-top:1px solid rgba(0,0,0,.06);display:flex;flex-direction:column;gap:4px"><span style="font:600 12.5px/1.3 ui-monospace,monospace">{{ r.dur }}</span><span style="font:500 11.5px/1.3 ui-monospace,monospace;color:#8A857D">{{ r.tok }}</span><sc-if value="{{ r.loop }}"><span style="align-self:flex-start;font:700 10px/1 system-ui;padding:3px 6px;border-radius:8px;background:#E7D2F7;color:#4A1470">↻ Loop</span></sc-if></div>
+        <span style="padding:12px;border-top:1px solid rgba(0,0,0,.06);font:12px/1.5 ui-monospace,monospace;color:#3F3C37;white-space:pre-line">{{ r.story }}</span>
+        <span style="padding:12px;border-top:1px solid rgba(0,0,0,.06);font:12.5px/1.5 system-ui;color:#3F3C37;background:#FBFAF6">{{ r.rm }}</span>
+        <div style="padding:12px;border-top:1px solid rgba(0,0,0,.06);display:flex;flex-direction:column;gap:6px">
+          <sc-if value="{{ r.solid }}"><div style="display:flex;gap:4px"><span title="{{ r.bgL }}" style="width:26px;height:26px;border-radius:8px;background:{{ r.bgL }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span title="{{ r.bgD }}" style="width:26px;height:26px;border-radius:8px;background:{{ r.bgD }}"></span></div><span style="font:500 10.5px/1.3 ui-monospace,monospace;color:#8A857D">{{ r.bgL }} / {{ r.bgD }}</span></sc-if>
+          <sc-if value="{{ r.alpha }}"><span style="align-self:flex-start;font:700 10px/1.2 system-ui;padding:4px 7px;border-radius:8px;background:#FFE3C2;color:#7A3A00">Transparenz nötig</span><span style="font:11.5px/1.4 system-ui;color:#55524C">{{ r.alphaWhy }}</span></sc-if>
+          <sc-if value="{{ r.code }}"><span style="font:500 11.5px/1.35 system-ui;color:#8A857D">Native UI – kein Clip</span></sc-if>
+        </div>
+        <span style="padding:12px;border-top:1px solid rgba(0,0,0,.06);font:500 11.5px/1.45 ui-monospace,monospace;color:{{ r.hapInk }}">{{ r.hap }}</span>
+      </sc-for>
+    </div></div>
+  </section>
+
+  <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:24px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">04</span><span style="font:400 34px/1 'Newsreader',Georgia,serif">Reduzierte Bewegung</span></div>
+      <sc-for list="{{ rmRules }}" as="r" hint-placeholder-count="5"><div style="display:flex;gap:12px;padding:14px 16px;border-radius:20px;background:#fff;border:1px solid rgba(0,0,0,.08)"><span style="flex:none;width:28px;height:28px;border-radius:50%;background:#A5C7AE;display:grid;place-items:center;font:700 12px/1 system-ui">{{ r.i }}</span><div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 14px/1.3 system-ui">{{ r.t }}</span><span style="font:13px/1.5 system-ui;color:#55524C;text-wrap:pretty">{{ r.d }}</span></div></div></sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">05</span><span style="font:400 34px/1 'Newsreader',Georgia,serif">Performance</span></div>
+      <sc-for list="{{ perf }}" as="r" hint-placeholder-count="7"><div style="display:flex;gap:12px;padding:14px 16px;border-radius:20px;background:#fff;border:1px solid rgba(0,0,0,.08)"><span style="flex:none;width:28px;height:28px;border-radius:50%;background:#F7B94A;display:grid;place-items:center;font:700 12px/1 system-ui">{{ r.i }}</span><div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 14px/1.3 system-ui">{{ r.t }}</span><span style="font:13px/1.5 system-ui;color:#55524C;text-wrap:pretty">{{ r.d }}</span></div></div></sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">06</span><span style="font:400 34px/1 'Newsreader',Georgia,serif">Clip-Hintergründe</span></div>
+    <div style="font:14px/1.55 system-ui;color:#55524C;max-width:820px;text-wrap:pretty">Every exported clip (Lottie, MP4 or WebM) is rendered on a solid surface in two versions. The surface is part of the clip and matches the container it sits in, so no alpha channel is needed. Transparent video isn’t reliable on iPhone and older Android devices. Anything that has to sit over live UI is not a video: it’s drawn natively (Compose particles) or as a Lottie with a transparent background.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px">
+      <sc-for list="{{ surfaces }}" as="s" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:22px;background:#fff;border:1px solid rgba(0,0,0,.08)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;height:74px;border-radius:14px;overflow:hidden"><div style="background:{{ s.l }};display:grid;place-items:center;font:600 11px ui-monospace,monospace;color:#1F1E1C">{{ s.l }}</div><div style="background:{{ s.d }};display:grid;place-items:center;font:600 11px ui-monospace,monospace;color:#F3EFE8">{{ s.d }}</div></div>
+          <span style="font:600 14px/1.3 system-ui">{{ s.n }}</span><span style="font:12.5px/1.45 system-ui;color:#55524C">{{ s.use }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+<section style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">07</span><span style="font:400 34px/1 'Newsreader',Georgia,serif">Storyboards</span><span style="font:13px system-ui;color:#6F6B65">Key frames per motion graphic, alternating light and dark surfaces</span></div>
+    <sc-for list="{{ mgs }}" as="g" hint-placeholder-count="16">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:16px;border-radius:22px;background:#fff;border:1px solid rgba(0,0,0,.08)">
+        <div style="width:190px;display:flex;flex-direction:column;gap:6px;padding-top:4px"><span style="font:600 14.5px/1.3 system-ui">{{ g.name }}</span><span style="font:500 11.5px/1.3 ui-monospace,monospace;color:#8A857D">{{ g.dur }}</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <sc-for list="{{ g.frames }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:6px;width:132px">
+              <div style="position:relative;height:112px;border-radius:16px;background:{{ f.bg }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.1);overflow:hidden;display:grid;place-items:center;{{ f.vars }}">
+                <span style="position:absolute;top:7px;left:9px;font:700 11px/1 ui-monospace,monospace;color:{{ f.ink }};opacity:.7">{{ f.t }}</span>
+                <div style="transform:{{ f.tf }}">
+                  <sc-if value="{{ f.isM }}"><dc-import name="Mascot" mood="{{ f.mood }}" size="{{ 70 }}" style="display:block;width:70px;height:65px" hint-size="70px,65px"></dc-import></sc-if>
+                  <sc-if value="{{ f.isI }}"><div style="width:74px;height:80px;border-radius:16px;overflow:hidden"><dc-import name="Illus" kind="{{ f.kind }}" style="display:block;width:100%;height:100%" hint-size="74px,80px"></dc-import></div></sc-if>
+                  <sc-if value="{{ f.isE }}"><span style="display:block;font-size:44px;line-height:1">{{ f.e }}</span></sc-if>
+                  <sc-if value="{{ f.isT }}"><span style="display:grid;place-items:center;width:64px;height:60px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#FCD980,#F29B32);font:400 26px/1 'Newsreader',Georgia,serif;color:#2A1A03">10×</span></sc-if>
+                  <sc-if value="{{ f.isA }}"><dc-import name="AppIcon" size="{{ 60 }}" flat="{{ true }}" hint-size="60px,60px"></dc-import></sc-if>
+                </div>
+              </div>
+              <span style="font:12px/1.35 system-ui;color:#3F3C37">{{ f.cap }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ g.alpha }}"><span style="align-self:center;font:700 10px/1.2 system-ui;padding:4px 7px;border-radius:8px;background:#FFE3C2;color:#7A3A00">Transparenz nötig</span></sc-if>
+      </div>
+    </sc-for>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const F = {"Empty Board: Topfbert + veggies":["m:happy",[["0%","none","Gemüse im Topf"],["45%","translateY(-8px) rotate(-4deg)","Karotte am Scheitel"],["90%","scale(1.04,.96)","landet, nächstes startet"]]],"Empty Column: rolling pea":["e:🫛",[["0%","translateX(-28px) rotate(-120deg)","links am Rand"],["50%","none","Mitte, Augen vorn"],["100%","translateX(28px) rotate(120deg)","rechts, zurück"]]],"Search empty: magnifier":["e:🔍",[["0%","translateX(-26px) rotate(-10deg)","links, Teller leer"],["50%","translateX(26px) rotate(10deg)","rechts, Erbse lugt"],["100%","translateX(-26px) rotate(-10deg)","zurück"]]],"Gekocht celebration":["m:happy",[["0%","scale(.3)","Button poppt salbei"],["9%","scale(.3) translateY(10px)","Gemüse schießt hoch"],["22%","scale(.3)","Scheitel, Drehung"],["45%","scale(1.06)","Topfbert: „Mmh!“"],["52%","none","Gemüse fällt raus"]]],"10× milestone":["t:10×",[["0%","scale(.2) rotate(-20deg)","Salbei-Fläche"],["10%","scale(1.15) rotate(4deg)","Pebble poppt"],["25%","none","Burst"],["100%","none","schließt nach 3,4s"]]],"Lookup: Topfbert stirs":["m:stir",[["0%","rotate(-4deg)","Löffel −20°"],["50%","rotate(4deg)","Löffel +20°, Orbit"],["100%","rotate(-4deg)","zurück"]]],"Failed: Topfbert oops":["m:oops",[["0%","rotate(-6deg)","Neigung, Tropfen"],["80%","rotate(-3deg)","Tropfen rinnt"],["100%","rotate(-6deg)","weg, Neigung zurück"]]],"Placeholder illustrations ×16":["i:ramen",[["0%","none","Standbild = Frame 0"],["33%","none","Dampf 1 steigt"],["66%","none","Dampf 2 + 3"],["100%","none","= Frame 0"]]],"Never cooked: Topfbert + pea":["m:happy",[["0%","none","ruht, Erbse links"],["50%","translateY(-4px)","hoch, Erbse rechts"],["100%","none","zurück"]]],"Board created build-in":["e:🥡",[["0%","scale(.2) rotate(-30deg)","Emoji + Burst"],["14%","scale(1.2) rotate(8deg)","Ideen steigt"],["34%","none","Gekocht steht"],["56%","none","Button erscheint"]]],"Invite welcome":["e:🍜",[["0%","scale(.3)","Emoji poppt"],["30%","none","Topfbert taucht auf"],["50%","rotate(-6deg)","Avatare, Lisa winkt"],["90%","translateY(-4px)","Text + Google"]]],"Splash":["a:",[["0%","scale(.1)","Butter-Bloom"],["22%","scale(1.14) rotate(6deg)","Icon federt rein"],["38%","none","Deckel poppt"],["88%","scale(1.8)","zoomt, Board blendet ein"]]],"Sign-in orbit":["i:pizza",[["0%","scale(.3)","Kacheln poppen"],["25%","translate(20px,-14px)","Ring dreht"],["50%","translate(0,-24px)","…"],["100%","none","360° nach 40s"]]],"Not unlocked sign":["m:happy",[["0%","rotate(-8deg)","Schild −8°"],["50%","rotate(8deg)","Schild +8°"],["100%","rotate(-8deg)","zurück"]]],"Offline: sleepy Topfbert":["m:sleep",[["0%","none","WLAN voll, z steigt"],["40%","translateY(-2px)","äußerer Bogen weg"],["55%","none","innerer Bogen weg"],["100%","none","Bögen zurück"]]],"Error: angebrannt":["m:oops",[["0%","rotate(-6deg)","Rauch am Deckel"],["40%","rotate(-2deg)","Rauch steigt"],["100%","rotate(-6deg)","Fleck pulsiert"]]]};
+const TK = [
+  ['tap', '120ms', 'cubic-bezier(.2,0,0,1)', 'scale → .94', 'Press feedback on every button and card', '#1F1E1C', 'ms-demoS'],
+  ['fade', '240ms', 'ease', '—', 'Scrims, captions, reduced-motion fallback', '#8E8A83', 'ms-demoF'],
+  ['pop', '360–480ms', 'cubic-bezier(.34,1.56,.64,1)', 'spring k 380 · ζ 0.55', 'Badges, chips, dialogs, check marks, Neu', '#F7B94A', 'ms-demoS'],
+  ['settle', '480ms', 'cubic-bezier(.3,1.3,.5,1)', 'spring k 300 · ζ 0.7', 'Swipe snap, drop, cards making room', '#A5C7AE', 'ms-demo'],
+  ['sheet', '440ms', 'cubic-bezier(.3,1.15,.5,1)', 'spring k 260 · ζ 0.8', 'Bottom sheets, side panel, keyboard', '#A8BEE3', 'ms-demo'],
+  ['swoosh', '600ms', 'cubic-bezier(.45,0,.2,1)', '—', 'Shared-element morph, fly-to-tab, theme reveal', '#DE8CF2', 'ms-demo'],
+  ['lift', '180ms', 'cubic-bezier(.3,1.3,.5,1)', 'scale 1.04 · −2° · shadow 34', 'Long-press / drag pick-up', '#F08A5D', 'ms-demoS'],
+  ['stagger', '50–80ms', '—', '—', 'Offset between list items (max 8 items, then all at once)', '#6F6B65', 'ms-demoF'],
+  ['type', '30ms / char', 'linear', '—', 'Suggested titles, demo typing', '#1F1E1C', 'ms-demoF'],
+  ['celebrate', '1.8–2.4s', 'gravity arc + pop', '—', 'Gekocht, 10×, Board created: one-shot only', '#F29B32', 'ms-demoS'],
+  ['idle', '2.4–8s', 'ease-in-out', 'seamless, frame 0 = still', 'Illustration loops, Topfbert, add pebble breathe', '#8DB596', 'ms-demo']
+];
+const UI = 'UI MOTION', MG = 'MOTION GRAPHIC';
+const HAP = {"Column swipe":"SEGMENT_TICK on snap","Gekocht button":"CONFIRM","Fly-to-tab pebble":"CLOCK_TICK on landing","Card lift / reorder":"LONG_PRESS on lift\nSEGMENT_TICK per slot","Tab as drop target":"GESTURE_THRESHOLD_ACTIVATE on enter","Drop into tab":"CONFIRM","… menu / popover":"CONTEXT_CLICK","Gekocht celebration":"CONFIRM + 2 light ticks at burst","Delete collapse + undo":"REJECT on delete","10× milestone":"CONFIRM, strong, 3 pulses","Saved → card flies to Board":"CONFIRM on landing","Achievement counter":"CLOCK_TICK per step (max 10)","Board created build-in":"light tick per Column","Copied!":"CONFIRM","Column / delete dialogs":"REJECT on final delete","Title prompt glow":"—","Desktop lane drop target":"n/a (desktop)"};
+const S = { board: ['#F7F6F2', '#131211'], card: ['#EFEDE8', '#2A2825'], sheet: ['#FFFFFF', '#1E1C1A'], butter: ['#FBE3B0', '#3A2E1A'], sage: ['#D5E4D8', '#223027'], sky: ['#DCE3F0', '#1F2530'] };
+const C = [
+  ['Board load', 'R1', 'Board opens / column swipe-in', UI, '640ms + 80ms/item', 'settle', 0, '', 'Cards appear at once, 120ms fade', 'code'],
+  ['Column swipe', 'R1', 'Horizontal swipe or tab tap', UI, '480ms', 'settle', 0, '', 'Instant switch + 150ms cross-fade; background colour cuts', 'code'],
+  ['Headline parallax', 'R1', 'During swipe', UI, 'scroll-linked', 'settle', 0, '', 'No parallax; headline cross-fades', 'code'],
+  ['Neu pebble', 'R1', 'New Dish first shown', UI, '560ms pop + 3.2s ring', 'pop', 1, '', 'Pebble static, no ring', 'code'],
+  ['Gekocht button', 'R1', 'Tap Gekocht', UI, '480ms', 'pop', 0, '', 'Colour change + check, no scale', 'code'],
+  ['Fly-to-tab pebble', 'R1', 'Gekocht outside Gekocht Column', UI, '640ms', 'swoosh', 0, '', 'Skipped; tab count updates', 'alpha', 'Flies over live UI'],
+  ['Tab count bump', 'R1', 'Count changes', UI, '460ms', 'pop', 0, '', 'Number swaps, no bump', 'code'],
+  ['Skeleton shimmer', 'R2', 'Board loading', UI, '1.4s', 'idle', 1, '', 'Static skeleton at 60% opacity', 'code'],
+  ['Empty Board: Topfbert + veggies', 'R2', 'Board with 0 Dishes', MG, '2.4s', 'idle', 1, '0%  veggie in pot\n45% veggie at apex, spun 150°\n90% back in pot, next veggie starts', 'Still: Topfbert smiling, veggies resting on rim', 'butter'],
+  ['Empty Column: rolling pea', 'R2', 'Column with 0 Dishes', MG, '2.2s', 'idle', 1, '0%  pea left on rim\n50% pea centre, eyes look ahead\n100% pea right (alternate)', 'Still: pea centred', 'sheet'],
+  ['Search results re-stagger', 'R2', 'Each keystroke', UI, '380ms + 50ms/item', 'pop', 0, '', 'Results replace instantly', 'code'],
+  ['Search empty: magnifier', 'R2', '0 results', MG, '3.6s', 'idle', 1, '0%  magnifier left, plate empty\n50% magnifier right, pea peeks up\n100% back', 'Still: magnifier over plate', 'sky'],
+  ['Card lift / reorder', 'R2', 'Long-press 300ms + drag', UI, '180ms lift · 320ms make room', 'lift', 0, '', 'Card outlines + shadow, no tilt or scale; neighbours jump', 'code'],
+  ['Tab as drop target', 'R2', 'Dragged card over tab', UI, '240ms grow + 600ms wiggle', 'pop', 1, '', 'Tab highlights (colour + ring), no wiggle', 'code'],
+  ['Drop into tab', 'R2', 'Release over tab', UI, '420ms swallow', 'swoosh', 0, '', 'Card fades out, count updates', 'code'],
+  ['Drop burst', 'R2', 'Drop landed', UI, '620ms', 'celebrate', 0, '', 'None', 'alpha', 'Particles over the tabs'],
+  ['… menu / popover', 'R2', 'Tap …', UI, '300ms', 'pop', 0, '', '150ms fade', 'code'],
+  ['Bottom sheets', 'R2–R6', 'Any sheet', UI, '440ms', 'sheet', 0, '', '200ms fade, no slide', 'code'],
+  ['Gekocht celebration', 'R2', 'Tap Gekocht', MG, '~2.4s one-shot', 'celebrate', 0, '0%  button pops sage\n9%  6 veggie types burst up from button\n22% apex, veggies spin\n45% Topfbert pops behind toast: "Mmh!"\n52% veggies fall off-screen', 'Toast + check only; no confetti, Topfbert still', 'alpha', 'Confetti falls over the live Board'],
+  ['Card leaves Column', 'R2', 'After Gekocht', UI, '360ms', 'swoosh', 0, '', 'Card fades; list closes up without spring', 'code'],
+  ['Delete collapse + undo', 'R2', 'Löschen / Rückgängig', UI, '260ms / 380ms', 'settle', 0, '', 'Fade out / fade in', 'code'],
+  ['Toast', 'R2', 'Any toast', UI, '380ms in · 5s', 'sheet', 0, '', 'Fade in; undo window unchanged', 'code'],
+  ['10× milestone', 'R1', '10th cooking', MG, '~1.8s one-shot', 'celebrate', 0, '0%  sage wash fades in\n10% 10× pebble pops from −20°\n25% 7 pebbles burst\n40% headline ticks up\n100% auto-dismiss at 3.4s', 'Still card with "10×" and text; tap to close', 'sage'],
+  ['Add sheet + clipboard chip', 'R3', 'Tap +', UI, '460ms + 520ms', 'sheet', 0, '', 'Fade; chip appears without pop', 'code'],
+  ['Lookup: Topfbert stirs', 'R3', 'Link being looked up', MG, '1.2s stir · 1.6s orbit', 'idle', 1, '0%  spoon −20°, veggies left\n50% spoon +20°, veggies orbit right\n100% back (alternate)', 'Still Topfbert + text "Wird gesucht…" + progress dots fade', 'butter'],
+  ['Image bloom', 'R3', 'Image found', UI, '1.2s', 'swoosh', 0, '', 'Image cross-fades in (200ms), no blur/scale', 'code'],
+  ['Title types in', 'R3', 'Title found', UI, '30ms / char', 'type', 0, '', 'Title appears at once', 'code'],
+  ['Title prompt glow', 'R3', 'Pinterest, no title', UI, '2.4s', 'idle', 1, '', 'Static butter ring, no pulse', 'code'],
+  ['Placeholder picker unroll', 'R3/R4', 'Nothing found / Bild ändern', UI, '520ms + 40ms/tile', 'pop', 0, '', 'Grid fades in', 'code'],
+  ['Failed: Topfbert oops', 'R3', 'Lookup failed', MG, '2.4s', 'idle', 1, '0%  tilt −6°, sweat drop appears\n80% drop slides down\n100% drop gone, tilt back', 'Still Topfbert oops pose', 'sheet'],
+  ['Saved → card flies to Board', 'R3', 'Speichern', UI, '700ms sheet + 900ms flight', 'swoosh', 0, '', 'Sheet fades; card appears at top of Ideen with 200ms fade', 'code'],
+  ['Placeholder illustrations ×16', 'R4', 'Focus: long-press, detail, picker, hover; 1× on first view / scroll-stop', MG, '1.8–3.6s', 'idle', 1, 'Per dish: only the hero part moves\n(steam, bubbles, fork twirl, lid…)\nFrame 0 = still', 'Always still frame', 'card'],
+  ['Card → detail morph', 'R5', 'Tap card', UI, '600ms', 'swoosh', 0, '', 'Detail cross-fades in (200ms)', 'code'],
+  ['Detail parallax + bar', 'R5', 'Scroll detail', UI, 'scroll-linked', 'settle', 0, '', 'No parallax; bar still appears', 'code'],
+  ['Achievement counter', 'R5', 'Detail opens / Gekocht', UI, '170ms/step · 460ms pop', 'pop', 0, '', 'Final number shown, badge static', 'code'],
+  ['Never cooked: Topfbert + pea', 'R5', 'History empty', MG, '2.6s bob · 3s roll', 'idle', 1, '0%  Topfbert rests, pea left\n50% Topfbert up 4px, pea right\n100% back', 'Still pose', 'sage'],
+  ['Edit mode morph', 'R5', 'Bearbeiten', UI, '380ms + 60ms/field', 'settle', 0, '', 'Fields swap with 150ms fade', 'code'],
+  ['Board switcher', 'R6', 'Tap Board pill', UI, '420ms + 50ms/row', 'pop', 0, '', 'List fades in', 'code'],
+  ['Board emojis idle', 'R6', 'Switcher open', UI, '4s, offset', 'idle', 1, '', 'Static', 'code'],
+  ['Board created build-in', 'R6', 'Board erstellen', MG, '~2.4s one-shot', 'celebrate', 0, '0%  emoji pops + pebble burst\n14% Ideen rises + overshoot\n24% Diese Woche\n34% Gekocht\n46% headline, 56% button', 'All elements shown, 200ms fade', 'butter'],
+  ['Copied!', 'R6', 'Tap Kopieren', UI, '200ms flip · 620ms burst', 'pop', 0, '', 'Label swaps to "Kopiert ✓", no burst', 'code'],
+  ['Column / delete dialogs', 'R6', 'Delete Column / Board', UI, '420ms', 'pop', 0, '', '150ms fade', 'code'],
+  ['Invite welcome', 'R6', 'Invite link opened', MG, '~1.5s intro · 14s orbit', 'celebrate', 1, '0%  Board emoji pops into pebble\n30% Topfbert pops up\n50% Member avatars pop, Lisa waves\n70% headline + text rise\n90% Google button\nthen: veggies orbit slowly', 'Everything shown statically', 'butter'],
+  ['Splash', 'R7', 'Every cold start', MG, '~1.1s', 'celebrate', 0, '0%  butter bloom from centre\n22% icon springs in\n38% lid pops\n52% wordmark + dot\n88% icon zooms out, Board fades in', 'Static icon on butter, then 200ms fade', 'butter'],
+  ['Sign-in orbit', 'R7', 'Sign-in screen', MG, '40s orbit · ~1.2s intro', 'idle', 1, '0%  tiles pop in around Topfbert (70ms each)\nthen: ring rotates 360° over 40s\nevery second tile plays its loop', 'Static ring, all tiles still', 'butter'],
+  ['Not unlocked sign', 'R7', 'Account not unlocked', MG, '2.8s', 'idle', 1, '0%  sign −8°\n50% sign +8°\n100% back', 'Still, sign straight', 'sky'],
+  ['Theme reveal', 'R7', 'Change Darstellung', UI, '600ms', 'swoosh', 0, '', 'Instant switch + 200ms cross-fade', 'code'],
+  ['Offline: sleepy Topfbert', 'R7', 'No connection', MG, '2.4s', 'idle', 1, '0%  Wi-Fi arcs full, z rises\n40% outer arc fades\n55% inner arc fades\n100% arcs back', 'Still, arcs at 30%', 'sky'],
+  ['Error: angebrannt', 'R7', 'Generic error', MG, '2.4s smoke · 2.6s spill', 'idle', 1, '0%  smoke puff at lid\n40% puff rises, grows\n100% gone; spill pulses', 'Still Topfbert oops + spill', 'sheet'],
+  ['Desktop hover', 'R8', 'Pointer over card / button', UI, '280ms', 'pop', 0, '', 'Shadow only, no lift, tilt or zoom; loops stay still', 'code'],
+  ['Desktop lane drop target', 'R8', 'Card dragged over lane', UI, '240ms + 1 wiggle', 'settle', 0, '', 'Lane ring highlight only', 'code']
+];
+class Component extends DCLogic {
+  state = { f: 'all', replay: {} };
+  renderVals() {
+    const f = this.state.f;
+    const rows = C.filter(r => f === 'all' || (f === 'ui' ? r[3] === UI : r[3] === MG)).map(([name, round, where, type, dur, tok, loop, story, rm, bg, alphaWhy]) => ({
+      name, round, where, type, dur, tok, loop: !!loop, story: story || '—', rm,
+      tagBg: type === MG ? '#E7D2F7' : '#1F1E1C', tagInk: type === MG ? '#4A1470' : '#fff',
+      hap: HAP[name] || '—', hapInk: HAP[name] ? '#1F1E1C' : '#B5B0A8', solid: !!S[bg], alpha: bg === 'alpha', code: bg === 'code', bgL: S[bg] ? S[bg][0] : '', bgD: S[bg] ? S[bg][1] : '', alphaWhy: alphaWhy || ''
+    }));
+    const nMG = C.filter(r => r[3] === MG).length;
+    return {
+      principles: [
+        ['Weich & federnd', 'Everything lands like a pebble: a slight overshoot (~8%), never a hard stop. Springs instead of linear curves.', '#FBE3B0'],
+        ['Kurz & bestimmt', 'Direct feedback within 120ms, UI motion under 500ms. Motion follows the finger and never makes you wait.', '#E9E4F7'],
+        ['Freude am Ende', 'The big moments (Gekocht, 10×, new Board) are allowed a celebration. Everyday actions stay quiet.', '#D5E4D8'],
+        ['Räumlich ehrlich', 'Things come from where they’re triggered and go where they belong: cards fly into tabs, images morph into headers.', '#DCE3F0'],
+        ['Ein Star pro Bild', 'Only one thing on screen plays for attention at a time. Illustrations are still until they’re in focus.', '#F7DCCB']
+      ].map(([t, d, bg]) => ({ t, d, bg })),
+      never: ['Text while reading (no marquee, no pulsing body copy)', 'Errors in red or shaking, except wrong confirm input (a single nudge)', 'Scrolling itself (no scroll-jacking)', 'Anything during typing, except the caret', 'More than one loop in the Board viewport', 'Navigation that makes you wait: animation never blocks input', 'Sounds (haptics only)'],
+      tokHead: ['TOKEN', 'DAUER', 'EASING', 'SPRING (COMPOSE)', 'EINSATZ', 'DEMO'],
+      tokens: TK.map(([n, d, e, sp, use, c, kf]) => ({ n, d, e, sp, use, c, anim: `${kf} ${this.state.replay[n] % 2 ? 1.2 : 1.21}s ${e.startsWith('cubic') ? e : 'ease'} infinite alternate`, on: () => this.setState(s => ({ replay: { ...s.replay, [n]: (s.replay[n] || 0) + 1 } })) })),
+      filters: [['all', 'Alle'], ['ui', 'UI motion'], ['mg', 'Motion graphics']].map(([k, l]) => ({ l, bg: f === k ? '#fff' : 'transparent', sh: f === k ? '0 3px 10px -4px rgba(0,0,0,.25)' : 'none', onTap: () => this.setState({ f: k }) })),
+      countLabel: `${C.length} Animationen · ${nMG} Motion Graphics · ${C.length - nMG} UI motion`,
+      catHead: ['ANIMATION', 'WO / AUSLÖSER', 'TYP', 'DAUER · TOKEN', 'STORYBOARD', 'REDUZIERTE BEWEGUNG', 'HINTERGRUND', 'HAPTIK'],
+      rows,
+      mgs: C.filter(r => F[r[0]]).map(r => { const [sub, fr] = F[r[0]], [kind, v] = [sub[0], sub.slice(2)], bg = S[r[9]] || S.board; return { name: r[0], dur: r[4], alpha: r[9] === 'alpha', bgL: bg[0], bgD: bg[1], frames: fr.map(([t, tf, cap], i) => ({ t, tf, cap, isM: kind === 'm', isI: kind === 'i', isE: kind === 'e', isT: kind === 't', isA: kind === 'a', mood: v, kind: v, e: v, bg: i % 2 ? bg[1] : bg[0], ink: i % 2 ? '#F3EFE8' : '#1F1E1C', vars: i % 2 ? '--ink:#F3EFE8;--surface:#1E1C1A;--surface2:#2A2825' : '--ink:#1F1E1C;--surface:#FFFFFF;--surface2:#EFEDE8' })) }; }),
+      rmRules: [
+        ['Respect the system setting', 'Android "Animationen entfernen" (animator duration scale 0) and prefers-reduced-motion on web switch every token to fade (≤200ms) or instant.'],
+        ['Loops never start', 'Illustrations, Topfbert and idle loops show frame 0, which is designed as a finished still.'],
+        ['Celebrations become a moment', 'Confetti and bursts are dropped. The meaning stays: the toast, check, count and "10×" card still appear.'],
+        ['Keep spatial meaning with fades', 'Morphs and flights cross-fade in place. Nothing disappears without feedback.'],
+        ['No parallax, no scale', 'Scroll-linked effects and hover lifts are off. Colour and shadow changes stay.']
+      ].map(([t, d], i) => ({ i: i + 1, t, d })),
+      perf: [
+        ['One loop on the Board', 'At most one looping motion graphic plays in the Board viewport. Priority: focused card > card nearest the centre after scroll-stop > first appearance. Everything else stays on frame 0.'],
+        ['Off-screen = paused', 'Loops pause when less than 50% visible, when a sheet or dialog covers them, and when the app is in the background.'],
+        ['Only transform + opacity', 'Animate translate, scale, rotate and alpha. Blur only in the one-shot image bloom; never animate layout, and avoid box-shadow on lists (use a pre-rendered shadow layer).'],
+        ['Haptik', 'Haptics use Android HapticFeedbackConstants only and are never on loops. They respect the system touch-feedback setting, and fire on arrival (e.g. drop landed), never at the start of a motion.'],
+        ['Budget', '60fps on a Pixel 6a. A celebration is at most 24 particles, removed when done. Lottie files under 60 KB, vector loops under 8 KB.'],
+        ['Battery saver', 'In battery saver mode, act as reduced motion but keep UI motion at 50% duration.'],
+        ['Interruptible', 'Every UI motion can be interrupted mid-way (springs, not timelines). A new tap retargets instead of queueing.'],
+        ['Lazy load', 'Motion graphics load on first use. The splash and sign-in are bundled; everything else is fetched and cached.']
+      ].map(([t, d], i) => ({ i: i + 1, t, d })),
+      surfaces: [['Board', 'board', 'Full-screen states on the Board background: sign-in, offline, error'], ['Karte', 'card', 'Placeholder illustrations inside cards and the picker'], ['Sheet / Panel', 'sheet', 'Clips inside sheets and dialogs: empty column, failed lookup, error'], ['Butter', 'butter', 'Warm moments: empty Board, lookup, created, invite, splash, sign-in'], ['Salbei', 'sage', 'Cooking moments: 10×, never cooked'], ['Himmel', 'sky', 'Calm or neutral: search empty, not unlocked, offline']].map(([n, k, use]) => ({ n, l: S[k][0], d: S[k][1], use }))
+    };
+  }
+}
+</script>
+</body>
+</html>

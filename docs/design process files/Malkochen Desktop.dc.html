@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#EDEAE3}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="padding:40px 44px 60px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="display:flex;gap:14px;font:600 12px/1 system-ui"><a href="Malkochen System.dc.html" style="text-decoration:none;opacity:.6">← Round 7 · System</a></div>
+    <div style="font:400 44px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em">Round 8 · Desktop &amp; Tablet</div>
+    <div style="font:14px/1.55 system-ui;color:#55524C;text-wrap:pretty">Same language as the phone, with the extra space used for overview. Each Column’s colour becomes its lane. Hover any card to see it lift, the image zoom, the placeholder loop start and the Neu pebble wiggle. Buttons, badges and the settings cog react on hover too.</div>
+  </div>
+  <sc-for list="{{ states }}" as="s" hint-placeholder-count="9">
+    <div id="{{ s.key }}" data-screen-label="{{ s.n }} {{ s.title }}" style="display:flex;flex-direction:column;gap:18px;padding:28px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px">
+      <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+        <div style="display:flex;align-items:baseline;gap:10px;min-width:280px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ s.n }}</span><span style="font:400 28px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.01em">{{ s.title }}</span></div>
+        <sc-for list="{{ s.notes }}" as="m" hint-placeholder-count="1">
+          <div style="flex:1;min-width:280px;max-width:520px"><span style="font:600 10px ui-monospace,monospace;padding:4px 7px;border-radius:5px;background:{{ m.tagBg }};color:{{ m.tagInk }}">{{ m.tag }}</span><div style="font:600 13.5px/1.4 system-ui;margin-top:8px">{{ m.t }}</div><div style="font:12.5px/1.55 system-ui;color:#55524C;text-wrap:pretty">{{ m.d }}</div><div style="font:11px ui-monospace,monospace;color:#8A857D;margin-top:4px">{{ m.tm }}</div></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:32px;align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">HELL</div><div style="--bg:#F7F6F2;--surface:#FFFFFF;--surface2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--pill:#1F1E1C;--pillInk:#FFFFFF;--danger:#C23B22;--glass:rgba(255,255,255,.8);--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);padding:{{ s.bez }};background:{{ s.bezBg }};border-radius:{{ s.bezR }};box-shadow:0 30px 60px -30px rgba(40,30,10,.4)"><dc-import name="DeskScreen" screen="{{ s.key }}" device="{{ s.dev }}" hint-size="{{ s.hint }}"></dc-import></div></div>
+        <div style="display:flex;flex-direction:column;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">DUNKEL</div><div style="--bg:#131211;--surface:#1E1C1A;--surface2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--pill:#F3EFE8;--pillInk:#131211;--danger:#FF8A70;--glass:rgba(30,28,26,.75);--shadow:0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);padding:{{ s.bez }};background:{{ s.bezBg }};border-radius:{{ s.bezR }};box-shadow:0 30px 60px -30px rgba(40,30,10,.4)"><dc-import name="DeskScreen" screen="{{ s.key }}" device="{{ s.dev }}" hint-size="{{ s.hint }}"></dc-import></div></div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motionSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1,0.5,0.25],&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+const N = (g, t, d, tm) => ({ tag: g ? 'MOTION GRAPHIC' : 'UI MOTION', tagBg: g ? '#E7D2F7' : '#1F1E1C', tagInk: g ? '#4A1470' : '#fff', t, d, tm });
+const STATES = [
+  ['board', 'Board · Desktop', 'desktop', [N(0, 'Kanban', 'All Columns side by side as colour lanes (the phone’s Column colour becomes the lane tint), with the phone cards unchanged. Headline and subline sit in the lane header. The Board pill, Members, search (/ shortcut), + Gericht and settings share one top bar. Each lane scrolls on its own. With 5+ Columns the Board scrolls horizontally with lane snapping and edge fades; lanes keep their width. Search opens an overlay of results grouped by Board (as on the phone) instead of filtering the lanes.', 'n/a')]],
+  ['hover', 'Hover', 'desktop', [N(0, 'Hover motion', 'Card: lifts 4px with a −0.6° tilt and a deeper shadow, the photo zooms to 1.08, and a placeholder starts its loop (Linsensuppe here). The Neu pebble wiggles once. Gekocht fills sage on hover, + Gericht grows and tilts, the cog turns 60°, and badges grow. All springs, never linear.', '280ms spring · loop while hovered')]],
+  ['drag', 'Drag zwischen Columns', 'desktop', [N(0, 'Drag + drop target', 'Pick up (mouse down, 4px move): the card lifts 1.04× with a −2° tilt and deep shadow, and a dashed slot stays behind. Over another lane, that lane grows 1.012×, glows in its colour and wiggles once, and a coloured slot opens where it will land. The other lanes dim to 60%. On drop the card settles with a squash, the count rolls up and the old slot collapses.', '3.8s demo loop · 320ms settle')]],
+  ['morph', 'Karte → Detail (Morph)', 'desktop', [N(0, 'Side panel morph', 'The card image flies from its thumbnail into the panel header (position, size and radius together) while the 480px panel slides in from the right and the Board dims. Closing reverses it. A side panel beats a modal here: the Board stays visible, so you can drag the next card while reading.', '600ms morph · 480ms panel')]],
+  ['detail', 'Dish-Detail · Side Panel', 'desktop', [N(0, 'Panel', 'Same content as the phone detail, in a 480px column. Esc or clicking outside closes it; ← and → step to the neighbouring Dish in the lane.', 'n/a')]],
+  ['add', 'Gericht hinzufügen · Dialog', 'desktop', [N(0, 'Dialog', 'Pops from 0.92 with a spring. The link field accepts ⌘V straight away. Image and fields sit side by side, and every Round 3 state (lookup, duplicate, failed…) plays in the same slots. ↵ saves, and the new card flies into the top of Ideen.', '360ms pop')]],
+  ['boardset', 'Board-Einstellungen', 'desktop', [N(0, 'Two-column modal', 'Columns and invite link on the left, Members on the right, so everything is visible without scrolling. Column rows drag with the same lift. Owner extras (Entfernen, Besitz übertragen, Link & Ablauf, Board löschen) reuse the phone designs in the same modal: Entfernen per row on hover, the rest under Members.', '360ms pop')]],
+  ['userset', 'Nutzer-Einstellungen', 'desktop', [N(0, 'Popover from avatar', 'Opens from the avatar (origin top-right). It holds the profile, Darstellung with the circular theme reveal from Round 7, Sprache (reserved) and Abmelden.', '320ms pop')]],
+  ['keys', 'Tastenkürzel', 'desktop', [N(0, 'Shortcut sheet', 'Press ? to open (also from the user popover). Keyboard focus shows as a butter ring on the card, and ⇧←/→ moves the focused card between lanes with the same drop animation as dragging.', '320ms pop')]],
+  ['board', 'Board · Tablet (quer)', 'tablet', [N(0, 'Tablet', 'At 1180px, three lanes fit next to each other, and "+ Column" peeks in at the edge. Touch uses the phone gestures: long-press to drag, tap to open the panel. The detail uses the same side panel.', 'long-press 300ms')]]
+];
+class Component extends DCLogic {
+  applySpd() { document.documentElement.style.setProperty('--spd', String(1 / (this.props.motionSpeed ?? 1))); }
+  componentDidMount() { this.applySpd(); }
+  componentDidUpdate() { this.applySpd(); }
+  renderVals() {
+    return { states: STATES.map(([key, title, dev, notes], i) => ({ key, title, dev, notes, n: String(i + 1).padStart(2, '0'), bez: dev === 'tablet' ? '14px' : '0', bezBg: dev === 'tablet' ? '#0D0D0D' : 'transparent', bezR: dev === 'tablet' ? '40px' : '14px', hint: dev === 'tablet' ? '1180px,820px' : '1440px,900px' })) };
+  }
+}
+</script>
+</body>
+</html>

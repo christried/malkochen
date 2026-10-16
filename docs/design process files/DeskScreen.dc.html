@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes dk-drag{0%,8%{transform:translate(var(--x0),var(--y0)) scale(1) rotate(0);box-shadow:var(--shadow);opacity:1}16%{transform:translate(var(--x0),var(--y0)) scale(1.04) rotate(-2deg);box-shadow:0 34px 60px -20px rgba(0,0,0,.45)}52%,84%{transform:translate(var(--x1),var(--y1)) scale(1.04) rotate(2deg);box-shadow:0 34px 60px -20px rgba(0,0,0,.45);opacity:1}92%{transform:translate(var(--x1),var(--y2)) scale(1) rotate(0);box-shadow:var(--shadow);opacity:1}97%{opacity:0}98%{transform:translate(var(--x0),var(--y0));opacity:0}100%{transform:translate(var(--x0),var(--y0));opacity:1}}
+@keyframes dk-slotout{0%,12%{opacity:0;max-height:128px}18%,86%{opacity:1;max-height:128px}96%,100%{opacity:0;max-height:128px}}
+@keyframes dk-slotin{0%,44%{max-height:0;opacity:0;margin-bottom:-12px}56%,90%{max-height:128px;opacity:1;margin-bottom:0}97%,100%{max-height:0;opacity:0;margin-bottom:-12px}}
+@keyframes dk-target{0%,44%{box-shadow:inset 0 0 0 0 rgba(222,140,242,0);transform:none}54%{box-shadow:inset 0 0 0 3px #DE8CF2,0 0 0 8px rgba(222,140,242,.22);transform:scale(1.012)}62%{transform:scale(1.012) rotate(-.3deg)}70%{transform:scale(1.012) rotate(.3deg)}78%,88%{box-shadow:inset 0 0 0 3px #DE8CF2,0 0 0 8px rgba(222,140,242,.22);transform:scale(1.012)}96%,100%{box-shadow:inset 0 0 0 0 rgba(222,140,242,0);transform:none}}
+@keyframes dk-cnt{0%,88%{transform:translateY(0)}92%,98%{transform:translateY(-16px)}100%{transform:translateY(0)}}
+@keyframes dk-dim{0%,44%{opacity:1}54%,88%{opacity:.6}96%,100%{opacity:1}}
+@keyframes dk-cursor{0%,8%{transform:translate(var(--cx0),var(--cy0)) scale(1)}12%{transform:translate(var(--cx0),var(--cy0)) scale(.85)}52%,88%{transform:translate(var(--cx1),var(--cy1)) scale(.85)}92%,100%{transform:translate(var(--cx1),var(--cy2)) scale(1)}}
+@keyframes dk-fade{from{opacity:0}to{opacity:1}}
+@keyframes dk-panel{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes dk-pop{0%{opacity:0;transform:scale(.92) translateY(10px)}100%{opacity:1;transform:none}}
+@keyframes dk-wig{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg) scale(1.1)}75%{transform:rotate(8deg) scale(1.1)}}
+@keyframes dk-morph{0%,14%{left:var(--mx);top:var(--my);width:76px;height:96px;border-radius:18px}40%,82%{left:var(--px);top:0;width:480px;height:340px;border-radius:0}96%,100%{left:var(--mx);top:var(--my);width:76px;height:96px;border-radius:18px}}
+@keyframes dk-mpanel{0%,16%{transform:translateX(100%)}38%,84%{transform:none}98%,100%{transform:translateX(100%)}}
+@keyframes dk-mscrim{0%,14%{opacity:0}34%,84%{opacity:1}98%,100%{opacity:0}}
+</style></helmet>
+<div style="position:relative;width:{{ W }};height:{{ H }};overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;user-select:none;border-radius:{{ radius }}">
+
+  <div style="position:absolute;left:0;right:0;top:0;height:76px;display:flex;align-items:center;gap:14px;padding:0 {{ pad }};box-sizing:border-box;z-index:3">
+    <div style="display:flex;align-items:center;gap:9px;height:46px;padding:0 16px 0 6px;border-radius:23px;background:var(--surface);box-shadow:var(--shadow);cursor:pointer" style-hover="transform:translateY(-1px)">
+      <span style="width:34px;height:34px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-size:19px">🍜</span>
+      <span style="font:600 16px/1 'Hanken Grotesk',system-ui">WG-Küche</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.55"><path d="M6 9l6 6 6-6"></path></svg>
+    </div>
+    <div style="display:flex;margin-left:4px"><sc-for list="{{ members }}" as="m" hint-placeholder-count="4"><span style="width:30px;height:30px;margin-left:-8px;border-radius:50%;border:2.5px solid var(--bg);display:grid;place-items:center;background:{{ m.bg }};color:{{ m.ink }};font:700 11px/1 'Hanken Grotesk',system-ui">{{ m.l }}</span></sc-for></div>
+    <div style="flex:1"></div>
+    <div style="width:{{ searchW }};height:46px;border-radius:23px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--ink2);font:500 15px/1 'Hanken Grotesk',system-ui;box-sizing:border-box" style-hover="box-shadow:0 0 0 2px var(--line2), var(--shadow)"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>Gerichte suchen<span style="flex:1"></span><span style="height:22px;padding:0 7px;border-radius:6px;background:var(--surface2);display:grid;place-items:center;font:600 11px/1 ui-monospace,monospace">/</span></div>
+    <div style="height:46px;padding:0 18px 0 8px;border-radius:23px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;gap:9px;font:600 15px/1 'Hanken Grotesk',system-ui;cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1)" style-hover="transform:scale(1.05) rotate(-1deg)" style-active="transform:scale(.95)"><span style="width:30px;height:30px;border-radius:50%;background:var(--pillInk);color:var(--pill);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg></span>Gericht</div>
+    <div style="width:46px;height:46px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;transition:transform .4s cubic-bezier(.34,1.56,.64,1)" style-hover="transform:rotate(60deg)"><svg width="19" height="19" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></div>
+    <span style="width:40px;height:40px;border-radius:50%;background:linear-gradient(140deg,#A8BEE3,#6F8FC4);color:#0F2340;display:grid;place-items:center;font:700 15px/1 'Hanken Grotesk',system-ui;cursor:pointer" style-hover="box-shadow:0 0 0 3px var(--line2)">S</span>
+  </div>
+
+  <div style="position:absolute;left:0;right:0;top:76px;bottom:0;padding:10px {{ pad }} 0;box-sizing:border-box;display:flex;gap:{{ gap }};overflow:hidden">
+    <sc-for list="{{ cols }}" as="c" hint-placeholder-count="3">
+      <div style="flex:none;width:{{ colW }};display:flex;flex-direction:column;border-radius:30px 26px 0 0;background:{{ c.tint }};padding:16px 12px 0;box-sizing:border-box;animation:{{ c.anim }};transform-origin:50% 0">
+        <div style="display:flex;align-items:baseline;gap:10px;padding:2px 8px 14px">
+          <span style="font:400 30px/1 'Newsreader',Georgia,serif;letter-spacing:-.02em">{{ c.l }}</span>
+          <span style="display:block;height:18px;overflow:hidden;font:700 15px/18px 'Hanken Grotesk',system-ui;color:var(--ink2)"><span style="display:flex;flex-direction:column;animation:{{ c.cntAnim }}"><span style="height:18px">{{ c.n }}</span><span style="height:18px">{{ c.n2 }}</span></span></span>
+          <span style="flex:1"></span>
+          <span style="font:italic 400 15px/1 'Newsreader',Georgia,serif;color:var(--ink2)">{{ c.sub }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;overflow:hidden;padding:0 2px 20px">
+          <sc-if value="{{ c.slotIn }}"><div style="flex:none;height:128px;border-radius:26px 22px 28px 24px;border:2.5px dashed #DE8CF2;box-sizing:border-box;background:color-mix(in oklch, #DE8CF2 14%, transparent);overflow:hidden;animation:dk-slotin calc(3.8s * var(--spd, 1)) ease-in-out infinite"></div></sc-if>
+          <sc-for list="{{ c.cards }}" as="d" hint-placeholder-count="4">
+            <div onMouseEnter="{{ d.on }}" onMouseLeave="{{ d.off }}" onClick="{{ d.open }}" style="position:relative;flex:none;height:128px;border-radius:26px 22px 28px 24px;cursor:pointer;transform:{{ d.tf }};box-shadow:{{ d.sh }};transition:transform calc(280ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1),box-shadow calc(280ms * var(--spd, 1)) ease">
+              <sc-if value="{{ d.isSlot }}"><div style="position:absolute;inset:0;border-radius:inherit;border:2.5px dashed color-mix(in oklch, var(--ink) 25%, transparent);box-sizing:border-box;opacity:0;animation:dk-slotout calc(3.8s * var(--spd, 1)) ease-in-out infinite"></div></sc-if>
+              <sc-if value="{{ d.isCard }}">
+              <div style="position:absolute;inset:0;display:grid;grid-template-columns:86px minmax(0,1fr);gap:14px;padding:9px;box-sizing:border-box;background:var(--surface);border-radius:inherit">
+                <div style="position:relative;border-radius:19px 16px 20px 17px;overflow:hidden">
+                  <sc-if value="{{ d.photo }}"><div style="position:absolute;inset:0;background:{{ d.ph }};background-size:{{ d.bgs }};background-position:center;transform:{{ d.imgTf }};transition:transform calc(500ms * var(--spd, 1)) ease"></div></sc-if>
+                  <sc-if value="{{ d.illus }}"><dc-import name="Illus" kind="{{ d.k }}" play="{{ d.hot }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import></sc-if>
+                </div>
+                <sc-if value="{{ d.neu }}"><div style="position:absolute;top:-10px;right:16px;width:46px;height:42px;display:grid;place-items:center;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#FCD980,#F29B32);color:#2A1A03;font:700 13px/1 'Hanken Grotesk',system-ui;animation:{{ d.neuAnim }}">Neu</div></sc-if>
+                <div style="display:flex;flex-direction:column;min-width:0;padding:5px 4px 1px 0">
+                  <div style="font:400 18px/1.16 'Newsreader',Georgia,serif;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-right:{{ d.tp }}">{{ d.t }}</div>
+                  <div style="display:flex;align-items:center;gap:7px;margin-top:7px"><span style="width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:{{ d.avBg }};color:{{ d.avInk }};font:700 9.5px/1 'Hanken Grotesk',system-ui">{{ d.av }}</span><sc-if value="{{ d.hasN }}"><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ d.nl }}</span></sc-if><sc-if value="{{ d.hasSrc }}"><i style="width:9px;height:9px;border-radius:50%;background:{{ d.srcDot }}"></i></sc-if></div>
+                  <div style="flex:1"></div>
+                  <div style="display:flex;align-items:center;gap:8px;opacity:{{ d.actOp }};transition:opacity .2s">
+                    <span style="height:32px;padding:0 12px;border-radius:16px 14px 17px 15px;display:inline-flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui;background:var(--surface2)" style-hover="background:#A5C7AE;color:#10261A">Gekocht<svg width="13" height="13" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></span>
+                    <span style="flex:1"></span>
+                    <span style="width:32px;height:32px;border-radius:50%;background:var(--surface2);display:grid;place-items:center" style-hover="background:var(--line2)"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></span>
+                  </div>
+                </div>
+              </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="flex:none;width:{{ addW }};border-radius:30px 26px 0 0;border:2.5px dashed var(--line2);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding-top:26px;gap:10px;color:var(--ink2);cursor:pointer" style-hover="background:var(--surface2);color:var(--ink)">
+      <svg width="24" height="24" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg><span style="font:600 14px/1.2 'Hanken Grotesk',system-ui;text-align:center">Column</span>
+    </div>
+  </div>
+
+  <sc-if value="{{ isDrag }}">
+    <div style="position:absolute;left:0;top:0;width:{{ cardW }};height:128px;z-index:20;pointer-events:none;border-radius:26px 22px 28px 24px;background:var(--surface);--x0:{{ x0 }};--y0:{{ y0 }};--x1:{{ x1 }};--y1:{{ y1 }};--y2:{{ y2 }};animation:dk-drag calc(3.8s * var(--spd, 1)) cubic-bezier(.45,0,.2,1) infinite">
+      <div style="position:absolute;inset:0;display:grid;grid-template-columns:86px minmax(0,1fr);gap:14px;padding:9px;box-sizing:border-box">
+        <div style="position:relative;border-radius:19px 16px 20px 17px;overflow:hidden"><dc-import name="Illus" kind="eintopf" play="{{ true }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import></div>
+        <div style="display:flex;flex-direction:column;padding:5px 4px 1px 0"><div style="font:400 18px/1.16 'Newsreader',Georgia,serif">Omas Linsensuppe</div><div style="display:flex;align-items:center;gap:7px;margin-top:7px"><span style="width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:#A9C9B1;color:#12291A;font:700 9.5px/1 'Hanken Grotesk',system-ui">J</span><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">3× gekocht</span></div></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;top:0;z-index:21;pointer-events:none;--cx0:{{ cx0 }};--cy0:{{ cy0 }};--cx1:{{ cx1 }};--cy1:{{ cy1 }};--cy2:{{ cy2 }};animation:dk-cursor calc(3.8s * var(--spd, 1)) cubic-bezier(.45,0,.2,1) infinite"><svg width="26" height="30" viewBox="0 0 22 26" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))"><path d="M7 11V3.5a2 2 0 0 1 4 0V10h.5V8a2 2 0 0 1 4 0v2h.3a1.9 1.9 0 0 1 3.7.6V16c0 4.4-3.1 8-7.5 8H11c-2.2 0-3.6-1-4.7-2.6L2.6 16a2 2 0 0 1 3-2.6z" style="fill:#fff;stroke:#1F1E1C;stroke-width:1.6;stroke-linejoin:round"></path></svg></div>
+  </sc-if>
+
+  <sc-if value="{{ overlay }}"><div onClick="{{ close }}" style="position:absolute;inset:0;z-index:30;background:rgba(12,10,8,.4);animation:{{ scrimAnim }}"></div></sc-if>
+
+  <sc-if value="{{ isDetail }}">
+    <sc-if value="{{ morphOn }}"><div style="position:absolute;z-index:32;overflow:hidden;--mx:{{ mx }};--my:{{ my }};--px:{{ px }};animation:dk-morph calc(5s * var(--spd, 1)) cubic-bezier(.45,0,.2,1) infinite"><div style="position:absolute;inset:0;background:{{ tofu }};background-size:cover;background-position:center"></div></div></sc-if>
+    <div style="position:absolute;right:0;top:0;bottom:0;width:480px;z-index:31;background:var(--bg);box-shadow:-30px 0 60px -30px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden;animation:{{ panelAnim }}">
+      <div style="position:relative;flex:none;height:340px;background:{{ tofu }};background-size:cover;background-position:center">
+        <div style="position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.35), transparent 30%)"></div>
+        <div style="position:absolute;left:16px;right:16px;top:16px;display:flex;justify-content:space-between">
+          <span onClick="{{ close }}" style="width:42px;height:42px;border-radius:50%;background:var(--glass);backdrop-filter:blur(10px);display:grid;place-items:center;cursor:pointer" style-hover="transform:scale(1.08)"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+          <div style="display:flex;gap:8px"><span style="height:42px;padding:0 14px;border-radius:21px;background:var(--glass);backdrop-filter:blur(10px);display:flex;align-items:center;gap:7px;font:600 13.5px/1 'Hanken Grotesk',system-ui;cursor:pointer" style-hover="transform:translateY(-1px)"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20h4l10-10-4-4L4 16z"></path></svg>Bearbeiten</span><span style="width:42px;height:42px;border-radius:50%;background:var(--glass);backdrop-filter:blur(10px);display:grid;place-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:var(--ink)"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></span></div>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;scrollbar-width:none;margin-top:-28px;position:relative;background:var(--bg);border-radius:30px 30px 0 0;padding:22px 24px 30px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:8px"><span style="height:30px;padding:0 11px 0 9px;border-radius:15px;background:var(--surface2);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui"><i style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)"></i>TikTok</span><span style="height:30px;padding:0 11px 0 9px;border-radius:15px;background:var(--surface2);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui">🍜 WG-Küche<i style="width:9px;height:9px;margin-left:3px;border-radius:50%;background:#F7B94A"></i>Ideen</span></div>
+        <div style="font:400 32px/1.08 'Newsreader',Georgia,serif;letter-spacing:-.02em">Knuspriger Sesam-Tofu mit Erdnusssoße</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#F7C85C;color:#2B1E04;font:700 10px/1 'Hanken Grotesk',system-ui">L</span><span style="font:500 13.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">hinzugefügt von Lisa am 3. Sep</span></div>
+        <div style="padding:14px 16px;border-radius:22px 20px 23px 21px;background:var(--surface2);font:400 17px/1.45 'Newsreader',Georgia,serif">Tofu vorher 20 Min. pressen – dann wird er richtig knusprig.</div>
+        <div style="display:flex;gap:10px"><div style="flex:1;height:52px;border-radius:26px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui;cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1)" style-hover="transform:scale(1.03)">Original öffnen<svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M7 17L17 7M9 7h8v8"></path></svg></div><div style="height:52px;padding:0 20px;border-radius:26px;background:#A5C7AE;color:#10261A;display:flex;align-items:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui;cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1)" style-hover="transform:scale(1.05) rotate(-1.5deg)">Gekocht<svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></div></div>
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:28px 24px 29px 25px;background:var(--surface);box-shadow:var(--shadow)">
+          <div style="width:66px;height:66px;flex:none;display:grid;place-items:center;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#FCE0A0,#F5B04A);font:400 28px/1 'Newsreader',Georgia,serif;color:#2A1A03;cursor:default;transition:transform .35s cubic-bezier(.34,1.56,.64,1)" style-hover="transform:scale(1.1) rotate(-6deg)">3×</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px"><span style="font:400 22px/1.1 'Newsreader',Georgia,serif">Wird Liebling</span><span style="font:500 13.5px/1.3 'Hanken Grotesk',system-ui;color:var(--ink2)">3× gekocht · zuletzt 12. Sep</span></div>
+        </div>
+        <sc-for list="{{ hist }}" as="h" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 6px;border-radius:16px" style-hover="background:var(--surface2)">
+            <div style="flex:none;width:44px;height:48px;border-radius:15px 13px 16px 14px;background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:400 19px/1 'Newsreader',Georgia,serif">{{ h.d }}</span><span style="font:600 9px/1 ui-monospace,monospace;letter-spacing:.06em;color:var(--ink2)">{{ h.m }}</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:5px"><span style="font:400 16px/1.25 'Newsreader',Georgia,serif">{{ h.n }}</span><span style="font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ h.w }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAdd }}">
+    <div style="position:absolute;left:50%;top:50%;width:620px;margin:-340px 0 0 -310px;height:680px;z-index:31;background:var(--surface);border-radius:34px 30px 36px 32px;box-shadow:0 40px 80px -30px rgba(0,0,0,.55);padding:24px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;animation:dk-pop calc(360ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) both">
+      <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font:400 30px/1 'Newsreader',Georgia,serif;letter-spacing:-.015em">Gericht hinzufügen</span><span style="width:40px;height:40px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;cursor:pointer" style-hover="transform:rotate(90deg)"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div>
+      <div style="height:54px;border-radius:20px 18px 21px 19px;background:var(--surface2);display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;font:500 15.5px/1 'Hanken Grotesk',system-ui"><i style="width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)"></i><span style="flex:1">tiktok.com/@plantkitchen/video/7291…</span><span style="height:22px;padding:0 7px;border-radius:6px;background:var(--surface);display:grid;place-items:center;font:600 11px/1 ui-monospace,monospace;color:var(--ink2)">⌘V</span></div>
+      <div style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;flex:1;min-height:0">
+        <div style="position:relative;border-radius:26px 24px 27px 25px;overflow:hidden;background:{{ tofu }};background-size:cover;background-position:center">
+          <span style="position:absolute;top:12px;left:12px;height:28px;padding:0 11px 0 9px;border-radius:14px;background:rgba(20,18,16,.55);backdrop-filter:blur(8px);color:#fff;display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui"><i style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)"></i>TikTok</span>
+          <span style="position:absolute;left:10px;right:10px;bottom:10px;height:38px;border-radius:19px;background:var(--glass);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;gap:6px;font:600 13px/1 'Hanken Grotesk',system-ui;cursor:pointer" style-hover="transform:translateY(-2px)">Bild ändern</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">TITEL</span>
+          <div style="min-height:56px;border-radius:18px 16px 19px 17px;background:var(--surface2);box-shadow:0 0 0 2px rgba(247,185,74,.75);display:flex;align-items:center;padding:10px 16px;box-sizing:border-box;font:400 20px/1.2 'Newsreader',Georgia,serif">Gochujang-Blumenkohl mit Sesam</div>
+          <span style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">BOARD</span>
+          <div style="height:50px;border-radius:18px;border:1.5px solid var(--line2);display:flex;align-items:center;gap:10px;padding:0 14px;font:600 15px/1 'Hanken Grotesk',system-ui">🍜 WG-Küche<span style="font-weight:500;color:var(--ink2)">→ Ideen</span><span style="flex:1"></span><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9l6 6 6-6"></path></svg></div>
+          <span style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">NOTIZ</span>
+          <div style="flex:1;border-radius:18px;border:1.5px solid var(--line2);padding:14px;font:500 14.5px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2)">Notiz hinzufügen (optional)</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:600 14px/1 'Hanken Grotesk',system-ui;color:var(--ink2);cursor:pointer" style-hover="color:var(--ink)">Ohne Link hinzufügen</span><span style="flex:1"></span><span style="height:52px;padding:0 22px;border-radius:26px;background:var(--surface2);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Abbrechen</span><span style="height:52px;padding:0 28px;border-radius:26px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;gap:10px;font:600 15px/1 'Hanken Grotesk',system-ui;cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1)" style-hover="transform:scale(1.04)">Speichern<span style="height:20px;padding:0 6px;border-radius:5px;background:color-mix(in oklch, var(--pillInk) 18%, transparent);display:grid;place-items:center;font:600 11px/1 ui-monospace,monospace">↵</span></span></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isBoardSet }}">
+    <div style="position:absolute;left:50%;top:50%;width:860px;margin:-350px 0 0 -430px;height:700px;z-index:31;background:var(--bg);border-radius:34px 30px 36px 32px;box-shadow:0 40px 80px -30px rgba(0,0,0,.55);padding:26px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px;animation:dk-pop calc(360ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) both">
+      <div style="display:flex;align-items:center;gap:14px"><span style="width:60px;height:58px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:color-mix(in oklch, #F7B94A 38%, var(--surface2));display:grid;place-items:center;font-size:32px;cursor:pointer" style-hover="transform:rotate(-8deg) scale(1.08)">🍜</span><div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font:400 30px/1 'Newsreader',Georgia,serif">WG-Küche</span><span style="font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">4 Members · 42 Gerichte · Owner: Lisa</span></div><span style="width:40px;height:40px;border-radius:50%;background:var(--surface2);display:grid;place-items:center" style-hover="transform:rotate(90deg)"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;flex:1;min-height:0">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">COLUMNS</span>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+            <sc-for list="{{ setCols }}" as="c" hint-placeholder-count="3"><div style="height:54px;display:flex;align-items:center;gap:10px;padding:0 10px 0 8px;border-radius:18px;cursor:grab" style-hover="background:var(--surface2)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:var(--ink2)"><circle cx="9" cy="6" r="1.7"></circle><circle cx="15" cy="6" r="1.7"></circle><circle cx="9" cy="12" r="1.7"></circle><circle cx="15" cy="12" r="1.7"></circle><circle cx="9" cy="18" r="1.7"></circle><circle cx="15" cy="18" r="1.7"></circle></svg><span style="width:26px;height:24px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ c.bg }};border:2px solid var(--ink);box-sizing:border-box"></span><span style="flex:1;font:600 15px/1 'Hanken Grotesk',system-ui">{{ c.l }}</span><span style="font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ c.n }}</span><sc-if value="{{ c.special }}"><span style="height:22px;padding:0 8px;border-radius:11px;background:color-mix(in oklch, #A5C7AE 40%, var(--surface2));display:grid;place-items:center;font:700 10.5px/1 'Hanken Grotesk',system-ui">Besonders</span></sc-if></div></sc-for>
+            <div style="height:46px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:16px;border:1.5px dashed var(--line2);font:600 14px/1 'Hanken Grotesk',system-ui;cursor:pointer" style-hover="background:var(--surface2)">+ Column hinzufügen</div>
+          </div>
+          <span style="margin-top:8px;padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">EINLADUNGSLINK</span>
+          <div style="display:flex;gap:8px;padding:10px;border-radius:24px;background:var(--surface);box-shadow:var(--shadow)"><span style="flex:1;height:44px;border-radius:15px;background:var(--surface2);display:flex;align-items:center;padding:0 12px;font:500 13.5px/1 ui-monospace,Menlo,monospace">malkochen.app/j/wg-k7Q2x</span><span style="height:44px;padding:0 16px;border-radius:22px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 14px/1 'Hanken Grotesk',system-ui;cursor:pointer" style-hover="background:#A5C7AE;color:#10261A">Kopieren</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">MEMBERS</span>
+          <div style="display:flex;flex-direction:column;padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+            <sc-for list="{{ memberRows }}" as="m" hint-placeholder-count="4"><div style="height:56px;display:flex;align-items:center;gap:12px;padding:0 10px;border-radius:18px" style-hover="background:var(--surface2)"><span style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:{{ m.bg }};color:{{ m.ink }};font:700 13px/1 'Hanken Grotesk',system-ui">{{ m.l }}</span><div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font:600 15px/1 'Hanken Grotesk',system-ui">{{ m.n }}</span><span style="font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ m.sub }}</span></div><sc-if value="{{ m.owner }}"><span style="height:24px;padding:0 9px;border-radius:12px;background:color-mix(in oklch, #F7B94A 35%, var(--surface2));display:grid;place-items:center;font:700 11px/1 'Hanken Grotesk',system-ui">Owner</span></sc-if></div></sc-for>
+          </div>
+          <div style="flex:1"></div>
+          <div style="height:50px;border-radius:25px;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui;color:var(--danger);background:color-mix(in oklch, var(--danger) 10%, transparent);cursor:pointer" style-hover="background:color-mix(in oklch, var(--danger) 18%, transparent)">Board verlassen</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isUserSet }}">
+    <div style="position:absolute;right:{{ pad }};top:84px;width:380px;z-index:31;background:var(--surface);border-radius:30px 26px 32px 28px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;transform-origin:90% 0;animation:dk-pop calc(320ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) both">
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:52px;height:52px;border-radius:50%;background:linear-gradient(140deg,#A8BEE3,#6F8FC4);color:#0F2340;display:grid;place-items:center;font:700 19px/1 'Hanken Grotesk',system-ui">S</span><div style="display:flex;flex-direction:column;gap:5px"><span style="font:400 22px/1 'Newsreader',Georgia,serif">Sam Becker</span><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">sam.becker@gmail.com · Google</span></div></div>
+      <span style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">DARSTELLUNG</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:20px;background:var(--surface2)"><sc-for list="{{ themes }}" as="t" hint-placeholder-count="3"><span style="height:64px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:600 13px/1 'Hanken Grotesk',system-ui;background:{{ t.bg }};box-shadow:{{ t.ring }};cursor:pointer" style-hover="transform:translateY(-2px)"><i style="width:26px;height:26px;border-radius:9px;background:{{ t.sw }};box-shadow:inset 0 0 0 1.5px var(--line2)"></i>{{ t.l }}</span></sc-for></div>
+      <div style="height:50px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:18px;border:1.5px solid var(--line2)"><span>🇩🇪</span><span style="flex:1;font:600 14.5px/1 'Hanken Grotesk',system-ui">Sprache: Deutsch</span><span style="font:500 11.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">weitere bald</span></div>
+      <div style="height:46px;border-radius:23px;display:grid;place-items:center;font:600 14.5px/1 'Hanken Grotesk',system-ui;color:var(--danger);background:color-mix(in oklch, var(--danger) 10%, transparent);cursor:pointer" style-hover="background:color-mix(in oklch, var(--danger) 18%, transparent)">Abmelden</div>
+    </div>
+  </sc-if>
+<sc-if value="{{ isKeys }}">
+    <div style="position:absolute;left:50%;top:50%;width:640px;margin:-250px 0 0 -320px;z-index:31;background:var(--surface);border-radius:34px 30px 36px 32px;box-shadow:0 40px 80px -30px rgba(0,0,0,.55);padding:26px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px;animation:dk-pop calc(320ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) both">
+      <div style="display:flex;align-items:center;gap:12px"><dc-import name="Mascot" mood="wow" size="{{ 54 }}" style="width:54px;height:50px" hint-size="54px,50px"></dc-import><span style="flex:1;font:400 30px/1 'Newsreader',Georgia,serif;letter-spacing:-.015em">Tastenkürzel</span><span style="height:28px;padding:0 10px;border-radius:8px;background:var(--surface2);display:grid;place-items:center;font:600 13px/1 ui-monospace,monospace">?</span></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 28px">
+        <sc-for list="{{ keys }}" as="k" hint-placeholder-count="10">
+          <div style="height:46px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)"><span style="flex:1;font:500 14.5px/1 'Hanken Grotesk',system-ui">{{ k.l }}</span><sc-for list="{{ k.keys }}" as="c" hint-placeholder-count="1"><span style="min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:8px;background:var(--surface2);box-shadow:inset 0 -2px 0 var(--line2);display:grid;place-items:center;font:600 12.5px/1 ui-monospace,monospace">{{ c }}</span></sc-for></div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;board&quot;,&quot;hover&quot;,&quot;drag&quot;,&quot;morph&quot;,&quot;detail&quot;,&quot;add&quot;,&quot;boardset&quot;,&quot;userset&quot;,&quot;keys&quot;],&quot;default&quot;:&quot;board&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;tablet&quot;],&quot;default&quot;:&quot;desktop&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const T = s => `calc(${s} * var(--spd, 1))`;
+const PH = {"tofu":"radial-gradient(9% 5% at 40% 44%, #F6CE7E 0 55%, transparent 100%), radial-gradient(10% 5.5% at 60% 49%, #EDB45F 0 55%, transparent 100%), radial-gradient(9% 5% at 47% 57%, #E7A24A 0 55%, transparent 100%), radial-gradient(8% 4.5% at 62% 60%, #F3C570 0 55%, transparent 100%), radial-gradient(3% 1.6% at 52% 42%, #9CCB5B 0 60%, transparent 100%), radial-gradient(3% 1.6% at 36% 55%, #86B94C 0 60%, transparent 100%), radial-gradient(3% 1.6% at 66% 55%, #9CCB5B 0 60%, transparent 100%), radial-gradient(30% 17% at 50% 51%, #7A3E1C 0 70%, transparent 100%), radial-gradient(44% 25% at 50% 51%, #F2EDE4 0 88%, #CFC6B6 93%, transparent 96%), linear-gradient(165deg,#3B474C,#161C1F)","curry":"radial-gradient(2% 3.6% at 45% 45%, #E8C66A 0 60%, transparent 100%), radial-gradient(2% 3.6% at 52% 52%, #E3BC5C 0 60%, transparent 100%), radial-gradient(2% 3.6% at 48% 58%, #E8C66A 0 60%, transparent 100%), radial-gradient(2.5% 4.4% at 56% 44%, #4C8A3A 0 60%, transparent 100%), radial-gradient(14% 25% at 50% 51%, #E09A28 0 75%, #B8741A 90%, transparent 94%), radial-gradient(18% 32% at 50% 51%, #2F3B45 0 88%, transparent 93%), radial-gradient(9% 16% at 75% 40%, #F4EEDD 0 70%, transparent 90%), linear-gradient(160deg,#D9CBB3,#B7A488)","kaese":"radial-gradient(4% 2.7% at 46% 46%, #7A1733 0 60%, transparent 100%), radial-gradient(4% 2.7% at 56% 50%, #9B1E42 0 60%, transparent 100%), radial-gradient(3.5% 2.4% at 50% 56%, #6E1430 0 60%, transparent 100%), radial-gradient(22% 14.7% at 50% 51%, #C73B5A 0 70%, transparent 100%), radial-gradient(34% 22.7% at 50% 51%, #F6E7C8 0 82%, #D9B77E 90%, transparent 94%), radial-gradient(42% 28% at 50% 51%, #FFFFFF 0 88%, #DAD3CB 93%, transparent 96%), linear-gradient(170deg,#F4C9CF,#E7A9B4)"};
+const P = { L: ['#F7C85C', '#2B1E04', 'L', 'Lisa'], J: ['#A9C9B1', '#12291A', 'J', 'Jonas'], M: ['#DDB0F6', '#2D0F3F', 'M', 'Mia'], Du: ['#A8BEE3', '#0F2340', 'Du', 'Du'] };
+const ACC = ['#F7B94A', '#DE8CF2', '#A5C7AE'];
+const SRCD = { tiktok: 'linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)', youtube: '#FF0033', insta: 'linear-gradient(135deg,#FEDA75,#D62976 55%,#4F5BD5)', pin: '#E60023' };
+const COLS = [
+  ['Ideen', 12, 'Worauf hast du Lust?', [['tofu', 'Knuspriger Sesam-Tofu mit Erdnusssoße', 'L', 0, 'tiktok', 1, 'ph:tofu'], ['linsen', 'Omas Linsensuppe', 'J', 3, null, 0, 'eintopf'], ['bowl', 'Crispy Tofu Bowl', 'Du', 1, 'insta', 0, 'bowl'], ['kaese', 'Veganer Käsekuchen', 'L', 0, 'pin', 0, 'ph:kaese'], ['pasta', 'One-Pot Pasta mit Cashewsoße', 'M', 0, 'youtube', 0, 'pasta']]],
+  ['Diese Woche', 3, 'Das steht an.', [['ramen', 'Miso-Ramen mit Pilzen', 'M', 1, 'tiktok', 0, 'ramen'], ['curry', 'Kichererbsen-Curry mit Spinat', 'J', 2, 'youtube', 0, 'ph:curry'], ['gnocchi', 'Gnocchi mit Salbei-Butter', 'Du', 0, null, 0, 'pasta']]],
+  ['Gekocht', 27, 'Schon geschafft!', [['shak', 'Shakshuka mit Seidentofu', 'L', 5, 'insta', 0, 'eintopf'], ['pad', 'Pad Thai mit Erdnüssen', 'J', 3, null, 0, 'wok'], ['banane', 'Bananenbrot', 'Du', 9, null, 0, 'bread'], ['bolo', 'Linsen-Bolognese', 'M', 2, 'youtube', 0, 'pasta']]]
+];
+class Component extends DCLogic {
+  state = { hov: null, openD: false };
+  renderVals() {
+    const sc = this.props.screen ?? 'board', tab = this.props.device === 'tablet';
+    const W = tab ? 1180 : 1440, H = tab ? 820 : 900, pad = tab ? 20 : 28, gap = tab ? 14 : 18, colW = tab ? 340 : 330, addW = tab ? 120 : 140;
+    const drag = sc === 'drag', hov = this.state.hov;
+    const cols = COLS.map(([l, n, sub, cards], ci) => ({
+      l, n, sub, n2: n + 1, tint: `color-mix(in oklch, ${ACC[ci]} ${ci === 1 && drag ? 26 : 20}%, var(--bg))`,
+      anim: drag ? (ci === 1 ? `dk-target ${T('3.8s')} ease-in-out infinite` : `dk-dim ${T('3.8s')} ease-in-out infinite`) : 'none',
+      cntAnim: drag && ci === 1 ? `dk-cnt ${T('3.8s')} ease infinite` : 'none', slotIn: drag && ci === 1,
+      cards: cards.map(([id, t, by, cn, src, neu, img], i) => {
+        const p = P[by], hot = hov === id || (sc === 'hover' && id === 'linsen'), slot = drag && id === 'linsen', photo = img.startsWith('ph:');
+        return { id, t, isSlot: slot, isCard: !slot, photo, illus: !photo, ph: photo ? PH[img.slice(3)] : 'none', bgs: '280% 100%', k: photo ? 'bowl' : img, hot,
+          neu: !!neu, tp: neu ? '38px' : '0', neuAnim: hot ? `dk-wig ${T('600ms')} ease-in-out` : 'none', avBg: p[0], avInk: p[1], av: p[2], hasN: cn > 0, nl: `${cn}× gekocht`, hasSrc: !!src, srcDot: src ? SRCD[src] : '',
+          tf: hot ? 'translateY(-4px) rotate(-.6deg)' : 'none', sh: hot ? '0 24px 40px -18px rgba(0,0,0,.35)' : 'var(--shadow)', imgTf: hot ? 'scale(1.08)' : 'none', actOp: 1,
+          on: () => this.setState({ hov: id }), off: () => this.setState({ hov: null }), open: () => {} };
+      })
+    }));
+    const cardW = colW - 28;
+    const x0 = pad + 14, x1 = pad + colW + gap + 14, y0 = 76 + 10 + 16 + 46 + 140, y1 = 76 + 10 + 16 + 46 - 4, y2 = 76 + 10 + 16 + 46;
+    const overlay = ['detail', 'morph', 'add', 'boardset', 'userset', 'keys'].includes(sc);
+    return {
+      W: W + 'px', H: H + 'px', radius: tab ? '28px' : '14px', pad: pad + 'px', gap: gap + 'px', colW: colW + 'px', addW: addW + 'px', searchW: tab ? '240px' : '320px',
+      members: ['L', 'J', 'M', 'Du'].map(id => ({ bg: P[id][0], ink: P[id][1], l: P[id][2] })),
+      cols, isDrag: drag, cardW: cardW + 'px', x0: x0 + 'px', x1: x1 + 'px', y0: y0 + 'px', y1: y1 + 'px', y2: y2 + 'px',
+      cx0: (x0 + 180) + 'px', cy0: (y0 + 50) + 'px', cx1: (x1 + 180) + 'px', cy1: (y1 + 50) + 'px', cy2: (y2 + 50) + 'px',
+      overlay, scrimAnim: sc === 'morph' ? `dk-mscrim ${T('5s')} ease-in-out infinite` : `dk-fade ${T('260ms')} ease both`, close: () => {},
+      isDetail: sc === 'detail' || sc === 'morph', morphOn: sc === 'morph', panelAnim: sc === 'morph' ? `dk-mpanel ${T('5s')} cubic-bezier(.45,0,.2,1) infinite` : `dk-panel ${T('380ms')} cubic-bezier(.3,1.2,.5,1) both`,
+      mx: (pad + 12 + 9) + 'px', my: (76 + 10 + 16 + 46 + 9) + 'px', px: (W - 480) + 'px',
+      tofu: PH.tofu, isAdd: sc === 'add', isBoardSet: sc === 'boardset', isUserSet: sc === 'userset', isKeys: sc === 'keys',
+      keys: [['Neues Gericht', ['N']], ['Suchen', ['/']], ['Gekocht ✓ (fokussierte Karte)', ['G']], ['Detail öffnen', ['↵']], ['Nächste / vorige Karte', ['↑', '↓']], ['Column wechseln', ['←', '→']], ['Karte verschieben', ['⇧', '←→']], ['Board wechseln', ['B']], ['Schließen', ['Esc']], ['Diese Übersicht', ['?']]].map(([l, keys]) => ({ l, keys })),
+      hist: [['12', 'SEP', '„mit Feta besser“', 'Jonas'], ['28', 'AUG', 'ohne Notiz', 'Lisa'], ['9', 'AUG', '„doppelte Menge, war sofort weg“', 'du']].map(([d, m, n, w]) => ({ d, m, n, w })),
+      setCols: [['Ideen', 12], ['Diese Woche', 3], ['Gekocht', 27]].map(([l, n], i) => ({ l, n, bg: ACC[i], special: i === 2 })),
+      memberRows: [['L', 'seit Mai', 1], ['J', 'seit Mai'], ['M', 'seit Juni'], ['Du', 'seit Juli']].map(([id, sub, o]) => ({ bg: P[id][0], ink: P[id][1], l: P[id][2], n: P[id][3], sub, owner: !!o })),
+      themes: [['Hell', 'linear-gradient(135deg,#FFFFFF 0 50%,#EFEDE8 50%)'], ['Dunkel', 'linear-gradient(135deg,#2A2825 0 50%,#131211 50%)'], ['System', 'linear-gradient(135deg,#FFFFFF 0 50%,#131211 50%)']].map(([l, sw]) => ({ l, sw, bg: l === 'System' ? 'var(--surface)' : 'transparent', ring: l === 'System' ? '0 0 0 2px var(--ink)' : 'none' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

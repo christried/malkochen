@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes ad-sheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes ad-fade{from{opacity:0}to{opacity:1}}
+@keyframes ad-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes ad-pop{0%{opacity:0;transform:scale(.4) rotate(-12deg)}70%{opacity:1;transform:scale(1.1) rotate(3deg)}100%{opacity:1;transform:none}}
+@keyframes ad-caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes ad-ring{0%,100%{box-shadow:0 0 0 3px rgba(247,185,74,.55)}50%{box-shadow:0 0 0 7px rgba(247,185,74,.18)}}
+@keyframes ad-sk{0%{background-position:160% 0}100%{background-position:-60% 0}}
+@keyframes ad-ph{0%{opacity:0;transform:translateY(8px)}5%,28%{opacity:1;transform:none}33%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes ad-dots{0%,100%{transform:scale(.6);opacity:.4}50%{transform:scale(1);opacity:1}}
+@keyframes ad-img{0%,10%{clip-path:circle(0% at 30% 42%);filter:blur(16px);transform:scale(1.14)}30%{clip-path:circle(120% at 30% 42%);filter:blur(4px)}42%,90%{clip-path:circle(120% at 30% 42%);filter:blur(0);transform:none}96%,100%{clip-path:circle(0% at 30% 42%);filter:blur(16px);transform:scale(1.14)}}
+@keyframes ad-imgsk{0%,14%{opacity:1}24%,92%{opacity:0}97%,100%{opacity:1}}
+@keyframes ad-badge{0%,28%{transform:scale(0) rotate(-20deg)}34%{transform:scale(1.15) rotate(4deg)}38%,90%{transform:none}95%,100%{transform:scale(0)}}
+@keyframes ad-late{0%,38%{opacity:0;transform:translateY(6px)}44%,90%{opacity:1;transform:none}95%,100%{opacity:0}}
+@keyframes ad-tc{0%,26%{opacity:0}28%,92%{opacity:1}96%,100%{opacity:0}}
+@keyframes ad-tsk{0%,26%{opacity:1}30%,92%{opacity:0}96%,100%{opacity:1}}
+@keyframes ad-ch{0%{opacity:0;transform:translateY(5px)}2%,70%{opacity:1;transform:none}72%,100%{opacity:0}}
+@keyframes ad-glow{0%,100%{box-shadow:0 0 0 2px rgba(247,185,74,.7),0 0 0 6px rgba(247,185,74,.18)}50%{box-shadow:0 0 0 2px rgba(247,185,74,.9),0 0 0 11px rgba(247,185,74,.06)}}
+@keyframes ad-bob{0%,100%{transform:none}50%{transform:translateY(-3px)}}
+@keyframes ad-wig{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(10deg)}}
+@keyframes ad-open{from{clip-path:inset(0 0 100% 0 round 26px);opacity:.3}to{clip-path:inset(0 0 0 0 round 26px);opacity:1}}
+@keyframes ad-hop{0%,70%,100%{transform:none}78%{transform:translateY(-8px) rotate(-5deg)}86%{transform:translateY(0) rotate(3deg)}}
+@keyframes ad-hl{0%,100%{background-size:0% 40%}30%,70%{background-size:100% 40%}}
+@keyframes ad-shuf{0%,30%{opacity:1;transform:none}36%,94%{opacity:0;transform:scale(.8) rotate(-8deg)}100%{opacity:1;transform:none}}
+@keyframes ad-slidein{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+@keyframes ad-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes sv-sheet{0%,16%{transform:none}32%,90%{transform:translateY(105%)}97%,100%{transform:none}}
+@keyframes sv-scrim{0%,16%{opacity:1}30%,90%{opacity:0}97%,100%{opacity:1}}
+@keyframes sv-btn{0%,5%{background:var(--pill);transform:none}8%{transform:scale(.95)}12%,100%{background:#A5C7AE;color:#10261A;transform:none}}
+@keyframes sv-lbl1{0%,9%{opacity:1}12%,100%{opacity:0}}
+@keyframes sv-lbl2{0%,9%{opacity:0;transform:scale(.6)}14%,100%{opacity:1;transform:none}}
+@keyframes sv-f{0%{opacity:0;transform:scale(1.3)}4%{opacity:1;transform:scale(.9)}9%,100%{opacity:0;transform:scale(1.1)}}
+@keyframes sv-fly{0%,22%{transform:translate(-40px,300px) scale(.62) rotate(8deg);opacity:0}26%{opacity:1}44%{transform:translate(0,-26px) scale(1.05) rotate(-2deg)}50%{transform:translate(0,6px) scale(1.03,.95)}56%,90%{transform:none;opacity:1}95%,100%{transform:none;opacity:0}}
+@keyframes sv-neu{0%,56%{transform:scale(0) rotate(-20deg)}62%{transform:scale(1.15) rotate(4deg)}66%,90%{transform:none}95%,100%{transform:scale(0)}}
+</style></helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:47px;background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;user-select:none">
+  <dc-import name="StatePhone" screen="{{ bgScreen }}" style="position:absolute;inset:0" hint-size="390px,844px"></dc-import>
+  <div style="position:absolute;inset:0;z-index:20;background:rgba(12,10,8,.42);animation:{{ scrimAnim }}"></div>
+
+  <sc-if value="{{ show }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;left:0;right:0;top:58px;bottom:0;z-index:21;background:var(--surface);border-radius:36px 36px 0 0;box-shadow:0 -20px 50px -20px rgba(0,0,0,.45);padding:10px 18px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;animation:{{ sheetAnim }}">
+    <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line2)"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <sc-if value="{{ isManual }}"><span style="width:38px;height:38px;border-radius:50%;background:var(--surface2);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round"><path d="M15 6l-6 6 6 6"></path></svg></span></sc-if>
+      <span style="flex:1;font:400 28px/1 'Newsreader',Georgia,serif;letter-spacing:-.015em">{{ sheetTitle }}</span>
+      <span style="width:38px;height:38px;border-radius:50%;background:var(--surface2);display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+    </div>
+
+    <sc-if value="{{ hasLink }}">
+      <div style="flex:none;height:54px;border-radius:20px 18px 21px 19px;background:var(--surface2);display:flex;align-items:center;gap:10px;padding:0 8px 0 14px;animation:{{ linkRing }}">
+        <sc-if value="{{ linkEmpty }}"><svg width="19" height="19" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--ink2);stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></sc-if>
+        <sc-if value="{{ hasSrc }}"><i style="flex:none;width:12px;height:12px;border-radius:50%;background:{{ srcDot }}"></i></sc-if>
+        <div style="flex:1;min-width:0;display:flex;align-items:center;font:500 15.5px/1 'Hanken Grotesk',system-ui">
+          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ urlInk }}">{{ url }}</span>
+          <sc-if value="{{ linkEmpty }}"><span style="order:-1;width:2px;height:21px;margin-right:2px;border-radius:1px;background:#E8961E;animation:ad-caret 1s steps(1) infinite"></span></sc-if>
+        </div>
+        <sc-if value="{{ linkEmpty }}"><span style="height:38px;padding:0 14px;border-radius:19px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 14px/1 'Hanken Grotesk',system-ui">Einfügen</span></sc-if>
+        <sc-if value="{{ isLookup }}"><div style="display:flex;gap:4px;padding-right:8px"><i style="width:7px;height:7px;border-radius:50%;background:var(--ink2);animation:ad-dots calc(.9s * var(--spd, 1)) ease-in-out infinite"></i><i style="width:7px;height:7px;border-radius:50%;background:var(--ink2);animation:ad-dots calc(.9s * var(--spd, 1)) ease-in-out calc(.15s * var(--spd, 1)) infinite"></i><i style="width:7px;height:7px;border-radius:50%;background:var(--ink2);animation:ad-dots calc(.9s * var(--spd, 1)) ease-in-out calc(.3s * var(--spd, 1)) infinite"></i></div></sc-if>
+        <sc-if value="{{ linkClear }}"><span style="width:28px;height:28px;border-radius:50%;background:var(--surface);display:grid;place-items:center"><svg width="11" height="11" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3.2;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></sc-if>
+        <sc-if value="{{ isFailed }}"><span style="height:36px;padding:0 12px;border-radius:18px;background:var(--surface);display:flex;align-items:center;gap:6px;font:600 13px/1 'Hanken Grotesk',system-ui"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;animation:ad-spin calc(900ms * var(--spd, 1)) cubic-bezier(.5,0,.3,1) calc(1.2s * var(--spd, 1)) 1 both"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Erneut</span></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEmpty }}">
+      <div style="display:flex;flex-direction:column;gap:14px;animation:ad-rise calc(420ms * var(--spd, 1)) ease-out calc(200ms * var(--spd, 1)) both">
+        <div style="font:500 14.5px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">Link von TikTok, Instagram, YouTube, Pinterest oder einem Foodblog</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ sources }}" as="s" hint-placeholder-count="5"><span style="height:30px;padding:0 11px 0 9px;border-radius:15px;background:var(--surface2);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui;animation:{{ s.anim }}"><i style="width:9px;height:9px;border-radius:50%;background:{{ s.dot }}"></i>{{ s.l }}</span></sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:4px;font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2)"><i style="flex:1;height:1px;background:var(--line2)"></i>oder<i style="flex:1;height:1px;background:var(--line2)"></i></div>
+        <div style="height:50px;border-radius:25px;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20h4l10-10-4-4L4 16z"></path><path d="M13 7l4 4"></path></svg>Ohne Link hinzufügen</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLookup }}">
+      <div style="flex:none;height:300px;border-radius:28px 26px 30px 27px;background:color-mix(in oklch, #F7B94A 22%, var(--surface2));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+        <dc-import name="Mascot" mood="stir" size="{{ 160 }}" style="width:160px;height:149px" hint-size="160px,149px"></dc-import>
+        <div style="position:relative;width:100%;height:24px;font:italic 400 20px/24px 'Newsreader',Georgia,serif;text-align:center">
+          <sc-for list="{{ phrases }}" as="p" hint-placeholder-count="3"><span style="position:absolute;left:0;right:0;top:0;opacity:0;animation:{{ p.anim }}">{{ p.t }}</span></sc-for>
+        </div>
+      </div>
+      <sc-for list="{{ skRows }}" as="r" hint-placeholder-count="3">
+        <div style="flex:none;height:54px;border-radius:18px;background:var(--surface2);position:relative;overflow:hidden;opacity:.7"><div style="position:absolute;left:16px;top:20px;height:14px;width:{{ r }};border-radius:7px;background:color-mix(in oklch, var(--ink) 10%, transparent)"></div><div style="position:absolute;inset:0;background:linear-gradient(100deg, transparent 35%, color-mix(in oklch, var(--surface) 70%, transparent) 50%, transparent 65%);background-size:260% 100%;animation:ad-sk calc(1.4s * var(--spd, 1)) ease-in-out infinite"></div></div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ hasImage }}">
+      <div style="flex:none;position:relative;height:{{ imgH }};border-radius:26px 24px 27px 25px;overflow:hidden;background:var(--surface2)">
+        <div style="position:absolute;inset:0;background:linear-gradient(100deg, transparent 35%, color-mix(in oklch, var(--surface) 70%, transparent) 50%, transparent 65%);background-size:260% 100%;animation:ad-sk calc(1.4s * var(--spd, 1)) ease-in-out infinite;opacity:0;animation:{{ imgSkAnim }}"></div>
+        <div style="position:absolute;inset:0;background:{{ ph }};animation:{{ imgAnim }}"></div>
+        <sc-if value="{{ hasSrc }}"><span style="position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px 0 9px;border-radius:14px;background:rgba(20,18,16,.55);backdrop-filter:blur(8px);color:#fff;font:600 12.5px/1 'Hanken Grotesk',system-ui;transform-origin:left center;animation:{{ badgeAnim }}"><i style="width:10px;height:10px;border-radius:50%;background:{{ srcDot }}"></i>{{ srcLabel }}</span></sc-if>
+        <span style="position:absolute;right:10px;bottom:10px;height:36px;padding:0 13px;border-radius:18px;background:var(--glass);backdrop-filter:blur(8px);display:flex;align-items:center;gap:6px;font:600 13px/1 'Hanken Grotesk',system-ui;animation:{{ lateAnim }}"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="5" width="18" height="14" rx="4"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-8 8"></path></svg>Bild ändern</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isNothing }}">
+      <div style="font:500 14px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2);animation:ad-fade calc(300ms * var(--spd, 1)) ease both">Kein Bild gefunden – such dir ein Platzhalterbild aus.</div>
+      <div style="flex:none;padding:12px;border-radius:26px;background:var(--surface2);display:flex;flex-direction:column;gap:12px;animation:ad-open calc(520ms * var(--spd, 1)) cubic-bezier(.3,1.1,.4,1) calc(150ms * var(--spd, 1)) both">
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+          <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+            <div style="position:relative;aspect-ratio:4 / 5;border-radius:16px 14px 17px 15px;overflow:hidden;box-shadow:{{ t.ring }};animation:{{ t.anim }}"><dc-import name="Illus" kind="{{ t.k }}" play="{{ t.play }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <sc-for list="{{ hues }}" as="h" hint-placeholder-count="5"><span style="width:26px;height:26px;border-radius:50%;background:{{ h.c }};border:2px solid var(--ink);box-sizing:border-box;box-shadow:{{ h.ring }}"></span></sc-for>
+          <div style="flex:1"></div>
+          <span style="font:600 13px/1 'Hanken Grotesk',system-ui">Alle 16</span><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6l6 6-6 6"></path></svg>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFailed }}">
+      <div style="flex:none;display:flex;align-items:center;gap:12px;padding:12px 16px 12px 8px;border-radius:26px;background:var(--surface2);animation:ad-rise calc(420ms * var(--spd, 1)) ease-out both">
+        <dc-import name="Mascot" mood="oops" size="{{ 92 }}" style="flex:none;width:92px;height:85px" hint-size="92px,85px"></dc-import>
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font:400 21px/1.15 'Newsreader',Georgia,serif">Hm, da kam nichts zurück.</span><span style="font:500 13.5px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">Kein Problem: Titel eintippen, wir nehmen ein Platzhalterbild.</span></div>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;gap:12px;animation:ad-rise calc(420ms * var(--spd, 1)) ease-out calc(120ms * var(--spd, 1)) both">
+        <div style="position:relative;width:64px;height:80px;border-radius:18px 16px 19px 17px;overflow:hidden;flex:none"><dc-import name="Illus" kind="bowl" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px"><span style="font:600 15px/1 'Hanken Grotesk',system-ui">Platzhalter</span><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">passend zum Titel gewählt</span></div>
+        <span style="height:36px;padding:0 14px;border-radius:18px;background:var(--surface2);display:grid;place-items:center;font:600 13px/1 'Hanken Grotesk',system-ui">Ändern</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isManual }}">
+      <div style="flex:none;position:relative;height:220px;border-radius:26px 24px 27px 25px;overflow:hidden;animation:ad-slidein calc(460ms * var(--spd, 1)) cubic-bezier(.3,1.2,.5,1) both">
+        <sc-for list="{{ shuffle }}" as="p" hint-placeholder-count="3"><div style="position:absolute;inset:0;opacity:0;animation:{{ p.anim }}"><dc-import name="Illus" kind="{{ p.k }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import></div></sc-for>
+        <div style="position:absolute;right:10px;bottom:10px;display:flex;gap:6px">
+          <span style="width:36px;height:36px;border-radius:50%;background:var(--glass);backdrop-filter:blur(8px);display:grid;place-items:center"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"><rect x="4" y="4" width="16" height="16" rx="4"></rect><circle cx="9" cy="9" r="1.2" style="fill:currentColor"></circle><circle cx="15" cy="15" r="1.2" style="fill:currentColor"></circle><circle cx="15" cy="9" r="1.2" style="fill:currentColor"></circle><circle cx="9" cy="15" r="1.2" style="fill:currentColor"></circle></svg></span>
+          <span style="height:36px;padding:0 13px;border-radius:18px;background:var(--glass);backdrop-filter:blur(8px);display:flex;align-items:center;font:600 13px/1 'Hanken Grotesk',system-ui">Bild wählen</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasTitle }}">
+      <div style="flex:none;display:flex;flex-direction:column;gap:7px;animation:{{ fieldsIn }}">
+        <div style="display:flex;align-items:center;gap:8px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">TITEL<sc-if value="{{ titleReq }}"><span style="height:18px;padding:0 7px;border-radius:9px;background:color-mix(in oklch, #F7B94A 30%, transparent);color:var(--ink);display:grid;place-items:center;letter-spacing:.02em">Pflichtfeld</span></sc-if></div>
+        <div style="position:relative;height:56px;border-radius:18px 16px 19px 17px;background:var(--surface2);display:flex;align-items:center;gap:8px;padding:0 14px 0 16px;animation:{{ titleGlow }}">
+          <sc-if value="{{ titleTyped }}">
+            <div style="position:absolute;left:16px;top:21px;height:14px;width:62%;border-radius:7px;background:color-mix(in oklch, var(--ink) 10%, transparent);animation:{{ tskAnim }}"></div>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;white-space:pre;overflow:hidden;font:400 19px/1 'Newsreader',Georgia,serif;animation:{{ tcAnim }}"><sc-for list="{{ chars }}" as="c" hint-placeholder-count="12"><span style="display:inline-block;animation:{{ c.anim }}">{{ c.c }}</span></sc-for></div>
+          </sc-if>
+          <sc-if value="{{ titleStatic }}"><div style="flex:1;min-width:0;display:flex;align-items:center;font:400 19px/1 'Newsreader',Georgia,serif;white-space:nowrap;overflow:hidden"><span style="text-overflow:ellipsis;overflow:hidden;background:linear-gradient(rgba(247,185,74,.55),rgba(247,185,74,.55)) 0 88% / 0% 40% no-repeat;animation:{{ titleHl }}">{{ titleText }}</span><sc-if value="{{ titleCaret }}"><span style="width:2px;height:22px;margin-left:1px;border-radius:1px;background:#E8961E;animation:ad-caret 1s steps(1) infinite"></span></sc-if></div></sc-if>
+          <sc-if value="{{ titleAsk }}"><div style="flex:1;display:flex;align-items:center;gap:2px"><span style="width:2px;height:22px;border-radius:1px;background:#E8961E;animation:ad-caret 1s steps(1) infinite"></span><span style="font:italic 400 19px/1 'Newsreader',Georgia,serif;color:var(--ink2);animation:ad-bob calc(2.4s * var(--spd, 1)) ease-in-out infinite">Wie heißt das Gericht?</span></div></sc-if>
+          <svg width="17" height="17" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--ink2);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transform-origin:20% 80%;animation:{{ pencilAnim }}"><path d="M4 20h4l10-10-4-4L4 16z"></path><path d="M13 7l4 4"></path></svg>
+        </div>
+        <sc-if value="{{ askHelp }}"><div style="font:500 12.5px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2);animation:ad-fade calc(300ms * var(--spd, 1)) ease calc(2.6s * var(--spd, 1)) both">Pinterest verrät uns keinen Titel – magst du einen eingeben?</div></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasMeta }}">
+      <div style="flex:none;display:flex;flex-direction:column;border-radius:20px;border:1.5px solid var(--line2);animation:{{ fieldsIn }}">
+        <div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 14px">
+          <span style="font:500 14.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">Board</span><div style="flex:1"></div>
+          <span style="font-size:17px">🍜</span><span style="font:600 15px/1 'Hanken Grotesk',system-ui">WG-Küche</span><span style="font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">→ Ideen</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9l6 6 6-6"></path></svg>
+        </div>
+        <sc-if value="{{ noteOn }}">
+          <div style="height:1.5px;background:var(--line2);margin:0 14px"></div>
+          <div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 14px">
+            <svg width="17" height="17" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--ink2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg>
+            <span style="flex:1;font:500 14.5px/1 'Hanken Grotesk',system-ui;color:{{ noteInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ noteText }}</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDup }}">
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:26px 24px 27px 25px;background:color-mix(in oklch, #F7B94A 24%, var(--surface));animation:ad-rise calc(480ms * var(--spd, 1)) cubic-bezier(.3,1.4,.5,1) calc(250ms * var(--spd, 1)) both">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="position:relative;width:46px;height:56px;border-radius:14px 12px 15px 13px;overflow:hidden;flex:none;animation:ad-hop calc(2.8s * var(--spd, 1)) ease-in-out calc(900ms * var(--spd, 1)) infinite"><div style="position:absolute;inset:0;background:{{ ph }};background-size:260% 100%;background-position:center"></div></div>
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font:600 15px/1.2 'Hanken Grotesk',system-ui">{{ dupTitle }}</span><span style="font:500 13.5px/1.3 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">{{ dupSub }}</span></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span style="flex:1;height:48px;border-radius:24px;background:var(--surface);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">{{ dupA }}</span>
+          <span style="flex:1;height:48px;border-radius:24px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">{{ dupB }}</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ saveOn }}">
+      <div style="flex:1"></div>
+      <div style="position:relative;flex:none;height:58px;border-radius:29px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 17px/1 'Hanken Grotesk',system-ui;opacity:{{ saveOp }};animation:{{ saveAnim }}">
+        <span style="grid-area:1/1;animation:{{ lbl1 }}">Speichern</span>
+        <sc-if value="{{ isSaved }}"><span style="grid-area:1/1;display:flex;align-items:center;gap:8px;opacity:0;animation:{{ lbl2 }}"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>Gespeichert</span></sc-if>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isEmpty }}">
+    <div style="position:absolute;left:14px;right:14px;bottom:312px;z-index:23;height:46px;border-radius:23px;background:var(--surface);box-shadow:0 10px 26px -8px rgba(0,0,0,.35);display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;animation:ad-pop calc(520ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(700ms * var(--spd, 1)) both">
+      <svg width="17" height="17" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--ink2);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="4" width="12" height="17" rx="3"></rect><path d="M9 4h6v3H9z"></path></svg>
+      <span style="flex:1;min-width:0;font:500 13.5px/1 'Hanken Grotesk',system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:var(--ink2)">Aus Zwischenablage: </span>tiktok.com/@plantkitchen/…</span>
+      <span style="height:34px;padding:0 12px;border-radius:17px;background:#F7B94A;color:#1F1E1C;display:grid;place-items:center;font:600 13px/1 'Hanken Grotesk',system-ui">Einfügen</span>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:300px;padding:8px 4px 0;box-sizing:border-box;z-index:22;background:color-mix(in oklch, var(--surface2) 88%, var(--ink) 6%);display:flex;flex-direction:column;gap:11px;animation:ad-rise calc(360ms * var(--spd, 1)) ease-out both">
+      <sc-for list="{{ kb }}" as="row" hint-placeholder-count="4">
+        <div style="display:flex;gap:6px;padding:0 {{ row.pad }}">
+          <sc-for list="{{ row.keys }}" as="key" hint-placeholder-count="10"><div style="flex:{{ key.grow }};height:44px;border-radius:7px;display:grid;place-items:center;background:{{ key.bg }};color:{{ key.ink }};font:{{ key.font }};box-shadow:0 1px 0 rgba(0,0,0,.28)">{{ key.l }}</div></sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSaved }}">
+    <div style="position:absolute;left:16px;top:296px;width:358px;height:128px;z-index:15;animation:{{ flyAnim }}">
+      <div style="position:absolute;inset:0;display:grid;grid-template-columns:88px minmax(0,1fr);gap:14px;padding:9px;box-sizing:border-box;background:var(--surface);border-radius:28px 24px 30px 26px;box-shadow:0 24px 44px -16px rgba(0,0,0,.4)">
+        <div style="border-radius:20px 17px 21px 18px;background:{{ ph }};background-size:280% 100%;background-position:center"></div>
+        <div style="position:absolute;top:-10px;right:16px;width:46px;height:42px;display:grid;place-items:center;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#FCD980,#F29B32);color:#2A1A03;font:700 13px/1 'Hanken Grotesk',system-ui;animation:{{ neuAnim }}">Neu</div>
+        <div style="display:flex;flex-direction:column;min-width:0;padding:5px 4px 1px 0">
+          <div style="font:400 19px/1.16 'Newsreader',Georgia,serif;letter-spacing:-.01em;padding-right:38px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">Gochujang-Blumenkohl mit Sesam</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#A8BEE3;color:#0F2340;font:700 10px/1 'Hanken Grotesk',system-ui">Du</span><span style="display:inline-flex;align-items:center;gap:5px;font:600 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)"><i style="width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)"></i>TikTok</span></div>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="height:34px;padding:0 12px;border-radius:17px 15px 18px 16px;display:inline-flex;align-items:center;gap:6px;font:600 13px/1 'Hanken Grotesk',system-ui;background:var(--surface2)">Gekocht<svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></div><div style="flex:1"></div><div style="width:34px;height:34px;border-radius:50%;background:var(--surface2);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></div></div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:195px;top:775px;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.4);border:2px solid rgba(255,255,255,.95);box-shadow:0 4px 16px rgba(0,0,0,.28);box-sizing:border-box;z-index:60;opacity:0;animation:{{ fingerAnim }}"></div>
+  </sc-if>
+
+  <div style="position:absolute;left:50%;bottom:8px;width:108px;height:4px;margin-left:-54px;border-radius:2px;background:var(--ink);opacity:.9;z-index:70;pointer-events:none"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;empty&quot;,&quot;lookup&quot;,&quot;found&quot;,&quot;image-only&quot;,&quot;nothing&quot;,&quot;duplicate&quot;,&quot;similar&quot;,&quot;failed&quot;,&quot;manual&quot;,&quot;saved&quot;],&quot;default&quot;:&quot;found&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;replay&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;}}">
+const T = s => `calc(${s} * var(--spd, 1))`;
+const L = (n, d, e) => `${n} ${T(d)} ${e || 'ease-in-out'} infinite`;
+const PH = {
+  kohl: 'radial-gradient(9% 5.6% at 40% 44%, #E8743B 0 55%, transparent 100%), radial-gradient(10% 6% at 60% 48%, #D9602E 0 55%, transparent 100%), radial-gradient(9% 5.6% at 47% 58%, #E06A33 0 55%, transparent 100%), radial-gradient(8% 5% at 63% 60%, #EC8446 0 55%, transparent 100%), radial-gradient(2% 1.3% at 52% 42%, #F7F1E3 0 60%, transparent 100%), radial-gradient(2% 1.3% at 44% 52%, #F7F1E3 0 60%, transparent 100%), radial-gradient(2% 1.3% at 58% 55%, #1F1E1C 0 60%, transparent 100%), radial-gradient(3% 1.8% at 36% 55%, #86B94C 0 60%, transparent 100%), radial-gradient(3% 1.8% at 66% 53%, #9CCB5B 0 60%, transparent 100%), radial-gradient(32% 20% at 50% 51%, #F2EDE4 0 88%, #CFC6B6 93%, transparent 96%), linear-gradient(165deg,#3B474C,#161C1F)',
+  kaese: 'radial-gradient(4% 5% at 46% 46%, #7A1733 0 60%, transparent 100%), radial-gradient(4% 5% at 56% 50%, #9B1E42 0 60%, transparent 100%), radial-gradient(3.5% 4.4% at 50% 56%, #6E1430 0 60%, transparent 100%), radial-gradient(18% 22% at 50% 51%, #C73B5A 0 70%, transparent 100%), radial-gradient(26% 33% at 50% 51%, #F6E7C8 0 82%, #D9B77E 90%, transparent 94%), radial-gradient(32% 41% at 50% 51%, #FFFFFF 0 88%, #DAD3CB 93%, transparent 96%), linear-gradient(170deg,#F4C9CF,#E7A9B4)',
+  bowl: 'radial-gradient(8% 11% at 50% 51%, #F7F3EA 0 60%, transparent 100%), radial-gradient(11% 15% at 40% 42%, #8C4AA0 0 60%, transparent 100%), radial-gradient(11% 15% at 60% 42%, #7FB34F 0 60%, transparent 100%), radial-gradient(11% 15% at 40% 60%, #F08A3C 0 60%, transparent 100%), radial-gradient(11% 15% at 60% 60%, #EFC77A 0 60%, transparent 100%), radial-gradient(26% 36% at 50% 51%, #F3EEE6 0 86%, #BCD0D6 90%, transparent 94%), linear-gradient(170deg,#F6DCCB,#E9B99C)'
+};
+const SRC = { tiktok: ['TikTok', 'linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)'], instagram: ['Instagram', 'linear-gradient(135deg,#FEDA75,#D62976 55%,#4F5BD5)'], youtube: ['YouTube', '#FF0033'], pinterest: ['Pinterest', '#E60023'], web: ['Foodblog', '#8E8A83'] };
+const CFG = {
+  empty: { link: '', title: 'Gericht hinzufügen' },
+  lookup: { link: 'tiktok.com/@plantkitchen/video/7291…', src: 'tiktok' },
+  found: { link: 'tiktok.com/@plantkitchen/video/7291…', src: 'tiktok', img: 'kohl', typed: 'Gochujang-Blumenkohl mit Sesam' },
+  'image-only': { link: 'pinterest.de/pin/88213…', src: 'pinterest', img: 'kaese', ask: 1 },
+  nothing: { link: 'omas-kochstube.de/rezept/rotkohl', src: 'web', req: 1 },
+  duplicate: { link: 'instagram.com/p/C8x2…', src: 'instagram', img: 'bowl', stat: 'Crispy Tofu Bowl', dup: 'hard' },
+  similar: { link: 'youtube.com/watch?v=q7T…', src: 'youtube', img: 'bowl', stat: 'Crispy Tofu', dup: 'soft' },
+  failed: { link: 'kochfreund.de/r/88a…', failed: 1, stat: 'Ofengemüse mit Tahini', caret: 1 },
+  manual: { manual: 1, stat: 'Omas Apfelkuchen', note: 'Aus dem roten Kochbuch, S. 112' },
+  saved: { link: 'tiktok.com/@plantkitchen/video/7291…', src: 'tiktok', img: 'kohl', stat: 'Gochujang-Blumenkohl mit Sesam', saved: 1 }
+};
+const KB = [['qwertzuiop', '3px'], ['asdfghjkl', '20px'], ['⇧yxcvbnm⌫', '3px']];
+class Component extends DCLogic {
+  state = { show: true };
+  componentDidUpdate(p) { if (p.replay !== this.props.replay) this.setState({ show: false }, () => setTimeout(() => this.setState({ show: true }), 40)); }
+  renderVals() {
+    const sc = this.props.screen ?? 'found', c = CFG[sc] || CFG.found;
+    const loop = sc === 'found' || sc === 'image-only';
+    const s = c.src ? SRC[c.src] : null;
+    const kb = KB.map(([keys, pad]) => ({ pad, keys: [...keys].map(l => { const sp = l === '⇧' || l === '⌫'; return { l, grow: sp ? 1.4 : 1, bg: sp ? 'color-mix(in oklch, var(--surface2) 70%, var(--ink) 12%)' : 'var(--surface)', ink: 'var(--ink)', font: `400 ${sp ? 18 : 21}px/1 'Hanken Grotesk',system-ui` }; }) }));
+    const mod = 'color-mix(in oklch, var(--surface2) 70%, var(--ink) 12%)';
+    kb.push({ pad: '3px', keys: [['123', 1.3, mod], ['/', 1, 'var(--surface)'], ['.', 1, 'var(--surface)'], ['.com', 1.8, 'var(--surface)'], ['Los', 2, '#F7B94A']].map(([l, grow, bg]) => ({ l, grow, bg, ink: l === 'Los' ? '#1F1E1C' : 'var(--ink)', font: `${l.length > 1 ? 600 : 400} ${l.length > 1 ? 15 : 21}px/1 'Hanken Grotesk',system-ui` })) });
+    const typed = c.typed || '';
+    const sv = !!c.saved;
+    return {
+      show: this.state.show,
+      bgScreen: sv ? 'saved' : 'static',
+      scrimAnim: sv ? L('sv-scrim', '4.5s') : `ad-fade ${T('300ms')} ease both`,
+      sheetAnim: sv ? L('sv-sheet', '4.5s', 'cubic-bezier(.4,0,.2,1)') : `ad-sheet ${T('460ms')} cubic-bezier(.3,1.15,.5,1) both`,
+      sheetTitle: c.manual ? 'Ohne Link' : 'Gericht hinzufügen', isManual: !!c.manual,
+      hasLink: !c.manual, linkEmpty: sc === 'empty', url: c.link || 'Link einfügen oder tippen', urlInk: sc === 'empty' ? 'var(--ink2)' : 'var(--ink)',
+      linkRing: sc === 'empty' ? L('ad-ring', '2.4s') : 'none',
+      hasSrc: !!s && sc !== 'lookup', srcDot: s ? s[1] : '', srcLabel: s ? s[0] : '',
+      isLookup: sc === 'lookup', linkClear: !!c.link && sc !== 'lookup' && !c.failed, isFailed: !!c.failed, isEmpty: sc === 'empty',
+      sources: Object.values(SRC).map(([l, dot], i) => ({ l, dot, anim: `ad-pop ${T('420ms')} cubic-bezier(.34,1.56,.64,1) ${T((300 + i * 60) + 'ms')} both` })),
+      phrases: ['Zutaten werden gerührt…', 'Rezept wird abgeschmeckt…', 'Gleich fertig…'].map((t, i) => ({ t, anim: `ad-ph ${T('4.5s')} ease-in-out ${T(i * 1.5 + 's')} infinite both` })),
+      skRows: ['62%', '38%', '48%'],
+      hasImage: !!c.img, imgH: sc === 'duplicate' ? '196px' : (sc === 'image-only' ? '216px' : '228px'), ph: c.img ? PH[c.img] : 'none',
+      imgAnim: loop ? L('ad-img', '6s') : 'none', imgSkAnim: loop ? L('ad-imgsk', '6s') : 'none',
+      badgeAnim: loop ? L('ad-badge', '6s', 'ease-out') : 'none', lateAnim: loop ? L('ad-late', '6s') : 'none',
+      isNothing: !!c.req,
+      tiles: ['salad', 'ramen', 'curry', 'bowl', 'wok', 'pasta', 'cake', 'bread'].map((k, i) => ({ k, play: i === 0, ring: i === 0 ? '0 0 0 3px var(--surface2), 0 0 0 5.5px var(--ink)' : 'none', anim: i === 0 ? `ad-pop ${T('460ms')} cubic-bezier(.34,1.56,.64,1) ${T('420ms')} both, ad-hop ${T('2.8s')} ease-in-out ${T('1.4s')} infinite` : `ad-pop ${T('420ms')} cubic-bezier(.34,1.56,.64,1) ${T((260 + i * 40) + 'ms')} both` })),
+      hues: ['#F08A5D', '#F7B94A', '#DE8CF2', '#A5C7AE', '#A8BEE3'].map((c2, i) => ({ c: c2, ring: i === 0 ? '0 0 0 2.5px var(--surface2), 0 0 0 4.5px var(--ink)' : 'none' })),
+      shuffle: ['cake', 'porridge', 'bread'].map((k, i) => ({ k, anim: `ad-shuf ${T('4.5s')} ease-in-out ${T(-(i * 1.5) + 's')} infinite` })),
+      hasTitle: sc !== 'empty' && sc !== 'lookup', titleReq: !!c.req,
+      titleTyped: !!typed, chars: [...typed].map((ch, i) => ({ c: ch, anim: `ad-ch ${T('6s')} linear ${T((1.9 + i * 0.03).toFixed(2) + 's')} infinite both` })),
+      tcAnim: L('ad-tc', '6s'), tskAnim: L('ad-tsk', '6s'),
+      titleStatic: !!c.stat, titleText: c.stat || '', titleCaret: !!c.caret,
+      titleHl: c.dup ? `ad-hl ${T('2.8s')} ease-in-out ${T('900ms')} infinite` : 'none',
+      titleAsk: !!(c.ask || c.req), askHelp: !!c.ask,
+      titleGlow: c.ask ? `ad-glow ${T('2.4s')} ease-in-out ${T('2.4s')} infinite` : (c.req ? L('ad-glow', '2.4s') : 'none'),
+      pencilAnim: c.ask ? `ad-wig ${T('1.6s')} ease-in-out ${T('2.4s')} infinite` : 'none',
+      fieldsIn: `ad-rise ${T('420ms')} ease-out ${T('150ms')} both`,
+      hasMeta: sc !== 'empty' && sc !== 'lookup', noteOn: sc !== 'nothing' && sc !== 'duplicate', noteText: c.note || 'Notiz hinzufügen (optional)', noteInk: c.note ? 'var(--ink)' : 'var(--ink2)',
+      isDup: !!c.dup,
+      dupTitle: c.dup === 'hard' ? 'Dieser Link ist schon da' : 'Ist das dasselbe Gericht?',
+      dupSub: c.dup === 'hard' ? '„Crispy Tofu Bowl“ in Ideen · gleicher Link, wird nicht doppelt gespeichert' : 'Sieht aus wie „Crispy Tofu Bowl“ in Ideen',
+      dupA: c.dup === 'hard' ? 'Abbrechen' : 'Nein, was anderes', dupB: c.dup === 'hard' ? 'Öffnen' : 'Ja, öffnen',
+      saveOn: sc !== 'empty' && !c.dup, saveOp: (c.ask || c.req || sc === 'lookup') ? 0.35 : 1,
+      isSaved: sv, saveAnim: sv ? L('sv-btn', '4.5s') : 'none', lbl1: sv ? L('sv-lbl1', '4.5s') : 'none', lbl2: L('sv-lbl2', '4.5s'),
+      flyAnim: L('sv-fly', '4.5s', 'cubic-bezier(.3,.8,.4,1)'), neuAnim: L('sv-neu', '4.5s', 'ease-out'), fingerAnim: L('sv-f', '4.5s', 'ease'),
+      kb
+    };
+  }
+}
+</script>
+</body>
+</html>

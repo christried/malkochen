@@ -1,0 +1,133 @@
+{
+  "dish": "bowl",
+  "viewBox": "0 0 120 120",
+  "note": "R11. Every layer is a full-canvas SVG in the shared viewBox: stack by z (1 = back). Transform origin = data-pivot (viewBox units). Keyframes: assets/r11-keyframes.css (prefix r11-). Inline style on animated elements = frame-0 state.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-leaves.svg",
+      "name": "leaves",
+      "animated": true,
+      "loop": "leaves 3.2s ease-in-out infinite",
+      "pivot": [
+        60,
+        64
+      ]
+    },
+    {
+      "z": 4,
+      "file": "layers/light/04-bowl_back.svg",
+      "name": "bowl_back",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/light/05-toppings.svg",
+      "name": "toppings",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/light/06-tomato.svg",
+      "name": "tomato",
+      "animated": true,
+      "loop": "tomato 3.2s ease-in-out infinite",
+      "pivot": [
+        68,
+        62
+      ]
+    },
+    {
+      "z": 7,
+      "file": "layers/light/07-bowl_front.svg",
+      "name": "bowl_front",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-leaves.svg",
+      "name": "leaves",
+      "animated": true,
+      "loop": "leaves 3.2s ease-in-out infinite",
+      "pivot": [
+        60,
+        64
+      ]
+    },
+    {
+      "z": 4,
+      "file": "layers/dark/04-bowl_back.svg",
+      "name": "bowl_back",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/dark/05-toppings.svg",
+      "name": "toppings",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/dark/06-tomato.svg",
+      "name": "tomato",
+      "animated": true,
+      "loop": "tomato 3.2s ease-in-out infinite",
+      "pivot": [
+        68,
+        62
+      ]
+    },
+    {
+      "z": 7,
+      "file": "layers/dark/07-bowl_front.svg",
+      "name": "bowl_front",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    }
+  ]
+}

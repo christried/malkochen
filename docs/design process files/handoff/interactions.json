@@ -1,0 +1,85 @@
+[
+  {
+    "name": "Drag lift",
+    "where": "Board cards (phone long-press 300ms; desktop mouse-down + 4px)",
+    "steps": [
+      "t0: long-press recognised → haptic LONG_PRESS",
+      "0–180ms: scale 1 → 1.04, rotate 0 → −2°, shadow card → lift (lift)",
+      "while dragging: card follows pointer 1:1; rotation = clamp(velocityX × 0.02, −3°, 3°), eased 120ms",
+      "origin slot: dashed outline (2.5px, line-strong 25%) at card height",
+      "neighbours: when card centre crosses a neighbour midpoint, neighbour springs to new slot (settle 320ms, +6px overshoot); haptic SEGMENT_TICK",
+      "drop: card springs into slot (settle 260ms), scale → 1, rotate → 0, shadow → card"
+    ],
+    "reduced": "No scale/tilt; card gets 2px ink outline + shadow; neighbours jump."
+  },
+  {
+    "name": "Drop target (tab / lane)",
+    "where": "Phone: Column tabs while card above list area; desktop: lanes",
+    "steps": [
+      "phone: card above y < tabs+60px → card scales to 0.5 over 280ms so tabs stay visible",
+      "enter target: target grows 1.16 (phone tab) / 1.012 (lane), fills with its accent, glow ring 7px accent 35%; others dim to 45% / 60%; background tints 22% toward target · pop 240ms; haptic GESTURE_THRESHOLD_ACTIVATE",
+      "hover: wiggle ±3° (tab) / ±0.3° (lane) 600ms, repeats every 1.2s",
+      "leave: reverse in 200ms",
+      "drop on tab: card scales to 0.05 + rotate −40° into tab 420ms (swoosh); tab squash 1.32/.84 → .9/1.1 → 1; count rolls; 5-pebble burst; slot collapses 400ms, list closes up · haptic CONFIRM",
+      "drop on current Column tab: card moves to top of list",
+      "drop on lane (desktop): coloured slot opens at insert index (dashed accent, 128px), card settles into it"
+    ],
+    "reduced": "Target: accent fill + ring only, no scale/wiggle. Drop: card fades; count swaps."
+  },
+  {
+    "name": "Gekocht celebration + toast",
+    "where": "Gekocht button on card / detail",
+    "steps": [
+      "0ms: press scale .94 (tap); haptic CONFIRM on release",
+      "0–480ms: button springs 1.12 → 1, fills sage, check draws (stroke-dashoffset 20 → 0, 260ms from +120ms)",
+      "0–620ms: veggie confetti (native Vue/SVG particles, 14 pieces, gravity arc; not video)",
+      "+300ms: card leaves Column (slides +440px, rotate 8°, 360ms swoosh), list closes up (settle)",
+      "+320ms: Gekocht tab bumps 1.22 + count rolls up",
+      "+500ms: toast springs in (380ms settle); Topfbert clip pops up behind toast (+100ms) and plays \"Mmh!\"",
+      "toast: \"Gekocht · Notiz hinzufügen · Rückgängig\"; undo window 5s (progress bar); FAB moves up 76px",
+      "5s: toast out 300ms; Rückgängig reverses all (card flies back 480ms)",
+      "10th cooking: after toast in, 10× milestone plays (420ms delay)"
+    ],
+    "reduced": "Button colour + check, card fades out, toast fades in. No confetti, Topfbert still frame."
+  },
+  {
+    "name": "Swipe between Columns",
+    "where": "Phone Board",
+    "steps": [
+      "horizontal pan > 8px and |dx| > 1.2|dy| → capture; list follows finger 1:1",
+      "edges: rubber-band 0.3×",
+      "progress p = idx − dx/width drives: headline translateX(offset × 70px) + opacity 1 − |offset| × 1.6; active tab pill position; background colour mix",
+      "release: |dx| > 18% width or velocity > 0.5px/ms → next Column; spring settle 480ms; haptic SEGMENT_TICK",
+      "background colour cross-fades 600ms to new Column tint"
+    ],
+    "reduced": "Swipe still pages; release snaps in 150ms fade; no parallax."
+  },
+  {
+    "name": "Card → detail morph",
+    "where": "Tap card (phone full-screen, desktop side panel)",
+    "steps": [
+      "shared element: card thumbnail → header image; interpolate left/top/width/height/border-radius (20px → 0) over 600ms swoosh",
+      "phone: Board behind scales to 0.94, detail background fades in (0–30%); content panel rises from +90px (from 30%, 420ms settle)",
+      "desktop: 480px panel slides from +100% x (480ms sheet); Board dims (scrim)",
+      "buttons (back, …) pop in at 80% (pop)",
+      "placeholder illustrations start their loop once morph ends",
+      "close / back gesture: exact reverse; image lands in card",
+      "Nuxt: use View Transitions API (view-transition-name per card image) with a fallback FLIP implementation"
+    ],
+    "reduced": "Detail cross-fades in 200ms; no scale of Board."
+  },
+  {
+    "name": "Sheet open / close",
+    "where": "All bottom sheets",
+    "steps": [
+      "open: scrim fades 0 → 1 (260ms); sheet translateY(100%) → 0 (440ms sheet, ~10px overshoot)",
+      "contents: first section rises 14px from +150ms (fade)",
+      "drag handle: follows finger, resistance 0.5 upwards; release > 25% height or velocity > 0.8 → close",
+      "close: translateY(100%) 320ms ease-in, scrim out 240ms",
+      "keyboard: sheet sits on top of keyboard; keyboard rises 360ms",
+      "stacked sheet: parent scales 0.96 and dims 20%",
+      "desktop ≥768px: sheet renders as Dialog (scale .92 → 1, 360ms)"
+    ],
+    "reduced": "Fade 200ms, no slide."
+  }
+]

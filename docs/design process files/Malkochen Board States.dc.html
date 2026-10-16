@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#EDEAE3}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="padding:40px 44px 60px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="display:flex;gap:14px;font:600 12px/1 system-ui"><a href="Malkochen Board.dc.html" style="text-decoration:none;opacity:.6">← Round 1 · Board</a><a href="Placeholder Pictograms.dc.html" style="text-decoration:none;opacity:.6">Pictogram library →</a></div>
+    <div style="font:400 44px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em">Round 2 · Board-Zustände &amp; Drag and Drop</div>
+    <div style="font:14px/1.55 system-ui;color:#55524C;text-wrap:pretty">Built on <a href="Malkochen Board.dc.html#2a">2a</a>. Every phone loops its motion; the white dot is a finger. Slow everything down with Tweaks → Motion speed. Tags: <span style="font:600 10px ui-monospace,monospace;padding:3px 6px;border-radius:5px;background:#1F1E1C;color:#fff">UI MOTION</span> in-app interaction · <span style="font:600 10px ui-monospace,monospace;padding:3px 6px;border-radius:5px;background:#E7D2F7;color:#4A1470">MOTION GRAPHIC</span> illustrated loop / one-shot.</div>
+  </div>
+  <sc-for list="{{ states }}" as="s" hint-placeholder-count="12">
+    <div id="{{ s.key }}" data-screen-label="{{ s.n }} {{ s.title }}" style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;padding:28px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">HELL</div><div style="--bg:#F7F6F2;--surface:#FFFFFF;--surface2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.14);--pill:#1F1E1C;--pillInk:#FFFFFF;--danger:#C23B22;--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="StatePhone" screen="{{ s.key }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">DUNKEL</div><div style="--bg:#131211;--surface:#1E1C1A;--surface2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--pill:#F3EFE8;--pillInk:#131211;--danger:#FF8A70;--shadow:0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="StatePhone" screen="{{ s.key }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="width:320px;display:flex;flex-direction:column;gap:4px;padding-top:24px">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ s.n }}</span><span style="font:400 28px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.01em">{{ s.title }}</span></div>
+        <sc-for list="{{ s.notes }}" as="m" hint-placeholder-count="1">
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)">
+            <span style="font:600 10px ui-monospace,monospace;padding:4px 7px;border-radius:5px;background:{{ m.tagBg }};color:{{ m.tagInk }}">{{ m.tag }}</span>
+            <div style="font:600 13.5px/1.4 system-ui;margin-top:8px">{{ m.t }}</div>
+            <div style="font:12.5px/1.55 system-ui;color:#55524C;text-wrap:pretty">{{ m.d }}</div>
+            <div style="font:11px ui-monospace,monospace;color:#8A857D;margin-top:4px">{{ m.tm }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motionSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1,0.5,0.25],&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+const N = (g, t, d, tm) => ({ tag: g ? 'MOTION GRAPHIC' : 'UI MOTION', tagBg: g ? '#E7D2F7' : '#1F1E1C', tagInk: g ? '#4A1470' : '#fff', t, d, tm });
+const STATES = [
+  ['loading', 'Laden', [N(0, 'Skeleton shimmer', 'A soft light sweep runs over each skeleton card, 90ms apart, so it moves down the list like a wave. Thumbnails and tab counts breathe. Real cards crossfade in once loaded.', '1.4s sweep · 90ms stagger · 240ms swap')]],
+  ['empty-board', 'Leeres Board', [N(1, 'Topfbert + hopping veggies', 'Veggies hop out of Topfbert, the pot mascot, one after another and fall back in. The pot blinks, steam rises, the blob behind it morphs. Seamless loop.', '2.4s hop cycle · 4s blink · 8s morph'), N(0, 'Add action highlighted', 'Extended "Link einfügen" button breathes with two rings pulsing out. It shrinks back to the normal add pebble after the first Dish.', '3.2s rings · 3.6s breathe')]],
+  ['empty-column', 'Leere Column', [N(1, 'Lonely pea', 'A pea with googly eyes rolls back and forth on the rim of an empty bowl.', '2.2s alternate')]],
+  ['search', 'Suche mit Treffern', [N(0, 'Results as you type', 'Searches all Boards, grouped by Board. Each keystroke re-runs the list: results re-stagger in (rise 10px + fade), and the match is highlighted in butter. The pressed key pops up.', '380ms spring · 50ms stagger · 120ms debounce'), N(0, 'Open / close', 'The search button morphs into the field, headline and tabs fade 12px up, the keyboard rises. Abbrechen reverses it.', '360ms spring')]],
+  ['search-empty', 'Suche ohne Treffer', [N(1, 'Magnifier + peeking pea', 'The magnifier sweeps over an empty plate while a pea peeks out from behind it and ducks away again.', '3.6s loop')]],
+  ['reorder', 'Drag: Sortieren', [N(0, 'Lift', 'Long-press 300ms, then the card lifts: 1.04×, −2° tilt, deep shadow, light haptic. While dragging it tilts with velocity (max ±3°).', '180ms lift'), N(0, 'Making room', 'Neighbours spring out of the way once the card crosses their midpoint. On drop it settles into the slot with a soft haptic.', '320ms spring · 260ms settle')]],
+  ['drag-tab', 'Drag: auf Column-Tab', [N(0, 'Card shrinks toward the tabs', 'Above the list the card shrinks to 50% so the tabs stay visible. A dashed slot holds its old spot.', '280ms'), N(0, 'Tab as drop target', 'The hovered tab grows 1.16×, fills with its colour, glows and wiggles. Other tabs dim to 45%, and the screen tints toward the target colour.', '240ms grow · 600ms wiggle loop')]],
+  ['drop', 'Drop in Column', [N(0, 'Swallow + count', 'The card shrinks and spins into the tab. The tab squashes and stretches, the count rolls 3→4, pebbles pop out. The slot collapses and the cards below slide up. Dropping on the current Column’s own tab moves the card to the top of the list.', '420ms swallow · 360ms roll · 400ms collapse')]],
+  ['menu', '„…“-Menü', [N(0, 'Popover', 'Grows from the "…" button (top-right origin, slight overshoot). The rest dims, and the card stays lifted above the scrim.', '300ms spring · 200ms scrim')]],
+  ['picker', '„Verschieben nach…“', [N(0, 'Sheet', 'Rises with a slight overshoot. This Board comes first (the current Column is marked "Aktuell"), then the other Boards with their Columns as chips. Picking pops a check, the sheet closes and the pebble flies to the target.', '420ms spring · 260ms check')]],
+  ['cooked', 'Toast: Gekocht ✓', [N(1, 'Celebration', 'Veggie confetti (carrot coin, pea, leaf, tomato, corn, mushroom) bursts from the button in a gravity arc. The pot mascot pops up behind the toast, bounces and says "Mmh!". The Gekocht tab bumps 27→28.', '~2.4s one-shot · Topfbert as Lottie/Rive'), N(0, 'Card leaves + toast', 'The card slides out to the right with a tilt, the list closes up, the toast springs in: „Gekocht · Notiz hinzufügen · Rückgängig“. Notiz hinzufügen opens the Dish detail. The sage bar shows the 5s undo window.', '360ms exit · 5s undo window')]],
+  ['deleted', 'Toast: Gelöscht', [N(0, 'Collapse + undo', 'The card shrinks to 0.9 and fades, the list closes up, the toast rises. "Rückgängig" reverses it: the list opens and the card springs back in with a small overshoot. No sounds anywhere; haptics only.', '260ms collapse · 380ms restore · 4s undo window')]]
+];
+class Component extends DCLogic {
+  applySpd() { document.documentElement.style.setProperty('--spd', String(1 / (this.props.motionSpeed ?? 1))); }
+  componentDidMount() { this.applySpd(); }
+  componentDidUpdate() { this.applySpd(); }
+  renderVals() {
+    return { states: STATES.map(([key, title, notes], i) => ({ key, title, notes, n: String(i + 1).padStart(2, '0') })) };
+  }
+}
+</script>
+</body>
+</html>

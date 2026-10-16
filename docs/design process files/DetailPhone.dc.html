@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes dd-tickA{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes dd-tickB{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes dd-popA{0%{transform:scale(.6) rotate(-14deg)}60%{transform:scale(1.16) rotate(4deg)}100%{transform:none}}
+@keyframes dd-popB{0%{transform:scale(.6) rotate(-14deg)}60%{transform:scale(1.16) rotate(4deg)}100%{transform:none}}
+@keyframes dd-ring{0%{transform:scale(1);opacity:.5}70%,100%{transform:scale(1.55);opacity:0}}
+@keyframes dd-in{from{opacity:0;max-height:0;transform:translateY(-8px)}to{opacity:1;max-height:96px;transform:none}}
+@keyframes dd-out{from{opacity:1;max-height:96px}to{opacity:0;max-height:0;transform:translateX(40px)}}
+@keyframes dd-glow{0%,100%{box-shadow:0 0 0 0 rgba(247,185,74,0)}50%{box-shadow:0 0 0 5px rgba(247,185,74,.35)}}
+@keyframes dd-caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes dd-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes dd-field{from{background-color:transparent;transform:scale(.97)}to{transform:none}}
+@keyframes dd-sheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes dd-fade{from{opacity:0}to{opacity:1}}
+@keyframes dd-toast{from{transform:translateY(120px)}to{transform:none}}
+@keyframes dd-roll{0%,100%{transform:translateX(-30px) rotate(-200deg)}50%{transform:translateX(30px) rotate(200deg)}}
+@keyframes dd-pip{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes dm-img{0%,12%{left:25px;top:305px;width:88px;height:110px;border-radius:20px}34%,78%{left:0;top:0;width:390px;height:420px;border-radius:0}96%,100%{left:25px;top:305px;width:88px;height:110px;border-radius:20px}}
+@keyframes dm-bg{0%,14%{opacity:0}30%,80%{opacity:1}94%,100%{opacity:0}}
+@keyframes dm-board{0%,12%{transform:none}30%,80%{transform:scale(.94)}96%,100%{transform:none}}
+@keyframes dm-panel{0%,30%{opacity:0;transform:translateY(90px)}44%,78%{opacity:1;transform:none}88%,100%{opacity:0;transform:translateY(90px)}}
+@keyframes dm-bar{0%,32%{transform:scale(0)}42%,78%{transform:scale(1)}86%,100%{transform:scale(0)}}
+@keyframes dm-f1{0%{opacity:0;transform:scale(1.3)}6%{opacity:1;transform:scale(1)}10%{transform:scale(.88)}14%,100%{opacity:0;transform:scale(1)}}
+@keyframes dm-f2{0%,72%{opacity:0;transform:scale(1.3)}75%{opacity:1;transform:scale(1)}78%{transform:scale(.88)}82%,100%{opacity:0}}
+</style></helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:47px;color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;user-select:none;background:{{ rootBg }}">
+  <sc-if value="{{ isMorph }}"><div style="position:absolute;inset:0;z-index:0;isolation:isolate"><dc-import name="StatePhone" screen="static" style="position:absolute;inset:0;transform-origin:50% 40%;animation:dm-board calc(5.5s * var(--spd, 1)) ease-in-out infinite" hint-size="390px,844px"></dc-import></div></sc-if>
+  <div style="position:absolute;inset:0;z-index:0;background:var(--bg);animation:{{ bgAnim }}"></div>
+
+  <div style="position:absolute;left:0;top:0;width:390px;height:{{ hH }};overflow:hidden;z-index:1;animation:{{ hdrAnim }}">
+    <div style="position:absolute;left:0;right:0;top:0;height:100%;transform:{{ imgTf }};transform-origin:50% 0">
+      <sc-if value="{{ hPhoto }}"><div style="position:absolute;inset:0;background:{{ ph }};background-size:cover"></div></sc-if>
+      <sc-if value="{{ hLand }}">
+        <div style="position:absolute;inset:-40px;background:{{ ph }};filter:blur(26px) saturate(1.2);opacity:.9"></div>
+        <div style="position:absolute;inset:0;background:color-mix(in oklch, var(--bg) 25%, transparent)"></div>
+        <div style="position:absolute;left:0;right:0;top:78px;height:219px;background:{{ ph }};box-shadow:0 20px 40px -20px rgba(0,0,0,.5)"></div>
+      </sc-if>
+      <sc-if value="{{ hIllus }}"><dc-import name="Illus" kind="{{ kind }}" play="{{ playIllus }}" style="position:absolute;left:0;right:0;top:0;bottom:0" hint-size="100%,100%"></dc-import></sc-if>
+      <sc-if value="{{ scrimOn }}"><div style="position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.42), transparent 24%, transparent 70%, rgba(0,0,0,.18))"></div></sc-if>
+    </div>
+    <sc-if value="{{ ownPhoto }}">
+      <div style="position:absolute;left:16px;bottom:46px;width:62px;height:76px;border-radius:18px 15px 19px 16px;border:2px dashed rgba(255,255,255,.85);background:rgba(20,18,16,.28);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#fff">
+        <svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="6" width="18" height="14" rx="4"></rect><circle cx="12" cy="13" r="3.4"></circle><path d="M9 6l1.5-2h3L15 6"></path></svg>
+        <span style="font:600 10px/1 'Hanken Grotesk',system-ui">Dein Foto</span>
+        <span style="position:absolute;top:-8px;right:-10px;height:18px;padding:0 7px;border-radius:9px;background:#F7B94A;color:#2A1A03;display:grid;place-items:center;font:700 9.5px/1 'Hanken Grotesk',system-ui">Bald</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isEdit }}">
+      <div style="position:absolute;left:0;right:0;bottom:46px;display:flex;justify-content:center;gap:8px;animation:dd-rise calc(420ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(200ms * var(--spd, 1)) both">
+        <span style="height:40px;padding:0 15px;border-radius:20px;background:var(--glass);backdrop-filter:blur(10px);display:flex;align-items:center;gap:7px;font:600 14px/1 'Hanken Grotesk',system-ui"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="5" width="18" height="14" rx="4"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-8 8"></path></svg>Bild ändern</span>
+        <span style="height:40px;padding:0 15px;border-radius:20px;background:var(--glass);backdrop-filter:blur(10px);display:flex;align-items:center;gap:7px;font:600 14px/1 'Hanken Grotesk',system-ui"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Neu laden</span>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ notEdit }}">
+  <div ref="{{ scRef }}" onScroll="{{ onScroll }}" style="position:absolute;inset:0;z-index:2;overflow-y:auto;scrollbar-width:none;animation:{{ panelAnim }}">
+    <div style="height:{{ spacer }}"></div>
+    <div style="position:relative;min-height:600px;background:var(--bg);border-radius:32px 32px 0 0;padding:22px 18px 60px;display:flex;flex-direction:column;gap:16px;box-shadow:0 -14px 30px -18px rgba(0,0,0,.35)">
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-if value="{{ hasSrc }}"><span style="height:30px;padding:0 11px 0 9px;border-radius:15px;background:var(--surface2);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui"><i style="width:10px;height:10px;border-radius:50%;background:{{ srcDot }}"></i>{{ srcLabel }}</span></sc-if>
+        <span style="height:30px;padding:0 10px 0 9px;border-radius:15px;background:var(--surface2);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui"><span style="font-size:13px">🍜</span>WG-Küche<i style="width:9px;height:9px;margin-left:3px;border-radius:50%;background:{{ colAcc }}"></i>{{ colLabel }}<svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6l6 6-6 6"></path></svg></span>
+      </div>
+      <div style="font:400 32px/1.08 'Newsreader',Georgia,serif;letter-spacing:-.02em;text-wrap:pretty">{{ title }}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:-4px"><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:{{ avBg }};color:{{ avInk }};font:700 10px/1 'Hanken Grotesk',system-ui">{{ avL }}</span><span style="font:500 13.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ addedLine }}</span></div>
+      <sc-if value="{{ hasNote }}">
+        <div style="display:flex;gap:10px;padding:14px 16px;border-radius:22px 20px 23px 21px;background:var(--surface2)">
+          <svg width="18" height="18" viewBox="0 0 24 24" style="flex:none;margin-top:1px;fill:none;stroke:var(--ink2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg>
+          <span style="font:400 17px/1.45 'Newsreader',Georgia,serif;text-wrap:pretty">{{ note }}</span>
+        </div>
+      </sc-if>
+      <div style="display:flex;gap:10px">
+        <sc-if value="{{ hasSrc }}"><div style="flex:1;min-width:0;height:56px;border-radius:28px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;justify-content:center;gap:9px;padding:0 14px"><i style="flex:none;width:11px;height:11px;border-radius:50%;background:{{ srcDot }};box-shadow:0 0 0 2px var(--pill)"></i><div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font:600 15.5px/1 'Hanken Grotesk',system-ui;white-space:nowrap">Original öffnen</span><span style="font:500 11.5px/1 'Hanken Grotesk',system-ui;opacity:.7;white-space:nowrap">{{ openSub }}</span></div><svg width="16" height="16" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M7 17L17 7M9 7h8v8"></path></svg></div></sc-if>
+        <sc-if value="{{ noSrc }}"><div style="flex:1;height:56px;border-radius:28px;border:2px dashed var(--line2);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui;color:var(--ink2)"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg>Link hinzufügen</div></sc-if>
+        <button onClick="{{ onCook }}" style="flex:none;height:56px;padding:0 20px;border:none;border-radius:28px 25px 29px 26px;background:#A5C7AE;color:#10261A;display:flex;align-items:center;gap:8px;font:600 15.5px/1 'Hanken Grotesk',system-ui;cursor:pointer;animation:{{ cookBtnAnim }}" style-active="transform:scale(.94)">Gekocht<svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:30px 26px 31px 27px;background:var(--surface);box-shadow:var(--shadow)">
+        <div style="display:flex;align-items:center;gap:8px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">KOCH-HISTORIE</div>
+        <sc-if value="{{ hasHist }}">
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="position:relative;flex:none;width:{{ bSize }};height:{{ bSize }};transition:width calc(420ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1),height calc(420ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1)">
+              <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ bBg }};animation:dd-ring calc(3s * var(--spd, 1)) ease-out calc(1s * var(--spd, 1)) infinite"></div>
+              <div style="position:absolute;inset:0;display:grid;place-items:center;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ bBg }};box-shadow:0 12px 24px -10px rgba(150,90,0,.55);animation:{{ bPop }}"><span style="display:block;font:400 {{ bFont }}/1 'Newsreader',Georgia,serif;letter-spacing:-.03em;color:#2A1A03;animation:{{ tickAnim }}">{{ shownN }}×</span></div>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+              <span style="font:400 23px/1.1 'Newsreader',Georgia,serif">{{ tierName }}</span>
+              <span style="font:500 13.5px/1.3 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ summary }}</span>
+              <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+                <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5"><i style="width:14px;height:13px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ p.bg }};box-shadow:{{ p.ring }};animation:{{ p.anim }}"></i></sc-for>
+                <span style="margin-left:4px;font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2);white-space:nowrap">{{ nextLabel }}</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ hist }}" as="h" hint-placeholder-count="3">
+              <div style="overflow:hidden;animation:{{ h.anim }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)">
+                  <div title="Datum ändern" style="position:relative;flex:none;width:46px;height:50px;border-radius:16px 14px 17px 15px;background:{{ h.dateBg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer" style-hover="box-shadow:0 0 0 2px var(--line2)"><span style="position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 0 0 1.5px var(--line2);display:grid;place-items:center"><svg width="9" height="9" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20h4l10-10-4-4L4 16z"></path></svg></span><span style="font:400 20px/1 'Newsreader',Georgia,serif">{{ h.day }}</span><span style="font:600 9.5px/1 ui-monospace,monospace;letter-spacing:.06em;color:var(--ink2)">{{ h.mon }}</span></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <sc-if value="{{ h.hasNote }}"><span style="font:400 16.5px/1.25 'Newsreader',Georgia,serif;text-wrap:pretty">„{{ h.note }}“</span></sc-if>
+                    <sc-if value="{{ h.noNote }}"><span onClick="{{ openSheet }}" style="align-self:flex-start;height:26px;padding:0 10px;border-radius:13px;border:1.5px dashed var(--line2);display:flex;align-items:center;gap:5px;font:600 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2);cursor:pointer;animation:{{ h.glow }}">+ Notiz</span></sc-if>
+                    <div style="display:flex;align-items:center;gap:6px"><span style="width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:{{ h.avBg }};color:{{ h.avInk }};font:700 8.5px/1 'Hanken Grotesk',system-ui">{{ h.av }}</span><span style="font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ h.who }}</span></div>
+                  </div>
+                  <button onClick="{{ h.onDel }}" aria-label="Eintrag löschen" style="flex:none;width:38px;height:38px;border-radius:50%;border:none;background:transparent;color:var(--ink2);display:grid;place-items:center;cursor:pointer" style-hover="background:var(--surface2)" style-active="transform:scale(.9)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"></path></svg></button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noHist }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 8px 8px;text-align:center">
+            <div style="position:relative;width:170px;height:118px">
+              <div style="position:absolute;left:10px;top:4px;width:150px;height:110px;border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;background:color-mix(in oklch, #A5C7AE 36%, var(--surface))"></div>
+              <dc-import name="Mascot" mood="happy" size="{{ 96 }}" style="position:absolute;left:37px;top:14px;width:96px;height:89px" hint-size="96px,89px"></dc-import>
+              <div style="position:absolute;left:78px;top:98px;width:18px;height:18px;border:2.5px solid var(--ink);box-sizing:border-box;border-radius:50%;background:#8DB596;animation:dd-roll calc(3s * var(--spd, 1)) ease-in-out infinite"><i style="position:absolute;left:3px;top:4px;width:3px;height:4px;border-radius:50%;background:var(--ink)"></i><i style="position:absolute;left:8px;top:4px;width:3px;height:4px;border-radius:50%;background:var(--ink)"></i></div>
+            </div>
+            <span style="font:400 22px/1.15 'Newsreader',Georgia,serif">Noch nie gekocht</span>
+            <span style="font:500 13.5px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">Topfbert wartet schon. Nach dem ersten Mal steht hier, wer wann gekocht hat.</span>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:4px"><i style="width:14px;height:13px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;border:1.5px dashed var(--line2);box-sizing:border-box"></i><i style="width:14px;height:13px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;border:1.5px dashed var(--line2);box-sizing:border-box"></i><i style="width:14px;height:13px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;border:1.5px dashed var(--line2);box-sizing:border-box"></i><span style="margin-left:4px;font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">3× bis „Wird Liebling“</span></div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex;flex-direction:column;padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+        <sc-for list="{{ actions }}" as="a" hint-placeholder-count="5">
+          <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 12px 0 8px;border-radius:18px;color:{{ a.ink }}" style-hover="background:var(--surface2)">
+            <span style="width:36px;height:36px;border-radius:50%;background:{{ a.iconBg }};display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ a.icon }}"></path></svg></span>
+            <span style="flex:1;font:600 15.5px/1 'Hanken Grotesk',system-ui">{{ a.l }}</span>
+            <sc-if value="{{ a.hint }}"><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ a.hintT }}</span></sc-if>
+            <sc-if value="{{ a.chev }}"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6l6 6-6 6"></path></svg></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:0;height:112px;z-index:3;pointer-events:none;background:var(--bg);opacity:{{ barOp }};box-shadow:0 1px 0 var(--line)"></div>
+  <div style="position:absolute;left:16px;right:16px;top:60px;z-index:4;display:flex;align-items:center;gap:10px">
+    <div style="flex:none;width:42px;height:42px;border-radius:50%;background:var(--glass);backdrop-filter:blur(10px);display:grid;place-items:center;animation:{{ barAnim }}"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M15 6l-6 6 6 6"></path></svg></div>
+    <span style="flex:1;min-width:0;font:400 19px/1 'Newsreader',Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:{{ barOp }};transform:translateY({{ barTy }})">{{ title }}</span>
+    <div style="flex:none;width:42px;height:42px;border-radius:50%;background:var(--glass);backdrop-filter:blur(10px);display:grid;place-items:center;animation:{{ barAnim }}"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:var(--ink)"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isEdit }}">
+    <div style="position:absolute;left:16px;right:16px;top:60px;z-index:4;display:flex;align-items:center;justify-content:space-between;animation:dd-fade calc(300ms * var(--spd, 1)) ease both">
+      <span style="height:42px;padding:0 16px;border-radius:21px;background:var(--glass);backdrop-filter:blur(10px);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Abbrechen</span>
+      <span style="height:42px;padding:0 18px;border-radius:21px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Fertig</span>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:270px;bottom:0;z-index:2;background:var(--bg);border-radius:32px 32px 0 0;padding:22px 18px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;box-shadow:0 -14px 30px -18px rgba(0,0,0,.35)">
+      <sc-for list="{{ fields }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:7px;animation:{{ f.anim }}">
+          <span style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">{{ f.label }}</span>
+          <div style="min-height:{{ f.h }};border-radius:18px 16px 19px 17px;background:var(--surface2);display:flex;align-items:{{ f.align }};gap:9px;padding:{{ f.pad }};box-sizing:border-box;box-shadow:{{ f.ring }};animation:{{ f.fieldAnim }}">
+            <sc-if value="{{ f.dot }}"><i style="flex:none;width:11px;height:11px;border-radius:50%;background:{{ f.dotBg }}"></i></sc-if>
+            <span style="flex:1;min-width:0;font:{{ f.font }};text-wrap:pretty;overflow:hidden;text-overflow:ellipsis">{{ f.v }}<sc-if value="{{ f.caret }}"><span style="display:inline-block;width:2px;height:21px;margin-left:1px;vertical-align:-4px;border-radius:1px;background:#E8961E;animation:dd-caret 1s steps(1) infinite"></span></sc-if></span>
+            <sc-if value="{{ f.chev }}"><svg width="14" height="14" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--ink2);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6l6 6-6 6"></path></svg></sc-if>
+          </div>
+        </div>
+      </sc-for>
+      <div style="flex:1"></div>
+      <div style="height:50px;border-radius:25px;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui;color:var(--danger);background:color-mix(in oklch, var(--danger) 10%, transparent);animation:dd-rise calc(420ms * var(--spd, 1)) ease-out calc(400ms * var(--spd, 1)) both"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"></path></svg>Gericht löschen</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toastOn }}">
+    <div style="position:absolute;left:14px;right:14px;bottom:30px;z-index:30;height:56px;border-radius:28px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;padding:0 7px 0 20px;box-shadow:0 18px 36px -12px rgba(0,0,0,.5);animation:dd-toast calc(380ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) both">
+      <span style="flex:1;font:700 15px/1 'Hanken Grotesk',system-ui">Eintrag gelöscht</span>
+      <button onClick="{{ onUndo }}" style="height:42px;padding:0 14px;border:none;border-radius:21px;background:color-mix(in oklch, var(--pillInk) 16%, transparent);color:inherit;font:600 14px/1 'Hanken Grotesk',system-ui;cursor:pointer">Rückgängig</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetOn }}">
+    <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:40;background:rgba(12,10,8,.42);animation:dd-fade calc(260ms * var(--spd, 1)) ease both"></div>
+    <div style="position:absolute;left:0;right:0;bottom:{{ sheetBottom }};z-index:41;background:var(--surface);border-radius:32px 32px {{ sheetRadB }};padding:10px 18px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;box-shadow:0 -18px 40px -18px rgba(0,0,0,.45);animation:dd-sheet calc(440ms * var(--spd, 1)) cubic-bezier(.3,1.15,.5,1) both">
+      <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line2)"></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font:400 25px/1 'Newsreader',Georgia,serif;letter-spacing:-.01em">Notiz zum Kochen</span><span onClick="{{ closeSheet }}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="height:28px;padding:0 11px;border-radius:14px;background:color-mix(in oklch, #A5C7AE 45%, var(--surface2));display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Hanken Grotesk',system-ui"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>Gekocht heute, 29. Sep</span><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#A8BEE3;color:#0F2340;font:700 9.5px/1 'Hanken Grotesk',system-ui">Du</span><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ sheetDish }}</span></div>
+      <div style="min-height:84px;border-radius:20px 18px 21px 19px;background:var(--surface2);padding:14px 16px;box-sizing:border-box;box-shadow:0 0 0 2px rgba(247,185,74,.7);font:400 19px/1.35 'Newsreader',Georgia,serif">
+        <span>{{ typed }}</span><span style="display:inline-block;width:2px;height:22px;margin-left:1px;vertical-align:-4px;border-radius:1px;background:#E8961E;animation:dd-caret 1s steps(1) infinite"></span><sc-if value="{{ typedEmpty }}"><span style="color:var(--ink2);font-style:italic">Wie war’s? Was würdest du ändern?</span></sc-if>
+      </div>
+      <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px">
+        <sc-for list="{{ quick }}" as="q" hint-placeholder-count="4"><span onClick="{{ q.onTap }}" style="flex:none;height:32px;padding:0 12px;border-radius:16px;background:var(--surface2);display:flex;align-items:center;font:600 12.5px/1 'Hanken Grotesk',system-ui;white-space:nowrap;cursor:pointer">{{ q.l }}</span></sc-for>
+      </div>
+      <div style="display:flex;gap:8px">
+        <span onClick="{{ closeSheet }}" style="flex:1;height:50px;border-radius:25px;display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui;background:var(--surface2);cursor:pointer">Später</span>
+        <span onClick="{{ saveNote }}" style="flex:2;height:50px;border-radius:25px;display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui;background:var(--pill);color:var(--pillInk);cursor:pointer">Notiz speichern</span>
+      </div>
+    </div>
+    <sc-if value="{{ kbOn }}">
+      <div style="position:absolute;left:0;right:0;bottom:0;height:290px;padding:8px 4px 0;box-sizing:border-box;z-index:42;background:color-mix(in oklch, var(--surface2) 88%, var(--ink) 6%);display:flex;flex-direction:column;gap:10px;animation:dd-sheet calc(360ms * var(--spd, 1)) ease-out both">
+        <sc-for list="{{ kb }}" as="row" hint-placeholder-count="4">
+          <div style="display:flex;gap:6px;padding:0 {{ row.pad }}"><sc-for list="{{ row.keys }}" as="key" hint-placeholder-count="10"><div style="flex:{{ key.grow }};height:44px;border-radius:7px;display:grid;place-items:center;background:{{ key.bg }};color:{{ key.ink }};font:{{ key.font }};box-shadow:0 1px 0 rgba(0,0,0,.28)">{{ key.l }}</div></sc-for></div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ isMorph }}">
+    <div style="position:absolute;left:69px;top:360px;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.4);border:2px solid rgba(255,255,255,.95);box-shadow:0 4px 16px rgba(0,0,0,.28);box-sizing:border-box;z-index:60;opacity:0;animation:dm-f1 calc(5.5s * var(--spd, 1)) ease infinite"></div>
+    <div style="position:absolute;left:37px;top:81px;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.4);border:2px solid rgba(255,255,255,.95);box-shadow:0 4px 16px rgba(0,0,0,.28);box-sizing:border-box;z-index:60;opacity:0;animation:dm-f2 calc(5.5s * var(--spd, 1)) ease infinite"></div>
+  </sc-if>
+
+  <div style="position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 38px;z-index:70;font:600 16px/1 'Hanken Grotesk',system-ui;color:{{ statusInk }};pointer-events:none;transition:color .25s">
+    <span>9:41</span>
+    <div style="position:absolute;left:50%;top:15px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:#000"></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <svg width="18" height="12" viewBox="0 0 18 12" style="fill:currentColor"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg>
+      <div style="width:25px;height:12px;border:1.5px solid currentColor;border-radius:4px;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;background:currentColor;border-radius:1.5px"></div></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:50%;bottom:8px;width:108px;height:4px;margin-left:-54px;border-radius:2px;background:var(--ink);opacity:.9;z-index:70;pointer-events:none"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;morph&quot;,&quot;photo&quot;,&quot;landscape&quot;,&quot;placeholder&quot;,&quot;nolink&quot;,&quot;never&quot;,&quot;edit&quot;,&quot;note&quot;],&quot;default&quot;:&quot;photo&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;replay&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;}}">
+const T = s => `calc(${s} * var(--spd, 1))`;
+const PH = {"tofu":"radial-gradient(9% 5% at 40% 44%, #F6CE7E 0 55%, transparent 100%), radial-gradient(10% 5.5% at 60% 49%, #EDB45F 0 55%, transparent 100%), radial-gradient(9% 5% at 47% 57%, #E7A24A 0 55%, transparent 100%), radial-gradient(8% 4.5% at 62% 60%, #F3C570 0 55%, transparent 100%), radial-gradient(3% 1.6% at 52% 42%, #9CCB5B 0 60%, transparent 100%), radial-gradient(3% 1.6% at 36% 55%, #86B94C 0 60%, transparent 100%), radial-gradient(3% 1.6% at 66% 55%, #9CCB5B 0 60%, transparent 100%), radial-gradient(30% 17% at 50% 51%, #7A3E1C 0 70%, transparent 100%), radial-gradient(44% 25% at 50% 51%, #F2EDE4 0 88%, #CFC6B6 93%, transparent 96%), linear-gradient(165deg,#3B474C,#161C1F)","curry":"radial-gradient(2% 3.6% at 45% 45%, #E8C66A 0 60%, transparent 100%), radial-gradient(2% 3.6% at 52% 52%, #E3BC5C 0 60%, transparent 100%), radial-gradient(2% 3.6% at 48% 58%, #E8C66A 0 60%, transparent 100%), radial-gradient(2.5% 4.4% at 56% 44%, #4C8A3A 0 60%, transparent 100%), radial-gradient(14% 25% at 50% 51%, #E09A28 0 75%, #B8741A 90%, transparent 94%), radial-gradient(18% 32% at 50% 51%, #2F3B45 0 88%, transparent 93%), radial-gradient(9% 16% at 75% 40%, #F4EEDD 0 70%, transparent 90%), linear-gradient(160deg,#D9CBB3,#B7A488)","kaese":"radial-gradient(4% 2.7% at 46% 46%, #7A1733 0 60%, transparent 100%), radial-gradient(4% 2.7% at 56% 50%, #9B1E42 0 60%, transparent 100%), radial-gradient(3.5% 2.4% at 50% 56%, #6E1430 0 60%, transparent 100%), radial-gradient(22% 14.7% at 50% 51%, #C73B5A 0 70%, transparent 100%), radial-gradient(34% 22.7% at 50% 51%, #F6E7C8 0 82%, #D9B77E 90%, transparent 94%), radial-gradient(42% 28% at 50% 51%, #FFFFFF 0 88%, #DAD3CB 93%, transparent 96%), linear-gradient(170deg,#F4C9CF,#E7A9B4)"};
+const P = { L: ['#F7C85C', '#2B1E04', 'L', 'Lisa'], J: ['#A9C9B1', '#12291A', 'J', 'Jonas'], M: ['#DDB0F6', '#2D0F3F', 'M', 'Mia'], Du: ['#A8BEE3', '#0F2340', 'Du', 'Du'] };
+const SRC = { tiktok: ['TikTok', 'linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)', 'in TikTok'], youtube: ['YouTube', '#FF0033', 'in YouTube'], pinterest: ['Pinterest', '#E60023', 'in Pinterest'], web: ['omas-kochstube.de', '#8E8A83', 'im Browser'] };
+const COLS = [['Ideen', '#F7B94A'], ['Diese Woche', '#DE8CF2'], ['Gekocht', '#A5C7AE']];
+const DISH = {
+  tofu: { t: 'Knuspriger Sesam-Tofu mit Erdnusssoße', src: 'tiktok', by: 'L', at: '3. Sep', note: 'Tofu vorher 20 Min. pressen – dann wird er richtig knusprig.', col: 0, ph: 'tofu', hist: [['12', 'SEP', 'mit Feta besser', 'J'], ['28', 'AUG', '', 'L'], ['9', 'AUG', 'doppelte Menge, war sofort weg', 'Du']] },
+  curry: { t: 'Kichererbsen-Curry mit Spinat', src: 'youtube', by: 'J', at: '21. Aug', note: 'Kokosmilch light reicht völlig.', col: 1, ph: 'curry', hist: [['15', 'SEP', 'mit Naan von Mia', 'M'], ['2', 'SEP', '', 'J']] },
+  linsen: { t: 'Omas Linsensuppe', src: 'web', by: 'J', at: '14. Jul', note: '', col: 0, hist: [['10', 'SEP', 'Essig zum Schluss!', 'J'], ['20', 'AUG', '', 'Du'], ['1', 'AUG', '', 'J'], ['18', 'JUL', 'mit Räuchertofu', 'M']] },
+  apfel: { t: 'Omas Apfelkuchen', src: null, by: 'M', at: '6. Sep', note: 'Aus dem roten Kochbuch, S. 112. Haferdrink statt Milch.', col: 0, hist: [['7', 'SEP', '', 'M']] },
+  kaese: { t: 'Veganer Käsekuchen', src: 'pinterest', by: 'L', at: '18. Sep', note: 'Für Mias Geburtstag?', col: 0, ph: 'kaese', hist: [] }
+};
+const SC = {
+  photo: { d: 'tofu', head: 'photo', hH: 470 }, landscape: { d: 'curry', head: 'land', hH: 330 },
+  placeholder: { d: 'linsen', head: 'illus', kind: 'eintopf', hH: 420 }, nolink: { d: 'apfel', head: 'illus', kind: 'cake', hH: 420 },
+  never: { d: 'kaese', head: 'photo', hH: 470 }, edit: { d: 'tofu', head: 'photo', hH: 300, edit: 1 },
+  note: { d: 'tofu', head: 'photo', hH: 470, sheet: 1 }, morph: { d: 'tofu', head: 'illus', kind: 'wok', hH: 420, morph: 1 }
+};
+const TIERS = [[10, 'WG-Klassiker', 84, 'linear-gradient(140deg,#FFE7A0,#F29B32 60%,#D8781E)'], [5, 'Stammgericht', 74, 'linear-gradient(140deg,#FCD980,#F29B32)'], [3, 'Wird Liebling', 66, 'linear-gradient(140deg,#FCE0A0,#F5B04A)'], [1, 'Ausprobiert', 58, 'linear-gradient(140deg,#FBE7BD,#F7C46C)']];
+const KB = [['qwertzuiop', '3px'], ['asdfghjkl', '20px'], ['⇧yxcvbnm⌫', '3px']];
+const NOTE = 'mit Feta besser';
+const ICON = { edit: 'M4 20h4l10-10-4-4L4 16zM13 7l4 4', reload: 'M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5', image: 'M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM21 16l-5-5-8 8', move: 'M4 12h13M12 6l6 6-6 6', del: 'M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12' };
+class Component extends DCLogic {
+  scRef = React.createRef();
+  constructor(p) { super(p); this.state = this.init(); }
+  init() {
+    const c = SC[this.props.screen] || SC.photo, d = DISH[c.d];
+    return { y: 0, hist: d.hist.map((h, i) => ({ id: 'h' + i, day: h[0], mon: h[1], note: h[2], by: h[3] })), shown: 0, bump: 0, leaving: null, fresh: null, toast: null, sheet: !!c.sheet, typed: '', noteFor: null };
+  }
+  componentDidMount() { this.start(); }
+  componentDidUpdate(p) { if (p.replay !== this.props.replay || p.screen !== this.props.screen) { this.stop(); this.setState(this.init(), () => this.start()); if (this.scRef.current) this.scRef.current.scrollTop = 0; } }
+  componentWillUnmount() { this.stop(); }
+  stop() { clearInterval(this.cu); clearInterval(this.ty); clearTimeout(this.tt); }
+  start() {
+    const n = this.state.hist.length; let i = 0;
+    if (n) this.cu = setInterval(() => { i++; this.setState({ shown: i, bump: i }); if (i >= n) clearInterval(this.cu); }, 170);
+    if ((SC[this.props.screen] || {}).sheet) this.loopType();
+  }
+  loopType() {
+    let k = 0; clearInterval(this.ty);
+    this.ty = setInterval(() => { k = (k + 1) % (NOTE.length + 14); this.setState({ typed: NOTE.slice(0, Math.min(k, NOTE.length)) }); }, 110);
+  }
+  onScroll = e => { const y = e.currentTarget.scrollTop; if (this.raf) return; this.raf = requestAnimationFrame(() => { this.raf = null; this.setState({ y }); }); };
+  cook = () => {
+    const id = 'n' + Date.now();
+    this.setState(s => ({ hist: [{ id, day: '29', mon: 'SEP', note: '', by: 'Du' }, ...s.hist], shown: s.hist.length + 1, bump: s.bump + 1, fresh: id }));
+  };
+  del(id) {
+    const s0 = this.state, idx = s0.hist.findIndex(h => h.id === id);
+    this.setState({ leaving: id });
+    setTimeout(() => this.setState(s => { const h = s.hist.find(x => x.id === id); return { hist: s.hist.filter(x => x.id !== id), shown: s.hist.length - 1, bump: s.bump + 1, leaving: null, toast: { h, idx } }; }), 280 * this.spd());
+    clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: null }), 4000);
+  }
+  undo = () => { const t = this.state.toast; if (!t) return; clearTimeout(this.tt); this.setState(s => { const hist = [...s.hist]; hist.splice(t.idx, 0, t.h); return { hist, shown: hist.length, bump: s.bump + 1, fresh: t.h.id, toast: null }; }); };
+  spd() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spd')) || 1; }
+  openSheet = () => { this.setState({ sheet: true, typed: '' }); };
+  closeSheet = () => { clearInterval(this.ty); this.setState({ sheet: false }); };
+  saveNote = () => {
+    clearInterval(this.ty);
+    this.setState(s => { const hist = s.hist.map((h, i) => (i === s.hist.findIndex(x => !x.note)) ? { ...h, note: s.typed || NOTE } : h); return { hist, sheet: false }; });
+  };
+  renderVals() {
+    const sc = this.props.screen ?? 'photo', c = SC[sc] || SC.photo, d = DISH[c.d], p = P[d.by], s = d.src ? SRC[d.src] : null;
+    const { y, hist, shown, bump, leaving, fresh } = this.state;
+    const hH = c.hH, n = hist.length, morph = !!c.morph;
+    const tier = TIERS.find(t => Math.max(shown, 1) >= t[0]) || TIERS[3];
+    const next = [3, 5, 10].find(x => x > n);
+    const photoHead = c.head !== 'illus';
+    const pastHead = y > hH - 150;
+    const barOp = Math.max(0, Math.min(1, (y - (hH - 170)) / 60));
+    const kb = KB.map(([keys, pad]) => ({ pad, keys: [...keys].map(l => { const sp = l === '⇧' || l === '⌫'; return { l, grow: sp ? 1.4 : 1, bg: sp ? 'color-mix(in oklch, var(--surface2) 70%, var(--ink) 12%)' : 'var(--surface)', ink: 'var(--ink)', font: `400 ${sp ? 18 : 21}px/1 'Hanken Grotesk',system-ui` }; }) }));
+    kb.push({ pad: '3px', keys: [['123', 1.3], ['Leerzeichen', 4.6], ['Fertig', 1.9]].map(([l, grow]) => ({ l, grow, bg: l === 'Fertig' ? '#F7B94A' : 'var(--surface)', ink: l === 'Fertig' ? '#1F1E1C' : 'var(--ink)', font: `${l === 'Fertig' ? 600 : 400} 15px/1 'Hanken Grotesk',system-ui` })) });
+    const lastH = hist[0];
+    return {
+      rootBg: morph ? 'transparent' : 'var(--bg)', isMorph: morph,
+      bgAnim: morph ? `dm-bg ${T('5.5s')} ease-in-out infinite` : 'none',
+      hdrAnim: morph ? `dm-img ${T('5.5s')} cubic-bezier(.45,0,.2,1) infinite` : 'none',
+      panelAnim: morph ? `dm-panel ${T('5.5s')} cubic-bezier(.3,1,.4,1) infinite` : 'none',
+      barAnim: morph ? `dm-bar ${T('5.5s')} cubic-bezier(.34,1.56,.64,1) infinite` : 'none',
+      hH: hH + 'px', spacer: (hH - 30) + 'px',
+      imgTf: `translateY(${(y * 0.42).toFixed(1)}px) scale(${(1 + Math.max(0, -y) / 400).toFixed(3)})`,
+      hPhoto: c.head === 'photo', hLand: c.head === 'land', hIllus: c.head === 'illus', kind: c.kind || 'bowl', playIllus: true,
+      ph: d.ph ? PH[d.ph] : 'none', scrimOn: photoHead, ownPhoto: !morph && !c.edit,
+      isEdit: !!c.edit, notEdit: !c.edit,
+      statusInk: photoHead && !pastHead && !c.sheet ? '#FFFFFF' : 'var(--ink)',
+      barOp: morph ? 0 : barOp, barTy: `${((1 - barOp) * 6).toFixed(1)}px`,
+      hasSrc: !!s, noSrc: !s, srcDot: s ? s[1] : '', srcLabel: s ? s[0] : '', openSub: s ? s[2] : '',
+      colAcc: COLS[d.col][1], colLabel: COLS[d.col][0],
+      title: d.t, avBg: p[0], avInk: p[1], avL: p[2], addedLine: `hinzugefügt von ${p[3]} am ${d.at}`,
+      hasNote: !!d.note, note: d.note,
+      onCook: this.cook, cookBtnAnim: 'none',
+      hasHist: n > 0, noHist: n === 0,
+      bSize: tier[2] + 'px', bBg: tier[3], bFont: Math.round(tier[2] * 0.42) + 'px', tierName: tier[1],
+      bPop: bump ? `${bump % 2 ? 'dd-popA' : 'dd-popB'} ${T('460ms')} cubic-bezier(.34,1.56,.64,1)` : 'none',
+      tickAnim: bump ? `${bump % 2 ? 'dd-tickA' : 'dd-tickB'} ${T('260ms')} cubic-bezier(.3,1.3,.5,1)` : 'none',
+      shownN: shown,
+      summary: n ? `${n}× gekocht · zuletzt ${lastH.day === '29' ? 'heute' : lastH.day + '. ' + lastH.mon[0] + lastH.mon.slice(1).toLowerCase()}` : '',
+      pips: Array.from({ length: next || 10 }, (_, i) => ({ bg: i < shown ? 'linear-gradient(140deg,#FCD980,#F29B32)' : 'transparent', ring: i < shown ? 'none' : 'inset 0 0 0 1.5px var(--line2)', anim: i < shown ? `dd-pip ${T('300ms')} cubic-bezier(.34,1.56,.64,1) both` : 'none' })).slice(0, 10),
+      nextLabel: next ? `noch ${next - n}× bis „${TIERS.find(t => t[0] === next)[1]}“` : '',
+      hist: hist.map(h => { const q = P[h.by]; return { ...h, hasNote: !!h.note, noNote: !h.note, avBg: q[0], avInk: q[1], av: q[2], who: q[3] === 'Du' ? 'du' : q[3], dateBg: h.id === fresh ? 'color-mix(in oklch, #A5C7AE 50%, var(--surface2))' : 'var(--surface2)', anim: h.id === leaving ? `dd-out ${T('280ms')} ease-in both` : (h.id === fresh ? `dd-in ${T('420ms')} cubic-bezier(.3,1.2,.5,1) both` : 'none'), glow: h.id === fresh ? `dd-glow ${T('1.6s')} ease-in-out 3` : 'none', onDel: () => this.del(h.id) }; }),
+      openSheet: this.openSheet,
+      actions: [
+        { l: 'Bearbeiten', icon: ICON.edit, chev: true }, { l: 'Bild neu laden', icon: ICON.reload, hint: !!s, hintT: 'vom Link' },
+        { l: 'Bild ändern', icon: ICON.image, chev: true }, { l: 'Verschieben nach…', icon: ICON.move, chev: true }, { l: 'Löschen', icon: ICON.del, danger: true }
+      ].filter(a => a.l !== 'Bild neu laden' || s).map(a => ({ ...a, hint: !!a.hint, chev: !!a.chev, ink: a.danger ? 'var(--danger)' : 'var(--ink)', iconBg: a.danger ? 'color-mix(in oklch, var(--danger) 13%, transparent)' : 'var(--surface2)' })),
+      toastOn: !!this.state.toast, onUndo: this.undo,
+      sheetOn: this.state.sheet, closeSheet: this.closeSheet, saveNote: this.saveNote,
+      kbOn: !!c.sheet, sheetBottom: c.sheet ? '290px' : '0px', sheetRadB: c.sheet ? '0 0' : '0 0',
+      sheetDish: d.t.split(' ').slice(0, 2).join(' '),
+      typed: this.state.typed, typedEmpty: !this.state.typed,
+      quick: ['perfekt so', 'mehr Knoblauch', 'zu scharf', 'doppelte Menge'].map(l => ({ l, onTap: () => { clearInterval(this.ty); this.setState({ typed: l }); } })),
+      kb,
+      fields: [
+        { label: 'TITEL', v: d.t, font: "400 20px/1.25 'Newsreader',Georgia,serif", h: '58px', pad: '12px 16px', align: 'center', caret: true, ring: '0 0 0 2px rgba(247,185,74,.75)' },
+        { label: 'NOTIZ', v: d.note, font: "400 16px/1.45 'Newsreader',Georgia,serif", h: '92px', pad: '12px 16px', align: 'flex-start' },
+        { label: 'LINK', v: 'tiktok.com/@plantkitchen/video/7291…', font: "500 14.5px/1 'Hanken Grotesk',system-ui", h: '50px', pad: '0 14px', align: 'center', dot: true, dotBg: SRC.tiktok[1] },
+        { label: 'BOARD', v: '🍜 WG-Küche · Ideen', font: "600 15px/1 'Hanken Grotesk',system-ui", h: '50px', pad: '0 14px', align: 'center', chev: true }
+      ].map((f, i) => ({ caret: false, dot: false, chev: false, ring: 'none', dotBg: '', ...f, anim: `dd-rise ${T('380ms')} cubic-bezier(.3,1.2,.5,1) ${T((120 + i * 60) + 'ms')} both`, fieldAnim: `dd-field ${T('380ms')} ease-out ${T((160 + i * 60) + 'ms')} both` }))
+    };
+  }
+}
+</script>
+</body>
+</html>
