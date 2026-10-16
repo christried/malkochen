@@ -70,7 +70,7 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
 export type InstagramPlayCheck = (link: string) => Promise<boolean | null>
 
 export function createInstagramPlayCheck(options: SourceLookupOptions = {}): InstagramPlayCheck {
-  const timeoutMs = options.timeoutMs ?? 5000
+  const timeoutMs = options.timeoutMs ?? 3000
 
   return async (link) => {
     try {

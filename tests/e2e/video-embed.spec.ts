@@ -110,7 +110,7 @@ test('Pinterest and blog Dishes get no "Video abspielen", and their detail is as
   await signIn(page, ALLOWLISTED[50])
   await gotoHydrated(page, '/')
 
-  for (const { title, sourceLink } of DISHES.slice(4, 6)) {
+  for (const { title, sourceLink } of DISHES.filter(({ sourceKind }) => sourceKind === 'pinterest-pin' || sourceKind === 'blog')) {
     const detail = await openDetail(page, title)
     await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveAttribute('href', sourceLink)
     await expect(detail.getByRole('button', { name: 'Video abspielen' })).toHaveCount(0)

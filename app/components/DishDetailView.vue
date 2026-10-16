@@ -53,12 +53,15 @@ watch(instagramLink, async (link, _, onCleanup) => {
     .then(({ playsInPlace }) => playsInPlace, () => null)
   if (!stale) playsInPlace.value = answer
 }, { immediate: true })
-const offer = computed<'play' | 'instagram' | null>(() => {
+// What the pill on the image offers: the player, the post on Instagram, or
+// nothing yet.
+const videoAction = computed<'play' | 'instagram' | null>(() => {
   if (!video.value || playing.value) return null
   if (!instagramLink.value) return 'play'
   if (playsInPlace.value === undefined) return null
   return playsInPlace.value === false ? 'instagram' : 'play'
 })
+const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
 </script>
 
 <template>
@@ -151,9 +154,9 @@ const offer = computed<'play' | 'instagram' | null>(() => {
         </button>
       </div>
       <button
-        v-if="offer === 'play'"
+        v-if="videoAction === 'play'"
         type="button"
-        class="absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        :class="videoPill"
         data-play-video
         @click="playing = true"
       >
@@ -161,11 +164,11 @@ const offer = computed<'play' | 'instagram' | null>(() => {
         {{ t.detail.playVideo }}
       </button>
       <a
-        v-else-if="offer === 'instagram' && video"
+        v-else-if="videoAction === 'instagram' && video"
         :href="video.link"
         target="_blank"
         rel="noopener noreferrer"
-        class="absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        :class="videoPill"
         data-play-video
       >
         <AppIcon name="play" />
