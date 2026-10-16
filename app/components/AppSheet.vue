@@ -5,9 +5,11 @@
 // does dragging it down by its handle. It moves in and out (handoff "Sheet
 // open / close"). Confirming or choosing (handoff Dialog: confirm,
 // destructive, type-to-confirm, picker), it is a Dialog on phones too:
-// `variant="dialog"`. Another modal opened over it, it steps back.
+// `variant="dialog"`. Your Settings (#283) are a sheet on phones and a side
+// sheet from 768px: full height on the right edge, moving in from it
+// (`variant="side"`). Another modal opened over it, it steps back.
 const open = defineModel<boolean>('open', { required: true })
-const props = withDefaults(defineProps<{ title: string, closeLabel: string, variant?: 'sheet' | 'dialog' }>(), { variant: 'sheet' })
+const props = withDefaults(defineProps<{ title: string, closeLabel: string, variant?: 'sheet' | 'dialog' | 'side' }>(), { variant: 'sheet' })
 const covered = useModalStack(open)
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
@@ -67,7 +69,7 @@ function onHandleUp(event: PointerEvent) {
   <dialog
     ref="dialog"
     class="sheet overflow-y-auto bg-surface p-0 text-text shadow-sheet tablet:shadow-dialog"
-    :class="{ 'is-dialog': variant === 'dialog' }"
+    :class="{ 'is-dialog': variant === 'dialog', 'is-side': variant === 'side' }"
     :data-covered="covered || undefined"
     :aria-labelledby="titleId"
     :aria-hidden="!open || undefined"
@@ -81,7 +83,7 @@ function onHandleUp(event: PointerEvent) {
       :class="variant === 'dialog' ? 'pt-6' : 'pt-3'"
     >
       <div
-        v-if="variant === 'sheet'"
+        v-if="variant !== 'dialog'"
         aria-hidden="true"
         class="handle -mx-5 -mt-3 mb-0 flex justify-center pb-3 pt-3 tablet:hidden"
         @pointerdown="onHandleDown"
@@ -208,6 +210,34 @@ function onHandleUp(event: PointerEvent) {
       overlay var(--dur-scrim-out) allow-discrete;
   }
 }
+/* Tablet and up, a side sheet: 420px wide on the right edge, full height,
+   its left corners rounded like a dialog. It moves in from the right edge
+   like a sheet from the bottom (440ms, sheet) and out the same way (320ms,
+   ease-in), past its shadow. Covered, it only dims: scaled, it would pull
+   away from the edges. */
+@media (min-width: 768px) {
+  .sheet.is-side {
+    margin: 0 0 0 auto;
+    width: min(420px, 100%);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: var(--radius-dialog) 0 0 var(--radius-dialog);
+  }
+  .sheet.is-side[open] {
+    animation: side-in var(--dur-sheet) var(--ease-sheet);
+  }
+  .sheet.is-side[data-covered] {
+    scale: none;
+  }
+  .sheet.is-side:not([open]) {
+    opacity: 1;
+    transform: translateX(calc(100% + 24px));
+    transition:
+      transform var(--dur-sheet-out) var(--ease-sheet-out),
+      display var(--dur-sheet-out) allow-discrete,
+      overlay var(--dur-sheet-out) allow-discrete;
+  }
+}
 /* A Dialog on phones: centred, it pops in from .4 with an overshoot, and
    fades out in 150ms. */
 @media (max-width: 767.98px) {
@@ -241,8 +271,12 @@ function onHandleUp(event: PointerEvent) {
       opacity: 0;
     }
   }
+  .sheet.is-side[open] {
+    animation: none;
+  }
   .sheet:not([open]),
-  .sheet.is-dialog:not([open]) {
+  .sheet.is-dialog:not([open]),
+  .sheet.is-side:not([open]) {
     transform: none;
     opacity: 0;
     transition:
@@ -263,6 +297,9 @@ function onHandleUp(event: PointerEvent) {
 
 @keyframes sheet-in {
   from { transform: translateY(100%); }
+}
+@keyframes side-in {
+  from { transform: translateX(calc(100% + 24px)); }
 }
 @keyframes dialog-in {
   from { transform: scale(.92); opacity: 0; }

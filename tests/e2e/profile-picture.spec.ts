@@ -67,6 +67,12 @@ test('a picture uploaded in the settings shows round in a preview, and once used
   })
   expect(width).toBeCloseTo(height, 0)
   expect(radius).toBeGreaterThanOrEqual(width / 2)
+  // Your settings step back behind it, dimmed, but stay on the window's right
+  // edge at full height (#283).
+  const settings = page.locator('dialog:has(h2:text-is("Einstellungen"))')
+  await expect(settings).toHaveAttribute('data-covered')
+  const viewport = page.viewportSize()!
+  await expect.poll(() => settings.boundingBox()).toEqual({ x: viewport.width - 420, y: 0, width: 420, height: viewport.height })
   // Not used yet.
   await expect(shownPicture(page)).toHaveAttribute('src', GOOGLE_PHOTO)
 
