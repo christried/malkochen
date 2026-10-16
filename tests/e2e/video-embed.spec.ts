@@ -18,6 +18,8 @@ const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 const SHORT = 'https://www.youtube.com/shorts/tPEE9ZwTmy0'
 const REEL = 'https://www.instagram.com/reel/C0WUh-tqkxU/'
 const PRIVATE_POST = 'https://www.instagram.com/p/AAAAAAAAAAA/'
+// A Reel Instagram's embed only shows with "Auf Instagram ansehen" (#279).
+const OUTSIDE_REEL = 'https://www.instagram.com/reel/DFvsVH_OD9h/'
 
 const DISHES = [
   { title: 'Tofu im Video', sourceLink: TIKTOK, sourceKind: 'tiktok' },
@@ -26,6 +28,7 @@ const DISHES = [
   { title: 'Privater Post', sourceLink: PRIVATE_POST, sourceKind: 'instagram-post' },
   { title: 'Pasta vom Pin', sourceLink: 'https://www.pinterest.com/pin/99360735500167749/', sourceKind: 'pinterest-pin' },
   { title: 'Brownies vom Blog', sourceLink: 'https://www.loveandlemons.com/brownies-recipe/', sourceKind: 'blog' },
+  { title: 'Bowl nur auf Instagram', sourceLink: OUTSIDE_REEL, sourceKind: 'instagram-reel' },
 ]
 
 const PLATFORM_HOST = /(^|\.)(tiktok|tiktokcdn|youtube|youtube-nocookie|ytimg|googlevideo|instagram|cdninstagram|fbcdn)\.(com|net)$/
@@ -39,6 +42,11 @@ function platformRequests(page: Page): string[] {
   return seen
 }
 
+// What the server would find on Instagram's embed pages (#279; covered at
+// Seam 2): the Reel plays in place, the broken post is unknown, and the
+// other Reel Instagram only shows with "Auf Instagram ansehen".
+const PLAYS_IN_PLACE: Record<string, boolean | null> = { [REEL]: true, [PRIVATE_POST]: null, [OUTSIDE_REEL]: false }
+
 // Stand-ins for the platforms' players. Instagram's tells the page around it
 // how it is doing as the real one does: "LOADING", then "MEASURE" and
 // "MOUNTED" once the post shows; a post it can't embed never gets past
@@ -46,6 +54,9 @@ function platformRequests(page: Page): string[] {
 async function stubPlayers(page: Page) {
   const player = (name: string, script = '') => `<!doctype html><title>${name}</title><body style="margin:0;background:#000;color:#fff">${name} spielt<script>${script}</script></body>`
   const say = (type: string, details: object = {}) => `parent.postMessage(JSON.stringify({ details: ${JSON.stringify(details)}, type: '${type}' }), '*');`
+  await page.route('**/api/instagram-plays?*', route => route.fulfill({
+    json: { playsInPlace: PLAYS_IN_PLACE[new URL(route.request().url()).searchParams.get('link') ?? ''] ?? null },
+  }))
   await page.route('https://www.tiktok.com/player/**', route => route.fulfill({ contentType: 'text/html', body: player('TikTok-Player') }))
   await page.route('https://www.youtube-nocookie.com/embed/**', route => route.fulfill({ contentType: 'text/html', body: player('YouTube-Player') }))
   await page.route('https://www.instagram.com/reel/C0WUh-tqkxU/embed/', route => route.fulfill({
@@ -99,7 +110,7 @@ test('Pinterest and blog Dishes get no "Video abspielen", and their detail is as
   await signIn(page, ALLOWLISTED[50])
   await gotoHydrated(page, '/')
 
-  for (const { title, sourceLink } of DISHES.slice(4)) {
+  for (const { title, sourceLink } of DISHES.slice(4, 6)) {
     const detail = await openDetail(page, title)
     await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveAttribute('href', sourceLink)
     await expect(detail.getByRole('button', { name: 'Video abspielen' })).toHaveCount(0)
@@ -183,6 +194,24 @@ test('an Instagram post that can\'t be embedded shows a link to it on Instagram 
   await expect(link).toHaveAttribute('target', '_blank')
   await expect(detail.getByText('Dieses Video lässt sich hier nicht abspielen.')).toBeVisible()
   await expect(detail.locator('iframe')).toHaveCount(0)
+})
+
+test('a Reel Instagram won\'t play here links to it on Instagram instead of "Video abspielen"', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page, ALLOWLISTED[50])
+  await stubPlayers(page)
+  await gotoHydrated(page, '/')
+  const requests = platformRequests(page)
+
+  const detail = await openDetail(page, 'Bowl nur auf Instagram')
+  const link = detail.getByRole('link', { name: 'Auf Instagram ansehen' })
+  await expect(link).toBeVisible()
+  await expect(link).toHaveAttribute('href', OUTSIDE_REEL)
+  await expect(link).toHaveAttribute('target', '_blank')
+  await expect(detail.getByRole('button', { name: 'Video abspielen' })).toHaveCount(0)
+  await expect(detail.locator('[data-detail-image] img').first()).toBeVisible()
+  await expect(detail.locator('iframe')).toHaveCount(0)
+  expect(requests).toEqual([])
 })
 
 // Without the fixture's own check: the violation is what this test is after.

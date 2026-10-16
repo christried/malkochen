@@ -6,6 +6,9 @@
 export const RATE_LIMITS = {
   // Up to ~5 outbound requests and 8 s of function time each.
   'source-lookup': { calls: 60, window: '10 minutes' },
+  // An Instagram Dish's detail opened (#279): one request to Instagram,
+  // fewer when the answer is kept.
+  'instagram-plays': { calls: 120, window: '10 minutes' },
   // Own Photos and Profile Pictures together: decoding up to 50 MP, and a
   // Blob write.
   'upload': { calls: 30, window: '1 hour' },

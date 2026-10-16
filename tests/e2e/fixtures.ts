@@ -32,9 +32,17 @@ export const testWithSplash = base.extend({
   },
 })
 
+// The browser tests never reach real upstreams: whether Instagram plays a
+// post in place (#279) is unknown unless a test says otherwise with its own
+// page route, which comes first.
+async function stubInstagramPlays(context: BrowserContext) {
+  await context.route('**/api/instagram-plays?*', route => route.fulfill({ json: { playsInPlace: null } }))
+}
+
 export const test = testWithSplash.extend({
   context: async ({ context }, use) => {
     await skipSplash(context)
+    await stubInstagramPlays(context)
     await use(context)
   },
 })
