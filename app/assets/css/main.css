@@ -60,7 +60,8 @@ html {
 /* Celebrating repeat cooking and new Boards (issue #25). The achievement
    badge counts up 170ms a step and springs to a new level's size in 420ms
    (handoff AchievementBadge). milestone-10x: its text rises 40% into the
-   1.8s clip and it goes by itself at 3.4s (motion.json "10× milestone").
+   1.8s clip and it goes by itself at 6.8s (twice motion.json's "10×
+   milestone" 3.4s, #280).
    board-created: the Board's Columns rise from 14% of its 2.4s, 10% apart,
    the text at 46% and the button at 56% (motion.json "Board created
    build-in"). */
@@ -68,7 +69,7 @@ html {
   --dur-badge-step: 170ms;
   --dur-badge-grow: 420ms;
   --dur-milestone-text: 720ms;
-  --dur-milestone-stay: 3400ms;
+  --dur-milestone-stay: 6800ms;
   --dur-board-created-columns: 336ms;
   --dur-board-created-column-gap: 240ms;
   --dur-board-created-text: 1104ms;
@@ -426,38 +427,39 @@ html[data-theme-reveal="fade"] *::after {
   }
 }
 
-/* A sideways scrollbar is the app's, not the browser's grey bar (#207): thin
+/* A scrollbar is the app's, not the browser's grey bar (#207, #280): thin
    (10px, the thumb 6px in it), a pill, tinted in the text colour, fuller
-   under the mouse. For whatever scrolls sideways with `overflow-x-auto`, at
-   any breakpoint: the Board's Columns, its skeleton, the Column tabs in a
-   narrow window; in a page or a dialog. Only where a mouse is: a touch
-   screen's own bar overlays the content, and this one would take room under
-   it. Firefox knows no ::-webkit-scrollbar and gets its thin bar in the same
+   under the mouse. For whatever scrolls with `overflow-x-auto` or
+   `overflow-y-auto`, at any breakpoint: the Board's Columns, its skeleton,
+   the Column tabs in a narrow window, sheets and dialogs, the Dish detail,
+   the Board Switcher's panel; and the page itself, down the lanes. Only
+   where a mouse is: a touch screen's own bar overlays the content, and
+   this one would take room under it. Firefox knows no ::-webkit-scrollbar and gets its thin bar in the same
    colour. */
 :root {
   --scrollbar-thumb: color-mix(in srgb, var(--color-text) 28%, transparent);
   --scrollbar-thumb-hover: color-mix(in srgb, var(--color-text) 46%, transparent);
 }
 @media (hover: hover) and (pointer: fine) {
-  [class*="overflow-x-auto"]::-webkit-scrollbar {
+  :is(html, [class*="overflow-x-auto"], [class*="overflow-y-auto"])::-webkit-scrollbar {
     height: 10px;
     width: 10px;
   }
-  [class*="overflow-x-auto"]::-webkit-scrollbar-track,
-  [class*="overflow-x-auto"]::-webkit-scrollbar-corner {
+  :is(html, [class*="overflow-x-auto"], [class*="overflow-y-auto"])::-webkit-scrollbar-track,
+  :is(html, [class*="overflow-x-auto"], [class*="overflow-y-auto"])::-webkit-scrollbar-corner {
     background: transparent;
   }
-  [class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+  :is(html, [class*="overflow-x-auto"], [class*="overflow-y-auto"])::-webkit-scrollbar-thumb {
     border: 2px solid transparent;
     border-radius: 999px;
     background-color: var(--scrollbar-thumb);
     background-clip: padding-box;
   }
-  [class*="overflow-x-auto"]::-webkit-scrollbar-thumb:hover {
+  :is(html, [class*="overflow-x-auto"], [class*="overflow-y-auto"])::-webkit-scrollbar-thumb:hover {
     background-color: var(--scrollbar-thumb-hover);
   }
   @supports not selector(::-webkit-scrollbar) {
-    [class*="overflow-x-auto"] {
+    :is(html, [class*="overflow-x-auto"], [class*="overflow-y-auto"]) {
       scrollbar-width: thin;
       scrollbar-color: var(--scrollbar-thumb) transparent;
     }

@@ -242,7 +242,7 @@ let closeOther: (() => void) | null = null
       </p>
       <p
         :id="`${panelId}-boards`"
-        class="mt-3 text-overline uppercase text-text-muted"
+        class="section-heading mt-3"
       >
         {{ boardsLabel }}
       </p>

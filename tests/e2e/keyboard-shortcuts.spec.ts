@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './fixtures'
+import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column } from './board'
@@ -131,7 +131,8 @@ test('1 to 9 switch to the Boards in the switcher\'s order; a number with no Boa
   await expect(heading(page)).toContainText(first!)
 })
 
-// The lines the "?" dialog and the settings section both list.
+// The lines the "?" dialog and the settings section both list: the
+// shortcuts, and selecting several Dishes with a click (#280).
 const LINES = [
   /^N\s*Gericht hinzufügen$/,
   /^\/\s*Gerichte suchen$/,
@@ -139,6 +140,7 @@ const LINES = [
   /^,\s*Board-Einstellungen$/,
   /^1\s*–\s*9\s*Zum 1\. bis 9\. Board wechseln$/,
   /^\?\s*Diese Tastenkürzel zeigen$/,
+  /^Strg\s*\+\s*Klick\s*Mehrere auswählen$/,
 ]
 
 test('? lists the shortcuts in a dialog, which OK closes', async ({ page }) => {
@@ -158,4 +160,35 @@ test('your settings explain the same shortcuts', async ({ page }) => {
 
   const section = page.getByRole('region', { name: 'Tastenkürzel' })
   await expect(section.getByRole('listitem')).toHaveText(LINES)
+})
+
+// On Apple devices the modifier is ⌘, in both places (#280).
+test('on a Mac, selecting several Dishes says ⌘ instead of Strg', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'userAgentData', { get: () => ({ platform: 'macOS' }) })
+    Object.defineProperty(Navigator.prototype, 'platform', { get: () => 'MacIntel' })
+  })
+  await signIn(page, FLORENCE)
+  await gotoHydrated(page, '/')
+
+  await page.keyboard.press('?')
+  const dialog = page.getByRole('dialog', { name: 'Tastenkürzel' })
+  await expect(dialog.getByRole('listitem').last()).toHaveText(/^⌘\s*\+\s*Klick\s*Mehrere auswählen$/)
+  await dialog.getByRole('button', { name: 'OK' }).click()
+
+  await openUserSettings(page)
+  const section = page.getByRole('region', { name: 'Tastenkürzel' })
+  await expect(section.getByRole('listitem').last()).toHaveText(/^⌘\s*\+\s*Klick\s*Mehrere auswählen$/)
+})
+
+// Shortcuts need a keyboard, so the section is only on devices with a fine
+// pointer that can hover, never on a touch phone, whatever its width (#280).
+test('your settings leave the shortcuts out on a touch phone', async ({ browser }) => {
+  const page = await newTab(browser, { hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+  await signIn(page, FLORENCE)
+  const sheet = await openUserSettings(page)
+
+  await expect(sheet.getByRole('region', { name: 'Sprache' })).toBeVisible()
+  await expect(sheet.getByRole('region', { name: 'Tastenkürzel' })).toBeHidden()
+  await page.context().close()
 })

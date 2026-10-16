@@ -24,8 +24,9 @@ test('every page links a manifest that makes malkochen installable', async ({ pa
   // Dishes, never recipes (CONTEXT.md).
   expect(manifest.description).toBe('Gerichte sammeln. Zusammen kochen.')
   // One colour each, no media queries. Android's native splash is butter,
-  // the first frame of the web splash that follows it.
-  expect(manifest).toMatchObject({ background_color: '#FCD980', theme_color: '#131211' })
+  // the first frame of the web splash that follows it. theme_color is butter
+  // too, so Android draws dark icons on the butter navigation bar.
+  expect(manifest).toMatchObject({ background_color: '#FCD980', theme_color: '#FCD980' })
   type Icon = { src: string, sizes: string, type: string, purpose: string }
   const icons = manifest.icons as Icon[]
   for (const purpose of ['any', 'maskable']) {

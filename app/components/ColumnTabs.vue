@@ -114,17 +114,11 @@ watch(() => props.active, index => tabs[index]?.scrollIntoView({
         color="var(--accent)"
       />
       {{ column.name }}
-      <span
+      <RollingCount
         v-if="column.count !== undefined"
-        class="relative inline-block overflow-hidden align-bottom opacity-60"
-      >
-        <Transition name="count">
-          <span
-            :key="column.count"
-            class="inline-block"
-          >{{ column.count }}</span>
-        </Transition>
-      </span>
+        class="opacity-60"
+        :value="column.count"
+      />
     </button>
   </nav>
 </template>
@@ -219,24 +213,5 @@ nav {
 }
 @keyframes tab-bump {
   40% { scale: 1.22; }
-}
-/* A count that changes rolls 16px up: the new number pops in from below as
-   the old one leaves above (handoff: count change · pop). Reduced motion:
-   the number just swaps. */
-.count-enter-active,
-.count-leave-active {
-  transition: translate var(--dur-pop) var(--ease-pop), opacity var(--dur-pop) var(--ease-fade);
-}
-.count-leave-active {
-  position: absolute;
-  inset-inline-start: 0;
-}
-.count-leave-to {
-  translate: 0 -16px;
-  opacity: 0;
-}
-.count-enter-from {
-  translate: 0 16px;
-  opacity: 0;
 }
 </style>

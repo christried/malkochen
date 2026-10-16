@@ -27,7 +27,10 @@ export default defineNuxtConfig({
       // background_color is butter (#FCD980), not the Board's: the native
       // splash must match the first frame of the web splash that follows it
       // (SplashScreen.vue, frame 10), or the launch flashes between the two.
-      // theme_color stays #131211.
+      // theme_color is butter too: on Android 15+ the navigation bar shows
+      // background_color, and Chrome picks its icon contrast from theme_color,
+      // so butter gives dark icons on the butter bar
+      // (docs/research/android-nav-bar-and-share-sheet.md, option 1).
       link: [
         { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'icon', type: 'image/svg+xml', href: '/icons/icon.svg' },

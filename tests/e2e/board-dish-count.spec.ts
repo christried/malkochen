@@ -99,6 +99,52 @@ test('the count follows adds and deletes, from this Member or another, and moves
   await expect(boardRow(page, 'Party')).toContainText('Party· 1')
 })
 
+// Each desktop lane's count (#280): „· N“ after the Column's name, drawn by
+// CSS like the header's, so the heading stays the name.
+function laneCount(page: Page, name: string) {
+  // Not the old number rolling away.
+  return column(page, name).locator('[data-lane-count] [data-dish-count]:not([class*="-leave-"])')
+}
+
+async function expectLaneCounts(page: Page, counts: Record<string, number>) {
+  for (const [name, count] of Object.entries(counts)) {
+    await expect(laneCount(page, name)).toHaveAttribute('data-dish-count', `· ${count}`, { timeout: 10_000 })
+  }
+}
+
+test('on desktop each lane shows its Column’s Dish count, Gekocht included, and follows adds, moves and deletes', async ({ page }) => {
+  // Waits for a poll (up to 5s apart).
+  test.slow()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await signIn(page, TU)
+  const board = await createBoard(page, 'Zuhause', '🏡')
+  for (const title of ['Focaccia', 'Pad Thai']) await addDish(page, board, title)
+  await page.request.post(`/api/dishes/${await addDish(page, board, 'Chili')}/cook`)
+  await gotoHydrated(page, `/b/${board}`)
+
+  await expectLaneCounts(page, { 'Ideen': 2, 'Diese Woche': 0, 'Gekocht': 1 })
+  await expect(column(page, 'Ideen').getByRole('heading', { level: 2 })).toHaveText('Ideen')
+  const looks = await laneCount(page, 'Ideen').evaluate(el => ({
+    drawn: getComputedStyle(el, '::before').content,
+    quiet: getComputedStyle(el.closest('[data-lane-count]')!).opacity,
+  }))
+  expect(looks).toEqual({ drawn: '"· 2"', quiet: '0.7' })
+
+  // Added elsewhere (as another Member would): the poll brings it.
+  await addDish(page, board, 'Ramen')
+  await expectLaneCounts(page, { 'Ideen': 3 })
+
+  await page.getByRole('button', { name: 'Mehr zu „Pad Thai“' }).click()
+  await page.getByRole('button', { name: 'Verschieben nach…' }).click()
+  await page.getByRole('dialog', { name: 'Pad Thai' }).getByRole('button', { name: 'Diese Woche' }).first().click()
+  await expect(titles(page, 'Diese Woche')).toHaveText(['Pad Thai'])
+  await expectLaneCounts(page, { 'Ideen': 2, 'Diese Woche': 1, 'Gekocht': 1 })
+
+  await page.getByRole('button', { name: 'Mehr zu „Chili“' }).click()
+  await page.getByRole('dialog', { name: 'Chili' }).getByRole('button', { name: 'Löschen' }).click()
+  await expectLaneCounts(page, { 'Ideen': 2, 'Diese Woche': 1, 'Gekocht': 0 })
+})
+
 for (const scheme of ['light', 'dark'] as const) {
   test(`on a phone a long Board name truncates and the count stays whole, quieter than the name (${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme })

@@ -6,8 +6,9 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // Your own settings (PRD stories 73–75), in a sheet over the Board (#210):
 // your Username, the Google account you're signed in with and your Profile
 // Picture, Darstellung, a place kept for Sprache (German only for now), the
-// Board's keyboard shortcuts and signing out. Opened from the user menu (on
-// phones, from the Board switcher), and by /settings (pages/settings.vue).
+// Board's keyboard shortcuts (where there's a keyboard and mouse) and signing
+// out. Opened from the user menu (on phones, from the Board switcher), and
+// by /settings (pages/settings.vue).
 const open = defineModel<boolean>('open', { required: true })
 const t = useStrings()
 const { signOut } = useAuth()
@@ -314,8 +315,9 @@ function removePicture() {
         </div>
       </section>
 
+      <!-- Only where there's a keyboard and mouse (scoped style below). -->
       <section
-        class="flex flex-col gap-3"
+        class="shortcuts flex flex-col gap-3"
         aria-labelledby="settings-shortcuts"
       >
         <h3
@@ -386,3 +388,14 @@ function removePicture() {
     </div>
   </AppSheet>
 </template>
+
+<style scoped>
+/* The shortcuts need a keyboard: shown only on devices with a fine pointer
+   that can hover (the rule the hover styles use), never on a phone, by
+   device rather than width (#280). */
+@media not ((hover: hover) and (pointer: fine)) {
+  .shortcuts {
+    display: none;
+  }
+}
+</style>

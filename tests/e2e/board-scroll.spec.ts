@@ -88,3 +88,39 @@ test('with a mouse, the Columns’ sideways scrollbar is the app’s: thin, roun
   expect(bar.radius).toBeGreaterThanOrEqual(5)
   expect(bar.thumb).not.toBe('rgba(0, 0, 0, 0)')
 })
+
+// The vertical scrollbars are the app's too (#280): Your Settings' sheet, the
+// Board Switcher's panel and the page down the Columns, in a window too
+// short for each, in light and dark.
+function verticalScrollbar(locator: ReturnType<Page['locator']>) {
+  return locator.evaluate((el) => {
+    const bar = getComputedStyle(el, '::-webkit-scrollbar')
+    const thumb = getComputedStyle(el, '::-webkit-scrollbar-thumb')
+    return { scrollsDown: el.scrollHeight > el.clientHeight, width: bar.width, thumb: thumb.backgroundColor, radius: Number.parseFloat(thumb.borderTopLeftRadius) }
+  })
+}
+
+function expectThin(bar: Awaited<ReturnType<typeof verticalScrollbar>>, what: string) {
+  expect(bar, what).toMatchObject({ scrollsDown: true, width: '10px' })
+  expect(bar.radius, what).toBeGreaterThanOrEqual(5)
+  expect(bar.thumb, what).not.toBe('rgba(0, 0, 0, 0)')
+}
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`with a mouse, the vertical scrollbars are the app’s: the page, Your Settings and the Board Switcher (${scheme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme })
+    await page.setViewportSize({ width: 800, height: 320 })
+    for (const name of ['Bildlauf A', 'Bildlauf B', 'Bildlauf C']) {
+      expect((await page.request.post('/api/boards', { data: { name, emoji: '🥕' } })).status()).toBe(201)
+    }
+    await gotoHydrated(page, '/')
+    expectThin(await verticalScrollbar(page.locator('html')), 'page')
+
+    await page.getByRole('heading', { level: 1 }).getByRole('button').click()
+    expectThin(await verticalScrollbar(page.getByRole('navigation', { name: 'Deine Boards' })), 'switcher')
+    await page.keyboard.press('Escape')
+
+    await gotoHydrated(page, '/settings')
+    expectThin(await verticalScrollbar(page.getByRole('dialog', { name: 'Einstellungen', exact: true })), 'settings')
+  })
+}

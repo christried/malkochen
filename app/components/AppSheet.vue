@@ -66,7 +66,7 @@ function onHandleUp(event: PointerEvent) {
 <template>
   <dialog
     ref="dialog"
-    class="sheet bg-surface p-0 text-text shadow-sheet tablet:shadow-dialog"
+    class="sheet overflow-y-auto bg-surface p-0 text-text shadow-sheet tablet:shadow-dialog"
     :class="{ 'is-dialog': variant === 'dialog' }"
     :data-covered="covered || undefined"
     :aria-labelledby="titleId"
@@ -127,7 +127,6 @@ function onHandleUp(event: PointerEvent) {
   max-height: calc(100dvh - 58px);
   border: 0;
   border-radius: var(--radius-sheet);
-  overflow-y: auto;
   overscroll-behavior: contain;
 }
 .sheet::backdrop {

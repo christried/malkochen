@@ -163,7 +163,7 @@ watch(editing, async (isEditing) => {
   <div class="contents">
     <dialog
       ref="dialog"
-      class="detail bg-bg p-0 text-text tablet:shadow-sheet"
+      class="detail overflow-y-auto bg-bg p-0 text-text tablet:shadow-sheet"
       :class="{ morphed }"
       :data-covered="covered || undefined"
       :data-edited="editedOnce || undefined"
@@ -232,7 +232,6 @@ watch(editing, async (isEditing) => {
   height: 100dvh;
   max-height: 100dvh;
   border: 0;
-  overflow-y: auto;
   overscroll-behavior: contain;
 }
 .detail[open] {

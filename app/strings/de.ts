@@ -247,7 +247,7 @@ export const de = {
   milestone: {
     headline: 'Klassiker!',
     body: (title: string, count: number) => `${title} ist jetzt ein Klassiker: ${count}× gekocht.`,
-    close: 'Schließen',
+    close: 'Überspringen',
   },
   boardCreated: {
     headline: (emoji: string, name: string) => `${emoji} ${name} ist bereit`,
@@ -598,6 +598,10 @@ export const de = {
       switchBoard: 'Zum 1. bis 9. Board wechseln',
       help: 'Diese Tastenkürzel zeigen',
     },
+    // Display only: selecting with a click is the Board's, not a shortcut.
+    ctrl: 'Strg',
+    click: 'Klick',
+    selectSeveral: 'Mehrere auswählen',
   },
 }
 

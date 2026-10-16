@@ -54,7 +54,7 @@ const groups = computed(() => [
     >
       <p
         v-if="group.label"
-        class="px-1 text-overline uppercase text-text-muted"
+        class="section-heading px-1"
       >
         {{ group.label }}
       </p>
