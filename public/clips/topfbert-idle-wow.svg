@@ -3,8 +3,8 @@
      TopfbertIdle; keyframes in app/assets/css/loops.css. Frame 0 is his still. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -20 140 150" width="420" height="450">
 <g data-layer="whole" data-loop="r11-breathe 3s ease-in-out infinite" data-pivot="70 123">
-  <g data-layer="steam_1" data-loop="r11-steam 3s ease-out infinite"><rect x="86" y="10" width="4" height="18" rx="2" fill="#1F1E1C" opacity=".45"></rect></g>
-  <g data-layer="steam_2" data-loop="r11-steam 3s ease-out -1.5s infinite"><rect x="102" y="16" width="4" height="14" rx="2" fill="#1F1E1C" opacity=".45"></rect></g>
+  <g data-layer="steam_1" data-loop="r11-steam 3s ease-out infinite"><rect x="86" y="10" width="4" height="18" rx="2" style="fill:var(--color-text, #1F1E1C)" opacity=".45"></rect></g>
+  <g data-layer="steam_2" data-loop="r11-steam 3s ease-out -1.5s infinite"><rect x="102" y="16" width="4" height="14" rx="2" style="fill:var(--color-text, #1F1E1C)" opacity=".45"></rect></g>
   <g data-layer="handles"><rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect><rect x="111.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
   <g data-layer="body"><path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="2.5"></path></g>
   <g data-layer="eyes" data-loop="r11-ieo 6s linear infinite"><ellipse cx="50" cy="71.5" rx="7" ry="7.5" fill="#1F1E1C"></ellipse><circle cx="48.5" cy="69.5" r="2.5" fill="#fff"></circle><ellipse cx="90" cy="71.5" rx="7" ry="7.5" fill="#1F1E1C"></ellipse><circle cx="88.5" cy="69.5" r="2.5" fill="#fff"></circle></g>
