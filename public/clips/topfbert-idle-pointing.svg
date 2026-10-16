@@ -1,0 +1,19 @@
+<!-- Topfbert pointing (every Tour step with a target): breathe, blink and hat sway, and
+     he nudges his arm towards the target (r12-nudge). No steam, so he mirrors
+     cleanly: TopfbertIdle flips him whole to point left
+     (handoff topfbert/layers.json → tour.poses.pointing; layers from
+     assets/topfbert/topfbert-pointing.svg). Played by TopfbertIdle; keyframes in
+     app/assets/css/loops.css. Frame 0 is his still. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -20 140 150" width="420" height="450">
+<g data-layer="whole" data-loop="r11-breathe 3s ease-in-out infinite" data-pivot="70 123">
+  <g data-layer="handles"><g transform="rotate(2 70 123)"><g transform="rotate(-18 21.25 64.5)"><rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g></g>
+  <g data-layer="body"><g transform="rotate(2 70 123)"><path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="2.5"></path></g></g>
+  <g data-layer="eyes" data-loop="r11-ieo 6s linear infinite"><g transform="rotate(2 70 123)"><ellipse cx="53.5" cy="72.5" rx="4.8" ry="5.4" fill="#1F1E1C"></ellipse><ellipse cx="92.5" cy="72.5" rx="4.8" ry="5.4" fill="#1F1E1C"></ellipse></g></g>
+  <g data-layer="eyes_closed" data-loop="r11-iec 6s linear infinite" style="opacity:0"><g transform="rotate(2 70 123)"><path d="M48.5 72.5Q53.5 77.5 58.5 72.5M87.5 72.5Q92.5 77.5 97.5 72.5" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></g></g>
+  <g data-layer="cheeks"><g transform="rotate(2 70 123)"><ellipse cx="43" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse><ellipse cx="100" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse></g></g>
+  <g data-layer="mouth"><g transform="rotate(2 70 123)"><path d="M61.5 82A10 8 0 0 0 81.5 82" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></g></g>
+  <g data-layer="rim"><g transform="rotate(2 70 123)"><rect x="13.25" y="41.25" width="113.5" height="12.5" rx="6.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g>
+  <g data-layer="arm" data-loop="r12-nudge 6s ease-in-out infinite"><g transform="rotate(2 70 123)"><g transform="rotate(-20 110 64.5)"><rect x="104.75" y="59.25" width="29" height="10.5" rx="5.25" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g></g>
+  <g data-layer="hat" data-loop="r11-ihat 6s ease-in-out infinite" data-pivot="38.7 44.9"><g transform="rotate(2 70 123)"><g transform="rotate(-14 36 46)"><circle cx="22" cy="6" r="10.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="39" cy="1" r="11.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="50" cy="8" r="8.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><rect x="16" y="8" width="40" height="22" fill="#fff"></rect><rect x="16.25" y="23.25" width="39.5" height="13.5" rx="3" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g></g>
+</g>
+</svg>

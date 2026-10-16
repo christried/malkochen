@@ -55,6 +55,28 @@
 @keyframes r11-ieo{0%,33%{opacity:1}33.5%,35.5%{opacity:0}36%,83%{opacity:1}83.5%,85.5%{opacity:0}86%,88%{opacity:1}88.5%,90.5%{opacity:0}91%,100%{opacity:1}}
 @keyframes r11-iec{0%,33%{opacity:0}33.5%,35.5%{opacity:1}36%,83%{opacity:0}83.5%,85.5%{opacity:1}86%,88%{opacity:0}88.5%,90.5%{opacity:1}91%,100%{opacity:0}}
 
+/* Round 12 (docs/design handoff/assets/r12-keyframes.css, copied verbatim):
+   Topfbert's Tour poses, waving, pointing and wink
+   (public/clips/topfbert-idle-<pose>.svg). */
+@keyframes r12-wave{0%,24%,60%,79%,100%{transform:none}4%{transform:rotate(-13deg)}9%{transform:rotate(5deg)}14%{transform:rotate(-13deg)}19%{transform:rotate(4deg)}64%{transform:rotate(-12deg)}69%{transform:rotate(4deg)}74%{transform:rotate(-10deg)}}
+@keyframes r12-nudge{0%,8%,15%,22%,56%,63%,70%,100%{transform:none}12%,18%,60%,66%{transform:translateX(2px)}}
+@keyframes r12-tip{0%,40%,64%,100%{transform:none}46%,54%{transform:translateY(-2.5px) rotate(-4deg)}60%{transform:translateY(.5px) rotate(1deg)}}
+
+/* Topfbert idling (TopfbertIdle) below 48px wide (handoff topfbert/layers.json
+   → idle.small, tour.small): he only breathes and blinks. No steam, and his
+   hat, arm, drop and sparks stay where they're drawn. */
+[data-topfbert-idle] {
+  container: topfbert / inline-size;
+}
+@container topfbert (width < 48px) {
+  [data-topfbert-idle] [data-svg-loop][data-run] [data-loop]:not([data-layer="whole"], [data-layer="eyes"], [data-layer="eyes_closed"]) {
+    animation: none;
+  }
+  [data-topfbert-idle] [data-layer^="steam"] {
+    visibility: hidden;
+  }
+}
+
 /* The Placeholder Images' loops (public/placeholders/*.svg), as the Remotion
    project drew them into video (remotion/src/motion.ts, from the briefs'
    "Animate" lines). Every one rests at 0% and 100%: frame 0 is the still. */
