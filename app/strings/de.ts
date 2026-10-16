@@ -413,8 +413,6 @@ export const de = {
     columns: 'Spalten',
     columnName: (name: string) => `Name der Spalte „${name}“`,
     columnSubtitle: (name: string) => `Untertitel der Spalte „${name}“`,
-    // A Column's row, which opens to its fields and buttons.
-    columnRow: (name: string) => `Spalte „${name}“`,
     // The labels of its fields once open; the names readers get say which
     // Column (columnName, columnSubtitle).
     columnNameLabel: 'Name',

@@ -57,9 +57,9 @@ const STEPS = [
 
 // The open row, one at a time (#285).
 const panelId = useId()
-const opened = ref<string | null>(null)
+const openedId = ref<string | null>(null)
 function toggle(column: ColumnRow) {
-  opened.value = opened.value === column.id ? null : column.id
+  openedId.value = openedId.value === column.id ? null : column.id
 }
 
 // ↑/↓. When the Column reaches either end, focus goes to the other arrow.
@@ -185,8 +185,8 @@ function drop(event?: Event) {
         <button
           type="button"
           class="toggle flex min-w-0 flex-1 items-center gap-3 py-3 pl-1 pr-3 text-left focus-visible:outline-2 focus-visible:outline-focus"
-          :aria-expanded="opened === column.id"
-          :aria-controls="opened === column.id ? `${panelId}-${column.id}` : undefined"
+          :aria-expanded="openedId === column.id"
+          :aria-controls="openedId === column.id ? `${panelId}-${column.id}` : undefined"
           @click="toggle(column)"
         >
           <span class="flex min-w-0 flex-1 flex-col">
@@ -213,12 +213,12 @@ function drop(event?: Event) {
             stroke-linejoin="round"
             aria-hidden="true"
             class="chevron shrink-0"
-            :class="{ flipped: opened === column.id }"
+            :class="{ flipped: openedId === column.id }"
           ><path d="M6 9l6 6 6-6" /></svg>
         </button>
       </div>
       <div
-        v-if="opened === column.id"
+        v-if="openedId === column.id"
         :id="`${panelId}-${column.id}`"
         class="panel flex flex-col gap-4 px-4 pb-4 pt-2"
       >
