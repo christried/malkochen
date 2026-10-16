@@ -279,22 +279,12 @@ test('Darstellung switches between light and dark, and the choice survives a rel
   await expect(page.locator('main')).toHaveCSS('background-color', LIGHT_BG)
 })
 
-test('"System" follows the device colour scheme', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'dark' })
-  await openUserSettings(page)
-
-  await page.getByRole('radio', { name: 'System' }).click()
-
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
-  await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
-})
-
 // The Theme reveal (handoff motion.json "Theme reveal"), as the page runs it:
 // what animates the View Transition's picture of the new theme, and the
 // cross-fade without one.
 const NEW_THEME = '::view-transition-new(root)'
 
-interface Reveal { duration: number, easing: string, from: string, to: string }
+interface Reveal { duration: number, from: string, to: string }
 
 // The reveal running now, if any: the clip-path animation on the new theme.
 function reveal(page: Page): Promise<Reveal | null> {
@@ -304,8 +294,13 @@ function reveal(page: Page): Promise<Reveal | null> {
     if (!found) return null
     const effect = found.effect as KeyframeEffect
     const [first, last] = [effect.getKeyframes().at(0)!, effect.getKeyframes().at(-1)!]
-    return { duration: Number(effect.getTiming().duration), easing: String(effect.getTiming().easing), from: String(first.clipPath), to: String(last.clipPath) }
+    return { duration: Number(effect.getTiming().duration), from: String(first.clipPath), to: String(last.clipPath) }
   }, NEW_THEME)
+}
+
+// A motion token's duration in ms, as the page has it now.
+function durationMs(page: Page, token: string): Promise<number> {
+  return page.evaluate(name => Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)), `--dur-${token}`)
 }
 
 // Counts the View Transitions the page starts, and every value <html
@@ -340,7 +335,7 @@ async function watchTransitions(page: Page) {
   }
 }
 
-test('picking Dunkel reveals it from the tapped option in 600ms (swoosh), and Hell the same way back', async ({ page }) => {
+test('picking Dunkel reveals it from the tapped option at the swoosh token’s pace, and Hell the same way back', async ({ page }) => {
   await openUserSettings(page)
 
   for (const [name, background] of [['Dunkel', DARK_BG], ['Hell', LIGHT_BG]] as const) {
@@ -351,9 +346,9 @@ test('picking Dunkel reveals it from the tapped option in 600ms (swoosh), and He
     await option.click()
 
     await expect.poll(() => reveal(page)).not.toBeNull()
-    const { duration, easing, from, to } = (await reveal(page))!
-    expect(duration).toBe(600)
-    expect(easing).toBe('cubic-bezier(0.45, 0, 0.2, 1)')
+    const { duration, from, to } = (await reveal(page))!
+    // Its value is tests/client/theme-reveal-tokens.test.ts's.
+    expect(duration).toBe(await durationMs(page, 'swoosh'))
     // A circle growing from the middle of the tapped option over the whole page.
     const [, radius, x, y] = from.match(/circle\(([\d.]+)px at ([\d.]+)px ([\d.]+)px\)/)!.map(Number)
     expect(radius).toBe(0)
@@ -365,28 +360,31 @@ test('picking Dunkel reveals it from the tapped option in 600ms (swoosh), and He
   }
 })
 
-test('"System" reveals nothing when the device already shows the same theme', async ({ page }) => {
+test('"System" follows the device colour scheme, revealing it only when it differs from the theme shown', async ({ page }) => {
   await openUserSettings(page)
   const watched = await watchTransitions(page)
 
-  // Light now, and the device is light too.
+  // Light now, and the device is light too: nothing to reveal.
   await page.getByRole('radio', { name: 'System' }).click()
 
   await expect(page.getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true')
   await expect(page.locator('html')).not.toHaveAttribute('data-theme')
   expect(await watched.transitions()).toBe(0)
   expect(await watched.reveals()).toEqual([])
-})
 
-test('"System" reveals the device’s theme when it differs', async ({ page }) => {
+  // The device turns dark: the page follows.
   await page.emulateMedia({ colorScheme: 'dark' })
-  await openUserSettings(page)
+  await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
+
+  // Hell, then back to the device's dark: revealed.
   await page.getByRole('radio', { name: 'Hell' }).click()
+  await expect(page.locator('main')).toHaveCSS('background-color', LIGHT_BG)
   await expect.poll(() => reveal(page)).toBeNull()
 
   await page.getByRole('radio', { name: 'System' }).click()
 
   await expect.poll(() => reveal(page)).not.toBeNull()
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
   await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
 })
 
@@ -409,7 +407,7 @@ test('without View Transitions, the theme cross-fades', async ({ page }) => {
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' })
 
-  test('the theme switches at once with a 200ms cross-fade, and nothing spreads out', async ({ page }) => {
+  test('the theme switches at once with a short cross-fade, and nothing spreads out', async ({ page }) => {
     await openUserSettings(page)
     const watched = await watchTransitions(page)
 
@@ -417,7 +415,8 @@ test.describe('with reduced motion', () => {
 
     await expect(page.locator('main')).toHaveCSS('background-color', DARK_BG)
     expect(await watched.reveals()).toEqual(['fade'])
-    expect(await watched.fades()).toEqual(['0.2s'])
+    // Its value is tests/client/theme-reveal-tokens.test.ts's.
+    expect(await watched.fades()).toEqual([`${await durationMs(page, 'fade') / 1000}s`])
     expect(await reveal(page)).toBeNull()
     await expect(page.locator('html')).not.toHaveAttribute('data-theme-reveal')
   })

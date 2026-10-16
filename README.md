@@ -74,7 +74,7 @@ pnpm lint
 
 CI (`.github/workflows/ci.yml`) runs all four on every PR (not on the merge to
 `main`), on GitHub-hosted runners against a Postgres service container: lint,
-typecheck and Vitest in one job, the browser tests in four shards beside it.
+typecheck and Vitest in one job, the browser tests in eight shards beside it.
 A browser test whose first try fails leaves a Playwright trace in
 `test-results/`, even if the retry passes; CI uploads them as the
 `e2e-traces-<shard>` artifact (14 days). Open one with

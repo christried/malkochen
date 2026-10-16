@@ -72,7 +72,8 @@ test('a Board’s address and its id both lead to it, for its Members only', asy
   expect(await addressOf(maryam, 'nur-fuer-mitglieder')).toEqual({ boardId: board.id, slug: 'nur-fuer-mitglieder', dish: null })
   expect(await addressOf(maryam, board.id)).toEqual({ boardId: board.id, slug: 'nur-fuer-mitglieder', dish: null })
 
-  // To anyone else, it is no different from an address no Board has.
+  // To anyone else, it is no different from an address no Board has, so the
+  // page shows them the same error screen (error-screen.spec.ts).
   const unknown = await maryam.fetch('/api/addresses/gibt-es-nicht-xyz')
   const notTheirs = await linus.fetch('/api/addresses/nur-fuer-mitglieder')
   const notTheirsById = await linus.fetch(`/api/addresses/${board.id}`)

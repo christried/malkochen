@@ -78,6 +78,9 @@ export default defineNuxtConfig({
       // (RESEND_API_KEY, server/env.ts) to send it with. The key itself
       // never leaves the server. False: the settings offer no digest.
       emailDigest: Boolean(process.env.RESEND_API_KEY),
+      // The browser tests' dev server (tests/e2e/run.ts). Only there may a
+      // test page shorten the Board's poll (composables/useBoardSync.ts).
+      e2e: Boolean(process.env.MALKOCHEN_E2E),
     },
   },
   // `nuxt typecheck` also covers the tests and the root tool configs.

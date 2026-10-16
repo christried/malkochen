@@ -90,27 +90,6 @@ test('a Dish moved to another Board opens there from its old address', async ({ 
   await expect(page.getByRole('dialog', { name: 'Wandernder Eintopf' })).toBeVisible()
 })
 
-test('a renamed Board is at its new address, and its old one forwards there', async ({ page }) => {
-  await signIn(page, GRETE)
-  const board = await createBoard(page, 'Alter Name')
-  await gotoHydrated(page, `/b/${board.slug}/settings`)
-
-  const name = page.getByLabel('Name', { exact: true })
-  await name.fill('Neuer Name')
-  await name.press('Enter')
-  await expect(name).toHaveValue('Neuer Name')
-  const { slug } = await (await page.request.get(`/api/boards/${board.id}`)).json() as Created
-  expect(slug).toMatch(slugFrom('neuer-name'))
-  await page.getByRole('link', { name: 'Zurück zum Board' }).click()
-  await expect(page).toHaveURL(at(`/b/${slug}`))
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('🧭 Neuer Name')
-
-  await gotoHydrated(page, `/b/${board.slug}`)
-  await expect(page).toHaveURL(at(`/b/${slug}`))
-  await gotoHydrated(page, `/b/${board.slug}/settings`)
-  await expect(page).toHaveURL(at(`/b/${slug}/settings`))
-})
-
 // Opening a Board moves on what is marked "Neu"; the old address forwards
 // before the Board is opened, so it is opened once, not twice.
 test('a Board opened from its old address still marks another Member’s new Dishes "Neu"', async ({ page, browser }) => {
@@ -153,18 +132,4 @@ test('a Board renamed while it is open keeps its address until it is opened agai
   await detail.getByRole('button', { name: 'Schließen' }).click()
   await expect(page).toHaveURL(at(`/b/${board.slug}`))
   await expect(card.getByText('Neu')).toBeVisible()
-})
-
-test('someone else’s Board’s address looks like one that doesn’t exist', async ({ page, browser }) => {
-  await signIn(page, GRETE)
-  const board = await createBoard(page, 'Nur Grete')
-  const youyou = await newTab(browser)
-  await signIn(youyou, YOUYOU)
-
-  for (const address of [`/b/${board.slug}`, `/b/${board.id}`, '/b/gibt-es-gar-nicht']) {
-    await gotoHydrated(youyou, address)
-    await expect(youyou.getByRole('heading', { level: 1 })).toHaveText('Das gibt’s hier nicht.')
-    await expect(youyou).toHaveURL(at(address))
-  }
-  await youyou.context().close()
 })

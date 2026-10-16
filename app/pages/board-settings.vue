@@ -299,7 +299,7 @@ const typedName = ref('')
 watch(confirmingDeleteBoard, () => {
   typedName.value = ''
 })
-const nameTyped = computed(() => typedName.value.trim() === saved.value.name)
+const nameTyped = computed(() => confirmsDeletion(typedName.value, saved.value.name))
 function deleteBoard() {
   if (!nameTyped.value) return
   hapticReject()

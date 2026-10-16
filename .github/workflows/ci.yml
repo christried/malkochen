@@ -42,15 +42,15 @@ jobs:
       - run: pnpm test
 
   # The browser tests are most of the run, so they split across shards that
-  # run next to `check`. Spec files run one after another within a shard,
-  # each shard on its own database.
+  # run next to `check`, by measured time (tests/e2e/shards.ts). Spec files
+  # run one after another within a shard, each shard on its own database.
   e2e:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
-    name: e2e (${{ matrix.shard }}/4)
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    name: e2e (${{ matrix.shard }}/8)
     services:
       postgres:
         image: postgres:17
@@ -81,7 +81,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - if: steps.browsers.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
-      - run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+      - run: pnpm test:e2e --shard=${{ matrix.shard }}/8
       # The traces of failed tries (playwright.config.ts), also of a flake
       # the retry rescued, so the job can be green and still upload some.
       - if: ${{ !cancelled() }}

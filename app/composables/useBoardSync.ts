@@ -25,6 +25,10 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
   let reopenDue = false
   // Once the Board page is gone, a poll still out schedules no other.
   let stopped = false
+  // A browser test that waits for polls may set a shorter interval on its
+  // page (tests/e2e/sync.spec.ts); anywhere but the tests' server, it can't.
+  const e2e = useRuntimeConfig().public.e2e
+  const pollMs = () => (e2e && (window as { e2ePollMs?: number }).e2ePollMs) || POLL_MS
 
   async function sync() {
     if (asking) {
@@ -57,7 +61,7 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
 
   function schedule() {
     clearTimeout(timer)
-    if (!stopped && document.visibilityState === 'visible') timer = setTimeout(() => sync(), POLL_MS)
+    if (!stopped && document.visibilityState === 'visible') timer = setTimeout(() => sync(), pollMs())
   }
 
   // The app coming back to the front, told by visibilitychange or focus,
