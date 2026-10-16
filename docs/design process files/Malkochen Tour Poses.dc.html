@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;family=Petrona:ital,wght@0,100..900;1,100..900&amp;family=Figtree:ital,wght@0,300..900;1,300..900&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#F7F6F2}a{color:#1F1E1C;text-decoration:none}a:hover{color:#9B32D8}</style></helmet>
+<div style="--spd:{{ spd }};max-width:1280px;margin:0 auto;padding:56px 40px 100px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:76px">
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:28px">
+    <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:16px;font:600 12px ui-monospace,monospace"><a href="Malkochen.dc.html" style="color:#8A857D">← Übersicht</a><a href="Malkochen Desktop Review.dc.html" style="color:#8A857D">← R11 · Desktop-Review</a></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:4px 8px;border-radius:6px;background:#1F1E1C;color:#fff">R12</span><span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">RUNDGANG · DREI NEUE POSEN</span></div>
+      <span style="font:400 54px/1.02 'Newsreader',Georgia,serif;letter-spacing:-.03em;text-wrap:balance;max-width:880px">Topfbert winkt, zeigt und zwinkert.</span>
+      <span style="font:italic 400 21px/1.35 'Newsreader',Georgia,serif;color:#6F6B65;max-width:780px;text-wrap:pretty">Drei Posen für den Rundgang. Gleiche Teile, gleiche Leinwand (140 × 150), gleicher Idle-Takt wie in R11. Eine Zeichnung für Hell und Dunkel.</span>
+    </div>
+    <div style="width:140px;height:150px"><dc-import name="Pose" pose="waving" still="{{ rm }}" style="width:100%;height:100%" hint-size="140px,150px"></dc-import></div>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">01</span><span style="font:400 34px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.02em">Die Posen</span></div>
+      <span style="font:14.5px/1.55 system-ui;color:#55524C;max-width:820px;text-wrap:pretty">Jede Pose läuft hier im 6-s-Idle. Darunter: wie er unter 48 px aussieht (nur atmen und blinzeln) und das Standbild für reduzierte Bewegung (Frame 0).</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px">
+      <sc-for list="{{ poses }}" as="p" hint-placeholder-count="3">
+        <div id="{{ p.id }}" style="display:flex;flex-direction:column;gap:14px;padding:14px 14px 20px;border-radius:28px 24px 30px 26px;background:#fff;box-shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <sc-for list="{{ p.stages }}" as="s" hint-placeholder-count="2">
+              <div style="position:relative;aspect-ratio:1/1.08;border-radius:20px 17px 21px 18px;background:{{ s.bg }};display:grid;place-items:center">
+                <span style="position:absolute;top:9px;left:11px;font:600 10px/1 ui-monospace,monospace;color:{{ s.ink }};opacity:.65">{{ s.l }}</span>
+                <div style="width:74%;aspect-ratio:140/150"><dc-import name="Pose" pose="{{ p.k }}" theme="{{ s.th }}" flip="{{ s.flip }}" still="{{ rm }}" style="width:100%;height:100%" hint-size="100%,100%"></dc-import></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:18px;padding:0 6px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:36px;height:39px"><dc-import name="Pose" pose="{{ p.k }}" small="{{ true }}" still="{{ rm }}" style="width:100%;height:100%" hint-size="36px,39px"></dc-import></div><span style="font:500 10.5px ui-monospace,monospace;color:#8A857D">36 px</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:60px"><dc-import name="Pose" pose="{{ p.k }}" still="{{ true }}" style="width:100%;height:100%" hint-size="56px,60px"></dc-import></div><span style="font:500 10.5px ui-monospace,monospace;color:#8A857D">Standbild</span></div>
+            <span style="flex:1"></span>
+            <span style="font:500 11px ui-monospace,monospace;color:#8A857D;padding-bottom:4px">{{ p.k }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:0 6px">
+            <div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#EFEDE8">{{ p.id }}</span><span style="font:400 28px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.015em">{{ p.n }}</span><span style="font:500 12px system-ui;color:#8A857D">{{ p.step }}</span></div>
+            <span style="font:italic 400 18px/1.3 'Newsreader',Georgia,serif;color:#3F3C37">„{{ p.line }}“</span>
+            <span style="font:14px/1.5 system-ui;color:#3F3C37;text-wrap:pretty">{{ p.d }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">02</span><span style="font:400 34px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.02em">Ebenen und Idle</span></div>
+      <span style="font:14.5px/1.55 system-ui;color:#55524C;max-width:820px;text-wrap:pretty">Nummerierte Ebenen wie bei den fünf Stimmungen: alle in derselben Leinwand, nach z gestapelt. Atmen, Dampf, Hutwippen und Blinzeln sind die R11-Keyframes. Neu sind nur r12-wave, r12-nudge und r12-tip.</span>
+    </div>
+    <sc-for list="{{ poses }}" as="p" hint-placeholder-count="3">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px;padding:18px;border-radius:26px;background:#fff">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:baseline;gap:10px"><span style="font:400 24px/1.1 'Newsreader',Georgia,serif">{{ p.n }}</span><span style="font:500 11.5px ui-monospace,monospace;color:#8A857D">topfbert-{{ p.k }}-NN-*.svg · {{ p.count }} Ebenen</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px">
+            <sc-for list="{{ p.layers }}" as="l" hint-placeholder-count="10">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="position:relative;aspect-ratio:140/150;border-radius:12px;background:#F2EFE9;padding:4px"><dc-import name="Pose" pose="{{ p.k }}" layer="{{ l.name }}" style="width:100%;height:100%" hint-size="100%,100%"></dc-import><span style="position:absolute;top:4px;left:5px;font:700 9.5px/1 ui-monospace,monospace;color:#8A857D">{{ l.nn }}</span></div>
+                <span style="font:500 10.5px/1.2 ui-monospace,monospace;color:{{ l.ink }}">{{ l.name }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;border-radius:18px;background:#FBFAF6;overflow:hidden;align-self:start">
+          <sc-for list="{{ p.idle }}" as="r" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:118px minmax(0,1fr);gap:12px;padding:11px 14px;border-top:1px solid rgba(31,30,28,.06)">
+              <span style="font:600 12px/1.4 ui-monospace,monospace">{{ r.l }}</span>
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font:13.5px/1.45 system-ui">{{ r.m }}</span><span style="font:500 11.5px/1.4 ui-monospace,monospace;color:#8A857D">{{ r.t }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+      <sc-for list="{{ rules }}" as="r" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:20px;background:{{ r.bg }}"><span style="font:600 13.5px/1.3 system-ui">{{ r.t }}</span><span style="font:13px/1.5 system-ui;color:#3F3C37;text-wrap:pretty">{{ r.d }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">03</span><span style="font:400 34px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.02em">Im Einsatz: Schritt „Gericht hinzufügen“</span></div>
+      <span style="font:14.5px/1.55 system-ui;color:#55524C;max-width:820px;text-wrap:pretty">360 px breit. Das Board ist gedimmt, nur der Plus-Button bleibt hell. Topfbert steht auf der Unterkante der Blase und zeigt zum Zipfel, der Zipfel zeigt auf den Button.</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:32px;justify-content:center">
+      <sc-for list="{{ phones }}" as="ph" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div data-screen-label="{{ ph.label }}" style="position:relative;width:360px;height:760px;border-radius:36px;overflow:hidden;background:{{ ph.bg }};color:{{ ph.ink }};font-family:'Figtree',system-ui,sans-serif;box-shadow:0 30px 60px -30px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.08);{{ ph.vars }}">
+            <div style="position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 14.5px/1 'Figtree',system-ui">
+              <span>9:41</span>
+              <div style="display:flex;gap:6px;align-items:center"><div style="width:16px;height:10px;border-radius:2px;background:currentColor;opacity:.85"></div><div style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:4px;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;background:currentColor;border-radius:1.5px"></div></div></div>
+            </div>
+            <div style="position:absolute;top:52px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:44px;height:44px;display:grid;place-items:center;background:{{ ph.surface }};border-radius:46% 54% 50% 50% / 55% 45% 55% 45%;box-shadow:{{ ph.shadow }};font-size:22px">🍜</div>
+                <span style="font:500 25px/1 'Petrona',Georgia,serif;letter-spacing:-.01em">WG-Küche</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:.55"><path d="M6 9l6 6 6-6"></path></svg>
+              </div>
+              <div style="width:44px;height:44px;border-radius:50%;background:{{ ph.surface }};box-shadow:{{ ph.shadow }};display:grid;place-items:center"><svg width="19" height="19" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg></div>
+            </div>
+            <div style="position:absolute;top:116px;left:12px;right:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding-bottom:12px;border-bottom:1px solid {{ ph.line }}">
+              <sc-for list="{{ ph.tabs }}" as="t" hint-placeholder-count="3">
+                <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:7px">
+                  <span style="font:500 14px/1 'Figtree',system-ui;color:{{ t.c }}">{{ t.l }}</span>
+                  <span style="min-width:36px;height:30px;padding:0 9px;box-sizing:border-box;border-radius:15px;display:grid;place-items:center;font:600 15px/1 'Figtree',system-ui;background:{{ t.bg }};color:{{ t.fg }}">{{ t.n }}</span>
+                  <sc-if value="{{ t.on }}"><div style="position:absolute;bottom:-13px;width:72px;height:2px;border-radius:2px;background:{{ ph.ink }}"></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="position:absolute;top:196px;left:16px;right:16px;display:flex;flex-direction:column;gap:18px">
+              <sc-for list="{{ ph.cards }}" as="c" hint-placeholder-count="2">
+                <div style="background:{{ ph.surface }};border-radius:30px 26px 32px 28px;box-shadow:{{ ph.shadow }};padding:10px">
+                  <div style="aspect-ratio:16/10;border-radius:22px 19px 23px 20px;overflow:hidden"><dc-import name="Illus" kind="{{ c.k }}" play="{{ false }}" style="width:100%;height:100%" hint-size="100%,100%"></dc-import></div>
+                  <div style="display:flex;flex-direction:column;gap:4px;padding:12px 8px 6px"><span style="font:500 20px/1.15 'Petrona',Georgia,serif">{{ c.t }}</span><span style="font:500 13px/1.2 'Figtree',system-ui;color:{{ ph.ink2 }}">{{ c.m }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(transparent, {{ ph.bg }} 72%)"></div>
+            <div style="position:absolute;right:20px;bottom:38px;width:140px;height:58px;box-sizing:border-box;padding:0 22px 0 10px;border-radius:29px;background:{{ ph.inv }};color:{{ ph.onInv }};display:flex;align-items:center;gap:10px;font:600 17px/1 'Figtree',system-ui;box-shadow:0 14px 30px -10px rgba(0,0,0,.45)">
+              <span style="flex:none;width:38px;height:38px;border-radius:50%;background:{{ ph.onInv }};color:{{ ph.inv }};display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg></span>Gericht
+            </div>
+            <div style="position:absolute;right:14px;bottom:32px;width:152px;height:70px;border-radius:35px;box-shadow:0 0 0 3px #F7B94A, 0 0 0 1400px {{ ph.scrim }};pointer-events:none"></div>
+            <div style="position:absolute;left:66px;right:12px;bottom:118px;box-sizing:border-box;padding:15px 18px 17px 24px;border-radius:24px 22px 26px 22px;background:{{ ph.bubble }};box-shadow:{{ ph.bubbleShadow }};display:flex;flex-direction:column;gap:4px">
+              <div style="position:absolute;left:198px;bottom:-6px;width:12px;height:12px;border-radius:2px;background:{{ ph.bubble }};transform:rotate(45deg)"></div>
+              <span style="position:relative;font:500 21px/1.15 'Petrona',Georgia,serif;letter-spacing:-.01em">Dein erstes Gericht</span>
+              <span style="position:relative;font:500 15px/1.4 'Figtree',system-ui;color:{{ ph.ink2b }}">Tipp aufs Plus.</span>
+            </div>
+            <div style="position:absolute;left:12px;bottom:118px;width:64px;height:69px"><dc-import name="Pose" pose="pointing" theme="{{ ph.th }}" still="{{ rm }}" style="width:100%;height:100%" hint-size="64px,69px"></dc-import></div>
+          </div>
+          <span style="font:500 11px ui-monospace,monospace;color:#8A857D">{{ ph.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">04</span><span style="font:400 34px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.02em">Wo er sitzt</span></div>
+      <span style="font:14.5px/1.55 system-ui;color:#55524C;max-width:820px;text-wrap:pretty">Eine Regel für alle Schritte: Topfbert steht immer auf der Unterkante der Blase, auf der Seite gegenüber vom Zipfel, und zeigt zum Zipfel. Ob die Blase über oder unter dem Ziel sitzt, ändert nur, wo der Zipfel ist. Schemata in 360 × 300.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px">
+      <sc-for list="{{ cases }}" as="c" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="position:relative;width:360px;height:300px;border-radius:24px;overflow:hidden;background:#F7F6F2;box-shadow:inset 0 0 0 1px rgba(31,30,28,.1)">
+            <div style="position:absolute;left:16px;right:16px;top:84px;height:90px;border-radius:24px;background:#fff"></div>
+            <div style="position:absolute;left:16px;right:16px;top:186px;height:90px;border-radius:24px;background:#fff"></div>
+            <sc-if value="{{ c.hasT }}">
+              <div style="position:absolute;left:{{ c.tx }};top:{{ c.ty }};width:{{ c.tw }};height:{{ c.th }};border-radius:{{ c.tr }};background:#E3DFD8;display:grid;place-items:center;font:600 11px ui-monospace,monospace;color:#6F6B65">Ziel</div>
+              <div style="position:absolute;left:{{ c.hx }};top:{{ c.hy }};width:{{ c.hw }};height:{{ c.hh }};border-radius:{{ c.hr }};box-shadow:0 0 0 3px #F7B94A, 0 0 0 900px rgba(12,10,8,.42)"></div>
+            </sc-if>
+            <sc-if value="{{ c.noT }}"><div style="position:absolute;inset:0;background:rgba(12,10,8,.42)"></div></sc-if>
+            <div style="position:absolute;left:{{ c.bx }};top:{{ c.by }};width:{{ c.bw }};height:76px;box-sizing:border-box;padding:18px 18px 0 {{ c.bpl }};border-radius:24px 22px 26px 22px;background:#fff;display:flex;flex-direction:column;gap:10px">
+              <sc-if value="{{ c.hasT }}"><div style="position:absolute;left:{{ c.tailX }};top:{{ c.tailY }};width:12px;height:12px;border-radius:2px;background:#fff;transform:rotate(45deg)"></div></sc-if>
+              <div style="position:relative;width:62%;height:12px;border-radius:6px;background:#D9D4CC"></div>
+              <div style="position:relative;width:38%;height:10px;border-radius:5px;background:#E8E4DD"></div>
+            </div>
+            <div style="position:absolute;left:{{ c.px }};top:{{ c.py }};width:64px;height:69px"><dc-import name="Pose" pose="{{ c.pose }}" flip="{{ c.flip }}" still="{{ true }}" style="width:100%;height:100%" hint-size="64px,69px"></dc-import></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;padding:0 4px"><span style="font:600 14px/1.3 system-ui">{{ c.n }}</span><span style="font:13px/1.5 system-ui;color:#55524C;text-wrap:pretty">{{ c.d }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;border-radius:22px;background:#fff;overflow:hidden">
+      <sc-for list="{{ spec }}" as="r" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;padding:12px 18px;border-top:1px solid rgba(31,30,28,.07)">
+          <span style="font:600 12px/1.45 ui-monospace,monospace">{{ r.l }}</span>
+          <span style="font:13.5px/1.5 system-ui;color:#3F3C37;text-wrap:pretty">{{ r.d }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">05</span><span style="font:400 34px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.02em">Handoff</span><a href="handoff/README.md" style="font:600 12px ui-monospace,monospace;color:#8A857D">README §8 →</a></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+      <sc-for list="{{ files }}" as="f" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:5px;padding:14px 16px;border-radius:20px;background:#fff"><span style="font:600 12px/1.4 ui-monospace,monospace;word-break:break-all">{{ f.p }}</span><span style="font:13px/1.5 system-ui;color:#55524C;text-wrap:pretty">{{ f.d }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;slowMo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const LAYERS = {
+  waving: ['steam_1', 'steam_2', 'handles', 'body', 'eyes', 'eyes_closed', 'cheeks', 'mouth', 'rim', 'arm', 'hat'],
+  pointing: ['handles', 'body', 'eyes', 'eyes_closed', 'cheeks', 'mouth', 'rim', 'arm', 'hat'],
+  wink: ['steam_1', 'steam_2', 'handles', 'body', 'eyes', 'eyes_closed', 'wink', 'cheeks', 'mouth', 'rim', 'hat']
+};
+const NEW = { arm: 1, wink: 1, eyes_closed: 1 };
+const BREATHE = ['whole', 'scale 1 → .985 / 1.025 → 1 (breathe), all layers', 'r11-breathe 3s ease-in-out ×2 · pivot 70 123'];
+const STEAM = ['steam_1 / 2', 'rise and fade, as R11 idle', 'r11-steam 3s ease-out · phase 0 / −1.5s'];
+const BLINK = ['eyes / closed', 'opacity swap, hard cuts: blink at 2.0s, double blink at 5.0 / 5.3s', 'r11-ieo / r11-iec 6s linear · shared clock'];
+const META = {
+  waving: { id: '1a', n: 'Winken', step: 'Schritt 1 · Hallo', line: 'Hallo, ich bin Topfbert!', d: 'Der rechte Henkel ist hochgerissen und winkt, dazu das große offene Lachen mit Zunge. Augen, Wangen, Hut und Dampf wie bei happy.',
+    idle: [BREATHE, STEAM, ['arm', 'waves: −13° → +5° → −13° → +4° → 0 (0–24%), rests, then −12° → +4° → −10° → 0 (60–79%)', 'r12-wave 6s ease-in-out · pivot 111 63'], BLINK, ['hat', 'sway +3°, y −1 on top of the authored −14°', 'r11-ihat 6s ease-in-out · pivot 36 46']] },
+  pointing: { id: '1b', n: 'Zeigen', step: 'Schritte mit Ziel', line: 'Zieh es auf ‚Diese Woche‘', d: 'Der rechte Henkel wird zum Zeigearm, der ganze Topf lehnt sich 2° nach vorn, Augen und Mund schauen zum Ziel. Gezeichnet nach rechts; gespiegelt zeigt er nach links. Ohne Dampf, ohne Schrift, ohne Licht von einer Seite.',
+    idle: [BREATHE, ['arm', 'nudge towards the target: x 0 → 2 → 0 → 2 → 0 at 8–22% and 56–70%', 'r12-nudge 6s ease-in-out · mirrored with the element'], BLINK, ['hat', 'sway, pivot moved with the 2° lean', 'r11-ihat 6s ease-in-out · pivot 38.7 44.9'], ['steam', 'none: keeps the silhouette clean for mirroring', '—']] },
+  wink: { id: '1c', n: 'Zwinkern', step: 'Letzter Schritt · Tipp', line: 'Teilen → malkochen, direkt aus TikTok', d: 'Rechtes Auge zugekniffen, die Wange darunter 2 px höher, schiefes Grinsen mit Grübchen. Der Hut sitzt gerader und 3 px gelüpft und tippt einmal pro Loop.',
+    idle: [BREATHE, STEAM, ['eyes / closed', 'left eye only: same shared blink', 'r11-ieo / r11-iec 6s linear · shared clock'], ['wink', 'static: the closed eye never blinks', '—'], ['hat', 'hat tip: y −2.5, −4° at 46–54%, overshoot +1° at 60%; replaces the sway', 'r12-tip 6s ease-in-out · pivot 18 36']] }
+};
+function place(W, H, t, pose) {
+  const M = 12, TW = 64, TH = 69, OV = 10, BH = 76, bw = W - 2 * M - (TW - OV);
+  if (!t) { const bx = M + TW - OV, by = H - 40 - BH; return { hasT: false, noT: true, bx, by, bw, bpl: 24, px: M, py: by + BH - TH, flip: false, pose }; }
+  const tc = t.x + t.w / 2, below = t.y + t.h / 2 < H / 2, left = tc >= W / 2;
+  const bx = left ? M + TW - OV : M, by = below ? t.y + t.h + 6 + 8 + 8 : t.y - 6 - 8 - 8 - BH;
+  const tailX = Math.min(Math.max(tc - bx, 28), bw - 28) - 6;
+  return { hasT: true, noT: false, tx: t.x, ty: t.y, tw: t.w, th: t.h, tr: t.r, hx: t.x - 6, hy: t.y - 6, hw: t.w + 12, hh: t.h + 12, hr: t.r + 6,
+    bx, by, bw, bpl: left ? 24 : 18, tailX, tailY: below ? -6 : BH - 6, px: left ? M : W - M - TW, py: by + BH - TH, flip: !left, pose };
+}
+const px = o => { const r = {}; for (const k in o) r[k] = typeof o[k] === 'number' && !['flip'].includes(k) ? o[k] + 'px' : o[k]; return r; };
+class Component extends DCLogic {
+  renderVals() {
+    const rm = !!this.props.reducedMotion;
+    const L = { bg: '#F7F6F2', ink: '#1F1E1C', th: 'light', l: 'light' }, D = { bg: '#1E1C1A', ink: '#F3EFE8', th: 'dark', l: 'dark' };
+    const poses = ['waving', 'pointing', 'wink'].map(k => ({
+      k, ...META[k], count: LAYERS[k].length,
+      stages: k === 'pointing' ? [{ ...L, l: 'light · → rechts', flip: false }, { ...D, l: 'dark · ← gespiegelt', flip: true }] : [{ ...L, flip: false }, { ...D, flip: false }],
+      layers: LAYERS[k].map((name, i) => ({ name, nn: String(i + 1).padStart(2, '0'), ink: NEW[name] ? '#9B32D8' : '#55524C' })),
+      idle: META[k].idle.map(([l, m, t]) => ({ l, m, t }))
+    }));
+    const tabs = (ink, ink2, inv, onInv, s2) => [['Ideen', '2', 1], ['Diese Woche', '0', 0], ['Gekocht', '0', 0]].map(([l, n, on]) => ({ l, n, on: !!on, c: on ? ink : ink2, bg: on ? inv : s2, fg: on ? onInv : ink }));
+    const cards = [{ k: 'ramen', t: 'Miso-Ramen mit Tofu', m: 'Lisa · vor 2 Tagen' }, { k: 'pasta', t: 'Ofen-Gnocchi', m: 'Jonas · vor 5 Tagen' }];
+    const phones = [
+      { label: 'Light · 360 × 760', th: 'light', bg: '#F7F6F2', surface: '#FFFFFF', ink: '#1F1E1C', ink2: '#6F6B65', ink2b: '#55524C', line: 'rgba(31,30,28,.09)', inv: '#1F1E1C', onInv: '#FFFFFF', scrim: 'rgba(12,10,8,.42)', bubble: '#FFFFFF', bubbleShadow: '0 30px 60px -20px rgba(0,0,0,.55)', shadow: '0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06)', vars: '--surface2:#EFEDE8;--ink:#1F1E1C', tabs: tabs('#1F1E1C', '#6F6B65', '#1F1E1C', '#FFFFFF', '#EFEDE8'), cards },
+      { label: 'Dark · 360 × 760', th: 'dark', bg: '#131211', surface: '#1E1C1A', ink: '#F3EFE8', ink2: '#A8A298', ink2b: '#C9C3B9', line: 'rgba(255,255,255,.08)', inv: '#F3EFE8', onInv: '#131211', scrim: 'rgba(12,10,8,.5)', bubble: '#2A2825', bubbleShadow: '0 30px 60px -20px rgba(0,0,0,.8)', shadow: '0 12px 28px -10px rgba(0,0,0,.60), 0 2px 6px rgba(0,0,0,.30)', vars: '--surface2:#2A2825;--ink:#F3EFE8', tabs: tabs('#F3EFE8', '#A8A298', '#F3EFE8', '#131211', '#2A2825'), cards }
+    ];
+    const cases = [
+      ['Ziel unten rechts · Blase darüber', 'Wie der Plus-Button. Zipfel unten, Topfbert links, wie gezeichnet.', { x: 204, y: 230, w: 140, h: 52, r: 26 }, 'pointing'],
+      ['Ziel oben Mitte · Blase darunter', 'Wie der Tab „Diese Woche“. Zipfel oben; Mitte zählt als rechts, also Topfbert links.', { x: 125, y: 20, w: 110, h: 44, r: 22 }, 'pointing'],
+      ['Ziel links · gespiegelt', 'Zipfel in der linken Hälfte: Topfbert wechselt nach rechts und wird mit scaleX(−1) gespiegelt.', { x: 16, y: 20, w: 150, h: 44, r: 22 }, 'pointing'],
+      ['Ohne Ziel · Winken und Zwinkern', 'Erster und letzter Schritt: ganzes Board gedimmt, kein Loch, kein Zipfel. Gruppe 40 px über dem unteren Rand.', null, 'waving']
+    ].map(([n, d, t, pose]) => ({ n, d, ...px(place(360, 300, t, pose)) }));
+    return {
+      rm, spd: this.props.slowMo ? 2 : 1, poses, phones, cases,
+      rules: [
+        ['Reduzierte Bewegung', 'No loop, no blink: show frame 0. Eyes open, steam_2 half-way, arm in its drawn position. Pause when < 50% visible or in the background.', '#DCE3F0'],
+        ['Unter 48 px', 'Breathe + blink only. No steam, no hat motion, no wave or nudge: the arm stays where it is drawn, so the pose still reads.', '#D5E4D8'],
+        ['Spiegeln', 'Flip the whole element with transform: scaleX(−1). His box is symmetric around x 70, so nothing moves. Never flip single layers; pivots mirror along.', '#FBE3B0'],
+        ['Eine Uhr', 'All Topfberts on screen share the R11 clock (same animation-delay from one start time), so a Tour Topfbert never blinks out of step.', '#E9E4F7'],
+        ['Hell und Dunkel', 'One drawing. Outline stays #1F1E1C. Only the steam rods take the text colour (#1F1E1C / #F3EFE8), as in the R11 idle.', '#F7DCCB']
+      ].map(([t, d, bg]) => ({ t, d, bg })),
+      spec: [
+        ['Größe', 'Topfbert 64 × 69 px in the Tour (viewBox 140 × 150). Above 48 px, so the full idle runs.'],
+        ['Seite', 'Tail in the right half (target centre ≥ 50% of the screen width): Topfbert on the left, as drawn. Otherwise on the right, mirrored.'],
+        ['Höhe', 'His bottom edge = bubble bottom edge, whether the bubble sits above or below the target.'],
+        ['Überlappung', 'He stands 10 px over the bubble edge, in front of it. Bubble text starts 24 px from the bubble edge on his side, 18 px on the other.'],
+        ['Breite', 'Bubble = screen − 2 × 12 px margin − 54 px (64 − 10 overlap). At 360: 282 px. Max 320 px on wider screens.'],
+        ['Über / unter', 'Target centre in the lower half: bubble above, else below. If the bubble doesn’t fit between target and safe area, use the other side.'],
+        ['Zipfel', '12 px square at 45°, radius 2, on the target-facing edge. x = target centre, clamped to 28 px from the bubble corners. Tip 8 px from the ring.'],
+        ['Spotlight', 'color-scrim over everything; hole = target + 6 px, radius + 6; ring 3 px #F7B94A, static. Topfbert is the only loop on screen.'],
+        ['Blase', 'Light: surface #FFFFFF. Dark: surface-muted #2A2825 so it lifts off the scrim. radius 24 22 26 22, shadow-dialog. Title Petrona 500 21, text Figtree 500 15.']
+      ].map(([l, d]) => ({ l, d })),
+      files: [
+        ['assets/topfbert/topfbert-waving.svg · -pointing.svg · -wink.svg', 'Full stills (frame 0). Layer groups carry data-loop / data-pivot; the root group #topfbert carries the breathe.'],
+        ['assets/topfbert/topfbert-waving-01…11-*.svg', '11 layers: steam_1, steam_2, handles (left only), body, eyes, eyes_closed, cheeks, mouth, rim, arm, hat.'],
+        ['assets/topfbert/topfbert-pointing-01…09-*.svg', '9 layers, drawn pointing right with a 2° lean baked in. No steam. eyes_closed shifted with the eyes.'],
+        ['assets/topfbert/topfbert-wink-01…11-*.svg', '11 layers. eyes and eyes_closed hold the left eye only; wink is the static closed right eye.'],
+        ['assets/topfbert/layers.json', 'moods.waving / pointing / wink (z, file, motion), idle.perMood for the three, and the new tour block: idle per pose, small, reduced motion, mirror, placement.'],
+        ['assets/r12-keyframes.css', 'r12-wave, r12-nudge, r12-tip. Everything else reuses r11-breathe, r11-steam, r11-ihat, r11-ieo, r11-iec.']
+      ].map(([p, d]) => ({ p, d }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -323,3 +323,34 @@ Written after the first desktop field test (`docs/reviews/desktop-review1.md`). 
 > - new entries in `illustrations.json` and `remotion-briefs.json`,
 > - the chosen fonts and the input label style as updates to `tokens.json` / `tokens.css` and `components.json`,
 > - a short README section listing what's new and what each new file is for.
+
+---
+
+## Round 12: Topfbert poses for the Tour
+
+Written for the Tour (`CONTEXT.md`, decided in a grilling session on 2026-10-16). Paste it into the **same** Claude Design project as rounds 1–11. When it's done, export the handoff into `docs/design handoff/` (new files next to the existing ones) and tell Claude Code. The Tour ships before this round is back, with his existing moods standing in, so there's no rush.
+
+> malkochen gets a **Tour** ("Rundgang"): a short walk through a Board on a user's first visit, where **Topfbert tells every step** in a speech bubble next to the part of the screen it's about. The user does the steps themselves: adds a Dish, moves it to the next Column, deletes it. Each step has its own mood. His existing five (happy, wow, oops, stir, sleep) cover some of them; we need **three new poses**. Keep everything from the handoff (tokens, Topfbert's layers in `assets/topfbert/layers.json`, his idle loop from round 11).
+>
+> ### 1. Three new poses
+>
+> - **Waving**: he says hello in the first bubble ("Hallo, ich bin Topfbert!"). One handle raised and waving, a big open smile.
+> - **Pointing**: he points at the part of the screen a step is about ("Zieh es auf „Diese Woche""). **One drawing that still reads when mirrored**, so the app can flip it to point left or right; nothing in it may be one-sided (no lettering, no light coming from one side). A handle stretched out as the pointing arm; eager, helpful face.
+> - **Wink**: the last bubble shares a tip ("Teilen → malkochen, direkt aus TikTok"). One eye closed, a sly grin, maybe the hat tipped.
+>
+> ### 2. For each pose
+>
+> - A full SVG plus **numbered layers**, in the same structure and `viewBox 140x150` as the existing moods (`topfbert-<pose>-NN-<layer>.svg`), with new entries in `layers.json`.
+> - An **idle loop** described as motion on its layers, in the same format as round 11's `idle` (6s, seamless, frame 0 = the still, the shared blink): waving's handle waves, pointing's arm gives a small nudge towards the target, wink's closed eye stays closed (no blink on that side).
+> - The **reduced-motion** behaviour (the still) and how he looks **below 48px**, the same rules as his idle.
+> - Topfbert is theme-independent, as before: one drawing for light and dark.
+>
+> ### 3. Show them in place
+>
+> A phone screen (360px wide), light and dark: the Board dimmed, the "Gericht hinzufügen" button spotlit, and a bubble beside it with Topfbert pointing at it ("Dein erstes Gericht" / "Tipp aufs Plus."). Show where he sits relative to the bubble, so the bubble can sit above or below its target and still fit on screen at 360px.
+>
+> ### Delivery
+>
+> The same format as your round 11 handoff:
+> - layered SVGs under `assets/topfbert/`, and their entries in `layers.json`,
+> - a short README section listing what's new and what each new file is for.

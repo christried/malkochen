@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./r11-art.js"></script><style>
+@keyframes il-twirl{0%,100%{transform:none}50%{transform:translateY(-10px) rotate(-10deg)}}
+@keyframes il-steam{0%{opacity:0;transform:translateY(6px)}30%{opacity:.85}100%{opacity:0;transform:translateY(-14px)}}
+@keyframes il-bub{0%{opacity:0;transform:scale(.2)}20%{opacity:1}70%{opacity:1;transform:scale(1)}80%,100%{opacity:0;transform:scale(1.35)}}
+@keyframes il-hop{0%,40%,100%{transform:none}55%{transform:translateY(-7px)}70%{transform:scale(1.08,.92)}80%{transform:none}}
+@keyframes il-sway{0%,100%{transform:none}50%{transform:translateY(-4px) rotate(-5deg)}}
+@keyframes il-lid{0%,100%{transform:none}35%{transform:translateY(-14px) rotate(-5deg)}60%{transform:scale(1.05,.9)}72%{transform:scale(.98,1.03)}82%{transform:none}}
+@keyframes il-wig{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+@keyframes il-slice{0%,15%,100%{transform:none}45%,65%{transform:translate(10px,-14px) rotate(-8deg)}}
+@keyframes il-toss{0%,15%{transform:none}45%{transform:translateY(-26px) rotate(180deg)}75%,100%{transform:translateY(0) rotate(360deg)}}
+@keyframes il-pan{0%,10%,40%,100%{transform:rotate(0)}20%{transform:translateY(2px) rotate(-6deg)}}
+@keyframes il-fall{0%{opacity:0;transform:translateY(-8px)}10%{opacity:1}45%{opacity:1;transform:translateY(34px)}50%,100%{opacity:0;transform:translateY(34px)}}
+@keyframes il-ripple{0%,45%{opacity:0;transform:scale(.3)}50%{opacity:1}80%,100%{opacity:0;transform:scale(1.4)}}
+@keyframes il-rise{0%,100%{transform:scale(1,1)}50%{transform:scale(1.04,1.1)}}
+@keyframes il-berry{0%,100%{transform:none}30%{transform:translateY(-10px) rotate(-12deg)}50%{transform:scale(1.12,.88)}60%{transform:none}}
+@keyframes il-up{0%{opacity:0;transform:translateY(0)}20%{opacity:.95}100%{opacity:0;transform:translateY(-38px)}}
+@keyframes il-rattle{0%,50%,100%{transform:none}8%{transform:translateY(-3px) rotate(-4deg)}16%{transform:none}24%{transform:translateY(-3px) rotate(4deg)}32%{transform:none}}
+@keyframes il-puff{0%,6%{opacity:0;transform:scale(.4)}14%{opacity:.9;transform:scale(1)}40%,100%{opacity:0;transform:translateY(-10px) scale(1.3)}}
+@keyframes il-roll{0%,15%,85%,100%{transform:scaleX(.08)}40%,60%{transform:scaleX(1)}}
+@keyframes il-rollc{0%,15%,85%,100%{transform:scale(1.12)}40%,60%{transform:scale(1)}}
+@keyframes il-spark{0%,100%{transform:scale(0)}50%{transform:scale(1) rotate(45deg)}}
+</style></helmet>
+<div style="position:relative;width:100%;height:100%;background:{{ p0 }};overflow:hidden">
+<svg viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%">
+  <ellipse cx="60" cy="101" rx="42" ry="6" style="fill:{{ p1 }}"></ellipse>
+
+  
+
+  <sc-if value="{{ kNew }}">{{ newArt }}</sc-if>
+
+  <sc-if value="{{ kRamen }}">
+    <path d="M44 42q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(2.7s * var(--spd, 1)) ease-out infinite both;animation-play-state:{{ ps }}"></path>
+    <path d="M58 40q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(2.7s * var(--spd, 1)) ease-out calc(.9s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></path>
+    <path d="M72 42q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(2.7s * var(--spd, 1)) ease-out calc(1.8s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></path>
+    <line x1="70" y1="58" x2="104" y2="22" style="stroke:{{ w }};stroke-width:4;stroke-linecap:round"></line>
+    <line x1="77" y1="60" x2="108" y2="28" style="stroke:{{ w }};stroke-width:4;stroke-linecap:round"></line>
+    <path d="M18 62h84a42 34 0 0 1-84 0z" style="fill:{{ p2 }}"></path>
+    <ellipse cx="60" cy="62" rx="42" ry="8" style="fill:{{ p3 }}"></ellipse>
+    <ellipse cx="60" cy="62" rx="38" ry="6.5" style="fill:{{ a1 }}"></ellipse>
+    <rect x="74" y="48" width="12" height="15" rx="2" style="fill:{{ g2 }}"></rect>
+    <path d="M52 64q5-4 10 0t10 0" style="fill:none;stroke:{{ c }};stroke-width:3;stroke-linecap:round"></path>
+    <ellipse cx="42" cy="61" rx="9" ry="4.6" style="fill:{{ c }}"></ellipse><ellipse cx="42" cy="61" rx="4" ry="2.4" style="fill:{{ a2 }}"></ellipse>
+    <circle cx="58" cy="59" r="2" style="fill:{{ g1 }}"></circle><circle cx="64" cy="61" r="2" style="fill:{{ g1 }}"></circle>
+    <path d="M40 80q20 8 40 0" style="fill:none;stroke:{{ p3 }};stroke-width:3;stroke-linecap:round;opacity:.5"></path>
+  </sc-if>
+
+  <sc-if value="{{ kCurry }}">
+    <path d="M16 74a44 26 0 0 0 88 0z" style="fill:{{ a1 }}"></path>
+    <ellipse cx="60" cy="74" rx="44" ry="10" style="fill:{{ a2 }}"></ellipse>
+    <ellipse cx="60" cy="74" rx="38" ry="7.5" style="fill:{{ p2 }}"></ellipse>
+    <ellipse cx="80" cy="70" rx="13" ry="7" style="fill:{{ c }}"></ellipse>
+    <circle cx="42" cy="74" r="3.2" style="fill:{{ c }}"></circle><circle cx="50" cy="77" r="3.2" style="fill:{{ c }}"></circle><circle cx="56" cy="72" r="3.2" style="fill:{{ c }}"></circle>
+    <ellipse cx="66" cy="76" rx="6" ry="3" transform="rotate(-20 66 76)" style="fill:{{ g1 }}"></ellipse>
+    <circle cx="46" cy="71" r="3" style="fill:none;stroke:{{ p3 }};stroke-width:1.6;transform-box:fill-box;transform-origin:center;animation:il-bub calc(2.4s * var(--spd, 1)) ease-out infinite both;animation-play-state:{{ ps }}"></circle>
+    <circle cx="60" cy="77" r="2.5" style="fill:none;stroke:{{ p3 }};stroke-width:1.6;transform-box:fill-box;transform-origin:center;animation:il-bub calc(2.4s * var(--spd, 1)) ease-out calc(.8s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></circle>
+    <circle cx="36" cy="76" r="2.2" style="fill:none;stroke:{{ p3 }};stroke-width:1.6;transform-box:fill-box;transform-origin:center;animation:il-bub calc(2.4s * var(--spd, 1)) ease-out calc(1.6s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></circle>
+  </sc-if>
+
+  
+
+  <sc-if value="{{ kSalad }}">
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-sway calc(3.2s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <ellipse cx="42" cy="54" rx="15" ry="7" transform="rotate(-35 42 54)" style="fill:{{ p1 }}"></ellipse>
+      <ellipse cx="78" cy="52" rx="16" ry="7" transform="rotate(30 78 52)" style="fill:{{ p3 }}"></ellipse>
+      <ellipse cx="60" cy="46" rx="7" ry="14" style="fill:{{ p1 }}"></ellipse>
+      <ellipse cx="51" cy="50" rx="6" ry="12" transform="rotate(-18 51 50)" style="fill:{{ p3 }}"></ellipse>
+      <circle cx="70" cy="56" r="6" style="fill:{{ a1 }}"></circle><circle cx="38" cy="60" r="5" style="fill:{{ a1 }}"></circle>
+    </g>
+    <path d="M16 62h88a44 32 0 0 1-88 0z" style="fill:{{ p2 }}"></path>
+    <ellipse cx="60" cy="62" rx="44" ry="6" style="fill:{{ p3 }}"></ellipse>
+    <path d="M36 78q24 10 48 0" style="fill:none;stroke:{{ p1 }};stroke-width:3;stroke-linecap:round;opacity:.7"></path>
+  </sc-if>
+
+  <sc-if value="{{ kBurger }}">
+    <rect x="26" y="80" width="68" height="14" rx="7" style="fill:{{ p2 }}"></rect>
+    <rect x="23" y="69" width="74" height="13" rx="6.5" style="fill:{{ d }}"></rect>
+    <rect x="26" y="64" width="68" height="7" rx="3.5" style="fill:{{ a1 }}"></rect>
+    <path d="M22 64q6-6 12 0t12 0 12 0 12 0 12 0 12 0v4H22z" style="fill:{{ g1 }}"></path>
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-lid calc(2.8s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <path d="M26 62a34 26 0 0 1 68 0z" style="fill:{{ p2 }}"></path>
+      <ellipse cx="46" cy="48" rx="2.6" ry="1.5" style="fill:{{ c }}"></ellipse><ellipse cx="60" cy="44" rx="2.6" ry="1.5" style="fill:{{ c }}"></ellipse><ellipse cx="72" cy="50" rx="2.6" ry="1.5" style="fill:{{ c }}"></ellipse><ellipse cx="54" cy="54" rx="2.6" ry="1.5" style="fill:{{ c }}"></ellipse>
+    </g>
+  </sc-if>
+
+  <sc-if value="{{ kTacos }}">
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-wig calc(1.8s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <circle cx="28" cy="70" r="7" style="fill:{{ g1 }}"></circle><circle cx="40" cy="63" r="7.5" style="fill:{{ a1 }}"></circle><circle cx="52" cy="63" r="6" style="fill:{{ c }}"></circle><circle cx="62" cy="70" r="6.5" style="fill:{{ g1 }}"></circle>
+      <path d="M18 92a27 27 0 0 1 54 0z" style="fill:{{ p2 }}"></path>
+      <path d="M26 90a19 19 0 0 1 38 0" style="fill:none;stroke:{{ p1 }};stroke-width:2.5;stroke-linecap:round"></path>
+    </g>
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-wig calc(1.8s * var(--spd, 1)) ease-in-out calc(-.9s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}">
+      <circle cx="58" cy="72" r="7" style="fill:{{ a1 }}"></circle><circle cx="70" cy="65" r="7.5" style="fill:{{ g1 }}"></circle><circle cx="82" cy="65" r="6" style="fill:{{ a2 }}"></circle><circle cx="92" cy="72" r="6.5" style="fill:{{ c }}"></circle>
+      <path d="M48 94a27 27 0 0 1 54 0z" style="fill:{{ p3 }}"></path>
+      <path d="M56 92a19 19 0 0 1 38 0" style="fill:none;stroke:{{ p2 }};stroke-width:2.5;stroke-linecap:round"></path>
+    </g>
+  </sc-if>
+
+  <sc-if value="{{ kPizza }}">
+    <ellipse cx="60" cy="76" rx="50" ry="28" style="fill:{{ p1 }}"></ellipse>
+    <path d="M60 71L99.5 62A42 26 0 1 1 96.4 84Z" style="fill:{{ a2 }}"></path>
+    <path d="M60 71L94 64A36 21 0 1 1 91.2 81.5Z" style="fill:{{ p2 }}"></path>
+    <ellipse cx="42" cy="66" rx="7" ry="4.5" style="fill:{{ a1 }}"></ellipse><ellipse cx="58" cy="84" rx="7" ry="4.5" style="fill:{{ a1 }}"></ellipse><ellipse cx="72" cy="62" rx="6" ry="4" style="fill:{{ a1 }}"></ellipse>
+    <circle cx="36" cy="78" r="3" style="fill:{{ d }}"></circle><circle cx="52" cy="60" r="3" style="fill:{{ d }}"></circle>
+    <ellipse cx="46" cy="76" rx="4.5" ry="2.4" transform="rotate(-30 46 76)" style="fill:{{ g1 }}"></ellipse>
+    <g style="transform-box:fill-box;transform-origin:0% 50%;animation:il-slice calc(3.6s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <path d="M60 71L99.5 62A42 26 0 0 1 96.4 84Z" style="fill:{{ a2 }}"></path>
+      <path d="M64 71L94 64.5A36 21 0 0 1 91.5 81Z" style="fill:{{ p2 }}"></path>
+      <ellipse cx="84" cy="71" rx="5" ry="3.4" style="fill:{{ a1 }}"></ellipse><circle cx="75" cy="74" r="2.4" style="fill:{{ d }}"></circle>
+    </g>
+  </sc-if>
+
+  <sc-if value="{{ kWok }}">
+    <g style="transform-box:fill-box;transform-origin:30% 50%;animation:il-pan calc(2.4s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <rect x="84" y="60" width="30" height="7" rx="3.5" transform="rotate(-12 84 60)" style="fill:{{ d }}"></rect>
+      <path d="M14 64h76a38 22 0 0 1-76 0z" style="fill:{{ p3 }}"></path>
+      <ellipse cx="52" cy="64" rx="38" ry="7" style="fill:{{ p2 }}"></ellipse>
+    </g>
+    <g style="transform-box:fill-box;transform-origin:center;animation:il-toss calc(2.4s * var(--spd, 1)) cubic-bezier(.3,.6,.4,1) infinite both;animation-play-state:{{ ps }}"><rect x="34" y="54" width="11" height="8" rx="3" style="fill:{{ a1 }}"></rect></g>
+    <g style="transform-box:fill-box;transform-origin:center;animation:il-toss calc(2.4s * var(--spd, 1)) cubic-bezier(.3,.6,.4,1) calc(.08s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"><circle cx="52" cy="56" r="5.5" style="fill:{{ g1 }}"></circle></g>
+    <g style="transform-box:fill-box;transform-origin:center;animation:il-toss calc(2.4s * var(--spd, 1)) cubic-bezier(.3,.6,.4,1) calc(.16s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"><rect x="60" y="55" width="10" height="7" rx="3" style="fill:{{ c }}"></rect></g>
+    <g style="transform-box:fill-box;transform-origin:center;animation:il-toss calc(2.4s * var(--spd, 1)) cubic-bezier(.3,.6,.4,1) calc(.04s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"><ellipse cx="44" cy="60" rx="5" ry="3" style="fill:{{ a2 }}"></ellipse></g>
+    <g style="transform-box:fill-box;transform-origin:center;animation:il-toss calc(2.4s * var(--spd, 1)) cubic-bezier(.3,.6,.4,1) calc(.12s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"><ellipse cx="72" cy="60" rx="5" ry="2.6" transform="rotate(20 72 60)" style="fill:{{ g2 }}"></ellipse></g>
+  </sc-if>
+
+  <sc-if value="{{ kPorridge }}">
+    <rect x="80" y="20" width="6" height="40" rx="3" transform="rotate(24 83 40)" style="fill:{{ w }}"></rect>
+    <path d="M18 64h84a42 32 0 0 1-84 0z" style="fill:{{ p2 }}"></path>
+    <ellipse cx="60" cy="64" rx="42" ry="8" style="fill:{{ p3 }}"></ellipse>
+    <ellipse cx="60" cy="63" rx="37" ry="6" style="fill:{{ c }}"></ellipse>
+    <circle cx="46" cy="62" r="5" style="fill:{{ a1 }}"></circle><circle cx="46" cy="62" r="1.6" style="fill:{{ a2 }}"></circle>
+    <circle cx="56" cy="64" r="5" style="fill:{{ a1 }}"></circle><circle cx="56" cy="64" r="1.6" style="fill:{{ a2 }}"></circle>
+    <circle cx="72" cy="61" r="3.6" style="fill:{{ p3 }}"></circle><circle cx="78" cy="64" r="3.6" style="fill:{{ p3 }}"></circle><circle cx="68" cy="65" r="3" style="fill:{{ p3 }}"></circle>
+    <ellipse cx="62" cy="62" rx="7" ry="2.4" style="fill:none;stroke:{{ a2 }};stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:il-ripple calc(3s * var(--spd, 1)) ease-out infinite both;animation-play-state:{{ ps }}"></ellipse>
+    <ellipse cx="62" cy="26" rx="3" ry="4" style="fill:{{ a1 }};transform-box:fill-box;animation:il-fall calc(3s * var(--spd, 1)) cubic-bezier(.5,0,.9,.5) infinite both;animation-play-state:{{ ps }}"></ellipse>
+  </sc-if>
+
+  <sc-if value="{{ kBread }}">
+    <path d="M52 40q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(3.6s * var(--spd, 1)) ease-out infinite both;animation-play-state:{{ ps }}"></path>
+    <path d="M68 42q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(3.6s * var(--spd, 1)) ease-out calc(1.8s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></path>
+    <rect x="12" y="90" width="96" height="9" rx="4.5" style="fill:{{ w }}"></rect>
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-rise calc(3.6s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <path d="M20 90V74a40 28 0 0 1 80 0v16z" style="fill:{{ p2 }}"></path>
+      <path d="M28 70a32 20 0 0 1 64 0" style="fill:none;stroke:{{ p3 }};stroke-width:3;stroke-linecap:round;opacity:.45"></path>
+      <path d="M40 58l8 10M56 54l8 10M72 57l8 10" style="fill:none;stroke:{{ c }};stroke-width:4;stroke-linecap:round"></path>
+    </g>
+  </sc-if>
+
+  <sc-if value="{{ kCake }}">
+    <ellipse cx="60" cy="94" rx="42" ry="8" style="fill:{{ p1 }}"></ellipse>
+    <rect x="28" y="70" width="64" height="22" rx="4" style="fill:{{ p2 }}"></rect>
+    <rect x="28" y="65" width="64" height="6" style="fill:{{ c }}"></rect>
+    <rect x="28" y="52" width="64" height="15" rx="3" style="fill:{{ p2 }}"></rect>
+    <path d="M26 50h68v6q-4 7-8.5 0t-8.5 0-8.5 0-8.5 0-8.5 0-8.5 0-8.5 0-8.5 0z" style="fill:{{ c }}"></path>
+    <circle cx="46" cy="80" r="2" style="fill:{{ p3 }}"></circle><circle cx="72" cy="78" r="2" style="fill:{{ p3 }}"></circle><circle cx="60" cy="84" r="2" style="fill:{{ p3 }}"></circle>
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-berry calc(2.4s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <circle cx="60" cy="42" r="8" style="fill:{{ p3 }}"></circle>
+      <ellipse cx="65" cy="33" rx="5" ry="2.4" transform="rotate(-30 65 33)" style="fill:{{ g1 }}"></ellipse>
+      <circle cx="57" cy="39" r="2" style="fill:{{ c }};opacity:.7"></circle>
+    </g>
+    <path d="M86 30l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" style="fill:{{ a1 }};transform-box:fill-box;transform-origin:center;animation:il-spark calc(2.4s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}"></path>
+    <path d="M30 34l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6z" style="fill:{{ a1 }};transform-box:fill-box;transform-origin:center;animation:il-spark calc(2.4s * var(--spd, 1)) ease-in-out calc(1.2s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></path>
+  </sc-if>
+  <sc-if value="{{ kDumplings }}">
+    <path d="M34 44q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(2.7s * var(--spd, 1)) ease-out infinite both;animation-play-state:{{ ps }}"></path>
+    <path d="M60 40q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(2.7s * var(--spd, 1)) ease-out calc(.9s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></path>
+    <path d="M86 44q-4-6 0-12t0-12" style="fill:none;stroke:{{ p2 }};stroke-width:3;stroke-linecap:round;transform-box:fill-box;animation:il-steam calc(2.7s * var(--spd, 1)) ease-out calc(1.8s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></path>
+    <rect x="14" y="68" width="92" height="28" rx="9" style="fill:{{ w }}"></rect>
+    <path d="M14 82h92" style="stroke:{{ d }};stroke-width:2.5;opacity:.35"></path>
+    <ellipse cx="60" cy="68" rx="46" ry="8" style="fill:{{ p3 }}"></ellipse>
+    <path d="M20 70a14 14 0 0 1 28 0z" style="fill:{{ c }}"></path><path d="M46 68a14 15 0 0 1 28 0z" style="fill:{{ c }}"></path><path d="M72 70a14 14 0 0 1 28 0z" style="fill:{{ c }}"></path>
+    <path d="M30 62l4 5M38 62l-4 5M56 59l4 6M64 59l-4 6M82 62l4 5M90 62l-4 5" style="stroke:{{ p1 }};stroke-width:2;stroke-linecap:round"></path>
+    <ellipse cx="100" cy="98" rx="12" ry="4.5" style="fill:{{ a2 }}"></ellipse><ellipse cx="100" cy="97" rx="9" ry="3" style="fill:{{ a1 }}"></ellipse>
+  </sc-if>
+
+  <sc-if value="{{ kWrap }}">
+    <ellipse cx="60" cy="90" rx="48" ry="11" style="fill:{{ p1 }}"></ellipse>
+    <g style="transform-box:fill-box;transform-origin:0% 50%;animation:il-roll calc(3.6s * var(--spd, 1)) cubic-bezier(.4,0,.2,1) infinite both;animation-play-state:{{ ps }}">
+      <ellipse cx="66" cy="80" rx="38" ry="11" style="fill:{{ c }}"></ellipse>
+      <circle cx="52" cy="78" r="5" style="fill:{{ g1 }}"></circle><circle cx="64" cy="81" r="5" style="fill:{{ a1 }}"></circle><circle cx="76" cy="77" r="4.5" style="fill:{{ p2 }}"></circle><circle cx="86" cy="81" r="4" style="fill:{{ g1 }}"></circle>
+    </g>
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-rollc calc(3.6s * var(--spd, 1)) cubic-bezier(.4,0,.2,1) infinite both;animation-play-state:{{ ps }}">
+      <rect x="20" y="46" width="26" height="42" rx="13" transform="rotate(-12 33 67)" style="fill:{{ w }}"></rect>
+      <ellipse cx="29" cy="48" rx="12" ry="6" transform="rotate(-12 29 48)" style="fill:{{ c }}"></ellipse>
+      <circle cx="25" cy="47" r="3.4" style="fill:{{ g1 }}"></circle><circle cx="32" cy="46" r="3" style="fill:{{ a1 }}"></circle><circle cx="29" cy="50" r="2.6" style="fill:{{ p2 }}"></circle>
+    </g>
+  </sc-if>
+
+  <sc-if value="{{ kSmoothie }}">
+    <line x1="66" y1="42" x2="82" y2="12" style="stroke:{{ a1 }};stroke-width:5;stroke-linecap:round"></line>
+    <path d="M34 40h52l-6 54a7 7 0 0 1-7 6H47a7 7 0 0 1-7-6z" style="fill:{{ p2 }}"></path>
+    <path d="M42 46l3 44" style="stroke:{{ p1 }};stroke-width:4;stroke-linecap:round;opacity:.8"></path>
+    <ellipse cx="60" cy="40" rx="26" ry="5" style="fill:{{ p3 }}"></ellipse>
+    <ellipse cx="36" cy="38" rx="9" ry="4" transform="rotate(-30 36 38)" style="fill:{{ g1 }}"></ellipse><circle cx="80" cy="38" r="7" style="fill:{{ a2 }}"></circle>
+    <circle cx="52" cy="88" r="2.6" style="fill:{{ c }};transform-box:fill-box;animation:il-up calc(2.4s * var(--spd, 1)) ease-in infinite both;animation-play-state:{{ ps }}"></circle>
+    <circle cx="62" cy="92" r="2" style="fill:{{ c }};transform-box:fill-box;animation:il-up calc(2.4s * var(--spd, 1)) ease-in calc(.8s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></circle>
+    <circle cx="68" cy="86" r="2.4" style="fill:{{ c }};transform-box:fill-box;animation:il-up calc(2.4s * var(--spd, 1)) ease-in calc(1.6s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></circle>
+  </sc-if>
+
+  <sc-if value="{{ kEintopf }}">
+    <circle cx="24" cy="50" r="5" style="fill:{{ p1 }};transform-box:fill-box;transform-origin:center;animation:il-puff calc(2s * var(--spd, 1)) ease-out infinite both;animation-play-state:{{ ps }}"></circle>
+    <circle cx="96" cy="50" r="5" style="fill:{{ p1 }};transform-box:fill-box;transform-origin:center;animation:il-puff calc(2s * var(--spd, 1)) ease-out calc(.32s * var(--spd, 1)) infinite both;animation-play-state:{{ ps }}"></circle>
+    <rect x="8" y="64" width="16" height="8" rx="4" style="fill:{{ p3 }}"></rect><rect x="96" y="64" width="16" height="8" rx="4" style="fill:{{ p3 }}"></rect>
+    <rect x="18" y="56" width="84" height="42" rx="14" style="fill:{{ p2 }}"></rect>
+    <path d="M18 72h84" style="stroke:{{ p1 }};stroke-width:4;opacity:.7"></path>
+    <ellipse cx="40" cy="84" rx="5" ry="3" style="fill:{{ a1 }};opacity:.9"></ellipse>
+    <g style="transform-box:fill-box;transform-origin:50% 100%;animation:il-rattle calc(2s * var(--spd, 1)) ease-in-out infinite both;animation-play-state:{{ ps }}">
+      <path d="M20 57a40 15 0 0 1 80 0z" style="fill:{{ p3 }}"></path>
+      <ellipse cx="60" cy="57" rx="42" ry="4" style="fill:{{ p3 }}"></ellipse>
+      <rect x="54" y="36" width="12" height="8" rx="4" style="fill:{{ d }}"></rect>
+      <path d="M36 50q24-10 48 0" style="fill:none;stroke:{{ p2 }};stroke-width:2.5;stroke-linecap:round;opacity:.6"></path>
+    </g>
+  </sc-if>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:250},&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pasta&quot;,&quot;bowl&quot;,&quot;breakfast&quot;,&quot;ramen&quot;,&quot;burger&quot;,&quot;tacos&quot;,&quot;wok&quot;,&quot;bread&quot;,&quot;cake&quot;,&quot;smoothie&quot;,&quot;eintopf&quot;,&quot;dumplings&quot;],&quot;default&quot;:&quot;ramen&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;play&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#F7B94A&quot;,&quot;#DE8CF2&quot;,&quot;#A5C7AE&quot;,&quot;#F08A5D&quot;,&quot;#A8BEE3&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;bg&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const K = { pasta: ['#F7B94A', '#F08A5D'], ramen: ['#A8BEE3', '#F7B94A'], curry: ['#F08A5D', '#A8BEE3'], bowl: ['#A5C7AE', '#F08A5D'], salad: ['#A5C7AE', '#F08A5D'], burger: ['#F7B94A', '#F08A5D'], tacos: ['#F7B94A', '#F08A5D'], pizza: ['#F08A5D', '#F7B94A'], wok: ['#A8BEE3', '#F08A5D'], porridge: ['#DE8CF2', '#F7B94A'], bread: ['#F7B94A', '#F08A5D'], cake: ['#DE8CF2', '#F7B94A'], dumplings: ['#A5C7AE', '#F08A5D'], wrap: ['#DE8CF2', '#F08A5D'], smoothie: ['#DE8CF2', '#A5C7AE'], eintopf: ['#F08A5D', '#A5C7AE'], breakfast: ['#DE8CF2', '#F7B94A'] };
+const NEW = ['pasta', 'bowl', 'breakfast'];
+class Component extends DCLogic {
+  componentDidMount() { if (!window.R11) this.t = setInterval(() => { if (window.R11) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const k = K[this.props.kind] ? this.props.kind : 'ramen', h = this.props.hue || K[k][0], a = K[k][1], S = 'var(--surface2, #EFEDE8)', I = 'var(--ink, #1F1E1C)';
+    const m = (c, p, x) => `color-mix(in oklch, ${c} ${p}%, ${x || S})`;
+    const o = {
+      ps: this.props.play ? 'running' : 'paused',
+      p0: (this.props.bg ?? true) ? m(h, 18) : 'transparent', p1: m(h, 34), p2: m(h, 58), p3: `color-mix(in oklch, ${h} 82%, ${I} 18%)`,
+      a1: m(a, 62), a2: `color-mix(in oklch, ${a} 85%, ${I} 15%)`,
+      c: m('#FFF4DE', 80), g1: m('#8DB596', 74), g2: `color-mix(in oklch, #5E8F6A 85%, ${I} 15%)`, d: m('#6B4A34', 85), w: m('#D9A86C', 76)
+    };
+    Object.keys(K).forEach(n => { o['k' + n[0].toUpperCase() + n.slice(1)] = n === k; });
+    o.kNew = NEW.includes(k) && !!window.R11;
+    o.newArt = o.kNew ? React.createElement('g', { style: { '--r11ps': o.ps }, dangerouslySetInnerHTML: { __html: window.R11.dishInner(k, o) } }) : null;
+    return o;
+  }
+}
+</script>
+</body>
+</html>

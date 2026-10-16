@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#EDEAE3}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="--ink:#1F1E1C;--ink2:#6F6B65;--surface:#FFFFFF;--surface2:#EFEDE8;--bg:#F7F6F2;padding:40px 44px 60px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-end">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:760px">
+      <div style="display:flex;gap:14px;font:600 12px/1 system-ui"><a href="Malkochen Board States.dc.html" style="text-decoration:none;opacity:.6">← Round 2 · States</a><a href="Placeholder Pictograms.dc.html" style="text-decoration:none;opacity:.6">Pictogram library →</a></div>
+      <div style="font:400 44px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em">Round 3 · Gericht hinzufügen</div>
+      <div style="font:14px/1.55 system-ui;color:#55524C;text-wrap:pretty">Android first. This is a tall bottom sheet over the Board, so the Board stays in view and the saved card can fly straight onto it. One-shot entrances have a ↻ Replay button; Found, Image only and Saved loop on their own. Tweaks → Motion speed slows everything down.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 20px 14px 10px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px;--ink:#1F1E1C">
+      <dc-import name="Mascot" mood="happy" size="{{ 76 }}" style="width:76px;height:71px" hint-size="76px,71px"></dc-import>
+      <dc-import name="Mascot" mood="stir" size="{{ 76 }}" style="width:76px;height:71px" hint-size="76px,71px"></dc-import>
+      <dc-import name="Mascot" mood="oops" size="{{ 76 }}" style="width:76px;height:71px" hint-size="76px,71px"></dc-import>
+      <dc-import name="Mascot" mood="wow" size="{{ 76 }}" style="width:76px;height:71px" hint-size="76px,71px"></dc-import>
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:200px"><span style="font:400 22px/1 'Newsreader',Georgia,serif">Topfbert</span><span style="font:12px/1.45 system-ui;color:#55524C">Topfbert McPottenheimer, the recurring pot mascot, in 4 moods: happy · stir · oops · wow. Sidekick: the googly-eyed pea.</span></div>
+    </div>
+  </div>
+  <sc-for list="{{ states }}" as="s" hint-placeholder-count="9">
+    <div id="{{ s.key }}" data-screen-label="{{ s.n }} {{ s.title }}" style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;padding:28px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">HELL</div><div style="--bg:#F7F6F2;--surface:#FFFFFF;--surface2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.14);--pill:#1F1E1C;--pillInk:#FFFFFF;--danger:#C23B22;--glass:rgba(255,255,255,.82);--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="AddPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">DUNKEL</div><div style="--bg:#131211;--surface:#1E1C1A;--surface2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--pill:#F3EFE8;--pillInk:#131211;--danger:#FF8A70;--glass:rgba(30,28,26,.8);--shadow:0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="AddPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="width:320px;display:flex;flex-direction:column;gap:4px;padding-top:24px">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ s.n }}</span><span style="font:400 28px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.01em">{{ s.title }}</span></div>
+        <sc-if value="{{ s.canReplay }}"><button onClick="{{ s.onReplay }}" style="align-self:flex-start;margin-top:8px;font:600 11px system-ui;padding:5px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.15);background:#fff;cursor:pointer">↻ Replay</button></sc-if>
+        <sc-for list="{{ s.notes }}" as="m" hint-placeholder-count="1">
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)">
+            <span style="font:600 10px ui-monospace,monospace;padding:4px 7px;border-radius:5px;background:{{ m.tagBg }};color:{{ m.tagInk }}">{{ m.tag }}</span>
+            <div style="font:600 13.5px/1.4 system-ui;margin-top:8px">{{ m.t }}</div>
+            <div style="font:12.5px/1.55 system-ui;color:#55524C;text-wrap:pretty">{{ m.d }}</div>
+            <div style="font:11px ui-monospace,monospace;color:#8A857D;margin-top:4px">{{ m.tm }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motionSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1,0.5,0.25],&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+const N = (g, t, d, tm) => ({ tag: g ? 'MOTION GRAPHIC' : 'UI MOTION', tagBg: g ? '#E7D2F7' : '#1F1E1C', tagInk: g ? '#4A1470' : '#fff', t, d, tm });
+const STATES = [
+  ['empty', 'Leer', 1, [N(0, 'Sheet + focus', 'The sheet springs up from the add pebble, the link field focuses with a soft butter ring that breathes, the keyboard rises. Source chips pop in one after another.', '460ms sheet · 60ms chip stagger · 2.4s ring'), N(0, 'Clipboard suggestion', 'If the clipboard holds a recipe link, a suggestion pops above the keyboard. One tap pastes it and starts the lookup.', '520ms pop, 700ms delay')]],
+  ['lookup', 'Wird gesucht', 1, [N(1, 'Topfbert stirs', 'Topfbert stirs with a wooden spoon while carrot, pea and pepper orbit the pot. Tongue out, eyes squeezed shut in concentration. Status lines rotate below. Loops until the lookup ends (usually under 2s).', '1.2s stir · 1.6s orbit · 4.5s copy cycle'), N(0, 'Waiting fields', 'Title, Board and note rows shimmer in place so the layout doesn’t jump when the result arrives. The URL field shows three soft dots.', '1.4s shimmer')]],
+  ['found', 'Gefunden', 0, [N(0, 'Image bloom', 'The image blooms out of a circle from the upper left while going from blurred to sharp and settling from 1.14× to 1×. The source badge pops in, then "Bild ändern" fades in.', '1.2s bloom · 360ms badge pop'), N(0, 'Title types in', 'The suggested title types itself in, letter by letter (30ms each), over a fading skeleton bar. It’s immediately editable.', '30ms per character')]],
+  ['image-only', 'Nur Bild (Pinterest)', 0, [N(0, 'Friendly prompt', 'Once the image lands, the title field starts a slow butter glow (never red). "Wie heißt das Gericht?" bobs gently, the pencil wiggles, and a one-line hint explains why. Speichern stays dimmed until a title is typed.', '2.4s glow · 1.6s wiggle')]],
+  ['nothing', 'Nichts gefunden', 1, [N(0, 'Picker opens itself', 'The placeholder picker unrolls top-down, showing 8 of the 16 illustrations inline with tiles popping in 40ms apart. The best match (from URL keywords) is selected and plays its loop. "Alle 16" opens the full picker (Round 4). The title is required and glows until filled.', '520ms unroll · 40ms stagger')]],
+  ['duplicate', 'Duplikat: gleicher Link', 1, [N(0, 'Hard stop', 'Same URL is a fact, so it can’t be saved twice. The card rises where Speichern was, the existing Dish’s thumbnail hops ("hey, that’s me"), and the title is underlined in butter. Choices: Abbrechen / Öffnen.', '480ms rise · 2.8s hop')]],
+  ['similar', 'Duplikat: ähnlicher Titel', 1, [N(0, 'Friendly question', 'Different link, similar title. Same card language, but it asks: "Ist das dasselbe Gericht?" Nein saves as a new Dish, Ja opens the existing one. Speichern waits until it’s answered.', '480ms rise · 2.8s hop')]],
+  ['failed', 'Fehlgeschlagen', 1, [N(1, 'Topfbert oops', 'Topfbert tilts, with one eye squinting and a sweat drop running down. No red, no error icon.', '2.4s wobble loop'), N(0, 'Still saveable', 'A placeholder is picked automatically from the title. "Erneut" spins once on tap. Speichern works as soon as there’s a title.', '420ms rise · 900ms retry spin')]],
+  ['manual', 'Ohne Link', 1, [N(0, 'Switch view', 'From "Ohne Link hinzufügen", the content slides in from the right (back arrow reverses it). The placeholder shuffles through pictograms; the dice picks a random one.', '460ms slide · 1.5s shuffle')]],
+  ['saved', 'Gespeichert', 0, [N(0, 'Save → fly', 'Tap squashes the button, it turns sage and "Gespeichert ✓" pops. The sheet drops away, and the new card rises from it in an arc, overshoots and lands at the top of Ideen (always Ideen, shown in the Board row) with a squash. The cards below make room, Ideen ticks 12→13, and the Neu pebble pops.', '200ms press · 700ms sheet · 900ms flight · 360ms land')]]
+];
+class Component extends DCLogic {
+  state = { rep: {} };
+  applySpd() { document.documentElement.style.setProperty('--spd', String(1 / (this.props.motionSpeed ?? 1))); }
+  componentDidMount() { this.applySpd(); }
+  componentDidUpdate() { this.applySpd(); }
+  renderVals() {
+    return { states: STATES.map(([key, title, canReplay, notes], i) => ({ key, title, notes, canReplay: !!canReplay, n: String(i + 1).padStart(2, '0'), rep: this.state.rep[key] || 0, onReplay: () => this.setState(s => ({ rep: { ...s.rep, [key]: (s.rep[key] || 0) + 1 } })) })) };
+  }
+}
+</script>
+</body>
+</html>

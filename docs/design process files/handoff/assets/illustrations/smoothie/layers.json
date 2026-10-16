@@ -1,0 +1,105 @@
+{
+  "dish": "smoothie",
+  "viewBox": "0 0 120 120",
+  "note": "Every layer is a full-canvas SVG in the shared viewBox: stack by z (1 = back) at identical position. Transform origin = pivot (viewBox units) or the layer bbox centre if null.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-base_1.svg",
+      "name": "base_1",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 4,
+      "file": "layers/light/04-bubble_1.svg",
+      "name": "bubble_1",
+      "animated": true,
+      "loop": "up 2.4s ease-in infinite",
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/light/05-bubble_2.svg",
+      "name": "bubble_2",
+      "animated": true,
+      "loop": "up 2.4s ease-in .8s infinite",
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/light/06-bubble_3.svg",
+      "name": "bubble_3",
+      "animated": true,
+      "loop": "up 2.4s ease-in 1.6s infinite",
+      "pivot": null
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-base_1.svg",
+      "name": "base_1",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 4,
+      "file": "layers/dark/04-bubble_1.svg",
+      "name": "bubble_1",
+      "animated": true,
+      "loop": "up 2.4s ease-in infinite",
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/dark/05-bubble_2.svg",
+      "name": "bubble_2",
+      "animated": true,
+      "loop": "up 2.4s ease-in .8s infinite",
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/dark/06-bubble_3.svg",
+      "name": "bubble_3",
+      "animated": true,
+      "loop": "up 2.4s ease-in 1.6s infinite",
+      "pivot": null
+    }
+  ]
+}

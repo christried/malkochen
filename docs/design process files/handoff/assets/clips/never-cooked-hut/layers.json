@@ -1,0 +1,138 @@
+{
+  "clip": "never-cooked-hut",
+  "viewBox": "0 0 170 118",
+  "canvas": [
+    510,
+    354
+  ],
+  "seconds": 4.8,
+  "note": "Layers stack by z. Animated elements carry id + data-loop (r11-keyframes.css name, duration, easing, delay) + data-pivot (viewBox units of their own <svg>; nested character/Topfbert <svg>s have their own viewBox). Inline style = frame-0 state.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-background.svg",
+      "name": "background",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-blob.svg",
+      "name": "blob",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-topfbert_stack.svg",
+      "name": "topfbert_stack",
+      "animated": true,
+      "elements": [
+        {
+          "id": "topfbert",
+          "loop": "breathe 2.4s ease-in-out infinite",
+          "pivot": "70 123"
+        },
+        {
+          "id": "steam_1",
+          "loop": "steam 2.4s ease-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "steam_2",
+          "loop": "steam 2.4s ease-out -1.2s infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "pea",
+          "loop": "peapop 4.8s ease-in-out infinite",
+          "pivot": "66 41"
+        },
+        {
+          "id": "pea_eyes",
+          "loop": "pealook 4.8s ease-in-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "gaze",
+          "loop": "gazehut 4.8s ease-in-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "eyes",
+          "loop": "eo 4.8s linear infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "hat",
+          "loop": "hattip 4.8s ease-in-out infinite",
+          "pivot": "15 42"
+        }
+      ]
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-background.svg",
+      "name": "background",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-blob.svg",
+      "name": "blob",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-topfbert_stack.svg",
+      "name": "topfbert_stack",
+      "animated": true,
+      "elements": [
+        {
+          "id": "topfbert",
+          "loop": "breathe 2.4s ease-in-out infinite",
+          "pivot": "70 123"
+        },
+        {
+          "id": "steam_1",
+          "loop": "steam 2.4s ease-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "steam_2",
+          "loop": "steam 2.4s ease-out -1.2s infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "pea",
+          "loop": "peapop 4.8s ease-in-out infinite",
+          "pivot": "66 41"
+        },
+        {
+          "id": "pea_eyes",
+          "loop": "pealook 4.8s ease-in-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "gaze",
+          "loop": "gazehut 4.8s ease-in-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "eyes",
+          "loop": "eo 4.8s linear infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "hat",
+          "loop": "hattip 4.8s ease-in-out infinite",
+          "pivot": "15 42"
+        }
+      ]
+    }
+  ]
+}

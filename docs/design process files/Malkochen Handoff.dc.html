@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#F7F6F2}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="max-width:1180px;margin:0 auto;padding:48px 32px 96px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:56px">
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <a href="Malkochen.dc.html" style="font:600 13px/1 system-ui;color:#6F6B65;text-decoration:none">← Übersicht</a>
+    <span style="font:400 56px/1 'Newsreader',Georgia,serif;letter-spacing:-.03em">Handoff · R10</span>
+    <span style="font:italic 400 20px/1.35 'Newsreader',Georgia,serif;color:#6F6B65;max-width:760px;text-wrap:pretty">Nuxt + Vue + Tailwind für UI & UI-Motion, Remotion für Motion Graphics. Alles hier wird live aus den Dateien in handoff/ gelesen.</span>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+      <sc-for list="{{ files }}" as="f" hint-placeholder-count="8"><a href="{{ f.href }}" style="height:40px;padding:0 14px;border-radius:20px;background:#fff;border:1px solid rgba(0,0,0,.1);display:flex;align-items:center;gap:8px;font:600 13px/1 system-ui;text-decoration:none" style-hover="background:#EFEDE8"><span style="font:500 11px ui-monospace,monospace;color:#8A857D">{{ f.k }}</span>{{ f.l }}</a></sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">1 · FARBEN</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px">
+      <sc-for list="{{ colors }}" as="c" hint-placeholder-count="13">
+        <div style="display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:#fff;border:1px solid rgba(0,0,0,.08)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;height:56px"><div style="background:{{ c.l }}"></div><div style="background:{{ c.d }}"></div></div>
+          <div style="padding:10px 12px;display:flex;flex-direction:column;gap:3px"><span style="font:600 13.5px/1.2 system-ui">{{ c.k }}</span><span style="font:500 11px/1.4 ui-monospace,monospace;color:#6F6B65">{{ c.l }} · {{ c.d }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:32px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">TYPO · Newsreader + Hanken Grotesk</span>
+      <sc-for list="{{ type }}" as="t" hint-placeholder-count="15">
+        <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid rgba(0,0,0,.07);padding-bottom:8px"><span style="width:92px;flex:none;font:500 11px ui-monospace,monospace;color:#8A857D">{{ t.k }}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:{{ t.font }};letter-spacing:{{ t.ls }};text-transform:{{ t.tt }}">Linsen-Dal mit Kokos</span><span style="flex:none;font:500 11px ui-monospace,monospace;color:#8A857D">{{ t.meta }}</span></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">RADIEN · Pebble</span>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <sc-for list="{{ radii }}" as="r" hint-placeholder-count="12"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:64px;height:52px;background:#FBE3B0;border:1.5px solid rgba(0,0,0,.14);border-radius:{{ r.v }}"></div><span style="font:500 10.5px ui-monospace,monospace;color:#6F6B65">{{ r.k }}</span></div></sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">SCHATTEN</span>
+        <div style="display:flex;flex-wrap:wrap;gap:22px;padding:8px 0 24px">
+          <sc-for list="{{ shadows }}" as="s" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="width:72px;height:56px;border-radius:20px 17px 21px 18px;background:#fff;box-shadow:{{ s.v }}"></div><span style="font:500 10.5px ui-monospace,monospace;color:#6F6B65">{{ s.k }}</span></div></sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">ABSTÄNDE · px</span>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px"><sc-for list="{{ space }}" as="s" hint-placeholder-count="13"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:{{ s.w }};height:{{ s.w }};background:#A5C7AE;border-radius:3px"></div><span style="font:500 10px ui-monospace,monospace;color:#6F6B65">{{ s.v }}</span></div></sc-for></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">MOTION-TOKENS</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+      <sc-for list="{{ motion }}" as="m" hint-placeholder-count="11"><div style="padding:14px 16px;border-radius:20px 17px 21px 18px;background:#fff;display:flex;flex-direction:column;gap:5px"><div style="display:flex;gap:8px;align-items:baseline"><span style="font:600 15px/1 system-ui">{{ m.k }}</span><span style="font:500 11.5px ui-monospace,monospace;color:#9B32D8">{{ m.d }}</span></div><span style="font:500 11px/1.4 ui-monospace,monospace;color:#6F6B65;word-break:break-all">{{ m.e }}</span><span style="font:13px/1.4 system-ui;color:#3F3C37;text-wrap:pretty">{{ m.u }}</span></div></sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">2 · KOMPONENTEN · components.json</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px">
+      <sc-for list="{{ comps }}" as="c" hint-placeholder-count="14">
+        <div style="padding:18px;border-radius:28px 24px 30px 26px;background:#fff;display:flex;flex-direction:column;gap:10px">
+          <span style="font:400 24px/1.1 'Newsreader',Georgia,serif">{{ c.name }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:5px"><sc-for list="{{ c.states }}" as="s"><span style="padding:4px 9px;border-radius:12px;background:#EFEDE8;font:600 11.5px/1.2 system-ui">{{ s }}</span></sc-for></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><sc-for list="{{ c.variants }}" as="v"><span style="font:13px/1.4 system-ui;color:#3F3C37">· {{ v }}</span></sc-for></div>
+          <div style="display:flex;flex-direction:column;gap:4px;padding-top:8px;border-top:1px solid rgba(0,0,0,.07)"><sc-for list="{{ c.motion }}" as="m"><span style="font:500 11.5px/1.45 ui-monospace,monospace;color:#5A4B7A">{{ m }}</span></sc-for></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">3 · INTERAKTIONEN · interactions.json</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:12px">
+      <sc-for list="{{ inter }}" as="i" hint-placeholder-count="6">
+        <div style="padding:20px;border-radius:28px 24px 30px 26px;background:#fff;display:flex;flex-direction:column;gap:10px">
+          <span style="font:400 24px/1.1 'Newsreader',Georgia,serif">{{ i.name }}</span>
+          <span style="font:13px/1.4 system-ui;color:#6F6B65">{{ i.where }}</span>
+          <div style="display:flex;flex-direction:column;gap:6px"><sc-for list="{{ i.steps }}" as="s"><span style="font:500 12px/1.5 ui-monospace,monospace;color:#1F1E1C;padding-left:10px;border-left:2px solid #FBE3B0">{{ s }}</span></sc-for></div>
+          <span style="font:13px/1.45 system-ui;color:#3F3C37;padding:10px 12px;border-radius:14px;background:#E9E4F7">Reduziert: {{ i.reduced }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">4 · MOTION GRAPHICS · REMOTION.md · {{ briefCount }} Briefs</span>
+    <div style="display:flex;flex-direction:column;border-radius:24px;overflow:hidden;background:#fff">
+      <sc-for list="{{ briefs }}" as="b" hint-placeholder-count="35">
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 120px;gap:14px;align-items:center;padding:11px 16px;border-top:1px solid rgba(0,0,0,.06)">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font:600 13.5px/1.2 ui-monospace,monospace">{{ b.id }}</span><span style="font:12px/1.3 system-ui;color:#6F6B65">{{ b.group }}</span></div>
+          <span style="font:500 12px/1.3 ui-monospace,monospace">{{ b.canvas }}</span>
+          <span style="font:500 12px/1.3 ui-monospace,monospace">{{ b.len }}</span>
+          <div style="display:flex;align-items:center;gap:6px"><sc-if value="{{ b.solid }}"><span style="width:22px;height:22px;border-radius:7px;border:1px solid rgba(0,0,0,.12);background:{{ b.bl }}"></span><span style="width:22px;height:22px;border-radius:7px;background:{{ b.bd }}"></span></sc-if><sc-if value="{{ b.alpha }}"><span style="padding:4px 8px;border-radius:10px;background:#F7DCCB;font:700 11px/1 system-ui;color:#8A3A1E">Alpha</span></sc-if></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">5 · BREAKPOINTS</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+      <sc-for list="{{ bps }}" as="b" hint-placeholder-count="3"><div style="padding:18px;border-radius:28px 24px 30px 26px;background:{{ b.bg }};display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:baseline;gap:10px"><span style="font:400 26px/1 'Newsreader',Georgia,serif">{{ b.k }}</span><span style="font:600 12px ui-monospace,monospace">{{ b.r }}</span></div><span style="font:13.5px/1.45 system-ui;color:#3F3C37;text-wrap:pretty">{{ b.l }}</span></div></sc-for>
+    </div>
+    <span style="font:13.5px/1.45 system-ui;color:#6F6B65">{{ bpNote }}</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">6 · ASSETS · handoff/assets/</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+      <sc-for list="{{ dishes }}" as="d" hint-placeholder-count="16"><a href="{{ d.json }}" style="display:flex;flex-direction:column;gap:6px;text-decoration:none"><div style="display:grid;grid-template-columns:1fr 1fr;border-radius:20px 17px 21px 18px;overflow:hidden"><img src="{{ d.l }}" alt="" style="width:100%;display:block"><img src="{{ d.d }}" alt="" style="width:100%;display:block"></div><span style="font:600 12.5px/1.2 system-ui">{{ d.k }} <span style="font:500 11px ui-monospace,monospace;color:#8A857D">{{ d.n }} Ebenen</span></span></a></sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;padding:20px;border-radius:28px 24px 30px 26px;background:#fff">
+      <sc-for list="{{ moods }}" as="m" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><img src="{{ m.src }}" alt="" style="width:110px;height:118px"><span style="font:500 11px ui-monospace,monospace;color:#6F6B65">{{ m.k }}</span></div></sc-for>
+      <sc-for list="{{ extras }}" as="e" hint-placeholder-count="10"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><img src="{{ e.src }}" alt="" style="width:64px;height:64px;object-fit:contain"><span style="font:500 11px ui-monospace,monospace;color:#6F6B65">{{ e.k }}</span></div></sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;padding:20px;border-radius:28px 24px 30px 26px;background:#EFEDE8">
+      <sc-for list="{{ icons }}" as="i" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><img src="{{ i.src }}" alt="" style="width:{{ i.w }};height:{{ i.w }};border-radius:{{ i.r }}"><span style="font:500 11px ui-monospace,monospace;color:#6F6B65">{{ i.k }}</span></div></sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { t: null, c: [], i: [], b: [], L: {} };
+  async componentDidMount() {
+    const j = p => fetch('handoff/' + p).then(r => r.json()).catch(() => null);
+    const D = ['pasta','ramen','curry','bowl','salad','burger','tacos','pizza','wok','porridge','bread','cake','dumplings','wrap','smoothie','eintopf'];
+    const [t, c, i, b, ...ls] = await Promise.all([j('tokens.json'), j('components.json'), j('interactions.json'), j('remotion-briefs.json'), ...D.map(d => j(`assets/illustrations/${d}/layers.json`))]);
+    const L = {}; D.forEach((d, k) => L[d] = ls[k] ? ls[k].light.length : 0);
+    this.setState({ t, c: c || [], i: i || [], b: b || [], L, D });
+  }
+  renderVals() {
+    const { t, c, i, b, L } = this.state, D = this.state.D || [];
+    const col = t ? Object.keys(t.color.light).filter(k => typeof t.color.light[k] === 'string').map(k => ({ k, l: t.color.light[k], d: t.color.dark[k] })) : [];
+    const fam = f => t.font[f] || f;
+    const A = 'handoff/assets/';
+    return {
+      files: [['md','README','handoff/README.md'],['json','tokens','handoff/tokens.json'],['css','tokens.css','handoff/tokens.css'],['js','tailwind.preset','handoff/tailwind.preset.js'],['json','components','handoff/components.json'],['json','interactions','handoff/interactions.json'],['md','REMOTION','handoff/REMOTION.md'],['json','motion','handoff/motion.json'],['webmanifest','Manifest','handoff/assets/icon/manifest.webmanifest']].map(([k,l,href]) => ({ k, l, href })),
+      colors: col,
+      type: t ? Object.entries(t.type).map(([k, [f, s, lh, w, ls, st]]) => ({ k, font: `${st === 'italic' ? 'italic ' : ''}${w} ${Math.min(s, 40)}px/${lh} ${fam(f)}`, ls, tt: st === 'uppercase' ? 'uppercase' : 'none', meta: `${s}/${lh} · ${w}` })) : [],
+      radii: t ? Object.entries(t.radius).filter(([k]) => k !== 'note').map(([k, v]) => ({ k, v })) : [],
+      shadows: t ? Object.entries(t.shadow.light).map(([k, v]) => ({ k, v })) : [],
+      space: t ? t.space.values.map(v => ({ v, w: v + 'px' })) : [],
+      motion: t ? Object.entries(t.motion).map(([k, m]) => ({ k, d: m.duration || '', e: [m.easing, m.spring].filter(x => x && x !== '—').join(' · '), u: m.use || '' })) : [],
+      comps: c.map(x => ({ name: x.name, states: x.states || [], variants: x.variants || [], motion: x.motion || [] })),
+      inter: i.map(x => ({ name: x.name, where: x.where, steps: x.steps || [], reduced: x.reduced })),
+      briefCount: b.length,
+      briefs: b.map(x => ({ id: x.id, group: x.group, canvas: x.canvas ? `${x.canvas[0]}×${x.canvas[1]} · ${x.aspect || ''}` : 'Vue-Partikel', len: x.frames ? `${x.frames}f · ${x.seconds}s · ${x.loop ? 'Loop' : 'einmal'}` : `${x.seconds || ''}s`, solid: !x.transparent, alpha: !!x.transparent, bl: x.background?.light, bd: x.background?.dark })),
+      bps: t ? [['Phone', `< ${t.breakpoints.tablet.min}px`, t.breakpoints.phone.layout, '#FBE3B0'], ['Tablet', `${t.breakpoints.tablet.min}–${t.breakpoints.tablet.max}px`, t.breakpoints.tablet.layout, '#D5E4D8'], ['Desktop', `≥ ${t.breakpoints.desktop.min}px`, t.breakpoints.desktop.layout, '#DCE3F0']].map(([k, r, l, bg]) => ({ k, r, l, bg })) : [],
+      bpNote: t?.breakpoints?.note || '',
+      dishes: D.map(d => ({ k: d, n: L[d], l: `${A}illustrations/${d}/${d}-light.svg`, d: `${A}illustrations/${d}/${d}-dark.svg`, json: `${A}illustrations/${d}/layers.json` })),
+      moods: ['happy','stir','oops','wow','sleep'].map(k => ({ k, src: `${A}topfbert/topfbert-${k}.svg` })),
+      extras: [['veggies/carrot','carrot'],['veggies/pea','pea'],['veggies/pepper','pepper'],['characters/pea','pea char'],['shapes/pebble','pebble'],['shapes/burst-pebbles','burst'],['shapes/plate','plate'],['shapes/sign','sign'],['shapes/magnifier','lupe'],['shapes/wifi','wifi']].map(([p, k]) => ({ k, src: `${A}${p}.svg` })),
+      icons: [['icon-512.png',96,'0','512 any'],['icon-maskable-512.png',96,'50%','512 maskable'],['icon-192.png',64,'0','192'],['icon-maskable-192.png',64,'22%','192 mask'],['apple-touch-icon-180.png',60,'22%','180 apple'],['favicon-48.png',48,'0','48'],['favicon-32.png',32,'0','32'],['favicon-16.png',16,'0','16']].map(([f, w, r, k]) => ({ src: `${A}icon/${f}`, w: w + 'px', r, k }))
+    };
+  }
+}
+</script>
+</body>
+</html>

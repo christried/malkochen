@@ -1,0 +1,105 @@
+{
+  "dish": "dumplings",
+  "viewBox": "0 0 120 120",
+  "note": "Every layer is a full-canvas SVG in the shared viewBox: stack by z (1 = back) at identical position. Transform origin = pivot (viewBox units) or the layer bbox centre if null.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-steam_1.svg",
+      "name": "steam_1",
+      "animated": true,
+      "loop": "steam 2.7s ease-out infinite",
+      "pivot": null
+    },
+    {
+      "z": 4,
+      "file": "layers/light/04-steam_2.svg",
+      "name": "steam_2",
+      "animated": true,
+      "loop": "steam 2.7s ease-out .9s infinite",
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/light/05-steam_3.svg",
+      "name": "steam_3",
+      "animated": true,
+      "loop": "steam 2.7s ease-out 1.8s infinite",
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/light/06-base_1.svg",
+      "name": "base_1",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-steam_1.svg",
+      "name": "steam_1",
+      "animated": true,
+      "loop": "steam 2.7s ease-out infinite",
+      "pivot": null
+    },
+    {
+      "z": 4,
+      "file": "layers/dark/04-steam_2.svg",
+      "name": "steam_2",
+      "animated": true,
+      "loop": "steam 2.7s ease-out .9s infinite",
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/dark/05-steam_3.svg",
+      "name": "steam_3",
+      "animated": true,
+      "loop": "steam 2.7s ease-out 1.8s infinite",
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/dark/06-base_1.svg",
+      "name": "base_1",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    }
+  ]
+}

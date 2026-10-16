@@ -1,6 +1,6 @@
 # malkochen · Implementation handoff (Nuxt + Vue + Tailwind, Remotion)
 
-Overview page: `../Malkochen Handoff.dc.html` (renders everything below).
+Overview page: `../design process files/Malkochen Handoff.dc.html` (renders everything below).
 
 ## 1 · Design tokens
 - `tokens.json`: source of truth. Colours for light and dark (bg, surface, surface-muted, text, text-muted, line, line-strong, inverse, on-inverse, danger, glass, scrim, focus, plus Column/accent hues). Also includes fonts, type scale `[family, size, line-height, weight, tracking, (style)]`, spacing, pebble radii, shadows, motion tokens, z-index and breakpoints.
@@ -25,14 +25,14 @@ There are 36 entries (R11): 12 placeholders, the state, system and celebration c
 
 ## 6 · Assets: `assets/`
 - `illustrations/<dish>/`: 12 dishes (R11). `<dish>-light.svg` / `<dish>-dark.svg` hold the still (frame 0). `layers/{light,dark}/NN-<part>.svg` are full-canvas layers in a shared 120×120 viewBox, and `NN` = z-order. `layers.json` lists the order, which parts animate, and the loop spec and pivot for each.
-- `topfbert/`: the mascot in 5 moods (happy, stir, oops, wow, sleep). Each mood has a full SVG and numbered layers (hat, eyes, mouth, steam, spoon, …). Motion per layer is in `layers.json`.
+- `topfbert/`: the mascot in 5 moods (happy, stir, oops, wow, sleep) plus 3 Tour poses (waving, pointing, wink; R12). Each mood has a full SVG and numbered layers (hat, eyes, mouth, steam, spoon, …). Motion per layer is in `layers.json`.
 - `veggies/`, `characters/pea.svg`, `shapes/`: supporting pieces used by the clips and particles (pebble, burst, plate, bowl outline, magnifier, "Gleich!" sign, wifi).
 - `icon/`: `manifest.webmanifest` plus `icon-192/512.png` (any) and `icon-maskable-192/512.png` (80% safe zone). Also `apple-touch-icon-180.png`, `favicon-16/32/48.png`, `icon.svg`, `icon-monochrome.svg` and `icon-layers/` for the splash clip. Copy the PNGs and SVGs to `public/icons/`.
 
 Legacy: `svg/{light,dark}/*.svg` and `illustrations.json` come from R4. They are identical to the `assets/illustrations/*` stills.
 
 ## 7 · R11: Desktop review 1 (new assets)
-Overview page: `../Malkochen Desktop Review.dc.html`. Everything is vegan and neutral (any cooking group). Copy the whole `handoff/` folder into `docs/design handoff/`; new files sit next to the existing ones.
+Overview page: `../design process files/Malkochen Desktop Review.dc.html`. Everything is vegan and neutral (any cooking group). Copy the whole `handoff/` folder into `docs/design handoff/`; new files sit next to the existing ones.
 
 **Placeholders: 16 → 12**
 - New drawings: `assets/illustrations/pasta/`, `bowl/` (Salat / Bowl, replaces Buddha Bowl + Salat), `breakfast/` (Frühstück). Each: `<key>-light.svg` / `<key>-dark.svg` (still = frame 0), `layers/{light,dark}/NN-<part>.svg`, `layers.json`.
@@ -56,3 +56,21 @@ Overview page: `../Malkochen Desktop Review.dc.html`. Everything is vegan and ne
 **Type + inputs**
 - `tokens.json` / `tokens.css` / `tailwind.preset.js`: fonts → Petrona + Figtree (display and title weights 500); new `field` tokens and `--field-*` variables.
 - `components.json → Input`: label style 5b (legend in the border, built as a notched `fieldset` so it works on any background), exact padding (52 = 2 + 13 + 20 + 15 + 2, 1 px optical lift), select chevron, textarea, button row, states. 5a and 5c are listed as alternatives.
+
+## 8 · R12: Tour poses (Rundgang)
+Overview page: `../design process files/Malkochen Tour Poses.dc.html`. Copy the new files into `docs/design handoff/` next to the existing ones; nothing existing changes except `layers.json` (additions only).
+
+**Three new poses** (`assets/topfbert/`, viewBox `0 -20 140 150`, same parts and colours as the moods, one drawing for light and dark)
+- `topfbert-waving.svg` + `topfbert-waving-01…11-*.svg`: first bubble ("Hallo, ich bin Topfbert!"). Right handle raised as an arm (`arm`, in front of the rim), open smile with tongue.
+- `topfbert-pointing.svg` + `topfbert-pointing-01…09-*.svg`: every step with a target. Drawn pointing right with a 2° lean baked into each layer; eyes and mouth look towards the target. No steam, lettering or one-sided light, so `transform: scaleX(-1)` on the whole element points it left. Its `eyes_closed` is shifted with the eyes.
+- `topfbert-wink.svg` + `topfbert-wink-01…11-*.svg`: last bubble (the share tip). `eyes` / `eyes_closed` hold the left eye only; `wink` is the static closed right eye. Hat sits straighter, 3 px up.
+- The full SVGs are frame 0 (the reduced-motion still). Layer groups carry `data-loop` (full keyframe name, duration, easing, delay) and `data-pivot` (viewBox units); the root group `#topfbert` carries the breathe.
+
+**Motion**
+- `assets/r12-keyframes.css`: `r12-wave` (arm waves twice at 0–24%, once at 60–79%), `r12-nudge` (arm x +2 twice at 8–22% and 56–70%), `r12-tip` (wink hat tip at 46–64%, replaces the sway). Breathe, steam, hat sway and the blink reuse the R11 keyframes, on the shared clock.
+- `layers.json`: `moods.waving / pointing / wink` (z, file, motion per layer), `idle.perMood` for the three, and a new `tour` block with the idle per pose in the R11 format, plus `small` (below 48 px: breathe + blink only, arm stays in its drawn position), `reducedMotion` (frame 0), `mirror`, `theme` (only the steam rods take the text colour) and `placement`.
+
+**Placement** (`layers.json → tour.placement`, shown at 360 px on the overview page)
+- Topfbert 64 × 69 px stands on the bubble's bottom edge, 10 px over the bubble, on the side opposite the tail. Tail in the right half: he's on the left, as drawn; otherwise on the right, mirrored.
+- Bubble above the target when the target centre is in the lower half, otherwise below (flip if it doesn't fit). Width = screen − 24 − 54 (282 at 360, max 320). Tail: 12 px square at 45°, x = target centre clamped 28 px from the corners, tip 8 px from the spotlight ring.
+- Spotlight: `color-scrim` with a hole of target + 6 px and a static 3 px #F7B94A ring. Steps without a target (waving, wink) dim the whole Board and have no tail.

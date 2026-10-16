@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#EDEAE3}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="padding:40px 44px 60px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:860px">
+    <div style="display:flex;gap:14px;font:600 12px/1 system-ui"><a href="Malkochen Placeholders.dc.html" style="text-decoration:none;opacity:.6">← Round 4 · Placeholders</a></div>
+    <div style="font:400 44px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em">Round 5 · Dish-Detail &amp; Kochen</div>
+    <div style="font:14px/1.55 system-ui;color:#55524C;text-wrap:pretty">The phones are live: scroll the detail to see the parallax and compact bar, tap <b>Gekocht</b> to add a cooking (badge and counter grow), tap the trash icon to delete one (with undo), and tap <b>+ Notiz</b> to open the note sheet. The ↻ button replays the count-up.</div>
+  </div>
+  <sc-for list="{{ states }}" as="s" hint-placeholder-count="8">
+    <div id="{{ s.key }}" data-screen-label="{{ s.n }} {{ s.title }}" style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;padding:28px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">HELL</div><div style="--bg:#F7F6F2;--surface:#FFFFFF;--surface2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--pill:#1F1E1C;--pillInk:#FFFFFF;--danger:#C23B22;--glass:rgba(255,255,255,.8);--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="DetailPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">DUNKEL</div><div style="--bg:#131211;--surface:#1E1C1A;--surface2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--pill:#F3EFE8;--pillInk:#131211;--danger:#FF8A70;--glass:rgba(30,28,26,.75);--shadow:0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="DetailPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="width:320px;display:flex;flex-direction:column;gap:4px;padding-top:24px">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ s.n }}</span><span style="font:400 28px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.01em">{{ s.title }}</span></div>
+        <button onClick="{{ s.onReplay }}" style="align-self:flex-start;margin-top:8px;font:600 11px system-ui;padding:5px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.15);background:#fff;cursor:pointer">↻ Replay</button>
+        <sc-for list="{{ s.notes }}" as="m" hint-placeholder-count="1">
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)">
+            <span style="font:600 10px ui-monospace,monospace;padding:4px 7px;border-radius:5px;background:{{ m.tagBg }};color:{{ m.tagInk }}">{{ m.tag }}</span>
+            <div style="font:600 13.5px/1.4 system-ui;margin-top:8px">{{ m.t }}</div>
+            <div style="font:12.5px/1.55 system-ui;color:#55524C;text-wrap:pretty">{{ m.d }}</div>
+            <div style="font:11px ui-monospace,monospace;color:#8A857D;margin-top:4px">{{ m.tm }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motionSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1,0.5,0.25],&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+const N = (g, t, d, tm) => ({ tag: g ? 'MOTION GRAPHIC' : 'UI MOTION', tagBg: g ? '#E7D2F7' : '#1F1E1C', tagInk: g ? '#4A1470' : '#fff', t, d, tm });
+const STATES = [
+  ['morph', 'Karte → Detail', [N(0, 'Shared-element morph', 'On tap, the card’s thumbnail grows into the header: position, size and corner radius interpolate together. The Board behind scales to 0.94 and fades under the detail background. The content panel rises from below, then the back and "…" buttons pop in. Back (button or edge swipe) reverses everything, and the image lands back in its card.', '600ms morph · 420ms panel +80ms · 300ms buttons')]],
+  ['photo', 'Detail · Foto hochkant', [N(0, 'Parallax + compact bar', 'While scrolling, the image moves at 0.42× the speed and stretches on overscroll. Past the header, a solid bar fades in with the title, and the status bar switches from white to ink.', 'scroll-linked · 60px fade'), N(0, 'Achievement counter', 'On open, the count rolls up from 0 and the pebble badge pops on each step. Pebbles fill toward the next level. The badge grows by level: Ausprobiert → Wird Liebling (3×) → Stammgericht (5×) → WG-Klassiker (10×).', '170ms per step · 460ms pop · 420ms grow'), N(0, 'Gekocht / delete', 'Gekocht adds a "heute" entry with a sage date pebble and a glowing "+ Notiz". Anyone on the Board can delete an entry: it collapses sideways, followed by an "Eintrag gelöscht · Rückgängig" toast (4s). Tapping the date pebble (pencil dot) opens a date picker for "cooked yesterday". The list re-sorts with a 320ms slide.', '420ms in · 280ms out')]],
+  ['landscape', 'Detail · Foto quer', [N(0, 'Landscape handling', 'The "…" button and the Board/Column chip both open the round 2 "Verschieben nach…" sheet and menu, unchanged. The 16:9 image sits full-width under the status bar. The same image, blurred and toned into the theme, fills the rest of the header, so portrait and landscape headers feel the same. Parallax as above.', 'same scroll curve'), N(0, 'Eigenes Foto (later)', 'Reserved in two places: the dashed "Dein Foto · Bald" slot in the header (the Dish’s cover), and later a small photo per cooking entry. Not designed yet.', 'n/a')]],
+  ['placeholder', 'Detail · Platzhalterbild', [N(1, 'Illustration loop', 'The Eintopf illustration fills the header and plays its loop here (lid rattle, steam), since the Dish detail counts as focus. "Bild neu laden" tries the link again.', '2.0s loop')]],
+  ['nolink', 'Detail · ohne Link', [N(0, 'No link', 'No source chip and no "Original öffnen". A dashed "Link hinzufügen" takes its place, and "Bild neu laden" disappears from the actions.', 'n/a')]],
+  ['never', 'Detail · noch nie gekocht', [N(1, 'Empty Cooking History', 'Topfbert bobs while the pea rolls around at his feet. Three empty pebbles hint at the first level. The first Gekocht pops the badge in from scale 0.', '2.6s bob · 3s roll')]],
+  ['edit', 'Bearbeiten', [N(0, 'Into edit mode', 'The header shrinks to 300px, "Bild ändern" and "Neu laden" rise onto the image, and the text turns into fields: backgrounds fade in and scale from 0.97, 60ms apart. The title field gets focus (butter ring). Abbrechen / Fertig replace back / "…". Fertig morphs the fields back to text.', '380ms · 60ms stagger')]],
+  ['note', 'Koch-Notiz', [N(0, 'Note sheet', 'Opens from the "Notiz hinzufügen" in the Gekocht toast or from "+ Notiz" in the history. It springs up above the keyboard, the date chip confirms which cooking it belongs to, and the quick chips fill the field in one tap. Saving drops the note into the history row, which gives a short glow.', '440ms sheet · 360ms keyboard')]]
+];
+class Component extends DCLogic {
+  state = { rep: {} };
+  applySpd() { document.documentElement.style.setProperty('--spd', String(1 / (this.props.motionSpeed ?? 1))); }
+  componentDidMount() { this.applySpd(); }
+  componentDidUpdate() { this.applySpd(); }
+  renderVals() {
+    return { states: STATES.map(([key, title, notes], i) => ({ key, title, notes, n: String(i + 1).padStart(2, '0'), rep: this.state.rep[key] || 0, onReplay: () => this.setState(s => ({ rep: { ...s.rep, [key]: (s.rep[key] || 0) + 1 } })) })) };
+  }
+}
+</script>
+</body>
+</html>

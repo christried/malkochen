@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes pt-bob{0%,100%{transform:translateY(0) scale(1,1)}45%{transform:translateY(-4px) scale(.98,1.03)}55%{transform:translateY(-4px) scale(.98,1.03)}90%{transform:translateY(1px) scale(1.03,.97)}}
+@keyframes pt-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes pt-hat{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(-9deg) translateY(-2px)}}
+@keyframes pt-stir{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
+@keyframes pt-ox{from{transform:translateX(-40px)}to{transform:translateX(40px)}}
+@keyframes pt-oy{from{transform:translateY(-12px)}to{transform:translateY(8px)}}
+@keyframes pt-wobble{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(-2deg) translateX(2px)}}
+@keyframes pt-drop{0%,20%{transform:translateY(0) scale(0);opacity:0}30%{transform:translateY(0) scale(1);opacity:1}80%{transform:translateY(10px) scale(1);opacity:1}100%{transform:translateY(14px) scale(.6);opacity:0}}
+@keyframes pt-spark{0%,100%{transform:scale(0) rotate(0)}40%{transform:scale(1) rotate(45deg)}70%{transform:scale(0) rotate(90deg)}}
+@keyframes pt-steam{0%{opacity:0;transform:translateY(6px) scaleY(.8)}40%{opacity:.8}100%{opacity:0;transform:translateY(-14px) scaleY(1.1)}}
+</style></helmet>
+<div style="position:relative;width:{{ w }};height:{{ h }}">
+<div style="position:absolute;left:0;top:0;width:140px;height:130px;transform:scale({{ k }});transform-origin:top left">
+  <div style="position:absolute;inset:0;transform-origin:bottom center;animation:{{ bodyAnim }}">
+    <sc-if value="{{ isStir }}">
+      <div style="position:absolute;left:67px;top:-14px;width:9px;height:76px;border:2.5px solid var(--ink);box-sizing:border-box;border-radius:5px;background:#D9A86C;transform-origin:50% 90%;animation:pt-stir calc(1.2s * var(--spd, 1)) ease-in-out infinite"></div>
+      <sc-for list="{{ orbit }}" as="o" hint-placeholder-count="3">
+        <div style="position:absolute;left:{{ o.x }};top:30px;animation:pt-ox calc(1.6s * var(--spd, 1)) ease-in-out {{ o.dx }} infinite alternate"><div style="animation:pt-oy calc(1.6s * var(--spd, 1)) ease-in-out {{ o.dy }} infinite alternate"><div style="width:{{ o.s }};height:{{ o.s }};border:2.5px solid var(--ink);box-sizing:border-box;border-radius:{{ o.r }};background:{{ o.bg }}"></div></div></div>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{ steamOn }}">
+      <div style="position:absolute;left:86px;top:10px;width:4px;height:18px;border-radius:2px;background:var(--ink);opacity:.45;animation:pt-steam calc(2.2s * var(--spd, 1)) ease-out infinite"></div>
+      <div style="position:absolute;left:102px;top:16px;width:4px;height:14px;border-radius:2px;background:var(--ink);opacity:.45;animation:pt-steam calc(2.2s * var(--spd, 1)) ease-out calc(.9s * var(--spd, 1)) infinite"></div>
+    </sc-if>
+    <div style="position:absolute;left:8px;top:58px;width:22px;height:13px;border:2.5px solid var(--ink);border-radius:7px;background:#C7E0CD;box-sizing:border-box"></div>
+    <div style="position:absolute;right:8px;top:58px;width:22px;height:13px;border:2.5px solid var(--ink);border-radius:7px;background:#C7E0CD;box-sizing:border-box"></div>
+    <div style="position:absolute;left:20px;top:48px;width:100px;height:76px;border:2.5px solid var(--ink);border-top:none;box-sizing:border-box;border-radius:0 0 40px 40px / 0 0 36px 36px;background:#A5C7AE">
+      <sc-if value="{{ eyesDot }}">
+        <div style="position:absolute;left:26px;top:20px;width:9px;height:10px;border-radius:50%;background:#1F1E1C;animation:pt-blink calc(4s * var(--spd, 1)) ease infinite"></div>
+        <div style="position:absolute;right:26px;top:20px;width:9px;height:10px;border-radius:50%;background:#1F1E1C;animation:pt-blink calc(4s * var(--spd, 1)) ease infinite"></div>
+      </sc-if>
+      <sc-if value="{{ eyesArc }}">
+        <div style="position:absolute;left:24px;top:21px;width:13px;height:7px;border:3px solid #1F1E1C;border-bottom:none;border-radius:8px 8px 0 0;box-sizing:border-box"></div>
+        <div style="position:absolute;right:24px;top:21px;width:13px;height:7px;border:3px solid #1F1E1C;border-bottom:none;border-radius:8px 8px 0 0;box-sizing:border-box"></div>
+      </sc-if>
+      <sc-if value="{{ eyesBig }}">
+        <div style="position:absolute;left:23px;top:16px;width:14px;height:15px;border-radius:50%;background:#1F1E1C"><i style="position:absolute;left:3px;top:3px;width:5px;height:5px;border-radius:50%;background:#fff"></i></div>
+        <div style="position:absolute;right:23px;top:16px;width:14px;height:15px;border-radius:50%;background:#1F1E1C"><i style="position:absolute;left:3px;top:3px;width:5px;height:5px;border-radius:50%;background:#fff"></i></div>
+      </sc-if>
+      <sc-if value="{{ eyesOops }}">
+        <div style="position:absolute;left:26px;top:21px;width:8px;height:9px;border-radius:50%;background:#1F1E1C"></div>
+        <div style="position:absolute;right:24px;top:24px;width:13px;height:3px;border-radius:2px;background:#1F1E1C;transform:rotate(-12deg)"></div>
+      </sc-if>
+      <div style="position:absolute;left:14px;top:34px;width:15px;height:8px;border-radius:50%;background:#F4A9A0;opacity:.85"></div>
+      <div style="position:absolute;right:14px;top:34px;width:15px;height:8px;border-radius:50%;background:#F4A9A0;opacity:.85"></div>
+      <sc-if value="{{ mSmile }}"><div style="position:absolute;left:39px;top:34px;width:20px;height:10px;border:3px solid #1F1E1C;border-top:none;border-radius:0 0 12px 12px;box-sizing:border-box"></div></sc-if>
+      <sc-if value="{{ mTongue }}"><div style="position:absolute;left:38px;top:33px;width:22px;height:12px;border:3px solid #1F1E1C;border-top:none;border-radius:0 0 13px 13px;box-sizing:border-box;background:#1F1E1C;overflow:hidden"><i style="position:absolute;left:5px;top:3px;width:9px;height:7px;border-radius:50%;background:#F08A8A"></i></div></sc-if>
+      <sc-if value="{{ mO }}"><div style="position:absolute;left:42px;top:34px;width:13px;height:14px;border:3px solid #1F1E1C;border-radius:50%;box-sizing:border-box;background:#5A2E2A"></div></sc-if>
+      <sc-if value="{{ mFlat }}"><div style="position:absolute;left:40px;top:39px;width:18px;height:3px;border-radius:2px;background:#1F1E1C;transform:rotate(8deg)"></div></sc-if>
+    </div>
+    <div style="position:absolute;left:12px;top:40px;width:116px;height:15px;border:2.5px solid var(--ink);border-radius:8px;background:#C7E0CD;box-sizing:border-box"></div>
+    <div style="position:absolute;left:10px;top:-6px;width:52px;height:52px;transform-origin:50% 100%;animation:pt-hat calc(3s * var(--spd, 1)) ease-in-out infinite">
+      <div style="position:absolute;left:0;top:0;width:24px;height:24px;border:2.5px solid var(--ink);border-radius:50%;background:#FFFFFF;box-sizing:border-box"></div>
+      <div style="position:absolute;left:16px;top:-6px;width:26px;height:26px;border:2.5px solid var(--ink);border-radius:50%;background:#FFFFFF;box-sizing:border-box"></div>
+      <div style="position:absolute;left:30px;top:4px;width:20px;height:20px;border:2.5px solid var(--ink);border-radius:50%;background:#FFFFFF;box-sizing:border-box"></div>
+      <div style="position:absolute;left:6px;top:14px;width:40px;height:22px;background:#FFFFFF"></div>
+      <div style="position:absolute;left:5px;top:28px;width:42px;height:16px;border:2.5px solid var(--ink);border-radius:4px;background:#FFFFFF;box-sizing:border-box"></div>
+    </div>
+    <sc-if value="{{ isOops }}"><div style="position:absolute;left:112px;top:52px;width:12px;height:16px;border:2px solid var(--ink);box-sizing:border-box;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:#A8D4F0;animation:pt-drop calc(2.4s * var(--spd, 1)) ease-in infinite"></div></sc-if>
+    <sc-if value="{{ isWow }}">
+      <div style="position:absolute;left:112px;top:14px;width:12px;height:12px;background:#F7B94A;border:2px solid var(--ink);border-radius:3px;animation:pt-spark calc(1.4s * var(--spd, 1)) ease-in-out infinite"></div>
+      <div style="position:absolute;left:2px;top:78px;width:10px;height:10px;background:#DE8CF2;border:2px solid var(--ink);border-radius:3px;animation:pt-spark calc(1.4s * var(--spd, 1)) ease-in-out calc(.5s * var(--spd, 1)) infinite"></div>
+      <div style="position:absolute;left:124px;top:84px;width:9px;height:9px;background:#F08A5D;border:2px solid var(--ink);border-radius:3px;animation:pt-spark calc(1.4s * var(--spd, 1)) ease-in-out calc(.9s * var(--spd, 1)) infinite"></div>
+    </sc-if>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:190},&quot;mood&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;happy&quot;,&quot;stir&quot;,&quot;oops&quot;,&quot;wow&quot;,&quot;sleep&quot;],&quot;default&quot;:&quot;happy&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:140,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:40,&quot;max&quot;:300}}">
+class Component extends DCLogic {
+  renderVals() {
+    const m = this.props.mood ?? 'happy', s = this.props.size ?? 140, k = s / 140;
+    const T = x => `calc(${x} * var(--spd, 1))`;
+    return {
+      w: s + 'px', h: Math.round(s * 130 / 140) + 'px', k,
+      bodyAnim: m === 'oops' ? `pt-wobble ${T('2.4s')} ease-in-out infinite` : `pt-bob ${T(m === 'stir' ? '1.2s' : m === 'sleep' ? '4s' : '2.6s')} ease-in-out infinite`,
+      isStir: m === 'stir', isOops: m === 'oops', isWow: m === 'wow', steamOn: m === 'happy' || m === 'wow',
+      eyesDot: m === 'happy', eyesArc: m === 'stir' || m === 'sleep', eyesBig: m === 'wow', eyesOops: m === 'oops',
+      mSmile: m === 'happy', mTongue: m === 'stir', mO: m === 'wow', mFlat: m === 'oops' || m === 'sleep',
+      orbit: [['#F08A5D', '18px', '30% 38% 32% 40%'], ['#8DB596', '15px', '50%'], ['#F7D58A', '17px', '52% 48% 44% 56%']].map(([bg, s2, r], i) => ({ bg, s: s2, r, x: '62px', dx: T(-(i * 1.07) + 's'), dy: T(-(i * 1.07 + 0.8) + 's') }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#EDEAE3}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="padding:40px 44px 60px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:860px">
+    <div style="display:flex;gap:14px;font:600 12px/1 system-ui"><a href="Malkochen Boards.dc.html" style="text-decoration:none;opacity:.6">← Round 6 · Boards</a></div>
+    <div style="font:400 44px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em">Round 7 · Zugang, Einstellungen &amp; System</div>
+    <div style="font:14px/1.55 system-ui;color:#55524C;text-wrap:pretty">One-shot intros replay with ↻. In settings, tap Hell / Dunkel / System to try the theme switch.</div>
+  </div>
+  <div id="icon" data-screen-label="00 App-Icon" style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-end;padding:28px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px">
+    <div style="display:flex;flex-direction:column;gap:10px;width:300px"><span style="font:400 28px/1.1 'Newsreader',Georgia,serif">App-Icon</span><span style="font:12.5px/1.55 system-ui;color:#55524C;text-wrap:pretty">Topfbert reduced to a cream pot with steam on a butter gradient. It’s an Android adaptive icon (108dp, 66dp safe zone), so it works under every launcher mask, and the themed (monochrome) version for Material You uses one ink colour.</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><dc-import name="AppIcon" size="{{ 144 }}" shape="squircle" hint-size="144px,144px"></dc-import><span style="font:11px ui-monospace,monospace;color:#8A857D">Pebble (Pixel)</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><dc-import name="AppIcon" size="{{ 108 }}" shape="circle" hint-size="108px,108px"></dc-import><span style="font:11px ui-monospace,monospace;color:#8A857D">Kreis</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><dc-import name="AppIcon" size="{{ 108 }}" shape="square" hint-size="108px,108px"></dc-import><span style="font:11px ui-monospace,monospace;color:#8A857D">Squircle</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><dc-import name="AppIcon" size="{{ 108 }}" shape="circle" mono="{{ true }}" hint-size="108px,108px"></dc-import><span style="font:11px ui-monospace,monospace;color:#8A857D">Themed hell</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><dc-import name="AppIcon" size="{{ 108 }}" shape="circle" mono="{{ true }}" mono-bg="#2E3A2F" mono-fg="#CFE3D2" hint-size="108px,108px"></dc-import><span style="font:11px ui-monospace,monospace;color:#8A857D">Themed dunkel</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 18px;border-radius:18px;background:linear-gradient(160deg,#5E7A8C,#2F4250)"><dc-import name="AppIcon" size="{{ 60 }}" shape="circle" hint-size="60px,60px"></dc-import><span style="font:600 12px/1 system-ui;color:#fff">malkochen</span><span style="font:11px ui-monospace,monospace;color:rgba(255,255,255,.7)">Homescreen 48dp</span></div>
+  </div>
+  <div style="display:none">
+  </div>
+  <sc-for list="{{ states }}" as="s" hint-placeholder-count="8">
+    <div id="{{ s.key }}" data-screen-label="{{ s.n }} {{ s.title }}" style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;padding:28px;background:#F7F5F0;border:1px solid rgba(0,0,0,.08);border-radius:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">HELL</div><div style="--bg:#F7F6F2;--surface:#FFFFFF;--surface2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--pill:#1F1E1C;--pillInk:#FFFFFF;--danger:#C23B22;--glass:rgba(255,255,255,.8);--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="SystemPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:rgba(0,0,0,.45)">DUNKEL</div><div style="--bg:#131211;--surface:#1E1C1A;--surface2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--pill:#F3EFE8;--pillInk:#131211;--danger:#FF8A70;--glass:rgba(30,28,26,.75);--shadow:0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);padding:11px;background:#0D0D0D;border-radius:58px;box-shadow:0 30px 60px -24px rgba(40,30,10,.4)"><dc-import name="SystemPhone" screen="{{ s.key }}" replay="{{ s.rep }}" hint-size="390px,844px"></dc-import></div></div>
+      <div style="width:320px;display:flex;flex-direction:column;gap:4px;padding-top:24px">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ s.n }}</span><span style="font:400 28px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.01em">{{ s.title }}</span></div>
+        <button onClick="{{ s.onReplay }}" style="align-self:flex-start;margin-top:8px;font:600 11px system-ui;padding:5px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.15);background:#fff;cursor:pointer">↻ Replay</button>
+        <sc-for list="{{ s.notes }}" as="m" hint-placeholder-count="1">
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)">
+            <span style="font:600 10px ui-monospace,monospace;padding:4px 7px;border-radius:5px;background:{{ m.tagBg }};color:{{ m.tagInk }}">{{ m.tag }}</span>
+            <div style="font:600 13.5px/1.4 system-ui;margin-top:8px">{{ m.t }}</div>
+            <div style="font:12.5px/1.55 system-ui;color:#55524C;text-wrap:pretty">{{ m.d }}</div>
+            <div style="font:11px ui-monospace,monospace;color:#8A857D;margin-top:4px">{{ m.tm }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motionSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1,0.5,0.25],&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+const N = (g, t, d, tm) => ({ tag: g ? 'MOTION GRAPHIC' : 'UI MOTION', tagBg: g ? '#E7D2F7' : '#1F1E1C', tagInk: g ? '#4A1470' : '#fff', t, d, tm });
+const STATES = [
+  ['splash', 'Splash', [N(1, 'Animated splash', 'Android 12+ SplashScreen API: the icon pebble springs in on a butter bloom, Topfbert’s lid pops once, the wordmark rises with a dot, then the pebble zooms out and the Board fades in underneath. Plays on every cold start. Warm starts skip straight to the Board.', '~1.1s (API cap) · lid 240ms · exit 360ms')]],
+  ['signin', 'Anmelden', [N(1, 'Dish orbit', 'Eight dish illustrations orbit Topfbert (wow mood) slowly on a dashed ring, and every second one plays its loop. The tiles pop in 70ms apart, then the wordmark, tagline and Google button rise in sequence.', '40s orbit · ~1.2s intro')]],
+  ['onboard', 'Erster Start', [N(0, 'Create or join', 'Signed in with no Board and no invite: "Wo wird bei dir gekocht?" with two big choices. Board erstellen leads to Round 6’s new-Board sheet. Einladungslink einfügen opens a paste field (with clipboard detection).', '460ms rise · 80ms stagger')]],
+  ['locked', 'Nicht freigeschaltet', [N(1, 'Friendly wait', 'Topfbert holds a swinging "Gleich!" sign. No red, no error icon. Lisa unlocks people manually, outside the app. The main action shares a pre-filled message to her (Android share sheet), the second one switches account.', '2.8s swing')]],
+  ['locked-invite', 'Nicht freigeschaltet · mit Einladung', [N(0, 'Invite kept', 'If they came through an invite, the Board card (🍜 WG-Küche from Lisa) rises below. The invite is saved and opens automatically once unlocked.', '500ms rise')]],
+  ['settings', 'Einstellungen', [N(0, 'Theme switch', 'The selection thumb slides with a spring and the swatch spins in. The new theme spreads as a circle from the tapped option over the old one (built here with two layers; on Android, take a screenshot of the old UI and reveal the new one with a circular clip).', '420ms thumb · 600ms circular reveal'), N(0, 'Read-only profile + Sprache', 'Name, email and avatar come from Google (with a small G badge, not editable). Sprache is a reserved row: Deutsch, with "weitere bald".', 'n/a')]],
+  ['offline', 'Offline', [N(1, 'Sleepy Topfbert', 'Wi-Fi arcs fade out one after another, and Topfbert, desaturated, dozes with drifting z’s. Offline, Boards can still be viewed and edited: changes (Gekocht, notes, moves, new Dishes without a link lookup) are queued with a small cloud mark on the card. When the connection returns, a sage toast "Wieder online · 3 Änderungen synchronisiert" appears.', '2.4s loop')]],
+  ['error', 'Fehler', [N(1, 'Angebrannt', 'Topfbert wobbles in oops mood while smoke puffs rise and a small spill spreads under the pot. The retry icon spins. The error code is small and copyable for support.', '2.4s smoke · 2.6s spill')]]
+];
+class Component extends DCLogic {
+  state = { rep: {} };
+  applySpd() { document.documentElement.style.setProperty('--spd', String(1 / (this.props.motionSpeed ?? 1))); }
+  componentDidMount() { this.applySpd(); }
+  componentDidUpdate() { this.applySpd(); }
+  renderVals() {
+    return { states: STATES.map(([key, title, notes], i) => ({ key, title, notes, n: String(i + 1).padStart(2, '0'), rep: this.state.rep[key] || 0, onReplay: () => this.setState(s => ({ rep: { ...s.rep, [key]: (s.rep[key] || 0) + 1 } })) })) };
+  }
+}
+</script>
+</body>
+</html>

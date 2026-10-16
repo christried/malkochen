@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#EDEAE3}a{color:#1F1E1C}a:hover{color:#9B32D8}</style></helmet>
+<div style="padding:40px 44px 56px;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:760px">
+    <a href="Malkochen Board.dc.html" style="font:600 12px/1 'Hanken Grotesk',system-ui;text-decoration:none;opacity:.6">← Board</a>
+    <a href="Malkochen Placeholders.dc.html" style="align-self:flex-start;font:600 12px/1 system-ui;padding:7px 11px;border-radius:8px;background:#1F1E1C;color:#fff;text-decoration:none">Superseded by Round 4 illustrations →</a>
+    <div style="font:400 44px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em">Platzhalter-Piktogramme</div>
+    <div style="font:15px/1.55 'Hanken Grotesk',system-ui;color:#55524C;text-wrap:pretty">Used for Entries with no image in their URL metadata. 16 shapes × 5 palette hues. Each uses 3 tonal shades mixed into the theme surface, so light and dark come for free. One element per shape idles (float, steam, sway, sizzle) and pauses under reduced motion.</div>
+  </div>
+
+  <sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
+    <div style="--bg:{{ th.bg }};--surface2:{{ th.s2 }};--ink:{{ th.ink }};--ink2:{{ th.ink2 }};--shadow:{{ th.sh }};background:var(--bg);border-radius:28px;padding:28px;display:flex;flex-direction:column;gap:18px">
+      <div style="font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">{{ th.label }}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:16px">
+        <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="16">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="aspect-ratio:4 / 5;border-radius:22px 18px 23px 19px;overflow:hidden;box-shadow:var(--shadow)"><dc-import name="Picto" kind="{{ k.kind }}" hue="{{ k.hue }}" style="display:block;width:100%;height:100%" hint-size="100%,100%"></dc-import></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:0 2px"><span style="font:600 13px/1.2 'Hanken Grotesk',system-ui;color:var(--ink)">{{ k.de }}</span><span style="font:500 11px/1 ui-monospace,Menlo,monospace;color:var(--ink2)">{{ k.kind }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">HUES</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <sc-for list="{{ hues }}" as="h" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:6px;width:96px">
+              <div style="aspect-ratio:4 / 5;border-radius:18px;overflow:hidden"><dc-import name="Picto" kind="bowl" hue="{{ h.hex }}" style="display:block;width:100%;height:100%" hint-size="100%,100%"></dc-import></div>
+              <span style="font:500 11px/1.3 ui-monospace,Menlo,monospace;color:var(--ink2)">{{ h.name }} {{ h.hex }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0 28px;max-width:900px">
+    <div style="padding:12px 0;border-top:1px solid rgba(0,0,0,.1)"><div style="font:600 13px/1.4 system-ui">Shape picking</div><div style="font:12.5px/1.5 system-ui;color:#55524C">Keyword match on the title (DE + EN): Suppe/Eintopf/Curry → pot · Nudeln/Ramen/Pasta → noodles · Salat → salad · Pfanne/Shakshuka/Rührtofu → pan · Kuchen/Torte → cake · Brot → bread … no match → bowl.</div></div>
+    <div style="padding:12px 0;border-top:1px solid rgba(0,0,0,.1)"><div style="font:600 13px/1.4 system-ui">Hue picking</div><div style="font:12.5px/1.5 system-ui;color:#55524C">Stable hash of the Entry id → one of 5 hues, so a Dish keeps its colour everywhere. Adjacent cards shouldn't repeat a hue: shift to the next one.</div></div>
+    <div style="padding:12px 0;border-top:1px solid rgba(0,0,0,.1)"><div style="font:600 13px/1.4 system-ui">Export</div><div style="font:12.5px/1.5 system-ui;color:#55524C">One SVG per shape, colours as 3 tokens (p1 light · p2 mid · p3 deep) resolved at runtime from hue + theme. Canvas 100×125; crops to 1:1 and 16:10 around the centre.</div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const K = [['bowl','Bowl'],['noodles','Nudeln'],['salad','Salat'],['pot','Topf'],['pan','Pfanne'],['plate','Teller'],['burger','Burger'],['taco','Taco'],['pizza','Pizza'],['toast','Toast'],['wrap','Wrap'],['dumpling','Dumplings'],['skewer','Spieß'],['smoothie','Smoothie'],['cake','Kuchen'],['bread','Brot']];
+const H = [['Butter','#F7B94A'],['Orchidee','#DE8CF2'],['Salbei','#A5C7AE'],['Möhre','#F08A5D'],['Himmel','#A8BEE3']];
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      kinds: K.map(([kind, de], i) => ({ kind, de, hue: H[i % 5][1] })),
+      hues: H.map(([name, hex]) => ({ name, hex })),
+      themes: [
+        { label: 'HELL', bg: '#F7F6F2', s2: '#EFEDE8', ink: '#1F1E1C', ink2: '#6F6B65', sh: '0 10px 24px -10px rgba(70,55,30,.18)' },
+        { label: 'DUNKEL', bg: '#131211', s2: '#2A2825', ink: '#F3EFE8', ink2: '#A8A298', sh: '0 10px 24px -10px rgba(0,0,0,.6)' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

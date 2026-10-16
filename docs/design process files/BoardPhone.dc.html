@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes mk-pebble{0%{opacity:0;transform:translateY(28px) scale(.9) rotate(-2deg)}50%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes mk-drop{0%{opacity:0;transform:translateY(-18px) scale(.97);filter:blur(6px)}100%{opacity:1;transform:none;filter:none}}
+@keyframes mk-rise{0%{opacity:0;transform:translateY(48px)}100%{opacity:1;transform:none}}
+@keyframes mk-badge{0%{opacity:0;transform:scale(.3) rotate(-20deg)}70%{opacity:1;transform:scale(1.12) rotate(6deg)}100%{opacity:1;transform:none}}
+@keyframes mk-ring{0%{transform:scale(1);opacity:.55}35%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
+@keyframes mk-wiggle{0%,100%{transform:none}20%{transform:rotate(-1.2deg)}40%{transform:rotate(1deg)}60%{transform:rotate(-.6deg)}80%{transform:rotate(.3deg)}}
+@keyframes mk-bob{0%,80%,100%{transform:none}86%{transform:translateY(-3px) rotate(-9deg)}92%{transform:rotate(7deg)}96%{transform:rotate(-2deg)}}
+@keyframes mk-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+@keyframes mk-morph{0%,100%{border-radius:46% 54% 50% 50% / 52% 46% 54% 48%}33%{border-radius:54% 46% 44% 56% / 46% 54% 48% 52%}66%{border-radius:50% 50% 56% 44% / 56% 48% 46% 52%}}
+@keyframes mk-cook{0%{transform:scale(.9)}45%{transform:scale(1.12)}72%{transform:scale(.97)}100%{transform:none}}
+@keyframes mk-draw{from{stroke-dashoffset:20}to{stroke-dashoffset:0}}
+@keyframes mk-burst{0%{opacity:1;transform:translate(0,0) scale(.3)}70%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1) rotate(120deg)}}
+@keyframes mk-tick{0%{opacity:0;transform:translateY(9px)}100%{opacity:1;transform:none}}
+@keyframes mk-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-5px) rotate(-4deg)}}
+@keyframes mk-steam{0%{opacity:0;transform:translateY(6px) scaleY(.8)}40%{opacity:.8}100%{opacity:0;transform:translateY(-14px) scaleY(1.1)}}
+@keyframes mk-shimmer{0%,65%{background-position:140% 0}100%{background-position:-60% 0}}
+@keyframes mk-hop{0%,100%{transform:none}40%{transform:translateY(-6px)}}
+@keyframes mk-bump{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes mk-bump2{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes mk-flyx{from{transform:translateX(var(--x0))}to{transform:translateX(var(--x1))}}
+@keyframes mk-flyy{from{transform:translateY(var(--y0))}to{transform:translateY(var(--y1))}}
+@keyframes mk-flys{0%{transform:scale(.5) rotate(0)}30%{transform:scale(1.3) rotate(-40deg)}100%{transform:scale(.5) rotate(-160deg)}}
+@keyframes mk-fadein{from{opacity:0}to{opacity:1}}
+@keyframes mk-fadeout{from{opacity:1}to{opacity:0}}
+@keyframes mk-bloom{0%{clip-path:circle(0% at 20% 30%)}100%{clip-path:circle(150% at 20% 30%)}}
+</style></helmet>
+<div ref="{{ rootRef }}" style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:47px;background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;user-select:none;-webkit-user-select:none">
+
+<div style="position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 38px;z-index:30;font:600 16px/1 'Hanken Grotesk',system-ui;color:var(--ink);pointer-events:none">
+  <span>9:41</span>
+  <div style="position:absolute;left:50%;top:15px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:#000"></div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <svg width="18" height="12" viewBox="0 0 18 12" style="fill:currentColor"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg>
+    <svg width="16" height="12" viewBox="0 0 16 12" style="fill:currentColor"><path d="M8 11.5l2.2-2.6a3.2 3.2 0 0 0-4.4 0z"></path><path d="M3.7 6.9a6.2 6.2 0 0 1 8.6 0l-1.3 1.5a4.2 4.2 0 0 0-6 0z"></path><path d="M1.3 4.1a9.7 9.7 0 0 1 13.4 0L13.4 5.6a7.7 7.7 0 0 0-10.8 0z"></path></svg>
+    <div style="width:25px;height:12px;border:1.5px solid currentColor;border-radius:4px;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;background:currentColor;border-radius:1.5px"></div></div>
+  </div>
+</div>
+
+<!-- ============ A · KIESEL ============ -->
+<sc-if value="{{ isA }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:56px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 0">
+    <button style="display:flex;align-items:center;gap:11px;background:none;border:none;padding:0;color:var(--ink);cursor:pointer">
+      <div style="width:46px;height:46px;display:grid;place-items:center;background:var(--surface);border-radius:46% 54% 50% 50% / 55% 45% 55% 45%;box-shadow:var(--shadow);font-size:23px"><span style="display:block;animation:mk-bob calc(6s * var(--spd, 1)) ease-in-out 1.5s infinite">🍜</span></div>
+      <span style="font:500 27px/1 'Newsreader',Georgia,serif;letter-spacing:-.01em">WG-Küche</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:.55"><path d="M6 9l6 6 6-6"></path></svg>
+    </button>
+    <button aria-label="Suchen" style="width:44px;height:44px;border-radius:50%;border:none;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--ink);cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>
+    </button>
+  </div>
+  <div style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:18px 12px 0;padding-bottom:12px;border-bottom:1px solid var(--line)">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+      <button onClick="{{ t.onTap }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:none;padding:0;cursor:pointer">
+        <span style="font:500 14px/1 'Hanken Grotesk',system-ui;color:{{ t.labelColor }};transition:color .3s">{{ t.label }}</span>
+        <span style="min-width:36px;height:30px;padding:0 9px;box-sizing:border-box;border-radius:15px;display:grid;place-items:center;font:600 16px/1 'Hanken Grotesk',system-ui;background:{{ t.pillBg }};color:{{ t.pillInk }};transition:background .3s,color .3s;animation:{{ t.countAnim }}">{{ t.count }}</span>
+      </button>
+    </sc-for>
+    <div style="position:absolute;bottom:-1px;left:{{ indLeft }};width:33.333%;height:2px;display:flex;justify-content:center;transition:{{ indTr }}"><div style="width:72px;height:2px;border-radius:2px;background:var(--ink)"></div></div>
+  </div>
+  <div ref="{{ vpRef }}" onPointerDown="{{ down }}" onPointerMove="{{ move }}" onPointerUp="{{ up }}" onPointerCancel="{{ up }}" style="flex:1;position:relative;overflow:hidden;touch-action:pan-y">
+    <div style="display:flex;width:300%;height:100%;transform:{{ trackTf }};transition:{{ trackTr }}">
+      <sc-for list="{{ cols }}" as="col" hint-placeholder-count="3">
+        <div style="width:33.3333%;height:100%;overflow-y:auto;scrollbar-width:none;box-sizing:border-box;padding:22px 16px 130px;display:flex;flex-direction:column;gap:20px">
+          <sc-if value="{{ show }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ col.dishes }}" as="d" hint-placeholder-count="3">
+            <div style="position:relative;flex:none;background:var(--surface);border-radius:34px 30px 36px 32px;box-shadow:var(--shadow);padding:10px;animation:{{ d.enterA }}">
+              <sc-if value="{{ d.neu }}">
+                <div style="position:absolute;top:-13px;right:22px;z-index:3;animation:{{ d.badgeAnim }}">
+                  <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#B845E6;animation:mk-ring calc(3.2s * var(--spd, 1)) ease-out calc(1.4s * var(--spd, 1)) infinite"></div>
+                  <div style="position:relative;padding:9px 15px 10px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#D877F4,#9B32D8);color:#fff;font:700 14px/1 'Hanken Grotesk',system-ui;box-shadow:0 8px 18px -6px rgba(155,50,216,.6)">Neu</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ d.landscape }}">
+                <div style="position:relative;aspect-ratio:{{ d.ratioCss }};border-radius:25px 22px 26px 23px;overflow:hidden;background:{{ d.ph }}">
+                  <sc-if value="{{ d.illus }}">
+                    <div style="position:absolute;inset:0;background:color-mix(in oklch, #B7CDBB 30%, var(--surface2));display:grid;place-items:center">
+                      <div style="position:relative;width:210px;height:150px">
+                        <div style="position:absolute;left:18px;top:6px;width:180px;height:138px;background:color-mix(in oklch, #F7D58A 55%, var(--surface));border-radius:48% 52% 44% 56% / 56% 46% 54% 44%"></div>
+                        <div style="position:absolute;left:94px;top:0;width:3px;height:22px;border-radius:3px;background:var(--ink);opacity:.5;animation:mk-steam calc(2.6s * var(--spd, 1)) ease-out infinite"></div>
+                        <div style="position:absolute;left:114px;top:4px;width:3px;height:18px;border-radius:3px;background:var(--ink);opacity:.5;animation:mk-steam calc(2.6s * var(--spd, 1)) ease-out 1.1s infinite"></div>
+                        <div style="position:absolute;left:62px;top:34px;width:42px;height:38px;border:2.5px solid var(--ink);border-radius:30% 38% 32% 40%;background:#F7D58A;animation:mk-float calc(3.4s * var(--spd, 1)) ease-in-out infinite"></div>
+                        <div style="position:absolute;left:100px;top:26px;width:34px;height:31px;border:2.5px solid var(--ink);border-radius:52% 48% 44% 56% / 50% 56% 44% 50%;background:#8DB596;animation:mk-float calc(3.9s * var(--spd, 1)) ease-in-out .4s infinite"></div>
+                        <div style="position:absolute;left:128px;top:42px;width:30px;height:27px;border:2.5px solid var(--ink);border-radius:50%;background:#F08A5D;animation:mk-float calc(3.1s * var(--spd, 1)) ease-in-out .9s infinite"></div>
+                        <div style="position:absolute;left:84px;top:48px;width:26px;height:24px;border:2.5px solid var(--ink);border-radius:44% 56% 50% 50%;background:#E9C46A;animation:mk-float calc(3.6s * var(--spd, 1)) ease-in-out 1.3s infinite"></div>
+                        <div style="position:absolute;left:34px;top:62px;width:144px;height:14px;border:2.5px solid var(--ink);border-radius:50%;background:var(--surface);box-sizing:border-box"></div>
+                        <div style="position:absolute;left:40px;top:70px;width:132px;height:62px;border:2.5px solid var(--ink);border-top:none;border-radius:0 0 50% 50% / 0 0 100% 100%;background:var(--surface);box-sizing:border-box"></div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <button aria-label="Mehr" style="position:absolute;top:10px;right:10px;width:40px;height:30px;border-radius:15px;border:none;background:var(--glass);backdrop-filter:blur(8px);color:var(--ink);display:grid;place-items:center;cursor:pointer" style-active="transform:scale(.9)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>
+                  </button>
+                </div>
+                <div style="padding:14px 8px 6px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <sc-if value="{{ d.hasSrc }}"><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px 0 8px;border-radius:12px;background:var(--surface2);font:600 12px/1 'Hanken Grotesk',system-ui"><i style="width:9px;height:9px;border-radius:50%;background:{{ d.srcDot }}"></i>{{ d.srcLabel }}</span></sc-if>
+                    <div style="flex:1"></div>
+                    <span title="{{ d.byName }}" style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:{{ d.avBg }};color:{{ d.avInk }};font:700 11px/1 'Hanken Grotesk',system-ui">{{ d.avLabel }}</span>
+                  </div>
+                  <div style="margin:11px 0 14px;font:400 23px/1.16 'Newsreader',Georgia,serif;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:pretty">{{ d.title }}</div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <sc-if value="{{ d.hasCooked }}"><span style="display:inline-flex;align-items:center;gap:6px;font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2);animation:{{ d.countAnim }}"><i style="width:8px;height:8px;border-radius:45% 55% 50% 50%;background:#F5A93B"></i>{{ d.cookedLabel }}</span></sc-if>
+                    <sc-if value="{{ d.note }}"><span title="Notiz" style="display:inline-flex;color:var(--ink2)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg></span></sc-if>
+                    <div style="flex:1"></div>
+                    <button onClick="{{ d.onCook }}" style="position:relative;height:40px;padding:0 16px;border-radius:20px;border:none;display:inline-flex;align-items:center;gap:7px;font:600 14px/1 'Hanken Grotesk',system-ui;background:{{ d.cookBg }};color:{{ d.cookInk }};animation:{{ d.cookAnim }};cursor:pointer;transition:background .25s" style-active="transform:scale(.94)">Gekocht<svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;animation:{{ d.checkAnim }}"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>
+                      <sc-if value="{{ d.done }}"><div style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none">
+                        <div style="position:absolute;width:10px;height:9px;margin:-5px;border-radius:50% 45% 55% 50%;background:#F7B94A;--dx:-44px;--dy:-30px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) both"></div>
+                        <div style="position:absolute;width:8px;height:8px;margin:-4px;border-radius:45% 55% 50% 50%;background:#A5C7AE;--dx:6px;--dy:-42px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 30ms both"></div>
+                        <div style="position:absolute;width:9px;height:10px;margin:-5px;border-radius:55% 45% 50% 50%;background:#D877F4;--dx:48px;--dy:-26px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 60ms both"></div>
+                        <div style="position:absolute;width:7px;height:7px;margin:-4px;border-radius:50%;background:#FF7A1A;--dx:56px;--dy:10px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 20ms both"></div>
+                        <div style="position:absolute;width:8px;height:9px;margin:-4px;border-radius:50% 50% 45% 55%;background:#2E4A6F;--dx:-52px;--dy:12px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 50ms both"></div>
+                        <div style="position:absolute;width:9px;height:8px;margin:-4px;border-radius:50% 45% 55% 50%;background:#F7B94A;--dx:-8px;--dy:34px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 40ms both"></div>
+                      </div></sc-if>
+                    </button>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ d.portrait }}">
+                <div style="display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px">
+                  <div style="aspect-ratio:{{ d.ratioCss }};border-radius:24px 20px 25px 22px;background:{{ d.ph }}"></div>
+                  <div style="display:flex;flex-direction:column;padding:6px 2px 4px 0;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <sc-if value="{{ d.hasSrc }}"><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px 0 8px;border-radius:12px;background:var(--surface2);font:600 12px/1 'Hanken Grotesk',system-ui"><i style="width:9px;height:9px;border-radius:50%;background:{{ d.srcDot }}"></i>{{ d.srcLabel }}</span></sc-if>
+                      <div style="flex:1"></div>
+                      <button aria-label="Mehr" style="width:36px;height:28px;border-radius:14px;border:none;background:var(--surface2);color:var(--ink);display:grid;place-items:center;cursor:pointer" style-active="transform:scale(.9)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+                    </div>
+                    <div style="margin:14px 0 0;font:400 21px/1.18 'Newsreader',Georgia,serif;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ d.title }}</div>
+                    <div style="display:flex;align-items:center;gap:9px;margin-top:12px">
+                      <span title="{{ d.byName }}" style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:{{ d.avBg }};color:{{ d.avInk }};font:700 11px/1 'Hanken Grotesk',system-ui">{{ d.avLabel }}</span>
+                      <sc-if value="{{ d.hasCooked }}"><span style="display:inline-flex;align-items:center;gap:6px;font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2);animation:{{ d.countAnim }}"><i style="width:8px;height:8px;border-radius:45% 55% 50% 50%;background:#F5A93B"></i>{{ d.cookedLabel }}</span></sc-if>
+                      <sc-if value="{{ d.note }}"><span style="display:inline-flex;color:var(--ink2)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg></span></sc-if>
+                    </div>
+                    <div style="flex:1;min-height:14px"></div>
+                    <button onClick="{{ d.onCook }}" style="position:relative;align-self:flex-start;height:40px;padding:0 16px;border-radius:20px;border:none;display:inline-flex;align-items:center;gap:7px;font:600 14px/1 'Hanken Grotesk',system-ui;background:{{ d.cookBg }};color:{{ d.cookInk }};animation:{{ d.cookAnim }};cursor:pointer;transition:background .25s" style-active="transform:scale(.94)">Gekocht<svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;animation:{{ d.checkAnim }}"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>
+                      <sc-if value="{{ d.done }}"><div style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none">
+                        <div style="position:absolute;width:10px;height:9px;margin:-5px;border-radius:50% 45% 55% 50%;background:#F7B94A;--dx:-44px;--dy:-30px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) both"></div>
+                        <div style="position:absolute;width:8px;height:8px;margin:-4px;border-radius:45% 55% 50% 50%;background:#A5C7AE;--dx:6px;--dy:-42px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 30ms both"></div>
+                        <div style="position:absolute;width:9px;height:10px;margin:-5px;border-radius:55% 45% 50% 50%;background:#D877F4;--dx:48px;--dy:-26px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 60ms both"></div>
+                        <div style="position:absolute;width:7px;height:7px;margin:-4px;border-radius:50%;background:#FF7A1A;--dx:56px;--dy:10px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 20ms both"></div>
+                        <div style="position:absolute;width:8px;height:9px;margin:-4px;border-radius:50% 50% 45% 55%;background:#2E4A6F;--dx:-52px;--dy:12px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 50ms both"></div>
+                        <div style="position:absolute;width:9px;height:8px;margin:-4px;border-radius:50% 45% 55% 50%;background:#F7B94A;--dx:-8px;--dy:34px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 40ms both"></div>
+                      </div></sc-if>
+                    </button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(transparent, var(--bg) 75%);pointer-events:none"></div>
+  <button aria-label="Gericht hinzufügen" style="position:absolute;right:20px;bottom:38px;height:58px;padding:0 24px 0 10px;border-radius:29px;border:none;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;gap:10px;font:600 17px/1 'Hanken Grotesk',system-ui;box-shadow:0 14px 30px -10px rgba(0,0,0,.45);cursor:pointer;animation:mk-breathe calc(3.6s * var(--spd, 1)) ease-in-out infinite" style-active="transform:scale(.94)">
+    <span style="width:38px;height:38px;border-radius:50%;background:var(--pillInk);color:var(--pill);display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg></span>Gericht
+  </button>
+</div>
+</sc-if>
+
+<!-- ============ B · PINNWAND ============ -->
+<sc-if value="{{ isB }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:56px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0">
+    <button style="display:flex;align-items:center;gap:8px;background:none;border:none;padding:0;color:var(--ink);cursor:pointer">
+      <span style="display:block;font-size:30px;line-height:1;animation:mk-bob calc(6s * var(--spd, 1)) ease-in-out 1.5s infinite">🍜</span>
+      <span style="font:700 23px/1 'Hanken Grotesk',system-ui;letter-spacing:-.02em">WG-Küche</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.55"><path d="M6 9l6 6 6-6"></path></svg>
+    </button>
+    <div style="display:flex">
+      <span style="width:32px;height:32px;border-radius:50%;border:2.5px solid var(--bg);display:grid;place-items:center;background:#F7C85C;color:#2B1E04;font:700 12px/1 'Hanken Grotesk',system-ui">L</span>
+      <span style="width:32px;height:32px;margin-left:-9px;border-radius:50%;border:2.5px solid var(--bg);display:grid;place-items:center;background:#A9C9B1;color:#12291A;font:700 12px/1 'Hanken Grotesk',system-ui">J</span>
+      <span style="width:32px;height:32px;margin-left:-9px;border-radius:50%;border:2.5px solid var(--bg);display:grid;place-items:center;background:#DDB0F6;color:#2D0F3F;font:700 12px/1 'Hanken Grotesk',system-ui">M</span>
+    </div>
+  </div>
+  <div style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 14px 0;height:46px;padding:4px;box-sizing:border-box;border-radius:23px;background:var(--surface2)">
+    <div style="position:absolute;top:4px;bottom:4px;left:{{ thumbLeft }};width:calc((100% - 8px) / 3);border-radius:19px;background:var(--surface);box-shadow:0 4px 12px -4px rgba(0,0,0,.18);transition:{{ indTr }}"></div>
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+      <button onClick="{{ t.onTap }}" style="position:relative;display:flex;align-items:center;justify-content:center;gap:6px;background:none;border:none;padding:0;cursor:pointer;color:{{ t.segInk }};transition:color .3s">
+        <span style="font:600 14px/1 'Hanken Grotesk',system-ui;white-space:nowrap">{{ t.label }}</span>
+        <span style="display:inline-block;font:500 13px/1 'Hanken Grotesk',system-ui;opacity:.7;animation:{{ t.countAnim }}">{{ t.count }}</span>
+      </button>
+    </sc-for>
+  </div>
+  <div ref="{{ vpRef }}" onPointerDown="{{ down }}" onPointerMove="{{ move }}" onPointerUp="{{ up }}" onPointerCancel="{{ up }}" style="flex:1;position:relative;overflow:hidden;touch-action:pan-y">
+    <div style="display:flex;width:300%;height:100%;transform:{{ trackTf }};transition:{{ trackTr }}">
+      <sc-for list="{{ cols }}" as="col" hint-placeholder-count="3">
+        <div style="width:33.3333%;height:100%;overflow-y:auto;scrollbar-width:none;box-sizing:border-box;padding:16px 12px 140px">
+          <sc-if value="{{ show }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px">
+              <sc-for list="{{ col.left }}" as="d" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:8px;animation:{{ d.enterB }}">
+                  <div style="position:relative;aspect-ratio:{{ d.ratioCss }};border-radius:22px;overflow:hidden;background:{{ d.ph }};animation:{{ d.hopAnim }}">
+                    <sc-if value="{{ d.illus }}">
+                      <div style="position:absolute;inset:0;background:color-mix(in oklch, #B7CDBB 30%, var(--surface2));display:grid;place-items:center">
+                        <div style="position:relative;width:210px;height:150px;transform:scale(.72)">
+                          <div style="position:absolute;left:18px;top:6px;width:180px;height:138px;background:color-mix(in oklch, #F7D58A 55%, var(--surface));border-radius:48% 52% 44% 56% / 56% 46% 54% 44%"></div>
+                          <div style="position:absolute;left:62px;top:34px;width:42px;height:38px;border:2.5px solid var(--ink);border-radius:30% 38% 32% 40%;background:#F7D58A;animation:mk-float calc(3.4s * var(--spd, 1)) ease-in-out infinite"></div>
+                          <div style="position:absolute;left:100px;top:26px;width:34px;height:31px;border:2.5px solid var(--ink);border-radius:52% 48% 44% 56% / 50% 56% 44% 50%;background:#8DB596;animation:mk-float calc(3.9s * var(--spd, 1)) ease-in-out .4s infinite"></div>
+                          <div style="position:absolute;left:128px;top:42px;width:30px;height:27px;border:2.5px solid var(--ink);border-radius:50%;background:#F08A5D;animation:mk-float calc(3.1s * var(--spd, 1)) ease-in-out .9s infinite"></div>
+                          <div style="position:absolute;left:84px;top:48px;width:26px;height:24px;border:2.5px solid var(--ink);border-radius:44% 56% 50% 50%;background:#E9C46A;animation:mk-float calc(3.6s * var(--spd, 1)) ease-in-out 1.3s infinite"></div>
+                          <div style="position:absolute;left:34px;top:62px;width:144px;height:14px;border:2.5px solid var(--ink);border-radius:50%;background:var(--surface);box-sizing:border-box"></div>
+                          <div style="position:absolute;left:40px;top:70px;width:132px;height:62px;border:2.5px solid var(--ink);border-top:none;border-radius:0 0 50% 50% / 0 0 100% 100%;background:var(--surface);box-sizing:border-box"></div>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ d.hasSrc }}"><span style="position:absolute;top:9px;left:9px;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px 0 6px;border-radius:11px;background:rgba(20,18,16,.55);backdrop-filter:blur(8px);color:#fff;font:600 11px/1 'Hanken Grotesk',system-ui"><i style="width:8px;height:8px;border-radius:50%;background:{{ d.srcDot }}"></i>{{ d.srcLabel }}</span></sc-if>
+                    <sc-if value="{{ d.neu }}"><span style="position:absolute;top:9px;right:9px;height:24px;padding:0 10px;border-radius:12px;display:grid;place-items:center;font:700 12px/1 'Hanken Grotesk',system-ui;color:#2A1A03;background:linear-gradient(110deg,#F7B94A 0 40%,#FFF1C9 50%,#F7B94A 60%);background-size:260% 100%;animation:{{ d.neuAnimB }}">Neu</span></sc-if>
+                    <button onClick="{{ d.onCook }}" style="position:absolute;right:8px;bottom:8px;height:34px;padding:0 12px;border-radius:17px;border:none;display:inline-flex;align-items:center;gap:5px;font:600 13px/1 'Hanken Grotesk',system-ui;background:{{ d.cookBgB }};color:{{ d.cookInk }};backdrop-filter:blur(8px);animation:{{ d.cookAnim }};cursor:pointer;transition:background .25s" style-active="transform:scale(.92)">Gekocht<svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;animation:{{ d.checkAnim }}"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>
+                      <sc-if value="{{ d.done }}"><div style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none">
+                        <div style="position:absolute;width:10px;height:9px;margin:-5px;border-radius:50% 45% 55% 50%;background:#F7B94A;--dx:-40px;--dy:-30px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) both"></div>
+                        <div style="position:absolute;width:8px;height:8px;margin:-4px;border-radius:45% 55% 50% 50%;background:#A5C7AE;--dx:6px;--dy:-42px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 30ms both"></div>
+                        <div style="position:absolute;width:9px;height:10px;margin:-5px;border-radius:55% 45% 50% 50%;background:#D877F4;--dx:40px;--dy:-26px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 60ms both"></div>
+                        <div style="position:absolute;width:8px;height:9px;margin:-4px;border-radius:50% 50% 45% 55%;background:#FF7A1A;--dx:-48px;--dy:4px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 50ms both"></div>
+                      </div></sc-if>
+                    </button>
+                  </div>
+                  <div style="display:flex;align-items:flex-start;gap:6px;padding:0 2px">
+                    <div style="flex:1;min-width:0;font:600 15px/1.25 'Hanken Grotesk',system-ui;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ d.title }}</div>
+                    <button aria-label="Mehr" style="flex:none;width:30px;height:24px;margin-top:-2px;border-radius:12px;border:none;background:none;color:var(--ink2);display:grid;place-items:center;cursor:pointer" style-active="transform:scale(.9)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:7px;padding:0 2px">
+                    <span title="{{ d.byName }}" style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:{{ d.avBg }};color:{{ d.avInk }};font:700 10px/1 'Hanken Grotesk',system-ui">{{ d.avLabel }}</span>
+                    <sc-if value="{{ d.hasCooked }}"><span style="display:inline-block;font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2);animation:{{ d.countAnim }}">{{ d.cookedLabel }}</span></sc-if>
+                    <sc-if value="{{ d.note }}"><span style="display:inline-flex;color:var(--ink2)"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg></span></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px">
+              <sc-for list="{{ col.right }}" as="d" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:8px;animation:{{ d.enterB }}">
+                  <div style="position:relative;aspect-ratio:{{ d.ratioCss }};border-radius:22px;overflow:hidden;background:{{ d.ph }};animation:{{ d.hopAnim }}">
+                    <sc-if value="{{ d.illus }}">
+                      <div style="position:absolute;inset:0;background:color-mix(in oklch, #B7CDBB 30%, var(--surface2));display:grid;place-items:center">
+                        <div style="position:relative;width:210px;height:150px;transform:scale(.72)">
+                          <div style="position:absolute;left:18px;top:6px;width:180px;height:138px;background:color-mix(in oklch, #F7D58A 55%, var(--surface));border-radius:48% 52% 44% 56% / 56% 46% 54% 44%"></div>
+                          <div style="position:absolute;left:62px;top:34px;width:42px;height:38px;border:2.5px solid var(--ink);border-radius:30% 38% 32% 40%;background:#F7D58A;animation:mk-float calc(3.4s * var(--spd, 1)) ease-in-out infinite"></div>
+                          <div style="position:absolute;left:100px;top:26px;width:34px;height:31px;border:2.5px solid var(--ink);border-radius:52% 48% 44% 56% / 50% 56% 44% 50%;background:#8DB596;animation:mk-float calc(3.9s * var(--spd, 1)) ease-in-out .4s infinite"></div>
+                          <div style="position:absolute;left:128px;top:42px;width:30px;height:27px;border:2.5px solid var(--ink);border-radius:50%;background:#F08A5D;animation:mk-float calc(3.1s * var(--spd, 1)) ease-in-out .9s infinite"></div>
+                          <div style="position:absolute;left:84px;top:48px;width:26px;height:24px;border:2.5px solid var(--ink);border-radius:44% 56% 50% 50%;background:#E9C46A;animation:mk-float calc(3.6s * var(--spd, 1)) ease-in-out 1.3s infinite"></div>
+                          <div style="position:absolute;left:34px;top:62px;width:144px;height:14px;border:2.5px solid var(--ink);border-radius:50%;background:var(--surface);box-sizing:border-box"></div>
+                          <div style="position:absolute;left:40px;top:70px;width:132px;height:62px;border:2.5px solid var(--ink);border-top:none;border-radius:0 0 50% 50% / 0 0 100% 100%;background:var(--surface);box-sizing:border-box"></div>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ d.hasSrc }}"><span style="position:absolute;top:9px;left:9px;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px 0 6px;border-radius:11px;background:rgba(20,18,16,.55);backdrop-filter:blur(8px);color:#fff;font:600 11px/1 'Hanken Grotesk',system-ui"><i style="width:8px;height:8px;border-radius:50%;background:{{ d.srcDot }}"></i>{{ d.srcLabel }}</span></sc-if>
+                    <sc-if value="{{ d.neu }}"><span style="position:absolute;top:9px;right:9px;height:24px;padding:0 10px;border-radius:12px;display:grid;place-items:center;font:700 12px/1 'Hanken Grotesk',system-ui;color:#2A1A03;background:linear-gradient(110deg,#F7B94A 0 40%,#FFF1C9 50%,#F7B94A 60%);background-size:260% 100%;animation:{{ d.neuAnimB }}">Neu</span></sc-if>
+                    <button onClick="{{ d.onCook }}" style="position:absolute;right:8px;bottom:8px;height:34px;padding:0 12px;border-radius:17px;border:none;display:inline-flex;align-items:center;gap:5px;font:600 13px/1 'Hanken Grotesk',system-ui;background:{{ d.cookBgB }};color:{{ d.cookInk }};backdrop-filter:blur(8px);animation:{{ d.cookAnim }};cursor:pointer;transition:background .25s" style-active="transform:scale(.92)">Gekocht<svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;animation:{{ d.checkAnim }}"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>
+                      <sc-if value="{{ d.done }}"><div style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none">
+                        <div style="position:absolute;width:10px;height:9px;margin:-5px;border-radius:50% 45% 55% 50%;background:#F7B94A;--dx:-40px;--dy:-30px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) both"></div>
+                        <div style="position:absolute;width:8px;height:8px;margin:-4px;border-radius:45% 55% 50% 50%;background:#A5C7AE;--dx:6px;--dy:-42px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 30ms both"></div>
+                        <div style="position:absolute;width:9px;height:10px;margin:-5px;border-radius:55% 45% 50% 50%;background:#D877F4;--dx:40px;--dy:-26px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 60ms both"></div>
+                        <div style="position:absolute;width:8px;height:9px;margin:-4px;border-radius:50% 50% 45% 55%;background:#FF7A1A;--dx:-48px;--dy:4px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 50ms both"></div>
+                      </div></sc-if>
+                    </button>
+                  </div>
+                  <div style="display:flex;align-items:flex-start;gap:6px;padding:0 2px">
+                    <div style="flex:1;min-width:0;font:600 15px/1.25 'Hanken Grotesk',system-ui;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ d.title }}</div>
+                    <button aria-label="Mehr" style="flex:none;width:30px;height:24px;margin-top:-2px;border-radius:12px;border:none;background:none;color:var(--ink2);display:grid;place-items:center;cursor:pointer" style-active="transform:scale(.9)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:7px;padding:0 2px">
+                    <span title="{{ d.byName }}" style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:{{ d.avBg }};color:{{ d.avInk }};font:700 10px/1 'Hanken Grotesk',system-ui">{{ d.avLabel }}</span>
+                    <sc-if value="{{ d.hasCooked }}"><span style="display:inline-block;font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2);animation:{{ d.countAnim }}">{{ d.cookedLabel }}</span></sc-if>
+                    <sc-if value="{{ d.note }}"><span style="display:inline-flex;color:var(--ink2)"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg></span></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:150px;background:linear-gradient(transparent, var(--bg) 70%);pointer-events:none"></div>
+  <div style="position:absolute;left:14px;right:14px;bottom:34px;display:flex;gap:10px;align-items:center">
+    <button style="flex:1;height:58px;border-radius:29px;border:none;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;padding:0 20px;color:var(--ink2);font:500 16px/1 'Hanken Grotesk',system-ui;cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>Gerichte suchen
+    </button>
+    <button aria-label="Gericht hinzufügen" style="flex:none;width:62px;height:62px;border:none;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;box-shadow:0 14px 30px -10px rgba(0,0,0,.45);cursor:pointer;animation:mk-morph calc(8s * var(--spd, 1)) ease-in-out infinite" style-active="transform:scale(.9)">
+      <svg width="26" height="26" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg>
+    </button>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ C · FARBFELD ============ -->
+<sc-if value="{{ isC }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:56px;background:{{ bgTint }};transition:background calc(600ms * var(--spd, 1)) ease">
+  <sc-if value="{{ show }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;inset:0;background:{{ bgTint }};animation:mk-bloom calc(900ms * var(--spd, 1)) cubic-bezier(.5,0,.2,1) both;pointer-events:none"></div></sc-if>
+  <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:6px 18px 0">
+    <button style="display:flex;align-items:center;gap:8px;height:42px;padding:0 14px 0 5px;border-radius:21px;border:none;background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:var(--shadow)">
+      <span style="width:32px;height:32px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-size:18px"><span style="display:block;animation:mk-bob calc(6s * var(--spd, 1)) ease-in-out 1.5s infinite">🍜</span></span>
+      <span style="font:600 15px/1 'Hanken Grotesk',system-ui">WG-Küche</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.55"><path d="M6 9l6 6 6-6"></path></svg>
+    </button>
+    <button aria-label="Suchen" style="width:42px;height:42px;border-radius:50%;border:none;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--ink);cursor:pointer">
+      <svg width="19" height="19" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>
+    </button>
+  </div>
+  <div style="position:relative;height:104px;margin:14px 0 0;overflow:hidden">
+    <sc-for list="{{ cols }}" as="col" hint-placeholder-count="1">
+      <div style="position:absolute;left:22px;top:0;right:22px;opacity:{{ col.hOp }};transform:{{ col.hTf }};transition:{{ col.hTr }}">
+        <div style="font:400 54px/1 'Newsreader',Georgia,serif;letter-spacing:-.025em;white-space:nowrap">{{ col.label }}</div>
+        <div style="margin-top:8px;font:italic 400 22px/1.1 'Newsreader',Georgia,serif;color:var(--ink2)">{{ col.sub }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:relative;display:flex;gap:8px;padding:12px 18px 4px">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+      <button ref="{{ t.ref }}" onClick="{{ t.onTap }}" style="display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border:none;border-radius:{{ t.pebRadius }};background:{{ t.pebBg }};color:{{ t.pebInk }};transform:{{ t.pebTf }};transition:background .35s,color .35s,transform calc(460ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1);cursor:pointer;box-shadow:var(--shadow)">
+        <span style="font:600 14px/1 'Hanken Grotesk',system-ui;white-space:nowrap">{{ t.label }}</span>
+        <span style="display:inline-block;font:700 14px/1 'Hanken Grotesk',system-ui;opacity:.75;animation:{{ t.countAnim }}">{{ t.count }}</span>
+      </button>
+    </sc-for>
+  </div>
+  <div ref="{{ vpRef }}" onPointerDown="{{ down }}" onPointerMove="{{ move }}" onPointerUp="{{ up }}" onPointerCancel="{{ up }}" style="flex:1;position:relative;overflow:hidden;touch-action:pan-y">
+    <div style="display:flex;width:300%;height:100%;transform:{{ trackTf }};transition:{{ trackTr }}">
+      <sc-for list="{{ cols }}" as="col" hint-placeholder-count="3">
+        <div style="width:33.3333%;height:100%;overflow-y:auto;scrollbar-width:none;box-sizing:border-box;padding:16px 16px 140px;display:flex;flex-direction:column;gap:16px">
+          <sc-if value="{{ show }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ col.dishes }}" as="d" hint-placeholder-count="3">
+            <sc-if value="{{ big }}"><div style="position:relative;flex:none;border-radius:30px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow);animation:{{ d.enterC }}">
+              <div style="position:relative;aspect-ratio:{{ d.cropCss }};background:{{ d.ph }};background-size:{{ d.bgSizeC }};background-position:center">
+                <sc-if value="{{ d.illus }}">
+                  <div style="position:absolute;inset:0;background:color-mix(in oklch, #B7CDBB 30%, var(--surface2));display:grid;place-items:center">
+                    <div style="position:relative;width:210px;height:150px;margin-top:-30px">
+                      <div style="position:absolute;left:18px;top:6px;width:180px;height:138px;background:color-mix(in oklch, #F7D58A 55%, var(--surface));border-radius:48% 52% 44% 56% / 56% 46% 54% 44%"></div>
+                      <div style="position:absolute;left:94px;top:0;width:3px;height:22px;border-radius:3px;background:var(--ink);opacity:.5;animation:mk-steam calc(2.6s * var(--spd, 1)) ease-out infinite"></div>
+                      <div style="position:absolute;left:114px;top:4px;width:3px;height:18px;border-radius:3px;background:var(--ink);opacity:.5;animation:mk-steam calc(2.6s * var(--spd, 1)) ease-out 1.1s infinite"></div>
+                      <div style="position:absolute;left:62px;top:34px;width:42px;height:38px;border:2.5px solid var(--ink);border-radius:30% 38% 32% 40%;background:#F7D58A;animation:mk-float calc(3.4s * var(--spd, 1)) ease-in-out infinite"></div>
+                      <div style="position:absolute;left:100px;top:26px;width:34px;height:31px;border:2.5px solid var(--ink);border-radius:52% 48% 44% 56% / 50% 56% 44% 50%;background:#8DB596;animation:mk-float calc(3.9s * var(--spd, 1)) ease-in-out .4s infinite"></div>
+                      <div style="position:absolute;left:128px;top:42px;width:30px;height:27px;border:2.5px solid var(--ink);border-radius:50%;background:#F08A5D;animation:mk-float calc(3.1s * var(--spd, 1)) ease-in-out .9s infinite"></div>
+                      <div style="position:absolute;left:84px;top:48px;width:26px;height:24px;border:2.5px solid var(--ink);border-radius:44% 56% 50% 50%;background:#E9C46A;animation:mk-float calc(3.6s * var(--spd, 1)) ease-in-out 1.3s infinite"></div>
+                      <div style="position:absolute;left:34px;top:62px;width:144px;height:14px;border:2.5px solid var(--ink);border-radius:50%;background:var(--surface);box-sizing:border-box"></div>
+                      <div style="position:absolute;left:40px;top:70px;width:132px;height:62px;border:2.5px solid var(--ink);border-top:none;border-radius:0 0 50% 50% / 0 0 100% 100%;background:var(--surface);box-sizing:border-box"></div>
+                    </div>
+                  </div>
+                </sc-if>
+                <div style="position:absolute;inset:0;background:{{ d.scrim }}"></div>
+                <sc-if value="{{ d.hasSrc }}"><span style="position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 8px;border-radius:13px;background:rgba(20,18,16,.5);backdrop-filter:blur(8px);color:#fff;font:600 12px/1 'Hanken Grotesk',system-ui"><i style="width:9px;height:9px;border-radius:50%;background:{{ d.srcDot }}"></i>{{ d.srcLabel }}</span></sc-if>
+                <sc-if value="{{ d.neu }}">
+                  <div style="position:absolute;top:10px;right:12px;animation:{{ d.badgeAnim }}">
+                    <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#F7B94A;animation:mk-ring calc(3.2s * var(--spd, 1)) ease-out calc(1.4s * var(--spd, 1)) infinite"></div>
+                    <div style="position:relative;width:52px;height:48px;display:grid;place-items:center;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#FCD980,#F29B32);color:#2A1A03;font:700 14px/1 'Hanken Grotesk',system-ui;animation:mk-float calc(4s * var(--spd, 1)) ease-in-out infinite">Neu</div>
+                  </div>
+                </sc-if>
+                <div style="position:absolute;left:18px;right:18px;bottom:16px;font:400 27px/1.1 'Newsreader',Georgia,serif;letter-spacing:-.015em;color:{{ d.ovInk }};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:pretty">{{ d.title }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:12px 12px 12px 16px">
+                <span title="{{ d.byName }}" style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:{{ d.avBg }};color:{{ d.avInk }};font:700 11px/1 'Hanken Grotesk',system-ui">{{ d.avLabel }}</span>
+                <sc-if value="{{ d.hasCooked }}"><span style="display:inline-block;font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2);animation:{{ d.countAnim }}">{{ d.cookedLabel }}</span></sc-if>
+                <sc-if value="{{ d.note }}"><span style="display:inline-flex;color:var(--ink2)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg></span></sc-if>
+                <div style="flex:1"></div>
+                <button onClick="{{ d.onCook }}" style="position:relative;height:40px;padding:0 15px;border-radius:20px 18px 21px 19px;border:none;display:inline-flex;align-items:center;gap:7px;font:600 14px/1 'Hanken Grotesk',system-ui;background:{{ d.cookBgC }};color:{{ d.cookInkC }};animation:{{ d.cookAnim }};cursor:pointer;transition:background .25s" style-active="transform:scale(.94)">Gekocht<svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;animation:{{ d.checkAnim }}"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>
+                  <sc-if value="{{ d.done }}"><div style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none">
+                    <div style="position:absolute;width:10px;height:9px;margin:-5px;border-radius:50% 45% 55% 50%;background:#A5C7AE;--dx:-44px;--dy:-30px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) both"></div>
+                    <div style="position:absolute;width:8px;height:8px;margin:-4px;border-radius:45% 55% 50% 50%;background:#F7B94A;--dx:6px;--dy:-44px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 30ms both"></div>
+                    <div style="position:absolute;width:9px;height:10px;margin:-5px;border-radius:55% 45% 50% 50%;background:#D877F4;--dx:40px;--dy:-30px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 60ms both"></div>
+                    <div style="position:absolute;width:7px;height:7px;margin:-4px;border-radius:50%;background:#8DB596;--dx:-54px;--dy:6px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 20ms both"></div>
+                    <div style="position:absolute;width:9px;height:8px;margin:-4px;border-radius:50% 45% 55% 50%;background:#FF7A1A;--dx:-10px;--dy:-58px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 40ms both"></div>
+                  </div></sc-if>
+                </button>
+                <button aria-label="Mehr" style="width:40px;height:40px;border-radius:50%;border:none;background:var(--surface2);color:var(--ink);display:grid;place-items:center;cursor:pointer" style-active="transform:scale(.9)"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+              </div>
+            </div></sc-if>
+            <sc-if value="{{ compact }}">
+            <div style="position:relative;flex:none;display:grid;grid-template-columns:104px minmax(0,1fr);gap:14px;padding:9px;background:var(--surface);border-radius:28px 24px 30px 26px;box-shadow:var(--shadow);animation:{{ d.enterC }}">
+              <div style="position:relative;aspect-ratio:4 / 5;border-radius:21px 18px 22px 19px;overflow:hidden;background:{{ d.phT }};background-size:{{ d.bgSizeT }};background-position:center">
+                <sc-if value="{{ d.illusT }}"><div style="position:absolute;inset:0;background:color-mix(in oklch, #B7CDBB 30%, var(--surface2));display:grid;place-items:center"><div style="display:flex;gap:4px"><i style="width:22px;height:20px;border:2px solid var(--ink);border-radius:30% 38% 32% 40%;background:#F7D58A;animation:mk-float calc(3.4s * var(--spd, 1)) ease-in-out infinite"></i><i style="width:18px;height:17px;border:2px solid var(--ink);border-radius:50%;background:#8DB596;animation:mk-float calc(3.9s * var(--spd, 1)) ease-in-out .4s infinite"></i><i style="width:16px;height:15px;border:2px solid var(--ink);border-radius:44% 56% 50% 50%;background:#F08A5D;animation:mk-float calc(3.1s * var(--spd, 1)) ease-in-out .9s infinite"></i></div></div></sc-if>
+                <sc-if value="{{ d.picto }}"><dc-import name="Illus" kind="{{ d.pKind }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import></sc-if>
+                <sc-if value="{{ d.hasSrc }}"><span style="position:absolute;left:7px;bottom:7px;width:20px;height:20px;border-radius:50%;background:rgba(20,18,16,.5);backdrop-filter:blur(8px);display:grid;place-items:center" title="{{ d.srcLabel }}"><i style="width:9px;height:9px;border-radius:50%;background:{{ d.srcDot }}"></i></span></sc-if>
+              </div>
+              <sc-if value="{{ d.neu }}">
+                <div style="position:absolute;top:-10px;right:16px;z-index:3;animation:{{ d.badgeAnim }}">
+                  <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#F7B94A;animation:mk-ring calc(3.2s * var(--spd, 1)) ease-out calc(1.4s * var(--spd, 1)) infinite"></div>
+                  <div style="position:relative;width:46px;height:42px;display:grid;place-items:center;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#FCD980,#F29B32);color:#2A1A03;font:700 13px/1 'Hanken Grotesk',system-ui;animation:mk-float calc(4s * var(--spd, 1)) ease-in-out infinite">Neu</div>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-direction:column;min-width:0;padding:6px 4px 2px 0">
+                <div style="font:400 20px/1.16 'Newsreader',Georgia,serif;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:pretty;padding-right:{{ d.titlePad }}">{{ d.title }}</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:9px">
+                  <span title="{{ d.byName }}" style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:{{ d.avBg }};color:{{ d.avInk }};font:700 10px/1 'Hanken Grotesk',system-ui">{{ d.avLabel }}</span>
+                  <sc-if value="{{ d.hasCooked }}"><span style="display:inline-block;font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2);animation:{{ d.countAnim }}">{{ d.cookedLabel }}</span></sc-if>
+                  <sc-if value="{{ d.note }}"><span style="display:inline-flex;color:var(--ink2)"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h10l4 4v12H5z"></path><path d="M9 12h6M9 16h4"></path></svg></span></sc-if>
+                </div>
+                <div style="flex:1;min-height:10px"></div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button onClick="{{ d.onCook }}" style="position:relative;height:36px;padding:0 13px;border-radius:18px 16px 19px 17px;border:none;display:inline-flex;align-items:center;gap:6px;font:600 13px/1 'Hanken Grotesk',system-ui;background:{{ d.cookBgC }};color:{{ d.cookInkC }};animation:{{ d.cookAnim }};cursor:pointer;transition:background .25s" style-active="transform:scale(.94)">Gekocht<svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;animation:{{ d.checkAnim }}"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>
+                    <sc-if value="{{ d.done }}"><div style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none">
+                      <div style="position:absolute;width:10px;height:9px;margin:-5px;border-radius:50% 45% 55% 50%;background:#A5C7AE;--dx:-40px;--dy:-28px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) both"></div>
+                      <div style="position:absolute;width:8px;height:8px;margin:-4px;border-radius:45% 55% 50% 50%;background:#F7B94A;--dx:6px;--dy:-40px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 30ms both"></div>
+                      <div style="position:absolute;width:9px;height:10px;margin:-5px;border-radius:55% 45% 50% 50%;background:#D877F4;--dx:38px;--dy:-28px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 60ms both"></div>
+                      <div style="position:absolute;width:7px;height:7px;margin:-4px;border-radius:50%;background:#8DB596;--dx:-50px;--dy:6px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 20ms both"></div>
+                      <div style="position:absolute;width:9px;height:8px;margin:-4px;border-radius:50% 45% 55% 50%;background:#FF7A1A;--dx:48px;--dy:4px;animation:mk-burst calc(620ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) 40ms both"></div>
+                    </div></sc-if>
+                  </button>
+                  <div style="flex:1"></div>
+                  <button aria-label="Mehr" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--surface2);color:var(--ink);display:grid;place-items:center;cursor:pointer" style-active="transform:scale(.9)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+                </div>
+              </div>
+            </div>
+            </sc-if>
+          </sc-for>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <button aria-label="Gericht hinzufügen" style="position:absolute;right:20px;bottom:34px;width:70px;height:70px;border:none;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;box-shadow:0 16px 32px -10px rgba(0,0,0,.5);cursor:pointer;animation:mk-morph calc(8s * var(--spd, 1)) ease-in-out infinite, mk-breathe calc(3.6s * var(--spd, 1)) ease-in-out infinite" style-active="transform:scale(.9)">
+    <svg width="28" height="28" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg>
+  </button>
+  <sc-if value="{{ flyOn }}"><div style="position:absolute;left:0;top:0;z-index:40;pointer-events:none;--x0:{{ fx0 }};--x1:{{ fx1 }};--y0:{{ fy0 }};--y1:{{ fy1 }};animation:mk-flyx calc(640ms * var(--spd, 1)) cubic-bezier(.5,0,.85,.6) both"><div style="animation:mk-flyy calc(640ms * var(--spd, 1)) cubic-bezier(.15,.7,.35,1) both"><div style="width:18px;height:17px;margin:-9px 0 0 -9px;border-radius:48% 52% 44% 56% / 55% 45% 55% 45%;background:linear-gradient(140deg,#C7E0CD,#8DB79A);border:2px solid var(--ink);animation:mk-flys calc(640ms * var(--spd, 1)) ease-in-out both"></div></div></div></sc-if>
+  <sc-if value="{{ msOn }}"><div onClick="{{ msClose }}" style="position:absolute;inset:0;z-index:45;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 44px;text-align:center;background:color-mix(in oklch, #A5C7AE 55%, var(--bg));animation:{{ msBgAnim }};cursor:pointer">
+    <div style="position:relative;width:176px;height:162px;margin-bottom:14px">
+      <div style="position:absolute;left:50%;top:50%;width:0;height:0">
+        <div style="position:absolute;width:18px;height:16px;margin:-8px;border-radius:50% 45% 55% 50%;background:#F7B94A;--dx:-130px;--dy:-90px;animation:mk-burst calc(900ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) calc(260ms * var(--spd, 1)) both"></div>
+        <div style="position:absolute;width:14px;height:14px;margin:-7px;border-radius:45% 55% 50% 50%;background:#DE8CF2;--dx:10px;--dy:-140px;animation:mk-burst calc(900ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) calc(290ms * var(--spd, 1)) both"></div>
+        <div style="position:absolute;width:16px;height:18px;margin:-8px;border-radius:55% 45% 50% 50%;background:#F08A5D;--dx:140px;--dy:-70px;animation:mk-burst calc(900ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) calc(270ms * var(--spd, 1)) both"></div>
+        <div style="position:absolute;width:12px;height:12px;margin:-6px;border-radius:50%;background:#A8BEE3;--dx:150px;--dy:40px;animation:mk-burst calc(900ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) calc(310ms * var(--spd, 1)) both"></div>
+        <div style="position:absolute;width:16px;height:15px;margin:-8px;border-radius:50% 50% 45% 55%;background:#F7B94A;--dx:90px;--dy:120px;animation:mk-burst calc(900ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) calc(280ms * var(--spd, 1)) both"></div>
+        <div style="position:absolute;width:14px;height:13px;margin:-7px;border-radius:50% 45% 55% 50%;background:#DE8CF2;--dx:-100px;--dy:120px;animation:mk-burst calc(900ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) calc(300ms * var(--spd, 1)) both"></div>
+        <div style="position:absolute;width:18px;height:16px;margin:-8px;border-radius:48% 52% 46% 54%;background:#F08A5D;--dx:-150px;--dy:20px;animation:mk-burst calc(900ms * var(--spd, 1)) cubic-bezier(.2,.8,.3,1) calc(260ms * var(--spd, 1)) both"></div>
+      </div>
+      <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#F7B94A;animation:mk-ring calc(1.8s * var(--spd, 1)) ease-out calc(500ms * var(--spd, 1)) infinite"></div>
+      <div style="position:absolute;inset:0;animation:mk-badge calc(720ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(120ms * var(--spd, 1)) both"><div style="width:100%;height:100%;display:grid;place-items:center;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:linear-gradient(140deg,#FCD980,#F29B32);color:#2A1A03;font:400 66px/1 'Newsreader',Georgia,serif;letter-spacing:-.03em;box-shadow:0 24px 40px -16px rgba(120,70,0,.5);animation:mk-float calc(3.6s * var(--spd, 1)) ease-in-out calc(900ms * var(--spd, 1)) infinite">10×</div></div>
+    </div>
+    <div style="font:400 36px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em;color:var(--ink);animation:mk-tick calc(460ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(420ms * var(--spd, 1)) both">WG-Klassiker!</div>
+    <div style="font:500 16px/1.45 'Hanken Grotesk',system-ui;color:var(--ink);opacity:.8;text-wrap:pretty;animation:mk-tick calc(460ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(520ms * var(--spd, 1)) both">{{ msTitle }} wurde zum 10. Mal gekocht.</div>
+    <div style="margin-top:18px;font:600 12px/1 'Hanken Grotesk',system-ui;color:var(--ink);opacity:.55;animation:mk-fadein calc(400ms * var(--spd, 1)) ease calc(1200ms * var(--spd, 1)) both">Tippen zum Schließen</div>
+  </div></sc-if>
+</div>
+</sc-if>
+
+<div style="position:absolute;left:50%;bottom:8px;width:108px;height:4px;margin-left:-54px;border-radius:2px;background:var(--ink);opacity:.9;z-index:30;pointer-events:none"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;,&quot;d&quot;],&quot;default&quot;:&quot;a&quot;,&quot;tsType&quot;:&quot;'a'|'b'|'c'|'d'&quot;},&quot;replay&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;},&quot;pictos&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const T = ms => `calc(${ms}ms * var(--spd, 1))`;
+const SPRING = 'cubic-bezier(.34,1.56,.64,1)';
+const PEOPLE = {
+  L: { bg: '#F7C85C', ink: '#2B1E04', label: 'L', name: 'Lea' },
+  J: { bg: '#A9C9B1', ink: '#12291A', label: 'J', name: 'Jonas' },
+  M: { bg: '#DDB0F6', ink: '#2D0F3F', label: 'M', name: 'Mia' },
+  Du: { bg: '#A8BEE3', ink: '#0F2340', label: 'Du', name: 'Du' }
+};
+const SRC = {
+  tiktok: { l: 'TikTok', dot: 'linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50%)' },
+  instagram: { l: 'Instagram', dot: 'linear-gradient(135deg,#FEDA75,#D62976 55%,#4F5BD5)' },
+  youtube: { l: 'YouTube', dot: '#FF0033' },
+  pinterest: { l: 'Pinterest', dot: '#E60023' },
+  web: { l: 'Web', dot: '#8E8A83' }
+};
+const DISH = {
+  tofu: { title: 'Knuspriger Sesam-Tofu mit Erdnusssoße und Frühlingszwiebeln', src: 'tiktok', ratio: [9, 16], by: 'L', cooked: 0, neu: true,
+    ph: 'radial-gradient(9% 5% at 40% 44%, #F6CE7E 0 55%, transparent 100%), radial-gradient(10% 5.5% at 60% 49%, #EDB45F 0 55%, transparent 100%), radial-gradient(9% 5% at 47% 57%, #E7A24A 0 55%, transparent 100%), radial-gradient(8% 4.5% at 62% 60%, #F3C570 0 55%, transparent 100%), radial-gradient(3% 1.6% at 52% 42%, #9CCB5B 0 60%, transparent 100%), radial-gradient(3% 1.6% at 36% 55%, #86B94C 0 60%, transparent 100%), radial-gradient(3% 1.6% at 66% 55%, #9CCB5B 0 60%, transparent 100%), radial-gradient(30% 17% at 50% 51%, #7A3E1C 0 70%, transparent 100%), radial-gradient(44% 25% at 50% 51%, #F2EDE4 0 88%, #CFC6B6 93%, transparent 96%), linear-gradient(165deg,#3B474C,#161C1F)' },
+  linsen: { title: 'Omas Linsensuppe', src: 'web', ratio: [4, 3], by: 'J', cooked: 3, note: true,
+    ph: 'radial-gradient(3% 4% at 44% 44%, #6FA34A 0 60%, transparent 100%), radial-gradient(2.5% 3.3% at 56% 52%, #7DB356 0 60%, transparent 100%), radial-gradient(2.5% 3.3% at 50% 60%, #6FA34A 0 60%, transparent 100%), radial-gradient(12% 16% at 46% 47%, rgba(255,230,190,.35) 0 40%, transparent 100%), radial-gradient(24% 32% at 50% 52%, #D0652E 0 80%, #A84A20 92%, transparent 96%), radial-gradient(31% 41% at 50% 52%, #F4EFE6 0 88%, #CFC5B4 94%, transparent 98%), repeating-linear-gradient(100deg, #7A5238 0 22px, #6E4930 22px 40px)' },
+  bowl: { title: 'Crispy Tofu Bowl', src: 'instagram', ratio: [9, 16], by: 'Du', cooked: 1,
+    ph: 'radial-gradient(11% 6.2% at 50% 51%, #F7F3EA 0 60%, transparent 100%), radial-gradient(15% 8.4% at 38% 44%, #8C4AA0 0 60%, transparent 100%), radial-gradient(15% 8.4% at 62% 44%, #7FB34F 0 60%, transparent 100%), radial-gradient(15% 8.4% at 38% 59%, #F08A3C 0 60%, transparent 100%), radial-gradient(15% 8.4% at 62% 59%, #EFC77A 0 60%, transparent 100%), radial-gradient(36% 20% at 50% 51%, #F3EEE6 0 86%, #BCD0D6 90%, transparent 94%), linear-gradient(170deg,#F6DCCB,#E9B99C)' },
+  ofen: { title: 'Ofengemüse mit Tahini', src: null, ratio: [4, 3], by: 'J', cooked: 0, note: true, illus: true },
+  pasta: { title: 'One-Pot Pasta mit Cashewsoße', src: 'youtube', ratio: [16, 9], by: 'M', cooked: 0, note: true,
+    ph: 'radial-gradient(2% 3.6% at 42% 46%, #6DAA45 0 60%, transparent 100%), radial-gradient(1.8% 3.2% at 58% 52%, #5E9E3C 0 60%, transparent 100%), radial-gradient(2.4% 4.2% at 50% 58%, #D9442B 0 55%, transparent 100%), radial-gradient(2.4% 4.2% at 60% 44%, #D9442B 0 55%, transparent 100%), radial-gradient(12% 22% at 48% 48%, rgba(255,248,225,.5) 0 30%, transparent 100%), radial-gradient(19% 34% at 50% 52%, #F0D59C 0 70%, #DDBB7C 86%, transparent 92%), radial-gradient(24% 43% at 50% 52%, #2B2A29 0 88%, #111 94%, transparent 97%), linear-gradient(170deg,#E9E1D3,#C9BDA8)' },
+  kaese: { title: 'Veganer Käsekuchen', src: 'pinterest', ratio: [2, 3], by: 'L', cooked: 0,
+    ph: 'radial-gradient(4% 2.7% at 46% 46%, #7A1733 0 60%, transparent 100%), radial-gradient(4% 2.7% at 56% 50%, #9B1E42 0 60%, transparent 100%), radial-gradient(3.5% 2.4% at 50% 56%, #6E1430 0 60%, transparent 100%), radial-gradient(22% 14.7% at 50% 51%, #C73B5A 0 70%, transparent 100%), radial-gradient(34% 22.7% at 50% 51%, #F6E7C8 0 82%, #D9B77E 90%, transparent 94%), radial-gradient(42% 28% at 50% 51%, #FFFFFF 0 88%, #DAD3CB 93%, transparent 96%), linear-gradient(170deg,#F4C9CF,#E7A9B4)' },
+  ramen: { title: 'Miso-Ramen mit Pilzen', src: 'tiktok', ratio: [9, 16], by: 'M', cooked: 1,
+    ph: 'radial-gradient(7% 4% at 40% 46%, #3D2A1E 0 60%, transparent 100%), radial-gradient(7% 4% at 58% 44%, #4A3223 0 60%, transparent 100%), radial-gradient(6% 3.4% at 60% 58%, #F2C94C 0 55%, transparent 100%), radial-gradient(9% 5% at 42% 58%, #5E9E3C 0 55%, transparent 100%), radial-gradient(20% 11% at 52% 52%, #EFD9A8 0 50%, transparent 90%), radial-gradient(36% 20% at 50% 51%, #B26A33 0 82%, #8A4E22 90%, transparent 93%), radial-gradient(43% 24% at 50% 51%, #1E1E1E 0 90%, transparent 95%), linear-gradient(170deg,#C9B79C,#8F7B61)' },
+  curry: { title: 'Kichererbsen-Curry mit Spinat', src: 'youtube', ratio: [16, 9], by: 'J', cooked: 2,
+    ph: 'radial-gradient(2% 3.6% at 45% 45%, #E8C66A 0 60%, transparent 100%), radial-gradient(2% 3.6% at 52% 52%, #E3BC5C 0 60%, transparent 100%), radial-gradient(2% 3.6% at 48% 58%, #E8C66A 0 60%, transparent 100%), radial-gradient(2.5% 4.4% at 56% 44%, #4C8A3A 0 60%, transparent 100%), radial-gradient(14% 25% at 50% 51%, #E09A28 0 75%, #B8741A 90%, transparent 94%), radial-gradient(18% 32% at 50% 51%, #2F3B45 0 88%, transparent 93%), radial-gradient(9% 16% at 75% 40%, #F4EEDD 0 70%, transparent 90%), linear-gradient(160deg,#D9CBB3,#B7A488)' },
+  gnocchi: { title: 'Gnocchi mit Salbei-Butter', src: 'web', ratio: [16, 9], by: 'Du', cooked: 0, note: true,
+    ph: 'radial-gradient(3% 5.3% at 44% 46%, #F1CF7B 0 55%, transparent 100%), radial-gradient(3% 5.3% at 52% 44%, #EBC36A 0 55%, transparent 100%), radial-gradient(3% 5.3% at 48% 56%, #F1CF7B 0 55%, transparent 100%), radial-gradient(3% 5.3% at 57% 54%, #E6B95C 0 55%, transparent 100%), radial-gradient(2.4% 4.2% at 54% 49%, #5F8B4E 0 55%, transparent 100%), radial-gradient(2.4% 4.2% at 45% 53%, #6E9A5A 0 55%, transparent 100%), radial-gradient(17% 30% at 50% 51%, #FAF6EE 0 88%, #D7D0C4 94%, transparent 97%), linear-gradient(160deg,#3A3F3A,#1E221F)' },
+  shakshuka: { title: 'Shakshuka mit Seidentofu', src: 'instagram', ratio: [9, 16], by: 'L', cooked: 5, note: true,
+    ph: 'radial-gradient(7% 4% at 42% 46%, #F7F1E3 0 55%, transparent 100%), radial-gradient(7% 4% at 58% 50%, #F7F1E3 0 55%, transparent 100%), radial-gradient(7% 4% at 46% 58%, #F2EAD8 0 55%, transparent 100%), radial-gradient(3% 1.7% at 54% 44%, #4E8A3A 0 60%, transparent 100%), radial-gradient(3% 1.7% at 38% 54%, #4E8A3A 0 60%, transparent 100%), radial-gradient(34% 19% at 50% 51%, #C7361F 0 78%, #9E2714 90%, transparent 93%), radial-gradient(41% 23% at 50% 51%, #232323 0 90%, transparent 95%), linear-gradient(170deg,#E8DDCB,#C2B198)' },
+  padthai: { title: 'Pad Thai mit Erdnüssen', src: 'web', ratio: [4, 3], by: 'J', cooked: 3,
+    ph: 'radial-gradient(4% 5.3% at 62% 42%, #B7D65A 0 55%, transparent 100%), radial-gradient(2% 2.7% at 44% 46%, #C89A62 0 60%, transparent 100%), radial-gradient(2% 2.7% at 52% 56%, #C89A62 0 60%, transparent 100%), radial-gradient(2.4% 3.2% at 48% 50%, #5E9E3C 0 60%, transparent 100%), radial-gradient(20% 26.7% at 50% 52%, #E58E3E 0 70%, #C7702A 88%, transparent 93%), radial-gradient(27% 36% at 50% 52%, #F5F1EA 0 88%, #CFC7BA 94%, transparent 97%), linear-gradient(160deg,#2E4A48,#1B2F2E)' },
+  banane: { title: 'Bananenbrot', src: null, ratio: [4, 3], by: 'Du', cooked: 9, note: true,
+    ph: 'radial-gradient(10% 6% at 50% 42%, #F4E3B6 0 60%, transparent 100%), radial-gradient(34% 22% at 50% 52%, #8A5226 0 70%, #6B3C18 90%, transparent 95%), radial-gradient(40% 30% at 50% 54%, #F2EDE5 0 88%, transparent 93%), linear-gradient(160deg,#E9D8BF,#CDB693)' },
+  bolo: { title: 'Linsen-Bolognese', src: 'youtube', ratio: [16, 9], by: 'M', cooked: 2,
+    ph: 'radial-gradient(3% 5.3% at 55% 45%, #4E8A3A 0 55%, transparent 100%), radial-gradient(8% 14% at 50% 50%, #8E3A20 0 65%, transparent 100%), radial-gradient(15% 27% at 50% 51%, #EFD08E 0 72%, #D9B46B 88%, transparent 93%), radial-gradient(19% 34% at 50% 51%, #F7F3EC 0 88%, #CFC7BA 94%, transparent 97%), linear-gradient(160deg,#6B7F5E,#46563C)' }
+};
+const COLS = [
+  { key: 'ideen', label: 'Ideen', base: 12, accent: '#F7B94A', sub: 'Worauf hast du Lust?', ids: ['tofu', 'linsen', 'bowl', 'ofen', 'pasta', 'kaese'] },
+  { key: 'woche', label: 'Diese Woche', base: 3, accent: '#DE8CF2', sub: 'Das steht an.', ids: ['ramen', 'curry', 'gnocchi'] },
+  { key: 'gekocht', label: 'Gekocht', base: 27, accent: '#A5C7AE', sub: 'Schon geschafft!', ids: ['shakshuka', 'padthai', 'banane', 'bolo'] }
+];
+const PICTO = {
+  tofu: ['wok', '#A8BEE3'], linsen: ['eintopf', '#F08A5D'], bowl: ['bowl', '#A5C7AE'], ofen: ['bowl', '#A5C7AE'],
+  pasta: ['pasta', '#F7B94A'], kaese: ['cake', '#DE8CF2'], ramen: ['ramen', '#A8BEE3'], curry: ['curry', '#F08A5D'],
+  gnocchi: ['pasta', '#F7B94A'], shakshuka: ['eintopf', '#F08A5D'], padthai: ['wok', '#A8BEE3'], banane: ['bread', '#F7B94A'], bolo: ['pasta', '#F7B94A']
+};
+const RADII = ['22px 17px 20px 15px', '17px 22px 15px 20px', '20px 15px 22px 17px'];
+
+class Component extends DCLogic {
+  state = { idx: 0, dragX: 0, dragging: false, done: {}, show: true, bumpN: 0, fly: null, ms: null, msLeave: false };
+  vpRef = React.createRef();
+  rootRef = React.createRef();
+  tabRefs = [React.createRef(), React.createRef(), React.createRef()];
+  spd() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spd')) || 1; }
+  closeMs = () => {
+    if (!this.state.ms || this.state.msLeave) return;
+    clearTimeout(this.msT);
+    this.setState({ msLeave: true });
+    setTimeout(() => this.setState({ ms: null, msLeave: false }), 320 * this.spd());
+  };
+  componentWillUnmount() { clearTimeout(this.msT); clearTimeout(this.flyT); }
+
+  componentDidUpdate(p) {
+    if (p.replay !== this.props.replay) {
+      this.setState({ show: false, idx: 0 }, () => setTimeout(() => this.setState({ show: true }), 40));
+    }
+  }
+  down = e => {
+    this.st = { x: e.clientX, y: e.clientY, w: this.vpRef.current ? this.vpRef.current.offsetWidth : 390, drag: false };
+  };
+  move = e => {
+    const s = this.st; if (!s) return;
+    const dx = e.clientX - s.x, dy = e.clientY - s.y;
+    if (!s.drag) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        s.drag = true;
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+        this.setState({ dragging: true });
+      } else if (Math.abs(dy) > 10) this.st = null;
+      return;
+    }
+    let d = dx; const i = this.state.idx;
+    if ((i === 0 && d > 0) || (i === 2 && d < 0)) d *= 0.3;
+    this.setState({ dragX: d });
+  };
+  up = () => {
+    const s = this.st; this.st = null;
+    if (!s || !s.drag) return;
+    const dx = this.state.dragX; let i = this.state.idx;
+    if (dx < -s.w * 0.18 && i < 2) i++; else if (dx > s.w * 0.18 && i > 0) i--;
+    this.setState({ idx: i, dragX: 0, dragging: false });
+  };
+  toggle(id, e) {
+    const was = !!this.state.done[id], inG = COLS[2].ids.includes(id), v = this.props.variant, cd = v === 'c' || v === 'd', k = this.spd();
+    const btn = e && e.currentTarget;
+    this.setState(s => ({ done: { ...s.done, [id]: !was }, bumpN: inG ? s.bumpN : s.bumpN + 1 }));
+    if (was || !cd) return;
+    if (!inG && btn && this.rootRef.current && this.tabRefs[2].current) {
+      const r = this.rootRef.current.getBoundingClientRect(), sc = r.width / 390 || 1;
+      const a = btn.getBoundingClientRect(), t = this.tabRefs[2].current.getBoundingClientRect();
+      const fly = { x0: (a.left + a.width / 2 - r.left) / sc, y0: (a.top + a.height / 2 - r.top) / sc, x1: (t.left + t.width / 2 - r.left) / sc, y1: (t.top + t.height / 2 - r.top) / sc };
+      this.setState({ fly: null }, () => requestAnimationFrame(() => this.setState({ fly })));
+      clearTimeout(this.flyT); this.flyT = setTimeout(() => this.setState({ fly: null }), 900 * k);
+    }
+    if (DISH[id].cooked + 1 === 10) {
+      clearTimeout(this.msT);
+      setTimeout(() => this.setState({ ms: { title: DISH[id].title }, msLeave: false }), 420 * k);
+      this.msT = setTimeout(() => this.closeMs(), 3600 * k);
+    }
+  }
+  dish(id, i) {
+    const d = DISH[id], dn = !!this.state.done[id], n = d.cooked + (dn ? 1 : 0), p = PEOPLE[d.by], s = d.src ? SRC[d.src] : null;
+    const ar = d.ratio[0] / d.ratio[1], portrait = ar < 1 && !d.illus;
+    const crop = portrait ? 4 / 5 : 16 / 10;
+    const badgeAnim = `mk-badge ${T(560)} ${SPRING} ${T(620 + i * 70)} both`;
+    return {
+      id, title: d.title, ph: d.ph || 'none', ratioCss: `${d.ratio[0]} / ${d.ratio[1]}`,
+      cropCss: portrait ? '4 / 5' : '16 / 10',
+      bgSizeT: ar < 0.8 ? `100% ${(0.8 / ar) * 100}%` : `${(ar / 0.8) * 100}% 100%`,
+      titlePad: d.neu ? '40px' : '0',
+      ...this.picto(id, d),
+      bgSizeC: ar < crop ? `100% ${(crop / ar) * 100}%` : `${(ar / crop) * 100}% 100%`,
+      portrait, landscape: !portrait, illus: !!d.illus, neu: !!d.neu, note: !!d.note,
+      hasSrc: !!s, srcLabel: s ? s.l : '', srcDot: s ? s.dot : '',
+      hasCooked: n > 0, cookedLabel: `${n}× gekocht`, done: dn,
+      avBg: p.bg, avInk: p.ink, avLabel: p.label, byName: `Hinzugefügt von ${p.name}`,
+      cookBg: dn ? 'linear-gradient(135deg,#FBD36B,#F5A03A)' : 'var(--surface2)',
+      cookBgB: dn ? 'linear-gradient(135deg,#FBD36B,#F5A03A)' : 'var(--glass)',
+      cookInk: dn ? '#2A1A03' : 'var(--ink)',
+      cookBgC: dn ? 'linear-gradient(135deg,#C7E0CD,#8DB79A)' : 'var(--surface2)',
+      cookInkC: dn ? '#10261A' : 'var(--ink)',
+      cookAnim: dn ? `mk-cook ${T(480)} ${SPRING}` : 'none',
+      checkAnim: dn ? `mk-draw ${T(260)} ease-out ${T(120)} both` : 'none',
+      countAnim: dn ? `mk-tick ${T(380)} ${SPRING}` : 'none',
+      hopAnim: dn ? `mk-hop ${T(380)} ${SPRING}` : 'none',
+      scrim: d.illus ? 'none' : 'linear-gradient(to top, rgba(10,8,6,.72), rgba(10,8,6,.15) 45%, transparent 60%)',
+      ovInk: d.illus ? 'var(--ink)' : '#FFFFFF',
+      enterA: `mk-pebble ${T(560)} ${SPRING} ${T(120 + i * 70)} both` + (d.neu ? `, mk-wiggle ${T(700)} ease-in-out ${T(1000 + i * 70)} 1` : ''),
+      enterB: `mk-drop ${T(560)} cubic-bezier(.16,1,.3,1) ${T(80 + i * 60)} both`,
+      enterC: `mk-rise ${T(640)} cubic-bezier(.34,1.3,.64,1) ${T(380 + i * 80)} both`,
+      badgeAnim,
+      neuAnimB: `${badgeAnim}, mk-shimmer ${T(3200)} ease-in-out ${T(1400)} infinite`,
+      onCook: e => this.toggle(id, e)
+    };
+  }
+  picto(id, d) {
+    const on = (this.props.variant === 'd') && (this.props.pictos ?? true);
+    const pk = PICTO[id] || ['plate', '#F7B94A'];
+    const h = pk[1], k = pk[0];
+    return {
+      picto: on, illusT: !on && !!d.illus,
+      phT: on ? 'var(--surface2)' : (d.ph || 'none'),
+      p1: `color-mix(in oklch, ${h} 34%, var(--surface2))`,
+      p2: `color-mix(in oklch, ${h} 58%, var(--surface2))`,
+      p3: `color-mix(in oklch, ${h} 82%, var(--ink) 18%)`,
+      pKind: k, pHue: h
+    };
+  }
+  renderVals() {
+    const { idx, dragX, dragging, show, bumpN, done } = this.state;
+    const v = this.props.variant ?? 'a';
+    const w = (this.vpRef.current && this.vpRef.current.offsetWidth) || 390;
+    const prog = Math.max(-0.3, Math.min(2.3, idx - dragX / w));
+    const bump = Object.keys(done).filter(k => done[k] && !COLS[2].ids.includes(k)).length;
+    const cols = COLS.map((c, ci) => {
+      const dishes = c.ids.map((id, i) => this.dish(id, i));
+      const left = [], right = []; let hl = 0, hr = 0;
+      dishes.forEach(x => { const r = DISH[x.id].ratio, h = r[1] / r[0] + 0.5; if (hl <= hr) { left.push(x); hl += h; } else { right.push(x); hr += h; } });
+      const off = ci - prog;
+      return {
+        ...c, count: c.base + (ci === 2 ? bump : 0), dishes, left, right,
+        hOp: Math.max(0, 1 - Math.abs(off) * 1.6),
+        hTf: `translateX(${off * 70}px)`,
+        hTr: dragging ? 'none' : `opacity ${T(360)} ease, transform ${T(480)} ${SPRING}`
+      };
+    });
+    const tabs = cols.map((c, ci) => {
+      const a = ci === idx;
+      return {
+        label: c.label, count: c.count, onTap: () => this.setState({ idx: ci }),
+        labelColor: a ? 'var(--ink)' : 'var(--ink2)',
+        pillBg: a ? 'var(--pill)' : 'transparent',
+        pillInk: a ? 'var(--pillInk)' : 'var(--ink2)',
+        segInk: a ? 'var(--ink)' : 'var(--ink2)',
+        pebBg: a ? c.accent : 'var(--surface)',
+        pebInk: a ? '#1F1E1C' : 'var(--ink)',
+        pebTf: a ? 'scale(1.06) rotate(-1.5deg)' : 'none',
+        pebRadius: RADII[ci],
+        countAnim: ci === 2 && bumpN ? `${bumpN % 2 ? 'mk-bump' : 'mk-bump2'} ${T(460)} ${SPRING} ${(v === 'c' || v === 'd') ? T(600) : '0ms'}` : 'none',
+        ref: this.tabRefs[ci]
+      };
+    });
+    const settle = `${T(480)} cubic-bezier(.3,1.3,.5,1)`;
+    return {
+      isA: v === 'a', isB: v === 'b', isC: v === 'c' || v === 'd', big: v === 'c', compact: v === 'd',
+      rootRef: this.rootRef,
+      flyOn: !!this.state.fly, fx0: this.state.fly ? this.state.fly.x0 + 'px' : '0px', fx1: this.state.fly ? this.state.fly.x1 + 'px' : '0px', fy0: this.state.fly ? this.state.fly.y0 + 'px' : '0px', fy1: this.state.fly ? this.state.fly.y1 + 'px' : '0px',
+      msOn: !!this.state.ms, msTitle: this.state.ms ? this.state.ms.title : '', msClose: this.closeMs,
+      msBgAnim: this.state.msLeave ? `mk-fadeout ${T(320)} ease both` : `mk-fadein ${T(300)} ease both`, show, cols, tabs,
+      vpRef: this.vpRef, down: this.down, move: this.move, up: this.up,
+      trackTf: `translateX(calc(${(-idx * 100) / 3}% + ${dragX}px))`,
+      trackTr: dragging ? 'none' : `transform ${settle}`,
+      indLeft: `${(prog * 100) / 3}%`,
+      thumbLeft: `calc(4px + (100% - 8px) * ${prog / 3})`,
+      indTr: dragging ? 'none' : `left ${settle}`,
+      bgTint: `color-mix(in oklch, ${COLS[idx].accent} 24%, var(--bg))`
+    };
+  }
+}
+</script>
+</body>
+</html>

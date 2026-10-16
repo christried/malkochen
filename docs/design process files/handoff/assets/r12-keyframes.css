@@ -1,0 +1,7 @@
+/* malkochen R12 keyframes: Topfbert Tour poses (waving, pointing, wink).
+   Usage as R11: animation: <name> <duration> <easing> <delay> infinite both; transform-box: view-box; transform-origin: <data-pivot>px.
+   Multiply durations and delays by --spd. Shared idle keyframes (r11-breathe, r11-steam, r11-ihat, r11-ieo, r11-iec) live in r11-keyframes.css.
+   Under prefers-reduced-motion: no animation, show frame 0. */
+@keyframes r12-wave{0%,24%,60%,79%,100%{transform:none}4%{transform:rotate(-13deg)}9%{transform:rotate(5deg)}14%{transform:rotate(-13deg)}19%{transform:rotate(4deg)}64%{transform:rotate(-12deg)}69%{transform:rotate(4deg)}74%{transform:rotate(-10deg)}}
+@keyframes r12-nudge{0%,8%,15%,22%,56%,63%,70%,100%{transform:none}12%,18%,60%,66%{transform:translateX(2px)}}
+@keyframes r12-tip{0%,40%,64%,100%{transform:none}46%,54%{transform:translateY(-2.5px) rotate(-4deg)}60%{transform:translateY(.5px) rotate(1deg)}}

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes bs-fade{from{opacity:0}to{opacity:1}}
+@keyframes bs-drop{from{opacity:0;transform:translateY(-16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes bs-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes bs-sheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes bs-pop{0%{opacity:0;transform:scale(.4) rotate(-14deg)}65%{opacity:1;transform:scale(1.12) rotate(4deg)}100%{opacity:1;transform:none}}
+@keyframes bs-bounce{0%,70%,100%{transform:none}78%{transform:translateY(-5px) rotate(-8deg)}86%{transform:translateY(0) rotate(6deg)}93%{transform:rotate(-2deg)}}
+@keyframes bs-bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+@keyframes bs-caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes bs-ring{0%{transform:scale(1);opacity:.5}70%,100%{transform:scale(1.6);opacity:0}}
+@keyframes bs-build{0%,var(--a){opacity:0;transform:translateY(40px) scale(.6) rotate(-6deg)}var(--b){opacity:1;transform:translateY(-8px) scale(1.06) rotate(2deg)}var(--c),88%{opacity:1;transform:none}96%,100%{opacity:0;transform:translateY(20px) scale(.8)}}
+@keyframes bs-cb1{0%,14%{opacity:0;transform:translateY(40px) scale(.6) rotate(-6deg)}22%{opacity:1;transform:translateY(-8px) scale(1.06) rotate(2deg)}27%,88%{opacity:1;transform:none}96%,100%{opacity:0;transform:translateY(20px) scale(.8)}}
+@keyframes bs-cb2{0%,24%{opacity:0;transform:translateY(40px) scale(.6) rotate(6deg)}32%{opacity:1;transform:translateY(-8px) scale(1.06) rotate(-2deg)}37%,88%{opacity:1;transform:none}96%,100%{opacity:0;transform:translateY(20px) scale(.8)}}
+@keyframes bs-cb3{0%,34%{opacity:0;transform:translateY(40px) scale(.6) rotate(-6deg)}42%{opacity:1;transform:translateY(-8px) scale(1.06) rotate(2deg)}47%,88%{opacity:1;transform:none}96%,100%{opacity:0;transform:translateY(20px) scale(.8)}}
+@keyframes bs-cemo{0%,2%{opacity:0;transform:scale(0) rotate(-30deg)}10%{opacity:1;transform:scale(1.2) rotate(8deg)}14%,88%{opacity:1;transform:none}96%,100%{opacity:0;transform:scale(.6)}}
+@keyframes bs-ctxt{0%,46%{opacity:0;transform:translateY(12px)}54%,88%{opacity:1;transform:none}96%,100%{opacity:0}}
+@keyframes bs-cbtn{0%,56%{opacity:0;transform:translateY(20px)}64%,88%{opacity:1;transform:none}96%,100%{opacity:0}}
+@keyframes bs-conf{0%,8%{opacity:0;transform:translate(0,0) scale(.3)}10%{opacity:1}40%,100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(200deg) scale(1)}}
+@keyframes bs-lift{0%,10%{transform:none;box-shadow:none}20%{transform:scale(1.03) rotate(-1.5deg);box-shadow:0 20px 34px -14px rgba(0,0,0,.4)}55%{transform:translateY(62px) scale(1.03) rotate(1deg);box-shadow:0 20px 34px -14px rgba(0,0,0,.4)}66%,100%{transform:translateY(62px);box-shadow:none}}
+@keyframes bs-make{0%,30%{transform:none}44%{transform:translateY(-66px)}50%,100%{transform:translateY(-62px)}}
+@keyframes bs-copyA{0%,18%{opacity:1;transform:none}24%,74%{opacity:0;transform:translateY(-10px)}80%,100%{opacity:1;transform:none}}
+@keyframes bs-copyB{0%,18%{opacity:0;transform:translateY(10px) scale(.6)}26%{opacity:1;transform:scale(1.15)}32%,72%{opacity:1;transform:none}78%,100%{opacity:0}}
+@keyframes bs-copyBg{0%,18%{background:var(--pill)}22%,74%{background:#A5C7AE;color:#10261A}80%,100%{background:var(--pill)}}
+@keyframes bs-linkHl{0%,18%{background-size:0% 100%}30%,74%{background-size:100% 100%}84%,100%{background-size:0% 100%}}
+@keyframes bs-cburst{0%,18%{opacity:0;transform:translate(0,0) scale(.3)}20%{opacity:1}44%,100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1) rotate(160deg)}}
+@keyframes bs-wave{0%,60%,100%{transform:rotate(0)}66%{transform:rotate(18deg)}74%{transform:rotate(-10deg)}82%{transform:rotate(14deg)}90%{transform:rotate(0)}}
+@keyframes bs-orbit{from{transform:rotate(0) translateX(118px) rotate(0)}to{transform:rotate(360deg) translateX(118px) rotate(-360deg)}}
+@keyframes bs-avpop{0%{opacity:0;transform:scale(0)}70%{transform:scale(1.18)}100%{opacity:1;transform:none}}
+@keyframes bs-crown{0%,20%{transform:translate(0,0) scale(1)}45%{transform:translate(0,-40px) scale(1.2) rotate(-20deg)}70%{transform:translate(0,var(--cy)) scale(1.1) rotate(8deg)}80%,100%{transform:translate(0,var(--cy)) scale(1)}}
+@keyframes bs-toast{0%,30%{transform:translateY(120px)}36%{transform:translateY(-6px)}40%,85%{transform:none}92%,100%{transform:translateY(120px)}}
+@keyframes bs-scramble{0%,30%{opacity:1;filter:none}36%{opacity:0;filter:blur(4px)}42%,100%{opacity:1;filter:none}}
+@keyframes bs-shake{0%,100%{transform:none}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+</style></helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:47px;background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;user-select:none">
+
+<sc-if value="{{ boardBg }}"><div style="position:absolute;inset:0;z-index:0;isolation:isolate"><dc-import name="StatePhone" screen="static" style="position:absolute;inset:0" hint-size="390px,844px"></dc-import></div></sc-if>
+<sc-if value="{{ scrim }}"><div style="position:absolute;inset:0;z-index:5;background:rgba(12,10,8,.42);animation:bs-fade calc(260ms * var(--spd, 1)) ease both"></div></sc-if>
+
+<sc-if value="{{ isSwitch }}">
+  <div style="position:absolute;left:12px;right:12px;top:58px;z-index:6;background:var(--surface);border-radius:30px 28px 32px 29px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);padding:10px;display:flex;flex-direction:column;gap:4px;transform-origin:20% 0;animation:bs-drop calc(420ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) both">
+    <div style="padding:10px 10px 8px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">MEINE BOARDS</div>
+    <sc-for list="{{ boards }}" as="b" hint-placeholder-count="4">
+      <div style="height:64px;display:flex;align-items:center;gap:12px;padding:0 12px 0 8px;border-radius:22px;background:{{ b.bg }};animation:{{ b.anim }}">
+        <span style="width:46px;height:46px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ b.tint }};display:grid;place-items:center;font-size:24px"><span style="display:block;animation:{{ b.emoAnim }}">{{ b.e }}</span></span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font:600 16px/1 'Hanken Grotesk',system-ui">{{ b.n }}</span><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ b.meta }}</span></div>
+        <div style="display:flex"><sc-for list="{{ b.avs }}" as="a" hint-placeholder-count="3"><span style="width:24px;height:24px;margin-left:-7px;border-radius:50%;border:2px solid var(--surface);display:grid;place-items:center;background:{{ a.bg }};color:{{ a.ink }};font:700 9.5px/1 'Hanken Grotesk',system-ui">{{ a.l }}</span></sc-for></div>
+        <sc-if value="{{ b.cur }}"><span style="width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></span></sc-if>
+      </div>
+    </sc-for>
+    <div style="height:1px;margin:6px 12px;background:var(--line)"></div>
+    <div style="height:58px;display:flex;align-items:center;gap:12px;padding:0 12px 0 8px;border-radius:22px;animation:bs-rise calc(380ms * var(--spd, 1)) ease-out calc(300ms * var(--spd, 1)) both">
+      <span style="width:46px;height:46px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;border:2px dashed var(--line2);box-sizing:border-box;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.8;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg></span>
+      <span style="flex:1;font:600 16px/1 'Hanken Grotesk',system-ui">Neues Board</span>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isNew }}">
+  <div style="position:absolute;left:0;right:0;bottom:0;top:70px;z-index:6;background:var(--surface);border-radius:36px 36px 0 0;padding:10px 18px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;animation:bs-sheet calc(460ms * var(--spd, 1)) cubic-bezier(.3,1.15,.5,1) both">
+    <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line2)"></div>
+    <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font:400 28px/1 'Newsreader',Georgia,serif;letter-spacing:-.015em">Neues Board</span><span style="width:38px;height:38px;border-radius:50%;background:var(--surface2);display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="position:relative;flex:none;width:76px;height:76px">
+        <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#F7B94A;opacity:.5;animation:bs-ring calc(2.4s * var(--spd, 1)) ease-out infinite"></div>
+        <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:color-mix(in oklch, #F7B94A 40%, var(--surface2));display:grid;place-items:center;font-size:40px"><span style="display:block;animation:bs-bob calc(2.4s * var(--spd, 1)) ease-in-out infinite">{{ newEmoji }}</span></div>
+      </div>
+      <div style="flex:1;min-width:0;height:58px;border-radius:18px 16px 19px 17px;background:var(--surface2);box-shadow:0 0 0 2px rgba(247,185,74,.75);display:flex;align-items:center;padding:0 16px;font:400 22px/1 'Newsreader',Georgia,serif"><span style="white-space:pre">{{ typedName }}</span><span style="width:2px;height:24px;margin-left:1px;border-radius:1px;background:#E8961E;animation:bs-caret 1s steps(1) infinite"></span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px">
+      <sc-for list="{{ emojis }}" as="e" hint-placeholder-count="21"><span onClick="{{ e.onTap }}" style="aspect-ratio:1;border-radius:14px;display:grid;place-items:center;font-size:23px;background:{{ e.bg }};box-shadow:{{ e.ring }};transform:{{ e.tf }};transition:transform calc(300ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1);cursor:pointer;animation:{{ e.anim }}">{{ e.e }}</span></sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">STARTET MIT</span>
+      <div style="display:flex;gap:8px"><sc-for list="{{ startCols }}" as="c" hint-placeholder-count="3"><span style="height:36px;padding:0 13px;border-radius:{{ c.r }};background:{{ c.bg }};color:#1F1E1C;display:flex;align-items:center;font:600 13.5px/1 'Hanken Grotesk',system-ui">{{ c.l }}</span></sc-for></div>
+      <span style="font:500 12.5px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2)">Columns kannst du später in den Einstellungen ändern.</span>
+    </div>
+    <div style="flex:1"></div>
+    <div style="height:58px;border-radius:29px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 17px/1 'Hanken Grotesk',system-ui">Board erstellen</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isCreated }}">
+  <div style="position:absolute;inset:0;background:color-mix(in oklch, #F7B94A 26%, var(--bg));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:0 30px">
+    <div style="position:relative;width:130px;height:130px">
+      <div style="position:absolute;left:50%;top:50%;width:0;height:0">
+        <sc-for list="{{ conf }}" as="p" hint-placeholder-count="10"><div style="position:absolute;width:{{ p.s }};height:{{ p.s }};margin:-6px;border-radius:48% 52% 45% 55%;background:{{ p.bg }};border:1.5px solid var(--ink);--dx:{{ p.dx }};--dy:{{ p.dy }};opacity:0;animation:{{ p.anim }}"></div></sc-for>
+      </div>
+      <div style="position:absolute;inset:0;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:var(--surface);box-shadow:0 24px 40px -16px rgba(120,70,0,.45);display:grid;place-items:center;font-size:68px;animation:bs-cemo calc(4.5s * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) infinite">🥡</div>
+    </div>
+    <div style="font:400 40px/1.05 'Newsreader',Georgia,serif;letter-spacing:-.02em;text-align:center;animation:bs-ctxt calc(4.5s * var(--spd, 1)) ease-out infinite">Meal Prep ist bereit!</div>
+    <div style="width:100%;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ built }}" as="c" hint-placeholder-count="3">
+        <div style="height:62px;display:flex;align-items:center;gap:12px;padding:0 16px 0 10px;border-radius:{{ c.r }};background:var(--surface);box-shadow:var(--shadow);opacity:0;animation:{{ c.anim }}">
+          <span style="width:40px;height:38px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ c.bg }}"></span>
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="font:400 21px/1 'Newsreader',Georgia,serif">{{ c.l }}</span><span style="font:italic 400 14px/1 'Newsreader',Georgia,serif;color:var(--ink2)">{{ c.sub }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="width:100%;height:58px;border-radius:29px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 17px/1 'Hanken Grotesk',system-ui;opacity:0;animation:bs-cbtn calc(4.5s * var(--spd, 1)) ease-out infinite">Ersten Link einfügen</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}">
+  <div style="position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding:62px 16px 50px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="width:42px;height:42px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M15 6l-6 6 6 6"></path></svg></span>
+      <span style="font:600 15px/1 'Hanken Grotesk',system-ui">Board-Einstellungen</span>
+      <span style="width:42px"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;padding:12px;border-radius:28px;background:var(--surface);box-shadow:var(--shadow)">
+      <div style="position:relative;flex:none;width:64px;height:64px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:color-mix(in oklch, #F7B94A 38%, var(--surface2));display:grid;place-items:center;font-size:34px"><span style="display:block;animation:bs-bounce calc(4s * var(--spd, 1)) ease-in-out infinite">🍜</span><span style="position:absolute;right:-3px;bottom:-3px;width:22px;height:22px;border-radius:50%;background:var(--surface);box-shadow:0 0 0 1.5px var(--line2);display:grid;place-items:center"><svg width="11" height="11" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20h4l10-10-4-4L4 16z"></path></svg></span></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><span style="font:400 26px/1 'Newsreader',Georgia,serif">WG-Küche</span><span style="font:500 12.5px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">4 Members · 42 Gerichte</span></div>
+      <svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20h4l10-10-4-4L4 16z"></path></svg>
+    </div>
+
+    <sc-if value="{{ showCols }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">COLUMNS</span>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+          <sc-for list="{{ cols }}" as="c" hint-placeholder-count="3">
+            <div style="position:relative;height:56px;display:flex;align-items:center;gap:10px;padding:0 8px 0 6px;border-radius:19px;background:var(--surface);z-index:{{ c.z }};animation:{{ c.anim }}">
+              <svg width="18" height="18" viewBox="0 0 24 24" style="flex:none;fill:var(--ink2)"><circle cx="9" cy="6" r="1.7"></circle><circle cx="15" cy="6" r="1.7"></circle><circle cx="9" cy="12" r="1.7"></circle><circle cx="15" cy="12" r="1.7"></circle><circle cx="9" cy="18" r="1.7"></circle><circle cx="15" cy="18" r="1.7"></circle></svg>
+              <span style="width:28px;height:26px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ c.bg }};border:2px solid var(--ink);box-sizing:border-box"></span>
+              <span style="flex:1;font:600 15.5px/1 'Hanken Grotesk',system-ui">{{ c.l }}</span>
+              <span style="font:500 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ c.n }}</span>
+              <sc-if value="{{ c.special }}"><span title="Kann nicht gelöscht werden" style="height:24px;padding:0 8px;border-radius:12px;background:color-mix(in oklch, #A5C7AE 40%, var(--surface2));display:flex;align-items:center;gap:4px;font:700 11px/1 'Hanken Grotesk',system-ui"><svg width="10" height="10" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><rect x="5" y="11" width="14" height="10" rx="3"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Besonders</span></sc-if>
+              <sc-if value="{{ c.delOn }}"><span style="width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--ink2)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"></path></svg></span></sc-if>
+            </div>
+          </sc-for>
+          <div style="height:48px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:17px;border:1.5px dashed var(--line2);font:600 14.5px/1 'Hanken Grotesk',system-ui"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg><span style="flex:1">Column hinzufügen</span><span style="font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">Farbe: auto</span><span style="width:18px;height:18px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#F08A5D;border:2px solid var(--ink);box-sizing:border-box"></span></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">EINLADUNGSLINK</span>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+        <div style="height:46px;border-radius:16px;background:var(--surface2);display:flex;align-items:center;padding:0 14px;font:500 14px/1 ui-monospace,Menlo,monospace;overflow:hidden"><span style="padding:3px 2px;border-radius:5px;background:linear-gradient(rgba(165,199,174,.55),rgba(165,199,174,.55)) 0 0 / 0% 100% no-repeat;animation:bs-linkHl calc(3.2s * var(--spd, 1)) ease-in-out infinite">malkochen.app/j/wg-k7Q2x</span></div>
+        <div style="display:flex;gap:8px">
+          <div style="position:relative;flex:1;height:48px;border-radius:24px;background:var(--pill);color:var(--pillInk);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui;animation:bs-copyBg calc(3.2s * var(--spd, 1)) ease-in-out infinite">
+            <span style="grid-area:1/1;display:flex;align-items:center;gap:7px;animation:bs-copyA calc(3.2s * var(--spd, 1)) ease-in-out infinite"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><rect x="8" y="8" width="12" height="12" rx="3"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>Kopieren</span>
+            <span style="grid-area:1/1;display:flex;align-items:center;gap:7px;opacity:0;animation:bs-copyB calc(3.2s * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) infinite"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>Kopiert!</span>
+            <div style="position:absolute;left:50%;top:50%;width:0;height:0"><sc-for list="{{ cburst }}" as="p" hint-placeholder-count="5"><div style="position:absolute;width:9px;height:9px;margin:-4px;border-radius:48% 52% 45% 55%;background:{{ p.bg }};--dx:{{ p.dx }};--dy:{{ p.dy }};opacity:0;animation:bs-cburst calc(3.2s * var(--spd, 1)) ease-out {{ p.d }} infinite"></div></sc-for></div>
+          </div>
+          <div style="flex:1;height:48px;border-radius:24px;background:var(--surface2);display:flex;align-items:center;justify-content:center;gap:7px;font:600 15px/1 'Hanken Grotesk',system-ui"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><circle cx="18" cy="5" r="2.6"></circle><circle cx="6" cy="12" r="2.6"></circle><circle cx="18" cy="19" r="2.6"></circle><path d="M8.3 10.8l7.4-4.3M8.3 13.2l7.4 4.3"></path></svg>Teilen</div>
+        </div>
+        <sc-if value="{{ isOwner }}"><div style="display:flex;align-items:center;gap:8px;padding:2px 4px;font:600 13.5px/1 'Hanken Grotesk',system-ui"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Link zurücksetzen<span style="flex:1"></span><span style="font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">alter Link wird ungültig</span></div></sc-if>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">MEMBERS</span>
+      <div style="display:flex;flex-direction:column;padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+        <sc-for list="{{ members }}" as="m" hint-placeholder-count="4">
+          <div style="height:56px;display:flex;align-items:center;gap:12px;padding:0 8px 0 8px;border-radius:18px">
+            <span style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:{{ m.bg }};color:{{ m.ink }};font:700 13px/1 'Hanken Grotesk',system-ui">{{ m.l }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><span style="font:600 15px/1 'Hanken Grotesk',system-ui">{{ m.n }}</span><span style="font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ m.sub }}</span></div>
+            <sc-if value="{{ m.owner }}"><span style="height:24px;padding:0 9px;border-radius:12px;background:color-mix(in oklch, #F7B94A 35%, var(--surface2));display:flex;align-items:center;gap:4px;font:700 11px/1 'Hanken Grotesk',system-ui"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"></path></svg>Owner</span></sc-if>
+            <sc-if value="{{ m.rm }}"><span style="height:30px;padding:0 11px;border-radius:15px;background:var(--surface2);display:grid;place-items:center;font:600 12.5px/1 'Hanken Grotesk',system-ui">Entfernen</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ isOwner }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="padding:0 6px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">NUR FÜR OWNER</span>
+        <div style="display:flex;flex-direction:column;padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+          <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 10px;font:600 15px/1 'Hanken Grotesk',system-ui"><span style="width:34px;height:34px;border-radius:50%;background:var(--surface2);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"></path></svg></span><span style="flex:1">Besitz übertragen</span><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6l6 6-6 6"></path></svg></div>
+          <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 10px;font:600 15px/1 'Hanken Grotesk',system-ui;color:var(--danger)"><span style="width:34px;height:34px;border-radius:50%;background:color-mix(in oklch, var(--danger) 13%, transparent);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"></path></svg></span>Board löschen</div>
+        </div>
+      </div>
+    </sc-if>
+    <div style="height:50px;flex:none;border-radius:25px;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui;color:var(--danger);background:color-mix(in oklch, var(--danger) 10%, transparent)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"></path></svg>Board verlassen</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isDialog }}">
+  <div style="position:absolute;inset:0;z-index:5;background:rgba(12,10,8,.5);animation:bs-fade calc(240ms * var(--spd, 1)) ease both"></div>
+  <div style="position:absolute;left:18px;right:18px;top:{{ dlgTop }};z-index:6;background:var(--surface);border-radius:32px 28px 33px 29px;padding:22px 18px 18px;box-shadow:0 30px 60px -20px rgba(0,0,0,.55);display:flex;flex-direction:column;gap:14px;animation:bs-pop calc(420ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) both">
+    <sc-if value="{{ isDelCol }}">
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:42px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#DE8CF2;border:2px solid var(--ink);box-sizing:border-box"></span><span style="font:400 23px/1.15 'Newsreader',Georgia,serif;text-wrap:pretty">„Diese Woche“ löschen?</span></div>
+      <span style="font:500 15px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2)">4 Gerichte in „Diese Woche“. Wohin verschieben?</span>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{ targets }}" as="t" hint-placeholder-count="2">
+          <div style="height:54px;display:flex;align-items:center;gap:12px;padding:0 14px 0 10px;border-radius:18px;background:{{ t.bg }};box-shadow:{{ t.ring }}">
+            <span style="width:26px;height:24px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:{{ t.acc }};border:2px solid var(--ink);box-sizing:border-box"></span>
+            <span style="flex:1;font:600 15.5px/1 'Hanken Grotesk',system-ui">{{ t.l }}</span>
+            <span style="width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);box-sizing:border-box;display:grid;place-items:center"><sc-if value="{{ t.sel }}"><i style="width:11px;height:11px;border-radius:50%;background:var(--ink);animation:bs-pop calc(300ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(300ms * var(--spd, 1)) both"></i></sc-if></span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px"><span style="flex:1;height:50px;border-radius:25px;background:var(--surface2);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Abbrechen</span><span style="flex:1.6;height:50px;border-radius:25px;background:var(--danger);color:#fff;display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Verschieben &amp; löschen</span></div>
+    </sc-if>
+    <sc-if value="{{ isDelBoard }}">
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:48px;height:46px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:color-mix(in oklch, #F7B94A 38%, var(--surface2));display:grid;place-items:center;font-size:24px;animation:bs-shake calc(500ms * var(--spd, 1)) ease-in-out calc(500ms * var(--spd, 1)) both">🍜</span><span style="font:400 23px/1.15 'Newsreader',Georgia,serif">WG-Küche löschen?</span></div>
+      <span style="font:500 14.5px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">42 Gerichte, 3 Columns und die Koch-Historie verschwinden für alle 4 Members. Das kann nicht rückgängig gemacht werden.</span>
+      <div style="display:flex;flex-direction:column;gap:7px"><span style="font:600 12.5px/1 'Hanken Grotesk',system-ui">Tippe <b>WG-Küche</b> zur Bestätigung</span>
+        <div style="height:52px;border-radius:16px;background:var(--surface2);box-shadow:{{ nameRing }};display:flex;align-items:center;gap:8px;padding:0 14px;font:500 17px/1 'Hanken Grotesk',system-ui;transition:box-shadow .25s"><span style="white-space:pre">{{ typedDel }}</span><span style="width:2px;height:20px;margin-left:-7px;border-radius:1px;background:#E8961E;animation:bs-caret 1s steps(1) infinite"></span><span style="flex:1"></span><sc-if value="{{ nameOk }}"><span style="width:24px;height:24px;border-radius:50%;background:#A5C7AE;color:#10261A;display:grid;place-items:center;animation:bs-pop calc(300ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) both"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></span></sc-if></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px"><span style="flex:1;height:50px;border-radius:25px;background:var(--surface2);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Abbrechen</span><span style="flex:1.4;height:50px;border-radius:25px;background:var(--danger);color:#fff;display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui;opacity:{{ delOp }};transition:opacity .25s">Endgültig löschen</span></div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isInvite }}">
+  <div style="position:absolute;inset:0;background:color-mix(in oklch, #F7B94A 22%, var(--bg));display:flex;flex-direction:column;align-items:center;padding:96px 26px 40px;box-sizing:border-box;gap:14px;text-align:center">
+    <div style="position:relative;width:260px;height:250px;flex:none">
+      <div style="position:absolute;left:30px;top:20px;width:200px;height:200px;border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;background:color-mix(in oklch, #F7B94A 42%, var(--surface))"></div>
+      <sc-for list="{{ orbit }}" as="o" hint-placeholder-count="6"><div style="position:absolute;left:130px;top:120px;width:0;height:0;animation:bs-orbit calc(14s * var(--spd, 1)) linear {{ o.d }} infinite"><div style="width:{{ o.s }};height:{{ o.s }};margin:-10px;border:2px solid var(--ink);box-sizing:border-box;border-radius:{{ o.r }};background:{{ o.bg }}"></div></div></sc-for>
+      <div style="position:absolute;left:62px;top:44px;width:136px;height:136px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:var(--surface);box-shadow:0 26px 44px -18px rgba(120,70,0,.45);display:grid;place-items:center;font-size:72px;animation:bs-pop calc(700ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(200ms * var(--spd, 1)) both"><span style="display:block;animation:bs-bob calc(3s * var(--spd, 1)) ease-in-out calc(900ms * var(--spd, 1)) infinite">🍜</span></div>
+      <div style="position:absolute;left:0;top:150px;width:92px;height:86px;transform-origin:50% 100%;animation:bs-rise calc(600ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) calc(700ms * var(--spd, 1)) both"><dc-import name="Mascot" mood="happy" size="{{ 92 }}" style="width:92px;height:86px" hint-size="92px,86px"></dc-import></div>
+      <div style="position:absolute;right:6px;top:172px;display:flex;animation:bs-rise calc(500ms * var(--spd, 1)) ease-out calc(1s * var(--spd, 1)) both">
+        <sc-for list="{{ invAvs }}" as="a" hint-placeholder-count="3"><span style="width:38px;height:38px;margin-left:-10px;border-radius:50%;border:3px solid color-mix(in oklch, #F7B94A 22%, var(--bg));display:grid;place-items:center;background:{{ a.bg }};color:{{ a.ink }};font:700 13px/1 'Hanken Grotesk',system-ui;transform-origin:50% 100%;animation:{{ a.anim }}">{{ a.l }}</span></sc-for>
+      </div>
+    </div>
+    <div style="font:600 13px/1 'Hanken Grotesk',system-ui;color:var(--ink2);animation:bs-rise calc(500ms * var(--spd, 1)) ease-out calc(900ms * var(--spd, 1)) both">Lisa hat dich eingeladen</div>
+    <div style="font:400 36px/1.08 'Newsreader',Georgia,serif;letter-spacing:-.02em;text-wrap:balance;animation:bs-rise calc(560ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(1s * var(--spd, 1)) both">Du wurdest zu 🍜 WG-Küche eingeladen</div>
+    <div style="font:500 15px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty;animation:bs-rise calc(500ms * var(--spd, 1)) ease-out calc(1.15s * var(--spd, 1)) both">42 Gerichte warten schon. Sammelt Rezepte, plant die Woche und hakt ab, was ihr gekocht habt.</div>
+    <div style="flex:1"></div>
+    <div style="width:100%;height:58px;border-radius:29px;background:var(--surface);box-shadow:0 14px 30px -12px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:12px;font:600 16.5px/1 'Hanken Grotesk',system-ui;animation:bs-rise calc(520ms * var(--spd, 1)) cubic-bezier(.3,1.3,.5,1) calc(1.35s * var(--spd, 1)) both">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"></path><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"></path><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"></path><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"></path></svg>Mit Google anmelden
+    </div>
+    <span style="font:500 12px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2);animation:bs-fade calc(400ms * var(--spd, 1)) ease calc(1.5s * var(--spd, 1)) both">Kostenlos · kein Passwort nötig</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isTransfer }}">
+  <div style="position:absolute;inset:0;z-index:5;background:rgba(12,10,8,.45);animation:bs-fade calc(240ms * var(--spd, 1)) ease both"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-radius:34px 34px 0 0;padding:10px 18px 34px;display:flex;flex-direction:column;gap:12px;animation:bs-sheet calc(440ms * var(--spd, 1)) cubic-bezier(.3,1.15,.5,1) both">
+    <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line2)"></div>
+    <span style="font:400 26px/1.1 'Newsreader',Georgia,serif">Besitz übertragen</span>
+    <span style="font:500 14px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">Der neue Owner kann Members entfernen, den Link zurücksetzen und das Board löschen. Du bleibst Member.</span>
+    <div style="position:relative;display:flex;flex-direction:column;gap:6px">
+      <sc-for list="{{ tMembers }}" as="m" hint-placeholder-count="3">
+        <div style="height:58px;display:flex;align-items:center;gap:12px;padding:0 12px 0 8px;border-radius:19px;background:{{ m.bg2 }};box-shadow:{{ m.ring }}">
+          <span style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:{{ m.bg }};color:{{ m.ink }};font:700 13px/1 'Hanken Grotesk',system-ui">{{ m.l }}</span>
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font:600 15.5px/1 'Hanken Grotesk',system-ui">{{ m.n }}</span><span style="font:500 12px/1 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ m.sub }}</span></div>
+          <span style="width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);box-sizing:border-box;display:grid;place-items:center"><sc-if value="{{ m.sel }}"><i style="width:11px;height:11px;border-radius:50%;background:var(--ink)"></i></sc-if></span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px"><span style="flex:1;height:52px;border-radius:26px;background:var(--surface2);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Abbrechen</span><span style="flex:1.6;height:52px;border-radius:26px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Hanken Grotesk',system-ui"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:#F7B94A;animation:bs-bounce calc(2.4s * var(--spd, 1)) ease-in-out infinite"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"></path></svg>An Jonas übertragen</span></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isRemove }}">
+  <div style="position:absolute;inset:0;z-index:5;background:rgba(12,10,8,.5);animation:bs-fade calc(240ms * var(--spd, 1)) ease both"></div>
+  <div style="position:absolute;left:18px;right:18px;top:250px;z-index:6;background:var(--surface);border-radius:32px 28px 33px 29px;padding:22px 18px 18px;box-shadow:0 30px 60px -20px rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;animation:bs-pop calc(420ms * var(--spd, 1)) cubic-bezier(.34,1.56,.64,1) both">
+    <span style="width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:#DDB0F6;color:#2D0F3F;font:700 22px/1 'Hanken Grotesk',system-ui">M</span>
+    <span style="font:400 24px/1.15 'Newsreader',Georgia,serif">Mia aus WG-Küche entfernen?</span>
+    <span style="font:500 14.5px/1.45 'Hanken Grotesk',system-ui;color:var(--ink2);text-wrap:pretty">Ihre Gerichte und Koch-Einträge bleiben auf dem Board. Mia kann nur mit einem neuen Link zurück.</span>
+    <div style="width:100%;display:flex;gap:8px;margin-top:4px"><span style="flex:1;height:50px;border-radius:25px;background:var(--surface2);display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Abbrechen</span><span style="flex:1;height:50px;border-radius:25px;background:var(--danger);color:#fff;display:grid;place-items:center;font:600 15px/1 'Hanken Grotesk',system-ui">Entfernen</span></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isReset }}">
+  <div style="position:absolute;inset:0;z-index:5;background:rgba(12,10,8,.45);animation:bs-fade calc(240ms * var(--spd, 1)) ease both"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-radius:34px 34px 0 0;padding:10px 18px 110px;display:flex;flex-direction:column;gap:14px;animation:bs-sheet calc(440ms * var(--spd, 1)) cubic-bezier(.3,1.15,.5,1) both">
+    <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line2)"></div>
+    <span style="font:400 26px/1.1 'Newsreader',Georgia,serif">Einladungslink</span>
+    <div style="height:48px;border-radius:16px;background:var(--surface2);display:flex;align-items:center;padding:0 14px;font:500 14px/1 ui-monospace,Menlo,monospace"><span style="animation:bs-scramble calc(3.6s * var(--spd, 1)) ease-in-out infinite">malkochen.app/j/wg-r4Nd8</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink2)">GÜLTIG</span>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;border-radius:20px;background:var(--surface2)"><sc-for list="{{ expiry }}" as="e" hint-placeholder-count="4"><span onClick="{{ e.onTap }}" style="height:40px;border-radius:16px;display:grid;place-items:center;font:600 13.5px/1 'Hanken Grotesk',system-ui;background:{{ e.bg }};box-shadow:{{ e.sh }};cursor:pointer;transition:background .2s">{{ e.l }}</span></sc-for></div>
+      <span style="font:500 12.5px/1.4 'Hanken Grotesk',system-ui;color:var(--ink2)">{{ expiryHint }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px;border:1.5px solid var(--line2)"><svg width="18" height="18" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--danger);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg><div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font:600 15px/1 'Hanken Grotesk',system-ui">Link zurücksetzen</span><span style="font:500 12.5px/1.3 'Hanken Grotesk',system-ui;color:var(--ink2)">Der alte Link funktioniert sofort nicht mehr.</span></div></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ toastOn }}">
+  <div style="position:absolute;left:14px;right:14px;bottom:30px;z-index:30;height:56px;border-radius:28px;background:var(--pill);color:var(--pillInk);display:flex;align-items:center;gap:10px;padding:0 7px 0 18px;box-shadow:0 18px 36px -12px rgba(0,0,0,.5);transform:translateY(120px);animation:bs-toast calc(3.6s * var(--spd, 1)) ease-in-out infinite">
+    <span style="width:24px;height:24px;border-radius:50%;background:#A5C7AE;color:#10261A;display:grid;place-items:center"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></span>
+    <span style="flex:1;font:700 14.5px/1.2 'Hanken Grotesk',system-ui">{{ toastText }}</span>
+    <span style="height:42px;padding:0 14px;border-radius:21px;display:grid;place-items:center;background:color-mix(in oklch, var(--pillInk) 16%, transparent);font:600 14px/1 'Hanken Grotesk',system-ui">{{ toastAct }}</span>
+  </div>
+</sc-if>
+
+<div style="position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 38px;z-index:70;font:600 16px/1 'Hanken Grotesk',system-ui;color:var(--ink);pointer-events:none">
+  <span>9:41</span>
+  <div style="position:absolute;left:50%;top:15px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:#000"></div>
+  <div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" style="fill:currentColor"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><div style="width:25px;height:12px;border:1.5px solid currentColor;border-radius:4px;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;background:currentColor;border-radius:1.5px"></div></div></div>
+</div>
+<div style="position:absolute;left:50%;bottom:8px;width:108px;height:4px;margin-left:-54px;border-radius:2px;background:var(--ink);opacity:.9;z-index:70;pointer-events:none"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;switcher&quot;,&quot;new&quot;,&quot;created&quot;,&quot;settings&quot;,&quot;owner&quot;,&quot;transfer&quot;,&quot;remove&quot;,&quot;reset&quot;,&quot;delete-column&quot;,&quot;delete-board&quot;,&quot;invite&quot;],&quot;default&quot;:&quot;switcher&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;replay&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;}}">
+const T = s => `calc(${s} * var(--spd, 1))`;
+const P = { L: ['#F7C85C', '#2B1E04', 'L', 'Lisa'], J: ['#A9C9B1', '#12291A', 'J', 'Jonas'], M: ['#DDB0F6', '#2D0F3F', 'M', 'Mia'], Du: ['#A8BEE3', '#0F2340', 'Du', 'Du'] };
+const ACC = ['#F7B94A', '#DE8CF2', '#A5C7AE'];
+const RAD = ['22px 17px 20px 15px', '17px 22px 15px 20px', '20px 15px 22px 17px'];
+const EMO = ['🍜', '🥡', '🎂', '🥗', '🌮', '🍕', '🥘', '🍝', '🥞', '🍲', '🥦', '🫘', '🍛', '🧁', '🥐', '🍱', '🌶️', '🥑', '🍋', '🫕', '🍓'];
+const NAME = 'Meal Prep';
+class Component extends DCLogic {
+  state = { k: 0, del: 0, emo: '🥡', exp: '7 Tage' };
+  componentDidMount() {
+    const sc = this.props.screen;
+    if (sc === 'new') this.iv = setInterval(() => this.setState(s => ({ k: (s.k + 1) % (NAME.length + 12) })), 140);
+    if (sc === 'delete-board') this.iv = setInterval(() => this.setState(s => ({ del: (s.del + 1) % 22 })), 150);
+  }
+  componentWillUnmount() { clearInterval(this.iv); }
+  renderVals() {
+    const sc = this.props.screen ?? 'switcher', owner = ['owner', 'delete-board', 'transfer', 'remove', 'reset'].includes(sc);
+    const av = ids => ids.map(id => ({ bg: P[id][0], ink: P[id][1], l: P[id][2] }));
+    const typedDel = 'WG-Küche'.slice(0, Math.min(this.state.del, 8));
+    return {
+      boardBg: sc === 'switcher', scrim: sc === 'switcher',
+      isSwitch: sc === 'switcher', isNew: sc === 'new', isCreated: sc === 'created',
+      isSettings: ['settings', 'owner', 'delete-column', 'delete-board', 'transfer', 'remove', 'reset'].includes(sc), isOwner: owner,
+      isTransfer: sc === 'transfer', isRemove: sc === 'remove', isReset: sc === 'reset',
+      toastOn: sc === 'reset', toastText: 'Neuer Link erstellt · alter ungültig', toastAct: 'Kopieren',
+      tMembers: [['J', 'seit Mai · am längsten dabei', 1], ['M', 'seit Juni'], ['L', 'seit Mai']].map(([id, sub, s]) => ({ bg: P[id][0], ink: P[id][1], l: P[id][2], n: P[id][3], sub, sel: !!s, bg2: s ? 'var(--surface2)' : 'transparent', ring: s ? '0 0 0 2px var(--ink)' : 'inset 0 0 0 1.5px var(--line2)' })),
+      expiry: ['Nie', '24 h', '7 Tage', '30 Tage'].map(l => ({ l, bg: l === this.state.exp ? 'var(--surface)' : 'transparent', sh: l === this.state.exp ? '0 4px 12px -4px rgba(0,0,0,.2)' : 'none', onTap: () => this.setState({ exp: l }) })),
+      expiryHint: this.state.exp === 'Nie' ? 'Link bleibt gültig, bis du ihn zurücksetzt.' : 'Läuft ab in ' + ({ '24 h': '24 Stunden', '7 Tage': '7 Tagen', '30 Tage': '30 Tagen' }[this.state.exp] || this.state.exp) + '. Danach braucht es einen neuen Link.', showCols: !owner,
+      isDialog: sc === 'delete-column' || sc === 'delete-board', isDelCol: sc === 'delete-column', isDelBoard: sc === 'delete-board',
+      dlgTop: sc === 'delete-column' ? '220px' : '200px', isInvite: sc === 'invite',
+      boards: [['🍜', 'WG-Küche', '42 Gerichte · 4 Members', ['L', 'J', 'M'], 1], ['🥡', 'Meal Prep', '16 Gerichte · nur du', ['Du'], 0], ['🎂', 'Geburtstage', '11 Gerichte · 3 Members', ['M', 'L'], 0], ['🥗', 'Sommer-Salate', '8 Gerichte · 2 Members', ['J'], 0]].map(([e, n, meta, ids, cur], i) => ({
+        e, n, meta, avs: av(ids), cur: !!cur, bg: cur ? 'var(--surface2)' : 'transparent', tint: `color-mix(in oklch, ${ACC[i % 3]} 38%, var(--surface2))`,
+        anim: `bs-rise ${T('360ms')} ease-out ${T((80 + i * 50) + 'ms')} both`, emoAnim: `bs-bounce ${T('4s')} ease-in-out ${T((i * 0.9) + 's')} infinite`
+      })),
+      newEmoji: this.state.emo, typedName: NAME.slice(0, Math.min(this.state.k, NAME.length)),
+      emojis: EMO.map((e, i) => { const s = e === this.state.emo; return { e, bg: s ? 'color-mix(in oklch, #F7B94A 40%, var(--surface2))' : 'var(--surface2)', ring: s ? '0 0 0 2.5px var(--ink)' : 'none', tf: s ? 'scale(1.1) rotate(-4deg)' : 'none', anim: `bs-pop ${T('360ms')} cubic-bezier(.34,1.56,.64,1) ${T((200 + i * 18) + 'ms')} both`, onTap: () => this.setState({ emo: e }) }; }),
+      startCols: ['Ideen', 'Diese Woche', 'Gekocht'].map((l, i) => ({ l, bg: ACC[i], r: RAD[i] })),
+      conf: Array.from({ length: 10 }, (_, i) => { const a = i * 36 * Math.PI / 180, r = 110 + (i % 3) * 22; return { s: 10 + (i % 3) * 3 + 'px', bg: ['#F7B94A', '#DE8CF2', '#A5C7AE', '#F08A5D', '#A8BEE3'][i % 5], dx: (Math.cos(a) * r).toFixed(0) + 'px', dy: (Math.sin(a) * r).toFixed(0) + 'px', anim: `bs-conf ${T('4.5s')} ease-out ${T(i * 15 + 'ms')} infinite` }; }),
+      built: [['Ideen', 'Worauf hast du Lust?'], ['Diese Woche', 'Das steht an.'], ['Gekocht', 'Schon geschafft!']].map(([l, sub], i) => ({ l, sub, bg: ACC[i], r: RAD[i], anim: `bs-cb${i + 1} ${T('4.5s')} cubic-bezier(.3,1.2,.5,1) infinite` })),
+      cols: [['Ideen', 12], ['Diese Woche', 4], ['Gekocht', 27]].map(([l, n], i) => ({ l, n, bg: ACC[i], special: i === 2, delOn: i !== 2, z: i === 1 ? 3 : 1, anim: sc === 'settings' ? (i === 1 ? `bs-lift ${T('3.4s')} ease-in-out infinite alternate` : i === 2 ? `bs-make ${T('3.4s')} ease-in-out infinite alternate` : 'none') : 'none' })),
+      cburst: [['-44px', '-22px', '#F7B94A'], ['-16px', '-36px', '#DE8CF2'], ['18px', '-36px', '#A5C7AE'], ['46px', '-20px', '#F08A5D'], ['0px', '30px', '#A8BEE3']].map(([dx, dy, bg], i) => ({ dx, dy, bg, d: T(i * 20 + 'ms') })),
+      members: [['L', 'Owner seit Mai', 1], ['J', 'seit Mai'], ['M', 'seit Juni'], ['Du', 'seit Juli']].map(([id, sub, o]) => ({ bg: P[id][0], ink: P[id][1], l: P[id][2], n: id === 'Du' ? 'Du' : P[id][3], sub: owner ? (id === 'Du' ? 'Owner · seit Juli' : sub.replace('Owner ', '')) : sub, owner: owner ? id === 'Du' : !!o, rm: owner && id !== 'Du' })),
+      targets: [['Ideen', 0, 1], ['Gekocht', 2, 0]].map(([l, i, sel]) => ({ l, acc: ACC[i], sel: !!sel, bg: sel ? 'var(--surface2)' : 'transparent', ring: sel ? '0 0 0 2px var(--ink)' : 'inset 0 0 0 1.5px var(--line2)' })),
+      typedDel, nameOk: typedDel === 'WG-Küche', delOp: typedDel === 'WG-Küche' ? 1 : 0.35,
+      nameRing: typedDel === 'WG-Küche' ? '0 0 0 2px #A5C7AE' : '0 0 0 2px rgba(247,185,74,.75)',
+      orbit: [['#F08A5D', '20px', '30% 38% 32% 40%'], ['#8DB596', '16px', '50%'], ['#F7D58A', '18px', '52% 48% 44% 56%'], ['#E5533D', '15px', '50%'], ['#DE8CF2', '17px', '48% 52% 45% 55%'], ['#A8BEE3', '14px', '50%']].map(([bg, s, r], i) => ({ bg, s, r, d: T(-(i * 14 / 6) + 's') })),
+      invAvs: av(['L', 'J', 'M']).map((a, i) => ({ ...a, anim: i === 0 ? `bs-avpop ${T('420ms')} cubic-bezier(.34,1.56,.64,1) ${T('1.1s')} both, bs-wave ${T('3.2s')} ease-in-out ${T('1.8s')} infinite` : `bs-avpop ${T('420ms')} cubic-bezier(.34,1.56,.64,1) ${T((1.2 + i * 0.1) + 's')} both` }))
+    };
+  }
+}
+</script>
+</body>
+</html>
