@@ -42,8 +42,8 @@ jobs:
       - run: pnpm test
 
   # The browser tests are most of the run, so they split across shards that
-  # run next to `check`. Spec files run one after another within a shard,
-  # each shard on its own database.
+  # run next to `check`, by measured time (tests/e2e/shards.ts). Spec files
+  # run one after another within a shard, each shard on its own database.
   e2e:
     runs-on: ubuntu-latest
     strategy:

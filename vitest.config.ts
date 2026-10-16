@@ -46,6 +46,14 @@ export default defineConfig({
       },
       {
         test: {
+          // The test tooling's own logic, such as how CI splits the browser
+          // tests into shards.
+          name: 'tooling',
+          include: ['tests/tooling/**/*.test.ts'],
+        },
+      },
+      {
+        test: {
           // Seam 4: client modules, with their I/O faked: the Board module
           // through its operations with an in-memory transport, the link
           // lookup module with fake timers and a fake Source Lookup, the

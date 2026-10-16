@@ -1,16 +1,33 @@
 import 'dotenv/config'
 import { spawn } from 'node:child_process'
+import { readdirSync } from 'node:fs'
 import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
 import { E2E_ORIGIN, testAuthEnv } from '../support/test-auth-env'
+import durations from './durations.json'
+import { planShard } from './shards'
+
+// `--shard=i/n` (CI) becomes the spec files of that shard (shards.ts), in
+// place of Playwright's own sharding; null if the shard has none.
+function withShardFiles(args: string[]): string[] | null {
+  const at = args.findIndex(a => /^--shard=\d+\/\d+$/.test(a))
+  if (at === -1) return args
+  const [index, total] = args[at]!.slice('--shard='.length).split('/').map(Number) as [number, number]
+  const specs = readdirSync(import.meta.dirname).filter(f => f.endsWith('.spec.ts'))
+  const files = planShard(specs, durations, index, total).map(f => `tests/e2e/${f}`)
+  return files.length ? [...args.slice(0, at), ...files, ...args.slice(at + 1)] : null
+}
 
 // `pnpm test:e2e [playwright args]`: runs Playwright against its own throwaway
 // local database, dropped afterwards whatever the outcome.
 async function main(): Promise<number> {
+  const given = withShardFiles(process.argv.slice(2))
+  // Without files, Playwright would run every test.
+  if (!given) return 0
   const database = await createThrowawayDatabase(readAdminUrl())
   try {
     return await new Promise<number>((resolve, reject) => {
-      // cmd.exe-style quoting (local dev is Windows). CI passes no arguments.
-      const args = process.argv.slice(2).map(a => /[\s"]/.test(a) ? `"${a.replaceAll('"', '""')}"` : a)
+      // cmd.exe-style quoting (local dev is Windows).
+      const args = given.map(a => /[\s"]/.test(a) ? `"${a.replaceAll('"', '""')}"` : a)
       const child = spawn(['pnpm', 'exec', 'playwright', 'test', ...args].join(' '), {
         stdio: 'inherit',
         shell: true,
