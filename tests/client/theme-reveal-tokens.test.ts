@@ -7,9 +7,9 @@ import { expect, test } from 'vitest'
 // user-settings.spec.ts (#287), which checks that the reveal uses them.
 const TOKENS = readFileSync(join(import.meta.dirname, '../../app/assets/css/tokens.css'), 'utf8')
 
-// The custom properties a `:root { … }` block sets, the first such block
-// after `after`.
-function rootBlock(after: string): Record<string, string> {
+// The custom properties a `:root { … }` block sets: the first one, or the
+// first after `after`.
+function rootBlock(after = ''): Record<string, string> {
   const start = TOKENS.indexOf(after)
   expect(start).toBeGreaterThanOrEqual(0)
   const open = TOKENS.indexOf(':root {', start)
@@ -18,7 +18,7 @@ function rootBlock(after: string): Record<string, string> {
 }
 
 test('a changed Darstellung spreads in 600ms with the swoosh easing, and cross-fades in 240ms without View Transitions', () => {
-  const root = rootBlock('')
+  const root = rootBlock()
   expect(root['--dur-swoosh']).toBe('600ms')
   expect(root['--ease-swoosh']).toBe('cubic-bezier(.45,0,.2,1)')
   expect(root['--dur-fade']).toBe('240ms')

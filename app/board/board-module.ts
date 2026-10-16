@@ -273,14 +273,21 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // by them, and new ones would redraw them all.
   function settle(dish: DishView, { placement, cooking, cookings, ...fields }: MovedDish) {
     Object.assign(dish, fields)
-    dish.cookings = cookings.map((settled) => {
-      const shown = dish.cookings.find(c => c.id === settled.id || (!c.id && settled.id === cooking?.id))
-      return shown ? Object.assign(shown, settled) : settled
-    })
+    dish.cookings = keepShownCookings(dish.cookings, cookings, cooking)
     const into = column(placement.columnId)
     if (!into) return
     takeOut(dish.id)
     insert(into, placement.index, dish)
+  }
+
+  // The server's Cooking History, with each Cooking already shown kept as
+  // the same object and filled in. The pending one (no id yet) is the
+  // Cooking the server just recorded.
+  function keepShownCookings(shown: CookingView[], settled: CookingView[], recorded: CookingView | undefined): CookingView[] {
+    return settled.map((cooking) => {
+      const same = shown.find(c => c.id ? c.id === cooking.id : cooking.id === recorded?.id)
+      return same ? Object.assign(same, cooking) : cooking
+    })
   }
 
   // Adding a Dish (PRD story 13), from Add Dish, which waits for it: nothing
