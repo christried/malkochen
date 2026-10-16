@@ -54,6 +54,9 @@ useHead({
 })
 
 const state = ref<'showing' | 'leaving' | 'gone'>(fromServer ? 'showing' : 'gone')
+// For what waits for it to go (the Tour).
+const splashUp = useSplashUp()
+watch(state, shown => (splashUp.value = shown !== 'gone'), { immediate: true })
 const timers: ReturnType<typeof setTimeout>[] = []
 let paintWatch: PerformanceObserver | undefined
 

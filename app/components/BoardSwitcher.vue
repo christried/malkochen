@@ -76,7 +76,10 @@ function newBoard() {
          pebble, the name in the button type, a chevron. On phones filled in
          the Board's tint (main.css, .board-pill), its pebble on surface;
          from 768px white in the Board's aura (#285). -->
-    <h1 class="text-button tablet:aura tablet:rounded-pill tablet:p-[1.5px]">
+    <h1
+      class="text-button tablet:aura tablet:rounded-pill tablet:p-[1.5px]"
+      data-tour="board-switcher"
+    >
       <button
         ref="pill"
         type="button"

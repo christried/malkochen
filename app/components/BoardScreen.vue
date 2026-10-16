@@ -341,11 +341,14 @@ const showingSettings = ref(false)
 // The address drops either at once, so going back or reloading doesn't open
 // the sheet again; the link goes once Add Dish has closed.
 const sharedLink = ref<string | null>(null)
+// Opened to add something shared, the Tour waits for the next plain open.
+const openedToAdd = ref(false)
 onMounted(() => {
   const { add, settings, ...rest } = route.query
   if (typeof add === 'string') {
     sharedLink.value = add
     adding.value = true
+    openedToAdd.value = true
   }
   else if (settings !== undefined) {
     showingSettings.value = true
@@ -358,6 +361,18 @@ onMounted(() => {
 watch(adding, (isOpen) => {
   if (!isOpen) sharedLink.value = null
 })
+
+// The Tour (BoardTour), by itself once the Board is idle: nothing open
+// over it (a sheet, a dialog, the Dish detail), no search, no selection, no
+// drag. "Rundgang starten" in Your Settings starts it again: the sheet
+// closes and the Tour starts on this Board.
+const anyModalOpen = useAnyModalOpen()
+const boardTour = useTemplateRef<{ start: () => void }>('boardTour')
+async function startTour() {
+  showingSettings.value = false
+  await nextTick()
+  boardTour.value?.start()
+}
 
 // Search (PRD story 36): the magnifier opens a field; while it holds a
 // query, what the search found takes the place of the Columns.
@@ -683,6 +698,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <!-- Phones: the active Column's name and subtitle, large. -->
     <ColumnHeadline
       v-show="!searching"
+      data-tour="columns"
       class="-mx-4 mt-5 px-4"
       :columns="board.columns"
       :active="activeIndex"
@@ -693,6 +709,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <ColumnTabs
       v-show="!searching"
       ref="tabBar"
+      data-tour="columns"
       class="tabs-bar sticky top-0 z-tabs -mx-4 mt-4 px-4 tablet:hidden"
       :columns="tabs"
       :active="activeIndex"
@@ -739,6 +756,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             <!-- Phones show it above the tabs (ColumnHeadline) instead. -->
             <ColumnTitle
               class="hidden tablet:block"
+              data-tour="columns"
               :subtitle="column.subtitle"
             >
               <span
@@ -1031,7 +1049,17 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     </AppSheet>
 
     <ShortcutsDialog v-model:open="showingShortcuts" />
-    <UserSettingsSheet v-model:open="showingSettings" />
+    <UserSettingsSheet
+      v-model:open="showingSettings"
+      @start-tour="startTour"
+    />
+    <BoardTour
+      ref="boardTour"
+      :board="board"
+      :idle="!anyModalOpen && !searchOpen && !selecting && !dragging && !route.params.dish"
+      :auto-start="!openedToAdd"
+      @ended="showNotice(t.tour.ended)"
+    />
 
     <BoardCreatedCelebration
       v-model:open="celebratingBoard"
