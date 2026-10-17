@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TourButton, TourStep } from '~/tour/tour'
-import { HOLE_PADDING, placeTour, type TourPlacement } from '~/utils/tour-placement'
+import { placeTour, type Box, type TourPlacement } from '~/utils/tour-placement'
 
 // Draws the Tour's step (app/tour/tour.ts) with TourStepView, in one of two
 // places:
@@ -13,7 +13,8 @@ import { HOLE_PADDING, placeTour, type TourPlacement } from '~/utils/tour-placem
 //   Dish's link field): lifted into that sheet's <dialog> as a manual
 //   popover, so it shows above the sheet while the sheet keeps its own focus
 //   and Esc. Its taps reach the target through the hole; elsewhere they do
-//   nothing.
+//   nothing (a see-through catcher with the hole's shape cut out takes
+//   them, so nothing the layer draws is cut).
 // - On the Board, live (a step whose target is dragged, like the Tour's Dish
 //   to another Column): a manual popover over the page, which stays live, so
 //   a drag that starts in the hole reaches the page; taps elsewhere do
@@ -30,8 +31,8 @@ const emit = defineEmits<{ choose: [button: TourButton] }>()
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const popover = useTemplateRef<HTMLElement>('popover')
-const pageView = useTemplateRef<{ bubble: HTMLElement | null }>('pageView')
-const sheetView = useTemplateRef<{ bubble: HTMLElement | null }>('sheetView')
+const pageView = useTemplateRef<{ bubble: HTMLElement | null, spot: HTMLElement | null }>('pageView')
+const sheetView = useTemplateRef<{ bubble: HTMLElement | null, spot: HTMLElement | null }>('sheetView')
 const titleId = useId()
 const textId = useId()
 
@@ -68,8 +69,24 @@ watch(popover, el => el?.showPopover())
 // swapped the Columns' tabs for their titles): the step shows unspotlit.
 const placement = shallowRef<TourPlacement | null>(null)
 const viewport = shallowRef({ width: 0, height: 0 })
-const targetRadius = ref(0)
 const pressLabel = ref('')
+// The side Topfbert has stood on in this step: he keeps it while the target
+// wobbles round the window's middle.
+let side: { step: string, mirrored: boolean } | null = null
+// Where the hole is on this frame, gliding or not, and its corners'.
+const spotBox = shallowRef<(Box & { radius: number }) | null>(null)
+// The ring draws once the hole has settled on a new target (the step, and
+// its first element): it stood still where it should be for a few frames.
+// A Dish card flying in keeps it moving, so the ring waits for it to land.
+const ringDrawn = ref(false)
+let ringTarget: { step: string, element: Element | undefined } | null = null
+let stillFrames = 0
+let lastSpot: DOMRect | null = null
+const STILL_FRAMES = 3
+// Hidden with the step that shows, not a frame later.
+watch(() => props.step?.id, () => {
+  ringDrawn.value = false
+}, { flush: 'sync' })
 let frame = 0
 function follow() {
   frame = requestAnimationFrame(follow)
@@ -87,10 +104,35 @@ function follow() {
   if (!next || !host || !bubble) return
   const size = { width: host.clientWidth, height: host.clientHeight }
   if (size.width !== viewport.value.width || size.height !== viewport.value.height) viewport.value = size
-  const placed = placeTour({ viewport: size, target: tourTargetBox(elements), corner: step.corner, bubbleHeight: bubble.offsetHeight })
+  const radius = first ? Number.parseFloat(getComputedStyle(first).borderTopLeftRadius) || 0 : 0
+  const mirrored = side?.step === step.id ? side.mirrored : null
+  const placed = placeTour({ viewport: size, target: tourTargetBox(elements), radius, corner: step.corner, mirrored, bubbleHeight: bubble.offsetHeight })
+  side = { step: step.id, mirrored: placed.topfbert.mirrored }
   if (JSON.stringify(placed) !== JSON.stringify(placement.value)) placement.value = placed
-  targetRadius.value = first ? Number.parseFloat(getComputedStyle(first).borderTopLeftRadius) || 0 : 0
   pressLabel.value = first ? first.getAttribute('aria-label') ?? first.textContent?.trim() ?? '' : ''
+  followSpot(step.id, first, placed.hole, (modal ? pageView.value : sheetView.value)?.spot)
+}
+
+function followSpot(step: string, first: Element | undefined, hole: TourPlacement['hole'], spot: HTMLElement | null | undefined) {
+  if (ringTarget?.step !== step || ringTarget.element !== first) {
+    ringTarget = { step, element: first }
+    ringDrawn.value = false
+    stillFrames = 0
+  }
+  if (!hole || !spot) {
+    spotBox.value = null
+    return
+  }
+  const now = spot.getBoundingClientRect()
+  const near = (a: number, b: number) => Math.abs(a - b) < 0.5
+  const still = !!lastSpot && near(now.left, lastSpot.left) && near(now.top, lastSpot.top) && near(now.width, lastSpot.width) && near(now.height, lastSpot.height)
+  const arrived = near(now.left, hole.left) && near(now.top, hole.top) && near(now.width, hole.width) && near(now.height, hole.height)
+  lastSpot = now
+  stillFrames = still && arrived ? stillFrames + 1 : 0
+  if (stillFrames >= STILL_FRAMES) ringDrawn.value = true
+  const radius = Math.max(0, Math.min(Number.parseFloat(getComputedStyle(spot).borderTopLeftRadius) || 0, now.width / 2, now.height / 2))
+  const box = { left: now.left, top: now.top, width: now.width, height: now.height, radius }
+  if (JSON.stringify(box) !== JSON.stringify(spotBox.value)) spotBox.value = box
 }
 watch(() => !!props.step, (running) => {
   cancelAnimationFrame(frame)
@@ -100,6 +142,8 @@ watch(() => !!props.step, (running) => {
   }
   where.value = null
   placement.value = null
+  side = null
+  ringTarget = null
 }, { flush: 'post' })
 onMounted(() => {
   if (props.step) frame = requestAnimationFrame(follow)
@@ -162,14 +206,18 @@ function onClosed() {
   if (onBoard.value) choose('skip')
 }
 
-const holeRadius = computed(() => `${targetRadius.value + HOLE_PADDING}px`)
-// In a sheet, taps through the hole reach the target; the rest of the
-// layer catches them.
+// In a sheet and live on the Board, taps through the hole reach the target;
+// the catcher takes the rest. Its hole is the spot's own, rounded, wherever
+// the spot is on this frame.
 const throughHole = computed(() => {
-  const hole = placement.value?.hole
+  const hole = spotBox.value
   if (!hole) return undefined
   const { width, height } = viewport.value
-  return `path(evenodd, 'M0 0H${width}V${height}H0Z M${hole.left} ${hole.top}h${hole.width}v${hole.height}h${-hole.width}Z')`
+  const { left, top, radius: r } = hole
+  const right = left + hole.width
+  const bottom = top + hole.height
+  const arc = (x: number, y: number) => `A${r} ${r} 0 0 1 ${x} ${y}`
+  return `path(evenodd, 'M0 0H${width}V${height}H0Z M${left + r} ${top}H${right - r}${arc(right, top + r)}V${bottom - r}${arc(right - r, bottom)}H${left + r}${arc(left, bottom - r)}V${top + r}${arc(left + r, top)}Z')`
 })
 </script>
 
@@ -189,7 +237,7 @@ const throughHole = computed(() => {
       ref="pageView"
       :step="shown"
       :placement="placement"
-      :hole-radius="holeRadius"
+      :ring-drawn="ringDrawn"
       :title-id="titleId"
       :text-id="textId"
       :press="shown.handsOn ? { label: pressLabel } : null"
@@ -210,15 +258,19 @@ const throughHole = computed(() => {
       role="dialog"
       :aria-labelledby="titleId"
       :aria-describedby="textId"
-      :style="{ clipPath: throughHole }"
       data-tour-layer
       @keydown="onKey"
     >
+      <div
+        class="catch"
+        :style="{ clipPath: throughHole }"
+        aria-hidden="true"
+      />
       <TourStepView
         ref="sheetView"
         :step="shown"
         :placement="placement"
-        :hole-radius="holeRadius"
+        :ring-drawn="ringDrawn"
         :title-id="titleId"
         :text-id="textId"
         :press="null"
@@ -247,6 +299,18 @@ const throughHole = computed(() => {
 }
 .tour::backdrop {
   background: transparent;
+}
+/* As a popover, only the catcher and the bubble take taps. */
+.tour[popover] {
+  pointer-events: none;
+}
+.catch {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+.tour[popover] :deep(.bubble) {
+  pointer-events: auto;
 }
 /* With motion: the layer fades in. */
 @media (prefers-reduced-motion: no-preference) {
