@@ -16,8 +16,9 @@ export interface Box {
 export type TourCorner = 'top-right' | 'bottom-right'
 
 export interface TourPlacement {
-  // The target and 6px around it; null for a step without one.
-  hole: Box | null
+  // The target and 6px around it, its corners rounded by `radius`; null for
+  // a step without one.
+  hole: (Box & { radius: number }) | null
   bubble: { left: number, top: number, width: number }
   // Its side facing the target, and how far along the bubble it sits.
   tail: { side: 'top' | 'bottom', x: number } | null
@@ -44,19 +45,25 @@ const TAIL_CORNER = 28
 const NO_TARGET_BOTTOM = 40
 // A browser's menu button, in its corner of the window.
 const MENU_BUTTON = 48
+// How far into the window's other half the target's centre must be before
+// Topfbert changes sides: a target at the middle doesn't flip him to and fro.
+const SIDE_HYSTERESIS = 24
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max))
 
-// `target`: the spotlit elements' box (null for none); `bubbleHeight`: the
-// bubble as laid out at its width; `corner`: without a target, the corner
-// Topfbert points to (a browser's menu).
-export function placeTour({ viewport, target, corner = null, bubbleHeight }: { viewport: { width: number, height: number }, target: Box | null, corner?: TourCorner | null, bubbleHeight: number }): TourPlacement {
+// `target`: the spotlit elements' box (null for none); `radius`: its
+// corners' (the first element's border radius); `bubbleHeight`: the bubble
+// as laid out at its width; `corner`: without a target, the corner Topfbert
+// points to (a browser's menu); `mirrored`: the side he has stood on so far
+// in this step, which he keeps unless the target is clearly in the other
+// half.
+export function placeTour({ viewport, target, radius = 0, corner = null, mirrored = null, bubbleHeight }: { viewport: { width: number, height: number }, target: Box | null, radius?: number, corner?: TourCorner | null, mirrored?: boolean | null, bubbleHeight: number }): TourPlacement {
   const width = Math.min(MAX_BUBBLE, viewport.width - 2 * MARGIN - BESIDE)
 
   // Placed as for a target in that corner, but nothing spotlit, no tail.
   if (!target && corner) {
     const top = corner === 'top-right' ? 0 : viewport.height - MENU_BUTTON
-    const placed = placeTour({ viewport, target: { left: viewport.width - MENU_BUTTON, top, width: MENU_BUTTON, height: MENU_BUTTON }, bubbleHeight })
+    const placed = placeTour({ viewport, target: { left: viewport.width - MENU_BUTTON, top, width: MENU_BUTTON, height: MENU_BUTTON }, mirrored, bubbleHeight })
     return { ...placed, hole: null, tail: null }
   }
 
@@ -66,7 +73,10 @@ export function placeTour({ viewport, target, corner = null, bubbleHeight }: { v
     return { hole: null, bubble, tail: null, topfbert: { left: groupLeft, top: bubble.top + bubbleHeight - TOPFBERT_HEIGHT, mirrored: false } }
   }
 
-  const hole = holeAround(target, viewport)
+  const around = holeAround(target, viewport)
+  // Never rounder than its shorter side allows: a pill's 9999px would have
+  // the hole fly square while it glides (the easing overshoots below 0).
+  const hole = { ...around, radius: Math.min(radius + HOLE_PADDING, around.width / 2, around.height / 2) }
   const centreX = hole.left + hole.width / 2
   const centreY = hole.top + hole.height / 2
 
@@ -81,7 +91,10 @@ export function placeTour({ viewport, target, corner = null, bubbleHeight }: { v
   const top = clamp(above ? aboveTop : belowTop, MARGIN, viewport.height - MARGIN - bubbleHeight)
 
   // Centred under the target; Topfbert and bubble kept between the margins.
-  const topfbertLeft = centreX >= viewport.width / 2
+  const middle = viewport.width / 2
+  const topfbertLeft = mirrored === null
+    ? centreX >= middle
+    : mirrored ? centreX >= middle + SIDE_HYSTERESIS : centreX > middle - SIDE_HYSTERESIS
   const groupWidth = width + BESIDE
   const groupLeft = clamp(centreX - width / 2 - (topfbertLeft ? BESIDE : 0), MARGIN, viewport.width - MARGIN - groupWidth)
   const left = groupLeft + (topfbertLeft ? BESIDE : 0)

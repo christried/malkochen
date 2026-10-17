@@ -187,6 +187,66 @@ const bubbleOnTop = (page: Page) => page.locator('[data-tour-step]:visible').eva
   return el.contains(document.elementFromPoint(left + width / 2, top + height / 2))
 })
 
+// One frame of the Tour, as traceTour records it: the step, the hole where
+// it is on that frame (its corners' radius too), whether the ring is drawn,
+// and whether Topfbert stands left of the bubble.
+interface TourFrame {
+  step: string | null
+  spot: { left: number, top: number, width: number, height: number, radius: number } | null
+  ring: string | null
+  topfbertLeft: boolean | null
+}
+
+// Records a TourFrame every frame until the returned stop() is awaited,
+// which gives them back.
+async function traceTour(page: Page) {
+  await page.evaluate(() => {
+    const frames: unknown[] = []
+    const w = window as { tourTrace?: unknown[] | null }
+    w.tourTrace = frames
+    const shown = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)].find(el => el.checkVisibility())
+    const tick = () => {
+      if (w.tourTrace !== frames) return
+      const spot = shown('[data-tour-spot]')
+      const bubble = shown('[data-tour-step]')
+      const topfbert = shown('[data-tour-layer] [data-topfbert-idle]')
+      const box = spot?.getBoundingClientRect()
+      frames.push({
+        step: bubble?.dataset.tourStep ?? null,
+        spot: spot && box ? { left: box.left, top: box.top, width: box.width, height: box.height, radius: Number.parseFloat(getComputedStyle(spot).borderTopLeftRadius) } : null,
+        ring: spot?.querySelector('[data-tour-ring]')?.getAttribute('data-tour-ring') ?? null,
+        topfbertLeft: bubble && topfbert ? topfbert.getBoundingClientRect().left < bubble.getBoundingClientRect().left : null,
+      })
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })
+  return () => page.evaluate(() => {
+    const w = window as { tourTrace?: unknown[] | null }
+    const frames = w.tourTrace
+    w.tourTrace = null
+    return frames
+  }) as Promise<TourFrame[]>
+}
+
+// How often Topfbert changed sides in the frames of `step`, from its second
+// on (its first still shows the last step's placement, not measured again
+// yet).
+function sideFlips(frames: TourFrame[], step: string) {
+  const sides = frames.filter(f => f.step === step && f.topfbertLeft !== null).slice(1).map(f => f.topfbertLeft)
+  return sides.filter((s, i) => i > 0 && s !== sides[i - 1]).length
+}
+
+// Whether, in the frames of `step`, the ring started hidden, then drew, and
+// the hole didn't move from the frame it drew on.
+function ringDrewOnceSettled(frames: TourFrame[], step: string) {
+  const ofStep = frames.filter(f => f.step === step && f.spot)
+  const drawn = ofStep.findIndex(f => f.ring === 'drawn')
+  if (drawn <= 0 || ofStep[0]!.ring !== 'hidden') return false
+  const at = ofStep[drawn]!.spot!
+  return ofStep.slice(drawn).every(({ spot }) => ['left', 'top', 'width', 'height'].every(k => Math.abs(spot![k as 'left'] - at[k as 'left']) < 0.5))
+}
+
 // The spotlit add button, tapped once the hole sits on it (a frame after
 // its step shows, the hole passes taps on).
 async function tapAddButton(page: Page) {
@@ -200,6 +260,7 @@ test('the Tour has the user add a Dish: the add button, Add Dish, then the new c
   await expect(addStep(page)).toContainText('Tipp aufs Plus.')
 
   // The spotlit add button takes the tap.
+  const stop = await traceTour(page)
   await tapAddButton(page)
 
   // The bubble follows into Add Dish, above it, onto its link field.
@@ -208,6 +269,13 @@ test('the Tour has the user add a Dish: the add button, Add Dish, then the new c
   await expect(bubble(page)).toBeFocused()
   await expect.poll(() => bubbleOnTop(page)).toBe(true)
   await expect.poll(() => holeRound(page, 'add-dish-link')).toBe(true)
+  // The link field is centred in the window: Topfbert keeps his side
+  // while the sheet opens, and once the hole has settled the ring draws in.
+  await expect(page.locator('[data-tour-ring="drawn"]:visible')).toBeAttached()
+  await page.waitForTimeout(300)
+  const frames = await stop()
+  expect(sideFlips(frames, 'addDishLink')).toBe(0)
+  expect(ringDrewOnceSettled(frames, 'addDishLink')).toBe(true)
   // A tap beside the link field does nothing: Add Dish stays open.
   await tapOn(page, addDish(page).getByRole('button', { name: 'Schließen' }))
   await expect(addDish(page)).toBeVisible()
@@ -305,11 +373,17 @@ test.describe('on a phone', () => {
     await expect(deleteStep(page)).toBeVisible()
     await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
 
-    // The spotlit ⋯ takes the tap; the bubble follows onto Löschen.
+    // The spotlit ⋯ takes the tap; the bubble follows onto Löschen. The
+    // hole stays round all the way there (a pill's radius never dips to 0).
     await expect.poll(() => holeRound(page, 'dish-menu', dishId)).toBe(true)
+    const stop = await traceTour(page)
     await tapOn(page, page.locator(`[data-dish-id="${dishId}"] [data-tour="dish-menu"]`))
     await expect(deleteStep(page)).toContainText('Tipp auf „Löschen“.')
     await expect.poll(() => holeRound(page, 'menu-delete')).toBe(true)
+    await page.waitForTimeout(300)
+    const radii = (await stop()).flatMap(f => f.spot ? [f.spot.radius] : [])
+    expect(radii.length).toBeGreaterThan(0)
+    expect(Math.min(...radii)).toBeGreaterThan(0)
     await tapOn(page, dishMenu(page).getByRole('button', { name: 'Löschen' }))
 
     await expect(switcherStep(page)).toBeVisible()
@@ -320,6 +394,30 @@ test.describe('on a phone', () => {
     await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
     await expect(switcherStep(page)).toBeVisible()
     await expect(cooked(page)).toHaveCount(0)
+  })
+
+  test('the new card arrives with Topfbert on one side, and the ring draws round it once it has landed', async ({ page }) => {
+    await gotoHydrated(page, '/')
+    await hello(page).getByRole('button', { name: 'Weiter' }).click()
+    await tapAddButton(page)
+    await expect.poll(() => holeRound(page, 'add-dish-link')).toBe(true)
+    await tapOn(page, addDish(page).getByRole('button', { name: 'Ohne Link hinzufügen' }))
+    const form = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+    await form.getByLabel('Titel').fill('Tour-Erbsen')
+    const stop = await traceTour(page)
+    await form.getByRole('button', { name: 'Speichern' }).click()
+
+    await expect(newCardStep(page)).toBeVisible()
+    const dishId = (await page.locator('li[data-dish-id]', { hasText: 'Tour-Erbsen' }).getAttribute('data-dish-id'))!
+    await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
+    const ring = page.locator('[data-tour-ring="drawn"]:visible')
+    await expect(ring).toBeAttached()
+    // It draws for longer than the hole glides (480ms).
+    await expect(ring).toHaveCSS('transition-duration', '0.7s')
+    await page.waitForTimeout(300)
+    const frames = await stop()
+    expect(sideFlips(frames, 'newCard')).toBe(0)
+    expect(ringDrewOnceSettled(frames, 'newCard')).toBe(true)
   })
 
   test('the Tour\'s Dish long-pressed and dragged onto the Column\'s tab counts too', async ({ page }) => {

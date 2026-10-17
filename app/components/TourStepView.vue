@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { TourButton, TourStep } from '~/tour/tour'
-import type { TourPlacement } from '~/utils/tour-placement'
+import { RING, type TourPlacement } from '~/utils/tour-placement'
 
 // One Tour step as TourLayer draws it (handoff R12 "Placement"): the dimming
-// with its hole round the target, ringed in butter; the bubble beside it,
+// with its hole round the target, ringed in butter once the hole has settled
+// there (`ringDrawn`, from TourLayer); the bubble beside it,
 // with Topfbert standing on its edge. Where everything goes comes from
 // TourLayer (`placement`; null until it's measured). A step the user acts
 // on (`press`, from a modal layer the page behind is inert to) has a button
@@ -11,7 +12,7 @@ import type { TourPlacement } from '~/utils/tour-placement'
 const props = defineProps<{
   step: TourStep
   placement: TourPlacement | null
-  holeRadius: string
+  ringDrawn: boolean
   titleId: string
   textId: string
   press: { label: string } | null
@@ -22,26 +23,41 @@ const t = useStrings()
 // Where the hole is: the dimming's and the button over it.
 const holeStyle = computed(() => {
   const hole = props.placement?.hole
-  return hole ? { left: `${hole.left}px`, top: `${hole.top}px`, width: `${hole.width}px`, height: `${hole.height}px`, borderRadius: props.holeRadius } : undefined
+  return hole ? { left: `${hole.left}px`, top: `${hole.top}px`, width: `${hole.width}px`, height: `${hole.height}px`, borderRadius: `${hole.radius}px` } : undefined
 })
 
 // Weiter, or Fertig on the last step, or Installieren there instead.
 const forward = computed(() => props.step.buttons.find(b => b === 'next' || b === 'finish' || b === 'install'))
 
 const bubble = useTemplateRef<HTMLElement>('bubble')
-defineExpose({ bubble })
+const spot = useTemplateRef<HTMLElement>('spot')
+defineExpose({ bubble, spot })
 </script>
 
 <template>
   <!-- The dimming: a hole's shadow over everything else. Without a target,
-       the hole closes in the middle of the screen. -->
+       the hole closes in the middle of the screen. The ring goes round the
+       hole, outside it, and moves with it. -->
   <div
+    ref="spot"
     class="spot"
     :class="{ 'no-target': !placement?.hole }"
     :style="holeStyle"
     aria-hidden="true"
     data-tour-spot
-  />
+  >
+    <svg
+      v-if="placement?.hole"
+      class="ring"
+      :class="{ drawn: ringDrawn }"
+      :data-tour-ring="ringDrawn ? 'drawn' : 'hidden'"
+    >
+      <rect
+        pathLength="1"
+        :style="{ rx: `${placement.hole.radius + RING / 2}px` }"
+      />
+    </svg>
+  </div>
   <button
     v-if="press && placement?.hole"
     type="button"
@@ -143,10 +159,10 @@ defineExpose({ bubble })
 </template>
 
 <style scoped>
-/* The hole, ringed in butter (3px), with the scrim as its shadow. */
+/* The hole, with the scrim as its shadow. */
 .spot {
   position: absolute;
-  box-shadow: 0 0 0 3px var(--color-butter), 0 0 0 200vmax var(--color-scrim);
+  box-shadow: 0 0 0 200vmax var(--color-scrim);
   pointer-events: none;
 }
 .spot.no-target {
@@ -154,7 +170,31 @@ defineExpose({ bubble })
   top: 50%;
   width: 0;
   height: 0;
-  box-shadow: 0 0 0 3px transparent, 0 0 0 200vmax var(--color-scrim);
+}
+/* The butter ring (3px) just outside the hole: hidden until it's drawn. */
+.ring {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  overflow: visible;
+  fill: none;
+  stroke: var(--color-butter);
+  stroke-width: 3px;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+}
+.ring rect {
+  x: 1.5px;
+  y: 1.5px;
+  width: calc(100% - 3px);
+  height: calc(100% - 3px);
+}
+.ring.drawn {
+  stroke-dashoffset: 0;
+  opacity: 1;
 }
 /* Over the hole, see-through; focused by keyboard, it wears the focus ring
    inside the butter one. */
@@ -204,10 +244,17 @@ defineExpose({ bubble })
   width: 64px;
 }
 /* With motion: the hole glides from target to target, and each bubble
-   rises in where it goes. */
+   rises in where it goes. The ring fades as the hole leaves, and once it
+   has settled, draws itself round it: longer than the glide, calmly. */
 @media (prefers-reduced-motion: no-preference) {
   .spot {
-    transition: left var(--dur-settle) var(--ease-settle), top var(--dur-settle) var(--ease-settle), width var(--dur-settle) var(--ease-settle), height var(--dur-settle) var(--ease-settle), border-radius var(--dur-settle) var(--ease-settle), box-shadow var(--dur-fade) var(--ease-fade);
+    transition: left var(--dur-settle) var(--ease-settle), top var(--dur-settle) var(--ease-settle), width var(--dur-settle) var(--ease-settle), height var(--dur-settle) var(--ease-settle), border-radius var(--dur-settle) var(--ease-settle);
+  }
+  .ring {
+    transition: opacity var(--dur-fade) var(--ease-fade), stroke-dashoffset 0s var(--dur-fade);
+  }
+  .ring.drawn {
+    transition: stroke-dashoffset 700ms var(--ease-swoosh);
   }
   .bubble.placed {
     animation: bubble-in var(--dur-settle) var(--ease-settle);

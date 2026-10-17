@@ -18,7 +18,7 @@ test('the bubble is the screen less 24 and 54 wide, at most 320', () => {
 test('the hole is the target and 6px around it', () => {
   const { hole } = placeTour({ viewport: PHONE, target: box(16, 20, 180, 44), bubbleHeight: 120 })
 
-  expect(hole).toEqual(box(10, 14, 192, 56))
+  expect(hole).toMatchObject(box(10, 14, 192, 56))
 })
 
 test('a target in the upper half gets the bubble below it, its tail pointing up, 8px from the ring', () => {
@@ -105,7 +105,7 @@ test('without a target, nothing is spotlit and there is no tail: the bubble sits
 test('a target partly off screen is spotlit where it shows', () => {
   const { hole } = placeTour({ viewport: DESKTOP, target: box(900, 120, 700, 40), bubbleHeight: 120 })
 
-  expect(hole).toEqual(box(894, 114, 392, 52))
+  expect(hole).toMatchObject(box(894, 114, 392, 52))
 })
 
 test.each([
@@ -126,4 +126,33 @@ test.each([
     expect(top).toBeGreaterThanOrEqual(0)
     expect(top + height).toBeLessThanOrEqual(PHONE.height)
   }
+})
+
+test('the hole\'s radius is the target\'s and 6px, but never more than half its side, so a pill\'s hole stays round', () => {
+  const card = placeTour({ viewport: PHONE, target: box(16, 20, 180, 44), radius: 16, bubbleHeight: 120 })
+  const pill = placeTour({ viewport: PHONE, target: box(16, 20, 180, 44), radius: 3.3e7, bubbleHeight: 120 })
+
+  expect(card.hole?.radius).toBe(22)
+  // The hole is 56 high.
+  expect(pill.hole?.radius).toBe(28)
+})
+
+test.each([
+  ['phone', PHONE, box(160, 400, 40, 40)],
+  ['desktop', DESKTOP, box(440, 300, 400, 52)],
+])('on a %s, a target at the window\'s middle, nudged by ±1px, keeps Topfbert on his side', (_, viewport, target) => {
+  const first = placeTour({ viewport, target, bubbleHeight: 120 })
+
+  for (const nudge of [-1, 1, -1, 1]) {
+    const nudged = placeTour({ viewport, target: { ...target, left: target.left + nudge }, mirrored: first.topfbert.mirrored, bubbleHeight: 120 })
+    expect(nudged.topfbert.mirrored).toBe(first.topfbert.mirrored)
+  }
+})
+
+test('a target clearly on the other half moves Topfbert over', () => {
+  const left = placeTour({ viewport: PHONE, target: box(100, 400, 40, 40), mirrored: false, bubbleHeight: 120 })
+  const right = placeTour({ viewport: PHONE, target: box(220, 400, 40, 40), mirrored: true, bubbleHeight: 120 })
+
+  expect(left.topfbert.mirrored).toBe(true)
+  expect(right.topfbert.mirrored).toBe(false)
 })
