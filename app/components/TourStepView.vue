@@ -48,7 +48,7 @@ defineExpose({ bubble, spot })
   >
     <svg
       v-if="placement?.hole"
-      class="ring"
+      class="butter-ring"
       :class="{ drawn: ringDrawn }"
       :data-tour-ring="ringDrawn ? 'drawn' : 'hidden'"
     >
@@ -172,7 +172,7 @@ defineExpose({ bubble, spot })
   height: 0;
 }
 /* The butter ring (3px) just outside the hole: hidden until it's drawn. */
-.ring {
+.butter-ring {
   position: absolute;
   left: -3px;
   top: -3px;
@@ -186,13 +186,13 @@ defineExpose({ bubble, spot })
   stroke-dashoffset: 1;
   opacity: 0;
 }
-.ring rect {
+.butter-ring rect {
   x: 1.5px;
   y: 1.5px;
   width: calc(100% - 3px);
   height: calc(100% - 3px);
 }
-.ring.drawn {
+.butter-ring.drawn {
   stroke-dashoffset: 0;
   opacity: 1;
 }
@@ -250,10 +250,10 @@ defineExpose({ bubble, spot })
   .spot {
     transition: left var(--dur-settle) var(--ease-settle), top var(--dur-settle) var(--ease-settle), width var(--dur-settle) var(--ease-settle), height var(--dur-settle) var(--ease-settle), border-radius var(--dur-settle) var(--ease-settle);
   }
-  .ring {
+  .butter-ring {
     transition: opacity var(--dur-fade) var(--ease-fade), stroke-dashoffset 0s var(--dur-fade);
   }
-  .ring.drawn {
+  .butter-ring.drawn {
     transition: stroke-dashoffset 700ms var(--ease-swoosh);
   }
   .bubble.placed {

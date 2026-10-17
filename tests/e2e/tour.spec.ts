@@ -174,6 +174,16 @@ test('→ and ← go forwards and back, focus is in each bubble, and Esc ends th
   await expect.poll(() => tourSeen(page)).toBe(1)
 })
 
+test('the butter ring is all that\'s drawn round the hole: no box round it', async ({ page }) => {
+  await gotoHydrated(page, '/')
+  await hello(page).getByRole('button', { name: 'Weiter' }).click()
+
+  const ring = page.locator('[data-tour-ring="drawn"]:visible')
+  await expect(ring).toBeAttached()
+  // Not even Tailwind's `ring` utility, a box-shadow round its square box.
+  await expect(ring).toHaveCSS('box-shadow', 'none')
+})
+
 // Taps the middle of what `locator` finds, as a finger would: whatever is
 // on top there gets it.
 async function tapOn(page: Page, locator: Locator) {
