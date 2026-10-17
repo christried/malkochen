@@ -104,6 +104,8 @@ function follow() {
   if (!next || !host || !bubble) return
   const size = { width: host.clientWidth, height: host.clientHeight }
   if (size.width !== viewport.value.width || size.height !== viewport.value.height) viewport.value = size
+  // The first element's corners: round a card and its Column too, the
+  // card's suit the box round both.
   const radius = first ? Number.parseFloat(getComputedStyle(first).borderTopLeftRadius) || 0 : 0
   const mirrored = side?.step === step.id ? side.mirrored : null
   const placed = placeTour({ viewport: size, target: tourTargetBox(elements), radius, corner: step.corner, mirrored, bubbleHeight: bubble.offsetHeight })
