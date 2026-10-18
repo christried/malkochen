@@ -187,7 +187,7 @@ export const it: Strings = {
     saving: 'Salvataggio…',
     close: 'Chiudi',
     failed,
-    summary: (count: number, last: Date) => `cucinato ${number(count)}×, l’ultima volta il ${addedDate(last)}`,
+    summary: (count: number, last: Date) => `cucinato ${number(count)}×, l’ultima il ${addedDate(last)}`,
     date: (date: Date) => addedDate(date),
     by: (name: string) => `di ${name}`,
     addNote: '+ Nota',
@@ -336,7 +336,7 @@ export const it: Strings = {
     switch: 'Cambia bacheca',
     label: 'Le tue bacheche',
     current: 'Bacheca attuale',
-    settings: (board: string) => `Impostazioni della bacheca: ${board}`,
+    settings: (board: string) => `Impostazioni bacheca: ${board}`,
     newBoard: 'Nuova bacheca',
     name: 'Nome',
     nameExamples: [

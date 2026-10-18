@@ -1,5 +1,6 @@
+import type { Locator } from '@playwright/test'
 import { expect, test } from './fixtures'
-import { ALLOWLISTED } from '../support/test-auth-env'
+import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
 import { openUserSettings, settingsSheet } from './settings-sheet'
@@ -110,4 +111,44 @@ test('picking Italiano in Your Settings shows the Board in Italian at once, and 
   await gotoHydrated(page, '/')
   await expect(page.locator('html')).toHaveAttribute('lang', 'it')
   await expect(page.getByRole('button', { name: 'Aggiungi un piatto' })).toBeVisible()
+})
+
+// Each choice's label against its button, and the highlight (the picker's
+// thumb) against the chosen one, in whole pixels.
+async function pickerLayout(group: Locator) {
+  return group.evaluate((el) => {
+    const thumb = el.querySelector(':scope > [aria-hidden="true"]')!.getBoundingClientRect()
+    const chosen = el.querySelector('[aria-checked="true"]')!.getBoundingClientRect()
+    return {
+      cutOff: [...el.querySelectorAll('[role="radio"]')].filter(radio => radio.scrollWidth > radio.clientWidth).map(radio => radio.textContent!.trim()),
+      thumb: [thumb.left, thumb.width].map(Math.round),
+      chosen: [chosen.left, chosen.width].map(Math.round),
+    }
+  })
+}
+
+test('on a 360px phone, all four choices fit, in German and Italian, and the highlight sits under the chosen one (#327)', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await signIn(page, PAYNE)
+  // Whatever the test before left: Automatisch, in this German browser.
+  await page.request.put('/api/me/language', { data: { language: 'auto' }, headers: { origin: E2E_ORIGIN } })
+  const sheet = await openUserSettings(page)
+  const german = sheet.getByRole('radiogroup', { name: 'Sprache' })
+  await expect(german.getByRole('radio', { name: 'Automatisch' })).toHaveAttribute('aria-checked', 'true')
+
+  await expect.poll(() => pickerLayout(german)).toEqual(expect.objectContaining({ cutOff: [] }))
+  let layout = await pickerLayout(german)
+  expect(layout.thumb).toEqual(layout.chosen)
+
+  await german.getByRole('radio', { name: 'Italiano' }).click()
+  const italian = settingsSheet(page, 'Impostazioni').getByRole('radiogroup', { name: 'Lingua' })
+  await expect(italian.getByRole('radio', { name: 'Italiano' })).toHaveAttribute('aria-checked', 'true')
+
+  // Once the highlight has slid over.
+  await expect.poll(async () => {
+    const { thumb, chosen } = await pickerLayout(italian)
+    return thumb.join() === chosen.join()
+  }).toBe(true)
+  layout = await pickerLayout(italian)
+  expect(layout.cutOff).toEqual([])
 })
