@@ -1,0 +1,334 @@
+<title>Dish life prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Petrona:ital,wght@0,500;0,600;1,500&display=swap">
+<style>
+/* Layout: a review sheet in malkochen's own palette. Three questions, each a
+   row of three options with their screenshots, switched by theme and device. */
+:root {
+  --bg: #F7F6F2;
+  --surface: #FFFFFF;
+  --muted-surface: #EFEDE8;
+  --text: #1F1E1C;
+  --muted: #6F6B65;
+  --line: rgba(31,30,28,.12);
+  --butter: #F7B94A;
+  --sage: #A5C7AE;
+  --sage-ink: #10261A;
+  --neu: #F29B32;
+  --shadow: 0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);
+  --display: 'Petrona', Georgia, serif;
+  --ui: 'Figtree', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131211; --surface: #1E1C1A; --muted-surface: #2A2825; --text: #F3EFE8; --muted: #A8A298;
+    --line: rgba(255,255,255,.1); --shadow: 0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131211; --surface: #1E1C1A; --muted-surface: #2A2825; --text: #F3EFE8; --muted: #A8A298;
+  --line: rgba(255,255,255,.1); --shadow: 0 12px 28px -10px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 var(--ui);
+}
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+header { display: flex; flex-direction: column; gap: 12px; max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.05; }
+h2 { font-size: 30px; line-height: 1.1; }
+h3 { font-size: 21px; line-height: 1.2; display: flex; align-items: baseline; gap: 10px; }
+p { margin: 0; }
+.lede { font-size: 17px; color: var(--muted); }
+.meta { font-size: 13px; color: var(--muted); }
+code { font: 13px ui-monospace, Menlo, monospace; background: var(--muted-surface); padding: 1px 6px; border-radius: 6px; }
+
+.controls {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  width: fit-content;
+  max-width: 100%;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.seg { display: inline-flex; background: var(--muted-surface); border-radius: 999px; padding: 3px; }
+.seg button {
+  font: 600 13px var(--ui);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--butter); color: #2B1E04; }
+.seg button:focus-visible { outline: 2px solid var(--butter); outline-offset: 2px; }
+.controls .label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+section.q { display: flex; flex-direction: column; gap: 20px; }
+.q-head { display: flex; flex-direction: column; gap: 8px; max-width: 72ch; }
+.common { font-size: 14px; color: var(--muted); }
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.option {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: 28px 24px 30px 26px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.key {
+  font: 700 13px var(--ui);
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 48% 52% 46% 54% / 55% 50% 50% 45%;
+  background: var(--butter);
+  color: #2B1E04;
+  flex-shrink: 0;
+  transform: translateY(-2px);
+}
+.option ul { margin: 0; padding-left: 18px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.option li.minus::marker { content: "– "; color: var(--neu); }
+.option li.plus::marker { content: "+ "; color: #4E8A5E; }
+.shots { display: flex; flex-direction: column; gap: 10px; }
+.shots figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.shots img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--muted-surface);
+}
+.shots figcaption { font-size: 12px; color: var(--muted); }
+.phone-only .shots img { max-width: 360px; }
+footer { font-size: 14px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+@media (prefers-reduced-motion: no-preference) {
+  .shots img { transition: opacity 200ms ease; }
+}
+</style>
+
+<div class="page">
+  <header>
+    <p class="meta">malkochen issue #330, for the Dish life spec (#318)</p>
+    <h1>Dish life prototype</h1>
+    <p class="lede">Three looks each for the card, the Verlauf and the Gekocht toast, built into the real app. Votes and Comments are made up per Dish; Cookings, the Board and everything else are real. Pick one per question (or a mix).</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Screenshots">
+    <span class="label">Theme</span>
+    <span class="seg" data-control="theme">
+      <button type="button" id="theme-light" data-value="light" aria-pressed="true">Light</button>
+      <button type="button" id="theme-dark" data-value="dark" aria-pressed="false">Dark</button>
+    </span>
+    <span class="label">Screen</span>
+    <span class="seg" data-control="size">
+      <button type="button" id="size-phone" data-value="phone" aria-pressed="true">Phone 360px</button>
+      <button type="button" id="size-desktop" data-value="desktop" aria-pressed="false">Desktop</button>
+    </span>
+  </div>
+
+  <section class="q" aria-labelledby="q-card">
+    <div class="q-head">
+      <h2 id="q-card">1. The card</h2>
+      <p>How a card shows its Votes, how many Comments it has, and that something is new in its Verlauf since you last opened it, next to the image, title, Source badge, adder, "3× gekocht" and "Neu".</p>
+      <p class="common">Shakshuka is a New Dish with 2 unread Comments. Cremige Pilzpasta has 4 👍, 1 👎, 3 Comments, something new. Ofengemüse has 2 👍, 2 👎 and 12 Comments, all read. Gnocchi leans 👎 with one new Comment. The note icon is gone everywhere, as notes become Comments.</p>
+    </div>
+    <div class="options">
+      <article class="option">
+        <h3><span class="key">A</span>Quiet row</h3>
+        <p>Line icons in the bottom row after the adder's picture: the thumb most people gave, then the speech bubble with its count. Something new puts an orange dot on the bubble.</p>
+        <ul>
+          <li class="plus">Calmest; the image and title stay untouched.</li>
+          <li class="minus">Beside "Gekocht ✓" a desktop card has about 40px, so it can't show how many voted, only which way it leans. Two-digit counts touch the button.</li>
+        </ul>
+        <div class="shots" data-shot="card-A"></div>
+      </article>
+      <article class="option">
+        <h3><span class="key">B</span>Glass chip on the image</h3>
+        <p>A small frosted chip down the thumb's top right, one line each for 👍, 👎 and Comments. Something new turns the chip the "Neu" orange.</p>
+        <ul>
+          <li class="plus">Shows every number and fits any card width; clear of "Neu" (top left) and the Source badge (bottom left).</li>
+          <li class="minus">Covers a corner of the picture, and three lines are busy on a small thumb.</li>
+        </ul>
+        <div class="shots" data-shot="card-B"></div>
+      </article>
+      <article class="option">
+        <h3><span class="key">C</span>In the line under the title</h3>
+        <p>Emoji with counts after "3× gekocht". Something new marks the Comment count like a highlighter.</p>
+        <ul>
+          <li class="plus">Shows every number and reads like the rest of the card's facts.</li>
+          <li class="minus">Takes the room from the Creator, which is cut down to a letter or two on most cards.</li>
+        </ul>
+        <div class="shots" data-shot="card-C"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="q" aria-labelledby="q-verlauf">
+    <div class="q-head">
+      <h2 id="q-verlauf">2. The Verlauf</h2>
+      <p>The Dish History at the bottom of the Dish detail: added, Cookings, Votes and Comments, oldest first, with the comment field underneath.</p>
+      <p class="common">Same in all three: the heading becomes "Verlauf" (achievement badge, summary and "Gekocht ✓" stay); the detail's "Hinzugefügt von" line and the note are gone, since the Verlauf starts with who added it; "bearbeitet" follows the time; your own Comments have "…" for Bearbeiten and Löschen; Cookings keep the bin. Shown on Cremige Pilzpasta, and on Shakshuka (never cooked, so no Votes yet, the loop stays).</p>
+    </div>
+    <div class="options">
+      <article class="option">
+        <h3><span class="key">A</span>Chat</h3>
+        <p>Comments as speech bubbles, yours on the right in butter. Cookings as sage pills in the middle, Votes and "added" as small centred lines. A "Neu" line marks where the unread part starts. 👍 👎 sit beside the comment field.</p>
+        <ul>
+          <li class="plus">Reads like a group chat; voting and commenting in one place at the bottom.</li>
+          <li class="minus">Many Votes make many small lines.</li>
+        </ul>
+        <div class="shots" data-shot="verlauf-A"></div>
+      </article>
+      <article class="option">
+        <h3><span class="key">B</span>Timeline</h3>
+        <p>A line down the left with one dot per entry: the person's picture for a Comment, a pot for a Cooking, the thumb for a Vote. Comments in the detail's serif. "Wie war's?" with 👍 👎 under the heading.</p>
+        <ul>
+          <li class="plus">Every entry the same shape, easy to scan; Comments read like the Cooking notes today.</li>
+          <li class="minus">Less of a conversation; your own Comments don't stand out.</li>
+        </ul>
+        <div class="shots" data-shot="verlauf-B"></div>
+      </article>
+      <article class="option">
+        <h3><span class="key">C</span>Cards like today</h3>
+        <p>Each entry a row like today's Cooking History, with its date pebble. Votes next to each other fold into one row. An unread Comment gets an orange ring and "Neu". 👍 👎 as two chips with everyone's counts under the heading.</p>
+        <ul>
+          <li class="plus">Closest to what the app has; the tally is visible at the top.</li>
+          <li class="minus">Heaviest: a box per entry gets long with many Comments.</li>
+        </ul>
+        <div class="shots" data-shot="verlauf-C"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="q" aria-labelledby="q-toast">
+    <div class="q-head">
+      <h2 id="q-toast">3. The Gekocht toast</h2>
+      <p>"Gekocht ✓", 👍 👎, "Kommentieren" and "Rückgängig" at 360px.</p>
+      <p class="common">Same in all three: a thumb keeps the toast open, so you can change it (each option is shown before and after 👍); "Kommentieren" opens the Dish with the comment field in focus; the add button moves up over a toast of two rows.</p>
+    </div>
+    <div class="options">
+      <article class="option">
+        <h3><span class="key">A</span>One pill, wraps</h3>
+        <p>Today's toast with the thumbs added. On a phone it breaks into two rows, "Gekocht ✓" above, the four controls below; on a desktop it's one row.</p>
+        <ul>
+          <li class="plus">Least new; one row on a desktop.</li>
+          <li class="minus">On a phone the first row is nearly empty.</li>
+        </ul>
+        <div class="shots" data-shot="toast-A"></div>
+      </article>
+      <article class="option">
+        <h3><span class="key">B</span>Two rows, "Wie war's?"</h3>
+        <p>"Gekocht ✓" and "Rückgängig" on top; "Wie war's?" with 👍 👎 and a "Kommentieren" button below.</p>
+        <ul>
+          <li class="plus">Asks the question out loud; the biggest targets.</li>
+          <li class="minus">Taller, so it covers more of the Board for its 5 seconds.</li>
+        </ul>
+        <div class="shots" data-shot="toast-B"></div>
+      </article>
+      <article class="option">
+        <h3><span class="key">C</span>One row, bubble button</h3>
+        <p>"Kommentieren" becomes a speech-bubble button next to the thumbs, so everything fits one row at 360px.</p>
+        <ul>
+          <li class="plus">Smallest; the toast keeps its shape.</li>
+          <li class="minus">The bubble has no word on it (its name and tooltip say "Kommentieren").</li>
+        </ul>
+        <div class="shots" data-shot="toast-C"></div>
+      </article>
+    </div>
+  </section>
+
+  <footer>
+    <p>Try it yourself: branch <code>issue-330-prototype</code>, <code>pnpm dev</code>, open a Board. A dark bar at the top switches the variants (← and → cycle them), or add <code>?card=B&amp;verlauf=C&amp;toast=A</code> to the address. The prototype is never merged.</p>
+    <p>Screenshots are retaken with <code>P330_SHOTS=1 pnpm test:e2e tests/e2e/prototype330.spec.ts</code>.</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const state = { theme: 'light', size: 'phone' }
+  try {
+    const saved = JSON.parse(localStorage.getItem('p330-view') || '{}')
+    if (saved.theme === 'light' || saved.theme === 'dark') state.theme = saved.theme
+    if (saved.size === 'phone' || saved.size === 'desktop') state.size = saved.size
+  } catch {}
+
+  function shotsFor(key) {
+    const [kind] = key.split('-')
+    const { theme, size } = state
+    if (kind === 'card') return [[`shots/${key}-${size}-${theme}.png`, `Board, ${size === 'phone' ? '360px' : '1280px'}`]]
+    if (kind === 'verlauf') {
+      const list = [[`shots/${key}-${size}-${theme}.png`, `Cremige Pilzpasta, ${size === 'phone' ? '360px' : 'desktop dialog'}`]]
+      if (size === 'phone') list.push([`shots/${key}-never-${theme}.png`, 'Shakshuka, never cooked'])
+      return list
+    }
+    return [
+      [`shots/${key}-${size}-${theme}.png`, 'Right after "Gekocht ✓"'],
+      [`shots/${key}-${size}-${theme}-voted.png`, 'After tapping 👍'],
+    ]
+  }
+
+  function render() {
+    document.querySelectorAll('[data-shot]').forEach((box) => {
+      box.replaceChildren(...shotsFor(box.dataset.shot).map(([src, caption]) => {
+        const figure = document.createElement('figure')
+        const img = document.createElement('img')
+        img.src = src
+        img.alt = `${box.dataset.shot}: ${caption}`
+        img.loading = 'lazy'
+        const cap = document.createElement('figcaption')
+        cap.textContent = caption
+        figure.append(img, cap)
+        return figure
+      }))
+    })
+    document.querySelectorAll('[data-control]').forEach((group) => {
+      group.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(state[group.dataset.control] === b.dataset.value)))
+    })
+    document.body.classList.toggle('phone-only', state.size === 'phone')
+    try { localStorage.setItem('p330-view', JSON.stringify(state)) } catch {}
+  }
+
+  document.querySelectorAll('[data-control]').forEach((group) => {
+    group.addEventListener('click', (event) => {
+      const button = event.target.closest('button')
+      if (!button) return
+      state[group.dataset.control] = button.dataset.value
+      render()
+    })
+  })
+  render()
+})()
+</script>
