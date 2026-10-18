@@ -7,6 +7,7 @@ import { board, boardColumn, boardSlug, dish, membership, user } from '../db/sch
 import { freeSlug, lockSlugs, recordSlug, slugOf } from './addresses'
 import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
+import { detailsOf, insertEvents } from './events'
 import { usernameOf, pictureOf } from './people'
 
 // The Board a user gets on their first sign-in (PRD story 3), named in
@@ -129,7 +130,7 @@ export async function landingBoard(userId: string, language: Language): Promise<
     // a second one sees the first one's Board and creates none.
     d.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`starter-board:${userId}`}, 0))`),
     lockSlugs(d),
-    insertBoard(d, randomUUID(), userId, starterBoard(language), language, sql`not exists (select 1 from ${membership} where user_id = ${userId})`),
+    insertBoard(d, randomUUID(), userId, starterBoard(language), language, { starter: true, where: sql`not exists (select 1 from ${membership} where user_id = ${userId})` }),
   ])
 
   const [created] = await lastOpenedBoard(userId)
@@ -159,8 +160,9 @@ export async function createBoard(userId: string, { name, emoji }: NewBoard, lan
 }
 
 // One statement inserting a Board with its slug (after lockSlugs), its
-// Owner and its default Columns in `language`, only `where` that holds.
-function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoard, language: Language, where: SQL = sql`true`) {
+// Owner and its default Columns in `language`, and recording it, only
+// `where` that holds. `starter`: the Board a first landing creates.
+function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoard, language: Language, { starter = false, where = sql`true` }: { starter?: boolean, where?: SQL } = {}) {
   const columns = sql.join(
     defaultColumns(language).map((c, i) => sql`(${c.name}, ${c.subtitle}::text, ${i}::int, ${c.isGekocht}::boolean)`),
     sql`, `,
@@ -177,6 +179,13 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoar
     ), owner as (
       insert into ${membership} (board_id, user_id, is_owner)
       select id, ${userId}, true from new_board
+    ), recorded as (
+      ${insertEvents({
+        kind: 'board_created',
+        board: sql`new_board.id`,
+        user: userId,
+        details: starter ? detailsOf({ starter: true }) : undefined,
+      }, sql`from new_board`)}
     )
     insert into ${boardColumn} (board_id, name, subtitle, position, is_gekocht)
     select new_board.id, c.name, c.subtitle, c.position, c.is_gekocht

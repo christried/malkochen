@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, desc, eq, exists, ilike, inArray, isNull, ne, notExists, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, ilike, inArray, isNotNull, isNull, ne, notExists, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm'
 import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
@@ -7,6 +7,7 @@ import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, membership, user } from '../db/schema'
 import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
+import { cookingEvent, detailsOf, dishEvent, recordEvents, withEvents } from './events'
 import { pictureOf, shownAs } from './people'
 
 // The Member who added a Dish, as the card shows them.
@@ -222,8 +223,23 @@ function unlessPlaceholder(percent: number, centre: number) {
 // Deletes a Dish (PRD story 47): a soft delete, so it can be restored. False
 // unless it is on a Board the user is a Member of and not deleted yet.
 export async function deleteDish(dishId: string, userId: string): Promise<boolean> {
-  const deleted = await db.update(dish).set({ deletedAt: new Date() }).where(onMembersBoard(dishId, userId)).returning({ id: dish.id })
-  return deleted.length > 0
+  const { rows } = await withEvents(db, archive(db, onMembersBoard(dishId, userId)), dishEvent('dish_archived', userId))
+  return rows.length > 0
+}
+
+// Soft-deletes the Dishes `where` finds, returning their ids and Boards.
+function archive(d: Db, where: SQL | undefined) {
+  return d.update(dish).set({ deletedAt: new Date() }).where(where).returning({ id: dish.id, boardId: dish.boardId })
+}
+
+// Brings back the Dishes `where` finds, recording each that was deleted.
+function restoreRecorded(d: Db, where: SQL | undefined, userId: string) {
+  return withEvents(
+    d,
+    d.update(dish).set({ deletedAt: null }).where(where).returning({ id: dish.id, boardId: dish.boardId }),
+    dishEvent('dish_restored', userId),
+    { earlier: sql`select ${dish.id} from ${dish} where ${and(where, isNotNull(dish.deletedAt))}` },
+  )
 }
 
 // Undoes deleting a Dish. It kept its Column and position, so it is back
@@ -232,7 +248,7 @@ export async function deleteDish(dishId: string, userId: string): Promise<boolea
 // user is a Member of.
 export async function restoreDish(dishId: string, userId: string): Promise<PlacedDish | null> {
   const target = onMembersBoardIncludingDeleted(dishId, userId)
-  await db.update(dish).set({ deletedAt: null }).where(target)
+  await restoreRecorded(db, target, userId)
   return withPlacement(await findDish(target))
 }
 
@@ -266,7 +282,15 @@ export async function moveDish(
       where ${and(movable, cook ? undefined : ne(dish.columnId, columnId))}
         and exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${columnId} and ${boardColumn.isGekocht})
     `),
-    index === undefined ? toTop(d, columnId, movable) : renumberForDrop(d, dishId, columnId, index, movable),
+    moveRecorded(
+      d,
+      index === undefined ? toTop(d, columnId, movable) : renumberForDrop(d, dishId, columnId, index, movable),
+      [dishId],
+      userId,
+      // A drop is a move also within the Dish's own Column.
+      { reorder: index !== undefined },
+    ),
+    recordEvents(d, cookingEvent('cooking_recorded', userId), sql`from ${cooking} changed where changed.id = ${cookingId}`),
   ])
 
   const moved = await withPlacement(await findDish(and(target, eq(dish.columnId, columnId))))
@@ -300,13 +324,17 @@ export async function undoCooking(cookingId: string, dishId: string, userId: str
   const movable = movableTo(and(onMembersBoard(dishId, userId), stillCooked), userId, columnId)
   const cookingGone = notExists(db.select({ id: cooking.id }).from(cooking).where(eq(cooking.id, cookingId)))
   await runAtomic(d => [
-    d.delete(cooking).where(and(
-      undoableCooking(cookingId, userId),
-      eq(cooking.dishId, dishId),
-      exists(db.select({ id: dish.id }).from(dish).where(movable)),
-    )),
+    withEvents(
+      d,
+      d.delete(cooking).where(and(
+        undoableCooking(cookingId, userId),
+        eq(cooking.dishId, dishId),
+        exists(db.select({ id: dish.id }).from(dish).where(movable)),
+      )).returning({ id: cooking.id, dishId: cooking.dishId }),
+      cookingEvent('cooking_deleted', userId, { undo: true }),
+    ),
     // Only once the Cooking is gone: the delete above went through.
-    renumberForDrop(d, dishId, columnId, index, and(movable, cookingGone)),
+    moveRecorded(d, renumberForDrop(d, dishId, columnId, index, and(movable, cookingGone)), [dishId], userId, { undo: true }),
   ])
   // Also when an undo just before this one took the Cooking back already:
   // the Dish is back, so this one answers where, too.
@@ -328,6 +356,30 @@ function movableTo(target: SQL | undefined, userId: string, columnId: string) {
   )
 }
 
+// `write`, moving Dishes, with an event for each of `dishIds` it moved:
+// from the Column it was in to the one it is in now. Only into another
+// Column, unless `reorder` (a drop) counts a move within its own too.
+// `undo`: it takes back a move before.
+function moveRecorded(d: Db, write: SQLWrapper, dishIds: string[], userId: string, { reorder = false, undo = false } = {}) {
+  return withEvents(
+    d,
+    write,
+    dishEvent('dish_moved', userId, sql`jsonb_strip_nulls(jsonb_build_object(
+      'from', earlier.column_id,
+      'to', changed.column_id,
+      'fromBoard', nullif(earlier.board_id, changed.board_id),
+      'undo', ${undo ? sql`true` : sql`null::boolean`}
+    ))`),
+    {
+      earlier: sql`select ${dish.id}, ${dish.columnId}, ${dish.boardId} from ${dish} where ${inArray(dish.id, dishIds)}`,
+      where: reorder ? undefined : sql`earlier.column_id <> changed.column_id`,
+    },
+  )
+}
+
+// What a move answers about every Dish it changed.
+const MOVED = { id: dish.id, columnId: dish.columnId, boardId: dish.boardId }
+
 // The Board of the Column, for a Dish moving into it.
 function boardOf(columnId: string) {
   return sql`(select ${boardColumn.boardId} from ${boardColumn} where ${boardColumn.id} = ${columnId})`
@@ -345,6 +397,7 @@ function toTop(d: Db, columnId: string, movable: SQL | undefined) {
         else (select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${columnId}) end`,
     })
     .where(movable)
+    .returning(MOVED)
 }
 
 // Drops a Dish at `index` in a Column, if `movable`: one statement numbers
@@ -378,6 +431,7 @@ function renumberForDrop(d: Db, dishId: string, columnId: string, index: number,
       and(eq(dish.id, dishId), movable),
       inArray(dish.id, d.select({ id: others.id }).from(others)),
     ))
+    .returning(MOVED)
 }
 
 // Several Dishes at once (#218): moved to the top of a Column, put back
@@ -449,7 +503,7 @@ async function placedDishes(ids: string[]): Promise<PlacedDish[] | null> {
 // isn't a Gekocht Column.
 export async function moveDishes(ids: string[], userId: string, columnId: string): Promise<PlacedDish[] | null> {
   const rank = sql.join(ids.map((id, i) => sql`when ${id}::uuid then ${i}::integer`), sql` `)
-  const moved = await db
+  const move = db
     .update(dish)
     .set({
       columnId,
@@ -463,8 +517,9 @@ export async function moveDishes(ids: string[], userId: string, columnId: string
       allOnMembersBoards(ids, userId),
       allColumnsOfMember([columnId], userId, { noGekocht: true }),
     ))
-    .returning({ id: dish.id })
-  return moved.length === ids.length ? placedDishes(ids) : null
+    .returning(MOVED)
+  const { rows } = await moveRecorded(db, move, ids, userId)
+  return rows.length === ids.length ? placedDishes(ids) : null
 }
 
 // Where a Dish goes back to, undoing a move of several: its Column, and its
@@ -496,7 +551,7 @@ export async function placeDishes(places: DishPlace[], userId: string): Promise<
     // Held until the end, so no other write changes them meanwhile and the
     // check stays true for every step.
     d.execute(sql`select ${dish.id} from ${dish} where ${inArray(dish.id, ids)} for update`),
-    ...ordered.map(p => renumberForDrop(d, p.dishId, p.columnId, p.index, and(eq(dish.id, p.dishId), allowed))),
+    ...ordered.map(p => moveRecorded(d, renumberForDrop(d, p.dishId, p.columnId, p.index, and(eq(dish.id, p.dishId), allowed)), [p.dishId], userId, { undo: true })),
   ])
   return placedDishes(ids)
 }
@@ -522,12 +577,8 @@ async function holds(condition: SQL | undefined, userId: string): Promise<boolea
 // be restored. False, deleting none, unless every Dish is on a Board the
 // user is a Member of and not deleted yet.
 export async function deleteDishes(ids: string[], userId: string): Promise<boolean> {
-  const deleted = await db
-    .update(dish)
-    .set({ deletedAt: new Date() })
-    .where(and(inArray(dish.id, ids), allOnMembersBoards(ids, userId)))
-    .returning({ id: dish.id })
-  return deleted.length === ids.length
+  const { rows } = await withEvents(db, archive(db, and(inArray(dish.id, ids), allOnMembersBoards(ids, userId))), dishEvent('dish_archived', userId))
+  return rows.length === ids.length
 }
 
 // "Rückgängig" after deleting several Dishes: they are back where they
@@ -535,12 +586,8 @@ export async function deleteDishes(ids: string[], userId: string): Promise<boole
 // `ids`; null, restoring none, unless every Dish is on a Board the user is
 // a Member of.
 export async function restoreDishes(ids: string[], userId: string): Promise<PlacedDish[] | null> {
-  const restored = await db
-    .update(dish)
-    .set({ deletedAt: null })
-    .where(and(inArray(dish.id, ids), allOnMembersBoards(ids, userId, { deleted: true })))
-    .returning({ id: dish.id })
-  return restored.length === ids.length ? placedDishes(ids) : null
+  const { rows } = await restoreRecorded(db, and(inArray(dish.id, ids), allOnMembersBoards(ids, userId, { deleted: true })), userId)
+  return rows.length === ids.length ? placedDishes(ids) : null
 }
 
 // A Dish already on a Board with the Source being added (PRD story 24).
@@ -582,11 +629,13 @@ function escapeLike(text: string): string {
 
 // Adds a Dish at the top of the Column that takes new Dishes (PRD story 13;
 // shared/placement.ts). Answers it placed; null unless the user is a Member
-// of the Board, or if another Member deleted it already.
+// of the Board, or if another Member deleted it already. `tour`: the Tour
+// has the user add it (ADR 0006), which its event says.
 export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
+  { tour = false }: { tour?: boolean } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
@@ -598,9 +647,10 @@ export async function addDish(
   if (!firstColumn) return null
 
   const focus = focusOf(input.imageUrl, input.imageFocus)
-  const [created] = await db
-    .insert(dish)
-    .values({
+  const id = randomUUID()
+  await runAtomic(d => [
+    d.insert(dish).values({
+      id,
       boardId,
       columnId: firstColumn.id,
       position: sql`(select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${firstColumn.id})`,
@@ -614,12 +664,20 @@ export async function addDish(
       imageFocusY: focus.y,
       placeholder: input.placeholder,
       addedBy: adder.id,
-    })
-    .returning({ id: dish.id, code: dish.code, createdAt: dish.createdAt })
+    }),
+    recordEvents(d, {
+      kind: 'dish_added',
+      board: sql`${boardId}`,
+      dish: sql`${id}`,
+      user: adder.id,
+      details: detailsOf({ source: input.source?.kind ?? null, ...tour && { tour: true as const } }),
+    }, sql``),
+  ])
+  const [created] = await db.select({ code: dish.code, createdAt: dish.createdAt }).from(dish).where(eq(dish.id, id))
   if (!created) throw new Error(`Dish was not added to Board ${boardId}`)
 
   return withPlacement({
-    id: created.id,
+    id,
     code: created.code,
     title: input.title,
     note: input.note,
