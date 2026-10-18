@@ -71,10 +71,10 @@ export async function notifyNewDish(boardId: string, dishId: string, adderId: st
       .select({ userId: pushSubscription.userId, endpoint: pushSubscription.endpoint, p256dh: pushSubscription.p256dh, auth: pushSubscription.auth })
       .from(pushSubscription)
       .where(inArray(pushSubscription.userId, [...news.keys()]))
-    const outcomes = await Promise.all(targets.map(async target => ({
-      endpoint: target.endpoint,
-      outcome: await sendPush(target, pushMessage(...news.get(target.userId)!)),
-    })))
+    const outcomes = await Promise.all(targets.map(async (target) => {
+      const { language, news: theirs } = news.get(target.userId)!
+      return { endpoint: target.endpoint, outcome: await sendPush(target, pushMessage(language, theirs)) }
+    }))
     const gone = outcomes.filter(o => o.outcome === 'gone').map(o => o.endpoint)
     if (gone.length > 0) await db.delete(pushSubscription).where(inArray(pushSubscription.endpoint, gone))
   }
@@ -86,7 +86,7 @@ export async function notifyNewDish(boardId: string, dishId: string, adderId: st
 // What each Member to notify gets told, by user id, and in which language:
 // the Dishes other Members added since that Member last had the Board open
 // (or joined it), and always the new one, whatever the clocks say.
-async function boardNews(boardId: string, dishId: string, adderId: string): Promise<Map<string, [Language, BoardNews]>> {
+async function boardNews(boardId: string, dishId: string, adderId: string): Promise<Map<string, { language: Language, news: BoardNews }>> {
   const [found] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
     .from(board)
@@ -121,10 +121,10 @@ async function boardNews(boardId: string, dishId: string, adderId: string): Prom
     ))
     .orderBy(desc(dish.createdAt), desc(dish.id))
 
-  const news = new Map<string, [Language, BoardNews]>()
+  const news = new Map<string, { language: Language, news: BoardNews }>()
   for (const { recipient, language, browserLanguage, ...added } of rows) {
-    const theirs = news.get(recipient) ?? [recipientLanguage({ language, browserLanguage }), { board: found, dishes: [] }]
-    theirs[1].dishes.push(added)
+    const theirs = news.get(recipient) ?? { language: recipientLanguage({ language, browserLanguage }), news: { board: found, dishes: [] } }
+    theirs.news.dishes.push(added)
     news.set(recipient, theirs)
   }
   return news
