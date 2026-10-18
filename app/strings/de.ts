@@ -587,10 +587,9 @@ export const de = {
     // Dish's title if it's just one, else how many.
     added: (names: string[], count: number, dish: string) => `${someNames(names)} ${names.length === 1 ? 'hat' : 'haben'} ${count === 1 ? dish : dishCount(count)} hinzugefügt`,
     // Its body: the Board (its emoji and name), then the titles of several
-    // Dishes, as many as fit, and how many more.
-    body: (board: string, titles: string[], more: number) => titles.length === 0
-      ? board
-      : `${board}: ${titles.join(', ')}${more === 0 ? '' : ` und ${more} ${more === 1 ? 'weiteres' : 'weitere'}`}`,
+    // Dishes, as many as fit, and how many more. About one Dish, it's only
+    // the Board.
+    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` und ${more} ${more === 1 ? 'weiteres' : 'weitere'}`}`,
   },
   // The Email Digest (#220): switched on in your settings, for all your
   // Boards; one email in the evening listing the Dishes others added since
@@ -602,7 +601,8 @@ export const de = {
     // The email (#325). `board`: the emoji and name of the one Board it's
     // about; null when it's about several.
     subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'auf deinen Boards'}`,
-    // The inbox's preview line: who added them, the latest first.
+    // The inbox's preview line: who added them, in the order the email
+    // lists them.
     preheader: (names: string[]) => `Von ${someNames(names)}. Schau mal rein!`,
     // `name`: the recipient's Username, null before they picked one.
     greeting: (name: string | null) => name ? `Hallo ${name}!` : 'Hallo!',

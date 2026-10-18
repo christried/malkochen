@@ -36,20 +36,24 @@ export function pushMessage({ board, dishes }: BoardNews): PushMessage {
   const boardName = `${board.emoji} ${board.name}`
   return {
     title: de.push.added(adders, dishes.length, only?.title ?? ''),
-    body: only ? de.push.body(boardName, [], 0) : body(boardName, dishes.map(d => d.title)),
+    body: only ? boardName : body(boardName, dishes.map(d => d.title)),
     tag: `board-${board.id}`,
     url: only ? dishPath(board, only) : boardPath(board),
   }
 }
 
-// As many whole titles as fit, then how many more. A first title too long
-// on its own is cut.
+// The Board, then as many whole titles as fit and how many more. A first
+// title too long on its own is cut to fit (by characters, never inside an
+// emoji).
 function body(boardName: string, titles: string[]): string {
   const listing = (shown: number) => de.push.body(boardName, titles.slice(0, shown), titles.length - shown)
   let shown = 0
   while (shown < titles.length && listing(shown + 1).length <= MAX_BODY) shown++
   if (shown > 0) return listing(shown)
-  return de.push.body(boardName, [`${titles[0]!.slice(0, MAX_BODY)} …`], titles.length - 1)
+  const cut = (length: number) => de.push.body(boardName, [`${[...titles[0]!].slice(0, length).join('')} …`], titles.length - 1)
+  let length = MAX_BODY
+  while (length > 1 && cut(length).length > MAX_BODY) length--
+  return cut(length)
 }
 
 // The push services of the browsers malkochen runs in: Chrome and Android

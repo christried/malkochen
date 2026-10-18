@@ -36,8 +36,9 @@ export interface Recipient {
   name: string | null
 }
 
-// One email to `to` about each Board's news (each Board with at least one
-// Dish, newest first), linking back to the app at `origin`.
+// One email to `to` about each Board's news (in the order given, each Board
+// with at least one Dish, its Dishes newest first), linking back to the app
+// at `origin`.
 export function digestEmail(to: Recipient, boards: BoardNews[], origin: string): Email {
   const t = de.emailDigest
   const count = boards.reduce((sum, b) => sum + b.dishes.length, 0)

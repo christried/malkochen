@@ -81,10 +81,16 @@ describe('the message', () => {
       .toBe('🍪 Kochclub: Ein langes Gericht mit vielen Zutaten, Noch ein langes Gericht mit Zutaten und 1 weiteres')
   })
 
-  test('a first title too long on its own is cut, the rest counted', () => {
+  test('a first title too long on its own is cut to fit, the rest counted', () => {
     const { body } = pushMessage({ board: BOARD, dishes: added(['Ada'], ['x'.repeat(300), 'Dal']) })
     expect(body).toMatch(/^🍪 Kochclub: x+ … und 1 weiteres$/)
-    expect(body.length).toBeLessThanOrEqual(150)
+    expect(body.length).toBe(120)
+  })
+
+  test('the cut never splits an emoji', () => {
+    const { body } = pushMessage({ board: BOARD, dishes: added(['Ada'], ['🍕'.repeat(150), 'Dal']) })
+    expect(body).toMatch(/^🍪 Kochclub: (🍕)+ … und 1 weiteres$/u)
+    expect(body.length).toBeLessThanOrEqual(120)
   })
 })
 
