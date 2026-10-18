@@ -1,6 +1,6 @@
-// The languages malkochen speaks (#317). Italian joins with its strings
-// (#327). German stays the source the others are translated from.
-export const LANGUAGES = ['de', 'en'] as const
+// The languages malkochen speaks (#317). German stays the source the others
+// are translated from.
+export const LANGUAGES = ['de', 'en', 'it'] as const
 export type Language = typeof LANGUAGES[number]
 
 // What a user picks under Sprache in Your Settings, stored on the user:

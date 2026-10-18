@@ -37,9 +37,16 @@ test('the weights decide, not the order the header lists them in', () => {
 
 test('languages malkochen doesn\'t speak are passed over for the next one it does', () => {
   expect(chooseLanguage('auto', 'fr-FR,fr;q=0.9,de;q=0.8')).toBe('de')
-  // Italian joins with its strings (#327); until then it's passed over too.
-  expect(chooseLanguage('auto', 'it-CH, en-GB;q=0.8')).toBe('en')
-  expect(chooseLanguage('auto', 'it-CH,it;q=0.9,de;q=0.5')).toBe('de')
+  expect(chooseLanguage('auto', 'es-ES, it;q=0.7, en;q=0.5')).toBe('it')
+})
+
+test('Italian, from Italy or Switzerland, gets Italian (#327)', () => {
+  expect(chooseLanguage('auto', 'it-IT,it;q=0.9,en;q=0.8')).toBe('it')
+  expect(chooseLanguage('auto', 'it-CH, en-GB;q=0.8')).toBe('it')
+  expect(chooseLanguage('auto', 'de-CH;q=0.4, it-CH;q=0.9')).toBe('it')
+  expect(chooseLanguage('auto', ['it-CH', 'de-CH'])).toBe('it')
+  expect(chooseLanguage('it', 'de-DE')).toBe('it')
+  expect(chooseLanguage('de', 'it-IT')).toBe('de')
 })
 
 test('with none malkochen speaks, it is English', () => {
