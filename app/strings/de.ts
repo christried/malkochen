@@ -543,6 +543,7 @@ export const de = {
       auto: 'Automatisch',
       de: 'Deutsch',
       en: 'English',
+      it: 'Italiano',
     } satisfies Record<LanguageChoice, string>,
     languageFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     signOut: 'Abmelden',

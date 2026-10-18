@@ -471,6 +471,7 @@ export const en: Strings = {
       auto: 'Automatic',
       de: 'Deutsch',
       en: 'English',
+      it: 'Italiano',
     },
     languageFailed: failed,
     signOut: 'Sign out',

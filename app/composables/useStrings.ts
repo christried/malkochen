@@ -1,8 +1,9 @@
 import type { Language } from '~~/shared/language'
 import { de, type Strings } from '~/strings/de'
 import { en } from '~/strings/en'
+import { it } from '~/strings/it'
 
-const STRINGS: Record<Language, Strings> = { de, en }
+const STRINGS: Record<Language, Strings> = { de, en, it }
 
 // The single entry point for UI text: the strings of the language shown
 // right now (useLanguage). Read as `t.section.key` while rendering (in a
