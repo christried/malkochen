@@ -6,7 +6,7 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // Your own settings (PRD stories 73–75), in a sheet over the Board (#210),
 // from 768px on its right edge (#283):
 // your Username, the Google account you're signed in with and your Profile
-// Picture, Darstellung, a place kept for Sprache (German only for now), the
+// Picture, Darstellung, Sprache (LanguagePicker), the
 // Board's keyboard shortcuts (where there's a keyboard and mouse),
 // "Rundgang starten", which starts the Tour again (`startTour`: the Board
 // closes the sheet and starts it), and signing out. Opened by the cogwheel
@@ -313,10 +313,7 @@ function removePicture() {
         >
           {{ t.userSettings.language }}
         </h3>
-        <div class="flex flex-col gap-1 rounded-card bg-surface-muted p-4">
-          <span class="text-body">{{ t.userSettings.german }}</span>
-          <span class="text-small text-text-muted">{{ t.userSettings.moreLanguages }}</span>
-        </div>
+        <LanguagePicker />
       </section>
 
       <!-- Only where there's a keyboard and mouse (scoped style below). -->

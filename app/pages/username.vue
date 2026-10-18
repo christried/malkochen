@@ -27,8 +27,8 @@ async function submit() {
 
 const fieldId = useId()
 const hintId = useId()
-const headline = confirming ? t.username.confirmHeadline : t.username.pickHeadline
-useHead({ title: () => `${headline} · ${t.app.name}` })
+const headline = computed(() => confirming ? t.username.confirmHeadline : t.username.pickHeadline)
+useHead({ title: () => `${headline.value} · ${t.app.name}` })
 </script>
 
 <template>

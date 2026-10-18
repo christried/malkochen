@@ -38,7 +38,7 @@ const { status: lookupStatus, result, canonicalLink, tooMany: lookupTooMany } = 
 const title = ref('')
 const note = ref('')
 // The note field's made-up example, a new one each time the sheet opens.
-const noteExample = useExamplePrompt(t.dishNote.examples, t.dishNote.prompt)
+const noteExample = useExamplePrompt(() => t.dishNote.examples, example => t.dishNote.prompt(example))
 // The Placeholder Image goes by the title, else the link (handoff
 // illustrations.json autoPick), until the Member picks one.
 const pickedPlaceholder = ref<Placeholder | null>(null)

@@ -19,7 +19,6 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css', '~/assets/css/loops.css'],
   app: {
     head: {
-      htmlAttrs: { lang: 'de' },
       title: 'malkochen',
       // Installable (PRD story 7): the manifest and icons are the handoff's
       // assets/icon/. Android builds its splash from the manifest; iOS shows

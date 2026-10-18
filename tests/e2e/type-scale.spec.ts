@@ -57,11 +57,10 @@ function sectionHeadings(page: Page) {
   return page.getByRole('heading', { level: 2 })
 }
 
-test('user settings: the email and the languages note in `small`, the sections under one heading style', async ({ page }) => {
+test('user settings: the email in `small`, the sections under one heading style', async ({ page }) => {
   await signIn(page, MARIE, { name: 'Marie' })
   const sheet = await openUserSettings(page)
   await expectSmall(sheet.getByText(MARIE))
-  await expectSmall(sheet.getByText('Weitere Sprachen kommen später.'))
   // Under the sheet's own title.
   const headings = sheet.getByRole('heading', { level: 3 })
   await expect(headings).toHaveText(['Konto', 'Benachrichtigungen', 'Darstellung', 'Sprache', 'Tastenkürzel', 'Rundgang'])

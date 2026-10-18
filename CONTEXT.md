@@ -19,7 +19,7 @@ One Board's Columns, Members and Invite Link, which its Members change for every
 _Avoid_: Board config, board options
 
 **Your Settings**:
-One user's own Username, Profile Picture, notifications, Darstellung and shortcuts, the same on every Board ("Deine Einstellungen").
+One user's own Username, Profile Picture, notifications, Darstellung, Sprache and shortcuts, the same on every Board ("Deine Einstellungen").
 _Avoid_: User settings, account, profile
 
 **Tour**:

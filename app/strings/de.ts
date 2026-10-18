@@ -1,37 +1,29 @@
-// Every piece of UI text lives here. Components read it through useStrings(),
-// so adding English later means adding an `en.ts` of type `Strings` and
-// choosing between them in useStrings() -- no component changes. Its types
-// come by relative paths: the tests read it too, and their typecheck
+// Every piece of UI text lives here, in German, the source the other
+// languages are translated from (en.ts). Each of them is of the type
+// `Strings`, so one missing a key fails the type check. Components read the
+// current language's through useStrings(). Its types come by relative
+// paths: the tests read it too, and their typecheck
 // (.nuxt/tsconfig.node.json) has no `~` aliases.
 import type { AchievementLevel } from '../utils/achievement'
+import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { intlFor } from './intl'
 
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-// "3. Sept.", with the year only when it isn't this year. Always in German
-// time, so the server and the browser render the same day.
-function addedDate(date: Date): string {
-  const zone = 'Europe/Berlin'
-  const year = (d: Date) => new Intl.DateTimeFormat('de-DE', { year: 'numeric', timeZone: zone }).format(d)
-  return new Intl.DateTimeFormat('de-DE', {
-    day: 'numeric',
-    month: 'short',
-    year: year(date) === year(new Date()) ? undefined : 'numeric',
-    timeZone: zone,
-  }).format(date)
-}
+const { number, plural, day: addedDate, month: monthAndYear } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
-  return count === 1 ? '1 Gericht' : `${count} Gerichte`
+  return `${number(count)} ${plural(count, { one: 'Gericht', other: 'Gerichte' })}`
 }
 
 // "ließ" for one Dish, "ließen" for several.
 function lassenPast(count: number): string {
-  return count === 1 ? 'ließ' : 'ließen'
+  return plural(count, { one: 'ließ', other: 'ließen' })
 }
 
 // "Ada", "Ada und Linus", "Ada, Linus und Grace".
@@ -42,17 +34,12 @@ function nameList(names: string[]): string {
 // Like nameList, but at most three names: "Ada, Linus und Grace", then
 // "Ada, Linus und 2 andere" (outside the app, where space is short).
 function someNames(names: string[]): string {
-  return names.length <= 3 ? nameList(names) : `${names.slice(0, 2).join(', ')} und ${names.length - 2} andere`
+  return names.length <= 3 ? nameList(names) : `${names.slice(0, 2).join(', ')} und ${number(names.length - 2)} andere`
 }
 
 // "1 neues Gericht", "3 neue Gerichte".
 function newDishCount(count: number): string {
-  return count === 1 ? '1 neues Gericht' : `${count} neue Gerichte`
-}
-
-// "März 2026", in German time like addedDate.
-function monthAndYear(date: Date): string {
-  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' }).format(date)
+  return `${number(count)} ${plural(count, { one: 'neues Gericht', other: 'neue Gerichte' })}`
 }
 
 export const de = {
@@ -200,7 +187,7 @@ export const de = {
       'So gut!',
       'Klasse!',
     ],
-    cookedCount: (count: number) => `${count}× gekocht`,
+    cookedCount: (count: number) => `${number(count)}× gekocht`,
     addNote: 'Notiz hinzufügen',
     cookFailed: (title: string) => `„${title}“ ließ sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,
     uncookFailed: (title: string) => `„${title}“ ließ sich nicht zurückholen.`,
@@ -209,12 +196,12 @@ export const de = {
   // click on desktop, and the bar at the bottom.
   selection: {
     label: 'Auswahl',
-    count: (count: number) => `${count} ausgewählt`,
+    count: (count: number) => `${number(count)} ausgewählt`,
     move: 'Verschieben',
     delete: 'Löschen',
     close: 'Auswahl beenden',
     moved: (count: number, column: string) => `${dishCount(count)} nach „${column}“ verschoben`,
-    movedToBoard: (count: number, board: string, column: string) => `${dishCount(count)} ${count === 1 ? 'ist' : 'sind'} jetzt in ${board} · ${column}`,
+    movedToBoard: (count: number, board: string, column: string) => `${dishCount(count)} ${plural(count, { one: 'ist', other: 'sind' })} jetzt in ${board} · ${column}`,
     deleted: (count: number) => `${dishCount(count)} gelöscht`,
     moveFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht verschieben. Versuch es gleich noch mal.`,
     deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht löschen. Versuch es gleich noch mal.`,
@@ -229,7 +216,7 @@ export const de = {
     saving: 'Speichert …',
     close: 'Schließen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
-    summary: (count: number, last: Date) => `${count}× gekocht · zuletzt ${addedDate(last)}`,
+    summary: (count: number, last: Date) => `${number(count)}× gekocht · zuletzt ${addedDate(last)}`,
     date: (date: Date) => addedDate(date),
     by: (name: string) => `von ${name}`,
     addNote: '+ Notiz',
@@ -250,14 +237,14 @@ export const de = {
       regular: 'Stammgericht',
       classic: 'Klassiker',
     } satisfies Record<AchievementLevel, string>,
-    count: (count: number) => `${count}×`,
+    count: (count: number) => `${number(count)}×`,
     // "Wird Liebling: 4× gekocht, noch 1× bis Stammgericht".
     label: (level: string, count: number, next: { level: string, left: number } | null) =>
-      `${level}: ${count}× gekocht${next ? `, noch ${next.left}× bis ${next.level}` : ''}`,
+      `${level}: ${number(count)}× gekocht${next ? `, noch ${number(next.left)}× bis ${next.level}` : ''}`,
   },
   milestone: {
     headline: 'Klassiker!',
-    body: (title: string, count: number) => `${title} ist jetzt ein Klassiker: ${count}× gekocht.`,
+    body: (title: string, count: number) => `${title} ist jetzt ein Klassiker: ${number(count)}× gekocht.`,
     close: 'Überspringen',
   },
   boardCreated: {
@@ -384,7 +371,7 @@ export const de = {
     switcher: (board: string, count: number | null) => count === null ? `Board wechseln, jetzt: ${board}` : `Board wechseln, jetzt: ${board}, ${dishCount(count)}`,
     // How many Dishes a Board holds, after its name in the header and the
     // switcher: „Kochclub · 23“.
-    count: (count: number) => `· ${count}`,
+    count: (count: number) => `· ${number(count)}`,
     // The switcher's Tooltip: it shows the Board's name itself.
     switch: 'Board wechseln',
     label: 'Deine Boards',
@@ -551,8 +538,13 @@ export const de = {
     close: 'Einstellungen schließen',
     account: 'Konto',
     language: 'Sprache',
-    german: 'Deutsch',
-    moreLanguages: 'Weitere Sprachen kommen später.',
+    // Each language named in itself, the same in every language.
+    languages: {
+      auto: 'Automatisch',
+      de: 'Deutsch',
+      en: 'English',
+    } satisfies Record<LanguageChoice, string>,
+    languageFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     signOut: 'Abmelden',
     // Your own Profile Picture, shown instead of your Google photo.
     pickPicture: 'Eigenes Bild hochladen',
@@ -585,11 +577,11 @@ export const de = {
     // The notification, one per Board (#325). Its title: who added the
     // Dishes since you last opened it, the latest adder first, and the
     // Dish's title if it's just one, else how many.
-    added: (names: string[], count: number, dish: string) => `${someNames(names)} ${names.length === 1 ? 'hat' : 'haben'} ${count === 1 ? dish : dishCount(count)} hinzugefügt`,
+    added: (names: string[], count: number, dish: string) => `${someNames(names)} ${plural(names.length, { one: 'hat', other: 'haben' })} ${count === 1 ? dish : dishCount(count)} hinzugefügt`,
     // Its body: the Board (its emoji and name), then the titles of several
     // Dishes, as many as fit, and how many more. About one Dish, it's only
     // the Board.
-    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` und ${more} ${more === 1 ? 'weiteres' : 'weitere'}`}`,
+    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` und ${number(more)} ${plural(more, { one: 'weiteres', other: 'weitere' })}`}`,
   },
   // The Email Digest (#220): switched on in your settings, for all your
   // Boards; one email in the evening listing the Dishes others added since
@@ -668,7 +660,7 @@ export const de = {
     // (onto its tab on phones) or through the card's ⋯.
     moveDish: {
       title: (column: string) => `Zieh es auf „${column}“`,
-      text: (phone: boolean) => phone
+      text: (phone: boolean): string => phone
         ? 'Halt die Karte gedrückt und zieh sie oben auf die Spalte. Oder über ⋯ → „Verschieben nach…“.'
         : 'Zieh die Karte rüber in die Spalte. Oder über ⋯ → „Verschieben nach…“.',
       menu: 'Tipp auf „Verschieben nach…“.',

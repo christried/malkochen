@@ -1,6 +1,8 @@
 import { afterEach, expect, test, vi } from 'vitest'
+import { ref } from 'vue'
 import { useExamplePrompt } from '../../app/composables/useExamplePrompt'
 import { de } from '../../app/strings/de'
+import { en } from '../../app/strings/en'
 
 // A field's prompt with a made-up example in it, a new one each time it shows
 // (a Dish's note, a new Board's name, a new Column's name).
@@ -15,13 +17,13 @@ function eachInTurn(count: number) {
 }
 
 test('a prompt starts on its first example, on the server as in the browser', () => {
-  const column = useExamplePrompt(de.settings.newColumnExamples, de.settings.newColumnPrompt)
+  const column = useExamplePrompt(() => de.settings.newColumnExamples, de.settings.newColumnPrompt)
 
   expect(column.prompt.value).toBe('z. B. „Wochenende“')
 })
 
 test('a new Column’s name field goes through its ten examples', () => {
-  const column = useExamplePrompt(de.settings.newColumnExamples, de.settings.newColumnPrompt)
+  const column = useExamplePrompt(() => de.settings.newColumnExamples, de.settings.newColumnPrompt)
   eachInTurn(10)
 
   const shown = Array.from({ length: 10 }, () => {
@@ -44,7 +46,7 @@ test('a new Column’s name field goes through its ten examples', () => {
 })
 
 test('picking another can reach the last example and never leaves the list', () => {
-  const note = useExamplePrompt(['eins', 'zwei', 'drei'], example => example)
+  const note = useExamplePrompt(() => ['eins', 'zwei', 'drei'], example => example)
 
   vi.spyOn(Math, 'random').mockReturnValue(0.999999)
   note.pickAnother()
@@ -53,4 +55,18 @@ test('picking another can reach the last example and never leaves the list', () 
   vi.spyOn(Math, 'random').mockReturnValue(0)
   note.pickAnother()
   expect(note.prompt.value).toBe('eins')
+})
+
+test('in another language, the prompt shows the same example in its words', () => {
+  const strings = ref(de)
+  const column = useExamplePrompt(() => strings.value.settings.newColumnExamples, example => strings.value.settings.newColumnPrompt(example))
+  eachInTurn(10)
+  column.pickAnother()
+  column.pickAnother()
+  column.pickAnother()
+  expect(column.prompt.value).toBe('z. B. „Für Gäste“')
+
+  strings.value = en
+
+  expect(column.prompt.value).toBe('e.g. “For guests”')
 })

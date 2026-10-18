@@ -13,7 +13,7 @@ const t = useStrings()
 const boardModule = useBoardModule()
 const { name, adding, canAdd, submit } = useNewColumn(columnName => boardModule.addColumn(columnName), () => emit('failed'))
 // The name field's made-up example, a new one each time the lane opens.
-const nameExample = useExamplePrompt(t.settings.newColumnExamples, t.settings.newColumnPrompt)
+const nameExample = useExamplePrompt(() => t.settings.newColumnExamples, example => t.settings.newColumnPrompt(example))
 
 const open = ref(false)
 const form = useTemplateRef<HTMLFormElement>('form')

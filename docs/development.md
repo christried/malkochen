@@ -113,7 +113,14 @@ on the migrated schema until the new one is promoted.
 - Motion: use the `--dur-*` / `--ease-*` tokens (`duration-*` / `ease-*`
   utilities). Under `prefers-reduced-motion` they collapse (fades keep 200ms),
   and a global rule in `main.css` stops keyframe animations.
-- UI text: all of it lives in `app/strings/de.ts`, read through `useStrings()`.
+- UI text: all of it lives in `app/strings/`, German (`de.ts`, the source) and
+  English (`en.ts`), each of the type `Strings`, so a missing key fails the
+  type check. Components read the current language's through `useStrings()`:
+  the user's choice under Sprache, else the browser's languages
+  (`shared/language.ts`; Accept-Language on the server, so the first render
+  is already right). Counts, plurals and dates go through `Intl`
+  (`app/strings/intl.ts`). The browser tests run in a German browser
+  (`locale: 'de-DE'` in `playwright.config.ts`).
 - Public assets: `public/icons/` (app icons and manifest),
   `public/placeholders/<dish>-{light,dark}.svg` (the Placeholder Images), and
   `public/clips/<clip>[-{light,dark}].svg` (the state, system and celebration
