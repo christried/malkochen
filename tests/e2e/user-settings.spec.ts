@@ -55,8 +55,10 @@ test('the cogwheel in the Board\'s header opens your settings over the Board, an
   await expect(account.getByText('Jean', { exact: true })).toBeVisible()
   await expect(account.getByText(JEAN)).toBeVisible()
   await expect(account.locator(`img[src="${PHOTO}"]`)).toBeVisible()
-  // German only for now: the language setting has its place but no choice yet.
-  await expect(sheet.getByRole('region', { name: 'Sprache' }).getByText('Deutsch')).toBeVisible()
+  // Sprache: Automatisch (the browser's language) until another is picked
+  // (languages.spec.ts).
+  const language = sheet.getByRole('region', { name: 'Sprache' }).getByRole('radiogroup', { name: 'Sprache' })
+  await expect(language.getByRole('radio', { name: 'Automatisch' })).toHaveAttribute('aria-checked', 'true')
 
   // Closed, focus is back on the cogwheel.
   await sheet.getByRole('button', { name: 'Einstellungen schließen' }).click()

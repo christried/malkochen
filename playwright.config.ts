@@ -19,6 +19,10 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: E2E_ORIGIN,
+    // A German browser (navigator.languages, Accept-Language), so malkochen
+    // speaks German with "Automatisch", as the specs expect. languages.spec.ts
+    // tries others.
+    locale: 'de-DE',
     // page.route can't see requests that pass through a service worker, and
     // many tests stub the API that way. offline.spec.ts lets it run.
     serviceWorkers: 'block',

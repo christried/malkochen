@@ -14,7 +14,7 @@ const saving = ref(false)
 const failed = ref(false)
 const nameId = useId()
 // The name field's made-up example, a new one each time the sheet opens.
-const nameExample = useExamplePrompt(t.boards.nameExamples, t.boards.namePrompt)
+const nameExample = useExamplePrompt(() => t.boards.nameExamples, example => t.boards.namePrompt(example))
 const justCreated = useJustCreatedBoard()
 
 // Every opening starts from an empty form.

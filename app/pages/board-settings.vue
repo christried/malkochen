@@ -109,7 +109,7 @@ async function saveOrder(before: ColumnRow[]) {
 // A new Column, at the end; the same as the Board's add lane on desktop. Its
 // name field's made-up example is a new one each time the page opens, and
 // once a Column is added.
-const newColumnExample = useExamplePrompt(t.settings.newColumnExamples, t.settings.newColumnPrompt)
+const newColumnExample = useExamplePrompt(() => t.settings.newColumnExamples, example => t.settings.newColumnPrompt(example))
 onMounted(newColumnExample.pickAnother)
 const { name: newColumn, canAdd: canAddColumn, submit: addColumn } = useNewColumn(async (columnName) => {
   const added = await postColumn(id.value, columnName)

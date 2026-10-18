@@ -11,6 +11,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // API in-process with the visitor's cookies.
   const { data: me, error } = await useFetch('/api/me', { key: `me:${to.fullPath}` })
   const status = error.value?.statusCode
+  // The language follows the signed-in user's choice; signed out, the
+  // browser's languages alone. A failed check (offline) changes nothing.
+  if (me.value) useLanguageChoice().value = me.value.language
+  else if (status === 401) useLanguageChoice().value = 'auto'
 
   if (to.path.startsWith('/invite/')) return
   if (to.path === '/login') {

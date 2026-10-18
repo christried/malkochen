@@ -10,6 +10,7 @@ import type { NuxtError } from '#app'
 const props = defineProps<{ error: NuxtError }>()
 
 useThemeAttribute()
+useLanguageAttribute()
 const t = useStrings()
 const notFound = computed(() => props.error.statusCode === 404)
 
