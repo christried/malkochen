@@ -101,6 +101,9 @@ test('each row of the switcher has a Board Settings button for its Board: it ope
   // Daheim is still the Board you were on: back is Daheim.
   await page.goBack()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('🌱 Daheim')
+  // The skeleton names the Board already, and its switcher opens nothing:
+  // the Board is back once the skeleton has gone (as after #243).
+  await expect(page.locator('[data-board-skeleton]')).toHaveCount(0)
 
   // Leaving Board Settings lands on the Board they were for.
   await switcher(page).click()

@@ -27,7 +27,7 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
     ...rest,
     source: source ? sourceOf(source) : null,
     imageUrl: stored,
-  })
+  }, { tour })
   if (!created) throw boardNotFound()
   if (!tour) await notifyNewDish(boardId, created.id, user.id)
   setResponseStatus(event, 201)

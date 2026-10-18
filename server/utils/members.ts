@@ -2,6 +2,7 @@ import { and, eq, exists, not, sql, type SQL } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
 import { board, membership } from '../db/schema'
 import { membershipOf } from './boards'
+import { boardEvent, detailsOf, withEvents, type EventValues } from './events'
 
 // Members and the Owner (CONTEXT.md): any Member but the Owner can leave; the
 // Owner removes Members, hands ownership over and deletes the Board. A Board
@@ -22,11 +23,11 @@ export async function removeMember(boardId: string, userId: string, memberId: st
   if (!found) return null
   if (memberId === userId) {
     if (found.isOwner) return 'owner'
-    return await deleteMembership(boardId, memberId) ? 'removed' : 'not-member'
+    return await deleteMembership(boardId, memberId, boardEvent('member_left', userId)) ? 'removed' : 'not-member'
   }
   if (!found.isOwner) return 'forbidden'
   // Checked again as it deletes, in case ownership was handed over meanwhile.
-  return await deleteMembership(boardId, memberId, exists(ownerOf(boardId, userId))) ? 'removed' : 'not-member'
+  return await deleteMembership(boardId, memberId, boardEvent('member_removed', userId, detailsOf({ member: memberId })), exists(ownerOf(boardId, userId))) ? 'removed' : 'not-member'
 }
 
 // Why ownership couldn't be handed over: the user isn't the Owner
@@ -82,21 +83,25 @@ export async function deleteBoard(boardId: string, userId: string): Promise<'del
   if (!found) return null
   if (!found.isOwner) return 'forbidden'
   // Checked again as it deletes, in case ownership was handed over meanwhile.
-  const deleted = await db
-    .delete(board)
-    .where(and(eq(board.id, boardId), exists(ownerOf(boardId, userId))))
-    .returning({ id: board.id })
-  return deleted.length > 0 ? 'deleted' : 'forbidden'
+  const { rows } = await withEvents(
+    db,
+    db.delete(board).where(and(eq(board.id, boardId), exists(ownerOf(boardId, userId)))).returning({ id: board.id }),
+    { ...boardEvent('board_deleted', userId), board: sql`changed.id` },
+  )
+  return rows.length > 0 ? 'deleted' : 'forbidden'
 }
 
-// Deletes a membership that isn't the Owner's, only `where` that holds.
-// Whether there was one.
-async function deleteMembership(boardId: string, memberId: string, where?: SQL): Promise<boolean> {
-  const deleted = await db
-    .delete(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), not(membership.isOwner), where))
-    .returning({ userId: membership.userId })
-  return deleted.length > 0
+// Deletes a membership that isn't the Owner's, only `where` that holds,
+// and records it as `event` says. Whether there was one.
+async function deleteMembership(boardId: string, memberId: string, event: EventValues, where?: SQL): Promise<boolean> {
+  const { rows } = await withEvents(
+    db,
+    db.delete(membership)
+      .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), not(membership.isOwner), where))
+      .returning({ boardId: membership.boardId }),
+    event,
+  )
+  return rows.length > 0
 }
 
 // The user's membership of the Board if they are its Owner.

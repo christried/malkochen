@@ -147,7 +147,9 @@ export async function deleteColumn(columnId: string, userId: string, moveTo?: st
   await runAtomic(d => [
     lockColumns(d, found.boardId),
     // Above everything in the target, deleted Dishes included, so a Dish
-    // brought back later doesn't share a place with a moved one.
+    // brought back later doesn't share a place with a moved one. Recorded
+    // as no move in the event log (#331): no Member moved these Dishes,
+    // they went with their Column.
     d.execute(sql`
       with moving as (
         select id, row_number() over (order by position, created_at desc, id desc) as rank, count(*) over () as n

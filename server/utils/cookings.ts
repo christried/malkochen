@@ -1,8 +1,9 @@
-import { and, desc, eq, gt, inArray, isNull, notExists, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNotNull, isNull, notExists, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db'
 import { cooking, dish, membership, user } from '../db/schema'
 import type { DishAdder } from './dishes'
+import { cookingEvent, withEvents } from './events'
 import { pictureOf } from './people'
 
 // One occasion a Dish was cooked (CONTEXT.md: Cooking), as its Cooking
@@ -120,14 +121,24 @@ export async function noteCooking(cookingId: string, userId: string, note: strin
 // Deletes a Cooking from the Cooking History (PRD story 48): a soft delete,
 // so it can be restored.
 export async function deleteCooking(cookingId: string, userId: string): Promise<boolean> {
-  const deleted = await db.update(cooking).set({ deletedAt: new Date() }).where(onMembersDish(cookingId, userId)).returning({ id: cooking.id })
-  return deleted.length > 0
+  const { rows } = await withEvents(
+    db,
+    db.update(cooking).set({ deletedAt: new Date() }).where(onMembersDish(cookingId, userId)).returning({ id: cooking.id, dishId: cooking.dishId }),
+    cookingEvent('cooking_deleted', userId),
+  )
+  return rows.length > 0
 }
 
 // Undoes deleting a Cooking. Restoring one that isn't deleted changes nothing.
 export async function restoreCooking(cookingId: string, userId: string): Promise<CookingView | null> {
   const target = onMembersDish(cookingId, userId, { includingDeleted: true })
-  await db.update(cooking).set({ deletedAt: null }).where(target)
+  await withEvents(
+    db,
+    db.update(cooking).set({ deletedAt: null }).where(target).returning({ id: cooking.id, dishId: cooking.dishId }),
+    cookingEvent('cooking_restored', userId),
+    // Recorded only for one that was deleted.
+    { earlier: sql`select ${cooking.id} from ${cooking} where ${and(target, isNotNull(cooking.deletedAt))}` },
+  )
   const [row] = await selectCookings().where(target)
   return row ? toView(row) : null
 }

@@ -176,6 +176,13 @@
       "when": 1792337340474,
       "tag": "0024_browser_language",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792351758843,
+      "tag": "0025_event_log",
+      "breakpoints": true
     }
   ]
 }

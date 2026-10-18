@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
-import { bigint, boolean, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import type { EventDetails, EventKind } from '../utils/events'
+import { bigint, boolean, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
 // ./migrations. Every timestamp is `timestamptz`, so values never depend on the
@@ -283,3 +284,23 @@ export const cooking = pgTable('cooking', {
   // recorded it removes it for good instead.
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, t => [index('cooking_dish_id_idx').on(t.dishId, t.cookedAt)])
+
+// ---------------------------------------------------------------------------
+// The event log (#331): what happens on Boards, one row per event, for the
+// Operator's Admin Page to count. Written in the same transaction as the
+// change it records (server/utils/events.ts), only appended to, and kept
+// indefinitely, so it holds no content: never a title, note, name or link,
+// only when, which kind, the ids involved and a few non-textual details.
+// No foreign keys, so an event outlives the Board, Dish or account it names.
+
+export const eventLog = pgTable('event_log', {
+  // In the order the events were recorded.
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+  kind: text('kind').$type<EventKind>().notNull(),
+  boardId: uuid('board_id').notNull(),
+  dishId: uuid('dish_id'),
+  // Who did it.
+  userId: text('user_id'),
+  details: jsonb('details').$type<EventDetails>(),
+}, t => [index('event_log_at_idx').on(t.at)])
