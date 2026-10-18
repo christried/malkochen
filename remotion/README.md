@@ -43,6 +43,10 @@ npm run brag:studio   # or look at the public one in Studio first
 npx remotion ffmpeg -y -i out/brag/public/brag.mp4 -s 720x1280 -c:v libx264 -preset slow -crf 22 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart ../docs/media/malkochen.mp4
 ```
 
+The public version's full render is kept in the repo as
+`docs/media/malkochen-1080p.mp4` (with its poster), so it survives `out/`
+being ignored. The friends version is not: it shows a real Board.
+
 - **`src/brag/timeline.ts`** is the beat grid everything shares: the song's
   tempo (115 BPM) and first beat, the excerpt the video plays (from its beat
   9, two bars before the groove drops in, to the end of its one-bar break
