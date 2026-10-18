@@ -36,20 +36,55 @@ describe('the push services a subscription may be on', () => {
 })
 
 describe('the message', () => {
-  test('a long list of Dish titles is cut, so the push stays small', () => {
-    const dishes = Array.from({ length: 40 }, (_, i) => ({ title: `Ein ziemlich langes Gericht Nummer ${i}`, code: `c${i}`, addedBy: 'Ada' }))
+  // The Dishes, newest first, the i-th added by addedBy[i] (else by the first).
+  const added = (addedBy: string[], titles = addedBy.map((_, i) => `Gericht ${i}`)) =>
+    titles.map((title, i) => ({ title, code: `c${i}`, addedBy: addedBy[i] ?? addedBy[0]! }))
 
-    const { title, body, url } = pushMessage({ board: BOARD, dishes })
+  test('one Dish: who added it and its title, the Board below, and it opens the Dish', () => {
+    const { title, body, url } = pushMessage({ board: BOARD, dishes: added(['Ada'], ['Linsen-Dal']) })
 
-    expect(title).toBe('Ada hat 40 Gerichte zu 🍪 Kochclub hinzugefügt')
-    expect(body.length).toBeLessThanOrEqual(122)
-    expect(body).toMatch(/^Ein ziemlich langes Gericht Nummer 0, Ein ziemlich langes Gericht Nummer 1, .* …$/)
+    expect(title).toBe('Ada hat Linsen-Dal hinzugefügt')
+    expect(body).toBe('🍪 Kochclub')
+    expect(url).toBe('/b/kochclub/linsen-dal-c0')
+  })
+
+  test('several Dishes: how many, then the Board and their titles, and it opens the Board', () => {
+    const { title, body, url } = pushMessage({ board: BOARD, dishes: added(['Ada'], ['Linsen-Dal', 'Cremige Pilzpasta', 'Ofengemüse mit Tahini']) })
+
+    expect(title).toBe('Ada hat 3 Gerichte hinzugefügt')
+    expect(body).toBe('🍪 Kochclub: Linsen-Dal, Cremige Pilzpasta, Ofengemüse mit Tahini')
     expect(url).toBe('/b/kochclub')
   })
 
-  test('three or more adders are listed, the last joined with „und"', () => {
-    const dishes = ['Ada', 'Linus', 'Grace', 'Ada'].map((addedBy, i) => ({ title: `Gericht ${i}`, code: `c${i}`, addedBy }))
-    expect(pushMessage({ board: BOARD, dishes }).title).toBe('Ada, Linus und Grace haben 4 Gerichte zu 🍪 Kochclub hinzugefügt')
+  test('up to three adders are all named, the latest first and the last joined with „und"', () => {
+    expect(pushMessage({ board: BOARD, dishes: added(['Linus', 'Ada']) }).title).toBe('Linus und Ada haben 2 Gerichte hinzugefügt')
+    expect(pushMessage({ board: BOARD, dishes: added(['Ada', 'Linus', 'Grace', 'Ada']) }).title).toBe('Ada, Linus und Grace haben 4 Gerichte hinzugefügt')
+  })
+
+  test('four or more adders: the latest two are named, the others counted', () => {
+    expect(pushMessage({ board: BOARD, dishes: added(['Grace', 'Linus', 'Kati', 'Ada', 'Grace']) }).title)
+      .toBe('Grace, Linus und 2 andere haben 5 Gerichte hinzugefügt')
+  })
+
+  test('a long list of titles ends with how many more, so the push stays small and no title is cut', () => {
+    const titles = Array.from({ length: 40 }, (_, i) => `Ein ziemlich langes Gericht Nummer ${i}`)
+
+    const { title, body } = pushMessage({ board: BOARD, dishes: added(['Ada'], titles) })
+
+    expect(title).toBe('Ada hat 40 Gerichte hinzugefügt')
+    expect(body).toBe('🍪 Kochclub: Ein ziemlich langes Gericht Nummer 0, Ein ziemlich langes Gericht Nummer 1 und 38 weitere')
+  })
+
+  test('one more is „1 weiteres"', () => {
+    const titles = ['Ein langes Gericht mit vielen Zutaten', 'Noch ein langes Gericht mit Zutaten', 'Ein drittes ziemlich langes Gericht']
+    expect(pushMessage({ board: BOARD, dishes: added(['Ada'], titles) }).body)
+      .toBe('🍪 Kochclub: Ein langes Gericht mit vielen Zutaten, Noch ein langes Gericht mit Zutaten und 1 weiteres')
+  })
+
+  test('a first title too long on its own is cut, the rest counted', () => {
+    const { body } = pushMessage({ board: BOARD, dishes: added(['Ada'], ['x'.repeat(300), 'Dal']) })
+    expect(body).toMatch(/^🍪 Kochclub: x+ … und 1 weiteres$/)
+    expect(body.length).toBeLessThanOrEqual(150)
   })
 })
 

@@ -39,6 +39,17 @@ function nameList(names: string[]): string {
   return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} und ${names.at(-1)}`
 }
 
+// Like nameList, but at most three names: "Ada, Linus und Grace", then
+// "Ada, Linus und 2 andere" (outside the app, where space is short).
+function someNames(names: string[]): string {
+  return names.length <= 3 ? nameList(names) : `${names.slice(0, 2).join(', ')} und ${names.length - 2} andere`
+}
+
+// "1 neues Gericht", "3 neue Gerichte".
+function newDishCount(count: number): string {
+  return count === 1 ? '1 neues Gericht' : `${count} neue Gerichte`
+}
+
 // "März 2026", in German time like addedDate.
 function monthAndYear(date: Date): string {
   return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' }).format(date)
@@ -571,9 +582,15 @@ export const de = {
     blocked: 'Dein Browser blockiert Benachrichtigungen von malkochen. Erlaube sie in den Website-Einstellungen, dann kannst du sie hier einschalten.',
     unsupported: 'Dieser Browser kann keine Push-Benachrichtigungen empfangen.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
-    // The notification, one per Board: who added how many Dishes since you
-    // last opened it, the latest adder first. `board` is its emoji and name.
-    added: (names: string[], count: number, board: string) => `${nameList(names)} ${names.length === 1 ? 'hat' : 'haben'} ${dishCount(count)} zu ${board} hinzugefügt`,
+    // The notification, one per Board (#325). Its title: who added the
+    // Dishes since you last opened it, the latest adder first, and the
+    // Dish's title if it's just one, else how many.
+    added: (names: string[], count: number, dish: string) => `${someNames(names)} ${names.length === 1 ? 'hat' : 'haben'} ${count === 1 ? dish : dishCount(count)} hinzugefügt`,
+    // Its body: the Board (its emoji and name), then the titles of several
+    // Dishes, as many as fit, and how many more.
+    body: (board: string, titles: string[], more: number) => titles.length === 0
+      ? board
+      : `${board}: ${titles.join(', ')}${more === 0 ? '' : ` und ${more} ${more === 1 ? 'weiteres' : 'weitere'}`}`,
   },
   // The Email Digest (#220): switched on in your settings, for all your
   // Boards; one email in the evening listing the Dishes others added since
@@ -582,12 +599,20 @@ export const de = {
     toggle: 'Tägliche E-Mail',
     hint: 'Abends an deine E-Mail-Adresse, wenn andere neue Gerichte zu deinen Boards hinzugefügt haben. Für alle deine Geräte.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
-    subject: (count: number) => `Neu auf deinen Boards: ${dishCount(count)}`,
-    heading: 'Neu auf deinen Boards',
+    // The email (#325). `board`: the emoji and name of the one Board it's
+    // about; null when it's about several.
+    subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'auf deinen Boards'}`,
+    // The inbox's preview line: who added them, the latest first.
+    preheader: (names: string[]) => `Von ${someNames(names)}. Schau mal rein!`,
+    // `name`: the recipient's Username, null before they picked one.
+    greeting: (name: string | null) => name ? `Hallo ${name}!` : 'Hallo!',
+    intro: 'Das ist seit gestern auf deinen Boards dazugekommen:',
     addedBy: (name: string) => `von ${name}`,
     openBoard: 'Board öffnen',
-    why: 'Du bekommst diese E-Mail, weil du die tägliche E-Mail in deinen malkochen-Einstellungen eingeschaltet hast.',
-    turnOff: 'Ausschalten',
+    why: 'Einmal am Abend, nur wenn’s was Neues gibt: So hast du’s in malkochen eingestellt.',
+    // Then the link to your settings, where you switch it off.
+    noMore: 'Keine Lust mehr?',
+    turnOff: 'Hier ausschalten',
   },
   // The Board's keyboard shortcuts (utils/shortcuts.ts): the "?" dialog and
   // the section in your settings.
