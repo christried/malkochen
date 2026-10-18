@@ -1,5 +1,6 @@
 import { and, eq, ne, sql } from 'drizzle-orm'
 import { de } from '../../app/strings/de'
+import { languageChoice, type LanguageChoice } from '../../shared/language'
 import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { user } from '../db/schema'
@@ -17,8 +18,8 @@ export const usernameOf = sql<string>`coalesce(${user.username}, ${de.username.n
 // The signed-in user as /api/me answers: who they are (`name` is their
 // Username, empty until they have one), the picture shown for them, their
 // own Profile Picture, if they have one (for their settings), and what they are
-// still to be asked about their Username, and the highest Tour version they
-// finished or skipped (null for none).
+// still to be asked about their Username, the highest Tour version they
+// finished or skipped (null for none) and their language under Sprache.
 export interface Me {
   id: string
   name: string
@@ -27,6 +28,7 @@ export interface Me {
   ownPicture: string | null
   usernamePrompt: UsernamePrompt | null
   tourSeen: number | null
+  language: LanguageChoice
 }
 
 interface Signed {
@@ -37,17 +39,18 @@ interface Signed {
   username?: string | null
   usernameConfirmedAt?: Date | null
   tourSeen?: number | null
+  language?: string | null
 }
 
 // The signed-in user as others see them on what they just added: the same
 // name and picture as usernameOf and pictureOf select.
-export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt' | 'tourSeen'>): { id: string, name: string, image: string | null } {
+export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt' | 'tourSeen' | 'language'>): { id: string, name: string, image: string | null } {
   return { id, name: username ?? de.username.none, image: ownPicture ?? image ?? null }
 }
 
 // /api/me's answer for the signed-in user, from their session.
 export function meOf(signedIn: Signed): Me {
-  const { id, email, image, ownPicture, username, usernameConfirmedAt, tourSeen } = signedIn
+  const { id, email, image, ownPicture, username, usernameConfirmedAt, tourSeen, language } = signedIn
   return {
     id,
     name: username ?? '',
@@ -56,10 +59,11 @@ export function meOf(signedIn: Signed): Me {
     ownPicture: ownPicture ?? null,
     usernamePrompt: !username ? 'pick' : usernameConfirmedAt ? null : 'confirm',
     tourSeen: tourSeen ?? null,
+    language: languageChoice(language),
   }
 }
 
-const meColumns = { id: user.id, email: user.email, image: user.image, ownPicture: user.ownPicture, username: user.username, usernameConfirmedAt: user.usernameConfirmedAt, tourSeen: user.tourSeen }
+const meColumns = { id: user.id, email: user.email, image: user.image, ownPicture: user.ownPicture, username: user.username, usernameConfirmedAt: user.usernameConfirmedAt, tourSeen: user.tourSeen, language: user.language }
 
 // Sets (or, with null, removes) the user's own Profile Picture.
 export async function setOwnPicture(userId: string, url: string | null): Promise<Me | null> {
@@ -72,6 +76,12 @@ export async function setOwnPicture(userId: string, url: string | null): Promise
 // bring a newer one back.
 export async function recordTourSeen(userId: string, version: number): Promise<Me | null> {
   const [updated] = await db.update(user).set({ tourSeen: sql`greatest(${user.tourSeen}, ${version})` }).where(eq(user.id, userId)).returning(meColumns)
+  return updated ? meOf(updated) : null
+}
+
+// Sets the user's language under Sprache in Your Settings.
+export async function setLanguage(userId: string, language: LanguageChoice): Promise<Me | null> {
+  const [updated] = await db.update(user).set({ language }).where(eq(user.id, userId)).returning(meColumns)
   return updated ? meOf(updated) : null
 }
 

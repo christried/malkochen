@@ -38,6 +38,10 @@ export const user = pgTable('user', {
   // null for none. Below the app's current one, the Tour starts by itself.
   // Only PUT /api/me/tour raises it; Better Auth just reads it.
   tourSeen: integer('tour_seen'),
+  // Their language under Sprache in Your Settings (shared/language.ts):
+  // "auto" (follow the browser) or a language. Only PUT /api/me/language
+  // sets it; Better Auth just reads it.
+  language: text('language').notNull().default('auto'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, t => [
