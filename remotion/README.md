@@ -10,8 +10,11 @@ Vercel build never installs it.
 Uses npm, not pnpm, so the repo root's workspace stays out of it.
 
 One video is still rendered here: the brag video (#313). It is a 29s
-vertical launch video, in German, for the README and for posts, never for
-the app.
+vertical launch video in German, never for the app. It comes in two
+versions (`scripts/brag-variant.ts`). The **public** one shows a made-up
+Board with stock photos and is the video in the repo's README. The
+**friends** one shows a real Board from production and is made for showing
+to friends, never for publishing.
 
 ## The brag video
 
@@ -27,12 +30,17 @@ outro with malkochen.christried.me.
 #    (never committed: the Pixabay licence doesn't allow passing it on).
 # 1. From the repo root: the app on a throwaway database (Ctrl+C drops it)…
 pnpm exec tsx remotion/capture/serve.ts
-# 2. …and, once it's ready, the capture into remotion/out/brag/shots/
-pnpm exec tsx remotion/capture/capture.ts
+# 2. …and, once it's ready, the capture into remotion/out/brag/<version>/
+pnpm exec tsx remotion/capture/capture.ts             # public
+pnpm exec tsx remotion/capture/capture.ts --friends   # friends
 
-# 3. Here: the soundtrack, then out/brag/brag.mp4 and its poster brag.jpg
+# 3. Here: the soundtrack, then out/brag/<version>/brag.mp4 and its poster brag.jpg
 npm run brag
-npm run brag:studio   # or look at it in Studio first
+npm run brag:friends
+npm run brag:studio   # or look at the public one in Studio first
+
+# 4. The README's video: 720p, so it stays light; its poster is brag.jpg at 720×1280
+npx remotion ffmpeg -y -i out/brag/public/brag.mp4 -s 720x1280 -c:v libx264 -preset slow -crf 22 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart ../docs/media/malkochen.mp4
 ```
 
 - **`src/brag/timeline.ts`** is the beat grid everything shares: the song's
@@ -44,21 +52,26 @@ npm run brag:studio   # or look at it in Studio first
 - **`capture/`** runs with the app's own dependencies, from the repo root.
   `serve.ts` starts `pnpm dev` with the browser tests' settings: dev
   sign-in, no Tour starting by itself, no dev error overlay. `seed.ts`
-  fills the Board. It uses the made-up one (`MADE_UP`) unless `.env` has
-  `PROD_DATABASE_URL`. Then `prod-board.ts` reads a real Board from
-  production in a read-only transaction: `BRAG_BOARD`, by default "kochen
-  lecker". It keeps that Board's Columns, Dishes, images and creators, but
-  only its owner's name (`BRAG_ME`, by default Chris): the other Members get
-  made-up names, and nobody's picture is used. `capture.ts` records the
-  shots on a 412×892 phone at 2.5×, each tap timed to land on its cue's
-  beat. The recording (`recorder.ts`) runs the page on Playwright's paused
-  clock and moves every CSS and Web Animation on by exactly 1/30s per frame,
-  so each frame shows what the app shows at that moment, however long the
-  screenshot takes. It also records the touches, which the video draws as a
-  fingertip.
-- **`src/brag/`** is the composition. Its public dir is `out/brag`, not
-  the handoff, so `render-brag.ts` first copies in the app's Topfbert, the
-  Placeholder Images, the icon, the veggies and the music.
+  fills the Board. The public version uses `MADE_UP`: invented Members,
+  Dishes and creators, most Dishes showing a stock photo from
+  `brag-photos/` (CC0, see its `CREDITS.md`), about one in five its
+  Placeholder Image. The friends version uses `prod-board.ts`, which reads
+  a real Board from production in a read-only transaction: `BRAG_BOARD`,
+  by default "kochen lecker". The connection string is `DATABASE_URL` in
+  the repo's `.env.production.local` (`vercel env pull`), read straight
+  from that file. It keeps that Board's Columns, Dishes, images, creators
+  and its Members' Usernames, seen as `BRAG_ME` (by default its Owner).
+  Nobody's picture is used. `capture.ts` records the shots on a 412×892
+  phone at 2.5×, each tap timed to land on its cue's beat. The recording
+  (`recorder.ts`) runs the page on Playwright's paused clock and moves every
+  CSS and Web Animation on by exactly 1/30s per frame, so each frame shows
+  what the app shows at that moment, however long the screenshot takes. It
+  also records the touches, which the video draws as a fingertip, and
+  writes the opening grid (`grid.json`) and the shared video's photo.
+- **`src/brag/`** is the composition. Its public dir is the version's
+  `out/brag/<version>`, not the handoff, so `render-brag.ts` first copies in
+  the app's Topfbert, the Placeholder Images, the icon, the veggies and the
+  music.
 - **`scripts/brag-audio.ts`** cuts the excerpt sample-exact with Remotion's
   ffmpeg and lays quiet effects under it: taps, air and a confetti
   sparkle, all unpitched so they can't clash with the song's key.

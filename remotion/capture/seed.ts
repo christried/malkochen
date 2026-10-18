@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import { copyFile, mkdir, readdir } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import type { APIRequestContext } from '@playwright/test'
 import pg from 'pg'
 import type { Placeholder } from '../../shared/placeholders'
@@ -29,45 +32,87 @@ export interface BoardContent {
   columns: { name: string, subtitle: string | null, gekocht?: boolean, dishes: BoardDish[] }[]
 }
 
-const dish = (title: string, placeholder: Placeholder, kind: SourceKind, link: string, creator: string, by: number, cooked = 0): BoardDish =>
-  ({ title, placeholder, kind, link, creator, image: null, focus: [50, 50], by, cooked })
+// Images as the capture server serves stored ones (local dev, no Blob
+// token): .data/images/dishes/<uuid>.<ext> at /images/dishes/… The uuid is
+// made from what the image is (a stock photo's name, a production image's
+// URL), so the same image always gets the same name.
+const SERVED = resolve(import.meta.dirname, '../../.data/images/dishes')
+export function servedImage(of: string, extension: string) {
+  const h = createHash('sha256').update(of).digest('hex')
+  const name = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}.${extension}`
+  return { path: `/images/dishes/${name}`, file: join(SERVED, name) }
+}
+export const servedFile = (path: string) => join(SERVED, path.replace('/images/dishes/', ''))
 
-// Nothing here is anyone's real data; the Dishes use the drawn Placeholder
-// Images, not images from the posts.
+// The stock photos (brag-photos/, CC0), one per Placeholder Image they stand
+// in for.
+const PHOTOS = resolve(import.meta.dirname, '../brag-photos')
+export const stockPhoto = (key: Placeholder) => servedImage(`stock-${key}`, 'jpg').path
+
+export async function serveStockPhotos() {
+  await mkdir(SERVED, { recursive: true })
+  for (const file of await readdir(PHOTOS)) {
+    if (file.endsWith('.jpg')) await copyFile(join(PHOTOS, file), servedImage(`stock-${file.replace('.jpg', '')}`, 'jpg').file)
+  }
+}
+
+// `photo`: the Dish shows its stock photo, as if the post's image had been
+// stored; else its Placeholder Image.
+const dish = (title: string, placeholder: Placeholder, photo: boolean, kind: SourceKind, link: string, creator: string, by: number, cooked = 0): BoardDish =>
+  ({ title, placeholder, kind, link, creator, image: photo ? stockPhoto(placeholder) : null, focus: [50, 50], by, cooked })
+
+// Nothing here is anyone's real data. Most Dishes show a stock photo; two
+// keep their Placeholder Image, as Dishes do whose post had none.
 export const MADE_UP: BoardContent = {
   name: 'Kochclub',
   emoji: '🍝',
   members: ['Mia', 'Jonas', 'Lea'],
   columns: [
     { name: 'Ideen', subtitle: 'Worauf hast du Lust?', dishes: [
-      dish('Pasta alla Norma', 'pasta', 'blog', 'https://www.example-kitchen.de/pasta-alla-norma', 'Kitchen Notes', 1),
-      dish('Smash Burger', 'burger', 'youtube-short', 'https://www.youtube.com/shorts/aB3dE5fG7hI', 'Plant Grill', 2),
-      dish('Gyoza', 'dumplings', 'pinterest-pin', 'https://www.pinterest.com/pin/123456789012345678/', 'Dumpling Diary', 0),
-      dish('Jackfruit Tacos', 'tacos', 'tiktok', 'https://www.tiktok.com/@tacotuesday/video/7301234567890123001', 'Taco Tuesday', 1),
-      dish('Erdnuss-Nudeln', 'wok', 'instagram-reel', 'https://www.instagram.com/reel/C1x2y3z4w5v/', 'Wok Hei Club', 2),
+      dish('Pasta alla Norma', 'pasta', true, 'blog', 'https://www.example-kitchen.de/pasta-alla-norma', 'Kitchen Notes', 1),
+      dish('Smash Burger', 'burger', true, 'youtube-short', 'https://www.youtube.com/shorts/aB3dE5fG7hI', 'Plant Grill', 2),
+      dish('Gyoza', 'dumplings', true, 'pinterest-pin', 'https://www.pinterest.com/pin/123456789012345678/', 'Dumpling Diary', 0),
+      dish('Jackfruit Tacos', 'tacos', true, 'tiktok', 'https://www.tiktok.com/@tacotuesday/video/7301234567890123001', 'Taco Tuesday', 1),
+      dish('Erdnuss-Nudeln', 'wok', false, 'instagram-reel', 'https://www.instagram.com/reel/C1x2y3z4w5v/', 'Wok Hei Club', 2),
     ] },
     { name: 'Diese Woche', subtitle: 'Das steht an.', dishes: [
-      dish('Ramen', 'ramen', 'tiktok', 'https://www.tiktok.com/@noodlenight/video/7301234567890123002', 'Noodle Night', 2),
-      dish('Omas Linsensuppe', 'eintopf', 'blog', 'https://www.example-kitchen.de/linsensuppe', 'Kitchen Notes', 0),
+      dish('Ramen', 'ramen', true, 'tiktok', 'https://www.tiktok.com/@noodlenight/video/7301234567890123002', 'Noodle Night', 2),
+      dish('Omas Linsensuppe', 'eintopf', true, 'blog', 'https://www.example-kitchen.de/linsensuppe', 'Kitchen Notes', 0),
     ] },
     { name: 'Gekocht', subtitle: null, dishes: [
-      dish('Bananenbrot', 'bread', 'instagram-reel', 'https://www.instagram.com/reel/C9a8b7c6d5e/', 'Bake Club', 1, 4),
-      dish('Schoko-Kuchen', 'cake', 'pinterest-pin', 'https://www.pinterest.com/pin/876543210987654321/', 'Sweet Tooth', 0, 2),
+      dish('Bananenbrot', 'bread', true, 'instagram-reel', 'https://www.instagram.com/reel/C9a8b7c6d5e/', 'Bake Club', 1, 4),
+      dish('Schoko-Kuchen', 'cake', false, 'pinterest-pin', 'https://www.pinterest.com/pin/876543210987654321/', 'Sweet Tooth', 0, 2),
     ] },
   ],
 }
 
+// The opening grid of the made-up version: saved Dishes, by Placeholder;
+// two of the nine stay drawn.
+export const MADE_UP_GRID: { placeholder: Placeholder, photo: boolean }[] = [
+  { placeholder: 'pasta', photo: true },
+  { placeholder: 'ramen', photo: true },
+  { placeholder: 'bowl', photo: true },
+  { placeholder: 'breakfast', photo: true },
+  { placeholder: 'burger', photo: true },
+  { placeholder: 'tacos', photo: true },
+  { placeholder: 'wok', photo: false },
+  { placeholder: 'cake', photo: false },
+  { placeholder: 'dumplings', photo: true },
+]
+
 // Made-up names for the other Members of a Board read from production.
 export const STAND_INS = ['Mia', 'Jonas', 'Lea', 'Ben', 'Noa', 'Emil', 'Ida', 'Paul']
 
-// What the share brings in (capture.ts answers the Source Lookup with it).
+// What the share brings in (capture.ts answers the Source Lookup with it),
+// its image the bowl's stock photo. The ticket is made up: capture.ts puts
+// the photo on the saved Dish itself, as the server can't copy it.
 export const SHARED = {
   kind: 'tiktok',
   canonicalLink: 'https://www.tiktok.com/@veganfoodclub/video/7301234567890123456',
   suggestedTitle: 'Crispy Tofu Bowl',
   creator: 'Vegan Food Club',
-  imageUrl: null,
-  imageTicket: null,
+  imageUrl: stockPhoto('bowl'),
+  imageTicket: 'capture',
 }
 
 // The test Allowlist's emails the Members sign in with, per Board: a
@@ -100,6 +145,11 @@ export async function seed(request: APIRequestContext, origin: string, databaseU
       users.push((await client.query<{ id: string }>('select id from "user" where email = $1', [email])).rows[0]!.id)
     }
     await client.query('update "user" set tour_seen = 1 where id = any($1)', [users])
+    // A sign-in names a user only the first time: from a capture before,
+    // they may still have another name.
+    for (const [i, user] of users.entries()) {
+      await client.query('update "user" set username = $2, name = $2 where id = $1', [user, content.members[i]])
+    }
     const { rows: [board] } = await client.query<{ id: string }>(
       'select board_id as id from membership where user_id = $1 and is_owner', [users[0]])
     await client.query('update board set name = $2, emoji = $3 where id = $1', [board!.id, content.name, content.emoji])

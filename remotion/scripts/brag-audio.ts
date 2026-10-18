@@ -2,18 +2,20 @@
 // src/brag/timeline.ts), cut sample-exact at the video's first beat, with
 // quiet effects under it on the same timeline: a soft tap for every touch,
 // air for what moves, a sparkle for the confetti. The effects are unpitched,
-// so they can't clash with the song's key. Writes out/brag/brag-audio.wav.
+// so they can't clash with the song's key. Writes brag-audio.wav into the
+// version's out/brag/<version> (scripts/brag-variant.ts).
 //
-//   node scripts/brag-audio.ts
+//   node scripts/brag-audio.ts [--friends]
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { OUT_DIR, VARIANT } from "./brag-variant.ts";
 import { beat, CUE, DURATION, FPS, INTRO_TAPS, MUSIC, MUSIC_START, SCENES, SHOT_ORDER, SHOTS, type ShotName } from "../src/brag/timeline.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = join(ROOT, "out/brag");
+const OUT = OUT_DIR;
 const SR = 44100;
 const LENGTH = Math.ceil((DURATION / FPS) * SR);
 const at = (frame: number) => frame / FPS;
@@ -170,4 +172,4 @@ header.writeUInt16LE(16, 34);
 header.write("data", 36);
 header.writeUInt32LE(data.length, 40);
 writeFileSync(join(OUT, "brag-audio.wav"), Buffer.concat([header, data]));
-console.log(`✓ out/brag/brag-audio.wav (${(LENGTH / SR).toFixed(2)}s, music from ${MUSIC_START.toFixed(3)}s, gain ${gain.toFixed(2)})`);
+console.log(`✓ out/brag/${VARIANT}/brag-audio.wav (${(LENGTH / SR).toFixed(2)}s, music from ${MUSIC_START.toFixed(3)}s, gain ${gain.toFixed(2)})`);

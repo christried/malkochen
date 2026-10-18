@@ -130,13 +130,14 @@ const ShareIntro: React.FC = () => {
   const drift = interpolate(frame, [SCENES.shareIntro.from, SCENES.shareIntro.to], [1.04, 1.12]);
   const progress = interpolate(frame, [SCENES.shareIntro.from, SCENES.shareIntro.to], [0.18, 0.46]);
   return (
-    // The dark bowl's own ground, so its square doesn't show.
-    <AbsoluteFill style={{ background: "#3B423D" }}>
+    // The video: the shared Dish's photo (capture.ts puts it in shared.jpg),
+    // full screen, slowly drifting closer.
+    <AbsoluteFill style={{ background: "#151413" }}>
       <Img
-        src={staticFile("placeholders/bowl-dark.svg")}
-        style={{ position: "absolute", left: 26, top: 170, width: 360, transform: `scale(${drift})` }}
+        src={staticFile("shared.jpg")}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: `scale(${drift})` }}
       />
-      <AbsoluteFill style={{ background: "radial-gradient(circle at 50% 40%, transparent 35%, rgba(12,11,10,.7) 90%)" }} />
+      <AbsoluteFill style={{ background: "radial-gradient(circle at 50% 40%, transparent 45%, rgba(12,11,10,.45) 95%)" }} />
       <AbsoluteFill style={{ background: "linear-gradient(transparent 55%, rgba(0,0,0,.55))" }} />
       <Icon y={440} d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.2 1.8-2 3.3-3.2 5.4-3.2 3.6 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z" />
       <Icon y={520} d="M12 3C6.5 3 2 6.9 2 11.6c0 2.4 1.2 4.6 3.1 6.1L4.4 21l4.1-2c1.1.3 2.3.5 3.5.5 5.5 0 10-3.9 10-8.6S17.5 3 12 3z" />

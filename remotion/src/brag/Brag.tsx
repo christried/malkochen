@@ -29,7 +29,10 @@ const bob = (frame: number, height: number) => Math.sin((frame / beat(2)) * Math
 loadFigtree("normal", { weights: ["500", "600", "700"], subsets: ["latin"] });
 loadPetrona("normal", { weights: ["500"], subsets: ["latin"] });
 
-export type BragProps = { touches: Touches };
+// A tile of the opening grid: a saved Dish's photo, or its Placeholder Image
+// (capture.ts writes grid.json).
+export type GridTile = { photo: string } | { placeholder: string };
+export type BragProps = { touches: Touches; grid: GridTile[] };
 
 export const calculateBragMetadata: CalculateMetadataFunction<BragProps> = async () => {
   const touches = Object.fromEntries(
@@ -40,20 +43,20 @@ export const calculateBragMetadata: CalculateMetadataFunction<BragProps> = async
       }),
     ),
   ) as Touches;
-  return { props: { touches } };
+  const grid = (await (await fetch(staticFile("grid.json"))).json()) as GridTile[];
+  return { props: { touches, grid } };
 };
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-const HOOK_DISHES = ["pasta", "ramen", "bowl", "breakfast", "burger", "tacos", "wok", "cake", "dumplings"];
 const ACCENTS = [ACCENT.butter, ACCENT.orchid, ACCENT.sage, ACCENT.carrot, ACCENT.sky];
 
 const TILE = 262;
 const GAP = 26;
 
-// Gespeichert … nie gekocht: the Placeholder Images piling up, one on
-// every eighth note, each bookmarked.
-const Hook: React.FC = () => {
+// Gespeichert … nie gekocht: saved Dishes piling up, one on every eighth
+// note, each bookmarked; most as their photo, some drawn.
+const Hook: React.FC<{ grid: GridTile[] }> = ({ grid }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (frame >= SCENES.hook.to + 8) return null;
@@ -81,7 +84,7 @@ const Hook: React.FC = () => {
         <div style={{ transform: `scale(${0.7 + 0.3 * saved})`, opacity: saved }}>Gespeichert.</div>
         <div style={{ color: ACCENT.carrot, transform: `scale(${0.7 + 0.3 * never})`, opacity: never }}>Nie gekocht.</div>
       </div>
-      {HOOK_DISHES.map((dish, i) => {
+      {grid.map((tile, i) => {
         const pop = spring({ frame: frame - beat(i / 2), fps, config: POP });
         const mark = spring({ frame: frame - beat(i / 2) - 5, fps, config: POP });
         const out = spring({ frame: frame - (SCENES.hook.to - 10) - (i % 3) * 2, fps, config: SOFT });
@@ -89,7 +92,7 @@ const Hook: React.FC = () => {
         const accent = ACCENTS[i % ACCENTS.length]!;
         return (
           <div
-            key={dish}
+            key={i}
             style={{
               position: "absolute",
               left: (1080 - 3 * TILE - 2 * GAP) / 2 + col * (TILE + GAP),
@@ -104,7 +107,12 @@ const Hook: React.FC = () => {
               opacity: 1 - 0.35 * never,
             }}
           >
-            <Img src={staticFile(`placeholders/${dish}-light.svg`)} style={{ width: "100%", height: "100%" }} />
+            <div style={{ width: "100%", height: "100%", borderRadius: 64, overflow: "hidden" }}>
+              <Img
+                src={staticFile("photo" in tile ? tile.photo : `placeholders/${tile.placeholder}-light.svg`)}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
             <div
               style={{
                 position: "absolute",
@@ -332,23 +340,23 @@ const background = (frame: number) =>
 
 // Frame 0 is the poster (POSTER_FRAME), so every platform's thumbnail shows
 // it; the soundtrack runs on regardless.
-export const Brag: React.FC<BragProps> = ({ touches }) => {
+export const Brag: React.FC<BragProps> = ({ touches, grid }) => {
   const frame = useCurrentFrame();
   return (
     <>
       <Html5Audio src={staticFile("brag-audio.wav")} />
       <Freeze frame={POSTER_FRAME} active={frame === 0}>
-        <Picture touches={touches} />
+        <Picture touches={touches} grid={grid} />
       </Freeze>
     </>
   );
 };
 
-const Picture: React.FC<BragProps> = ({ touches }) => {
+const Picture: React.FC<BragProps> = ({ touches, grid }) => {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: background(frame), overflow: "hidden" }}>
-      <Hook />
+      <Hook grid={grid} />
       <Reveal />
       <Topfbert />
       {CAPTIONS.map((c) => (
