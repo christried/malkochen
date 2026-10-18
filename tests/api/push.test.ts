@@ -177,8 +177,8 @@ test('one notification per Board counts the Dishes added since the Member last o
   // One Dish: it is named, and opening the notification opens it.
   const soup = await addDish(katalin, board.id, 'Omas Linsensuppe')
   expect(pushService.deliveries.map(d => d.message)).toEqual([{
-    title: `${kati} hat 1 Gericht zu 🍪 Kochclub hinzugefügt`,
-    body: 'Omas Linsensuppe',
+    title: `${kati} hat Omas Linsensuppe hinzugefügt`,
+    body: '🍪 Kochclub',
     tag,
     url: `/b/${board.slug}/omas-linsensuppe-${soup.code}`,
   }])
@@ -187,8 +187,8 @@ test('one notification per Board counts the Dishes added since the Member last o
   // counting all of them, opens the Board.
   for (const title of ['Pilzpasta', 'Tofu-Nuggets', 'Dal', 'Ramen']) await addDish(katalin, board.id, title)
   expect(pushService.deliveries.at(-1)!.message).toEqual({
-    title: `${kati} hat 5 Gerichte zu 🍪 Kochclub hinzugefügt`,
-    body: 'Ramen, Dal, Tofu-Nuggets, Pilzpasta, Omas Linsensuppe',
+    title: `${kati} hat 5 Gerichte hinzugefügt`,
+    body: '🍪 Kochclub: Ramen, Dal, Tofu-Nuggets, Pilzpasta, Omas Linsensuppe',
     tag,
     url: `/b/${board.slug}`,
   })
@@ -196,15 +196,15 @@ test('one notification per Board counts the Dishes added since the Member last o
 
   // Another Member adds one too: both are named, the latest first.
   await addDish(mileva, board.id, 'Shakshuka')
-  expect(pushService.deliveries.at(-1)!.message.title).toBe(`${mile} und ${kati} haben 6 Gerichte zu 🍪 Kochclub hinzugefügt`)
+  expect(pushService.deliveries.at(-1)!.message.title).toBe(`${mile} und ${kati} haben 6 Gerichte hinzugefügt`)
 
   // Hypatia opens the Board: counting starts again.
   await open(hypatia, board.id)
   pushService.forget()
   const ramen = await addDish(mileva, board.id, 'Miso-Ramen')
   expect(pushService.deliveries.map(d => d.message)).toEqual([{
-    title: `${mile} hat 1 Gericht zu 🍪 Kochclub hinzugefügt`,
-    body: 'Miso-Ramen',
+    title: `${mile} hat Miso-Ramen hinzugefügt`,
+    body: '🍪 Kochclub',
     tag,
     url: `/b/${board.slug}/miso-ramen-${ramen.code}`,
   }])

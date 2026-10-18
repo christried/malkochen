@@ -78,13 +78,13 @@ async function digestEmails(covered: Coverage[]): Promise<Map<string, Email>> {
   const news = await newsFor(covered)
   if (news.size === 0) return new Map()
   const recipients = await db
-    .select({ id: user.id, email: user.email, emailVerified: user.emailVerified })
+    .select({ id: user.id, email: user.email, name: user.username, emailVerified: user.emailVerified })
     .from(user)
     .where(inArray(user.id, [...news.keys()]))
   const origin = env.BETTER_AUTH_URL.replace(/\/+$/, '')
   return new Map(recipients
     .filter(r => !signInRefusal(r))
-    .map(r => [r.id, digestEmail(r.email, news.get(r.id)!, origin)]))
+    .map(r => [r.id, digestEmail(r, news.get(r.id)!, origin)]))
 }
 
 // What one run covers for a Member: the Dishes added in (since, until].

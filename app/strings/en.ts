@@ -20,6 +20,17 @@ function nameList(names: string[]): string {
   return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
 }
 
+// Like nameList, but at most three names: "Ada, Linus and Grace", then
+// "Ada, Linus and 2 others".
+function someNames(names: string[]): string {
+  return names.length <= 3 ? nameList(names) : `${names.slice(0, 2).join(', ')} and ${number(names.length - 2)} others`
+}
+
+// "1 new dish", "3 new dishes".
+function newDishCount(count: number): string {
+  return `${number(count)} new ${plural(count, { one: 'dish', other: 'dishes' })}`
+}
+
 const tryAgain = 'Try again in a moment.'
 const failed = `That didn’t work. ${tryAgain}`
 
@@ -487,18 +498,22 @@ export const en: Strings = {
     blocked: 'Your browser is blocking notifications from malkochen. Allow them in the site settings, then you can turn them on here.',
     unsupported: 'This browser can’t receive push notifications.',
     failed,
-    added: (names: string[], count: number, board: string) => `${nameList(names)} added ${dishCount(count)} to ${board}`,
+    added: (names: string[], count: number, dish: string) => `${someNames(names)} added ${count === 1 ? dish : dishCount(count)}`,
+    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` and ${number(more)} more`}`,
   },
   emailDigest: {
     toggle: 'Daily email',
     hint: 'In the evening to your email address, when others have added new dishes to your boards. For all your devices.',
     failed,
-    subject: (count: number) => `New on your boards: ${dishCount(count)}`,
-    heading: 'New on your boards',
+    subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'on your boards'}`,
+    preheader: (names: string[]) => `From ${someNames(names)}. Take a look!`,
+    greeting: (name: string | null) => name ? `Hi ${name}!` : 'Hi!',
+    intro: 'Here’s what’s new on your boards since yesterday:',
     addedBy: (name: string) => `by ${name}`,
     openBoard: 'Open board',
-    why: 'You’re getting this email because you turned on the daily email in your malkochen settings.',
-    turnOff: 'Turn off',
+    why: 'Once in the evening, only when there’s something new: that’s how you set it up in malkochen.',
+    noMore: 'Had enough?',
+    turnOff: 'Turn it off here',
   },
   shortcuts: {
     title: 'Keyboard shortcuts',

@@ -29,16 +29,28 @@ const escapeHtml = (text: string) => text
   .replaceAll('"', '&quot;')
   .replaceAll('\'', '&#39;')
 
-// One email to `to` about each Board's news (each Board with at least one
-// Dish, newest first), linking back to the app at `origin`.
-export function digestEmail(to: string, boards: BoardNews[], origin: string): Email {
+// Who an email goes to: their address, and their Username to greet them
+// with (null before they picked one).
+export interface Recipient {
+  email: string
+  name: string | null
+}
+
+// One email to `to` about each Board's news (in the order given, each Board
+// with at least one Dish, its Dishes newest first), linking back to the app
+// at `origin`.
+export function digestEmail(to: Recipient, boards: BoardNews[], origin: string): Email {
   const t = de.emailDigest
   const count = boards.reduce((sum, b) => sum + b.dishes.length, 0)
   const link = (path: string) => `${origin}${path}`
   const boardName = (board: BoardNews['board']) => `${board.emoji} ${board.name}`
+  const subject = t.subject(count, boards.length === 1 ? boardName(boards[0]!.board) : null)
+  const adders = [...new Set(boards.flatMap(b => b.dishes.map(d => d.addedBy)))]
+  const greeting = t.greeting(to.name)
 
   const text = [
-    t.heading,
+    greeting,
+    t.intro,
     ...boards.flatMap(({ board, dishes }) => [
       '',
       boardName(board),
@@ -46,19 +58,20 @@ export function digestEmail(to: string, boards: BoardNews[], origin: string): Em
       `${t.openBoard}: ${link(boardPath(board))}`,
     ]),
     '',
-    '--',
     t.why,
-    `${t.turnOff}: ${link(SETTINGS)}`,
+    `${t.noMore} ${t.turnOff}: ${link(SETTINGS)}`,
   ].join('\n')
 
   const ink = '#131211'
   const muted = '#6B6862'
   const html = `<!doctype html>
 <html lang="de">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(t.heading)}</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:24px 16px;background:#F7F6F2;color:${ink};font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.5">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">${escapeHtml(t.preheader(adders))}</div>
 <div style="max-width:560px;margin:0 auto">
-<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 16px">${escapeHtml(t.heading)}</h1>
+<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(greeting)}</h1>
+<p style="margin:0 0 16px">${escapeHtml(t.intro)}</p>
 ${boards.map(({ board, dishes }) => `<div style="background:#FFFFFF;border-radius:16px;padding:16px 20px;margin:0 0 16px">
 <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:600;margin:0 0 8px"><a href="${escapeHtml(link(boardPath(board)))}" style="color:${ink};text-decoration:none">${escapeHtml(boardName(board))}</a></h2>
 <ul style="margin:0 0 12px;padding:0 0 0 20px">
@@ -66,12 +79,12 @@ ${dishes.map(d => `<li style="margin:0 0 4px"><a href="${escapeHtml(link(dishPat
 </ul>
 <a href="${escapeHtml(link(boardPath(board)))}" style="display:inline-block;background:${ink};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.openBoard)}</a>
 </div>`).join('\n')}
-<p style="color:${muted};font-size:13px;margin:24px 0 0">${escapeHtml(t.why)} <a href="${escapeHtml(link(SETTINGS))}" style="color:${muted}">${escapeHtml(t.turnOff)}</a></p>
+<p style="color:${muted};font-size:13px;margin:24px 0 0">${escapeHtml(t.why)} ${escapeHtml(t.noMore)} <a href="${escapeHtml(link(SETTINGS))}" style="color:${muted}">${escapeHtml(t.turnOff)}</a>.</p>
 </div>
 </body>
 </html>`
 
-  return { to, subject: t.subject(count), html, text }
+  return { to: to.email, subject, html, text }
 }
 
 // Who each email reached, and who it didn't (Resend refused the batch or

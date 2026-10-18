@@ -35,7 +35,16 @@ test('a day of an earlier year carries its year, in each language', () => {
   expect(en.cooking.date(day)).toBe('3 Sept 2024')
 })
 
-test('English names: "Ada", "Ada and Linus", "Ada, Linus and Grace"', () => {
-  expect(en.push.added(['Ada'], 1, 'Kochclub')).toBe('Ada added 1 dish to Kochclub')
-  expect(en.push.added(['Ada', 'Linus', 'Grace'], 4, 'Kochclub')).toBe('Ada, Linus and Grace added 4 dishes to Kochclub')
+test('English names: "Ada", "Ada and Linus", "Ada, Linus and Grace", then "and 2 others"', () => {
+  expect(en.push.added(['Ada'], 1, 'Lentil dal')).toBe('Ada added Lentil dal')
+  expect(en.push.added(['Ada', 'Linus'], 2, 'Lentil dal')).toBe('Ada and Linus added 2 dishes')
+  expect(en.push.added(['Ada', 'Linus', 'Grace'], 4, 'Lentil dal')).toBe('Ada, Linus and Grace added 4 dishes')
+  expect(en.emailDigest.preheader(['Ada', 'Linus', 'Grace', 'Hedy'])).toBe('From Ada, Linus and 2 others. Take a look!')
+})
+
+test('the Email Digest\'s subject counts new dishes, in each language', () => {
+  expect(de.emailDigest.subject(1, '🍪 Kochclub')).toBe('1 neues Gericht in 🍪 Kochclub')
+  expect(de.emailDigest.subject(3, null)).toBe('3 neue Gerichte auf deinen Boards')
+  expect(en.emailDigest.subject(1, '🍪 Kochclub')).toBe('1 new dish in 🍪 Kochclub')
+  expect(en.emailDigest.subject(3, null)).toBe('3 new dishes on your boards')
 })
