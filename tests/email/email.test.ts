@@ -106,7 +106,7 @@ describe('in the recipient\'s language', () => {
     expect(email.html).toContain('<html lang="it">')
     for (const part of [email.text, email.html]) {
       expect(part).toContain('Ciao Ada!')
-      expect(part).toContain('di Grace')
+      expect(part).toContain('aggiunto da Grace')
       expect(part).toContain('Apri la bacheca')
       expect(part).toContain('Disattivala qui')
     }

@@ -403,7 +403,7 @@ export const it: Strings = {
     cancel: 'Annulla',
     invite: 'Invita',
     inviteLink: 'Link d’invito',
-    inviteHint: 'Chi apre il link ed è abilitato a malkochen entra in questa bacheca.',
+    inviteHint: 'Chi apre il link e ha un account abilitato per malkochen entra in questa bacheca.',
     copyLink: 'Copia il link',
     copied: 'Link copiato',
     copiedShort: 'Copiato ✓',
@@ -467,7 +467,7 @@ export const it: Strings = {
     problem: {
       short: 'Almeno 2 caratteri.',
       long: 'Al massimo 24 caratteri.',
-      characters: 'Sono ammessi solo lettere, cifre e _ . -',
+      characters: 'Puoi usare solo lettere, cifre e i segni _ . - nel nome.',
     },
     taken: 'Questo nome è già preso. Provane un altro.',
     tooMany: 'Sono tanti nomi per un giorno solo. Domani potrai cambiarlo di nuovo.',
@@ -524,7 +524,8 @@ export const it: Strings = {
     preheader: (names: string[]) => `Da ${someNames(names)}. Dai un’occhiata!`,
     greeting: (name: string | null) => name ? `Ciao ${name}!` : 'Ciao!',
     intro: 'Ecco cosa c’è di nuovo sulle tue bacheche da ieri:',
-    addedBy: (name: string) => `di ${name}`,
+    // "aggiunto da": "di Linus" would read as Linus's own dish.
+    addedBy: (name: string) => `aggiunto da ${name}`,
     openBoard: 'Apri la bacheca',
     why: 'Una volta la sera, solo quando c’è qualcosa di nuovo: l’hai impostata così su malkochen.',
     noMore: 'Non ti serve più?',
@@ -545,7 +546,7 @@ export const it: Strings = {
     },
     ctrl: 'Ctrl',
     click: 'Clic',
-    selectSeveral: 'Selezionane più di uno',
+    selectSeveral: 'Seleziona più piatti',
   },
   tour: {
     label: 'Tour',
