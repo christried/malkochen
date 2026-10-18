@@ -150,8 +150,10 @@ test('a Member who switched it on gets one email listing the Dishes others added
   const [email] = emails
   expect(email!.to).toEqual([WU])
   expect(email!.from).toBe('malkochen <malkochen@christried.me>')
-  expect(email!.subject).toBe('Neu auf deinen Boards: 3 Gerichte')
+  expect(email!.subject).toBe('3 neue Gerichte auf deinen Boards')
   for (const part of [email!.text, email!.html]) {
+    // Greeted by their Username.
+    expect(part).toContain(`Hallo ${await usernameOf(wu)}!`)
     expect(part).toContain('🍪 Kochclub')
     expect(part).toContain('🥞 Sonntag')
     expect(part).toContain('Linsensuppe')
@@ -210,7 +212,7 @@ test('a Dish is listed once: the next day\'s digest has only what was added sinc
   const [email] = emailsTo(WU)
   expect(email!.text).toContain('Risotto')
   expect(email!.text).not.toContain('Gnocchi')
-  expect(email!.subject).toBe('Neu auf deinen Boards: 1 Gericht')
+  expect(email!.subject).toBe('1 neues Gericht in 🍜 Wochenplan')
 })
 
 test('only Dishes of Boards the Member is on: never another Board\'s, nor what was added before they joined', async () => {

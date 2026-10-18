@@ -60,8 +60,8 @@ function serviceWorker({ windows = [] as FakeWindow[] } = {}) {
 const window = (url: string): FakeWindow => ({ url, focus: vi.fn(async () => undefined), postMessage: vi.fn() })
 
 const MESSAGE = {
-  title: 'Chris hat 1 Gericht zu 🍪 Kochclub hinzugefügt',
-  body: 'Omas Linsensuppe',
+  title: 'Chris hat Omas Linsensuppe hinzugefügt',
+  body: '🍪 Kochclub',
   tag: 'board-42',
   url: '/b/kochclub/omas-linsensuppe-3f9k',
 }

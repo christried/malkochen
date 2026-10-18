@@ -8,17 +8,22 @@ import { createMailSender, digestEmail, type Email } from '../../server/email'
 const ORIGIN = 'https://malkochen.example'
 const KOCHCLUB = { id: '0b5c2c1e-58a4-4c43-9a5e-3f3b7a1d2e4f', slug: 'kochclub', name: 'Kochclub', emoji: '🍜' }
 const SONNTAG = { id: '7d1f3a52-1c0e-4a8b-9f6d-2e5b8c4a1f30', slug: 'sonntag', name: 'Sonntag', emoji: '🥞' }
+const ADA = { email: 'ada@example.com', name: 'Ada' }
 
 describe('the email', () => {
-  test('lists each Board\'s new Dishes with who added them, and links to the Board and each Dish', () => {
-    const email = digestEmail('ada@example.com', [
+  test('greets them, lists each Board\'s new Dishes with who added them, and links to the Board and each Dish', () => {
+    const email = digestEmail(ADA, [
       { board: KOCHCLUB, dishes: [{ title: 'Linsensuppe', code: 'ab12', addedBy: 'Linus' }, { title: 'Dal', code: 'cd34', addedBy: 'Grace' }] },
       { board: SONNTAG, dishes: [{ title: 'Pfannkuchen', code: 'ef56', addedBy: 'Linus' }] },
     ], ORIGIN)
 
     expect(email.to).toBe('ada@example.com')
-    expect(email.subject).toBe('Neu auf deinen Boards: 3 Gerichte')
+    expect(email.subject).toBe('3 neue Gerichte auf deinen Boards')
+    // The inbox's preview line: who added them.
+    expect(email.html).toContain('Von Linus und Grace. Schau mal rein!')
     for (const part of [email.text, email.html]) {
+      expect(part).toContain('Hallo Ada!')
+      expect(part).toContain('Das ist seit gestern auf deinen Boards dazugekommen:')
       expect(part).toContain('🍜 Kochclub')
       expect(part).toContain('Linsensuppe')
       expect(part).toContain('von Linus')
@@ -29,18 +34,40 @@ describe('the email', () => {
       expect(part).toContain('https://malkochen.example/b/kochclub')
       expect(part).toContain('https://malkochen.example/b/kochclub/linsensuppe-ab12')
       expect(part).toContain('https://malkochen.example/b/sonntag')
-      // Where to switch it off again.
+      // Why it came, and where to switch it off again.
+      expect(part).toContain('Einmal am Abend, nur wenn’s was Neues gibt: So hast du’s in malkochen eingestellt.')
+      expect(part).toContain('Keine Lust mehr?')
+      expect(part).toContain('Hier ausschalten')
       expect(part).toContain('https://malkochen.example/settings')
     }
+    expect(email.html).toMatch(/<a href="https:\/\/malkochen\.example\/settings"[^>]*>Hier ausschalten<\/a>/)
   })
 
-  test('one Dish: the subject says so', () => {
-    const email = digestEmail('ada@example.com', [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }] }], ORIGIN)
-    expect(email.subject).toBe('Neu auf deinen Boards: 1 Gericht')
+  test('about one Board, the subject names it; one Dish is „1 neues Gericht"', () => {
+    const one = digestEmail(ADA, [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }] }], ORIGIN)
+    expect(one.subject).toBe('1 neues Gericht in 🍜 Kochclub')
+
+    const two = digestEmail(ADA, [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }, { title: 'Ramen', code: 'gh78', addedBy: 'Grace' }] }], ORIGIN)
+    expect(two.subject).toBe('2 neue Gerichte in 🍜 Kochclub')
+  })
+
+  test('many adders: the preview names two and counts the others', () => {
+    const dishes = ['Grace', 'Linus', 'Kati', 'Mile', 'Grace'].map((addedBy, i) => ({ title: `Gericht ${i}`, code: `c${i}`, addedBy }))
+    expect(digestEmail(ADA, [{ board: KOCHCLUB, dishes }], ORIGIN).html).toContain('Von Grace, Linus und 2 andere. Schau mal rein!')
+  })
+
+  test('someone without a Username yet is greeted without a name', () => {
+    const email = digestEmail({ email: 'ada@example.com', name: null }, [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }] }], ORIGIN)
+    for (const part of [email.text, email.html]) expect(part).toContain('Hallo!')
+  })
+
+  test('the plain text has no dashed separator line', () => {
+    const email = digestEmail(ADA, [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }] }], ORIGIN)
+    expect(email.text).not.toMatch(/^-{2,}\s*$/m)
   })
 
   test('what Members typed is escaped in the HTML, never markup', () => {
-    const email = digestEmail('ada@example.com', [{
+    const email = digestEmail(ADA, [{
       board: { ...KOCHCLUB, name: 'Koch<b>club</b>' },
       dishes: [{ title: '<img src=x onerror=alert(1)> & "Dal"', code: 'cd34', addedBy: 'Gr<ace>' }],
     }], ORIGIN)
