@@ -255,17 +255,74 @@ From the grilling session on 2026-10-16 (`CONTEXT.md` → Tour, ADR 0006, design
 
 ### Phase 13 onwards: the road to 1.0 (#317–#323)
 
-From the grilling session on 2026-10-18 (`docs/reviews/next-spec-brief.md`, `CONTEXT.md`, ADRs 0007 and 0008). Seven specs, in this order; their tickets don't exist yet and are added here phase by phase as `/to-tickets` creates them. Don't implement a spec directly.
+From the grilling session on 2026-10-18 (`docs/reviews/next-spec-brief.md`, `CONTEXT.md`, ADRs 0007 and 0008). Seven specs, worked in this order; each ticket is a sub-issue of its spec, with GitHub blocking links as well as its `## Blocked by` section. Don't implement a spec directly.
 
-| # | Spec | Note |
+**Phase 13: Languages (#317)**
+
+| # | Ticket | Note |
 |---|---|---|
-| #317 | Languages: English and Italian beside German | Opens with the user's pick of push and Digest wordings |
-| #318 | Dish life: Votes, Comments, the Dish History and the Archive | Card prototype; the user decides |
-| #319 | Live updates: version polling within the Hobby plan | Small |
-| #320 | Board access: Permissions per Member | |
-| #321 | Opening up: CSP, email sign-in, account deletion, limits, Admin Page and Open Sign-up | Privacy policy and imprint are the user's |
-| #322 | Notifications for Comments and Votes | |
-| #323 | Version 1.0 and the Changelog | Last; its final ticket releases 1.0.0 |
+| #325 | Push and Digest wordings: variations to choose from | Ends with the user's pick. Can run beside #326 |
+| #326 | Choosing the language, and English | Biggest of the phase. Migration |
+| #327 | Italian | |
+| #328 | Outside the app in the recipient's language | After #325 and #327 |
+| #329 | Review of the English and Italian with fresh context | Must not run in the session that translated |
+
+**Phase 14: Dish life (#318)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #330 | Prototype: card indicator and Dish History look | Ends with the user's decision |
+| #331 | Event log | Can run while the user decides on #330 |
+| #336 | Archived Dishes | Only needs #327; can run while the user decides on #330 |
+| #337 | Archived Boards | After #336 |
+| #332 | Comments and the Dish History | After #330 and #331 |
+| #333 | Notes become Comments | Migration drops the note columns |
+| #334 | Votes | |
+| #335 | Card shows Votes, Comments and "new" | |
+
+**Phase 15: Live updates (#319)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #338 | Board version and the cheap check | Triggers on every Board table |
+| #339 | Polling cadence | |
+
+**Phase 16: Board access (#320)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #340 | Permissions groundwork, with "add Dishes" end to end | Migration |
+| #341 | Permissions: edit, move and archive Dishes | |
+| #342 | Permissions: Columns, Invite Link, comment and vote, Board name and emoji | |
+| #343 | Default Permissions, "Nur ansehen", the Tour and handing over ownership | |
+
+**Phase 17: Opening up (#321)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #344 | Enforce the Content Security Policy | Reads production logs first |
+| #345 | Email sign-in with a code | |
+| #346 | Account deletion | |
+| #347 | Limits and the free-tier figures | |
+| #348 | Operator and the Admin Page | The user sets the Operator email in Vercel |
+| #349 | Privacy policy and imprint on christried.me | `ready-for-human`: skip, the user does it |
+| #350 | Open Sign-up | Last of the phase; blocked by #349 |
+
+**Phase 18: Notifications for Comments and Votes (#322)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #351 | Wordings for Comment and Vote notifications | Ends with the user's pick |
+| #352 | Push Notifications for Comments and Votes | |
+| #353 | Email Digest section for Comments and Votes | |
+
+**Phase 19: Version 1.0 and the Changelog (#323)**
+
+| # | Ticket | Note |
+|---|---|---|
+| #354 | Changelog page and the Version in Your Settings | Blocked by the last tickets of every phase above |
+| #355 | The Changelog rule for agents | |
+| #356 | Release 1.0.0 | |
 
 ## Keeping this file current
 
