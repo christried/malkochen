@@ -39,7 +39,7 @@ onMounted(() => {
   for (const el of group.value!.children) resized.observe(el)
 })
 onBeforeUnmount(() => resized?.disconnect())
-watch([chosen, () => t.userSettings.languages], () => nextTick(place))
+watch(chosen, () => nextTick(place))
 
 // Typed as a plain string: Nitro's route typing runs too deep here.
 const LANGUAGE: string = '/api/me/language'

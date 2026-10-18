@@ -47,6 +47,9 @@ test.describe('with an Italian browser', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'it')
     await expect(page.getByRole('button', { name: 'Aggiungi un piatto' })).toBeVisible()
+    // Still "Automatisch", in its Italian name.
+    const sheet = await openUserSettings(page, 'Impostazioni')
+    await expect(sheet.getByRole('radiogroup', { name: 'Lingua' }).getByRole('radio', { name: 'Automatica' })).toHaveAttribute('aria-checked', 'true')
   })
 })
 

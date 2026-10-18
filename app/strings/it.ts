@@ -218,7 +218,7 @@ export const it: Strings = {
     close: 'Salta',
   },
   boardCreated: {
-    headline: (emoji: string, name: string) => `${emoji} ${name} è pronta`,
+    headline: (emoji: string, name: string) => `La bacheca ${emoji} ${name} è pronta`,
     body: 'Raccogli qui cosa vuoi cucinare e invita altre persone.',
     start: 'Iniziamo',
     close: 'Chiudi',
@@ -554,7 +554,7 @@ export const it: Strings = {
     },
     addButton: {
       title: 'Il tuo primo piatto',
-      text: 'Tocca il più.',
+      text: 'Tocca il +.',
     },
     addDishLink: {
       title: 'Hai un link?',
