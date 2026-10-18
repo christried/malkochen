@@ -47,7 +47,7 @@ const ACCENTS = [ACCENT.butter, ACCENT.orchid, ACCENT.sage, ACCENT.carrot, ACCEN
 const TILE = 262;
 const GAP = 26;
 
-// Saved, saved, saved … never cooked: the Placeholder Images piling up,
+// Gespeichert … nie gekocht: the Placeholder Images piling up,
 // each bookmarked.
 const Hook: React.FC = () => {
   const frame = useCurrentFrame();
@@ -74,8 +74,8 @@ const Hook: React.FC = () => {
           transform: `translateY(${-leave * 80}px)`,
         }}
       >
-        <div style={{ transform: `scale(${0.7 + 0.3 * saved})`, opacity: saved }}>Saved.</div>
-        <div style={{ color: ACCENT.carrot, transform: `scale(${0.7 + 0.3 * never})`, opacity: never }}>Never cooked.</div>
+        <div style={{ transform: `scale(${0.7 + 0.3 * saved})`, opacity: saved }}>Gespeichert.</div>
+        <div style={{ color: ACCENT.carrot, transform: `scale(${0.7 + 0.3 * never})`, opacity: never }}>Nie gekocht.</div>
       </div>
       {HOOK_DISHES.map((dish, i) => {
         const pop = spring({ frame: frame - 2 - i * 3, fps, config: POP });
@@ -158,45 +158,49 @@ const Reveal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (frame < SCENES.reveal.from || frame >= SCENES.reveal.to + 4) return null;
-  const word = spring({ frame: frame - 84, fps, config: POP });
-  const line = spring({ frame: frame - 94, fps, config: SOFT });
+  const line = spring({ frame: frame - 82, fps, config: SOFT });
+  const word = spring({ frame: frame - 90, fps, config: POP });
   const leave = interpolate(frame, [SCENES.phone.from - 12, SCENES.phone.from + 2], [0, 1], clamp);
+  // The sign-in screen's headline (strings: signIn.headline), the name
+  // highlighted as it is there.
   return (
     <AbsoluteFill style={{ opacity: 1 - leave, transform: `translateY(${-leave * 260}px)` }}>
       <div
         style={{
           position: "absolute",
-          top: 1110,
+          top: 1070,
           width: "100%",
           textAlign: "center",
           fontFamily: DISPLAY,
           fontWeight: 500,
-          fontSize: 190,
-          letterSpacing: "-0.03em",
-          color: LIGHT.text,
-          opacity: word,
-          transform: `translateY(${(1 - word) * 60}px)`,
-        }}
-      >
-        malkochen
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 1370,
-          left: 120,
-          right: 120,
-          textAlign: "center",
-          fontFamily: UI,
-          fontWeight: 600,
-          fontSize: 62,
-          lineHeight: 1.2,
+          fontSize: 104,
+          letterSpacing: "-0.02em",
           color: LIGHT.text,
           opacity: line,
           transform: `translateY(${(1 - line) * 30}px)`,
         }}
       >
-        One board for the food you find online.
+        Was willst du
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 1190,
+          width: "100%",
+          textAlign: "center",
+          fontFamily: DISPLAY,
+          fontWeight: 500,
+          fontSize: 168,
+          letterSpacing: "-0.03em",
+          color: LIGHT.text,
+          opacity: word,
+          transform: `translateY(${(1 - word) * 60}px) scale(${0.85 + 0.15 * word})`,
+        }}
+      >
+        <span style={{ background: `linear-gradient(transparent 62%, ${ACCENT.butter} 62%, ${ACCENT.butter} 90%, transparent 90%)`, padding: "0 12px" }}>
+          malkochen
+        </span>
+        ?
       </div>
     </AbsoluteFill>
   );
@@ -213,7 +217,7 @@ const Outro: React.FC = () => {
   const pop = spring({ frame: t - 6, fps, config: POP });
   const bob = Math.sin((t / fps) * Math.PI * 2 * 0.9) * 10;
   const word = spring({ frame: t - 14, fps, config: POP });
-  const steps = ["Collect.", "Plan.", "Cook."];
+  const steps = ["Sammeln.", "Planen.", "Kochen."];
   const url = spring({ frame: t - 40, fps, config: SOFT });
   return (
     <AbsoluteFill>
@@ -269,7 +273,7 @@ const Outro: React.FC = () => {
               style={{
                 fontFamily: UI,
                 fontWeight: 700,
-                fontSize: 66,
+                fontSize: 58,
                 color: LIGHT.text,
                 padding: "10px 30px",
                 borderRadius: 999,
@@ -286,17 +290,26 @@ const Outro: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          top: 1690,
+          top: 1640,
           width: "100%",
           textAlign: "center",
-          fontFamily: UI,
-          fontWeight: 600,
-          fontSize: 42,
-          color: LIGHT.textMuted,
           opacity: url,
+          transform: `translateY(${(1 - url) * 30}px)`,
         }}
       >
-        github.com/christried/malkochen
+        <span
+          style={{
+            fontFamily: UI,
+            fontWeight: 700,
+            fontSize: 50,
+            color: LIGHT.surface,
+            background: LIGHT.text,
+            padding: "18px 40px",
+            borderRadius: 999,
+          }}
+        >
+          malkochen.christried.me
+        </span>
       </div>
     </AbsoluteFill>
   );

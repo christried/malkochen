@@ -287,6 +287,7 @@ export const Caption: React.FC<{ text: string; from: number; to: number }> = ({ 
         fontSize: 92,
         lineHeight: 1.04,
         letterSpacing: "-0.02em",
+        textWrap: "balance",
         color: LIGHT.text,
         opacity: Math.min(inn, out),
         transform: `translateY(${(1 - inn) * 40 - (1 - out) * 20}px)`,

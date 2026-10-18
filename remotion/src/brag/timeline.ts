@@ -38,9 +38,9 @@ export const TAB_SWITCH = SHOTS.plan.at + 72;
 
 // What the captions over the phone say, and when.
 export const CAPTIONS = [
-  { from: 168, to: SHOTS.plan.at, text: "Found it on TikTok? Share it." },
-  { from: SHOTS.plan.at, to: SHOTS.cook.at, text: "Plan the week together." },
-  { from: SHOTS.cook.at, to: end("cook"), text: "Then actually cook it." },
+  { from: 168, to: SHOTS.plan.at, text: "Auf TikTok entdeckt? Einfach teilen." },
+  { from: SHOTS.plan.at, to: SHOTS.cook.at, text: "Plant gemeinsam die Woche." },
+  { from: SHOTS.cook.at, to: end("cook"), text: "Und dann wirklich kochen." },
 ];
 
 // The made-up share before the app: the share icon, then malkochen's.
