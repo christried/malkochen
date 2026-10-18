@@ -3,7 +3,8 @@ import { spawn } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createThrowawayDatabase, readAdminUrl } from '../../tests/support/throwaway-db'
 import { testAuthEnv } from '../../tests/support/test-auth-env'
-import { CAPTURE_ORIGIN, OUT_DIR, SERVER_FILE } from './settings'
+import { dirname } from 'node:path'
+import { CAPTURE_ORIGIN, SERVER_FILE } from './settings'
 
 // The app the brag video is captured from: `pnpm dev` on its own throwaway
 // local database, with the browser tests' settings (dev sign-in, test
@@ -12,7 +13,7 @@ import { CAPTURE_ORIGIN, OUT_DIR, SERVER_FILE } from './settings'
 // from SERVER_FILE.
 async function main() {
   const database = await createThrowawayDatabase(readAdminUrl())
-  await mkdir(OUT_DIR, { recursive: true })
+  await mkdir(dirname(SERVER_FILE), { recursive: true })
   await writeFile(SERVER_FILE, JSON.stringify({ origin: CAPTURE_ORIGIN, databaseUrl: database.url }))
   const child = spawn(`pnpm dev --port ${new URL(CAPTURE_ORIGIN).port}`, {
     stdio: 'inherit',

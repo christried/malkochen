@@ -1,66 +1,131 @@
-// The brag video's timeline (#313): 20s at 30fps, its 120 BPM soundtrack
-// a beat every 15 frames. Shared by the composition and the soundtrack
-// (scripts/brag-audio.ts), so the effects hit what the picture does.
-// Frames, never seconds.
+// The brag video's timeline (#313), on the beat grid of its music: "Joyful
+// Rhythm Walk Funk" by lightbeatsmusic (Pixabay), 115 BPM, from its beat 9
+// (two bars before the groove drops in) to its beat 65 (the end of its
+// one-bar break). Shared by the composition, the soundtrack
+// (scripts/brag-audio.ts) and the capture (capture/capture.ts), which
+// records the app so that its taps land on these beats too. Everything is
+// counted in beats of the video (0 = the first frame); `beat()` turns a
+// beat into the nearest frame, never off by more than half a frame.
 
 export const FPS = 30;
 export const WIDTH = 1080;
 export const HEIGHT = 1920;
-export const BEAT = 15;
-export const DURATION = 40 * BEAT;
 
-// The captured shots of the real app (capture/capture.ts): which frames of
-// each the video plays, from `from` up to `to` (its last), and where it starts them.
-export type ShotName = "share" | "plan" | "cook";
-
-export const SHOTS: Record<ShotName, { at: number; from: number; to: number }> = {
-  share: { at: 200, from: 6, to: 103 },
-  plan: { at: 298, from: 3, to: 110 },
-  cook: { at: 406, from: 3, to: 83 },
+export const MUSIC = {
+  // In out/brag (copied there by scripts/render-brag.ts).
+  file: "music.mp3",
+  bpm: 115,
+  // The song's beat 0, in seconds; its bars start on beats 1, 5, 9, …
+  firstBeat: 0.016,
+  // The song's beats the video plays, from and up to.
+  from: 9,
+  to: 65,
 };
 
-const end = (shot: ShotName) => SHOTS[shot].at + SHOTS[shot].to - SHOTS[shot].from;
+const BEAT_FRAMES = (60 / MUSIC.bpm) * FPS;
+export const beat = (b: number) => Math.round(b * BEAT_FRAMES);
+// Where in the song (seconds) the video starts.
+export const MUSIC_START = MUSIC.firstBeat + (MUSIC.from * 60) / MUSIC.bpm;
 
-export const SCENES = {
-  hook: { from: 0, to: 75 },
-  reveal: { from: 75, to: 165 },
-  // The phone, from the shared video to the last cooked frame.
-  phone: { from: 150, to: end("cook") + 8 },
-  // Inside it, before the app: a food video, shared to malkochen, until
-  // the app has opened over it.
-  shareIntro: { from: 150, to: SHOTS.share.at + 12 },
-  outro: { from: end("cook"), to: DURATION },
+export const DURATION = beat(MUSIC.to - MUSIC.from);
+
+// The moments, in beats. Bars start on 0, 4, 8, …; the groove drops in on
+// 8 and stops for the break on 52.
+export const CUE = {
+  saved: 0,
+  never: 4,
+  drop: 8,
+  malkochen: 9,
+  phone: 12,
+  shareIcon: 13,
+  malkochenIcon: 15,
+  // The shots of the real app, each from its first beat.
+  share: 16,
+  save: 20,
+  plan: 24,
+  lift: 24.5,
+  landed: 28,
+  dieseWoche: 30,
+  columns: 32,
+  switcher: 33,
+  gear: 34,
+  typing: 34.75,
+  add: 37,
+  back: 38.5,
+  cook: 40,
+  cookTab: 40.5,
+  cooked: 42,
+  outro: 48,
+  name: 49,
+  steps: 50,
+  breakdown: 52,
 } as const;
 
-// The plan shot's tap on the "Diese Woche" tab: the Board's tint turns
-// from Ideen's butter to its orchid.
-export const TAB_SWITCH = SHOTS.plan.at + 72;
+// The captured shots, in order: each starts at its beat, its frame 0 there.
+export type ShotName = "share" | "plan" | "columns" | "cook";
+export const SHOT_ORDER: ShotName[] = ["share", "plan", "columns", "cook"];
+const SHOT_BEATS: Record<ShotName, [number, number]> = {
+  share: [CUE.share, CUE.plan],
+  plan: [CUE.plan, CUE.columns],
+  columns: [CUE.columns, CUE.cook],
+  cook: [CUE.cook, CUE.outro],
+};
+export const SHOTS = Object.fromEntries(
+  SHOT_ORDER.map((s) => [s, { at: beat(SHOT_BEATS[s][0]), frames: beat(SHOT_BEATS[s][1]) - beat(SHOT_BEATS[s][0]) }]),
+) as Record<ShotName, { at: number; frames: number }>;
+
+// A cue's frame within its shot (what capture.ts ticks to).
+export const shotCue = (shot: ShotName, cue: number) => beat(cue) - SHOTS[shot].at;
+
+export const SCENES = {
+  hook: { from: 0, to: beat(CUE.drop) },
+  reveal: { from: beat(CUE.drop), to: beat(CUE.phone) + 6 },
+  phone: { from: beat(CUE.phone), to: beat(CUE.outro) + 8 },
+  // Inside it, before the app: a food video, shared to malkochen, until
+  // the app has opened over it.
+  shareIntro: { from: beat(CUE.phone), to: beat(CUE.share) + 12 },
+  outro: { from: beat(CUE.outro), to: DURATION },
+} as const;
 
 // What the captions over the phone say, and when.
 export const CAPTIONS = [
-  { from: 168, to: SHOTS.plan.at, text: "Found it on TikTok? Share it." },
-  { from: SHOTS.plan.at, to: SHOTS.cook.at, text: "Plan the week together." },
-  { from: SHOTS.cook.at, to: end("cook"), text: "Then actually cook it." },
+  { from: beat(CUE.phone) + 4, to: beat(CUE.plan), text: "Auf TikTok entdeckt? Einfach teilen." },
+  { from: beat(CUE.plan), to: beat(CUE.columns), text: "Plant gemeinsam die Woche." },
+  { from: beat(CUE.columns), to: beat(CUE.cook), text: "Spalten, wie ihr sie braucht." },
+  { from: beat(CUE.cook), to: beat(CUE.outro), text: "Und dann wirklich kochen." },
 ];
 
-// The made-up share before the app: the share icon, then malkochen's.
-export const INTRO_TAPS = { share: 174, malkochen: 194 };
+// The made-up share before the app: the share icon, then malkochen's. A
+// tap acts as the finger lifts, on the beat.
+export const INTRO_TAPS = { share: beat(CUE.shareIcon), malkochen: beat(CUE.malkochenIcon) };
 
-// A shot's frame of the real app at a video frame, null outside it.
-export const shotFrame = (shot: ShotName, frame: number) => {
-  const { at, from, to } = SHOTS[shot];
-  const f = frame - at + from;
-  return frame >= at && f <= to ? f : null;
-};
-
-// The shot playing at a frame (the last one holds its final frame).
+// The shot playing at a frame, and its frame (the last one holds).
 export const shotAt = (frame: number): { shot: ShotName; frame: number } | null => {
-  for (const shot of ["cook", "plan", "share"] as const) {
-    if (frame >= SHOTS[shot].at) return { shot, frame: Math.min(shotFrame(shot, frame) ?? SHOTS[shot].to, SHOTS[shot].to) };
+  for (const shot of [...SHOT_ORDER].reverse()) {
+    const { at, frames } = SHOTS[shot];
+    if (frame >= at) return { shot, frame: Math.min(frame - at, frames - 1) };
   }
   return null;
 };
 
-// The poster: the outro settled (Topfbert, the name, the three words). It
-// is also frame 0 of the video (Brag.tsx), for every platform's thumbnail.
-export const POSTER_FRAME = 580;
+// The page's tint: the Column the phone shows (Ideen's butter, Diese
+// Woche's orchid), the settings page's plain ground, then butter again.
+export const TINTS: [number, "bg" | "butter" | "orchid"][] = [
+  [0, "bg"],
+  [beat(CUE.drop), "bg"],
+  [beat(CUE.drop) + 15, "butter"],
+  [beat(CUE.dieseWoche), "butter"],
+  [beat(CUE.dieseWoche) + 14, "orchid"],
+  [beat(CUE.gear), "orchid"],
+  [beat(CUE.gear) + 14, "bg"],
+  [beat(CUE.back), "bg"],
+  [beat(CUE.back) + 14, "butter"],
+  [beat(CUE.cookTab), "butter"],
+  [beat(CUE.cookTab) + 14, "orchid"],
+  [beat(CUE.outro), "orchid"],
+  [beat(CUE.outro) + 12, "butter"],
+];
+
+// The poster: the end card settled. It is also frame 0 of the video
+// (Brag.tsx), for every platform's thumbnail.
+export const POSTER_FRAME = beat(CUE.breakdown + 3);

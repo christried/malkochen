@@ -54,7 +54,7 @@ export const RemotionRoot: React.FC = () => {
         )}
       </Folder>
       {/* The brag video (#313): rendered with out/brag as its public dir
-          (scripts/render-brag.ts), not the handoff. */}
+          (out/brag/<version>, scripts/render-brag.ts), not the handoff. */}
       <Composition
         id="brag"
         component={Brag}
@@ -62,7 +62,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{ touches: { share: [], plan: [], cook: [] } }}
+        defaultProps={{ touches: { share: [], plan: [], columns: [], cook: [] }, grid: [] }}
         calculateMetadata={calculateBragMetadata}
       />
     </>

@@ -15,17 +15,24 @@ import {
 } from "remotion";
 import { ACCENT, DISPLAY, LIGHT, POP, SOFT, tint, UI } from "./look";
 import { Caption, Phone, type Touches } from "./Phone";
-import { CAPTIONS, POSTER_FRAME, SCENES, SHOTS, type ShotName, TAB_SWITCH } from "./timeline";
+import { beat, CAPTIONS, CUE, POSTER_FRAME, SCENES, SHOTS, type ShotName, TINTS } from "./timeline";
 
 // The brag video (#313): saved and never cooked → malkochen → the real app
-// on a phone (shared from a food video, planned, cooked) → the outro. Its
-// public dir is out/brag (scripts/render-brag.ts), where the capture, the
+// on a phone (shared from a food video, planned, a Column added, cooked) →
+// the outro, every move on a beat of the music (timeline.ts). Its public
+// dir is out/brag (scripts/render-brag.ts), where the capture, the
 // soundtrack and the app's art are.
+
+// Topfbert's bob: once every two beats.
+const bob = (frame: number, height: number) => Math.sin((frame / beat(2)) * Math.PI * 2) * height;
 
 loadFigtree("normal", { weights: ["500", "600", "700"], subsets: ["latin"] });
 loadPetrona("normal", { weights: ["500"], subsets: ["latin"] });
 
-export type BragProps = { touches: Touches };
+// A tile of the opening grid: a saved Dish's photo, or its Placeholder Image
+// (capture.ts writes grid.json).
+export type GridTile = { photo: string } | { placeholder: string };
+export type BragProps = { touches: Touches; grid: GridTile[] };
 
 export const calculateBragMetadata: CalculateMetadataFunction<BragProps> = async () => {
   const touches = Object.fromEntries(
@@ -36,24 +43,24 @@ export const calculateBragMetadata: CalculateMetadataFunction<BragProps> = async
       }),
     ),
   ) as Touches;
-  return { props: { touches } };
+  const grid = (await (await fetch(staticFile("grid.json"))).json()) as GridTile[];
+  return { props: { touches, grid } };
 };
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-const HOOK_DISHES = ["pasta", "ramen", "bowl", "breakfast", "burger", "tacos", "wok", "cake", "dumplings"];
 const ACCENTS = [ACCENT.butter, ACCENT.orchid, ACCENT.sage, ACCENT.carrot, ACCENT.sky];
 
 const TILE = 262;
 const GAP = 26;
 
-// Saved, saved, saved … never cooked: the Placeholder Images piling up,
-// each bookmarked.
-const Hook: React.FC = () => {
+// Gespeichert … nie gekocht: saved Dishes piling up, one on every eighth
+// note, each bookmarked; most as their photo, some drawn.
+const Hook: React.FC<{ grid: GridTile[] }> = ({ grid }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (frame >= SCENES.hook.to + 8) return null;
-  const never = spring({ frame: frame - 34, fps, config: POP });
+  const never = spring({ frame: frame - beat(CUE.never), fps, config: POP });
   const leave = interpolate(frame, [SCENES.hook.to - 8, SCENES.hook.to + 4], [0, 1], clamp);
   const saved = spring({ frame, fps, config: POP });
   return (
@@ -74,18 +81,18 @@ const Hook: React.FC = () => {
           transform: `translateY(${-leave * 80}px)`,
         }}
       >
-        <div style={{ transform: `scale(${0.7 + 0.3 * saved})`, opacity: saved }}>Saved.</div>
-        <div style={{ color: ACCENT.carrot, transform: `scale(${0.7 + 0.3 * never})`, opacity: never }}>Never cooked.</div>
+        <div style={{ transform: `scale(${0.7 + 0.3 * saved})`, opacity: saved }}>Gespeichert.</div>
+        <div style={{ color: ACCENT.carrot, transform: `scale(${0.7 + 0.3 * never})`, opacity: never }}>Nie gekocht.</div>
       </div>
-      {HOOK_DISHES.map((dish, i) => {
-        const pop = spring({ frame: frame - 2 - i * 3, fps, config: POP });
-        const mark = spring({ frame: frame - 7 - i * 3, fps, config: POP });
+      {grid.map((tile, i) => {
+        const pop = spring({ frame: frame - beat(i / 2), fps, config: POP });
+        const mark = spring({ frame: frame - beat(i / 2) - 5, fps, config: POP });
         const out = spring({ frame: frame - (SCENES.hook.to - 10) - (i % 3) * 2, fps, config: SOFT });
         const [col, row] = [i % 3, Math.floor(i / 3)];
         const accent = ACCENTS[i % ACCENTS.length]!;
         return (
           <div
-            key={dish}
+            key={i}
             style={{
               position: "absolute",
               left: (1080 - 3 * TILE - 2 * GAP) / 2 + col * (TILE + GAP),
@@ -100,7 +107,12 @@ const Hook: React.FC = () => {
               opacity: 1 - 0.35 * never,
             }}
           >
-            <Img src={staticFile(`placeholders/${dish}-light.svg`)} style={{ width: "100%", height: "100%" }} />
+            <div style={{ width: "100%", height: "100%", borderRadius: 64, overflow: "hidden" }}>
+              <Img
+                src={staticFile("photo" in tile ? tile.photo : `placeholders/${tile.placeholder}-light.svg`)}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
             <div
               style={{
                 position: "absolute",
@@ -131,13 +143,12 @@ const Hook: React.FC = () => {
 const Topfbert: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  if (frame < 36 || frame >= SCENES.reveal.to + 4) return null;
-  const pop = spring({ frame: frame - 38, fps, config: POP });
+  if (frame < beat(CUE.never + 1) || frame >= SCENES.reveal.to + 4) return null;
+  const pop = spring({ frame: frame - beat(CUE.never + 1), fps, config: POP });
   const travel = spring({ frame: frame - SCENES.reveal.from, fps, config: SOFT });
   const leave = interpolate(frame, [SCENES.phone.from - 12, SCENES.phone.from + 2], [0, 1], clamp);
   const size = 400 + 160 * travel;
   const cy = 1600 - 860 * travel - leave * 260;
-  const bob = Math.sin((frame / fps) * Math.PI * 2 * 0.9) * 8 * travel;
   const pose = frame < SCENES.reveal.from ? "oops" : "waving";
   return (
     <Img
@@ -145,7 +156,7 @@ const Topfbert: React.FC = () => {
       style={{
         position: "absolute",
         left: 540 - size / 2,
-        top: cy - size / 2 + bob,
+        top: cy - size / 2 + bob(frame, 8) * travel,
         width: size,
         transform: `scale(${pop})`,
         opacity: 1 - leave,
@@ -158,45 +169,49 @@ const Reveal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (frame < SCENES.reveal.from || frame >= SCENES.reveal.to + 4) return null;
-  const word = spring({ frame: frame - 84, fps, config: POP });
-  const line = spring({ frame: frame - 94, fps, config: SOFT });
+  const line = spring({ frame: frame - beat(CUE.drop) - 2, fps, config: SOFT });
+  const word = spring({ frame: frame - beat(CUE.malkochen), fps, config: POP });
   const leave = interpolate(frame, [SCENES.phone.from - 12, SCENES.phone.from + 2], [0, 1], clamp);
+  // The sign-in screen's headline (strings: signIn.headline), the name
+  // highlighted as it is there.
   return (
     <AbsoluteFill style={{ opacity: 1 - leave, transform: `translateY(${-leave * 260}px)` }}>
       <div
         style={{
           position: "absolute",
-          top: 1110,
+          top: 1070,
           width: "100%",
           textAlign: "center",
           fontFamily: DISPLAY,
           fontWeight: 500,
-          fontSize: 190,
-          letterSpacing: "-0.03em",
-          color: LIGHT.text,
-          opacity: word,
-          transform: `translateY(${(1 - word) * 60}px)`,
-        }}
-      >
-        malkochen
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 1370,
-          left: 120,
-          right: 120,
-          textAlign: "center",
-          fontFamily: UI,
-          fontWeight: 600,
-          fontSize: 62,
-          lineHeight: 1.2,
+          fontSize: 104,
+          letterSpacing: "-0.02em",
           color: LIGHT.text,
           opacity: line,
           transform: `translateY(${(1 - line) * 30}px)`,
         }}
       >
-        One board for the food you find online.
+        Was willst du
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 1190,
+          width: "100%",
+          textAlign: "center",
+          fontFamily: DISPLAY,
+          fontWeight: 500,
+          fontSize: 168,
+          letterSpacing: "-0.03em",
+          color: LIGHT.text,
+          opacity: word,
+          transform: `translateY(${(1 - word) * 60}px) scale(${0.85 + 0.15 * word})`,
+        }}
+      >
+        <span style={{ background: `linear-gradient(transparent 62%, ${ACCENT.butter} 62%, ${ACCENT.butter} 90%, transparent 90%)`, padding: "0 12px" }}>
+          malkochen
+        </span>
+        ?
       </div>
     </AbsoluteFill>
   );
@@ -210,15 +225,18 @@ const Outro: React.FC = () => {
   const { fps } = useVideoConfig();
   const t = frame - SCENES.outro.from;
   if (t < 0) return null;
-  const pop = spring({ frame: t - 6, fps, config: POP });
-  const bob = Math.sin((t / fps) * Math.PI * 2 * 0.9) * 10;
-  const word = spring({ frame: t - 14, fps, config: POP });
-  const steps = ["Collect.", "Plan.", "Cook."];
-  const url = spring({ frame: t - 40, fps, config: SOFT });
+  // Topfbert and the veggies on the outro's downbeat, the name on the next
+  // beat, a word on each beat after, the last one and the address as the
+  // music breaks.
+  const at = (cue: number) => frame - beat(cue);
+  const pop = spring({ frame: at(CUE.outro), fps, config: POP });
+  const word = spring({ frame: at(CUE.name), fps, config: POP });
+  const steps = ["Sammeln.", "Planen.", "Kochen."];
+  const url = spring({ frame: at(CUE.breakdown), fps, config: SOFT });
   return (
     <AbsoluteFill>
       {Array.from({ length: 16 }, (_, i) => {
-        const age = (t - 8) / fps;
+        const age = at(CUE.outro) / fps;
         if (age < 0 || age > 1.6) return null;
         const angle = (i / 16) * Math.PI * 2 + 0.3;
         const speed = 900 + (i % 4) * 160;
@@ -241,7 +259,7 @@ const Outro: React.FC = () => {
       })}
       <Img
         src={staticFile("illustrations/topfbert-happy.svg")}
-        style={{ position: "absolute", left: 540 - 250, top: 470 + bob, width: 500, transform: `scale(${pop})` }}
+        style={{ position: "absolute", left: 540 - 250, top: 470 + bob(frame, 10), width: 500, transform: `scale(${pop})` }}
       />
       <div
         style={{
@@ -262,14 +280,14 @@ const Outro: React.FC = () => {
       </div>
       <div style={{ position: "absolute", top: 1290, width: "100%", display: "flex", justifyContent: "center", gap: 28 }}>
         {steps.map((step, i) => {
-          const s = spring({ frame: t - 22 - i * 7, fps, config: POP });
+          const s = spring({ frame: at(CUE.steps + i), fps, config: POP });
           return (
             <span
               key={step}
               style={{
                 fontFamily: UI,
                 fontWeight: 700,
-                fontSize: 66,
+                fontSize: 58,
                 color: LIGHT.text,
                 padding: "10px 30px",
                 borderRadius: 999,
@@ -286,50 +304,59 @@ const Outro: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          top: 1690,
+          top: 1640,
           width: "100%",
           textAlign: "center",
-          fontFamily: UI,
-          fontWeight: 600,
-          fontSize: 42,
-          color: LIGHT.textMuted,
           opacity: url,
+          transform: `translateY(${(1 - url) * 30}px)`,
         }}
       >
-        github.com/christried/malkochen
+        <span
+          style={{
+            fontFamily: UI,
+            fontWeight: 700,
+            fontSize: 50,
+            color: LIGHT.surface,
+            background: LIGHT.text,
+            padding: "18px 40px",
+            borderRadius: 999,
+          }}
+        >
+          malkochen.christried.me
+        </span>
       </div>
     </AbsoluteFill>
   );
 };
 
-// The page behind: the app's own, then the tint of the Column the phone
-// shows (Ideen's butter, Diese Woche's orchid), then butter again.
+// The page behind, in the tint of what the phone shows (TINTS).
+const TINT_COLOURS = { bg: LIGHT.bg, butter: tint(ACCENT.butter, 26), orchid: tint(ACCENT.orchid, 24) };
 const background = (frame: number) =>
   interpolateColors(
     frame,
-    [0, SCENES.reveal.from, SCENES.reveal.from + 15, TAB_SWITCH, TAB_SWITCH + 14, SCENES.outro.from, SCENES.outro.from + 12],
-    [LIGHT.bg, LIGHT.bg, tint(ACCENT.butter, 26), tint(ACCENT.butter, 26), tint(ACCENT.orchid, 24), tint(ACCENT.orchid, 24), tint(ACCENT.butter, 26)],
+    TINTS.map(([f]) => f),
+    TINTS.map(([, colour]) => TINT_COLOURS[colour]),
   );
 
 // Frame 0 is the poster (POSTER_FRAME), so every platform's thumbnail shows
 // it; the soundtrack runs on regardless.
-export const Brag: React.FC<BragProps> = ({ touches }) => {
+export const Brag: React.FC<BragProps> = ({ touches, grid }) => {
   const frame = useCurrentFrame();
   return (
     <>
       <Html5Audio src={staticFile("brag-audio.wav")} />
       <Freeze frame={POSTER_FRAME} active={frame === 0}>
-        <Picture touches={touches} />
+        <Picture touches={touches} grid={grid} />
       </Freeze>
     </>
   );
 };
 
-const Picture: React.FC<BragProps> = ({ touches }) => {
+const Picture: React.FC<BragProps> = ({ touches, grid }) => {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: background(frame), overflow: "hidden" }}>
-      <Hook />
+      <Hook grid={grid} />
       <Reveal />
       <Topfbert />
       {CAPTIONS.map((c) => (

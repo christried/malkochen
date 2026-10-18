@@ -1,6 +1,6 @@
 import { AbsoluteFill, Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { ACCENT, DISPLAY, LIGHT, POP, UI } from "./look";
-import { INTRO_TAPS, SCENES, SHOTS, type ShotName, shotAt } from "./timeline";
+import { beat, CUE, INTRO_TAPS, SCENES, SHOTS, type ShotName, shotAt } from "./timeline";
 
 // The phone, and on its screen the real app as captured (capture/capture.ts),
 // after a made-up food video shared to it. Drawn in the app's CSS pixels
@@ -17,15 +17,11 @@ export type Touches = Record<ShotName, Touch[]>;
 // Every touch at its video frame: the shots' (from their shot.json) and the
 // made-up share's taps.
 const videoTouches = (touches: Touches, shareIcon: { x: number; y: number }, malkochenIcon: { x: number; y: number }) => [
-  { frame: INTRO_TAPS.share, ...shareIcon, phase: "down" as const },
-  { frame: INTRO_TAPS.share + 3, ...shareIcon, phase: "up" as const },
-  { frame: INTRO_TAPS.malkochen, ...malkochenIcon, phase: "down" as const },
-  { frame: INTRO_TAPS.malkochen + 4, ...malkochenIcon, phase: "up" as const },
-  ...(Object.keys(SHOTS) as ShotName[]).flatMap((shot) =>
-    touches[shot]
-      .map((t) => ({ ...t, frame: SHOTS[shot].at + t.frame - SHOTS[shot].from }))
-      .filter((t) => t.frame >= SHOTS[shot].at),
-  ),
+  { frame: INTRO_TAPS.share - 3, ...shareIcon, phase: "down" as const },
+  { frame: INTRO_TAPS.share, ...shareIcon, phase: "up" as const },
+  { frame: INTRO_TAPS.malkochen - 4, ...malkochenIcon, phase: "down" as const },
+  { frame: INTRO_TAPS.malkochen, ...malkochenIcon, phase: "up" as const },
+  ...(Object.keys(SHOTS) as ShotName[]).flatMap((shot) => touches[shot].map((t) => ({ ...t, frame: SHOTS[shot].at + t.frame }))),
 ];
 
 // The centres of the share icon and of malkochen's in the share sheet.
@@ -126,21 +122,22 @@ const AppTile: React.FC<{ label: string; children: React.ReactNode; lit?: number
 const ShareIntro: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const sheet = spring({ frame: frame - INTRO_TAPS.share - 3, fps, config: { damping: 18, stiffness: 160 } });
-  const lit = interpolate(frame, [INTRO_TAPS.malkochen, INTRO_TAPS.malkochen + 3, INTRO_TAPS.malkochen + 8], [0, 1, 0.6], {
+  const sheet = spring({ frame: frame - INTRO_TAPS.share, fps, config: { damping: 18, stiffness: 160 } });
+  const lit = interpolate(frame, [INTRO_TAPS.malkochen - 3, INTRO_TAPS.malkochen, INTRO_TAPS.malkochen + 5], [0, 1, 0.6], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const drift = interpolate(frame, [SCENES.shareIntro.from, SCENES.shareIntro.to], [1.04, 1.12]);
   const progress = interpolate(frame, [SCENES.shareIntro.from, SCENES.shareIntro.to], [0.18, 0.46]);
   return (
-    // The dark bowl's own ground, so its square doesn't show.
-    <AbsoluteFill style={{ background: "#3B423D" }}>
+    // The video: the shared Dish's photo (capture.ts puts it in shared.jpg),
+    // full screen, slowly drifting closer.
+    <AbsoluteFill style={{ background: "#151413" }}>
       <Img
-        src={staticFile("placeholders/bowl-dark.svg")}
-        style={{ position: "absolute", left: 26, top: 170, width: 360, transform: `scale(${drift})` }}
+        src={staticFile("shared.jpg")}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: `scale(${drift})` }}
       />
-      <AbsoluteFill style={{ background: "radial-gradient(circle at 50% 40%, transparent 35%, rgba(12,11,10,.7) 90%)" }} />
+      <AbsoluteFill style={{ background: "radial-gradient(circle at 50% 40%, transparent 45%, rgba(12,11,10,.45) 95%)" }} />
       <AbsoluteFill style={{ background: "linear-gradient(transparent 55%, rgba(0,0,0,.55))" }} />
       <Icon y={440} d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.2 1.8-2 3.3-3.2 5.4-3.2 3.6 0 5.7 3.9 4.2 7.3C19.5 16.4 12 21 12 21z" />
       <Icon y={520} d="M12 3C6.5 3 2 6.9 2 11.6c0 2.4 1.2 4.6 3.1 6.1L4.4 21l4.1-2c1.1.3 2.3.5 3.5.5 5.5 0 10-3.9 10-8.6S17.5 3 12 3z" />
@@ -219,14 +216,24 @@ const App: React.FC = () => {
   );
 };
 
-// Gekocht ✓: the screen leans in on the top, where Topfbert's pill pops
-// and the confetti falls, then back.
-const cookZoom = (frame: number) =>
-  interpolate(frame, [SHOTS.cook.at + 6, SHOTS.cook.at + 18, SHOTS.cook.at + 58, SHOTS.cook.at + 72], [1, 1.28, 1.28, 1], {
+// The screen leans in where the small things happen, then back: on the
+// Board settings' Columns while one is added, and at the top on Gekocht ✓,
+// where Topfbert's pill pops and the confetti falls. In the app's CSS
+// pixels.
+const ZOOMS = [
+  { from: beat(CUE.typing) - 4, to: beat(CUE.back) - 4, scale: 1.18, origin: "206px 420px" },
+  { from: beat(CUE.cooked), to: beat(CUE.outro - 1), scale: 1.28, origin: "60px 40px" },
+];
+const zoom = (frame: number) => {
+  const z = ZOOMS.find((z) => frame >= z.from && frame < z.to + 12);
+  if (!z) return { scale: 1, origin: "0 0" };
+  const scale = interpolate(frame, [z.from, z.from + 12, z.to, z.to + 12], [1, z.scale, z.scale, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
+  return { scale, origin: z.origin };
+};
 
 export const Phone: React.FC<{ touches: Touches }> = ({ touches }) => {
   const frame = useCurrentFrame();
@@ -250,7 +257,7 @@ export const Phone: React.FC<{ touches: Touches }> = ({ touches }) => {
     >
       <div style={{ width: SCREEN_PX, height: SCREEN.height * SCALE, borderRadius: 58, overflow: "hidden", position: "relative", background: LIGHT.bg }}>
         <div style={{ position: "absolute", left: 0, top: 0, width: SCREEN.width, height: SCREEN.height, transform: `scale(${SCALE})`, transformOrigin: "0 0" }}>
-          <AbsoluteFill style={{ transformOrigin: "60px 40px", transform: `scale(${cookZoom(frame)})` }}>
+          <AbsoluteFill style={{ transformOrigin: zoom(frame).origin, transform: `scale(${zoom(frame).scale})` }}>
             {frame < SCENES.shareIntro.to ? <ShareIntro /> : null}
             <App />
             <Finger touches={touches} />
@@ -287,6 +294,7 @@ export const Caption: React.FC<{ text: string; from: number; to: number }> = ({ 
         fontSize: 92,
         lineHeight: 1.04,
         letterSpacing: "-0.02em",
+        textWrap: "balance",
         color: LIGHT.text,
         opacity: Math.min(inn, out),
         transform: `translateY(${(1 - inn) * 40 - (1 - out) * 20}px)`,
