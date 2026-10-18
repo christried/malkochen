@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import pg from 'pg'
 import { expect, newTab, test } from './fixtures'
 import { signIn } from './auth'
@@ -54,7 +54,7 @@ async function seedBoard(page: Page) {
   for (const [position, d] of dishes.reverse().entries()) {
     const [{ id }] = await sql(
       `insert into dish (board_id, column_id, position, title, placeholder, source_link, source_kind, added_by, creator, created_at)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now() - make_interval(secs => $10 * 86400)) returning id`,
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now() - $10::float8 * interval '1 day') returning id`,
       [boardId, columns[d.column], -position, d.title, d.placeholder, d.link, d.kind, d.by, d.creator ?? null, d.daysAgo],
     )
     for (const [i, days] of d.cookings.entries()) {
@@ -65,6 +65,21 @@ async function seedBoard(page: Page) {
 
 function at(path: string, picks: Record<string, string>) {
   return `${path}?${new URLSearchParams({ ...picks, bar: '0' })}`
+}
+
+// Shakshuka stays a New Dish: the Board's next open counts from an hour ago.
+async function unseen() {
+  await sql(`update membership m set seen_at = now() - interval '1 hour', new_since = now() - interval '1 hour'
+             from "user" u where u.id = m.user_id and u.email = $1`, [ME])
+}
+
+// The Verlauf with some of the detail around it.
+async function around(page: Page, section: Locator, path: string) {
+  await section.scrollIntoViewIfNeeded()
+  const box = (await section.boundingBox())!
+  const size = page.viewportSize()!
+  const x = Math.max(0, box.x - 20)
+  await page.screenshot({ path, clip: { x, y: Math.max(0, box.y - 16), width: Math.min(size.width - x, box.width + 40), height: box.height + 40 } })
 }
 
 async function settle(page: Page, ms = 1500) {
@@ -91,6 +106,7 @@ for (const theme of THEMES) {
     for (const variant of VARIANTS) {
       for (const [size, viewport] of [['phone', PHONE], ['desktop', DESKTOP]] as const) {
         await page.setViewportSize(viewport)
+        await unseen()
         await gotoHydrated(page, at(boardPath, { card: variant }))
         await expect(page.getByRole('link', { name: 'Cremige Pilzpasta' })).toBeVisible()
         // Let the cards rise in and "Neu" pop.
@@ -113,7 +129,7 @@ for (const theme of THEMES) {
         const verlauf = page.locator(`[data-p330-verlauf="${variant}"]`)
         await expect(verlauf).toBeVisible()
         await settle(page, 2500)
-        await verlauf.screenshot({ path: `${OUT}/verlauf-${variant}-${size}-${theme}.png` })
+        await around(page, verlauf, `${OUT}/verlauf-${variant}-${size}-${theme}.png`)
       }
     }
     // A Dish never cooked: no Votes yet.
@@ -124,7 +140,7 @@ for (const theme of THEMES) {
       const verlauf = page.locator(`[data-p330-verlauf="${variant}"]`)
       await expect(verlauf).toBeVisible()
       await settle(page, 2000)
-      await verlauf.screenshot({ path: `${OUT}/verlauf-${variant}-never-${theme}.png` })
+      await around(page, verlauf, `${OUT}/verlauf-${variant}-never-${theme}.png`)
     }
   })
 

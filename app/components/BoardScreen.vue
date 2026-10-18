@@ -981,7 +981,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-show="!selecting"
       type="button"
       class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
-      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
+      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast, 'p330-fab-higher': toast?.p330Gekocht && (p330Toast === 'A' || p330Toast === 'B') }"
       :aria-label="t.addDish.open"
       :data-tooltip="t.addDish.open"
       data-tour="add-button"
@@ -1240,6 +1240,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 }
 .fab-lifted {
   translate: 0 -76px;
+}
+/* PROTOTYPE #330: throwaway. Above a Gekocht toast of two rows (A wraps on
+   a phone, B always has two). */
+@media (max-width: 767px) {
+  .p330-fab-higher {
+    translate: 0 -124px;
+  }
 }
 /* Its aura (#285, main.css `.aura`): a 3px rim just outside the pebble, at
    every width, behind it. */

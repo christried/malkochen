@@ -5,12 +5,16 @@ import type { DishView } from '~~/server/utils/dishes'
 // (#318 stories 28 to 31): its Votes, how many Comments, and whether there's
 // anything new in its Verlauf since you last opened it. DishCard puts this
 // in three places; each variant draws in one of them.
-//   A, the bottom row (`row`): quiet line icons with numbers after the
-//      adder's picture; something new puts an orange dot on the bubble.
-//   B, on the image (`thumb`): a glass chip in the thumb's bottom right;
-//      something new turns it into the "Neu" pebble's orange.
+//   A, the bottom row (`row`), after the adder's picture: beside "Gekocht ✓"
+//      there's room for about 40px on a desktop, so only how it was voted
+//      (the thumb most gave, no number) and the bubble with its number;
+//      something new puts an orange dot on the bubble.
+//   B, on the image (`thumb`): a glass chip down the thumb's top right, one
+//      line each for 👍, 👎 and the Comments; something new turns it into
+//      the "Neu" pebble's orange.
 //   C, the line under the title (`meta`): emoji and numbers after
-//      "3× gekocht"; something new marks the Comments like a highlighter.
+//      "3× gekocht", where they take room from the Creator; something new
+//      marks the Comments like a highlighter.
 const props = defineProps<{ dish: DishView, place: 'row' | 'thumb' | 'meta' }>()
 const variant = useP330Variant('card')
 const life = computed(() => fakeLife(props.dish))
@@ -19,6 +23,8 @@ const shown = computed(() => any.value && (
   (variant.value === 'A' && props.place === 'row')
   || (variant.value === 'B' && props.place === 'thumb')
   || (variant.value === 'C' && props.place === 'meta')))
+// A: how it was voted, by the thumb most gave (up on a tie).
+const leaning = computed(() => life.value.up + life.value.down === 0 ? null : life.value.up >= life.value.down ? 'up' : 'down')
 </script>
 
 <template>
@@ -26,32 +32,24 @@ const shown = computed(() => any.value && (
     <!-- A: the bottom row. -->
     <span
       v-if="variant === 'A'"
-      class="inline-flex min-w-0 items-center gap-2.5 text-caption tabular-nums"
+      class="-ml-0.5 inline-flex min-w-0 items-center gap-1.5 text-caption tabular-nums"
       data-p330-card="A"
     >
-      <span
-        v-if="life.up"
-        class="inline-flex items-center gap-1"
-      ><Prototype330Icon
-        name="up"
+      <Prototype330Icon
+        v-if="leaning"
+        :name="leaning"
         :size="15"
-      />{{ life.up }}</span>
-      <span
-        v-if="life.down"
-        class="inline-flex items-center gap-1"
-      ><Prototype330Icon
-        name="down"
-        :size="15"
-      />{{ life.down }}</span>
+        :class="leaning === 'up' ? 'text-text' : 'text-text-muted'"
+      />
       <span
         v-if="life.comments || life.unread"
-        class="relative inline-flex items-center gap-1"
+        class="relative inline-flex items-center gap-0.5"
         :class="{ 'font-semibold text-text': life.unread }"
       >
         <span class="relative inline-flex">
           <Prototype330Icon
             name="bubble"
-            :size="16"
+            :size="15"
           />
           <span
             v-if="life.unread"
@@ -65,27 +63,27 @@ const shown = computed(() => any.value && (
     <!-- B: on the image. -->
     <span
       v-else-if="variant === 'B'"
-      class="p330-chip absolute bottom-1.5 right-1.5 inline-flex items-center gap-1.5 rounded-pill px-1.5 py-[3px] text-[11.5px] font-semibold leading-none tabular-nums"
+      class="absolute right-1.5 top-1.5 inline-flex flex-col items-stretch gap-1 rounded-[11px] px-1.5 py-1.5 text-[11.5px] font-semibold leading-none tabular-nums"
       :class="life.unread ? 'p330-chip-new text-neu-ink' : 'bg-glass text-text backdrop-blur-sm'"
       data-p330-card="B"
     >
       <span
         v-if="life.up"
-        class="inline-flex items-center gap-0.5"
+        class="inline-flex items-center justify-between gap-1"
       ><Prototype330Icon
         name="up"
         :size="12"
       />{{ life.up }}</span>
       <span
         v-if="life.down"
-        class="inline-flex items-center gap-0.5"
+        class="inline-flex items-center justify-between gap-1"
       ><Prototype330Icon
         name="down"
         :size="12"
       />{{ life.down }}</span>
       <span
         v-if="life.comments"
-        class="inline-flex items-center gap-0.5"
+        class="inline-flex items-center justify-between gap-1"
       ><Prototype330Icon
         name="bubble"
         :size="12"

@@ -84,16 +84,16 @@ const link = 'shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline
         </button>
       </div>
       <div class="flex items-center gap-2">
-        <span class="mr-0.5 text-on-inverse/70">Wie war’s?</span>
+        <span class="mr-0.5 whitespace-nowrap text-on-inverse/70">Wie war’s?</span>
         <Prototype330VoteButtons
           :vote="vote"
-          :size="40"
+          :size="38"
           @pick="pick"
         />
         <button
           v-if="comment"
           type="button"
-          class="ml-auto flex h-10 items-center gap-1.5 rounded-pill bg-on-inverse/12 px-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          class="ml-auto flex h-10 shrink-0 items-center gap-1.5 rounded-pill bg-on-inverse/12 px-3 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           @click="emit('act', comment)"
         >
           <Prototype330Icon
