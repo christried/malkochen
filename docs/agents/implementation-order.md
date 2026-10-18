@@ -253,6 +253,20 @@ From the grilling session on 2026-10-16 (`CONTEXT.md` → Tour, ADR 0006, design
 | #309 | Bundle: Tour spotlight, rounded cutout, round glide, Topfbert stays put, the ring draws in | Found in #302's device check; #302 resumes after it |
 | #302 | Device check: Tour on Android | `ready-for-human`: skip, the user does it |
 
+### Phase 13 onwards: the road to 1.0 (#317–#323)
+
+From the grilling session on 2026-10-18 (`docs/reviews/next-spec-brief.md`, `CONTEXT.md`, ADRs 0007 and 0008). Seven specs, in this order; their tickets don't exist yet and are added here phase by phase as `/to-tickets` creates them. Don't implement a spec directly.
+
+| # | Spec | Note |
+|---|---|---|
+| #317 | Languages: English and Italian beside German | Opens with the user's pick of push and Digest wordings |
+| #318 | Dish life: Votes, Comments, the Dish History and the Archive | Card prototype; the user decides |
+| #319 | Live updates: version polling within the Hobby plan | Small |
+| #320 | Board access: Permissions per Member | |
+| #321 | Opening up: CSP, email sign-in, account deletion, limits, Admin Page and Open Sign-up | Privacy policy and imprint are the user's |
+| #322 | Notifications for Comments and Votes | |
+| #323 | Version 1.0 and the Changelog | Last; its final ticket releases 1.0.0 |
+
 ## Keeping this file current
 
 When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.

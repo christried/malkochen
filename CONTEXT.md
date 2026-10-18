@@ -35,8 +35,20 @@ A short line under a Column's name saying what it's for (default: "Worauf hast d
 _Avoid_: Description, tagline
 
 **Member**:
-A user who belongs to a Board. All Members can add, edit, move and delete Dishes and edit Columns.
+A user who belongs to a Board. What each Member may do there is set by their Permissions.
 _Avoid_: Collaborator, participant
+
+**Permissions**:
+What one Member may do on a Board, each switched on or off for them by the Owner ("Rechte"): add Dishes, edit them, move them (including into the Gekocht Column), archive them, edit Columns, share the Invite Link, comment and vote, and change the Board's name and emoji. The Owner always has all of them, and a Member can always edit and archive the Dishes they added themselves. An action a Member may not take isn't shown to them.
+_Avoid_: Roles, rights, access level
+
+**Default Permissions**:
+The Permissions a Member gets on joining a Board, chosen by its Owner; everything is allowed until the Owner changes them.
+_Avoid_: Standard role, guest role
+
+**Deleted Account**:
+A user who deleted their account themselves. What they added to Boards they shared with others (Dishes, Cookings, Comments, Votes) stays, shown as "Gelöschtes Konto"; their Boards with others pass to the longest-standing Member, and Boards only they belonged to are deleted.
+_Avoid_: Former member, anonymous user
 
 **Username**:
 The name a user picks for themselves and the only name malkochen shows of them, written plainly ("Chris", not "@chris"). Unique across the whole app regardless of case, 2–24 letters, digits, `_`, `.` or `-`. A user can change it; the old one is free for others right away. The name from their Google account is kept but never shown.
@@ -47,11 +59,11 @@ The round picture that shows who a Member is, e.g. on the Dishes they added: a p
 _Avoid_: Avatar (except in code), profile photo, user image
 
 **Owner**:
-The one Member of a Board who can delete it, remove Members, reset the Invite Link and hand ownership to another Member. Initially whoever created the Board.
+The one Member of a Board who can delete it, remove Members, set their Permissions, reset the Invite Link, delete Archived Dishes for good and hand ownership to another Member. Initially whoever created the Board.
 _Avoid_: Admin, creator
 
 **Invite Link**:
-A shareable link that lets a signed-in user on the Allowlist become a Member of a Board, readable like its Address: `/invite/kochclub-7fk2qm9xh3tdz8wpc`, the Board's name as in its Address, then a secret. Only the secret counts, so renaming the Board doesn't break a link sent before; resetting it does.
+A shareable link that lets any signed-in user become a Member of a Board, readable like its Address: `/invite/kochclub-7fk2qm9xh3tdz8wpc`, the Board's name as in its Address, then a secret. Only the secret counts, so renaming the Board doesn't break a link sent before; resetting it does.
 _Avoid_: Share link, invitation
 
 **Address**:
@@ -59,13 +71,17 @@ Where a Board or Dish opens in the app, readable instead of an id: a Board at `/
 _Avoid_: URL, slug (except in code), permalink
 
 **Allowlist**:
-The fixed set of email addresses allowed to sign in to malkochen at all. Being on the Allowlist gives access to the app, not to any Board.
+The fixed set of email addresses allowed to sign up for malkochen while Open Sign-up is off. Anyone who already has an account can always sign in. Being on it gives access to the app, not to any Board.
 _Avoid_: Whitelist, beta list
+
+**Open Sign-up**:
+The Operator's switch on the Admin Page ("Anmeldung offen") that lets anyone sign up. Switched off again, only the Allowlist can sign up, while everyone who has an account by then still signs in.
+_Avoid_: Public registration, beta
 
 ### Dishes
 
 **Dish**:
-One piece of food someone wants to cook, saved to a Board, usually from a Source. It has a title, an image, an optional note, and records who added it and when.
+One piece of food someone wants to cook, saved to a Board, usually from a Source. It has a title and an image, and records who added it and when.
 _Avoid_: Recipe, post, entry, card
 
 **Source**:
@@ -117,7 +133,7 @@ A Dish is Cooked once it has been moved into the Gekocht Column at least once.
 _Avoid_: Done, finished, completed
 
 **Cooking**:
-One occasion a Dish was cooked, with a date, an optional note and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. A Dish's Cookings form its Cooking History, which is kept when it moves out again.
+One occasion a Dish was cooked, with a date and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. A Dish's Cookings appear in its Dish History and are kept when it moves out again.
 _Avoid_: Done entry, log entry
 
 **Achievement Level**:
@@ -127,3 +143,41 @@ _Avoid_: Badge, rank, streak
 **Klassiker**:
 A Dish with 10 or more Cookings, the top Achievement Level. Its 10th Cooking is celebrated once.
 _Avoid_: Milestone (except for the celebration's clip), favourite
+
+**Comment**:
+A Member's message on a Dish, shown in the Dish's history with who wrote it and when. Its author can edit it (then marked "bearbeitet") or delete it; the Owner can delete any.
+_Avoid_: Note, message, reply
+
+**Vote**:
+A Member's thumbs up or thumbs down on a Cooked Dish. Any Member can give one, one per Dish, and change or take it back.
+_Avoid_: Rating, like, review, score
+
+**Dish History**:
+Everything that happened to a Dish, at the bottom of its detail like a chat ("Verlauf"), oldest first: when it was added, its Cookings, Votes and Comments. Moves aren't part of it.
+_Avoid_: Cooking History, timeline, activity feed, log
+
+**Archived Dish**:
+A Dish taken off its Board ("Archivieren"), kept in the Board's Archive ("Archiv" in Board Settings) for 30 days. Members can restore it until then; the Owner can delete it for good sooner. After 30 days it's gone, with its images.
+_Avoid_: Deleted Dish, trash, bin
+
+**Archived Board**:
+A Board its Owner deleted, kept under "Archiv" in the Owner's Board Switcher for 30 days. The Owner can restore it, with its Members, until then or delete it for good sooner.
+_Avoid_: Deleted Board
+
+### Running malkochen
+
+**Operator**:
+The one person who runs malkochen, and the only one who can open the Admin Page.
+_Avoid_: Admin, superuser, Owner (an Owner owns one Board)
+
+**Admin Page**:
+The Operator's page of figures on how malkochen is used (Dishes added, moves, Cookings, Comments, active users and Boards, sign-ups), reached from their Your Settings. It shows counts only, never other people's Dish titles or Comments.
+_Avoid_: Dashboard, admin panel, admin console
+
+**Changelog**:
+The page listing what changed for users in each Version ("Was ist neu"), newest first, with what's done but not yet in a Version on top ("Gerade neu"). Only what users notice goes in.
+_Avoid_: Release notes, updates, news
+
+**Version**:
+malkochen's number, starting at 1.0.0. Each finished spec, and each batch of smaller changes, is a patch (1.0.1, 1.0.2, …); a minor Version (1.1.0) only when the user calls a feature big enough for one.
+_Avoid_: Release, build
