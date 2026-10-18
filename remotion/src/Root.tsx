@@ -62,7 +62,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{ touches: { share: [], plan: [], cook: [] } }}
+        defaultProps={{ touches: { share: [], plan: [], columns: [], cook: [] } }}
         calculateMetadata={calculateBragMetadata}
       />
     </>

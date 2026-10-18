@@ -104,27 +104,47 @@ export class Recorder {
     this.touches.push({ frame: this.frame, x, y, phase: type === 'touchStart' ? 'down' : type === 'touchEnd' ? 'up' : 'move' })
   }
 
-  // A tap at the centre of `selector`'s first match, held for `hold` frames.
-  async tap(target: string | Locator, hold = 3) {
+  // Frames until this shot's frame `frame` is the next one captured. A touch
+  // made then shows from that frame on.
+  async tickTo(frame: number) {
+    if (frame < this.frame) throw new Error(`frame ${frame} has passed (now ${this.frame})`)
+    await this.tick(frame - this.frame)
+  }
+
+  // A tap at the centre of `target`'s first match, lifted (when the app
+  // acts on it) as frame `up` is captured, down `hold` frames before.
+  async tapAt(target: string | Locator, up: number, hold = 3) {
+    await this.tickTo(up - hold)
     const { x, y } = await this.centre(target)
     await this.touch('touchStart', x, y)
-    await this.tick(hold)
+    await this.tickTo(up)
     await this.touch('touchEnd', x, y)
   }
 
-  // Long-press `from`, then move to `to` over `frames` frames (eased), and
-  // let go there.
-  async drag(from: { x: number, y: number }, to: { x: number, y: number }, { press = 12, frames = 24, rest = 4 } = {}) {
+  // Long-press `from` at frame `down`, lift the card after `press` frames,
+  // carry it to `to` (eased) and let go there at frame `up`.
+  async dragAt(from: { x: number, y: number }, to: { x: number, y: number }, down: number, up: number, { press = 12, rest = 4 } = {}) {
+    await this.tickTo(down)
     await this.touch('touchStart', from.x, from.y)
     await this.tick(press)
+    const frames = up - rest - this.frame
     for (let i = 1; i <= frames; i++) {
       const t = i / frames
       const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
       await this.touch('touchMove', from.x + (to.x - from.x) * e, from.y + (to.y - from.y) * e)
       await this.tick()
     }
-    await this.tick(rest)
+    await this.tickTo(up)
     await this.touch('touchEnd', to.x, to.y)
+  }
+
+  // Types `text` into the focused field, a character every `every` frames
+  // from frame `from`.
+  async typeAt(text: string, from: number, every = 2) {
+    for (const [i, char] of [...text].entries()) {
+      await this.tickTo(from + i * every)
+      await this.page.keyboard.type(char)
+    }
   }
 
   async centre(target: string | Locator) {
