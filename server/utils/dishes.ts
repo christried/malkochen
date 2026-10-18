@@ -665,6 +665,7 @@ export async function addDish(
       placeholder: input.placeholder,
       addedBy: adder.id,
     }),
+    // Recorded whatever happens: a Dish not added fails the whole step.
     recordEvents(d, {
       kind: 'dish_added',
       board: sql`${boardId}`,

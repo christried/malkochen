@@ -94,6 +94,12 @@ export function withEvents(d: Db, write: SQLWrapper, event: EventValues, { earli
   `)
 }
 
+// The event of a Board, or of a membership of it, a write changed
+// (`changed`, its row, with its `board_id`).
+export function boardEvent(kind: EventKind, user: string, details?: SQL): EventValues {
+  return { kind, board: sql`changed.board_id`, user, details }
+}
+
 // The event of a Dish a write changed (`changed`, its row).
 export function dishEvent(kind: EventKind, user: string, details?: SQL): EventValues {
   return { kind, board: sql`changed.board_id`, dish: sql`changed.id`, user, details }

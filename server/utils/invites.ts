@@ -6,7 +6,7 @@ import { db } from '../db'
 import { board, inviteMiss, membership } from '../db/schema'
 import { slugOf } from './addresses'
 import { boardMembers, membershipOf, type BoardMember, type BoardNameAndEmoji } from './boards'
-import { withEvents } from './events'
+import { boardEvent, withEvents } from './events'
 
 // Invite Links (CONTEXT.md): /invite/<Board slug>-<secret> lets a signed-in
 // user on the Allowlist become a Member of the Board (shared/invite.ts).
@@ -76,7 +76,7 @@ export async function joinByInvite(secret: string, userId: string): Promise<{ bo
       .onConflictDoUpdate({ target: [membership.boardId, membership.userId], set: { lastOpenedAt: now, seenAt: now } })
       // A row the insert made, not one it updated: a join.
       .returning({ boardId: membership.boardId, joined: sql<boolean>`xmax = 0`.as('joined') }),
-    { kind: 'member_joined', board: sql`changed.board_id`, user: userId },
+    boardEvent('member_joined', userId),
     { where: sql`changed.joined` },
   )
   return { boardId: found.id, slug: found.slug }

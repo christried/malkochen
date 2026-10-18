@@ -174,6 +174,10 @@ _Avoid_: Admin, superuser, Owner (an Owner owns one Board)
 The Operator's page of figures on how malkochen is used (Dishes added, moves, Cookings, Comments, active users and Boards, sign-ups), reached from their Your Settings. It shows counts only, never other people's Dish titles or Comments.
 _Avoid_: Dashboard, admin panel, admin console
 
+**Event Log**:
+What happens on Boards, recorded for the Admin Page to count: an event each time a Dish is added, moved, archived or restored, a Cooking is recorded, deleted or restored, a Board is created or deleted, and a Member joins, leaves or is removed. Each says when, what kind, which Board, Dish and user, never any content (no titles, Comments or names), and is kept indefinitely. Shown nowhere but as counts on the Admin Page.
+_Avoid_: Activity feed, audit log, Dish History
+
 **Changelog**:
 The page listing what changed for users in each Version ("Was ist neu"), newest first, with what's done but not yet in a Version on top ("Gerade neu"). Only what users notice goes in.
 _Avoid_: Release notes, updates, news
