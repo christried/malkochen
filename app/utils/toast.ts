@@ -8,6 +8,8 @@ export interface Toast {
   actions?: ToastAction[]
   // How long it stays, in ms.
   duration: number
+  // PROTOTYPE #330: throwaway. The Gekocht toast's 👍 👎, for this Dish.
+  p330Gekocht?: { dishId: string }
 }
 
 export interface ToastAction {

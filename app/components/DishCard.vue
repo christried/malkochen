@@ -46,6 +46,16 @@ onBeforeUnmount(() => {
 // under it on hover or keyboard focus.
 const titleEl = useTemplateRef<HTMLElement>('title')
 const titleCut = useTextCut(titleEl, () => props.dish.title)
+
+// PROTOTYPE #330: throwaway. With a card variant (dev only), the note's icon
+// gives way to the Dish's life (Prototype330CardLife), and C's line under
+// the title shows even without a Creator or Cookings.
+const p330 = useP330Variant('card')
+const p330Meta = computed(() => {
+  if (p330.value !== 'C') return false
+  const life = fakeLife(props.dish)
+  return life.up + life.down + life.comments > 0 || life.unread
+})
 </script>
 
 <template>
@@ -78,6 +88,11 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
         dot-only
         class="absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)]"
       />
+      <Prototype330CardLife
+        v-if="p330"
+        :dish="dish"
+        place="thumb"
+      />
     </div>
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">
       <h3
@@ -90,7 +105,7 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
            "N× gekocht", which is never cut. Two lines would not fit under a
            two-line title. -->
       <p
-        v-if="dish.creator || dish.cookings.length"
+        v-if="dish.creator || dish.cookings.length || p330Meta"
         class="mt-0.5 flex min-w-0 pr-1 text-caption text-text-muted"
       >
         <span
@@ -109,6 +124,11 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
           class="shrink-0"
           data-cooked-count
         >{{ t.dish.cookedCount(dish.cookings.length) }}</span>
+        <Prototype330CardLife
+          v-if="p330"
+          :dish="dish"
+          place="meta"
+        />
       </p>
       <div class="mt-auto flex min-w-0 items-center gap-2 pr-[108px] text-text-muted">
         <!-- Drawn here; the button that opens their popover
@@ -126,8 +146,13 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
         </span>
         <!-- Drawn only: the card is inside the Dish's link, so the control
              for the note (NoteButton) lies over it, outside the link. -->
+        <Prototype330CardLife
+          v-if="p330"
+          :dish="dish"
+          place="row"
+        />
         <span
-          v-if="dish.note"
+          v-if="dish.note && !p330"
           aria-hidden="true"
           class="inline-flex"
           data-note-drawn

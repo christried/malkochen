@@ -19,6 +19,9 @@ import { boardLabel, dishOnBoard } from '~~/shared/board'
 // then.
 
 const t = useStrings()
+// PROTOTYPE #330: throwaway.
+const p330Card = useP330Variant('card')
+const p330Toast = useP330Variant('toast')
 const route = useRoute()
 
 // The Board at this address; an outdated address forwards first, and the
@@ -637,6 +640,23 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   hapticCelebrate()
   gekochtPill.show({ cheer: nextCheer(t.dish.cheers), ...toBoard && { board: boardLabel(toBoard) } })
   if (origin !== null) confetti.fire(origin ?? gekochtPill.origin())
+  // PROTOTYPE #330: throwaway. The Gekocht toast with 👍 👎 and
+  // "Kommentieren" (#318 stories 20 to 22), which opens the Dish at its
+  // comment field. ?hold=1 keeps it up for screenshots.
+  if (p330Toast.value) {
+    showToast({
+      text: t.dish.cook,
+      ...toBoard && { unseen: t.dish.cookedOn(boardLabel(toBoard)) },
+      duration: route.query.hold === '1' ? 600_000 : UNDO_WINDOW_MS,
+      p330Gekocht: { dishId: dish.id },
+      actions: [
+        { label: 'Kommentieren', run: () => void navigateTo({ path: dishPath(address.value, dish), query: { ...route.query, p330comment: '1' } }) },
+        ...undo ? [{ label: t.dish.undo, run: () => void undo().then(r => showResult(r)) }] : [],
+      ],
+    })
+    if (dish.cookings.length === MILESTONE_COOKINGS) void celebrateMilestone(dish, recorded)
+    return
+  }
   showToast({
     text: t.dish.cook,
     ...toBoard && { unseen: t.dish.cookedOn(boardLabel(toBoard)) },
@@ -867,7 +887,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       :board-id="board.id"
                     />
                     <NoteButton
-                      v-if="dish.note"
+                      v-if="dish.note && !p330Card"
                       :note="dish.note"
                       :beside-avatar="!!dish.addedBy"
                     />

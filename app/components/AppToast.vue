@@ -3,7 +3,12 @@
 // optional actions (e.g. "Rückgängig") and a progress bar showing how long
 // it stays. A new toast replaces the one showing.
 const toast = defineModel<Toast | null>({ required: true })
-const bar = useTemplateRef<HTMLElement>('bar')
+const ownBar = useTemplateRef<HTMLElement>('bar')
+// PROTOTYPE #330: throwaway. The Gekocht toast's variants draw their own
+// pill (Prototype330GekochtToast), with the bar in it.
+const p330 = useP330Variant('toast')
+const p330Bar = shallowRef<HTMLElement | null>(null)
+const bar = computed(() => ownBar.value ?? p330Bar.value)
 const paused = useToastPaused()
 
 // The bar's animation is also the timer. A Web Animation, not CSS, so the
@@ -61,8 +66,17 @@ function act(action: ToastAction) {
       <div
         v-if="toast"
         class="relative max-w-md"
+        :class="{ 'w-full': toast.p330Gekocht && p330 === 'B' }"
       >
+        <Prototype330GekochtToast
+          v-if="toast.p330Gekocht && p330"
+          :toast="toast"
+          :variant="p330"
+          @act="act"
+          @bar="el => p330Bar = el"
+        />
         <div
+          v-else
           class="pointer-events-auto relative flex items-center overflow-hidden rounded-pill bg-inverse py-3 text-small text-on-inverse shadow-fab"
           :class="[toast.actions?.length ? 'pr-2' : 'pr-5', crowded ? 'flex-wrap gap-x-0.5 gap-y-0.5 pl-3 tablet:gap-x-4 tablet:pl-5' : 'gap-4 pl-5']"
           data-toast

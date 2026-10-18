@@ -21,6 +21,9 @@ defineEmits<{
   deleteCooking: [cooking: CookingView]
 }>()
 const t = useStrings()
+// PROTOTYPE #330: throwaway. The Verlauf's variant (dev only); its first
+// entry says who added the Dish, so the line saying it goes.
+const p330 = useP330Variant('verlauf')
 
 const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, new Date(props.dish.createdAt)))
 
@@ -205,7 +208,7 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
       </p>
 
       <p
-        v-if="dish.note"
+        v-if="dish.note && !p330"
         class="whitespace-pre-line text-body"
         data-morph-field="note"
       >
@@ -230,6 +233,7 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
 
       <!-- Who added it opens their popover (#213), picture and line alike. -->
       <div
+        v-if="!p330"
         class="flex text-small text-text-muted"
         data-morph-field="added"
       >
@@ -254,7 +258,18 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         </p>
       </div>
 
+      <!-- PROTOTYPE #330: throwaway. The Verlauf in place of the Cooking
+           History (dev only). -->
+      <Prototype330History
+        v-if="p330"
+        :dish="dish"
+        :variant="p330"
+        data-morph-field="history"
+        @cook="origin => $emit('cook', origin)"
+        @delete="cooking => $emit('deleteCooking', cooking)"
+      />
       <CookingHistory
+        v-else
         :dish="dish"
         data-morph-field="history"
         @cook="origin => $emit('cook', origin)"
