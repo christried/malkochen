@@ -1,6 +1,6 @@
 # malkochen
 
-<a href="docs/media/malkochen.mp4"><img src="docs/media/malkochen.jpg" alt="malkochen in 30 seconds: play the video" width="300"></a>
+https://github.com/user-attachments/assets/dbb051cd-8784-4447-ab9b-550c37016bc5
 
 A shared board for the food you find online: collect it, plan the week, cook it.
 
