@@ -39,9 +39,16 @@ npm run brag
 npm run brag:friends
 npm run brag:studio   # or look at the public one in Studio first
 
-# 4. The README's video: 720p, so it stays light; its poster is brag.jpg at 720×1280
+# 4. The README's video: 720p, so it stays light; its poster is brag.jpg at 720×1280.
+#    GitHub only plays a video it hosts itself: drag the file into an issue's
+#    comment box (no need to post it) and put the user-attachments URL it
+#    gives on a line of its own in the README.
 npx remotion ffmpeg -y -i out/brag/public/brag.mp4 -s 720x1280 -c:v libx264 -preset slow -crf 22 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart ../docs/media/malkochen.mp4
 ```
+
+The public version's full render is kept in the repo as
+`docs/media/malkochen-1080p.mp4` (with its poster), so it survives `out/`
+being ignored. The friends version is not: it shows a real Board.
 
 - **`src/brag/timeline.ts`** is the beat grid everything shares: the song's
   tempo (115 BPM) and first beat, the excerpt the video plays (from its beat
