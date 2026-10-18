@@ -13,6 +13,7 @@ withDefaults(defineProps<{ name: 'up' | 'down' | 'bubble' | 'send' | 'pot' | 'pl
     stroke-width="2.2"
     stroke-linecap="round"
     stroke-linejoin="round"
+    class="shrink-0"
     aria-hidden="true"
   >
     <template v-if="name === 'up'">

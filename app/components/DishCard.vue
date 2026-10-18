@@ -130,7 +130,10 @@ const p330Meta = computed(() => {
           place="meta"
         />
       </p>
-      <div class="mt-auto flex min-w-0 items-center gap-2 pr-[108px] text-text-muted">
+      <div
+        class="mt-auto flex min-w-0 items-center gap-2 text-text-muted"
+        :class="p330 === 'A' ? 'pr-[100px]' : 'pr-[108px]'"
+      >
         <!-- Drawn here; the button that opens their popover
              (CardPersonButton) lies over it, outside the card's link. -->
         <span

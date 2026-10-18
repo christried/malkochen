@@ -187,8 +187,9 @@ export function fakeHistory(dish: DishView, me: Person | null): HistoryEntry[] {
   const span = Math.max(end - start, 60_000)
   const comments = Math.min(life.comments, 6)
   for (let i = 0; i < comments; i++) {
-    const at = new Date(start + span * ((i + 1) / (comments + 1)) + ((h >> i) % 50) * 60_000)
-    const mine = me && i === 1
+    // Never later than now, a minute apart at the end.
+    const at = new Date(Math.min(start + span * ((i + 1) / (comments + 1)) + ((h >> i) % 50) * 60_000, Date.now() - (comments - i) * 60_000))
+    const mine = me && comments >= 3 && i === 1
     entries.push({
       kind: 'comment',
       at,

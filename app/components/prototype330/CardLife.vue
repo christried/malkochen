@@ -32,13 +32,13 @@ const leaning = computed(() => life.value.up + life.value.down === 0 ? null : li
     <!-- A: the bottom row. -->
     <span
       v-if="variant === 'A'"
-      class="-ml-0.5 inline-flex min-w-0 items-center gap-1.5 text-caption tabular-nums"
+      class="-ml-0.5 inline-flex min-w-0 items-center gap-1 text-caption tabular-nums"
       data-p330-card="A"
     >
       <Prototype330Icon
         v-if="leaning"
         :name="leaning"
-        :size="15"
+        :size="14"
         :class="leaning === 'up' ? 'text-text' : 'text-text-muted'"
       />
       <span
@@ -49,7 +49,7 @@ const leaning = computed(() => life.value.up + life.value.down === 0 ? null : li
         <span class="relative inline-flex">
           <Prototype330Icon
             name="bubble"
-            :size="15"
+            :size="14"
           />
           <span
             v-if="life.unread"
