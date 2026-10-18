@@ -94,6 +94,7 @@ export const it: Strings = {
     emptyBoardTitle: 'Ancora niente qui.',
     emptyBoardBody: 'Incolla il tuo primo link!',
     emptyColumn: 'Ancora niente qui.',
+    gekochtSubtitle: 'Già fatto!',
     columns: 'Colonne',
     loading: 'Caricamento della bacheca…',
     previousColumn: 'Colonna precedente',
@@ -619,5 +620,11 @@ export const it: Strings = {
     ended: 'Puoi ricominciare il tour quando vuoi dalle impostazioni.',
     start: 'Avvia il tour',
     startHint: 'Topfbert ti mostra di nuovo la bacheca.',
+  },
+  boardStart: {
+    starter: 'La mia cucina',
+    ideas: { name: 'Idee', subtitle: 'Cosa ti va?' },
+    thisWeek: { name: 'Questa settimana', subtitle: 'In programma.' },
+    gekocht: 'Cucinati',
   },
 }

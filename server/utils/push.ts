@@ -1,10 +1,12 @@
 import { and, desc, eq, exists, gt, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
+import type { Language } from '../../shared/language'
 import { db } from '../db'
 import { board, dish, membership, pushSubscription, user } from '../db/schema'
 import { parseServerEnv } from '../env'
 import { createPushSender, isPushEndpoint, pushMessage, type BoardNews, type PushTarget } from '../push'
 import { slugOf } from './addresses'
-import { usernameOf } from './people'
+import { recipientLanguage } from './people'
 
 const env = parseServerEnv(process.env)
 
@@ -57,7 +59,8 @@ export async function isPushOn(userId: string, endpoint: string): Promise<boolea
 // After `adderId` added Dish `dishId` to the Board: every other Member who
 // turned push notifications on gets the Board's notification on each of
 // their devices, counting the Dishes others added since they last had the
-// Board open. A subscription the push service says is gone is deleted.
+// Board open, in their language. A subscription the push service says is
+// gone is deleted.
 // Never rejects: adding the Dish has worked whatever happens here.
 export async function notifyNewDish(boardId: string, dishId: string, adderId: string): Promise<void> {
   if (!sendPush) return
@@ -68,10 +71,10 @@ export async function notifyNewDish(boardId: string, dishId: string, adderId: st
       .select({ userId: pushSubscription.userId, endpoint: pushSubscription.endpoint, p256dh: pushSubscription.p256dh, auth: pushSubscription.auth })
       .from(pushSubscription)
       .where(inArray(pushSubscription.userId, [...news.keys()]))
-    const outcomes = await Promise.all(targets.map(async target => ({
-      endpoint: target.endpoint,
-      outcome: await sendPush(target, pushMessage(news.get(target.userId)!)),
-    })))
+    const outcomes = await Promise.all(targets.map(async (target) => {
+      const { language, news: theirs } = news.get(target.userId)!
+      return { endpoint: target.endpoint, outcome: await sendPush(target, pushMessage(language, theirs)) }
+    }))
     const gone = outcomes.filter(o => o.outcome === 'gone').map(o => o.endpoint)
     if (gone.length > 0) await db.delete(pushSubscription).where(inArray(pushSubscription.endpoint, gone))
   }
@@ -80,19 +83,29 @@ export async function notifyNewDish(boardId: string, dishId: string, adderId: st
   }
 }
 
-// What each Member to notify gets told, by user id: the Dishes other Members
-// added since that Member last had the Board open (or joined it), and always
-// the new one, whatever the clocks say.
-async function boardNews(boardId: string, dishId: string, adderId: string): Promise<Map<string, BoardNews>> {
+// What each Member to notify gets told, by user id, and in which language:
+// the Dishes other Members added since that Member last had the Board open
+// (or joined it), and always the new one, whatever the clocks say.
+async function boardNews(boardId: string, dishId: string, adderId: string): Promise<Map<string, { language: Language, news: BoardNews }>> {
   const [found] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
     .from(board)
     .where(eq(board.id, boardId))
   if (!found) return new Map()
 
+  const recipient = alias(user, 'recipient')
   const rows = await db
-    .select({ recipient: membership.userId, title: dish.title, code: dish.code, addedBy: usernameOf })
+    .select({
+      recipient: membership.userId,
+      language: recipient.language,
+      browserLanguage: recipient.browserLanguage,
+      title: dish.title,
+      code: dish.code,
+      // Adding takes a Username (server/middleware/auth.ts).
+      addedBy: sql<string>`${user.username}`,
+    })
     .from(membership)
+    .innerJoin(recipient, eq(recipient.id, membership.userId))
     .innerJoin(dish, and(
       eq(dish.boardId, membership.boardId),
       isNull(dish.deletedAt),
@@ -108,10 +121,10 @@ async function boardNews(boardId: string, dishId: string, adderId: string): Prom
     ))
     .orderBy(desc(dish.createdAt), desc(dish.id))
 
-  const news = new Map<string, BoardNews>()
-  for (const { recipient, ...added } of rows) {
-    const theirs = news.get(recipient) ?? { board: found, dishes: [] }
-    theirs.dishes.push(added)
+  const news = new Map<string, { language: Language, news: BoardNews }>()
+  for (const { recipient, language, browserLanguage, ...added } of rows) {
+    const theirs = news.get(recipient) ?? { language: recipientLanguage({ language, browserLanguage }), news: { board: found, dishes: [] } }
+    theirs.news.dishes.push(added)
     news.set(recipient, theirs)
   }
   return news

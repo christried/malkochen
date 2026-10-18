@@ -1,8 +1,10 @@
 import type { Locator } from '@playwright/test'
-import { expect, test } from './fixtures'
+import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
+import { inviteToken } from './invite'
+import { landingBoardId } from './seed'
 import { openUserSettings, settingsSheet } from './settings-sheet'
 
 // Languages (#326): malkochen follows the browser's language ("Automatisch")
@@ -35,6 +37,40 @@ test.describe('with an English browser', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await expect(page.getByRole('button', { name: 'Add dish' })).toBeVisible()
+  })
+
+  test('the invite landing is in English for a visitor whose browser is (#328)', async ({ page, browser }) => {
+    await signIn(page, HOPPER)
+    const token = await inviteToken(page, await landingBoardId(page))
+    const visitor = await newTab(browser, { locale: 'en-GB' })
+
+    await gotoHydrated(visitor, `/invite/${token}`)
+
+    await expect(visitor.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(visitor.getByRole('heading', { level: 1 })).toHaveText(/^You’re invited to /)
+    await expect(visitor.getByRole('button', { name: 'Sign in with Google' })).toBeVisible()
+    await visitor.context().close()
+  })
+
+  test.describe('offline', () => {
+    // The service worker serves the Offline page (offline.spec.ts).
+    test.use({ serviceWorkers: 'allow' })
+
+    test('the Offline page is in English, from the device\'s language (#328)', async ({ page, context }) => {
+      await signIn(page, HOPPER)
+      await gotoHydrated(page, '/')
+      await page.evaluate(() => navigator.serviceWorker.ready)
+      await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
+
+      await context.setOffline(true)
+      await page.goto('/')
+
+      await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('You’re offline.')
+      await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
+      await expect(page).toHaveTitle('Offline · malkochen')
+      await context.setOffline(false)
+    })
   })
 })
 

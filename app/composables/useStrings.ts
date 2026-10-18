@@ -1,9 +1,4 @@
-import type { Language } from '~~/shared/language'
-import { de, type Strings } from '~/strings/de'
-import { en } from '~/strings/en'
-import { it } from '~/strings/it'
-
-const STRINGS: Record<Language, Strings> = { de, en, it }
+import { stringsFor, type Strings } from '~/strings'
 
 // The single entry point for UI text: the strings of the language shown
 // right now (useLanguage). Read as `t.section.key` while rendering (in a
@@ -13,6 +8,6 @@ const STRINGS: Record<Language, Strings> = { de, en, it }
 export function useStrings(): Strings {
   const language = useLanguage()
   return new Proxy({} as Strings, {
-    get: (_, section) => STRINGS[language.value][section as keyof Strings],
+    get: (_, section) => stringsFor(language.value)[section as keyof Strings],
   })
 }

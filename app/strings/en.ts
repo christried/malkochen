@@ -85,6 +85,7 @@ export const en: Strings = {
     emptyBoardTitle: 'Nothing here yet.',
     emptyBoardBody: 'Paste your first link!',
     emptyColumn: 'Nothing here yet.',
+    gekochtSubtitle: 'All done!',
     columns: 'Columns',
     loading: 'Loading board…',
     previousColumn: 'Previous column',
@@ -606,5 +607,11 @@ export const en: Strings = {
     ended: 'You can start the tour again any time in your settings.',
     start: 'Start the tour',
     startHint: 'Topfbert shows you round the board once more.',
+  },
+  boardStart: {
+    starter: 'My kitchen',
+    ideas: { name: 'Ideas', subtitle: 'What do you fancy?' },
+    thisWeek: { name: 'This week', subtitle: 'Coming up.' },
+    gekocht: 'Cooked',
   },
 }

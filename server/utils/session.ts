@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { chooseLanguage, type Language } from '../../shared/language'
 import type { SessionUser } from './auth'
 
 declare module 'h3' {
@@ -13,6 +14,13 @@ export function requireUser(event: H3Event): SessionUser {
   const user = event.context.user
   if (!user) throw createError({ statusCode: 401, statusMessage: 'Not signed in' })
   return user
+}
+
+// The language the server writes in for whoever made the request (#328):
+// the signed-in user's choice under Sprache, else what their browser asks
+// for, else English. Signed out, the browser alone.
+export function callerLanguage(event: H3Event): Language {
+  return chooseLanguage(event.context.user?.language, getRequestHeader(event, 'accept-language'))
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

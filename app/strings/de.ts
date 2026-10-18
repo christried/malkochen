@@ -102,6 +102,9 @@ export const de = {
     emptyBoardTitle: 'Noch nichts hier.',
     emptyBoardBody: 'Füg deinen ersten Link ein!',
     emptyColumn: 'Noch nichts hier.',
+    // The Gekocht Column's Column Subtitle (CONTEXT.md): fixed, so not
+    // stored with the Board (#328), and shown in each viewer's language.
+    gekochtSubtitle: 'Schon geschafft!',
     columns: 'Spalten',
     loading: 'Board lädt …',
     // The edge indicators, where the window cuts Columns off.
@@ -713,6 +716,17 @@ export const de = {
     // Your Settings.
     start: 'Rundgang starten',
     startHint: 'Topfbert zeigt dir das Board noch einmal.',
+  },
+  // What the server writes into a new Board (#328), in its creator's
+  // language: the Board a first sign-in gets, and every new Board's Columns
+  // with their Column Subtitles. Data once written, so a Board looks the same
+  // to every Member, and Members can rename it all. The Gekocht Column's
+  // fixed Column Subtitle isn't among them: board.gekochtSubtitle.
+  boardStart: {
+    starter: 'Meine Küche',
+    ideas: { name: 'Ideen', subtitle: 'Worauf hast du Lust?' },
+    thisWeek: { name: 'Diese Woche', subtitle: 'Das steht an.' },
+    gekocht: 'Gekocht',
   },
 }
 

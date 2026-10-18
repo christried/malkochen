@@ -129,6 +129,9 @@ export const auth = betterAuth({
       tourSeen: { type: 'number', required: false, input: false },
       // Their language (#326): only PUT /api/me/language sets it.
       language: { type: 'string', required: false, input: false, defaultValue: 'auto' },
+      // The language their browser asked for last (#328): only the API's
+      // guard (server/middleware/auth.ts) sets it.
+      browserLanguage: { type: 'string', required: false, input: false },
     },
     // Runs on user creation and, for Google, on every repeat sign-in too, so
     // someone removed from the Allowlist can't sign in again. Gets what Google

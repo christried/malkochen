@@ -4,14 +4,14 @@ import { createBoard, type BoardSummary } from '../../utils/boards'
 
 const body = z.strictObject({ name: boardName, emoji: boardEmoji })
 
-// POST /api/boards — "Neues Board": a Board with the default Columns, owned
-// by whoever creates it.
+// POST /api/boards — "Neues Board": a Board with the default Columns, in the
+// creator's language, owned by whoever creates it.
 export default defineEventHandler(async (event): Promise<BoardSummary> => {
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Board' })
   const user = requireUser(event)
   await spendRateLimit(user.id, 'create-board')
-  const created = await createBoard(user.id, parsed.data)
+  const created = await createBoard(user.id, parsed.data, callerLanguage(event))
   setResponseStatus(event, 201)
   return created
 })

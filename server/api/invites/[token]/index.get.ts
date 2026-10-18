@@ -6,5 +6,5 @@ import { inviteSecretParam, inviteView, lookUpInvite, type InviteView } from '..
 // signing in.
 export default defineEventHandler(async (event): Promise<InviteView> => {
   const secret = inviteSecretParam(event)
-  return lookUpInvite(event, () => inviteView(secret))
+  return lookUpInvite(event, () => inviteView(secret, callerLanguage(event)))
 })

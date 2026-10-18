@@ -1,8 +1,8 @@
 {
   "name": "malkochen",
   "short_name": "malkochen",
-  "description": "Gerichte sammeln. Zusammen kochen.",
-  "lang": "de",
+  "description": "Collect dishes. Cook together.",
+  "lang": "en",
   "id": "/",
   "start_url": "/",
   "scope": "/",

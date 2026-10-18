@@ -1,6 +1,7 @@
 import { eq, gt, lt, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { inviteSecret } from '../../shared/invite'
+import type { Language } from '../../shared/language'
 import { db } from '../db'
 import { board, inviteMiss, membership } from '../db/schema'
 import { slugOf } from './addresses'
@@ -47,11 +48,12 @@ async function boardOf(secret: string) {
 }
 
 // The invite landing for a secret, or null if no Board has it (any more).
-export async function inviteView(secret: string): Promise<InviteView | null> {
+// Members without a Username yet in the visitor's `language`.
+export async function inviteView(secret: string, language: Language): Promise<InviteView | null> {
   const found = await boardOf(secret)
   if (!found) return null
 
-  const members = await boardMembers(found.id).limit(LANDING_MEMBERS)
+  const members = await boardMembers(found.id, language).limit(LANDING_MEMBERS)
   const [owner] = members
   if (!owner?.isOwner) return null
   const strip = ({ isOwner: _, ...m }: typeof owner): BoardMember => m

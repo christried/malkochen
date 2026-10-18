@@ -8,7 +8,7 @@ import { createMailSender, digestEmail, type Email } from '../../server/email'
 const ORIGIN = 'https://malkochen.example'
 const KOCHCLUB = { id: '0b5c2c1e-58a4-4c43-9a5e-3f3b7a1d2e4f', slug: 'kochclub', name: 'Kochclub', emoji: '🍜' }
 const SONNTAG = { id: '7d1f3a52-1c0e-4a8b-9f6d-2e5b8c4a1f30', slug: 'sonntag', name: 'Sonntag', emoji: '🥞' }
-const ADA = { email: 'ada@example.com', name: 'Ada' }
+const ADA = { email: 'ada@example.com', name: 'Ada', language: 'de' } as const
 
 describe('the email', () => {
   test('greets them, lists each Board\'s new Dishes with who added them, and links to the Board and each Dish', () => {
@@ -57,7 +57,7 @@ describe('the email', () => {
   })
 
   test('someone without a Username yet is greeted without a name', () => {
-    const email = digestEmail({ email: 'ada@example.com', name: null }, [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }] }], ORIGIN)
+    const email = digestEmail({ ...ADA, name: null }, [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }] }], ORIGIN)
     for (const part of [email.text, email.html]) expect(part).toContain('Hallo!')
   })
 
@@ -79,6 +79,37 @@ describe('the email', () => {
     expect(email.html).toContain('von Gr&lt;ace&gt;')
     // The text part shows them as typed.
     expect(email.text).toContain('<img src=x onerror=alert(1)> & "Dal"')
+  })
+})
+
+describe('in the recipient\'s language', () => {
+  const news = [{ board: KOCHCLUB, dishes: [{ title: 'Dal', code: 'cd34', addedBy: 'Grace' }, { title: 'Ramen', code: 'gh78', addedBy: 'Linus' }] }]
+
+  test('English: every word around what Members typed', () => {
+    const email = digestEmail({ ...ADA, language: 'en' }, news, ORIGIN)
+    expect(email.subject).toBe('2 new dishes in 🍜 Kochclub')
+    expect(email.html).toContain('From Grace and Linus. Take a look!')
+    expect(email.html).toContain('<html lang="en">')
+    for (const part of [email.text, email.html]) {
+      expect(part).toContain('Hi Ada!')
+      expect(part).toContain('Here’s what’s new on your boards since yesterday:')
+      expect(part).toContain('by Grace')
+      expect(part).toContain('Open board')
+      expect(part).toContain('Turn it off here')
+      expect(part).not.toContain('Hallo')
+    }
+  })
+
+  test('Italian', () => {
+    const email = digestEmail({ ...ADA, language: 'it' }, news, ORIGIN)
+    expect(email.subject).toBe('2 nuovi piatti in 🍜 Kochclub')
+    expect(email.html).toContain('<html lang="it">')
+    for (const part of [email.text, email.html]) {
+      expect(part).toContain('Ciao Ada!')
+      expect(part).toContain('di Grace')
+      expect(part).toContain('Apri la bacheca')
+      expect(part).toContain('Disattivala qui')
+    }
   })
 })
 

@@ -9,8 +9,13 @@ export interface Caller {
 
 export { ALLOWLISTED } from '../support/test-auth-env'
 
+// Every caller asks for German, as a German browser would, unless a test
+// sends its own Accept-Language: the server writes what's in the caller's
+// language (#328), and the tests read German.
+const GERMAN = { 'accept-language': 'de-DE,de;q=0.9' }
+
 export function anonymous(): Caller {
-  return { fetch: (path, init) => fetch(`${inject('apiBaseUrl')}${path}`, init) }
+  return { fetch: (path, init) => fetch(`${inject('apiBaseUrl')}${path}`, { ...init, headers: { ...GERMAN, ...init?.headers } }) }
 }
 
 // Signs in through the dev bypass (same Allowlist gate and session creation as
@@ -23,7 +28,7 @@ export async function signIn(email: string, profile?: Profile): Promise<Caller> 
   return {
     fetch: (path, init) => fetch(`${inject('apiBaseUrl')}${path}`, {
       ...init,
-      headers: { ...init?.headers, cookie },
+      headers: { ...GERMAN, ...init?.headers, cookie },
     }),
   }
 }
@@ -40,7 +45,7 @@ export function browser(): Browser {
   const jar = new Map<string, string>()
   const fetchKeeping = async (path: string, init?: RequestInit) => {
     const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ')
-    const res = await fetch(`${inject('apiBaseUrl')}${path}`, { ...init, headers: { ...init?.headers, cookie } })
+    const res = await fetch(`${inject('apiBaseUrl')}${path}`, { ...init, headers: { ...GERMAN, ...init?.headers, cookie } })
     for (const set of res.headers.getSetCookie()) {
       const [pair = ''] = set.split(';')
       const name = pair.slice(0, pair.indexOf('='))
@@ -68,4 +73,9 @@ function devSignInInit(email: string, profile?: Profile): RequestInit {
 
 export function devSignIn(email: string, profile?: Profile): Promise<Response> {
   return anonymous().fetch('/api/auth/dev/sign-in', devSignInInit(email, profile))
+}
+
+// The caller, with a browser that asks for `languages` instead of German.
+export function speaking(caller: Caller, languages: string): Caller {
+  return { fetch: (path, init) => caller.fetch(path, { ...init, headers: { ...init?.headers as Record<string, string>, 'accept-language': languages } }) }
 }

@@ -7,7 +7,7 @@ import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, membership, user } from '../db/schema'
 import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
-import { pictureOf, shownAs, usernameOf } from './people'
+import { pictureOf, shownAs } from './people'
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -110,7 +110,8 @@ function selectDishes() {
       placeholder: dish.placeholder,
       createdAt: dish.createdAt,
       adderId: user.id,
-      adderName: usernameOf,
+      // Adding takes a Username (server/middleware/auth.ts).
+      adderName: user.username,
       adderImage: pictureOf,
     })
     .from(dish)

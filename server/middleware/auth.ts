@@ -1,4 +1,6 @@
+import { chooseLanguage } from '../../shared/language'
 import { auth, signInRefusal } from '../utils/auth'
+import { recordBrowserLanguage } from '../utils/people'
 
 // The security boundary for /api/**: every route needs a session, except
 // Better Auth's own, the health check, and what the invite landing and "Not
@@ -31,4 +33,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'No Username yet' })
   }
   event.context.user = session.user
+
+  // The language their browser asks for, kept for when they aren't there to
+  // ask (#328). Written only when it changed.
+  const asked = getRequestHeader(event, 'accept-language')
+  const browserLanguage = asked ? chooseLanguage('auto', asked) : null
+  if (browserLanguage && browserLanguage !== session.user.browserLanguage) await recordBrowserLanguage(session.user.id, browserLanguage)
 })

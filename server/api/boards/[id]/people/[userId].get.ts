@@ -6,7 +6,7 @@ import { personCard, type PersonCard } from '../../../../utils/person-card'
 // Someone the caller shares no Board with is "not found", like nobody at
 // all; so is anyone, for a non-Member of the Board.
 export default defineEventHandler(async (event): Promise<PersonCard> => {
-  const found = await personCard(boardIdParam(event), requireUser(event).id, getRouterParam(event, 'userId') ?? '')
+  const found = await personCard(boardIdParam(event), requireUser(event).id, getRouterParam(event, 'userId') ?? '', callerLanguage(event))
   if (found === 'not-member') throw boardNotFound()
   if (!found) throw personNotFound()
   return found

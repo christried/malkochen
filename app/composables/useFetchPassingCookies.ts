@@ -6,10 +6,12 @@ import type { NitroFetchOptions } from 'nitropack'
 // sends the visitor's cookies along and passes the ones set back to the
 // browser. In the browser it is plain $fetch. Call it at the top of setup:
 // the request it belongs to is only known there. It passes on who is
-// asking too (x-forwarded-for), which Invite Link lookups are limited by.
+// asking too (x-forwarded-for), which Invite Link lookups are limited by,
+// and the languages their browser asks for (accept-language), which what
+// the server writes for them follows (#328).
 export function useFetchPassingCookies() {
   const event = useRequestEvent()
-  const headers = useRequestHeaders(['cookie', 'x-forwarded-for'])
+  const headers = useRequestHeaders(['cookie', 'x-forwarded-for', 'accept-language'])
   return async <T>(url: string, options?: NitroFetchOptions<string>): Promise<T> => {
     const res = await $fetch.raw<T>(url, { ...options, headers: { ...headers } })
     for (const cookie of res.headers.getSetCookie()) event?.node.res.appendHeader('set-cookie', cookie)

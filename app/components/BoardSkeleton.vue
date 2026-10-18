@@ -16,7 +16,7 @@ const t = useStrings()
 
 const listings = useBoardListings()
 const listing = computed(() => listings.value.find(b => b.slug === props.address || b.id === props.address) ?? null)
-const NAMELESS_COLUMNS = [{ id: 'a', name: '', subtitle: null }, { id: 'b', name: '', subtitle: null }, { id: 'c', name: '', subtitle: null }]
+const NAMELESS_COLUMNS = ['a', 'b', 'c'].map(id => ({ id, name: '', subtitle: null, isGekocht: false }))
 const columns = computed(() => listing.value?.columns ?? NAMELESS_COLUMNS)
 // Fewer cards further along, as Boards tend to have.
 const cardCount = (index: number) => Math.max(1, 3 - index)
@@ -113,6 +113,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
           <ColumnTitle
             class="hidden tablet:block"
             :subtitle="column.subtitle"
+            :gekocht="column.isGekocht"
           >
             <template v-if="column.name">
               {{ column.name }}

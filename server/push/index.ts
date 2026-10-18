@@ -1,6 +1,7 @@
 import webpush from 'web-push'
-import { de } from '../../app/strings/de'
+import { stringsFor, type Strings } from '../../app/strings'
 import { boardPath, dishPath } from '../../shared/address'
+import type { Language } from '../../shared/language'
 
 // Push notifications (#219): what a Member's device shows when others added
 // Dishes to one of their Boards, and how it gets there. Pure apart from the
@@ -29,14 +30,16 @@ const MAX_BODY = 120
 
 // „Chris hat 5 Gerichte hinzugefügt" over „🍪 Kochclub: Dal, Ramen und 3
 // weitere", the latest adder named first. About one Dish, the title names
-// it and it opens that Dish; about several, the Board.
-export function pushMessage({ board, dishes }: BoardNews): PushMessage {
+// it and it opens that Dish; about several, the Board. In the recipient's
+// `language` (server/utils/people.ts recipientLanguage).
+export function pushMessage(language: Language, { board, dishes }: BoardNews): PushMessage {
+  const t = stringsFor(language).push
   const adders = [...new Set(dishes.map(d => d.addedBy))]
   const [only] = dishes.length === 1 ? dishes : []
   const boardName = `${board.emoji} ${board.name}`
   return {
-    title: de.push.added(adders, dishes.length, only?.title ?? ''),
-    body: only ? boardName : body(boardName, dishes.map(d => d.title)),
+    title: t.added(adders, dishes.length, only?.title ?? ''),
+    body: only ? boardName : body(t.body, boardName, dishes.map(d => d.title)),
     tag: `board-${board.id}`,
     url: only ? dishPath(board, only) : boardPath(board),
   }
@@ -44,13 +47,13 @@ export function pushMessage({ board, dishes }: BoardNews): PushMessage {
 
 // The Board, then as many whole titles as fit and how many more. A first
 // title too long on its own is cut to fit (by characters, never inside an
-// emoji).
-function body(boardName: string, titles: string[]): string {
-  const listing = (shown: number) => de.push.body(boardName, titles.slice(0, shown), titles.length - shown)
+// emoji). `listed` writes it in the recipient's language.
+function body(listed: Strings['push']['body'], boardName: string, titles: string[]): string {
+  const listing = (shown: number) => listed(boardName, titles.slice(0, shown), titles.length - shown)
   let shown = 0
   while (shown < titles.length && listing(shown + 1).length <= MAX_BODY) shown++
   if (shown > 0) return listing(shown)
-  const cut = (length: number) => de.push.body(boardName, [`${[...titles[0]!].slice(0, length).join('')} …`], titles.length - 1)
+  const cut = (length: number) => listed(boardName, [`${[...titles[0]!].slice(0, length).join('')} …`], titles.length - 1)
   let length = MAX_BODY
   while (length > 1 && cut(length).length > MAX_BODY) length--
   return cut(length)
