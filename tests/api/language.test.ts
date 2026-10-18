@@ -39,6 +39,16 @@ test('a chosen language is kept, for every device the user signs in on', async (
   expect((await me(otherDevice)).language).toBe('en')
 })
 
+test('Italian can be chosen (#327)', async () => {
+  const payne = await signIn(PAYNE)
+
+  const res = await choose(payne, 'it')
+
+  expect(res.status).toBe(200)
+  expect((await res.json() as Me).language).toBe('it')
+  expect((await me(payne)).language).toBe('it')
+})
+
 test('the session carries it', async () => {
   const bartik = await signIn(BARTIK)
   await choose(bartik, 'de')
