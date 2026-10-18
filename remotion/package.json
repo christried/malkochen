@@ -26,6 +26,8 @@
   "scripts": {
     "dev": "remotion studio",
     "render": "node scripts/render.ts",
+    "brag": "node scripts/render-brag.ts",
+    "brag:studio": "node scripts/render-brag.ts --prepare && remotion studio --public-dir out/brag",
     "test": "vitest run",
     "lint": "eslint src scripts && tsc",
     "upgrade": "remotion upgrade"

@@ -1,5 +1,7 @@
 import { Composition, Folder } from "remotion";
 import { PLACEHOLDER_THEMES } from "../../shared/placeholders";
+import { Brag, calculateBragMetadata } from "./brag/Brag";
+import { DURATION, FPS, HEIGHT, WIDTH } from "./brag/timeline";
 import { clipBrief, clipVideo, LANDSCAPE_CLIPS, placeholderBrief, STUDIO_PLACEHOLDERS } from "./briefs";
 import { calculateClipMetadata, ClipVideo } from "./ClipVideo";
 import { CLIPS } from "./clips/registry";
@@ -51,6 +53,18 @@ export const RemotionRoot: React.FC = () => {
           ),
         )}
       </Folder>
+      {/* The brag video (#313): rendered with out/brag as its public dir
+          (scripts/render-brag.ts), not the handoff. */}
+      <Composition
+        id="brag"
+        component={Brag}
+        durationInFrames={DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{ touches: { share: [], plan: [], cook: [] } }}
+        calculateMetadata={calculateBragMetadata}
+      />
     </>
   );
 };
