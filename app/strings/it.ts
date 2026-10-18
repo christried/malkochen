@@ -615,7 +615,7 @@ export const it: Strings = {
     back: 'Indietro',
     skip: 'Salta',
     finish: 'Fatto',
-    withoutDish: 'Continua senza piatto',
+    withoutDish: 'Avanti senza piatto',
     ended: 'Puoi ricominciare il tour quando vuoi dalle impostazioni.',
     start: 'Avvia il tour',
     startHint: 'Topfbert ti mostra di nuovo la bacheca.',
