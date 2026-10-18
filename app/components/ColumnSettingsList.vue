@@ -194,7 +194,7 @@ function drop(event?: Event) {
               class="truncate font-display text-title-s text-text"
               data-column-name
             >{{ column.name }}</span>
-            <span class="truncate font-display text-body-serif italic text-text-muted">{{ column.subtitle ?? t.settings.subtitlePrompt }}</span>
+            <span class="truncate font-display text-body-serif italic text-text-muted">{{ column.isGekocht ? t.board.gekochtSubtitle : column.subtitle ?? t.settings.subtitlePrompt }}</span>
           </span>
           <span
             aria-hidden="true"
@@ -261,7 +261,7 @@ function drop(event?: Event) {
           v-else
           class="text-small text-text-muted"
         >
-          {{ t.settings.fixedSubtitle(column.subtitle ?? '') }} · {{ t.settings.notDeletable }}
+          {{ t.settings.fixedSubtitle(t.board.gekochtSubtitle) }} · {{ t.settings.notDeletable }}
         </p>
         <div class="flex flex-wrap gap-2">
           <button

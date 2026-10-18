@@ -782,6 +782,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
               class="hidden tablet:block"
               data-tour="columns"
               :subtitle="column.subtitle"
+              :gekocht="column.isGekocht"
             >
               <span
                 :key="columnCue?.value.columnId === column.id ? columnCue.key : 0"

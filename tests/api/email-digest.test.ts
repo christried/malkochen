@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'vitest'
 import { postDish } from './boards'
-import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
+import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
 import { startResendService, type ResendService, type SentEmail } from './resend-service'
 import { CRON_SECRET } from './server-env'
 import { TEST_RESEND_API_KEY } from '../support/test-auth-env'
@@ -250,4 +250,24 @@ test('a digest Resend refused goes out with the next run, nothing lost', async (
   await run()
   const [email] = emailsTo(WU)
   expect(email!.text).toContain('Kimchi')
+})
+
+test('each recipient gets it in their own language: their choice, else what their browser asked for last (#328)', async () => {
+  const wu = await switchedOnFor(await signIn(WU))
+  // Perey's browser asks for English.
+  const perey = speaking(await switchedOnFor(await signIn(PEREY)), 'en-US,en')
+  const conway = await signIn(CONWAY)
+  const board = await sharedBoard(conway, [wu, perey], 'Zweisprachig')
+  expect((await wu.fetch('/api/me/language', json('PUT', { language: 'it' }))).status).toBe(200)
+
+  try {
+    await addDish(conway, board.id, 'Gnocchi')
+    await run()
+
+    expect(emailsTo(WU)[0]!.subject).toBe('1 nuovo piatto in 🍜 Zweisprachig')
+    expect(emailsTo(PEREY)[0]!.subject).toBe('1 new dish in 🍜 Zweisprachig')
+  }
+  finally {
+    await wu.fetch('/api/me/language', json('PUT', { language: 'auto' }))
+  }
 })

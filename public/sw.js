@@ -5,7 +5,7 @@
 // has one but malkochen doesn't answer ("nicht erreichbar", our side).
 // Nothing else is cached: Boards and Dishes always come from the network.
 // Bump VERSION when offline.html or what it shows changes.
-const VERSION = 'offline-v11'
+const VERSION = 'offline-v12'
 const FALLBACK_PAGE = '/offline.html'
 // The offline clip's drawings (both themes), which the app's Offline screen
 // plays (SvgLoop) and shows only without a connection. The Offline page has

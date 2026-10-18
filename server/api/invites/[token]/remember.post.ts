@@ -5,7 +5,7 @@ import { inviteSecretParam, inviteView, lookUpInvite, rememberInvite } from '../
 // refused sign-in (PRD story 5). Public, like the landing itself.
 export default defineEventHandler(async (event) => {
   const secret = inviteSecretParam(event)
-  await lookUpInvite(event, () => inviteView(secret))
+  await lookUpInvite(event, () => inviteView(secret, callerLanguage(event)))
   rememberInvite(event, secret)
   setResponseStatus(event, 204)
   return null

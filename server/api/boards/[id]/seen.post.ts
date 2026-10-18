@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const boardId = boardIdParam(event)
   const userId = requireUser(event).id
   if (!await markSeen(boardId, userId)) throw boardNotFound()
-  const found = await getBoard(boardId, userId)
+  const found = await getBoard(boardId, userId, callerLanguage(event))
   if (!found) throw boardNotFound()
   return found
 })

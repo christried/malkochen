@@ -23,6 +23,10 @@ export default defineConfig({
     // speaks German with "Automatisch", as the specs expect. languages.spec.ts
     // tries others.
     locale: 'de-DE',
+    // The same for page.request, which doesn't follow `locale`: a Board it
+    // creates gets its default Columns in that language (#328). The page's
+    // own requests take the locale's instead, so a spec's other locale wins.
+    extraHTTPHeaders: { 'accept-language': 'de-DE,de;q=0.9' },
     // page.route can't see requests that pass through a service worker, and
     // many tests stub the API that way. offline.spec.ts lets it run.
     serviceWorkers: 'block',

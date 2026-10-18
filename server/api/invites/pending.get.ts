@@ -7,7 +7,7 @@ export default defineEventHandler(async (event): Promise<InviteView> => {
   const secret = rememberedInvite(event)
   if (!secret) throw inviteNotFound()
   return lookUpInvite(event, async () => {
-    const view = await inviteView(secret)
+    const view = await inviteView(secret, callerLanguage(event))
     if (!view) forgetInvite(event)
     return view
   })

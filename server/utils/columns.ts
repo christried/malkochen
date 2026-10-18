@@ -19,14 +19,10 @@ export interface ColumnView {
   isGekocht: boolean
 }
 
-// The Gekocht Column's Column Subtitle, whatever it is called. It can't be
-// changed, so it isn't stored.
-export const GEKOCHT_SUBTITLE = 'Schon geschafft!'
-
-// A Column's Column Subtitle as the app shows it.
-const shownSubtitle = sql<string | null>`case when ${boardColumn.isGekocht} then ${GEKOCHT_SUBTITLE}::text else ${boardColumn.subtitle} end`
-
-export const columnView = { id: boardColumn.id, name: boardColumn.name, subtitle: shownSubtitle, isGekocht: boardColumn.isGekocht }
+// The Gekocht Column's Column Subtitle is fixed, whatever it is called, so it
+// isn't stored: its subtitle is null here, and the app shows the fixed one
+// in each viewer's language (#328).
+export const columnView = { id: boardColumn.id, name: boardColumn.name, subtitle: boardColumn.subtitle, isGekocht: boardColumn.isGekocht }
 
 // What Board settings may change about a Column.
 export interface ColumnChanges {

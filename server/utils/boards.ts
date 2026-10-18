@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, gt, inArray, isNull, sql, type SQL } from 'drizzle-orm'
+import { stringsFor } from '../../app/strings'
+import type { Language } from '../../shared/language'
 import { db, runAtomic, type Db } from '../db'
 import { board, boardColumn, boardSlug, dish, membership, user } from '../db/schema'
 import { freeSlug, lockSlugs, recordSlug, slugOf } from './addresses'
@@ -7,16 +9,21 @@ import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
 import { usernameOf, pictureOf } from './people'
 
-// The Board a user gets on their first sign-in (PRD story 3).
-const STARTER_BOARD = { name: 'Meine Küche', emoji: '🍲' }
+// The Board a user gets on their first sign-in (PRD story 3), named in
+// their language.
+const starterBoard = (language: Language) => ({ name: stringsFor(language).boardStart.starter, emoji: '🍲' })
 
-// Every new Board starts with these Columns; the last is the Gekocht Column,
-// whose Column Subtitle is fixed (GEKOCHT_SUBTITLE).
-const DEFAULT_COLUMNS = [
-  { name: 'Ideen', subtitle: 'Worauf hast du Lust?', isGekocht: false },
-  { name: 'Diese Woche', subtitle: 'Das steht an.', isGekocht: false },
-  { name: 'Gekocht', subtitle: null, isGekocht: true },
-] as const
+// Every new Board starts with these Columns, in its creator's language
+// (#328); the last is the Gekocht Column, whose Column Subtitle is fixed
+// and not stored (the app shows it in each viewer's language).
+function defaultColumns(language: Language) {
+  const { ideas, thisWeek, gekocht } = stringsFor(language).boardStart
+  return [
+    { ...ideas, isGekocht: false },
+    { ...thisWeek, isGekocht: false },
+    { name: gekocht, subtitle: null, isGekocht: true },
+  ]
+}
 
 // A Board as Board settings shows it: its name and emoji, and the slug of
 // its Address (/b/<slug>, CONTEXT.md), which follows its name.
@@ -69,8 +76,9 @@ export interface BoardMemberView extends BoardMember {
 }
 
 // The user's Boards in a steady order, the one they joined first first, so
-// the switcher doesn't reshuffle whenever they switch.
-export async function listBoards(userId: string): Promise<BoardListing[]> {
+// the switcher doesn't reshuffle whenever they switch. Members without a
+// Username yet in the user's `language`.
+export async function listBoards(userId: string, language: Language): Promise<BoardListing[]> {
   const boards = await db
     .select({
       id: board.id,
@@ -89,7 +97,7 @@ export async function listBoards(userId: string): Promise<BoardListing[]> {
   const ids = boards.map(b => b.id)
   const [members, columns] = await Promise.all([
     db
-      .select({ boardId: membership.boardId, id: user.id, name: usernameOf, image: pictureOf })
+      .select({ boardId: membership.boardId, id: user.id, name: usernameOf(language), image: pictureOf })
       .from(membership)
       .innerJoin(user, eq(user.id, membership.userId))
       .where(inArray(membership.boardId, ids))
@@ -111,7 +119,8 @@ export async function listBoards(userId: string): Promise<BoardListing[]> {
 // Board at all (a first sign-in) gets "Meine Küche" created for them here --
 // not when their account is created, so someone arriving through an Invite
 // Link can join that Board first and never get an extra empty one (story 4).
-export async function landingBoard(userId: string): Promise<{ boardId: string, slug: string }> {
+// Created in the user's `language`.
+export async function landingBoard(userId: string, language: Language): Promise<{ boardId: string, slug: string }> {
   const [last] = await lastOpenedBoard(userId)
   if (last) return last
 
@@ -120,7 +129,7 @@ export async function landingBoard(userId: string): Promise<{ boardId: string, s
     // a second one sees the first one's Board and creates none.
     d.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`starter-board:${userId}`}, 0))`),
     lockSlugs(d),
-    insertBoard(d, randomUUID(), userId, STARTER_BOARD, sql`not exists (select 1 from ${membership} where user_id = ${userId})`),
+    insertBoard(d, randomUUID(), userId, starterBoard(language), language, sql`not exists (select 1 from ${membership} where user_id = ${userId})`),
   ])
 
   const [created] = await lastOpenedBoard(userId)
@@ -139,21 +148,21 @@ function lastOpenedBoard(userId: string) {
     .limit(1)
 }
 
-// Creates a Board (PRD story 61) with the default Columns and the user as
-// its Owner.
-export async function createBoard(userId: string, { name, emoji }: NewBoard): Promise<BoardSummary> {
+// Creates a Board (PRD story 61) with the default Columns, in the user's
+// `language`, and the user as its Owner.
+export async function createBoard(userId: string, { name, emoji }: NewBoard, language: Language): Promise<BoardSummary> {
   const id = randomUUID()
-  await runAtomic(d => [lockSlugs(d), insertBoard(d, id, userId, { name, emoji })])
+  await runAtomic(d => [lockSlugs(d), insertBoard(d, id, userId, { name, emoji }, language)])
   const [created] = await db.select({ slug: slugOf }).from(board).where(eq(board.id, id))
   if (!created) throw new Error(`Board ${id} was not created`)
   return { id, slug: created.slug, name, emoji, isOwner: true }
 }
 
 // One statement inserting a Board with its slug (after lockSlugs), its
-// Owner and its default Columns, only `where` that holds.
-function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoard, where: SQL = sql`true`) {
+// Owner and its default Columns in `language`, only `where` that holds.
+function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoard, language: Language, where: SQL = sql`true`) {
   const columns = sql.join(
-    DEFAULT_COLUMNS.map((c, i) => sql`(${c.name}, ${c.subtitle}::text, ${i}::int, ${c.isGekocht}::boolean)`),
+    defaultColumns(language).map((c, i) => sql`(${c.name}, ${c.subtitle}::text, ${i}::int, ${c.isGekocht}::boolean)`),
     sql`, `,
   )
   return d.execute(sql`
@@ -175,8 +184,9 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoar
   `)
 }
 
-// The Board with its Columns and their Dishes, or null unless the user is one of its Members.
-export async function getBoard(boardId: string, userId: string): Promise<BoardView | null> {
+// The Board with its Columns and their Dishes, or null unless the user is
+// one of its Members. Members without a Username yet in the user's `language`.
+export async function getBoard(boardId: string, userId: string, language: Language): Promise<BoardView | null> {
   const [found] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, inviteToken: board.inviteToken, newSince: membership.newSince })
     .from(membership)
@@ -192,7 +202,7 @@ export async function getBoard(boardId: string, userId: string): Promise<BoardVi
     .orderBy(asc(boardColumn.position))
   const [dishes, members, newDishIds] = await Promise.all([
     dishesByColumn(columns.map(c => c.id)),
-    boardMembers(boardId),
+    boardMembers(boardId, language),
     newSince ? newDishesSince(boardId, userId, newSince) : [],
   ])
   return {
@@ -265,10 +275,11 @@ export async function editBoard(boardId: string, userId: string, changes: BoardC
   return edited ?? null
 }
 
-// The Board's Members, the Owner first, then in the order they joined.
-export function boardMembers(boardId: string) {
+// The Board's Members, the Owner first, then in the order they joined; those
+// without a Username yet in `language`.
+export function boardMembers(boardId: string, language: Language) {
   return db
-    .select({ id: user.id, name: usernameOf, image: pictureOf, isOwner: membership.isOwner })
+    .select({ id: user.id, name: usernameOf(language), image: pictureOf, isOwner: membership.isOwner })
     .from(membership)
     .innerJoin(user, eq(user.id, membership.userId))
     .where(eq(membership.boardId, boardId))

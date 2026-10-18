@@ -6,8 +6,11 @@
 // still. A Column without a subtitle keeps its line, so the lanes' Dishes
 // line up, and a long name breaks rather than leaving its place. Both are in
 // the display font through its token, so changing the font is a token
-// change.
-defineProps<{ subtitle: string | null }>()
+// change. The Gekocht Column's subtitle is fixed and not stored with the
+// Board: it is shown in the viewer's language (#328).
+const props = defineProps<{ subtitle: string | null, gekocht?: boolean }>()
+const t = useStrings()
+const shown = computed(() => props.gekocht ? t.board.gekochtSubtitle : props.subtitle)
 </script>
 
 <template>
@@ -17,10 +20,10 @@ defineProps<{ subtitle: string | null }>()
     </h2>
     <p
       class="mt-1 min-h-[1lh] text-subline italic text-text-muted"
-      :aria-hidden="subtitle ? undefined : 'true'"
-      :data-column-subtitle="subtitle ? '' : undefined"
+      :aria-hidden="shown ? undefined : 'true'"
+      :data-column-subtitle="shown ? '' : undefined"
     >
-      {{ subtitle }}
+      {{ shown }}
     </p>
   </hgroup>
 </template>

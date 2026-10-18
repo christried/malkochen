@@ -6,7 +6,9 @@ import { migrationsBefore } from '../support/migrations'
 import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 
-// Column Subtitles (CONTEXT.md): the short line under a Column's name. Lise
+// Column Subtitles (CONTEXT.md): the short line under a Column's name. The
+// Gekocht Column's is fixed and shown by the app, so the API answers null
+// for it (#328). Lise
 // is used by this file only; each test works on a Board of its own.
 
 interface Column {
@@ -47,11 +49,12 @@ test('a new Board’s Columns come with their subtitles', async () => {
   expect(subtitles(board)).toEqual([
     { name: 'Ideen', subtitle: 'Worauf hast du Lust?' },
     { name: 'Diese Woche', subtitle: 'Das steht an.' },
-    { name: 'Gekocht', subtitle: 'Schon geschafft!' },
+    // Fixed, so not stored: the app shows it in each viewer's language.
+    { name: 'Gekocht', subtitle: null },
   ])
 })
 
-test('a renamed Column keeps its subtitle, and the Gekocht Column’s stays “Schon geschafft!”', async () => {
+test('a renamed Column keeps its subtitle, and the Gekocht Column still has none of its own', async () => {
   const lise = await signIn(ALLOWLISTED[20])
   const board = await newBoard(lise)
   const [ideen, , gekocht] = board.columns
@@ -65,7 +68,7 @@ test('a renamed Column keeps its subtitle, and the Gekocht Column’s stays “S
   expect(subtitles(await boardOf(lise, board.id))).toEqual([
     { name: 'Ideensammlung', subtitle: 'Worauf hast du Lust?' },
     { name: 'Diese Woche', subtitle: 'Das steht an.' },
-    { name: 'Erledigt', subtitle: 'Schon geschafft!' },
+    { name: 'Erledigt', subtitle: null },
   ])
 })
 
@@ -106,7 +109,8 @@ test('a subtitle has at most 40 characters, the Gekocht Column’s can’t be ch
   expect(subtitles(await boardOf(lise, board.id))).toEqual([
     { name: 'Ideen', subtitle: forty },
     { name: 'Diese Woche', subtitle: 'Das steht an.' },
-    { name: 'Gekocht', subtitle: 'Schon geschafft!' },
+    // Fixed, so not stored: the app shows it in each viewer's language.
+    { name: 'Gekocht', subtitle: null },
   ])
 })
 

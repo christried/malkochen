@@ -1,6 +1,6 @@
 import { and, eq, ne, sql } from 'drizzle-orm'
-import { de } from '../../app/strings/de'
-import { languageChoice, type LanguageChoice } from '../../shared/language'
+import { stringsFor } from '../../app/strings'
+import { chooseLanguage, languageChoice, type Language, type LanguageChoice } from '../../shared/language'
 import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { user } from '../db/schema'
@@ -12,8 +12,9 @@ export const pictureOf = sql<string | null>`coalesce(${user.ownPicture}, ${user.
 
 // A person's name wherever the app shows them to others: their Username,
 // never their Google name. Someone who hasn't picked one yet (a new user who
-// followed an Invite Link is a Member before they have) shows as "Neu dabei".
-export const usernameOf = sql<string>`coalesce(${user.username}, ${de.username.none})`
+// followed an Invite Link is a Member before they have) shows as "Neu dabei",
+// in the `language` of whoever looks.
+export const usernameOf = (language: Language) => sql<string>`coalesce(${user.username}, ${stringsFor(language).username.none})`
 
 // The signed-in user as /api/me answers: who they are (`name` is their
 // Username, empty until they have one), the picture shown for them, their
@@ -42,10 +43,19 @@ interface Signed {
   language?: string | null
 }
 
+// The language the server writes to someone in when they aren't there to
+// ask (#328): the Email Digest, Push Notifications. Their choice under
+// Sprache; for "auto", the language last seen from their browser
+// (recordBrowserLanguage), else English.
+export function recipientLanguage({ language, browserLanguage }: { language: string | null, browserLanguage: string | null }): Language {
+  return chooseLanguage(language, browserLanguage ? [browserLanguage] : [])
+}
+
 // The signed-in user as others see them on what they just added: the same
-// name and picture as usernameOf and pictureOf select.
+// name and picture as usernameOf and pictureOf select. Adding takes a
+// Username (server/middleware/auth.ts), so there always is one.
 export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt' | 'tourSeen' | 'language'>): { id: string, name: string, image: string | null } {
-  return { id, name: username ?? de.username.none, image: ownPicture ?? image ?? null }
+  return { id, name: username ?? '', image: ownPicture ?? image ?? null }
 }
 
 // /api/me's answer for the signed-in user, from their session.
@@ -77,6 +87,12 @@ export async function setOwnPicture(userId: string, url: string | null): Promise
 export async function recordTourSeen(userId: string, version: number): Promise<Me | null> {
   const [updated] = await db.update(user).set({ tourSeen: sql`greatest(${user.tourSeen}, ${version})` }).where(eq(user.id, userId)).returning(meColumns)
   return updated ? meOf(updated) : null
+}
+
+// Remembers the language the user's browser asked for last (shared/language.ts
+// chooseLanguage of its Accept-Language), for when they aren't there to ask.
+export async function recordBrowserLanguage(userId: string, language: Language): Promise<void> {
+  await db.update(user).set({ browserLanguage: language }).where(eq(user.id, userId))
 }
 
 // Sets the user's language under Sprache in Your Settings.

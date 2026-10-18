@@ -1,5 +1,6 @@
 import { and, asc, count, eq, isNull } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
+import type { Language } from '../../shared/language'
 import { db } from '../db'
 import { board, dish, membership, user } from '../db/schema'
 import { isMember } from './boards'
@@ -26,7 +27,7 @@ export interface PersonCard {
 // Board (or there is nobody by that id), so nobody learns anything about
 // people outside their Boards. Someone who left this Board but still shares
 // another one is shown, as the Dishes they added here still show them.
-export async function personCard(boardId: string, viewerId: string, personId: string): Promise<PersonCard | 'not-member' | null> {
+export async function personCard(boardId: string, viewerId: string, personId: string, language: Language): Promise<PersonCard | 'not-member' | null> {
   if (!await isMember(boardId, viewerId)) return 'not-member'
 
   const theirs = alias(membership, 'theirs')
@@ -42,7 +43,7 @@ export async function personCard(boardId: string, viewerId: string, personId: st
 
   const [[person], [added]] = await Promise.all([
     db
-      .select({ id: user.id, name: usernameOf, image: pictureOf, createdAt: user.createdAt })
+      .select({ id: user.id, name: usernameOf(language), image: pictureOf, createdAt: user.createdAt })
       .from(user)
       .where(eq(user.id, personId)),
     db

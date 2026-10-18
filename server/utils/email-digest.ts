@@ -6,7 +6,7 @@ import { createMailSender, digestEmail, type BoardNews, type Email } from '../em
 import { parseServerEnv } from '../env'
 import { slugOf } from './addresses'
 import { signInRefusal } from './auth'
-import { usernameOf } from './people'
+import { recipientLanguage } from './people'
 
 const env = parseServerEnv(process.env)
 
@@ -78,13 +78,13 @@ async function digestEmails(covered: Coverage[]): Promise<Map<string, Email>> {
   const news = await newsFor(covered)
   if (news.size === 0) return new Map()
   const recipients = await db
-    .select({ id: user.id, email: user.email, name: user.username, emailVerified: user.emailVerified })
+    .select({ id: user.id, email: user.email, name: user.username, emailVerified: user.emailVerified, language: user.language, browserLanguage: user.browserLanguage })
     .from(user)
     .where(inArray(user.id, [...news.keys()]))
   const origin = env.BETTER_AUTH_URL.replace(/\/+$/, '')
   return new Map(recipients
     .filter(r => !signInRefusal(r))
-    .map(r => [r.id, digestEmail(r, news.get(r.id)!, origin)]))
+    .map(r => [r.id, digestEmail({ ...r, language: recipientLanguage(r) }, news.get(r.id)!, origin)]))
 }
 
 // What one run covers for a Member: the Dishes added in (since, until].
@@ -132,7 +132,8 @@ async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
       board: { id: board.id, slug: slugOf, name: board.name, emoji: board.emoji },
       title: dish.title,
       code: dish.code,
-      addedBy: usernameOf,
+      // Adding takes a Username (server/middleware/auth.ts).
+      addedBy: sql<string>`${user.username}`,
     })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))

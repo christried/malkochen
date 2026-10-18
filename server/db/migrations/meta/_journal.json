@@ -169,6 +169,13 @@
       "when": 1792331584711,
       "tag": "0023_user_language",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792337340474,
+      "tag": "0024_browser_language",
+      "breakpoints": true
     }
   ]
 }

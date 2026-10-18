@@ -1,5 +1,6 @@
-import { de } from '../../app/strings/de'
+import { stringsFor } from '../../app/strings'
 import { boardPath, dishPath } from '../../shared/address'
+import type { Language } from '../../shared/language'
 import type { BoardNews } from '../push'
 
 // The Email Digest (#220): the email a Member who switched it on gets in the
@@ -29,18 +30,20 @@ const escapeHtml = (text: string) => text
   .replaceAll('"', '&quot;')
   .replaceAll('\'', '&#39;')
 
-// Who an email goes to: their address, and their Username to greet them
-// with (null before they picked one).
+// Who an email goes to: their address, their Username to greet them with
+// (null before they picked one) and the language it's written in (theirs,
+// server/utils/people.ts recipientLanguage).
 export interface Recipient {
   email: string
   name: string | null
+  language: Language
 }
 
 // One email to `to` about each Board's news (in the order given, each Board
 // with at least one Dish, its Dishes newest first), linking back to the app
 // at `origin`.
 export function digestEmail(to: Recipient, boards: BoardNews[], origin: string): Email {
-  const t = de.emailDigest
+  const t = stringsFor(to.language).emailDigest
   const count = boards.reduce((sum, b) => sum + b.dishes.length, 0)
   const link = (path: string) => `${origin}${path}`
   const boardName = (board: BoardNews['board']) => `${board.emoji} ${board.name}`
@@ -65,7 +68,7 @@ export function digestEmail(to: Recipient, boards: BoardNews[], origin: string):
   const ink = '#131211'
   const muted = '#6B6862'
   const html = `<!doctype html>
-<html lang="de">
+<html lang="${to.language}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:24px 16px;background:#F7F6F2;color:${ink};font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.5">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">${escapeHtml(t.preheader(adders))}</div>

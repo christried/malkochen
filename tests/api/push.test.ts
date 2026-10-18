@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'vitest'
 import { postDish } from './boards'
-import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
+import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
 import { startPushService, type Device, type PushService } from './push-service'
 
 // Push notifications (#219): a Member turns them on per device in their
@@ -275,4 +275,27 @@ test('a push that fails otherwise keeps the subscription and never breaks adding
 
   expect(await isOn(hypatia, flaky)).toBe(true)
   expect(await isOn(hypatia, unreachable)).toBe(true)
+})
+
+test('each Member is notified in their own language: their choice, else what their browser asked for last (#328)', async () => {
+  const katalin = await signIn(KATALIN)
+  const hypatia = await signIn(HYPATIA)
+  // Mileva's browser asks for English.
+  const mileva = speaking(await signIn(MILEVA), 'en-GB,en;q=0.9')
+  const kati = await usernameOf(katalin)
+  const board = await sharedBoard(katalin, [hypatia, mileva], 'Kochclub', '🍪')
+  await subscribed(hypatia, 'hypatia-it')
+  await subscribed(mileva, 'mileva-en')
+  expect((await hypatia.fetch('/api/me/language', json('PUT', { language: 'it' }))).status).toBe(200)
+
+  try {
+    await addDish(katalin, board.id, 'Ramen')
+
+    const titleOn = (device: string) => pushService.deliveries.find(d => d.device === device)!.message.title
+    expect(titleOn('hypatia-it')).toBe(`${kati} ha aggiunto Ramen`)
+    expect(titleOn('mileva-en')).toBe(`${kati} added Ramen`)
+  }
+  finally {
+    await hypatia.fetch('/api/me/language', json('PUT', { language: 'auto' }))
+  }
 })

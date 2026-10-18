@@ -13,8 +13,10 @@
     - the device has no connection: "Du bist offline" (the Offline screen);
     - it has one, but malkochen doesn't answer: "nicht erreichbar", our side.
     It can't use the app, so it repeats what the app shows on its own: the
-    strings from app/strings/de.ts (offline; "nicht erreichbar" lives only
-    here), the offline clip's drawing (public/clips/offline-light.svg, its
+    strings from app/strings/de.ts, en.ts and it.ts (offline; "nicht
+    erreichbar" lives only here), in the device's language (#328: the first
+    of navigator.languages malkochen speaks, else English; it can't know a
+    choice under Sprache), the offline clip's drawing (public/clips/offline-light.svg, its
     Wi-Fi sign in the page's ink) as OfflineScreen.vue plays it, an idling
     Topfbert oops for "nicht erreichbar", the colours from tokens.css, and the
     type as app/components/SystemScreen.vue sets it (tokens.json → type:
@@ -98,8 +100,8 @@
       <div class="blob sky"></div>
       <svg class="drawing" viewBox="0 0 220 200" aria-hidden="true" data-clip="offline"><svg x="26.4" y="60" width="123.2" height="132" viewBox="0 -20 140 150" overflow="visible"><g data-layer="whole" data-loop="tb-bob 2.4s ease-in-out -1.3333s infinite" data-pivot="70 130" transform="translate(0 -4) translate(70 130) scale(0.98 1.03) translate(-70 -130)"><g data-layer="handles"><rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#D2DCD4" stroke="#1E1E1D" stroke-width="2.5"></rect><rect x="111.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#D2DCD4" stroke="#1E1E1D" stroke-width="2.5"></rect></g><g data-layer="body"><path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#B4C2B8" stroke="#1E1E1D" stroke-width="2.5"></path></g><g data-layer="eyes"><path d="M45.5 76A5 5 0 0 1 55.5 76M84.5 76A5 5 0 0 1 94.5 76" fill="none" stroke="#1E1E1D" stroke-width="3" stroke-linecap="round"></path></g><g data-layer="cheeks"><ellipse cx="41.5" cy="86" rx="7.5" ry="4" fill="#D0B2AF" opacity=".85"></ellipse><ellipse cx="98.5" cy="86" rx="7.5" ry="4" fill="#D0B2AF" opacity=".85"></ellipse></g><g data-layer="mouth"><rect x="60" y="87" width="18" height="3" rx="1.5" fill="#1E1E1D" transform="rotate(8 69 88.5)"></rect></g><g data-layer="rim"><rect x="13.25" y="41.25" width="113.5" height="12.5" rx="6.5" fill="#D2DCD4" stroke="#1E1E1D" stroke-width="2.5"></rect></g><g data-layer="hat" data-loop="tb-hat 2.4s ease-in-out -1.3333s infinite" data-pivot="36 46" transform="translate(0 -1.95) translate(36 46) rotate(4.88) translate(-36 -46)"><g transform="rotate(-14 36 46)"><g><circle cx="22" cy="6" r="10.75" fill="#FFFFFF" stroke="#1E1E1D" stroke-width="2.5"></circle><circle cx="39" cy="1" r="11.75" fill="#FFFFFF" stroke="#1E1E1D" stroke-width="2.5"></circle><circle cx="50" cy="8" r="8.75" fill="#FFFFFF" stroke="#1E1E1D" stroke-width="2.5"></circle><rect x="16" y="8" width="40" height="22" fill="#FFFFFF"></rect><rect x="16.25" y="23.25" width="39.5" height="13.5" rx="3" fill="#FFFFFF" stroke="#1E1E1D" stroke-width="2.5"></rect></g></g></g><g data-layer="z_1" data-loop="of-z 2.4s ease-out -1.3333s infinite" transform="translate(3.48 -4.64)" opacity="0.42"><path d="M112.6 23.2H119.4L112.6 29.8H119.6" fill="none" stroke="#1E1E1D" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/></g><g data-layer="z_2" data-loop="of-z 2.4s ease-out -0.1333s infinite" transform="translate(-2.64 2.64)" opacity="0.34"><path d="M122.5 13.3H127.3L122.5 17.9H127.5" fill="none" stroke="#1E1E1D" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/></g></g></svg><svg x="140.8" y="20" width="57.2" height="57.2" viewBox="0 0 64 64" overflow="visible"><g data-layer="arc_outer" data-loop="of-arc-outer 2.4s ease-in-out -1.3333s infinite" opacity="0.12"><path d="M8 26A34 34 0 0 1 56 26" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path></g><g data-layer="arc_inner" data-loop="of-arc-inner 2.4s ease-in-out -1.3333s infinite" opacity="0.12"><path d="M17 36A21 21 0 0 1 47 36" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path></g><g data-layer="arc_1"><path d="M26 46A8 8 0 0 1 38 46" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path></g><g data-layer="dot"><circle cx="32" cy="54" r="3.5" fill="currentColor"></circle></g></svg></svg>
     </div>
-    <h1>Du bist offline.</h1>
-    <p>Sobald du wieder Netz hast, geht’s hier weiter.</p>
+    <h1 data-text="offline">Du bist offline.</h1>
+    <p data-text="offlineBody">Sobald du wieder Netz hast, geht’s hier weiter.</p>
   </div>
   <div id="unreachable" class="screen" hidden>
     <div class="art">
@@ -119,17 +121,53 @@
       </g>
       </svg>
     </div>
-    <h1>malkochen ist gerade nicht erreichbar.</h1>
-    <p>Dein Internet geht, aber malkochen antwortet gerade nicht. Das liegt an uns, nicht an dir. Versuch es gleich noch mal.</p>
+    <h1 data-text="unreachable">malkochen ist gerade nicht erreichbar.</h1>
+    <p data-text="unreachableBody">Dein Internet geht, aber malkochen antwortet gerade nicht. Das liegt an uns, nicht an dir. Versuch es gleich noch mal.</p>
   </div>
-  <button type="button" onclick="location.reload()">Nochmal versuchen</button>
+  <button type="button" data-text="retry" onclick="location.reload()">Nochmal versuchen</button>
   <script>
+    var TEXTS = {
+      de: {
+        offline: 'Du bist offline.',
+        offlineBody: 'Sobald du wieder Netz hast, geht’s hier weiter.',
+        offlineTitle: 'Offline',
+        unreachable: 'malkochen ist gerade nicht erreichbar.',
+        unreachableBody: 'Dein Internet geht, aber malkochen antwortet gerade nicht. Das liegt an uns, nicht an dir. Versuch es gleich noch mal.',
+        unreachableTitle: 'Nicht erreichbar',
+        retry: 'Nochmal versuchen',
+      },
+      en: {
+        offline: 'You’re offline.',
+        offlineBody: 'As soon as you’re back online, you can carry on here.',
+        offlineTitle: 'Offline',
+        unreachable: 'malkochen can’t be reached right now.',
+        unreachableBody: 'Your internet works, but malkochen isn’t answering right now. That’s on us, not you. Try again in a moment.',
+        unreachableTitle: 'Can’t be reached',
+        retry: 'Try again',
+      },
+      it: {
+        offline: 'Sei offline.',
+        offlineBody: 'Appena torni online, puoi continuare da qui.',
+        offlineTitle: 'Offline',
+        unreachable: 'malkochen al momento non è raggiungibile.',
+        unreachableBody: 'La tua connessione funziona, ma malkochen al momento non risponde. Il problema è nostro, non tuo. Riprova tra un attimo.',
+        unreachableTitle: 'Non raggiungibile',
+        retry: 'Riprova',
+      },
+    }
+    // As shared/language.ts chooses for "auto".
+    var language = (navigator.languages || [navigator.language || '']).map(function (tag) { return tag.split('-')[0].toLowerCase() })
+      .filter(function (primary) { return TEXTS[primary] })[0] || 'en'
+    var texts = TEXTS[language]
+    document.documentElement.lang = language
+    document.querySelectorAll('[data-text]').forEach(function (element) { element.textContent = texts[element.getAttribute('data-text')] })
+
     var screens = { offline: document.getElementById('offline'), unreachable: document.getElementById('unreachable') }
     function show() {
       var shown = navigator.onLine ? 'unreachable' : 'offline'
       screens.offline.hidden = shown !== 'offline'
       screens.unreachable.hidden = shown !== 'unreachable'
-      document.title = (shown === 'offline' ? 'Offline' : 'Nicht erreichbar') + ' · malkochen'
+      document.title = texts[shown + 'Title'] + ' · malkochen'
     }
     show()
     window.addEventListener('offline', show)

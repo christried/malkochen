@@ -27,11 +27,11 @@ A short walk through a Board, told step by step by Topfbert, pointing at what a 
 _Avoid_: Onboarding, walkthrough, coach marks, tutorial, intro
 
 **Column**:
-A named, ordered stage on a Board (default: Ideen, Diese Woche, Gekocht). Members can rename, add, reorder and delete Columns.
+A named, ordered stage on a Board (default: Ideen, Diese Woche, Gekocht, written in the language of whoever creates the Board, and the same for every Member after that). Members can rename, add, reorder and delete Columns.
 _Avoid_: Lane, list, status
 
 **Column Subtitle**:
-A short line under a Column's name saying what it's for (default: "Worauf hast du Lust?" for Ideen, "Das steht an." for Diese Woche). Members can set or clear it; the Gekocht Column's is fixed ("Schon geschafft!"), even when it's renamed.
+A short line under a Column's name saying what it's for (default: "Worauf hast du Lust?" for Ideen, "Das steht an." for Diese Woche). Members can set or clear it; the Gekocht Column's is fixed ("Schon geschafft!"), even when it's renamed, and shown in each viewer's language.
 _Avoid_: Description, tagline
 
 **Member**:

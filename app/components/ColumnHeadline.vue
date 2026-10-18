@@ -11,7 +11,7 @@
 // drift, the title cuts to the next Column's. From 768px every lane has
 // its own title, and there is no headline.
 const props = defineProps<{
-  columns: { id: string, name: string, subtitle: string | null }[]
+  columns: { id: string, name: string, subtitle: string | null, isGekocht: boolean }[]
   active: number
   progress: number
   // True while a finger drags the Board: the titles follow without easing.
@@ -39,6 +39,7 @@ function titleStyle(index: number, name: string) {
       v-for="(column, index) in columns"
       :key="column.id"
       :subtitle="column.subtitle"
+      :gekocht="column.isGekocht"
       :class="{ active: index === active }"
       :style="titleStyle(index, column.name)"
       :aria-hidden="index === active ? undefined : 'true'"

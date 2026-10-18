@@ -42,6 +42,11 @@ export const user = pgTable('user', {
   // "auto" (follow the browser) or a language. Only PUT /api/me/language
   // sets it; Better Auth just reads it.
   language: text('language').notNull().default('auto'),
+  // The language their browser asked for last (#328), as malkochen speaks it
+  // (de, en or it); null until one asked. What "auto" means when they aren't
+  // there to ask: the Email Digest, Push Notifications. Only the API's guard
+  // (server/middleware/auth.ts) sets it; Better Auth just reads it.
+  browserLanguage: text('browser_language'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, t => [
