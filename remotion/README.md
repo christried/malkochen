@@ -9,6 +9,46 @@ Vercel build never installs it.
 
 Uses npm, not pnpm, so the repo root's workspace stays out of it.
 
+One video is still rendered here: the brag video (#313). It is a 20s
+vertical launch video for the README and for posts, never for the app.
+
+## The brag video
+
+The real app on a phone, captured frame by frame, inside a short story:
+saved and never cooked, then malkochen, then a TikTok shared to it and saved,
+dragged onto "Diese Woche" and cooked, then the outro.
+
+```bash
+# 1. From the repo root: the app on a throwaway database (Ctrl+C drops it)…
+pnpm exec tsx remotion/capture/serve.ts
+# 2. …and, once it's ready, the capture into remotion/out/brag/shots/
+pnpm exec tsx remotion/capture/capture.ts
+
+# 3. Here: the soundtrack, then out/brag/brag.mp4 and its poster brag.jpg
+npm run brag
+npm run brag:studio   # or look at it in Studio first
+```
+
+- **`capture/`** runs with the app's own dependencies, from the repo root.
+  `serve.ts` starts `pnpm dev` with the browser tests' settings: dev
+  sign-in, no Tour starting by itself, no dev error overlay. `seed.ts` makes
+  up the Board: its Members, Dishes and creators are invented, and the
+  Dishes use the Placeholder Images. `capture.ts` records the shots on a
+  412×892 phone at 2.5×. The recording (`recorder.ts`) runs the page on
+  Playwright's paused clock and moves every CSS and Web Animation on by
+  exactly 1/30s per frame, so each frame shows what the app shows at that
+  moment, however long the screenshot takes. It also records the touches,
+  which the video draws as a fingertip.
+- **`src/brag/`** is the composition. `timeline.ts` holds every frame the
+  picture and the sound share. Its public dir is `out/brag`, not the
+  handoff, so `render-brag.ts` first copies in the app's Topfbert, the
+  Placeholder Images, the icon and the veggies.
+- **`scripts/brag-audio.ts`** synthesises the soundtrack: a 120 BPM groove in
+  F major, with every effect in the same key, timed from the timeline and the
+  captured touches.
+- Frame 0 is the poster (`POSTER_FRAME`), so every platform's thumbnail
+  shows it.
+
 ## Setup
 
 Node 24 (the render script runs TypeScript directly).
