@@ -1,6 +1,6 @@
 # Push and Digest wordings: variations to choose from
 
-For #325 (spec #317, user stories 24–25). Every text a Push Notification or the Email Digest shows today, with 2–3 German variations each and what each one is going for. All keep the casual "du", warm and short. Pick one per text (or a mix, or ask for more); the picks go into the issue's comments and then into `app/strings/de.ts`, before anything is translated.
+For #325 (spec #317, user stories 24–25). Every text a Push Notification or the Email Digest shows today, with 2–3 German variations each and what each one is going for. All keep the casual "du", warm and short. Pick one per text (or a mix, or ask for more); the picks go into the issue's comments and then into `app/strings/de.ts`, before anything is translated. **The user's choice is at the end, under „Chosen".**
 
 The examples use the Board „🍪 Kochclub", the Members Ada, Linus and Grace, and the Dishes Linsen-Dal, Cremige Pilzpasta and Ofengemüse mit Tahini.
 
@@ -103,8 +103,8 @@ Today: only the heading **„Neu auf deinen Boards"**, with no greeting.
 Today: the Board's emoji and name as a heading, then per Dish **„Linsen-Dal von Ada"**, then a button **„Board öffnen"**.
 
 - **A) As today:** „🍪 Kochclub", „Linsen-Dal von Ada", „Board öffnen". Clear and short.
-- **B) With a count, grouped by who:** heading „🍪 Kochclub · 3 neu", then „Ada: Linsen-Dal, Cremige Pilzpasta" and „Linus: Ofengemüse mit Tahini", button „Zum Board". Reads like a short report; better when one person added a lot. Each Dish stays a link.
-- **C) Lighter:** heading „🍪 Kochclub", per Dish „Linsen-Dal · Ada", button „Ansehen". Less text and quick to scan; the button says what you do there.
+- **B) With a count, grouped by who:** heading „🍪 Kochclub (3 neu)", then „Ada: Linsen-Dal, Cremige Pilzpasta" and „Linus: Ofengemüse mit Tahini", button „Zum Board". Reads like a short report; better when one person added a lot. Each Dish stays a link.
+- **C) Lighter:** heading „🍪 Kochclub", per Dish „Linsen-Dal (Ada)", button „Ansehen". Less text and quick to scan; the button says what you do there.
 
 ### Footer
 
@@ -124,7 +124,7 @@ Today: the link **„Ausschalten"** straight after the footer, to Your Settings.
 
 (Out of scope here: the link opens Your Settings and needs you signed in; it doesn't unsubscribe in one click.)
 
-## Recommendation
+## Recommendation (before the choice)
 
 - **Push:** Style C, with two names then a count, and whole titles then a count. It is the shortest collapsed, leads with the food and uses the app's „Neu". If „in 🍪 Kochclub" bothers you, Style B is the safe choice.
 - **Subject:** C, to match the push.
@@ -133,3 +133,18 @@ Today: the link **„Ausschalten"** straight after the footer, to Your Settings.
 - **List:** A, as today, with „Zum Board" from B as the button.
 - **Footer:** B, so people know it won't come every day for nothing.
 - **Unsubscribe:** B, „Keine Lust mehr? Hier ausschalten."
+
+## Chosen (2026-10-18)
+
+The user's picks, now in `app/strings/de.ts`. They also set a rule for every one of these texts: no dashes or hyphens as separators, and no middle dots (·) or similar dots between words.
+
+- **Push:** Style A. Up to three names, then „Grace, Linus und 2 andere". Whole titles, then „und 4 weitere" („und 1 weiteres" for one).
+  - One Dish: „Ada hat Linsen-Dal hinzugefügt" over „🍪 Kochclub".
+  - Several: „Ada hat 3 Gerichte hinzugefügt" over „🍪 Kochclub: Linsen-Dal, Cremige Pilzpasta, Ofengemüse mit Tahini".
+- **Subject:** C. „3 neue Gerichte in 🍪 Kochclub" with one Board, „3 neue Gerichte auf deinen Boards" with several, „1 neues Gericht …" for one.
+- **Preheader:** B. „Von Linus und Ada. Schau mal rein!" (with four or more names: „Von Grace, Linus und 2 andere. Schau mal rein!").
+- **Greeting:** B. „Hallo Ada!" and below it „Das ist seit gestern auf deinen Boards dazugekommen:". Someone who hasn't picked a Username yet gets „Hallo!".
+- **List:** A, as today, with the button „Board öffnen".
+- **Footer:** C. „Einmal am Abend, nur wenn’s was Neues gibt: So hast du’s in malkochen eingestellt."
+- **Unsubscribe:** B. „Keine Lust mehr? Hier ausschalten." „Hier ausschalten" is the footer's link to Your Settings, where the daily email is switched off.
+- The plain-text part of the email lost its „--" line above the footer.
