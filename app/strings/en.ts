@@ -192,12 +192,12 @@ export const en: Strings = {
   achievement: {
     level: {
       tried: 'Tried',
-      favourite: 'New favourite',
+      favourite: 'Rising favourite',
       regular: 'Staple',
       classic: 'Classic',
     },
     count: (count: number) => `${number(count)}×`,
-    // "New favourite: cooked 4×, 1× more to Staple".
+    // "Rising favourite: cooked 4×, 1× more to Staple".
     label: (level: string, count: number, next: { level: string, left: number } | null) =>
       `${level}: cooked ${number(count)}×${next ? `, ${number(next.left)}× more to ${next.level}` : ''}`,
   },
@@ -222,6 +222,7 @@ export const en: Strings = {
     openOnInstagram: 'Open on Instagram',
     watchOnInstagram: 'Watch on Instagram',
     noSource: 'No link',
+    // After the Board's emoji, as in German.
     placement: (board: string, column: string) => `${board} · ${column}`,
     added: (name: string | null, date: Date) => {
       const day = addedDate(date)
