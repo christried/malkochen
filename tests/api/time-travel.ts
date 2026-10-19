@@ -11,9 +11,9 @@ export async function backdateCooking(cookingId: string, minutes: number): Promi
   await query(`update cooking set cooked_at = cooked_at - make_interval(mins => $2) where id = $1`, [cookingId, minutes])
 }
 
-// Makes a deleted Dish, Cooking or Board `days` longer deleted, as if it had been
+// Makes a deleted Dish, Cooking, Comment or Board `days` longer deleted, as if it had been
 // deleted that long before.
-export async function backdateDeletion(table: 'dish' | 'cooking' | 'board', id: string, days: number): Promise<void> {
+export async function backdateDeletion(table: 'dish' | 'cooking' | 'board' | 'comment', id: string, days: number): Promise<void> {
   await query(`update ${table} set deleted_at = deleted_at - make_interval(days => $2) where id = $1`, [id, days])
 }
 

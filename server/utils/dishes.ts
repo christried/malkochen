@@ -183,6 +183,11 @@ export async function isDishMember(dishId: string, userId: string): Promise<bool
   return found !== undefined
 }
 
+// The Dish, if it is on a Board the user is a Member of and not archived.
+export function membersDish(dishId: string, userId: string): Promise<DishView | null> {
+  return findDish(onMembersBoard(dishId, userId))
+}
+
 // The Board a Dish is on, Member or not; null if it is missing or deleted.
 export async function boardOfDish(dishId: string): Promise<string | null> {
   const [found] = await db.select({ boardId: dish.boardId }).from(dish).where(and(eq(dish.id, dishId), isNull(dish.deletedAt)))
