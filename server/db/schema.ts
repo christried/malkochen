@@ -316,6 +316,26 @@ export const cooking = pgTable('cooking', {
 }, t => [index('cooking_dish_id_idx').on(t.dishId, t.cookedAt)])
 
 // ---------------------------------------------------------------------------
+// Comments (CONTEXT.md: Comment): a Member's message on a Dish, in its Dish
+// History (server/utils/comments.ts).
+
+export const comment = pgTable('comment', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
+  // Who wrote it; kept (as "Gelöschtes Konto") if their account is deleted.
+  authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
+  // Trimmed, never empty, at most COMMENT_MAX characters (app/utils/comment-text.ts).
+  text: text('text').notNull(),
+  createdAt: createdAt(),
+  // When its author last changed its text ("bearbeitet"); null if never.
+  editedAt: timestamp('edited_at', { withTimezone: true }),
+  // Set when its author or the Board's Owner deletes it, so "Rückgängig"
+  // can bring it back; left out everywhere else, and purged by the daily
+  // cleanup after RESTORABLE_FOR.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+}, t => [index('comment_dish_id_idx').on(t.dishId, t.createdAt)])
+
+// ---------------------------------------------------------------------------
 // The event log (#331): what happens on Boards, one row per event, for the
 // Operator's Admin Page to count. Written in the same transaction as the
 // change it records (server/utils/events.ts), only appended to, and kept

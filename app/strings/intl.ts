@@ -15,12 +15,20 @@ export function intlFor(locale: string) {
   const dayThisYear = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: ZONE })
   const day = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: ZONE })
   const month = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: ZONE })
+  // The calendar day in German time, to tell today from other days.
+  const calendarDay = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: ZONE })
+  const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone: ZONE })
+  // "3. Sept." / "3 Sept", with the year only when it isn't this year.
+  const dayOf = (at: Date) => (year.format(at) === year.format(new Date()) ? dayThisYear : day).format(at)
   return {
     number: (count: number) => numbers.format(count),
     plural: (count: number, forms: PluralForms) => forms[plurals.select(count)] ?? forms.other,
-    // "3. Sept." / "3 Sept", with the year only when it isn't this year.
-    day: (date: Date) => (year.format(date) === year.format(new Date()) ? dayThisYear : day).format(date),
+    day: dayOf,
     // "März 2026" / "March 2026".
     month: (date: Date) => month.format(date),
+    // A moment as the Dish History tells it: `today` with its time ("20:55")
+    // if it was today, else its day as `day` writes it.
+    moment: (at: Date, today: (time: string) => string) =>
+      calendarDay.format(at) === calendarDay.format(new Date()) ? today(time.format(at)) : dayOf(at),
   }
 }

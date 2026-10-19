@@ -79,3 +79,15 @@ export function cookingIdParam(event: H3Event): string {
   if (!UUID.test(id)) throw cookingNotFound()
   return id
 }
+
+// Same for a Comment: one that doesn't exist and one on someone else's Board look alike.
+export function commentNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Comment not found' })
+}
+
+// A Comment id from the route. Anything that isn't a UUID can't be a Comment.
+export function commentIdParam(event: H3Event): string {
+  const id = getRouterParam(event, 'id') ?? ''
+  if (!UUID.test(id)) throw commentNotFound()
+  return id
+}

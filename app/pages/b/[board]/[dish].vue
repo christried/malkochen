@@ -3,6 +3,7 @@ import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import type { BoardResult } from '~/board/board-module'
+import type { CommentResult } from '~/board/dish-histories'
 import { boardPath as pathOfBoard, dishAt } from '~~/shared/address'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
@@ -12,7 +13,7 @@ import { boardPath as pathOfBoard, dishAt } from '~~/shared/address'
 // Board the parent page already has. At /b/<Board>/<title>-<code> (its
 // Address, CONTEXT.md); its old address, /b/<Board id>/d/<Dish id>, is an
 // alias, which the Board page forwards from (useBoardAddress). Its actions (an edit, "Gekocht ✓",
-// "Verschieben nach…", "Löschen", the Cooking History's) go through the
+// "Verschieben nach…", "Löschen", the Dish History's) go through the
 // client Board module the page provides, and each result goes up as
 // `result`, for the page to show as it shows a card's. The Board is inert
 // behind this dialog, so its Toast and the Gekocht celebration show in
@@ -133,6 +134,21 @@ function onSaved(result: BoardResult) {
   editing.value = false
 }
 
+// What a Comment write answered (from the Dish History): haptics for one
+// deleted, and its notice in the Toast, offering "Rückgängig" if it comes
+// with an undo (whose result shows the same way); then what the write ended
+// in, once settled.
+function showComment({ notice, undo, settled }: CommentResult) {
+  if (notice === 'commentDeleted') hapticReject()
+  if (notice) {
+    const text = t.history[notice]
+    toast.value = undo
+      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(showComment) }] }
+      : { text, duration: NOTICE_MS }
+  }
+  void settled?.then(showComment)
+}
+
 // The Cooking note sheet, from the Cooking History, for a Cooking of the
 // Dish shown then.
 const noting = ref<{ dish: DishView, cooking: CookingView } | null>(null)
@@ -193,6 +209,7 @@ watch(editing, async (isEditing) => {
           @cook="origin => actOnDish(boardModule.cookDish, { origin })"
           @note="cooking => located && (noting = { dish: located.dish, cooking })"
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
+          @comment="showComment"
         />
       </template>
       <AppSheet

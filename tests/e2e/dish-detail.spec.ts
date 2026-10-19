@@ -53,7 +53,8 @@ test('tapping a card opens its detail with everything about the Dish', async ({ 
   await expect(original).toHaveAttribute('target', '_blank')
   await expectCardShape(detail.locator('[data-morph-field="source"]'))
   await expect(detail.getByText('Meine Küche · Diese Woche')).toBeVisible()
-  await expect(detail.getByText(/^Hinzugefügt am \d/)).toBeVisible()
+  // Who added it opens its Verlauf; this one's account is gone.
+  await expect(detail.locator('[data-history-added]')).toContainText('Gelöschtes Konto hat das Gericht hinzugefügt')
   // Without a Creator, no empty line for one.
   await expect(detail.locator('[data-creator]')).toHaveCount(0)
 

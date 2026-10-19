@@ -179,9 +179,9 @@ for (const [device, viewport, renamed] of [
     await expect(other.getByRole('list', { name: 'Mitglieder' }).getByRole('listitem').first()).toContainText(renamed)
     await gotoHydrated(other, `/b/${boardId}`)
     await expect(other.getByText(`Hinzugefügt von ${renamed}`).first()).toBeAttached()
-    // The Dish's own page: who added it, and who cooked it in its history.
+    // The Dish's own page: who added it, and who cooked it, in its Verlauf.
     await gotoHydrated(other, `/b/${boardId}/${dishId}`)
-    await expect(other.getByText(new RegExp(`^Hinzugefügt von ${renamed.replace('.', '\\.')} am `))).toBeVisible()
-    await expect(other.locator('[data-cooking]')).toContainText(`von ${renamed}`)
+    await expect(other.getByText(`${renamed} hat das Gericht hinzugefügt`, { exact: true })).toBeVisible()
+    await expect(other.locator('[data-cooking]')).toContainText(`${renamed} hat es gekocht`)
   })
 }

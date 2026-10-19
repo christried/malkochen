@@ -31,6 +31,12 @@ export type EventKind =
   | 'cooking_recorded'
   | 'cooking_deleted'
   | 'cooking_restored'
+  // A Comment (CONTEXT.md) written, its text changed by its author,
+  // deleted by its author or the Owner, and brought back by "Rückgängig".
+  | 'comment_written'
+  | 'comment_edited'
+  | 'comment_deleted'
+  | 'comment_restored'
 
 // What an event says beyond its Board, Dish and user, by kind. `undo`: the
 // write was a "Rückgängig", taking back the one before it.
@@ -45,6 +51,9 @@ export type EventDetails =
   | { from: string, to: string, fromBoard?: string, undo?: true }
   // cooking_recorded, cooking_deleted, cooking_restored.
   | { cooking: string, undo?: true }
+  // comment_written, comment_edited, comment_deleted, comment_restored:
+  // which Comment, never its text.
+  | { comment: string }
   // member_removed: who the Owner removed.
   | { member: string }
 
@@ -122,5 +131,17 @@ export function cookingEvent(kind: EventKind, user: string, { undo = false } = {
     dish: sql`changed.dish_id`,
     user,
     details: sql`jsonb_build_object('cooking', changed.id${undo ? sql`, 'undo', true` : sql``})`,
+  }
+}
+
+// The event of a Comment a write changed (`changed`, its row), on the
+// Board its Dish is on.
+export function commentEvent(kind: EventKind, user: string): EventValues {
+  return {
+    kind,
+    board: sql`(select ${dish.boardId} from ${dish} where ${dish.id} = changed.dish_id)`,
+    dish: sql`changed.dish_id`,
+    user,
+    details: sql`jsonb_build_object('comment', changed.id)`,
   }
 }

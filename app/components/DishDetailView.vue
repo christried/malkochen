@@ -3,13 +3,15 @@ import type { BoardSummary } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import { videoEmbed } from '~~/shared/video-embed'
+import type { CommentResult } from '~/board/dish-histories'
 
 // The Dish detail's contents: a large image, the title with the Creator
-// under it, the note, the Source
-// with "Original öffnen", where the Dish is (Board and Column), who added it
-// and when, its Cooking History with "Gekocht ✓", "Verschieben nach…" and
-// "Löschen". Scrolled past its image, a compact bar at the top keeps close,
-// the title and "Bearbeiten" at hand (useDetailScroll).
+// under it, the note, the Source with "Original öffnen", where the Dish is
+// (Board and Column), its Dish History ("Verlauf": who added it and when,
+// its Cookings and Comments, the comment field) with "Gekocht ✓",
+// "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
+// at the top keeps close, the title and "Bearbeiten" at hand
+// (useDetailScroll).
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
 defineEmits<{
   close: []
@@ -19,10 +21,9 @@ defineEmits<{
   cook: [origin: Point]
   note: [cooking: CookingView]
   deleteCooking: [cooking: CookingView]
+  comment: [result: CommentResult]
 }>()
 const t = useStrings()
-
-const added = computed(() => t.detail.added(props.dish.addedBy?.name ?? null, new Date(props.dish.createdAt)))
 
 const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useTemplateRef('bar'))
 
@@ -228,38 +229,15 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         </a>
       </div>
 
-      <!-- Who added it opens their popover (#213), picture and line alike. -->
-      <div
-        class="flex text-small text-text-muted"
-        data-morph-field="added"
-      >
-        <PersonPopover
-          v-if="dish.addedBy"
-          :person="dish.addedBy"
-          :board-id="board.id"
-          class="-mx-2 -my-1 flex items-center gap-2 rounded-pill px-2 py-1 text-left transition-colors duration-tap ease-tap hover:bg-surface-muted hover:text-text focus-visible:outline-2 focus-visible:outline-focus"
-          data-added
-        >
-          <UserAvatar
-            :name="dish.addedBy.name"
-            :image="dish.addedBy.image"
-          />
-          <span>{{ added }}</span>
-        </PersonPopover>
-        <p
-          v-else
-          data-added
-        >
-          {{ added }}
-        </p>
-      </div>
-
-      <CookingHistory
+      <DishHistory
         :dish="dish"
+        :board-id="board.id"
+        :is-owner="board.isOwner"
         data-morph-field="history"
         @cook="origin => $emit('cook', origin)"
         @note="cooking => $emit('note', cooking)"
-        @delete="cooking => $emit('deleteCooking', cooking)"
+        @delete-cooking="cooking => $emit('deleteCooking', cooking)"
+        @comment="result => $emit('comment', result)"
       />
 
       <div

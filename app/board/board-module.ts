@@ -8,6 +8,7 @@ import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { AddedDish, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
 import { landingIndex, recordsCooking } from '../../shared/placement'
+import { createDishHistories, type HistoryTransport } from './dish-histories'
 
 // The client Board module (spec #61): owns the app's copy of an open Board.
 // Every change to it goes through an operation here, which changes the
@@ -84,8 +85,8 @@ function isGone(error: unknown) {
 
 // How the module's writes reach the server: over HTTP in the app
 // (http-transport.ts), in memory under test. A failed write rejects with
-// WriteFailed.
-export interface BoardTransport {
+// WriteFailed. With the Dish History's (dish-histories.ts).
+export interface BoardTransport extends HistoryTransport {
   addDish: (boardId: string, dish: AddDishBody) => Promise<AddedDish>
   editDish: (dishId: string, changes: DishEditBody) => Promise<SavedDish>
   deleteDish: (dishId: string) => Promise<void>
@@ -771,12 +772,18 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     if (!writesSince(asked) && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
   }
 
+  // The Dish History of the Dishes whose detail opens, and their Comments.
+  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, queued, isGone })
+
   // How many Dishes are on the Board, the Gekocht Column's included: it
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount, ...histories }
 }
+
+// What the transport reads rather than writes: never counted below.
+const READS = new Set<keyof BoardTransport>(['dishHistory'])
 
 // `uncounted`, counting its writes while under way and as they start, for
 // sync to tell whether one was under way when a poll asked (`mark`), or
@@ -786,7 +793,7 @@ function counted(uncounted: BoardTransport) {
   let started = 0
   const writes: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
   for (const [name, write] of Object.entries(uncounted) as [string, (...args: unknown[]) => Promise<unknown>][]) {
-    writes[name] = (...args) => {
+    writes[name] = READS.has(name as keyof BoardTransport) ? write : (...args) => {
       underWay++
       started++
       // One that throws rather than rejecting ends like one that rejects.

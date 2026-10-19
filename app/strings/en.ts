@@ -8,7 +8,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear } = intlFor('en-GB')
+const { number, plural, day: addedDate, month: monthAndYear, moment } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -190,6 +190,30 @@ export const en: Strings = {
     deleteFailed: `Deleting didn’t work. ${tryAgain}`,
     restoreFailed: 'Bringing it back didn’t work.',
   },
+  history: {
+    heading: 'History',
+    deletedAccount: 'Deleted account',
+    added: (name: string) => `${name} added the dish`,
+    cooked: (name: string) => `${name} cooked it`,
+    when: (at: Date) => moment(at, time => `today, ${time}`),
+    edited: 'edited',
+    commentMenu: (own: boolean) => own ? 'Edit or delete comment' : 'Delete comment',
+    editComment: 'Edit',
+    deleteComment: 'Delete',
+    field: 'Comment',
+    fieldPrompt: 'Write a comment',
+    editPrompt: 'Edit your comment',
+    send: 'Send',
+    saveEdit: 'Save',
+    cancelEdit: 'Cancel',
+    commentDeleted: 'Comment deleted',
+    commentFailed: `Your comment couldn’t be sent. ${tryAgain}`,
+    commentEditFailed: `Your change couldn’t be saved. ${tryAgain}`,
+    commentDeleteFailed: `Deleting didn’t work. ${tryAgain}`,
+    commentRestoreFailed: 'Bringing it back didn’t work.',
+    loadFailed: 'The comments couldn’t be loaded.',
+    retry: 'Try again',
+  },
   achievement: {
     level: {
       tried: 'Tried',
@@ -225,11 +249,6 @@ export const en: Strings = {
     noSource: 'No link',
     // After the Board's emoji, as in German.
     placement: (board: string, column: string) => `${board} · ${column}`,
-    added: (name: string | null, date: Date) => {
-      const day = addedDate(date)
-      return name ? `Added by ${name} on ${day}` : `Added on ${day}`
-    },
-    cookingHistory: 'Cooked',
     cookingHistoryEmpty: 'Not cooked yet.',
     edit: 'Edit',
     editing: 'Edit dish',
