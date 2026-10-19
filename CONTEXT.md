@@ -175,7 +175,7 @@ The Operator's page of figures on how malkochen is used (Dishes added, moves, Co
 _Avoid_: Dashboard, admin panel, admin console
 
 **Event Log**:
-What happens on Boards, recorded for the Admin Page to count: an event each time a Dish is added, moved, archived, restored or deleted for good, a Cooking is recorded, deleted or restored, a Board is created or deleted, and a Member joins, leaves or is removed. Each says when, what kind, which Board, Dish and user, never any content (no titles, Comments or names), and is kept indefinitely. Shown nowhere but as counts on the Admin Page.
+What happens on Boards, recorded for the Admin Page to count: an event each time a Dish is added, moved, archived, restored or deleted for good, a Cooking is recorded, deleted or restored, a Board is created, archived, restored or deleted for good, and a Member joins, leaves or is removed. Each says when, what kind, which Board, Dish and user, never any content (no titles, Comments or names), and is kept indefinitely. Shown nowhere but as counts on the Admin Page.
 _Avoid_: Activity feed, audit log, Dish History
 
 **Changelog**:
