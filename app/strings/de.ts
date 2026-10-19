@@ -403,6 +403,15 @@ export const de = {
     creating: 'Erstellt …',
     close: 'Schließen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    // The Owner's Archived Boards at the end of the switcher (CONTEXT.md:
+    // Archived Board), each with "Wiederherstellen" and "Endgültig löschen"
+    // (settings.restore, settings.deleteForGood) and its days left
+    // (settings.daysLeft). `board`: its emoji and name.
+    archive: 'Archiv',
+    restoreBoard: (board: string) => `${board} wiederherstellen`,
+    purgeBoard: (board: string) => `${board} endgültig löschen`,
+    purgeConfirm: (board: string) => `${board} endgültig löschen?`,
+    purgeBody: 'Das Board verschwindet dann mit allen Spalten, Gerichten, Bildern und allem, was ihr gekocht habt. Das lässt sich nicht rückgängig machen.',
   },
   settings: {
     title: 'Board-Einstellungen',
@@ -482,7 +491,8 @@ export const de = {
     aloneHint: 'Du bist allein auf dem Board. Wenn du es nicht mehr brauchst, lösch es.',
     deleteBoard: 'Board löschen',
     deleteConfirm: 'Board löschen?',
-    deleteBody: (board: string) => `${board} verschwindet dann für alle, mit allen Spalten, Gerichten und was ihr gekocht habt. Das lässt sich nicht rückgängig machen.`,
+    // Deleting archives it (CONTEXT.md: Archived Board).
+    deleteBody: (board: string) => `${board} verschwindet dann für alle. 30 Tage lang findest du es noch unter „Archiv“ in der Liste deiner Boards und kannst es dort wiederherstellen.`,
     deleteTypeName: (name: string) => `Tipp zum Bestätigen „${name}“ ein`,
     deleteForGood: 'Endgültig löschen',
     // The Board's Archive (CONTEXT.md: Archived Dish): any Member restores
