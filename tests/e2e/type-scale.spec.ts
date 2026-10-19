@@ -72,7 +72,7 @@ test('Board settings: the sections under the same heading style, "(du)" in the n
   await gotoHydrated(page, '/')
   await openBoardSettings(page)
   const headings = sectionHeadings(page)
-  await expect(headings).toHaveText(['Board', 'Spalten', 'Mitglieder', 'Einladen'])
+  await expect(headings).toHaveText(['Board', 'Spalten', 'Mitglieder', 'Einladen', 'Archiv'])
   for (const heading of await headings.all()) await expectSectionHeading(heading)
   // Muted text differs from the name by colour only.
   const you = page.getByText('(du)')

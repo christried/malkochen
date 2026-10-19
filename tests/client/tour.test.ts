@@ -351,7 +351,7 @@ test('step 6 spotlights the card\'s ⋯, "Und wieder weg", mentioning Rückgäng
   expect(stepId(after(tour, 'next'))).toBe('deleteDish')
 })
 
-test('in the ⋯ menu, the bubble follows onto Löschen; deleted, the Tour goes on to the Board Switcher', () => {
+test('in the ⋯ menu, the bubble follows onto Archivieren; archived, the Tour goes on to the Board Switcher', () => {
   const inMenu = after(atDelete(), menu('actions'))
 
   expect(step(inMenu)).toMatchObject({ id: 'deleteDish', target: 'menu-delete', buttons: ['keep', 'skip'] })
