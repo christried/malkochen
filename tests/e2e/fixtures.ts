@@ -11,9 +11,9 @@ async function skipSplash(context: BrowserContext) {
 }
 
 // What the running test's pages did against the Content Security Policy
-// (#192). The policy is report-only, so the browser only logs it; a test
-// that causes any fails, which is how the policy is known to fit the app
-// before it is enforced.
+// (#192). The policy is enforced (#344): the browser blocks it and logs it.
+// A test that causes any fails, which is how the policy is known to fit the
+// app, the Offline page's own policy included.
 let policyViolations: string[] = []
 
 function watchPolicy(context: BrowserContext) {

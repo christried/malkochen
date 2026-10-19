@@ -25,6 +25,9 @@ function contentSecurityPolicy(nonce: string): string {
     'form-action \'self\' https://accounts.google.com',
     'base-uri \'self\'',
     'object-src \'none\'',
+    // This header takes the place of every answer's (nuxt.config.ts), so it
+    // says again that no other site may frame the app.
+    'frame-ancestors \'none\'',
     // Where the browser reports what broke the policy
     // (server/api/csp-report.post.ts): report-to, today's way, names the
     // endpoint of the Reporting-Endpoints header; report-uri is the one
@@ -40,13 +43,10 @@ const REPORTING_ENDPOINT = 'csp'
 // What a rendered page's answer carries beyond nuxt.config.ts's routeRules
 // (#192).
 export default defineNitroPlugin((nitro) => {
-  // Report-only for now: the browser reports what would be blocked and blocks
-  // nothing. To be enforced once the reports have stayed away in production
-  // (Vercel's logs, "[csp-report]").
-  // public/offline.html has an inline script and style of its own and gets no
-  // report-only policy: it shows only when malkochen can't be reached, so its
-  // reports would have nowhere to go. Its policy comes with enforcing, as
-  // hashes: a static file can't carry a nonce.
+  // Enforced since #344, after the report-only policy (#247) had run clean in
+  // production; the browser still reports what it blocks ("[csp-report]" in
+  // Vercel's logs). public/offline.html is a static file and has its own
+  // policy, with hashes in place of a nonce (nuxt.config.ts).
   nitro.hooks.hook('render:html', (html, { event }) => {
     // In dev Nuxt wraps the error screen in its own error page, which has
     // inline scripts and a frame of its own.
@@ -61,7 +61,7 @@ export default defineNitroPlugin((nitro) => {
     html.head = html.head.map(withNonce)
     html.bodyPrepend = html.bodyPrepend.map(withNonce)
     html.bodyAppend = html.bodyAppend.map(withNonce)
-    setResponseHeader(event, 'Content-Security-Policy-Report-Only', contentSecurityPolicy(nonce))
+    setResponseHeader(event, 'Content-Security-Policy', contentSecurityPolicy(nonce))
     setResponseHeader(event, 'Reporting-Endpoints', `${REPORTING_ENDPOINT}="${CSP_REPORT_PATH}"`)
   })
 
