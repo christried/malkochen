@@ -120,6 +120,14 @@ function cancelEdit() {
   text.value = ''
 }
 
+// Escape in the field while editing leaves the edit, not the detail.
+function onFieldEscape(event: KeyboardEvent) {
+  if (!editing.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  cancelEdit()
+}
+
 function remove(comment: CommentView) {
   menuFor.value = null
   if (editing.value === comment) cancelEdit()
@@ -401,6 +409,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
           :placeholder="editing ? t.history.editPrompt : t.history.fieldPrompt"
           :aria-label="t.history.field"
           @keydown.enter.exact.prevent="submit"
+          @keydown.esc="onFieldEscape"
         />
         <button
           type="submit"

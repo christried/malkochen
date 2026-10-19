@@ -197,7 +197,7 @@ test('in the Dish detail, hovering who added it shows their popover over the det
   await page.getByRole('link', { name: 'Linsencurry', exact: true }).click()
   const detail = page.getByRole('dialog', { name: 'Linsencurry' })
   await expect(detail).toBeVisible()
-  const added = detail.getByRole('button', { name: /^Hinzugefügt von Johnson am / })
+  const added = detail.getByRole('button', { name: 'Johnson hat das Gericht hinzugefügt' })
 
   await added.hover()
   await expectJohnson(page)
@@ -226,7 +226,7 @@ test('in the Dish detail on a phone, tapping who added it shows the popover; a t
   const detail = page.getByRole('dialog', { name: 'Linsencurry' })
   await expect(detail).toBeVisible()
   const url = page.url()
-  const added = detail.getByRole('button', { name: /^Hinzugefügt von Johnson am / })
+  const added = detail.getByRole('button', { name: 'Johnson hat das Gericht hinzugefügt' })
   await added.scrollIntoViewIfNeeded()
 
   await added.tap()

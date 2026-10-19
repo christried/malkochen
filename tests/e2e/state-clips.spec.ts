@@ -214,7 +214,7 @@ test('a Dish never cooked loops its own scene in the Cooking History, until it i
     const clip = await neverCookedClip(card)
     await card.click()
     const detail = page.getByRole('dialog', { name: title })
-    const history = detail.getByRole('region', { name: 'Gekocht' })
+    const history = detail.getByRole('region', { name: 'Verlauf' })
     await history.scrollIntoViewIfNeeded()
     await expect.poll(() => playing(history)).toEqual([`${clip}-dark.svg`])
     return { clip, detail, history }

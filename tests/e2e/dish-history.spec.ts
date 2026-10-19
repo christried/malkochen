@@ -65,10 +65,19 @@ test('its author edits a Comment, which is then marked "bearbeitet"', async ({ p
   const { history, comments, field } = await openDish(page, 'Linsen-Dal')
   await expect(comments).toHaveCount(2)
 
-  await comments.first().getByRole('button', { name: 'Kommentar bearbeiten oder löschen' }).click()
-  await comments.first().getByRole('button', { name: 'Bearbeiten', exact: true }).click()
-  await expect(field).toHaveValue('Machen wir Freitag?')
-  await expect(field).toBeFocused()
+  const startEditing = async () => {
+    await comments.first().getByRole('button', { name: 'Kommentar bearbeiten oder löschen' }).click()
+    await comments.first().getByRole('button', { name: 'Bearbeiten', exact: true }).click()
+    await expect(field).toHaveValue('Machen wir Freitag?')
+    await expect(field).toBeFocused()
+  }
+  // Escape leaves the edit, not the detail.
+  await startEditing()
+  await field.press('Escape')
+  await expect(field).toHaveValue('')
+  await expect(history).toBeVisible()
+
+  await startEditing()
   await field.fill('Machen wir Samstag?')
   await history.getByRole('button', { name: 'Speichern' }).click()
 

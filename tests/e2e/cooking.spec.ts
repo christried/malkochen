@@ -84,7 +84,7 @@ test('a note from the toast shows in the Cooking History; cooking again counts',
   await expect(detail.locator('[data-cooking-summary]')).toContainText('2× gekocht · zuletzt')
   const entries = detail.locator('[data-cooking]')
   await expect(entries).toHaveCount(2)
-  await expect(entries.nth(1)).toContainText('mit Räuchertofu besser')
+  await expect(entries.first()).toContainText('mit Räuchertofu besser')
 })
 
 test('in the detail: add a note later, delete a Cooking with undo, and cook again', async ({ page }) => {
@@ -95,21 +95,21 @@ test('in the detail: add a note later, delete a Cooking with undo, and cook agai
   const entries = detail.locator('[data-cooking]')
   await expect(entries).toHaveCount(2)
 
-  // The newest Cooking has no note yet.
-  await entries.first().getByRole('button', { name: /^Notiz zum Kochen am .* hinzufügen$/ }).click()
+  // The newest Cooking, at the end of the Verlauf, has no note yet.
+  await entries.last().getByRole('button', { name: /^Notiz zum Kochen am .* hinzufügen$/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
   await sheet.getByLabel('Notiz').fill('doppelt Knoblauch')
   await sheet.getByRole('button', { name: 'Speichern' }).click()
-  await expect(entries.first()).toContainText('doppelt Knoblauch')
+  await expect(entries.last()).toContainText('doppelt Knoblauch')
 
-  await entries.nth(1).getByRole('button', { name: /^Kochen am .* löschen$/ }).click()
+  await entries.first().getByRole('button', { name: /^Kochen am .* löschen$/ }).click()
   await expect(entries).toHaveCount(1)
   await expect(detail.locator('[data-cooking-summary]')).toContainText('1× gekocht')
   await page.getByRole('status').getByRole('button', { name: 'Rückgängig' }).click()
   await expect(entries).toHaveCount(2)
-  await expect(entries.nth(1)).toContainText('mit Räuchertofu besser')
+  await expect(entries.first()).toContainText('mit Räuchertofu besser')
 
-  await entries.first().getByRole('button', { name: /^Kochen am .* löschen$/ }).click()
+  await entries.last().getByRole('button', { name: /^Kochen am .* löschen$/ }).click()
   await expect(entries).toHaveCount(1)
   // Without undo, it stays deleted.
   await expect(page.getByRole('status').getByRole('button', { name: 'Rückgängig' })).toBeHidden({ timeout: 8000 })
@@ -121,7 +121,7 @@ test('in the detail: add a note later, delete a Cooking with undo, and cook agai
 
   await reloadHydrated(page)
   await expect(entries).toHaveCount(2)
-  await expect(entries.nth(1)).toContainText('mit Räuchertofu besser')
+  await expect(entries.first()).toContainText('mit Räuchertofu besser')
   await expect(detail).not.toContainText('doppelt Knoblauch')
 })
 

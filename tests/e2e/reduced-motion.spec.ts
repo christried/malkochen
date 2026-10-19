@@ -71,7 +71,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   }
   await normalSpeed()
   await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
-  const history = detail.getByRole('region', { name: 'Gekocht' })
+  const history = detail.getByRole('region', { name: 'Verlauf' })
   await expect(loopStill(history, neverCooked)).toBeVisible()
   await history.getByRole('button', { name: 'Gekocht ✓' }).click()
   await expect(history.locator('[data-cooking]')).toHaveCount(1)
