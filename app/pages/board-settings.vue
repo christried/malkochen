@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
+import type { ArchivedDishView, PlacedDish } from '~~/server/utils/dishes'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
 import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
@@ -8,8 +9,9 @@ import { invitePath } from '~~/shared/invite'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
-// and emoji, its Columns, its Members, the Invite Link and leaving; for the
-// Owner also removing Members, handing over ownership and deleting the Board.
+// and emoji, its Columns, its Members, the Invite Link, its Archive and
+// leaving; for the Owner also removing Members, handing over ownership,
+// deleting Archived Dishes for good and deleting the Board.
 // Its own page, not a child of the Board: any page under b/[board]/ opens over
 // the Board (a route group doesn't help, it is nested all the same), so it
 // lives here and sets its path. Every change saves at once; one that fails
@@ -307,6 +309,58 @@ function deleteBoard() {
   return goOffBoard(() => $fetch<null>(`/api/boards/${id.value}`, { method: 'DELETE' }))
 }
 
+// The Board's Archive (#336; CONTEXT.md: Archived Dish). Fetched apart from
+// the Board and not awaited, so it never holds the page up; it shows once
+// it is there. Restoring takes a Dish off the list at once and puts it back
+// on the Board, where its Column counts it again; deleting one for good
+// (the Owner) asks first. One that fails fetches the Archive afresh, which
+// also shows what other Members did meanwhile.
+const { data: archive, refresh: refreshArchive } = useFetch<{ dishes: ArchivedDishView[] }>(
+  () => `/api/boards/${id.value}/archive`,
+  { immediate: boardId !== null, lazy: true },
+)
+function offArchive(dish: ArchivedDishView) {
+  // A new object: useFetch's data is a shallow ref.
+  if (archive.value) archive.value = { dishes: archive.value.dishes.filter(d => d.id !== dish.id) }
+}
+
+async function restoreArchived(dish: ArchivedDishView) {
+  offArchive(dish)
+  try {
+    const restored = await $fetch<PlacedDish>(`/api/dishes/${dish.id}/restore`, { method: 'POST' })
+    const column = columns.value.find(c => c.id === restored.placement.columnId)
+    if (column) column.count += 1
+    toast.value = { text: t.settings.restored(dish.title), duration: NOTICE_MS }
+  }
+  catch {
+    failed()
+    await refreshArchive()
+  }
+}
+
+const purging = ref<ArchivedDishView | null>(null)
+const purgingOpen = computed({
+  get: () => purging.value !== null,
+  set: (open) => {
+    if (!open) purging.value = null
+  },
+})
+async function purgeArchived() {
+  const dish = purging.value
+  if (!dish) return
+  purging.value = null
+  hapticReject()
+  offArchive(dish)
+  try {
+    await $fetch<null>(`/api/dishes/${dish.id}/purge`, { method: 'POST' })
+    toast.value = { text: t.settings.purged(dish.title), duration: NOTICE_MS }
+  }
+  catch {
+    failed()
+    await refreshArchive()
+  }
+}
+
 function confirmDelete() {
   const column = deleting.value
   const target = columns.value.find(c => c.id === moveTo.value)
@@ -515,6 +569,28 @@ function confirmDelete() {
         </div>
       </section>
 
+      <section
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-archive"
+      >
+        <h2
+          id="settings-archive"
+          class="section-heading px-1"
+        >
+          {{ t.settings.archive }}
+        </h2>
+        <p class="px-1 text-small text-text-muted">
+          {{ t.settings.archiveHint }}
+        </p>
+        <ArchivedDishList
+          v-if="archive"
+          :dishes="archive.dishes"
+          :is-owner="board.isOwner"
+          @restore="restoreArchived"
+          @purge="dish => purging = dish"
+        />
+      </section>
+
       <div class="flex flex-col items-start gap-3 border-t border-line pt-6">
         <template v-if="board.isOwner">
           <p class="px-1 text-small text-text-muted">
@@ -667,6 +743,29 @@ function confirmDelete() {
           type="button"
           class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
           @click="confirmingReset = false"
+        >
+          {{ t.settings.cancel }}
+        </button>
+      </div>
+    </AppSheet>
+
+    <AppSheet
+      v-model:open="purgingOpen"
+      variant="dialog"
+      :title="purging ? t.settings.purgeConfirm(purging.title) : ''"
+      :close-label="t.settings.close"
+    >
+      <p class="mt-3 text-body text-text-muted">
+        {{ t.settings.purgeBody }}
+      </p>
+      <div class="mt-5 flex flex-col gap-2">
+        <DangerButton @click="purgeArchived">
+          {{ t.settings.deleteForGood }}
+        </DangerButton>
+        <button
+          type="button"
+          class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+          @click="purging = null"
         >
           {{ t.settings.cancel }}
         </button>

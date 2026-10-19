@@ -151,10 +151,11 @@ export const de = {
     // The same button's Tooltip: the card under it already says which Dish.
     more: 'Mehr',
     closeMenu: 'Schließen',
-    delete: 'Löschen',
-    deleted: (title: string) => `„${title}“ gelöscht`,
+    // Archiving a Dish (CONTEXT.md: Archived Dish).
+    delete: 'Archivieren',
+    deleted: (title: string) => `„${title}“ archiviert`,
     undo: 'Rückgängig',
-    deleteFailed: (title: string) => `„${title}“ ließ sich nicht löschen. Versuch es gleich noch mal.`,
+    deleteFailed: (title: string) => `„${title}“ ließ sich nicht archivieren. Versuch es gleich noch mal.`,
     restoreFailed: (title: string) => `„${title}“ ließ sich nicht zurückholen.`,
     moveTo: 'Verschieben nach…',
     back: 'Zurück',
@@ -201,13 +202,13 @@ export const de = {
     label: 'Auswahl',
     count: (count: number) => `${number(count)} ausgewählt`,
     move: 'Verschieben',
-    delete: 'Löschen',
+    delete: 'Archivieren',
     close: 'Auswahl beenden',
     moved: (count: number, column: string) => `${dishCount(count)} nach „${column}“ verschoben`,
     movedToBoard: (count: number, board: string, column: string) => `${dishCount(count)} ${plural(count, { one: 'ist', other: 'sind' })} jetzt in ${board} · ${column}`,
-    deleted: (count: number) => `${dishCount(count)} gelöscht`,
+    deleted: (count: number) => `${dishCount(count)} archiviert`,
     moveFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht verschieben. Versuch es gleich noch mal.`,
-    deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht löschen. Versuch es gleich noch mal.`,
+    deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht archivieren. Versuch es gleich noch mal.`,
     backFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht zurückholen.`,
   },
   cooking: {
@@ -484,6 +485,23 @@ export const de = {
     deleteBody: (board: string) => `${board} verschwindet dann für alle, mit allen Spalten, Gerichten und was ihr gekocht habt. Das lässt sich nicht rückgängig machen.`,
     deleteTypeName: (name: string) => `Tipp zum Bestätigen „${name}“ ein`,
     deleteForGood: 'Endgültig löschen',
+    // The Board's Archive (CONTEXT.md: Archived Dish): any Member restores
+    // a Dish, the Owner deletes one for good.
+    archive: 'Archiv',
+    archiveHint: 'Archivierte Gerichte bleiben 30 Tage hier. Danach sind sie endgültig weg.',
+    archiveEmpty: 'Gerade ist nichts archiviert.',
+    archivedBy: (name: string, date: Date) => `Von ${name} am ${addedDate(date)} archiviert`,
+    // Whoever archived it is unknown: their account is gone, or it was
+    // archived before malkochen kept who did.
+    archivedOn: (date: Date) => `Am ${addedDate(date)} archiviert`,
+    daysLeft: (days: number) => `Noch ${number(days)} ${plural(days, { one: 'Tag', other: 'Tage' })}`,
+    restore: 'Wiederherstellen',
+    restoreDish: (title: string) => `„${title}“ wiederherstellen`,
+    restored: (title: string) => `„${title}“ ist wieder auf dem Board.`,
+    purgeDish: (title: string) => `„${title}“ endgültig löschen`,
+    purgeConfirm: (title: string) => `„${title}“ endgültig löschen?`,
+    purgeBody: 'Das Gericht verschwindet dann mit seinem Bild und allem, was ihr dazu eingetragen habt. Das lässt sich nicht rückgängig machen.',
+    purged: (title: string) => `„${title}“ ist endgültig gelöscht.`,
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
   },
   // public/offline.html repeats these, for the service worker. It also has
@@ -670,11 +688,11 @@ export const de = {
       menu: 'Tipp auf „Verschieben nach…“.',
       pick: (column: string) => `Und jetzt auf „${column}“.`,
     },
-    // Step 6: deleting it again, or "Behalten".
+    // Step 6: archiving it again, or "Behalten".
     deleteDish: {
       title: 'Und wieder weg',
-      text: 'Über ⋯ löschst du ein Gericht. Keine Sorge: Mit „Rückgängig“ holst du es gleich wieder zurück.',
-      menu: 'Tipp auf „Löschen“. Mit „Rückgängig“ ist es gleich wieder da.',
+      text: 'Über ⋯ archivierst du ein Gericht. Keine Sorge: Mit „Rückgängig“ holst du es gleich wieder zurück.',
+      menu: 'Tipp auf „Archivieren“. Mit „Rückgängig“ ist es gleich wieder da.',
     },
     keep: 'Behalten',
     boardSwitcher: {
