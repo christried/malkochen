@@ -1,6 +1,8 @@
 import type { ColumnView } from '~~/server/utils/columns'
+import type { CommentView } from '~~/server/utils/comments'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { BulkBody } from '~~/server/utils/dish-input'
+import type { DishHistory } from '~~/server/utils/dish-history'
 import type { AddedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import { WriteFailed, type BoardTransport } from './board-module'
 
@@ -23,6 +25,11 @@ export function httpTransport(): BoardTransport {
     placeDishes: places => asWrite(bulk({ action: 'place', places })),
     deleteDishes: dishIds => asWrite(bulk({ action: 'delete', dishIds })).then(() => undefined),
     restoreDishes: dishIds => asWrite(bulk({ action: 'restore', dishIds })),
+    dishHistory: dishId => asWrite($fetch<DishHistory>(`/api/dishes/${dishId}/history`)),
+    writeComment: (dishId, text) => asWrite($fetch<CommentView>(`/api/dishes/${dishId}/comments`, { method: 'POST', body: { text } })),
+    editComment: (commentId, text) => asWrite($fetch<CommentView>(`/api/comments/${commentId}`, { method: 'PATCH', body: { text } })),
+    deleteComment: commentId => asWrite($fetch<unknown>(`/api/comments/${commentId}`, { method: 'DELETE' })).then(() => undefined),
+    restoreComment: commentId => asWrite($fetch<CommentView>(`/api/comments/${commentId}/restore`, { method: 'POST' })),
   }
 }
 

@@ -2,8 +2,10 @@ import type { BoardTransport } from '../../app/board/board-module'
 import { WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
+import type { CommentView } from '../../server/utils/comments'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
+import type { DishHistory } from '../../server/utils/dish-history'
 import type { AddedDish, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
@@ -39,6 +41,11 @@ export interface MemoryTransport {
   deleteColumnElsewhere: (columnId: string) => void
   // Another Member deletes a Cooking from its Dish's Cooking History.
   deleteCookingElsewhere: (cookingId: string) => void
+  // Each Dish's Comments on the server, oldest first, deleted ones too.
+  comments: Map<string, (CommentView & { deleted?: true })[]>
+  // Another Member writes a Comment on a Dish, or deletes one.
+  writeCommentElsewhere: (dishId: string, text: string) => CommentView
+  deleteCommentElsewhere: (commentId: string) => void
 }
 
 export function memoryTransport(board: BoardView, otherBoards: BoardView[] = []): MemoryTransport {
@@ -51,6 +58,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // Deleted Cookings keep their Dish, so restoring puts them back.
   const deletedCookings = new Map<string, { cooking: CookingView, dishId: string }>()
   let cookings = 0
+  let commentsWritten = 0
+  const comments = new Map<string, (CommentView & { deleted?: true })[]>()
   let added = 0
   let addedColumns = 0
 
@@ -279,6 +288,52 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return structuredClone(cooking)
   }
 
+  // The Dish History as the server builds it: added, then its Cookings and
+  // Comments oldest first. Null for a Dish the server doesn't have.
+  function historyOnServer(dishId: string): DishHistory | null {
+    const dish = server.columns.flatMap(c => c.dishes).find(d => d.id === dishId)
+    if (!dish) return null
+    const rest = [
+      ...dish.cookings.toReversed().map(cooking => ({ kind: 'cooking' as const, at: cooking.cookedAt, cooking })),
+      ...(comments.get(dishId) ?? []).filter(c => !c.deleted).map(({ deleted: _, ...comment }) => ({ kind: 'comment' as const, at: comment.createdAt, comment })),
+    ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+    return structuredClone({ dishId, entries: [{ kind: 'added' as const, at: dish.createdAt, by: dish.addedBy }, ...rest] })
+  }
+
+  // A Comment as the server keeps it: trimmed. By nobody in particular (the
+  // tests don't sign in). Null for a Dish the server doesn't have.
+  function writeCommentOnServer(dishId: string, text: string): CommentView | null {
+    if (!server.columns.some(c => c.dishes.some(d => d.id === dishId))) return null
+    const comment = { id: `comment-${++commentsWritten}`, text: text.trim(), createdAt: new Date().toISOString(), editedAt: null, author: { id: 'me', name: 'Ich', image: null } }
+    comments.set(dishId, [...comments.get(dishId) ?? [], comment])
+    return structuredClone(comment)
+  }
+
+  function commentOnServer(commentId: string) {
+    return [...comments.values()].flat().find(c => c.id === commentId) ?? null
+  }
+
+  function editCommentOnServer(commentId: string, text: string): CommentView | null {
+    const comment = commentOnServer(commentId)
+    if (!comment || comment.deleted) return null
+    if (comment.text !== text.trim()) Object.assign(comment, { text: text.trim(), editedAt: new Date().toISOString() })
+    return structuredClone(comment)
+  }
+
+  function deleteCommentOnServer(commentId: string): true | null {
+    const comment = commentOnServer(commentId)
+    if (!comment || comment.deleted) return null
+    comment.deleted = true
+    return true
+  }
+
+  function restoreCommentOnServer(commentId: string): CommentView | null {
+    const comment = commentOnServer(commentId)
+    if (!comment) return null
+    delete comment.deleted
+    return structuredClone(comment)
+  }
+
   // Answers a write as scripted, else runs it on the server: `run` answers
   // null for a Dish the server doesn't have (404), or throws WriteFailed.
   function answer<T>(write: Write, args: string, run: () => T | null): Promise<T> {
@@ -322,6 +377,11 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),
     restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
+    dishHistory: dishId => answer('dishHistory', dishId, () => historyOnServer(dishId)),
+    writeComment: (dishId, text) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text)),
+    editComment: (commentId, text) => answer('editComment', `${commentId} ${text}`, () => editCommentOnServer(commentId, text)),
+    deleteComment: commentId => answer('deleteComment', commentId, () => deleteCommentOnServer(commentId)).then(() => undefined),
+    restoreComment: commentId => answer('restoreComment', commentId, () => restoreCommentOnServer(commentId)),
   }
 
   return {
@@ -344,5 +404,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       }
     },
     deleteCookingElsewhere: cookingId => void deleteCookingOnServer(cookingId),
+    comments,
+    writeCommentElsewhere: (dishId, text) => writeCommentOnServer(dishId, text)!,
+    deleteCommentElsewhere: commentId => void deleteCommentOnServer(commentId),
   }
 }
