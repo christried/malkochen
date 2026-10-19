@@ -6,6 +6,6 @@ import { requireCronSecret } from '../../utils/cron'
 export default defineEventHandler(async (event) => {
   requireCronSecret(event)
   const report = await cleanUp()
-  console.info(`[cleanup] purged ${report.purgedDishes} Dishes and ${report.purgedCookings} Cookings, deleted ${report.deletedImages} images`)
+  console.info(`[cleanup] purged ${report.purgedBoards} Boards, ${report.purgedDishes} Dishes and ${report.purgedCookings} Cookings, deleted ${report.deletedImages} images`)
   return report
 })

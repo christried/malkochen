@@ -147,6 +147,11 @@ export const board = pgTable('board', {
   // address is its id then, until it is renamed.
   slug: text('slug'),
   createdAt: createdAt(),
+  // Set when its Owner deletes it (CONTEXT.md: Archived Board): its
+  // memberships move to archived_membership, so it is left out of
+  // everything that goes by membership; the cleanup purges it after
+  // RESTORABLE_FOR (server/utils/archived-boards.ts).
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 })
 
 // Every slug a Board has had, its current one too: a former one forwards to
@@ -207,6 +212,22 @@ export const membership = pgTable('membership', {
   index('membership_user_id_idx').on(t.userId),
   // Exactly one Owner per Board (at most one here; creation always sets one).
   uniqueIndex('membership_one_owner_idx').on(t.boardId).where(sql`${t.isOwner}`),
+])
+
+// The memberships of an Archived Board, as they were when it was archived,
+// for restoring it with its Members. Kept apart from `membership`, so
+// nothing that finds a user's Boards by membership finds an Archived Board.
+export const archivedMembership = pgTable('archived_membership', {
+  boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  isOwner: boolean('is_owner').notNull(),
+  lastOpenedAt: timestamp('last_opened_at', { withTimezone: true }),
+  seenAt: timestamp('seen_at', { withTimezone: true }),
+  newSince: timestamp('new_since', { withTimezone: true }),
+  joinedAt: timestamp('joined_at', { withTimezone: true }).notNull(),
+}, t => [
+  primaryKey({ columns: [t.boardId, t.userId] }),
+  index('archived_membership_user_id_idx').on(t.userId),
 ])
 
 export const boardColumn = pgTable('board_column', {

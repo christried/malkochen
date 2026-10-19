@@ -2,28 +2,33 @@ import { eq, isNotNull, lt, or, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { cooking, dish, user } from '../db/schema'
 import { sweepImages } from '../image-store/sweep'
+import { purgeExpiredBoards } from './archived-boards'
 import { RESTORABLE_FOR } from './dishes'
 import { storage } from './image-store'
 
 // The daily cleanup job (#195; server/api/cron/cleanup.get.ts). Archived
-// Dishes and deleted Cookings stay restorable for RESTORABLE_FOR, then are
-// purged for good. Neon's own restore window is a day, so this is the main
+// Boards, Archived Dishes and deleted Cookings stay restorable for
+// RESTORABLE_FOR, then are purged for good. Neon's own restore window is a day, so this is the main
 // way back from a deletion.
 
 export interface CleanupReport {
+  purgedBoards: number
   purgedDishes: number
   purgedCookings: number
   deletedImages: number
 }
 
 export async function cleanUp(): Promise<CleanupReport> {
-  // A purged Dish takes its Cookings along (on delete cascade).
+  // A purged Board takes everything on it along, and a purged Dish its
+  // Cookings (on delete cascade).
+  const purgedBoards = await purgeExpiredBoards()
   const deletedBefore = sql`now() - ${RESTORABLE_FOR}::interval`
   const purgedDishes = await db.delete(dish).where(lt(dish.deletedAt, deletedBefore)).returning({ id: dish.id })
   const purgedCookings = await db.delete(cooking).where(lt(cooking.deletedAt, deletedBefore)).returning({ id: cooking.id })
 
   // Read after the purge, so the purged Dishes' images go in the same sweep.
-  // A deleted Dish still restorable keeps its image.
+  // An Archived Dish, or a Dish on an Archived Board, keeps its image
+  // while it can still be restored.
   const [dishImages, pictures] = await Promise.all([
     db.select({ url: dish.imageUrl }).from(dish).where(isNotNull(dish.imageUrl)),
     db.select({ url: user.ownPicture }).from(user).where(isNotNull(user.ownPicture)),
@@ -31,7 +36,7 @@ export async function cleanUp(): Promise<CleanupReport> {
   const referenced = new Set([...dishImages, ...pictures].map(row => row.url))
   const deleted = await sweepImages({ storage, isReferenced: url => referenced.has(url), referenceCount: referenced.size })
 
-  return { purgedDishes: purgedDishes.length, purgedCookings: purgedCookings.length, deletedImages: deleted.length }
+  return { purgedBoards, purgedDishes: purgedDishes.length, purgedCookings: purgedCookings.length, deletedImages: deleted.length }
 }
 
 // Removes a stored image at once, unless a Dish or a user still refers to

@@ -10,6 +10,12 @@ import { dish, eventLog } from '../db/schema'
 
 export type EventKind =
   | 'board_created'
+  // "Board löschen" (CONTEXT.md: Archived Board).
+  | 'board_archived'
+  // An Archived Board its Owner brought back.
+  | 'board_restored'
+  // An Archived Board its Owner deleted for good (before #337: any Board
+  // its Owner deleted, which was then gone at once).
   | 'board_deleted'
   | 'member_joined'
   | 'member_left'

@@ -333,7 +333,7 @@ test('the Owner leaving, a Member removing someone, or removing nobody records n
   expect((await removeMember(wexler, board.id, memberId)).status).toBe(204)
 })
 
-test('deleting a Board records it; only its Owner\'s delete does', async () => {
+test('deleting (archiving) a Board records it; only its Owner\'s delete does', async () => {
   const teitelbaum = await owner()
   const wexler = await member()
   const board = await createBoard(teitelbaum, 'Abriss')
@@ -344,7 +344,7 @@ test('deleting a Board records it; only its Owner\'s delete does', async () => {
   expect((await teitelbaum.fetch(`/api/boards/${board.id}`, { method: 'DELETE' })).status).toBe(204)
 
   expect(await log.recorded()).toEqual([
-    { kind: 'board_deleted', boardId: board.id, dishId: null, userId: await idOf(teitelbaum), details: null },
+    { kind: 'board_archived', boardId: board.id, dishId: null, userId: await idOf(teitelbaum), details: null },
   ])
 })
 

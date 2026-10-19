@@ -190,6 +190,13 @@
       "when": 1792416168298,
       "tag": "0026_archived_dishes",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792424233465,
+      "tag": "0027_archived_boards",
+      "breakpoints": true
     }
   ]
 }

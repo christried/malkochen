@@ -1,4 +1,4 @@
-import { eq, gt, lt, sql } from 'drizzle-orm'
+import { and, eq, gt, isNull, lt, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { inviteSecret } from '../../shared/invite'
 import type { Language } from '../../shared/language'
@@ -38,13 +38,14 @@ export function inviteSecretParam(event: H3Event): string {
   return secret
 }
 
-// The Board a secret opens, or null if none has it (any more).
+// The Board a secret opens, or null if none has it (any more). An Archived
+// Board's link opens nothing until it is restored.
 async function boardOf(secret: string) {
   if (inviteSecret(secret) !== secret) return null
   const [found] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
     .from(board)
-    .where(eq(board.inviteToken, secret))
+    .where(and(eq(board.inviteToken, secret), isNull(board.deletedAt)))
   return found ?? null
 }
 
@@ -64,22 +65,29 @@ export async function inviteView(secret: string, language: Language): Promise<In
 // Makes the user a Member of the secret's Board (PRD story 64); for someone
 // already on it, only this changes (story 65): following the link counts as
 // opening the Board, so the app lands on it next. The Board's id and the
-// slug of its Address, or null if no Board has the secret.
+// slug of its Address, or null if no Board has the secret (or it was
+// archived meanwhile).
 export async function joinByInvite(secret: string, userId: string): Promise<{ boardId: string, slug: string } | null> {
   const found = await boardOf(secret)
   if (!found) return null
-  const now = new Date()
-  await withEvents(
+  const now = sql`${new Date().toISOString()}::timestamptz`
+  // Only while the Board isn't archived, reading its row `for share`: a join
+  // can't slip in while the Board is being archived (server/utils/archived-boards.ts).
+  const { rows } = await withEvents(
     db,
-    db.insert(membership)
-      .values({ boardId: found.id, userId, lastOpenedAt: now, seenAt: now })
-      .onConflictDoUpdate({ target: [membership.boardId, membership.userId], set: { lastOpenedAt: now, seenAt: now } })
-      // A row the insert made, not one it updated: a join.
-      .returning({ boardId: membership.boardId, joined: sql<boolean>`xmax = 0`.as('joined') }),
+    sql`
+      insert into ${membership} (board_id, user_id, last_opened_at, seen_at)
+      select ${board.id}, ${userId}, ${now}, ${now} from ${board}
+      where ${board.id} = ${found.id} and ${board.deletedAt} is null
+      for share
+      on conflict (board_id, user_id) do update set last_opened_at = excluded.last_opened_at, seen_at = excluded.seen_at
+      -- A row the insert made, not one it updated: a join.
+      returning board_id, xmax = 0 as joined
+    `,
     boardEvent('member_joined', userId),
     { where: sql`changed.joined` },
   )
-  return { boardId: found.id, slug: found.slug }
+  return rows.length > 0 ? { boardId: found.id, slug: found.slug } : null
 }
 
 // Gives the Board a new secret, so the old link stops working (story 66),

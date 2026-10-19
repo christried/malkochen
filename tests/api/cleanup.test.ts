@@ -8,8 +8,8 @@ import { CRON_SECRET, IMAGE_DIR, storedImages } from './server-env'
 import { backdateDeletion } from './time-travel'
 
 // The daily cleanup job (#195), as Vercel Cron calls it: GET
-// /api/cron/cleanup with CRON_SECRET as a bearer token. It purges Dishes and
-// Cookings deleted more than 30 days ago for good, then deletes every stored
+// /api/cron/cleanup with CRON_SECRET as a bearer token. It purges Boards,
+// Dishes and Cookings deleted more than 30 days ago for good, then deletes every stored
 // image nothing refers to any more that is older than a day. Here against
 // the test server's disk storage.
 
@@ -124,7 +124,7 @@ test('a Cooking deleted more than 30 days ago is purged; one deleted less long a
   expect((await post(stephanie, `/api/cookings/${kept}/restore`)).status).toBe(200)
 })
 
-test('a deleted Board’s images are deleted by the job', async () => {
+test('a Board archived more than 30 days ago is purged, and its images are deleted by the job', async () => {
   const stephanie = await signIn(ALLOWLISTED[39])
   const created = await stephanie.fetch('/api/boards', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Weg damit', emoji: '🗑️' }) })
   expect(created.status).toBe(201)
@@ -133,6 +133,7 @@ test('a deleted Board’s images are deleted by the job', async () => {
   await addDish(stephanie, board.id, { photo: uploaded })
   expect((await stephanie.fetch(`/api/boards/${board.id}`, { method: 'DELETE' })).status).toBe(204)
   await backdateImage(uploaded.url, 48)
+  await backdateDeletion('board', board.id, 31)
 
   expect((await runCleanup()).status).toBe(200)
 
