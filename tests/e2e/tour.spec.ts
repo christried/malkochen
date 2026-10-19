@@ -364,7 +364,7 @@ test('from 768px, the Tour\'s Dish is dragged across to the next lane; "Behalten
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true })
 
-  test('the Tour\'s Dish is moved through ⋯ → Verschieben, then deleted through ⋯ → Löschen, and "Rückgängig" brings it back', async ({ page }) => {
+  test('the Tour\'s Dish is moved through ⋯ → Verschieben, then archived through ⋯ → Archivieren, and "Rückgängig" brings it back', async ({ page }) => {
     const dishId = await toMoveStep(page)
     await expect.poll(() => holeRound(page, 'dish', dishId)).toBe(true)
 
@@ -383,18 +383,18 @@ test.describe('on a phone', () => {
     await expect(deleteStep(page)).toBeVisible()
     await expect(inColumn(page, 'Diese Woche', dishId)).toBeAttached()
 
-    // The spotlit ⋯ takes the tap; the bubble follows onto Löschen. The
+    // The spotlit ⋯ takes the tap; the bubble follows onto Archivieren. The
     // hole stays round all the way there (a pill's radius never dips to 0).
     await expect.poll(() => holeRound(page, 'dish-menu', dishId)).toBe(true)
     const stop = await traceTour(page)
     await tapOn(page, page.locator(`[data-dish-id="${dishId}"] [data-tour="dish-menu"]`))
-    await expect(deleteStep(page)).toContainText('Tipp auf „Löschen“.')
+    await expect(deleteStep(page)).toContainText('Tipp auf „Archivieren“.')
     await expect.poll(() => holeRound(page, 'menu-delete')).toBe(true)
     await page.waitForTimeout(300)
     const radii = (await stop()).flatMap(f => f.spot ? [f.spot.radius] : [])
     expect(radii.length).toBeGreaterThan(0)
     expect(Math.min(...radii)).toBeGreaterThan(0)
-    await tapOn(page, dishMenu(page).getByRole('button', { name: 'Löschen' }))
+    await tapOn(page, dishMenu(page).getByRole('button', { name: 'Archivieren' }))
 
     await expect(switcherStep(page)).toBeVisible()
     await expect(page.locator(`li[data-dish-id="${dishId}"]`)).toHaveCount(0)

@@ -90,7 +90,7 @@ export async function dishesByColumn(columnIds: string[]): Promise<Map<string, D
     .where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt)))
     .orderBy(...BOARD_ORDER)
   const views = await toViews(rows)
-  rows.forEach((row, i) => byColumn.get(row.columnId)?.push(views[i]!))
+  rows.forEach((row, i) => row.columnId && byColumn.get(row.columnId)?.push(views[i]!))
   return byColumn
 }
 
@@ -150,10 +150,12 @@ async function findDish(where: SQL | undefined): Promise<DishView | null> {
 async function withPlacement(view: DishView | null): Promise<PlacedDish | null> {
   if (!view) return null
   const [location] = await db.select({ boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(and(eq(dish.id, view.id), isNull(dish.deletedAt)))
-  if (!location) return null
-  const order = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, location.columnId), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)
+  // A Dish on its Board always has a Column (schema.ts).
+  const columnId = location?.columnId
+  if (!location || !columnId) return null
+  const order = await db.select({ id: dish.id }).from(dish).where(and(eq(dish.columnId, columnId), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)
   const index = order.findIndex(d => d.id === view.id)
-  return index === -1 ? null : { ...view, placement: { ...location, index } }
+  return index === -1 ? null : { ...view, placement: { boardId: location.boardId, columnId, index } }
 }
 
 // What editing a Dish may change (PRD story 43); fields left out stay as
@@ -220,32 +222,56 @@ function unlessPlaceholder(percent: number, centre: number) {
   return sql<number>`case when ${dish.imageUrl} is null then ${centre}::smallint else ${percent}::smallint end`
 }
 
-// Deletes a Dish (PRD story 47): a soft delete, so it can be restored. False
-// unless it is on a Board the user is a Member of and not deleted yet.
+// Archives a Dish ("Archivieren"; CONTEXT.md: Archived Dish): a soft
+// delete, recording who did it, so any Member can restore it from the
+// Board's Archive for 30 days (RESTORABLE_FOR). False unless it is on a
+// Board the user is a Member of and not archived yet.
 export async function deleteDish(dishId: string, userId: string): Promise<boolean> {
-  const { rows } = await withEvents(db, archive(db, onMembersBoard(dishId, userId)), dishEvent('dish_archived', userId))
+  const { rows } = await withEvents(db, archive(db, onMembersBoard(dishId, userId), userId), dishEvent('dish_archived', userId))
   return rows.length > 0
 }
 
-// Soft-deletes the Dishes `where` finds, returning their ids and Boards.
-function archive(d: Db, where: SQL | undefined) {
-  return d.update(dish).set({ deletedAt: new Date() }).where(where).returning({ id: dish.id, boardId: dish.boardId })
+// How long an Archived Dish (and a deleted Cooking) can still be restored,
+// before the daily cleanup purges it for good (server/utils/cleanup.ts).
+export const RESTORABLE_FOR = '30 days'
+
+// Archives the Dishes `where` finds, returning their ids and Boards.
+function archive(d: Db, where: SQL | undefined, userId: string) {
+  return d.update(dish).set({ deletedAt: new Date(), archivedBy: userId }).where(where).returning({ id: dish.id, boardId: dish.boardId })
 }
 
-// Brings back the Dishes `where` finds, recording each that was deleted.
+// The Column that takes new Dishes on the Board of the Dish being written
+// (shared/placement.ts columnForNewDishes).
+const firstColumnOfItsBoard = sql`(
+  select new_column.id from ${boardColumn} as new_column
+  where new_column.board_id = ${dish.boardId} and not new_column.is_gekocht
+  order by new_column.position limit 1
+)`
+
+// Brings back the Dishes `where` finds, recording each that was archived.
+// Each keeps its Column and position; one whose Column was deleted
+// meanwhile (schema.ts) goes to the top of the Column that takes new Dishes.
 function restoreRecorded(d: Db, where: SQL | undefined, userId: string) {
   return withEvents(
     d,
-    d.update(dish).set({ deletedAt: null }).where(where).returning({ id: dish.id, boardId: dish.boardId }),
+    d.update(dish).set({
+      deletedAt: null,
+      archivedBy: null,
+      columnId: sql`coalesce(${dish.columnId}, ${firstColumnOfItsBoard})`,
+      position: sql`case when ${dish.columnId} is null
+        then (select coalesce(min(above.position), 0) - 1 from ${dish} as above where above.column_id = ${firstColumnOfItsBoard})
+        else ${dish.position} end`,
+    }).where(where).returning({ id: dish.id, boardId: dish.boardId }),
     dishEvent('dish_restored', userId),
     { earlier: sql`select ${dish.id} from ${dish} where ${and(where, isNotNull(dish.deletedAt))}` },
   )
 }
 
-// Undoes deleting a Dish. It kept its Column and position, so it is back
-// where it was (or, if its Column was deleted meanwhile, where that
-// Column's Dishes went). Answers it placed; null unless it is on a Board the
-// user is a Member of.
+// Restores an Archived Dish: "Rückgängig" right after archiving it, or
+// "Wiederherstellen" in the Board's Archive. It is back where it was, or,
+// if its Column was deleted meanwhile, at the top of the Column that takes
+// new Dishes, with its Cookings. Answers it placed; null unless it is on a
+// Board the user is a Member of.
 export async function restoreDish(dishId: string, userId: string): Promise<PlacedDish | null> {
   const target = onMembersBoardIncludingDeleted(dishId, userId)
   await restoreRecorded(db, target, userId)
@@ -470,16 +496,19 @@ export function areDishesOfMember(ids: string[], userId: string): Promise<boolea
   return holds(allOnMembersBoards(ids, userId), userId)
 }
 
+// The Column of a Dish that isn't archived, which always has one (schema.ts).
+const liveColumnId = sql<string>`${dish.columnId}`
+
 // The Dishes placed (PlacedDish), in the order of `ids`; null if one of
 // them is deleted.
 async function placedDishes(ids: string[]): Promise<PlacedDish[] | null> {
   const live = and(inArray(dish.id, ids), isNull(dish.deletedAt))
   const views = new Map((await toViews(await selectDishes().where(live))).map(v => [v.id, v]))
-  const locations = new Map((await db.select({ id: dish.id, boardId: dish.boardId, columnId: dish.columnId }).from(dish).where(live)).map(l => [l.id, l]))
+  const locations = new Map((await db.select({ id: dish.id, boardId: dish.boardId, columnId: liveColumnId }).from(dish).where(live)).map(l => [l.id, l]))
   // Every Dish of their Columns, in Board order, for each one's index.
   const columnIds = [...new Set([...locations.values()].map(l => l.columnId))]
   const orders = new Map<string, string[]>()
-  for (const { id, columnId } of await db.select({ id: dish.id, columnId: dish.columnId }).from(dish).where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)) {
+  for (const { id, columnId } of await db.select({ id: dish.id, columnId: liveColumnId }).from(dish).where(and(inArray(dish.columnId, columnIds), isNull(dish.deletedAt))).orderBy(...BOARD_ORDER)) {
     orders.set(columnId, [...orders.get(columnId) ?? [], id])
   }
   const placed: PlacedDish[] = []
@@ -573,21 +602,89 @@ async function holds(condition: SQL | undefined, userId: string): Promise<boolea
   return row?.ok === true
 }
 
-// Deletes Dishes (the selection's "Löschen"), soft as one is, so they can
-// be restored. False, deleting none, unless every Dish is on a Board the
-// user is a Member of and not deleted yet.
+// Archives Dishes (the selection's "Archivieren"), as one is archived.
+// False, archiving none, unless every Dish is on a Board the user is a
+// Member of and not archived yet.
 export async function deleteDishes(ids: string[], userId: string): Promise<boolean> {
-  const { rows } = await withEvents(db, archive(db, and(inArray(dish.id, ids), allOnMembersBoards(ids, userId))), dishEvent('dish_archived', userId))
+  const { rows } = await withEvents(db, archive(db, and(inArray(dish.id, ids), allOnMembersBoards(ids, userId)), userId), dishEvent('dish_archived', userId))
   return rows.length === ids.length
 }
 
-// "Rückgängig" after deleting several Dishes: they are back where they
+// "Rückgängig" after archiving several Dishes: they are back where they
 // were, as restoreDish puts one back. Answers them placed, in the order of
 // `ids`; null, restoring none, unless every Dish is on a Board the user is
 // a Member of.
 export async function restoreDishes(ids: string[], userId: string): Promise<PlacedDish[] | null> {
   const { rows } = await restoreRecorded(db, and(inArray(dish.id, ids), allOnMembersBoards(ids, userId, { deleted: true })), userId)
   return rows.length === ids.length ? placedDishes(ids) : null
+}
+
+// An Archived Dish as the Board's Archive lists it (Board Settings).
+export interface ArchivedDishView {
+  id: string
+  title: string
+  imageUrl: string | null
+  imageFocus: ImageFocus
+  placeholder: Placeholder
+  archivedAt: string
+  // Who archived it; null if unknown (their account is gone, or it was
+  // archived before this was kept).
+  archivedBy: DishAdder | null
+  // When the daily cleanup purges it for good, at the earliest.
+  purgesAt: string
+}
+
+// The Board's Archived Dishes, the newest archived first. The caller has
+// checked that the user is a Member of the Board.
+export async function archivedDishes(boardId: string): Promise<ArchivedDishView[]> {
+  const rows = await db
+    .select({
+      id: dish.id,
+      title: dish.title,
+      imageUrl: dish.imageUrl,
+      imageFocusX: dish.imageFocusX,
+      imageFocusY: dish.imageFocusY,
+      placeholder: dish.placeholder,
+      archivedAt: sql<Date>`${dish.deletedAt}`.mapWith(dish.deletedAt),
+      purgesAt: sql<Date>`${dish.deletedAt} + ${RESTORABLE_FOR}::interval`.mapWith(dish.deletedAt),
+      archiverId: user.id,
+      archiverName: user.username,
+      archiverImage: pictureOf,
+    })
+    .from(dish)
+    .leftJoin(user, eq(user.id, dish.archivedBy))
+    .where(and(eq(dish.boardId, boardId), isNotNull(dish.deletedAt)))
+    .orderBy(desc(dish.deletedAt), desc(dish.id))
+  return rows.map(({ imageFocusX, imageFocusY, archivedAt, purgesAt, archiverId, archiverName, archiverImage, ...row }) => ({
+    ...row,
+    imageFocus: { x: imageFocusX, y: imageFocusY },
+    archivedAt: archivedAt.toISOString(),
+    archivedBy: archiverId ? { id: archiverId, name: archiverName ?? '', image: archiverImage } : null,
+    purgesAt: purgesAt.toISOString(),
+  }))
+}
+
+// "Endgültig löschen" in the Board's Archive: the Owner deletes an Archived
+// Dish for good, with its Cookings, before the 30 days are up. Answers the
+// image it had ({ imageUrl }), for the caller to remove; 'forbidden' for a
+// Member who isn't the Owner; null unless it is an Archived Dish on a Board
+// the user is a Member of.
+export async function purgeDish(dishId: string, userId: string): Promise<{ imageUrl: string | null } | 'forbidden' | null> {
+  const archived = and(onMembersBoardIncludingDeleted(dishId, userId), isNotNull(dish.deletedAt))
+  const ownersBoard = inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(and(eq(membership.userId, userId), membership.isOwner)))
+  const [found] = await db.select({ isOwner: sql<boolean>`${ownersBoard}` }).from(dish).where(archived)
+  if (!found) return null
+  if (!found.isOwner) return 'forbidden'
+  // Checked again as it deletes: restored, deleted for good by someone else
+  // or ownership handed over meanwhile, it is left as it is.
+  const { rows } = await withEvents(
+    db,
+    db.delete(dish).where(and(archived, ownersBoard)).returning({ id: dish.id, boardId: dish.boardId, imageUrl: dish.imageUrl }),
+    dishEvent('dish_deleted', userId),
+  )
+  // withEvents answers the rows as the database names their columns.
+  const [purged] = rows as { image_url: string | null }[]
+  return purged ? { imageUrl: purged.image_url } : null
 }
 
 // A Dish already on a Board with the Source being added (PRD story 24).

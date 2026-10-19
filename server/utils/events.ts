@@ -16,10 +16,12 @@ export type EventKind =
   | 'member_removed'
   | 'dish_added'
   | 'dish_moved'
-  // Today's delete, which a later ticket turns into archiving.
+  // "Archivieren" (CONTEXT.md: Archived Dish).
   | 'dish_archived'
-  // Its undo.
+  // Brought back from the Archive, or by "Rückgängig" right after.
   | 'dish_restored'
+  // An Archived Dish the Owner deleted for good.
+  | 'dish_deleted'
   | 'cooking_recorded'
   | 'cooking_deleted'
   | 'cooking_restored'

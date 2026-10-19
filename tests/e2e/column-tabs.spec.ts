@@ -104,7 +104,7 @@ test('the menu goes back from choosing a Column', async ({ page }) => {
   await menu.getByRole('button', { name: 'Verschieben nach…' }).click()
   await menu.getByRole('button', { name: 'Zurück' }).click()
 
-  await expect(menu.getByRole('button', { name: 'Löschen' })).toBeVisible()
+  await expect(menu.getByRole('button', { name: 'Archivieren' })).toBeVisible()
   await expect(menu.getByRole('button', { name: 'Diese Woche' })).toHaveCount(0)
 })
 

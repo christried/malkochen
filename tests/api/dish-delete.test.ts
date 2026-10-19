@@ -83,7 +83,7 @@ test('undo answers where the Dish is back: its Board, its Column and its index i
 
 // Works on a Board of its own, so as Emmy: among the API tests, she is used
 // here only.
-test('undo after the Dish’s Column was deleted answers the Column it went to instead', async () => {
+test('undo after the Dish’s Column was deleted answers the top of the first Column instead', async () => {
   const emmy = await signIn(ALLOWLISTED[19])
   const created = await (await emmy.fetch('/api/boards', {
     method: 'POST',
