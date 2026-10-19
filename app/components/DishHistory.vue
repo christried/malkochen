@@ -7,7 +7,7 @@ import type { CommentResult } from '~/board/dish-histories'
 import { neverCookedScene } from '~/utils/never-cooked'
 
 // A Dish's Dish History at the bottom of its detail ("Verlauf", #332; the
-// timeline #330 picked): "3× gekocht · zuletzt 12. Sept." under its
+// look #330 picked, its variant B): "3× gekocht · zuletzt 12. Sept." under its
 // achievement badge, "Gekocht ✓", and a line down the left with a dot per
 // entry, oldest first like a chat: a plus for who added the Dish, a pot for
 // each Cooking (with its bin), the author's Profile Picture for each
@@ -92,10 +92,25 @@ function submit() {
   const result = editing.value
     ? boardModule.editComment(props.dish.id, editing.value.id, text.value)
     : me.value && boardModule.writeComment(props.dish.id, text.value, { id: me.value.id, name: me.value.name, image: me.value.image })
-  if (!result) return
+  if (!result) {
+    // The Comment being edited is gone (deleted meanwhile): what was
+    // written stays in the field, to send as a new one.
+    editing.value = null
+    return
+  }
   editing.value = null
   text.value = ''
   showResult(result)
+}
+
+// Enter sends where there is a keyboard to type on (Shift+Enter for a new
+// line). On a phone's keyboard, which has no Shift+Enter, Enter is a new
+// line, and the arrow sends.
+const enterSends = useMediaQuery(FINE_POINTER)
+function onEnter(event: KeyboardEvent) {
+  if (!enterSends.value || event.isComposing) return
+  event.preventDefault()
+  submit()
 }
 
 // A Comment that couldn't be written comes back to the field, unless
@@ -184,7 +199,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
     <TransitionGroup
       tag="ol"
       name="entry"
-      class="timeline relative flex flex-col gap-4"
+      class="history-line relative flex flex-col gap-4"
     >
       <li
         v-for="entry in entries"
@@ -407,7 +422,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
           class="field block max-h-[136px] min-h-[52px] w-full resize-none bg-transparent py-[15px] pl-4 pr-1 text-body outline-none placeholder:text-text-muted"
           :placeholder="editing ? t.history.editPrompt : t.history.fieldPrompt"
           :aria-label="t.history.field"
-          @keydown.enter.exact.prevent="submit"
+          @keydown.enter.exact="onEnter"
           @keydown.esc="onFieldEscape"
         />
         <button
@@ -441,7 +456,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
 
 <style scoped>
 /* The line through the dots' middles, from the first to the last. */
-.timeline::before {
+.history-line::before {
   content: '';
   position: absolute;
   left: 15px;

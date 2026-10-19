@@ -157,6 +157,24 @@ test('an edit that fails puts the Comment back as it was, with a notice; the sam
   expect(fake.sent.filter(s => s.startsWith('editComment'))).toHaveLength(1)
 })
 
+test('two edits in a row: the later one shows until it settles, and one that fails goes back to what the server has', async () => {
+  const { fake, module, shown } = setup()
+  const { id } = fake.writeCommentElsewhere('a', 'Eins')
+  await module.loadHistory('a')
+  const held = fake.holdNext('editComment')
+
+  const first = module.editComment('a', id, 'Zwei')!
+  fake.failNext('editComment', 500)
+  const second = module.editComment('a', id, 'Drei')!
+  expect(shown('a')).toEqual(['added Ada', `comment ${id} Drei (bearbeitet)`])
+  held.succeed()
+  await first.settled
+  expect(shown('a')).toEqual(['added Ada', `comment ${id} Drei (bearbeitet)`])
+
+  expect((await second.settled!).notice).toBe('commentEditFailed')
+  expect(shown('a')).toEqual(['added Ada', `comment ${id} Zwei (bearbeitet)`])
+})
+
 test('deleting a Comment takes it out at once; "Rückgängig" brings it back in its place, and as the server restored it', async () => {
   const { fake, module, shown } = setup()
   const first = fake.writeCommentElsewhere('a', 'Eins')

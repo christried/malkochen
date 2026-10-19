@@ -6,11 +6,12 @@ import { videoEmbed } from '~~/shared/video-embed'
 import type { CommentResult } from '~/board/dish-histories'
 
 // The Dish detail's contents: a large image, the title with the Creator
-// under it, the note, the Source
-// with "Original öffnen", where the Dish is (Board and Column), its Dish
-// History ("Verlauf": who added it and when, its Cookings and Comments, the
-// comment field) with "Gekocht ✓", "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar at the top keeps close,
-// the title and "Bearbeiten" at hand (useDetailScroll).
+// under it, the note, the Source with "Original öffnen", where the Dish is
+// (Board and Column), its Dish History ("Verlauf": who added it and when,
+// its Cookings and Comments, the comment field) with "Gekocht ✓",
+// "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
+// at the top keeps close, the title and "Bearbeiten" at hand
+// (useDetailScroll).
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
 defineEmits<{
   close: []

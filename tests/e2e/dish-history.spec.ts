@@ -142,3 +142,22 @@ test('another Member can\'t change the Owner\'s Comment; the Owner deletes their
   await reloadHydrated(page)
   await expect(mine.comments).toHaveCount(1)
 })
+
+test('on a phone, Enter starts a new line in the comment field, and the arrow sends', async ({ browser }) => {
+  const phone = await newTab(browser, { hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+  await signIn(phone, LAMARR)
+  const { history, comments, field } = await openDish(phone, 'Linsen-Dal')
+  await expect(comments).toHaveCount(1)
+
+  await field.fill('Erste Zeile')
+  await field.press('Enter')
+  await field.pressSequentially('zweite Zeile')
+  await expect(field).toHaveValue('Erste Zeile\nzweite Zeile')
+  await expect(comments).toHaveCount(1)
+  await history.getByRole('button', { name: 'Senden' }).tap()
+
+  await expect(comments).toHaveCount(2)
+  await expect(comments.nth(1)).toContainText('Erste Zeile')
+  expect(await comments.nth(1).locator('p').innerText()).toBe('Erste Zeile\nzweite Zeile')
+  await phone.context().close()
+})

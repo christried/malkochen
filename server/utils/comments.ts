@@ -27,8 +27,8 @@ export interface CommentView {
 // COMMENT_MAX characters.
 export const commentBody = z.object({ text: z.string().trim().min(1).max(COMMENT_MAX) })
 
-// Why a Member may not change a Comment they can see: it isn't theirs (to
-// edit), or theirs nor on a Board they own (to delete).
+// Why a Member may not change a Comment they can see: to edit it, it must
+// be theirs; to delete or restore it, theirs or on a Board they own.
 export type CommentRefusal = 'forbidden'
 
 function selectComments() {

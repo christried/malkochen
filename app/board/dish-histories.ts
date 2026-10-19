@@ -4,6 +4,7 @@ import type { CommentView } from '../../server/utils/comments'
 import type { DishHistory, DishHistoryEntry } from '../../server/utils/dish-history'
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import { commentText } from '../utils/comment-text'
+import { historyEntries } from '../utils/history-entries'
 
 // The Board module's part for the Dish History ("Verlauf", #332) of the
 // Dishes whose detail opens: loaded from the server as the detail opens,
@@ -34,7 +35,8 @@ export interface HistoryTransport {
   restoreComment: (commentId: string) => Promise<CommentView>
 }
 
-interface Needs {
+// What the Board module lends it.
+interface HistoryHost {
   transport: HistoryTransport
   // The Dish as the Board shows it, if it is on the Board.
   find: (dishId: string) => DishView | undefined
@@ -45,7 +47,7 @@ interface Needs {
   isGone: (error: unknown) => boolean
 }
 
-export function createDishHistories({ transport, find, queued, isGone }: Needs) {
+export function createDishHistories({ transport, find, queued, isGone }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -96,25 +98,17 @@ export function createDishHistories({ transport, find, queued, isGone }: Needs) 
     // The ones still shown stay the same objects, as the history keys its
     // entries by them.
     const merged = [...loaded.map(c => Object.assign(shown.find(s => s.id === c.id) ?? c, c)), ...kept]
-    shown.splice(0, shown.length, ...merged.sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
+    shown.splice(0, shown.length, ...merged.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)))
     return true
   }
 
   // The Dish History as the detail shows it: when the Dish was added and by
-  // whom, its Cookings and its Comments, oldest first (as the server builds
-  // it, server/utils/dish-history.ts). Before it has loaded, without
-  // Comments. Empty if the Dish isn't on the Board.
+  // whom, its Cookings and its Comments, in the order the server tells it
+  // (historyEntries). Before it has loaded, without Comments. Empty if the
+  // Dish isn't on the Board.
   function historyOf(dishId: string): DishHistoryEntry[] {
     const dish = find(dishId)
-    if (!dish) return []
-    const rest: DishHistoryEntry[] = [
-      ...dish.cookings.toReversed().map(cooking => ({ kind: 'cooking' as const, at: cooking.cookedAt, cooking })),
-      ...(comments.get(dishId) ?? []).map(comment => ({ kind: 'comment' as const, at: comment.createdAt, comment })),
-    ]
-    return [
-      { kind: 'added', at: dish.createdAt, by: dish.addedBy },
-      ...rest.sort((a, b) => Date.parse(a.at) - Date.parse(b.at)),
-    ]
+    return dish ? historyEntries(dish, comments.get(dishId) ?? []) : []
   }
 
   // Writing a Comment (PRD #318 stories 6–8), by `author` (the Member
@@ -138,27 +132,39 @@ export function createDishHistories({ transport, find, queued, isGone }: Needs) 
     return { comment: pending, settled }
   }
 
+  // Each edited Comment's text as the server last had it, while an edit of
+  // it is under way: where a failed edit goes back to, also when an edit
+  // before it is still unconfirmed.
+  const confirmed = new WeakMap<CommentView, Pick<CommentView, 'text' | 'editedAt'>>()
+  const editsUnderWay = new WeakMap<CommentView, number>()
+
   // Editing the Member's own Comment (stories 9–10): the new text shows at
   // once, marked "bearbeitet", then as the server saved it. If the edit
-  // fails, the Comment is back as it was, with a notice; one the server no
-  // longer has (deleted meanwhile) goes. Null for a Comment not shown, still
-  // being written, or a text the server would refuse.
+  // fails, the Comment is back as the server has it, with a notice; one the
+  // server no longer has (deleted meanwhile) goes. Null for a Comment not
+  // shown, still being written, or a text the server would refuse.
   function editComment(dishId: string, commentId: string, text: string): CommentResult | null {
     const said = commentText(text)
-    const comment = commentId ? comments.get(dishId)?.find(c => c.id === commentId) : undefined
-    if (!said || !comment) return null
+    const found = commentId ? comments.get(dishId)?.find(c => c.id === commentId) : undefined
+    if (!said || !found) return null
+    const comment: CommentView = found
     if (said === comment.text) return { comment }
-    const before = { text: comment.text, editedAt: comment.editedAt }
+    if (!editsUnderWay.get(comment)) confirmed.set(comment, { text: comment.text, editedAt: comment.editedAt })
+    editsUnderWay.set(comment, (editsUnderWay.get(comment) ?? 0) + 1)
     Object.assign(comment, { text: said, editedAt: new Date().toISOString() })
-    const settled = tracked(dishId, () => queued(commentId, () => transport.editComment(commentId, said), { moves: false })).then((saved): CommentResult => {
-      Object.assign(comment, saved)
+    const edited = queued(commentId, () => transport.editComment(commentId, said), { moves: false })
+      .finally(() => editsUnderWay.set(comment, editsUnderWay.get(comment)! - 1))
+    const settled = tracked(dishId, () => edited).then((saved): CommentResult => {
+      confirmed.set(comment, { text: saved.text, editedAt: saved.editedAt })
+      // A later edit under way shows its own text until it settles.
+      if (!editsUnderWay.get(comment)) Object.assign(comment, saved)
       return { comment }
     }, (error: unknown): CommentResult => {
       if (isGone(error)) {
         removeFrom(listOf(dishId), comment)
         return { comment }
       }
-      Object.assign(comment, before)
+      if (!editsUnderWay.get(comment)) Object.assign(comment, confirmed.get(comment))
       return { comment, notice: 'commentEditFailed' }
     })
     return { comment, settled }
