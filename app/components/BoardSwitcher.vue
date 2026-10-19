@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import type { BoardListing, BoardNameAndEmoji } from '~~/server/utils/boards'
+import type { ArchivedBoardView } from '~~/server/utils/archived-boards'
+import type { BoardListing, BoardNameAndEmoji, BoardSummary } from '~~/server/utils/boards'
 import { boardPath, boardSettingsPath } from '~~/shared/address'
+import { boardLabel } from '~~/shared/board'
+import { daysLeft } from '~/utils/archive'
 
 // The handoff's BoardSwitcher (PRD story 39): the Board's emoji and name at
 // the top of the Board, as a pill that opens a dropdown of the user's Boards
@@ -11,7 +14,10 @@ import { boardPath, boardSettingsPath } from '~~/shared/address'
 // and Columns from it while it opens (useBoardListings). Each Board's row
 // ends in a cogwheel (#282, decided on #281 as A) that opens that Board's
 // Board Settings without switching to it. On phones its last row has the
-// legal pages (LegalLinks), which the header has no room for there.
+// legal pages (LegalLinks), which the header has no room for there. After
+// "Neues Board", an Owner's Archived Boards (#337) under "Archiv", each
+// with its days left, "Wiederherstellen" (which opens it) and
+// "Endgültig löschen" (which asks first).
 // `dishCount`: how many Dishes this Board holds, shown after its name in the
 // pill and on its row (as the Board module counts them, so it follows adds,
 // deletes and polls at once); null while not known.
@@ -25,11 +31,19 @@ const creating = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const pill = useTemplateRef<HTMLButtonElement>('pill')
 const panelId = useId()
+const archiveId = useId()
+
+const archived = ref<ArchivedBoardView[]>([])
 
 async function toggle() {
   open.value = !open.value
   if (!open.value) return
+  fetchArchived()
   boards.value = await $fetch<BoardListing[]>('/api/boards').catch(() => boards.value)
+}
+
+async function fetchArchived() {
+  archived.value = await $fetch<ArchivedBoardView[]>('/api/boards/archived').catch(() => archived.value)
 }
 
 // Escape closes it, and only it (not also the Board's search).
@@ -63,6 +77,42 @@ const shown = computed(() => boards.value.length
 function newBoard() {
   close()
   creating.value = true
+}
+
+// Back with its Members, as it was: the switcher opens it. One that
+// couldn't be restored stays listed as the server has it.
+async function restore(archivedBoard: ArchivedBoardView) {
+  try {
+    const restored = await $fetch<BoardSummary>(`/api/boards/${archivedBoard.id}/restore`, { method: 'POST' })
+    close()
+    await navigateTo(boardPath(restored))
+  }
+  catch {
+    await fetchArchived()
+  }
+}
+
+const purging = ref<ArchivedBoardView | null>(null)
+const purgingOpen = computed({
+  get: () => purging.value !== null,
+  set: (isOpen) => {
+    if (!isOpen) purging.value = null
+  },
+})
+
+function askPurge(archivedBoard: ArchivedBoardView) {
+  close()
+  purging.value = archivedBoard
+}
+
+async function purge() {
+  const archivedBoard = purging.value
+  if (!archivedBoard) return
+  purging.value = null
+  hapticReject()
+  archived.value = archived.value.filter(b => b.id !== archivedBoard.id)
+  // One that fails is listed again the next time the switcher opens.
+  await $fetch<null>(`/api/boards/${archivedBoard.id}/purge`, { method: 'POST' }).catch(() => {})
 }
 </script>
 
@@ -217,8 +267,61 @@ function newBoard() {
             </button>
           </li>
           <li
-            class="row mt-1 border-t border-line pt-1 tablet:hidden"
+            v-if="archived.length"
+            class="row mt-1 flex flex-col gap-1 border-t border-line pt-3"
             :style="{ '--i': shown.length + 1 }"
+          >
+            <h2
+              :id="archiveId"
+              class="px-2 text-small text-text-muted"
+            >
+              {{ t.boards.archive }}
+            </h2>
+            <ul
+              class="flex flex-col gap-1"
+              :aria-labelledby="archiveId"
+            >
+              <li
+                v-for="archivedBoard in archived"
+                :key="archivedBoard.id"
+                class="flex flex-col gap-2 px-2 py-2"
+                data-archived-board
+              >
+                <div class="flex items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-blob bg-surface-muted text-[24px] opacity-60"
+                  >{{ archivedBoard.emoji }}</span>
+                  <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span class="truncate text-button">{{ archivedBoard.name }}</span>
+                    <span class="text-small text-text-muted">{{ t.settings.daysLeft(daysLeft(archivedBoard.purgesAt)) }}</span>
+                  </span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="rounded-pill bg-inverse px-4 py-2.5 text-label text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    :aria-label="t.boards.restoreBoard(boardLabel(archivedBoard))"
+                    @click="restore(archivedBoard)"
+                  >
+                    {{ t.settings.restore }}
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-pill bg-danger/10 px-4 py-2.5 text-label text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                    :aria-label="t.boards.purgeBoard(boardLabel(archivedBoard))"
+                    aria-haspopup="dialog"
+                    @click="askPurge(archivedBoard)"
+                  >
+                    {{ t.settings.deleteForGood }}
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </li>
+          <li
+            class="row mt-1 border-t border-line pt-1 tablet:hidden"
+            :style="{ '--i': shown.length + (archived.length ? 2 : 1) }"
           >
             <LegalLinks @chosen="close({ refocus: true })" />
           </li>
@@ -227,6 +330,29 @@ function newBoard() {
     </Transition>
 
     <NewBoardSheet v-model:open="creating" />
+
+    <AppSheet
+      v-model:open="purgingOpen"
+      variant="dialog"
+      :title="purging ? t.boards.purgeConfirm(boardLabel(purging)) : ''"
+      :close-label="t.boards.close"
+    >
+      <p class="mt-3 text-body text-text-muted">
+        {{ t.boards.purgeBody }}
+      </p>
+      <div class="mt-5 flex flex-col gap-2">
+        <DangerButton @click="purge">
+          {{ t.settings.deleteForGood }}
+        </DangerButton>
+        <button
+          type="button"
+          class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+          @click="purging = null"
+        >
+          {{ t.settings.cancel }}
+        </button>
+      </div>
+    </AppSheet>
   </div>
 </template>
 

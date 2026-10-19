@@ -715,7 +715,7 @@ function confirmDelete() {
           class="mt-3 disabled:opacity-50"
           :disabled="!nameTyped"
         >
-          {{ t.settings.deleteForGood }}
+          {{ t.settings.deleteBoard }}
         </DangerButton>
         <button
           type="button"

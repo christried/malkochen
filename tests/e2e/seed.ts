@@ -113,6 +113,13 @@ export async function removeUsers(...emails: string[]) {
          and not exists (select from membership m join "user" u on u.id = m.user_id where m.board_id = b.id and u.email <> all($1))`,
       [emails],
     )
+    // Their Archived Boards too, the same way.
+    await client.query(
+      `delete from board b
+       where exists (select from archived_membership m join "user" u on u.id = m.user_id where m.board_id = b.id and u.email = any($1))
+         and not exists (select from archived_membership m join "user" u on u.id = m.user_id where m.board_id = b.id and u.email <> all($1))`,
+      [emails],
+    )
     await client.query('delete from "user" where email = any($1)', [emails])
     await client.query('commit')
   }

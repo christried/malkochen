@@ -1,8 +1,9 @@
-// The Board's Archive in Board Settings (#336; CONTEXT.md: Archived Dish).
+// The Board's Archive in Board Settings (#336; CONTEXT.md: Archived Dish),
+// and the Archived Boards in the Board Switcher (#337).
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// The days an Archived Dish has left before the cleanup purges it
+// The days an Archived Dish or Board has left before the cleanup purges it
 // (`purgesAt`, as the server answers it: 30 calendar days after it was
 // archived), to the nearest whole day, so a change of daylight saving time
 // in between doesn't add one. At least one while it is still listed: the
