@@ -825,7 +825,7 @@ test('the Dish count follows other Members’ adds and deletes through a poll', 
 })
 
 // Several Dishes at once (#218): the selection's "Verschieben nach…" and
-// "Löschen", one write for all of them, with one "Rückgängig".
+// "Archivieren", one write for all of them, with one "Rückgängig".
 
 test('Dishes selected across Columns move to the top of a Column together, in Board order; one already there stays', async () => {
   const { fake, module, shown } = setup()

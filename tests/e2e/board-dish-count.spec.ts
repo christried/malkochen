@@ -77,7 +77,7 @@ test('the count follows adds and deletes, from this Member or another, and moves
   await expect(headerCount(page)).toHaveAttribute('data-dish-count', '· 4', { timeout: 10_000 })
 
   await page.getByRole('button', { name: 'Mehr zu „Chili“' }).click()
-  await page.getByRole('dialog', { name: 'Chili' }).getByRole('button', { name: 'Löschen' }).click()
+  await page.getByRole('dialog', { name: 'Chili' }).getByRole('button', { name: 'Archivieren' }).click()
   await expect(headerCount(page)).toHaveAttribute('data-dish-count', '· 3')
 
   // Into another Column and into Gekocht: still on the Board.
@@ -141,7 +141,7 @@ test('on desktop each lane shows its Column’s Dish count, Gekocht included, an
   await expectLaneCounts(page, { 'Ideen': 2, 'Diese Woche': 1, 'Gekocht': 1 })
 
   await page.getByRole('button', { name: 'Mehr zu „Chili“' }).click()
-  await page.getByRole('dialog', { name: 'Chili' }).getByRole('button', { name: 'Löschen' }).click()
+  await page.getByRole('dialog', { name: 'Chili' }).getByRole('button', { name: 'Archivieren' }).click()
   await expectLaneCounts(page, { 'Ideen': 2, 'Diese Woche': 1, 'Gekocht': 0 })
 })
 

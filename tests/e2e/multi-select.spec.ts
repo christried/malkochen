@@ -10,7 +10,7 @@ import { landingBoardId, removeUsers, seedDish } from './seed'
 
 // Moving or deleting several Dishes at once (#218): Ctrl-click on desktop
 // or a long-press on phones selects a Dish; the bar at the bottom says how
-// many are selected and moves or deletes them all, with undo. Nettie's
+// many are selected and moves or archives them all, with undo. Nettie's
 // Board is used by this file only; Gerty joins it as a second Member.
 test.describe.configure({ mode: 'serial' })
 const NETTIE = ALLOWLISTED[48]
@@ -69,13 +69,13 @@ test('desktop: Ctrl-click selects Dishes across Columns, the bar counts them, Es
   await expect(bar(page)).toContainText('2 ausgewählt')
   await expect(page).toHaveURL(/\/b\/[^/]+$/)
   // No bulk "Gekocht": cooking stays one Dish at a time.
-  await expect(bar(page).getByRole('button')).toHaveText(['', 'Verschieben', 'Löschen'])
+  await expect(bar(page).getByRole('button')).toHaveText(['', 'Verschieben', 'Archivieren'])
   await expect(page.getByRole('button', { name: /^Gekocht/ })).toHaveCount(0)
-  // "Löschen" is a filled red pill with white text, readable (AA) in both
+  // "Archivieren" is a filled red pill with white text, readable (AA) in both
   // themes, so it doesn't look disabled (#280).
   for (const scheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: scheme })
-    const drawn = await bar(page).getByRole('button', { name: 'Löschen' }).evaluate((el) => {
+    const drawn = await bar(page).getByRole('button', { name: 'Archivieren' }).evaluate((el) => {
       const style = getComputedStyle(el)
       return { text: style.color, fill: style.backgroundColor }
     })
@@ -148,7 +148,7 @@ test('desktop: several Dishes move together, another Member sees it, and undo pu
   await gerty.context().close()
 })
 
-test('desktop: several Dishes are deleted together, and undo brings every one back as it was', async ({ page }) => {
+test('desktop: several Dishes are archived together, and undo brings every one back as it was', async ({ page }) => {
   await page.setViewportSize(DESKTOP)
   await signIn(page, NETTIE)
   await seedDish(page, { title: 'Pilzrisotto', sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Thymian', creator: '@christried' })
@@ -157,12 +157,12 @@ test('desktop: several Dishes are deleted together, and undo brings every one ba
   await ctrlClick(card(page, 'Pilzrisotto'))
   await checkbox(page, 'Ramen').click()
   await checkbox(page, 'Kürbissuppe').click()
-  await bar(page).getByRole('button', { name: 'Löschen' }).click()
+  await bar(page).getByRole('button', { name: 'Archivieren' }).click()
 
   await expect(bar(page)).toBeHidden()
   await expect(titles(page, 'Ideen')).toHaveText(['Tacos', 'Curry'])
   await expect(titles(page, 'Diese Woche')).toHaveText(['Bowl'])
-  const toast = page.getByRole('status').filter({ hasText: '3 Gerichte gelöscht' })
+  const toast = page.getByRole('status').filter({ hasText: '3 Gerichte archiviert' })
 
   await toast.getByRole('button', { name: 'Rückgängig' }).click()
 
