@@ -324,7 +324,7 @@ export const comment = pgTable('comment', {
   dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
   // Who wrote it; kept (as "Gelöschtes Konto") if their account is deleted.
   authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
-  // Trimmed, never empty, at most COMMENT_MAX characters (dish-input.ts).
+  // Trimmed, never empty, at most COMMENT_MAX characters (app/utils/comment-text.ts).
   text: text('text').notNull(),
   createdAt: createdAt(),
   // When its author last changed its text ("bearbeitet"); null if never.

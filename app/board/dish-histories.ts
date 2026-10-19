@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 import type { CommentView } from '../../server/utils/comments'
 import type { DishHistory, DishHistoryEntry } from '../../server/utils/dish-history'
 import type { DishAdder, DishView } from '../../server/utils/dishes'
-import { COMMENT_MAX } from '../../shared/comment'
+import { commentText } from '../utils/comment-text'
 
 // The Board module's part for the Dish History ("Verlauf", #332) of the
 // Dishes whose detail opens: loaded from the server as the detail opens,
@@ -43,13 +43,6 @@ interface Needs {
   queued: <T>(key: string, write: () => Promise<T>, options: { moves: false }) => Promise<T>
   // Whether a failed write failed because the server no longer has it (404).
   isGone: (error: unknown) => boolean
-}
-
-// The text as the server keeps it (shared/comment.ts): trimmed; null if
-// that leaves nothing, or too much.
-export function commentText(text: string): string | null {
-  const trimmed = text.trim()
-  return trimmed && trimmed.length <= COMMENT_MAX ? trimmed : null
 }
 
 export function createDishHistories({ transport, find, queued, isGone }: Needs) {

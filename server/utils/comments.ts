@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { COMMENT_MAX } from '../../shared/comment'
+import { COMMENT_MAX } from '../../app/utils/comment-text'
 import { db } from '../db'
 import { comment, dish, membership, user } from '../db/schema'
 import type { DishAdder } from './dishes'

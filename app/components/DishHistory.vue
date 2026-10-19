@@ -3,8 +3,7 @@ import type { CommentView } from '~~/server/utils/comments'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishHistoryEntry } from '~~/server/utils/dish-history'
 import type { DishView } from '~~/server/utils/dishes'
-import { COMMENT_MAX } from '~~/shared/comment'
-import { commentText, type CommentResult } from '~/board/dish-histories'
+import type { CommentResult } from '~/board/dish-histories'
 import { neverCookedScene } from '~/utils/never-cooked'
 
 // A Dish's Dish History at the bottom of its detail ("Verlauf", #332; the
