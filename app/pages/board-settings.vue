@@ -319,6 +319,7 @@ const { data: archive, refresh: refreshArchive } = useFetch<{ dishes: ArchivedDi
   () => `/api/boards/${id.value}/archive`,
   { immediate: boardId !== null, lazy: true },
 )
+// Takes the Dish off the Archive's list.
 function offArchive(dish: ArchivedDishView) {
   // A new object: useFetch's data is a shallow ref.
   if (archive.value) archive.value = { dishes: archive.value.dishes.filter(d => d.id !== dish.id) }

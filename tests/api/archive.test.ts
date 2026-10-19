@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import { expect, test } from 'vitest'
+import { beforeAll, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 import { watchEvents } from './event-log'
@@ -33,6 +33,12 @@ interface Uploaded { url: string, ticket: string }
 const owner = () => signIn(ALLOWLISTED[43])
 const member = () => signIn(ALLOWLISTED[44])
 const outsider = () => signIn(ALLOWLISTED[45])
+
+// The first sign-in makes each account and its first Board: done once
+// before the tests, so the first of them doesn't take that time too.
+beforeAll(async () => {
+  await Promise.all([owner(), member(), outsider()])
+})
 
 const DAY_MS = 24 * 60 * 60 * 1000
 

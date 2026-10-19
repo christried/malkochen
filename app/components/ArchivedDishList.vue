@@ -10,6 +10,7 @@ defineProps<{ dishes: ArchivedDishView[], isOwner: boolean }>()
 defineEmits<{ restore: [dish: ArchivedDishView], purge: [dish: ArchivedDishView] }>()
 const t = useStrings()
 
+// Who archived the Dish and when; only when, if who is unknown.
 function archivedLine({ archivedBy, archivedAt }: ArchivedDishView) {
   const at = new Date(archivedAt)
   return archivedBy ? t.settings.archivedBy(archivedBy.name, at) : t.settings.archivedOn(at)

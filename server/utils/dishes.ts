@@ -634,11 +634,9 @@ export interface ArchivedDishView {
   purgesAt: string
 }
 
-// The Board's Archived Dishes, the newest archived first. Null unless the
-// user is a Member of the Board.
-export async function archivedDishes(boardId: string, userId: string): Promise<ArchivedDishView[] | null> {
-  const [member] = await db.select({ boardId: membership.boardId }).from(membership).where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
-  if (!member) return null
+// The Board's Archived Dishes, the newest archived first. The caller has
+// checked that the user is a Member of the Board.
+export async function archivedDishes(boardId: string): Promise<ArchivedDishView[]> {
   const rows = await db
     .select({
       id: dish.id,
@@ -673,17 +671,20 @@ export async function archivedDishes(boardId: string, userId: string): Promise<A
 // the user is a Member of.
 export async function purgeDish(dishId: string, userId: string): Promise<{ imageUrl: string | null } | 'forbidden' | null> {
   const archived = and(onMembersBoardIncludingDeleted(dishId, userId), isNotNull(dish.deletedAt))
-  const [found] = await db.select({ id: dish.id }).from(dish).where(archived)
-  if (!found) return null
-  // Checked again as it deletes, in case ownership was handed over meanwhile.
   const ownersBoard = inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(and(eq(membership.userId, userId), membership.isOwner)))
+  const [found] = await db.select({ isOwner: sql<boolean>`${ownersBoard}` }).from(dish).where(archived)
+  if (!found) return null
+  if (!found.isOwner) return 'forbidden'
+  // Checked again as it deletes: restored, deleted for good by someone else
+  // or ownership handed over meanwhile, it is left as it is.
   const { rows } = await withEvents(
     db,
     db.delete(dish).where(and(archived, ownersBoard)).returning({ id: dish.id, boardId: dish.boardId, imageUrl: dish.imageUrl }),
     dishEvent('dish_deleted', userId),
   )
+  // withEvents answers the rows as the database names their columns.
   const [purged] = rows as { image_url: string | null }[]
-  return purged ? { imageUrl: purged.image_url } : 'forbidden'
+  return purged ? { imageUrl: purged.image_url } : null
 }
 
 // A Dish already on a Board with the Source being added (PRD story 24).
