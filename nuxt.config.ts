@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
+import { offlinePagePolicy } from './server/offline-page-policy'
 
 const EVERYWHERE = {
   'X-Content-Type-Options': 'nosniff',
@@ -104,6 +106,11 @@ export default defineNuxtConfig({
   // a rendered page gets (its own Cache-Control, the nonce'd CSP) is set in
   // server/plugins/headers.ts.
   routeRules: {
+    // The Offline page enforces a policy of its own (#344), with hashes in
+    // place of a nonce. Before '/**' and with all of its headers: Vercel
+    // applies the first rule that matches a file, and orders rules of the
+    // same depth as they are written here.
+    '/offline.html': { headers: { ...EVERYWHERE, 'Content-Security-Policy': offlinePagePolicy(readFileSync(new URL('public/offline.html', import.meta.url), 'utf8')) } },
     '/**': { headers: EVERYWHERE },
     // Named again for the built files: Nitro gives them a caching rule of
     // their own, and for a file Vercel applies the first rule that matches,

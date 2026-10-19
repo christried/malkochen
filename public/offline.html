@@ -124,7 +124,7 @@
     <h1 data-text="unreachable">malkochen ist gerade nicht erreichbar.</h1>
     <p data-text="unreachableBody">Dein Internet geht, aber malkochen antwortet gerade nicht. Das liegt an uns, nicht an dir. Versuch es gleich noch mal.</p>
   </div>
-  <button type="button" data-text="retry" onclick="location.reload()">Nochmal versuchen</button>
+  <button type="button" data-text="retry">Nochmal versuchen</button>
   <script>
     var TEXTS = {
       de: {
@@ -171,6 +171,11 @@
     }
     show()
     window.addEventListener('offline', show)
+
+    // Here and not in an onclick attribute: the page's Content Security
+    // Policy (nuxt.config.ts) allows its inline scripts by their hashes,
+    // which can't allow an attribute.
+    document.querySelector('[data-text="retry"]').addEventListener('click', function () { location.reload() })
 
     // Back online: carry on where the visit was going, once malkochen
     // answers. A device often says it is online before the connection gets
