@@ -183,6 +183,13 @@
       "when": 1792351758843,
       "tag": "0025_event_log",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792416168298,
+      "tag": "0026_archived_dishes",
+      "breakpoints": true
     }
   ]
 }

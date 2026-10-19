@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, eq, exists, inArray, isNull, not, sql } from 'drizzle-orm'
+import { and, asc, eq, exists, inArray, isNotNull, isNull, not, sql } from 'drizzle-orm'
 import { columnDeletion, type ColumnRefusal } from '../../shared/placement'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, dish, membership } from '../db/schema'
@@ -121,8 +121,10 @@ async function deleteTarget(column: DeletingColumn, moveTo?: string): Promise<{ 
 }
 
 // Deletes a Column (PRD stories 57–60). Its Dishes go to the top of `moveTo`,
-// in their order, deleted ones too; moved into the Gekocht Column they record
-// no Cooking, since nobody cooked them. An empty Column needs no `moveTo`.
+// in their order; moved into the Gekocht Column they record no Cooking,
+// since nobody cooked them. Its Archived Dishes stay in the Archive without
+// a Column, and come back at the top of the Column that takes new Dishes
+// (server/utils/dishes.ts). An empty Column needs no `moveTo`.
 // Refused for the Gekocht Column, the Board's last other Column, a Column
 // with Dishes but no `moveTo`, and a `moveTo` that isn't another Column of
 // the same Board.
@@ -146,14 +148,14 @@ export async function deleteColumn(columnId: string, userId: string, moveTo?: st
   )`
   await runAtomic(d => [
     lockColumns(d, found.boardId),
-    // Above everything in the target, deleted Dishes included, so a Dish
-    // brought back later doesn't share a place with a moved one. Recorded
-    // as no move in the event log (#331): no Member moved these Dishes,
-    // they went with their Column.
+    // Above everything in the target, Archived Dishes included, so a Dish
+    // restored later doesn't share a place with a moved one. Recorded as
+    // no move in the event log (#331): no Member moved these Dishes, they
+    // went with their Column.
     d.execute(sql`
       with moving as (
         select id, row_number() over (order by position, created_at desc, id desc) as rank, count(*) over () as n
-        from ${dish} where column_id = ${columnId}
+        from ${dish} where column_id = ${columnId} and deleted_at is null
       ), top as (
         select coalesce(min(position), 0) as position from ${dish} where column_id = ${target}
       )
@@ -164,6 +166,14 @@ export async function deleteColumn(columnId: string, userId: string, moveTo?: st
         and exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${target} and ${boardColumn.boardId} = ${found.boardId})
         ${moveTo === undefined ? sql`and not exists (select 1 from ${dish} as live where live.column_id = ${columnId} and live.deleted_at is null)` : sql``}
     `),
+    // Only once every live Dish has gone: a Column that stays keeps its
+    // Archived Dishes.
+    d.update(dish).set({ columnId: null }).where(and(
+      eq(dish.columnId, columnId),
+      isNotNull(dish.deletedAt),
+      sql`exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${columnId} and ${deletable})`,
+      sql`not exists (select 1 from ${dish} as live where live.column_id = ${columnId} and live.deleted_at is null)`,
+    )),
     d.delete(boardColumn).where(and(
       eq(boardColumn.id, columnId),
       deletable,

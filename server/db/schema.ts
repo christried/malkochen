@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
 import type { EventDetails, EventKind } from '../utils/events'
-import { bigint, boolean, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
 // ./migrations. Every timestamp is `timestamptz`, so values never depend on the
@@ -236,7 +236,10 @@ export const dish = pgTable('dish', {
   // (random_dish_code(), migration 0013).
   code: text('code').notNull().unique().default(sql`random_dish_code()`),
   // No cascade: a Column's Dishes must be moved before it can be deleted.
-  columnId: uuid('column_id').notNull().references(() => boardColumn.id),
+  // Null only for an Archived Dish whose Column was deleted meanwhile: it
+  // comes back at the top of the Column that takes new Dishes
+  // (server/utils/dishes.ts), so it isn't moved along with the live ones.
+  columnId: uuid('column_id').references(() => boardColumn.id),
   // Order within the Column, smallest first. New Dishes take one less than the
   // Column's smallest, so they go on top without touching the others.
   position: integer('position').notNull(),
@@ -260,12 +263,18 @@ export const dish = pgTable('dish', {
   // Who added it; kept (as unknown) if their account is ever deleted.
   addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
-  // Set when a Member deletes the Dish. A deleted Dish keeps its Column and
-  // position, so undo puts it back where it was; it is left out everywhere else.
+  // Set when a Member archives the Dish (CONTEXT.md: Archived Dish). It
+  // keeps its Column and position, so restoring puts it back where it was;
+  // it is left out everywhere but the Board's Archive.
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  // Who archived it, while it is archived; null once their account is gone,
+  // and for a Dish archived before this was kept and not in the event log.
+  archivedBy: text('archived_by').references(() => user.id, { onDelete: 'set null' }),
 }, t => [
   index('dish_board_id_idx').on(t.boardId),
   index('dish_column_id_position_idx').on(t.columnId, t.position),
+  // Every Dish on its Board has a Column.
+  check('dish_column_unless_archived', sql`${t.deletedAt} is not null or ${t.columnId} is not null`),
 ])
 
 // ---------------------------------------------------------------------------

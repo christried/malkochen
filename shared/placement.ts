@@ -40,9 +40,9 @@ export type ColumnRefusal = 'gekocht' | 'last' | 'not-empty' | 'bad-target'
 // Where a Column's Dishes go when it is deleted, or why it can't be. The
 // Gekocht Column stays, and so does a Board's last other Column, which
 // takes new Dishes. Its Dishes go to `moveTo`, which must be another of the
-// Board's Columns; without one it must have no Dishes, and those deleted
-// from it go to the Column that takes new Dishes once it is gone, so
-// "Rückgängig" still has a Column to bring them back to. Asked about the
+// Board's Columns; without one it must have no Dishes. Those archived from
+// it stay in the Archive and come back at the top of the Column that takes
+// new Dishes once it is gone (server/utils/dishes.ts). Asked about the
 // Column alone, it answers whether it can be deleted at all and, if so,
 // the Column its Dishes would go to by default.
 export function columnDeletion<C extends RuleColumn>(
