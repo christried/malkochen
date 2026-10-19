@@ -14,7 +14,7 @@ import { intlFor } from './intl'
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear } = intlFor('de')
+const { number, plural, day: addedDate, month: monthAndYear, moment } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -234,6 +234,34 @@ export const de = {
     deleteFailed: 'Das Löschen hat nicht geklappt. Versuch es gleich noch mal.',
     restoreFailed: 'Das Zurückholen hat nicht geklappt.',
   },
+  // The Dish History at the bottom of the Dish detail ("Verlauf", #332).
+  history: {
+    heading: 'Verlauf',
+    // Whoever's account is gone (CONTEXT.md: Deleted Account).
+    deletedAccount: 'Gelöschtes Konto',
+    added: (name: string) => `${name} hat das Gericht hinzugefügt`,
+    cooked: (name: string) => `${name} hat es gekocht`,
+    // When an entry happened: "heute, 20:55", else "18. Sept.".
+    when: (at: Date) => moment(at, time => `heute, ${time}`),
+    // After its time: "18. Sept., bearbeitet".
+    edited: 'bearbeitet',
+    commentMenu: (own: boolean): string => own ? 'Kommentar bearbeiten oder löschen' : 'Kommentar löschen',
+    editComment: 'Bearbeiten',
+    deleteComment: 'Löschen',
+    field: 'Kommentar',
+    fieldPrompt: 'Kommentieren',
+    editPrompt: 'Kommentar bearbeiten',
+    send: 'Senden',
+    saveEdit: 'Speichern',
+    cancelEdit: 'Abbrechen',
+    commentDeleted: 'Kommentar gelöscht',
+    commentFailed: 'Der Kommentar ließ sich nicht senden. Versuch es gleich noch mal.',
+    commentEditFailed: 'Die Änderung ließ sich nicht speichern. Versuch es gleich noch mal.',
+    commentDeleteFailed: 'Das Löschen hat nicht geklappt. Versuch es gleich noch mal.',
+    commentRestoreFailed: 'Das Zurückholen hat nicht geklappt.',
+    loadFailed: 'Die Kommentare ließen sich nicht laden.',
+    retry: 'Erneut versuchen',
+  },
   achievement: {
     level: {
       tried: 'Ausprobiert',
@@ -270,11 +298,6 @@ export const de = {
     watchOnInstagram: 'Auf Instagram ansehen',
     noSource: 'Ohne Link',
     placement: (board: string, column: string) => `${board} · ${column}`,
-    added: (name: string | null, date: Date) => {
-      const day = addedDate(date)
-      return name ? `Hinzugefügt von ${name} am ${day}` : `Hinzugefügt am ${day}`
-    },
-    cookingHistory: 'Gekocht',
     cookingHistoryEmpty: 'Noch nie gekocht.',
     edit: 'Bearbeiten',
     editing: 'Gericht bearbeiten',

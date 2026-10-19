@@ -11,7 +11,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear } = intlFor('it-IT')
+const { number, plural, day: addedDate, month: monthAndYear, moment } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -201,6 +201,30 @@ export const it: Strings = {
     deleteFailed: `L’eliminazione non è riuscita. ${tryAgain}`,
     restoreFailed: 'Il recupero non è riuscito.',
   },
+  history: {
+    heading: 'Cronologia',
+    deletedAccount: 'Account eliminato',
+    added: (name: string) => `${name} ha aggiunto il piatto`,
+    cooked: (name: string) => `${name} l’ha cucinato`,
+    when: (at: Date) => moment(at, time => `oggi, ${time}`),
+    edited: 'modificato',
+    commentMenu: (own: boolean) => own ? 'Modifica o elimina il commento' : 'Elimina il commento',
+    editComment: 'Modifica',
+    deleteComment: 'Elimina',
+    field: 'Commento',
+    fieldPrompt: 'Scrivi un commento',
+    editPrompt: 'Modifica il tuo commento',
+    send: 'Invia',
+    saveEdit: 'Salva',
+    cancelEdit: 'Annulla',
+    commentDeleted: 'Commento eliminato',
+    commentFailed: `Il commento non è stato inviato. ${tryAgain}`,
+    commentEditFailed: `La modifica non è stata salvata. ${tryAgain}`,
+    commentDeleteFailed: `L’eliminazione non è riuscita. ${tryAgain}`,
+    commentRestoreFailed: 'Il recupero non è riuscito.',
+    loadFailed: 'Non è stato possibile caricare i commenti.',
+    retry: 'Riprova',
+  },
   achievement: {
     level: {
       tried: 'Provato',
@@ -236,11 +260,6 @@ export const it: Strings = {
     noSource: 'Senza link',
     // After the Board's emoji, as in German.
     placement: (board: string, column: string) => `${board} · ${column}`,
-    added: (name: string | null, date: Date) => {
-      const day = addedDate(date)
-      return name ? `Aggiunto da ${name} il ${day}` : `Aggiunto il ${day}`
-    },
-    cookingHistory: 'Cucinato',
     cookingHistoryEmpty: 'Non ancora cucinato.',
     edit: 'Modifica',
     editing: 'Modifica il piatto',
