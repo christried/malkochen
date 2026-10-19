@@ -348,11 +348,58 @@ test('deleting (archiving) a Board records it; only its Owner\'s delete does', a
   ])
 })
 
-test('the log holds no content: no titles, notes, Board names, Usernames or emails', async () => {
+test('a Comment written, edited, deleted and restored records each, by whoever did it; what changes nothing records nothing', async () => {
+  const teitelbaum = await owner()
+  const wexler = await member()
+  const board = await createBoard(teitelbaum, 'Gesprächsrunde')
+  await join(wexler, board)
+  const dish = await addDish(teitelbaum, board.id, 'Dal')
+  const log = await watchEvents()
+
+  const res = await post(wexler, `/api/dishes/${dish.id}/comments`, { text: 'Mehr Kreuzkümmel' })
+  expect(res.status).toBe(201)
+  const { id } = await res.json() as { id: string }
+  const edit = (caller: Caller, text: string) => caller.fetch(`/api/comments/${id}`, { method: 'PATCH', ...json({ text }) })
+  expect((await edit(wexler, 'Viel mehr Kreuzkümmel')).status).toBe(200)
+  // The same text again is no edit.
+  expect((await edit(wexler, 'Viel mehr Kreuzkümmel')).status).toBe(200)
+  expect((await teitelbaum.fetch(`/api/comments/${id}`, { method: 'DELETE' })).status).toBe(204)
+  expect((await post(teitelbaum, `/api/comments/${id}/restore`)).status).toBe(200)
+  expect((await post(teitelbaum, `/api/comments/${id}/restore`)).status).toBe(200)
+
+  const [ownerId, memberId] = [await idOf(teitelbaum), await idOf(wexler)]
+  const event = (kind: string, userId: string) => ({ kind, boardId: board.id, dishId: dish.id, userId, details: { comment: id } })
+  expect(await log.recorded()).toEqual([
+    event('comment_written', memberId),
+    event('comment_edited', memberId),
+    event('comment_deleted', ownerId),
+    event('comment_restored', ownerId),
+  ])
+})
+
+test('a Comment refused records nothing: empty, by an outsider, edited or deleted by someone who may not', async () => {
+  const teitelbaum = await owner()
+  const wexler = await member()
+  const board = await createBoard(teitelbaum, 'Abgelehnt')
+  await join(wexler, board)
+  const dish = await addDish(teitelbaum, board.id, 'Dal')
+  const { id } = await (await post(teitelbaum, `/api/dishes/${dish.id}/comments`, { text: 'Vom Owner' })).json() as { id: string }
+  const log = await watchEvents()
+
+  expect((await post(wexler, `/api/dishes/${dish.id}/comments`, { text: '  ' })).status).toBe(400)
+  expect((await post(await outsider(), `/api/dishes/${dish.id}/comments`, { text: 'Hallo' })).status).toBe(404)
+  expect((await wexler.fetch(`/api/comments/${id}`, { method: 'PATCH', ...json({ text: 'Fremd' }) })).status).toBe(403)
+  expect((await wexler.fetch(`/api/comments/${id}`, { method: 'DELETE' })).status).toBe(403)
+  expect((await post(wexler, `/api/comments/${id}/restore`)).status).toBe(403)
+
+  expect(await log.recorded()).toEqual([])
+})
+
+test('the log holds no content: no titles, notes, Comments, Board names, Usernames or emails', async () => {
   const text = await everyEventAsText()
 
   expect(text).not.toBe('')
-  for (const content of ['Shakshuka', 'Linsensuppe', 'Essig', 'tiktok.com', 'Sonntagsessen', 'Tischrunde', 'teitelbaum', 'wexler', 'sinclair', 'example.com']) {
+  for (const content of ['Shakshuka', 'Linsensuppe', 'Essig', 'tiktok.com', 'Sonntagsessen', 'Tischrunde', 'Kreuzkümmel', 'Vom Owner', 'teitelbaum', 'wexler', 'sinclair', 'example.com']) {
     expect(text).not.toContain(content)
   }
 })
