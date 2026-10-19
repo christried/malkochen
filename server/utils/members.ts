@@ -1,15 +1,14 @@
 import { and, eq, exists, not, sql, type SQL } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
 import { membership } from '../db/schema'
-import { membershipOf } from './boards'
+import { membershipOf, ownerOf } from './boards'
 import { boardEvent, detailsOf, withEvents, type EventValues } from './events'
 
 // Members and the Owner (CONTEXT.md): any Member but the Owner can leave; the
 // Owner removes Members, hands ownership over and deletes the Board
-// (server/utils/archived-boards.ts). A Board
-// always has exactly one Owner, so the Owner hands over before leaving. The
-// Dishes someone added stay when they go: a Dish records its adder as a
-// user, not as a Member.
+// (server/utils/archived-boards.ts). A Board always has exactly one Owner,
+// so the Owner hands over before leaving. The Dishes someone added stay
+// when they go: a Dish records its adder as a user, not as a Member.
 
 // Why a Member couldn't be taken off the Board: the Owner leaving
 // ('owner'), a Member who isn't the Owner removing someone else
@@ -88,10 +87,3 @@ async function deleteMembership(boardId: string, memberId: string, event: EventV
   return rows.length > 0
 }
 
-// The user's membership of the Board if they are its Owner.
-function ownerOf(boardId: string, userId: string) {
-  return db
-    .select({ userId: membership.userId })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId), membership.isOwner))
-}

@@ -8,8 +8,8 @@ import { storage } from './image-store'
 
 // The daily cleanup job (#195; server/api/cron/cleanup.get.ts). Archived
 // Boards, Archived Dishes and deleted Cookings stay restorable for
-// RESTORABLE_FOR, then are purged for good. Neon's own restore window is a day, so this is the main
-// way back from a deletion.
+// RESTORABLE_FOR, then are purged for good. Neon's own restore window is
+// a day, so this is the main way back from a deletion.
 
 export interface CleanupReport {
   purgedBoards: number

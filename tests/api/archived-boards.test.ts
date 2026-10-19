@@ -5,6 +5,7 @@ import { beforeAll, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 import { watchEvents } from './event-log'
+import { startResendService } from './resend-service'
 import { CRON_SECRET, IMAGE_DIR, storedImages } from './server-env'
 import { backdateDeletion } from './time-travel'
 
@@ -227,4 +228,28 @@ test('archiving, restoring and deleting a Board for good are each recorded', asy
     { kind: 'board_archived', boardId: board.id, dishId: null, userId: kwolekId, details: null },
     { kind: 'board_deleted', boardId: board.id, dishId: null, userId: kwolekId, details: null },
   ])
+})
+
+test('an Archived Board’s Dishes are left out of the Email Digest', async () => {
+  const resend = await startResendService()
+  const live = await sharedBoard('Bleibt im Blick')
+  const archived = await sharedBoard('Aus dem Blick')
+  const { kwolek, jemison } = live
+  expect((await jemison.fetch('/api/me/email-digest', { method: 'PUT' })).status).toBe(204)
+  try {
+    expect((await postDish(kwolek, live.board.id, { title: 'Sichtbare Suppe', placeholder: 'bowl' })).status).toBe(201)
+    expect((await postDish(kwolek, archived.board.id, { title: 'Versteckter Eintopf', placeholder: 'bowl' })).status).toBe(201)
+    await archiveBoard(kwolek, archived.board.id)
+
+    expect((await anonymous().fetch('/api/cron/email-digest', { headers: { authorization: `Bearer ${CRON_SECRET}` } })).status).toBe(200)
+
+    const [email, ...more] = resend.sent.filter(e => e.to.includes(ALLOWLISTED[86]))
+    expect(more).toEqual([])
+    expect(email?.text).toContain('Sichtbare Suppe')
+    expect(email?.text).not.toContain('Versteckter Eintopf')
+  }
+  finally {
+    await jemison.fetch('/api/me/email-digest', { method: 'DELETE' })
+    await resend.close()
+  }
 })

@@ -81,9 +81,9 @@ function newBoard() {
 
 // Back with its Members, as it was: the switcher opens it. One that
 // couldn't be restored stays listed as the server has it.
-async function restore(gone: ArchivedBoardView) {
+async function restore(archivedBoard: ArchivedBoardView) {
   try {
-    const restored = await $fetch<BoardSummary>(`/api/boards/${gone.id}/restore`, { method: 'POST' })
+    const restored = await $fetch<BoardSummary>(`/api/boards/${archivedBoard.id}/restore`, { method: 'POST' })
     close()
     await navigateTo(boardPath(restored))
   }
@@ -100,19 +100,19 @@ const purgingOpen = computed({
   },
 })
 
-function askPurge(gone: ArchivedBoardView) {
+function askPurge(archivedBoard: ArchivedBoardView) {
   close()
-  purging.value = gone
+  purging.value = archivedBoard
 }
 
 async function purge() {
-  const gone = purging.value
-  if (!gone) return
+  const archivedBoard = purging.value
+  if (!archivedBoard) return
   purging.value = null
   hapticReject()
-  archived.value = archived.value.filter(b => b.id !== gone.id)
+  archived.value = archived.value.filter(b => b.id !== archivedBoard.id)
   // One that fails is listed again the next time the switcher opens.
-  await $fetch<null>(`/api/boards/${gone.id}/purge`, { method: 'POST' }).catch(() => {})
+  await $fetch<null>(`/api/boards/${archivedBoard.id}/purge`, { method: 'POST' }).catch(() => {})
 }
 </script>
 
@@ -282,8 +282,8 @@ async function purge() {
               :aria-labelledby="archiveId"
             >
               <li
-                v-for="gone in archived"
-                :key="gone.id"
+                v-for="archivedBoard in archived"
+                :key="archivedBoard.id"
                 class="flex flex-col gap-2 px-2 py-2"
                 data-archived-board
               >
@@ -291,27 +291,27 @@ async function purge() {
                   <span
                     aria-hidden="true"
                     class="flex h-11 w-11 shrink-0 items-center justify-center rounded-blob bg-surface-muted text-[24px] opacity-60"
-                  >{{ gone.emoji }}</span>
+                  >{{ archivedBoard.emoji }}</span>
                   <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span class="truncate text-button">{{ gone.name }}</span>
-                    <span class="text-small text-text-muted">{{ t.settings.daysLeft(daysLeft(gone.purgesAt)) }}</span>
+                    <span class="truncate text-button">{{ archivedBoard.name }}</span>
+                    <span class="text-small text-text-muted">{{ t.settings.daysLeft(daysLeft(archivedBoard.purgesAt)) }}</span>
                   </span>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
                     class="rounded-pill bg-inverse px-4 py-2.5 text-label text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                    :aria-label="t.boards.restoreBoard(boardLabel(gone))"
-                    @click="restore(gone)"
+                    :aria-label="t.boards.restoreBoard(boardLabel(archivedBoard))"
+                    @click="restore(archivedBoard)"
                   >
                     {{ t.settings.restore }}
                   </button>
                   <button
                     type="button"
                     class="rounded-pill bg-danger/10 px-4 py-2.5 text-label text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-                    :aria-label="t.boards.purgeBoard(boardLabel(gone))"
+                    :aria-label="t.boards.purgeBoard(boardLabel(archivedBoard))"
                     aria-haspopup="dialog"
-                    @click="askPurge(gone)"
+                    @click="askPurge(archivedBoard)"
                   >
                     {{ t.settings.deleteForGood }}
                   </button>

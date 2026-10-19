@@ -303,6 +303,15 @@ export function membershipOf(boardId: string, userId: string) {
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
 }
 
+// The user's membership of the Board if they are its Owner; built on `d`,
+// the transaction it is part of, if any.
+export function ownerOf(boardId: string, userId: string, d: Db = db) {
+  return d
+    .select({ userId: membership.userId })
+    .from(membership)
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId), membership.isOwner))
+}
+
 // Whether the user is a Member of the Board.
 export async function isMember(boardId: string, userId: string): Promise<boolean> {
   const [found] = await membershipOf(boardId, userId)

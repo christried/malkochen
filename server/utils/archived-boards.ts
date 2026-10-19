@@ -1,7 +1,7 @@
 import { and, desc, eq, exists, isNotNull, isNull, lt, sql } from 'drizzle-orm'
 import { db, runAtomic, type Db } from '../db'
 import { archivedMembership, board, dish, membership } from '../db/schema'
-import { membershipOf, type BoardNameAndEmoji, type BoardSummary } from './boards'
+import { membershipOf, ownerOf, type BoardNameAndEmoji, type BoardSummary } from './boards'
 import { slugOf } from './addresses'
 import { RESTORABLE_FOR } from './dishes'
 import { boardEvent, withEvents } from './events'
@@ -24,7 +24,8 @@ export interface ArchivedBoardView extends Pick<BoardNameAndEmoji, 'id' | 'name'
   purgesAt: string
 }
 
-const isArchived = (boardId: string) => sql`${board.id} = ${boardId} and ${board.deletedAt} is not null`
+// The Board's row, only if it is archived.
+const archivedRow = (boardId: string) => and(eq(board.id, boardId), isNotNull(board.deletedAt))
 
 // The user's archived membership of the Board if they were its Owner.
 function archivedOwnerOf(d: Db, boardId: string, userId: string) {
@@ -34,16 +35,28 @@ function archivedOwnerOf(d: Db, boardId: string, userId: string) {
     .where(and(eq(archivedMembership.boardId, boardId), eq(archivedMembership.userId, userId), archivedMembership.isOwner))
 }
 
-// The user's membership of the Board if they are its Owner.
-function ownerOf(d: Db, boardId: string, userId: string) {
-  return d
-    .select({ userId: membership.userId })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId), membership.isOwner))
-}
-
-// The columns both membership tables share, in one order.
+// The columns both membership tables have, in one order: keep it in step
+// with both.
 const membershipColumns = sql.raw('board_id, user_id, is_owner, last_opened_at, seen_at, new_since, joined_at')
+
+// Moves the Board's memberships, as they are, from one table to the other
+// (`from` and `to`), only while the Board is archived (`archived`) or not.
+// One statement, so a Member who leaves meanwhile is either moved or gone,
+// never both. A statement of its own after the one that archives or
+// restores, which it then sees.
+function moveMemberships(d: Db, boardId: string, from: typeof membership | typeof archivedMembership, to: typeof membership | typeof archivedMembership, archived: boolean) {
+  return d.execute(sql`
+    with moved as (
+      delete from ${from}
+      where board_id = ${boardId}
+        and exists (select 1 from ${board} where ${board.id} = ${boardId} and ${board.deletedAt} is ${archived ? sql`not null` : sql`null`})
+      returning ${membershipColumns}
+    )
+    insert into ${to} (${membershipColumns})
+    select ${membershipColumns} from moved
+    on conflict do nothing
+  `)
+}
 
 // "Board löschen" (PRD story 42): the Owner archives the Board for every
 // Member. 'archived' once it is, 'forbidden' for a Member who isn't the
@@ -54,24 +67,18 @@ export async function archiveBoard(boardId: string, userId: string): Promise<'ar
   if (!found.isOwner) return 'forbidden'
   // Archiving locks the Board's row first, so a join through its Invite Link
   // (which reads the row `for share`) either lands before and is moved along
-  // by the next two statements, or waits and then finds it archived.
-  // Checked again as it archives, in case ownership was handed over meanwhile.
+  // with the others, or waits and then finds it archived. Checked again as
+  // it archives, in case ownership was handed over meanwhile.
   await runAtomic(d => [
     withEvents(
       d,
       d.update(board)
         .set({ deletedAt: sql`now()` })
-        .where(and(eq(board.id, boardId), isNull(board.deletedAt), exists(ownerOf(d, boardId, userId))))
+        .where(and(eq(board.id, boardId), isNull(board.deletedAt), exists(ownerOf(boardId, userId, d))))
         .returning({ id: board.id }),
       { ...boardEvent('board_archived', userId), board: sql`changed.id` },
     ),
-    d.execute(sql`
-      insert into ${archivedMembership} (${membershipColumns})
-      select ${membershipColumns} from ${membership}
-      where ${membership.boardId} = ${boardId} and exists (select 1 from ${board} where ${isArchived(boardId)})
-      on conflict do nothing
-    `),
-    d.delete(membership).where(and(eq(membership.boardId, boardId), exists(d.select({ id: board.id }).from(board).where(isArchived(boardId))))),
+    moveMemberships(d, boardId, membership, archivedMembership, true),
   ])
   const [archived] = await archivedOwnerOf(db, boardId, userId)
   return archived ? 'archived' : 'forbidden'
@@ -101,23 +108,16 @@ export async function archivedBoards(userId: string): Promise<ArchivedBoardView[
 export async function restoreBoard(boardId: string, userId: string): Promise<BoardSummary | null> {
   const [archived] = await archivedOwnerOf(db, boardId, userId)
   if (!archived) return null
-  const live = exists(db.select({ id: board.id }).from(board).where(and(eq(board.id, boardId), isNull(board.deletedAt))))
   await runAtomic(d => [
     withEvents(
       d,
       d.update(board)
         .set({ deletedAt: null })
-        .where(and(isArchived(boardId), exists(archivedOwnerOf(d, boardId, userId))))
+        .where(and(archivedRow(boardId), exists(archivedOwnerOf(d, boardId, userId))))
         .returning({ id: board.id }),
       { ...boardEvent('board_restored', userId), board: sql`changed.id` },
     ),
-    d.execute(sql`
-      insert into ${membership} (${membershipColumns})
-      select ${membershipColumns} from ${archivedMembership}
-      where ${archivedMembership.boardId} = ${boardId} and ${live}
-      on conflict do nothing
-    `),
-    d.delete(archivedMembership).where(and(eq(archivedMembership.boardId, boardId), live)),
+    moveMemberships(d, boardId, archivedMembership, membership, false),
   ])
   const [restored] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner })
@@ -138,7 +138,7 @@ export async function purgeBoard(boardId: string, userId: string): Promise<{ ima
     .where(and(eq(dish.boardId, boardId), isNotNull(dish.imageUrl), exists(archivedOwnerOf(db, boardId, userId))))
   const { rows } = await withEvents(
     db,
-    db.delete(board).where(and(isArchived(boardId), exists(archivedOwnerOf(db, boardId, userId)))).returning({ id: board.id }),
+    db.delete(board).where(and(archivedRow(boardId), exists(archivedOwnerOf(db, boardId, userId)))).returning({ id: board.id }),
     { ...boardEvent('board_deleted', userId), board: sql`changed.id` },
   )
   if (rows.length === 0) return null
