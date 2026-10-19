@@ -1,7 +1,7 @@
 import { violationsIn } from '../utils/csp-report'
 
-// POST /api/csp-report — where a browser reports what broke a page's
-// report-only Content Security Policy (server/plugins/headers.ts, #247).
+// POST /api/csp-report — where a browser reports what a page's Content
+// Security Policy blocked (server/plugins/headers.ts, #247; enforced since #344).
 // Each violation becomes one line in the server log, which on Vercel is
 // where to see whether the policy runs clean; nothing is stored. Needs no
 // session (server/middleware/auth.ts): /login has a policy too. A browser

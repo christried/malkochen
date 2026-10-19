@@ -5,8 +5,8 @@ import { anonymous } from './client'
 import { SERVER_LOG } from './server-env'
 import { endClientLimitWindow, useUpClientLimit } from './time-travel'
 
-// POST /api/csp-report (#247): where a browser reports what broke a page's
-// report-only Content Security Policy (server/plugins/headers.ts). Each
+// POST /api/csp-report (#247): where a browser reports what a page's
+// Content Security Policy blocked (server/plugins/headers.ts). Each
 // report becomes one line in the server log and nothing else. Nobody is
 // signed in here: a violation on /login comes from someone who isn't.
 // Every test reports as a client of its own (x-forwarded-for, as Vercel
