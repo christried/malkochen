@@ -45,6 +45,13 @@ onMounted(() => {
   dialog.value?.showModal()
   morphArrived(headerImage())
 })
+// "Kommentieren" for this Dish not taken up while it was open (in edit
+// mode, say) is over once it closes, so it can't land by surprise the next
+// time. One for another Dish, which it is giving way to, stays.
+const commentRequest = useCommentRequest()
+onBeforeUnmount(() => {
+  if (commentRequest.value === located.value?.dish.id) commentRequest.value = null
+})
 
 // Back to the Board: the way it came if it came from there, so the history
 // doesn't grow; a deep link replaces itself with the Board. The image

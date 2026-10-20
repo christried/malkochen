@@ -383,10 +383,11 @@ test('the Gekocht toast\'s actions fit it in one row on a 360px phone', async ({
   expect(spare, `room to spare at 360px (${parts})`).toBeGreaterThanOrEqual(8)
 })
 
-// #170: narrower than that, the actions go below the text rather than being
-// cut off.
-test('on a 320px phone the Gekocht toast\'s actions go below its text, not cut off', async ({ page }) => {
-  const { fit, parts } = await gekochtToastFit(page, 320, 'Linsencurry')
+// #170: narrower than they fit, the actions go below the text rather than
+// being cut off. "Kommentieren" (#333) still fits one row at 320px, so a
+// screen narrower still.
+test('on a 280px screen the Gekocht toast\'s actions go below its text, not cut off', async ({ page }) => {
+  const { fit, parts } = await gekochtToastFit(page, 280, 'Linsencurry')
   expect(fit, parts).toEqual({ onScreen: true, overflowing: false, cut: [], actionsInOneRow: true, oneRow: false })
 })
 
