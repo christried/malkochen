@@ -72,7 +72,13 @@ onBeforeUnmount(() => clearTimeout(closing))
     @click="open = false"
   >
     <template v-if="open">
-      <div class="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
+      <!-- With the page's Toast in it (the Gekocht toast's two rows, #334),
+           its content keeps clear of the Toast, and the clip is a little
+           smaller to make the room. -->
+      <div
+        class="flex h-full flex-col items-center justify-center px-6 pt-10 text-center"
+        :class="$slots.toast ? 'pb-36 tablet:pb-40' : 'pb-10'"
+      >
         <button
           v-if="closeAs !== 'pill'"
           type="button"
@@ -83,7 +89,8 @@ onBeforeUnmount(() => clearTimeout(closing))
           <AppIcon name="close" />
         </button>
         <div
-          class="clip relative aspect-square w-[min(78vw,48dvh,420px)]"
+          class="clip relative aspect-square"
+          :class="$slots.toast ? 'w-[min(78vw,40dvh,420px)]' : 'w-[min(78vw,48dvh,420px)]'"
           :data-idle-pulse="pulse || undefined"
         >
           <SvgLoop
