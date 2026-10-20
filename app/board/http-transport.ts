@@ -19,7 +19,6 @@ export function httpTransport(): BoardTransport {
     undoCooking: (cookingId, to) => asWrite($fetch<PlacedDish>(`/api/cookings/${cookingId}/undo`, { method: 'POST', body: to })),
     deleteCooking: cookingId => asWrite($fetch<unknown>(`/api/cookings/${cookingId}`, { method: 'DELETE' })).then(() => undefined),
     restoreCooking: cookingId => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}/restore`, { method: 'POST' })),
-    noteCooking: (cookingId, note) => asWrite($fetch<CookingView>(`/api/cookings/${cookingId}`, { method: 'PATCH', body: { note } })),
     addColumn: (boardId, name) => asWrite(postColumn(boardId, name)),
     moveDishes: (dishIds, columnId) => asWrite(bulk({ action: 'move', dishIds, columnId })),
     placeDishes: places => asWrite(bulk({ action: 'place', places })),

@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
-import type { CookingView } from '~~/server/utils/cookings'
-import type { DishView } from '~~/server/utils/dishes'
 import type { BoardResult } from '~/board/board-module'
 import type { CommentResult } from '~/board/dish-histories'
 import { boardPath as pathOfBoard, dishAt } from '~~/shared/address'
@@ -39,8 +37,8 @@ const editing = ref(false)
 // Opened from its card, the card morphs into it (utils/dish-morph.ts): it
 // doesn't move in itself then.
 const morphed = !!morphArrival()
-// A sheet opened over it (moving the Dish, a Cooking's note, choosing an
-// image), it steps back.
+// A sheet opened over it (moving the Dish, choosing an image), it steps
+// back.
 const covered = useModalStack(() => true)
 const headerImage = () => dialog.value?.querySelector<HTMLElement>('[data-detail-image]') ?? null
 onMounted(() => {
@@ -149,16 +147,6 @@ function showComment({ notice, undo, settled }: CommentResult) {
   void settled?.then(showComment)
 }
 
-// The Cooking note sheet, from the Cooking History, for a Cooking of the
-// Dish shown then.
-const noting = ref<{ dish: DishView, cooking: CookingView } | null>(null)
-const notingCooking = computed({
-  get: () => noting.value?.cooking ?? null,
-  set: (cooking) => {
-    if (!cooking) noting.value = null
-  },
-})
-
 // Entering and leaving edit mode morphs one side's fields into the other's
 // (utils/edit-morph.ts), measured before the swap. Once edit mode has
 // opened, the card morph's arrival doesn't play again as the read-only Dish
@@ -207,7 +195,6 @@ watch(editing, async (isEditing) => {
           @move="moving = true"
           @delete="onDelete"
           @cook="origin => actOnDish(boardModule.cookDish, { origin })"
-          @note="cooking => located && (noting = { dish: located.dish, cooking })"
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
           @comment="showComment"
         />
@@ -229,12 +216,6 @@ watch(editing, async (isEditing) => {
       <GekochtPill />
       <AppToast v-model="toast" />
     </dialog>
-    <!-- The Cooking note sheet sits beside the detail, not in it: the
-         detail's own fields (edit mode's "Notiz") stay the only ones there. -->
-    <CookingNoteSheet
-      v-model:cooking="notingCooking"
-      :dish="noting?.dish ?? null"
-    />
   </div>
 </template>
 

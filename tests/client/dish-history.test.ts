@@ -16,7 +16,6 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     id,
     code: `c${id}`,
     title: `Titel ${id}`,
-    note: null,
     source: null,
     creator: null,
     imageUrl: null,
@@ -25,7 +24,7 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     addedBy: { id: 'ada', name: 'Ada', image: null },
     createdAt: '2026-10-01T12:00:00.000Z',
     // Newest first, as the Board has them.
-    cookings: cookedAt.map((at, i) => ({ id: `${id}-cooking-${i}`, cookedAt: at, note: null, recordedBy: null })).toReversed(),
+    cookings: cookedAt.map((at, i) => ({ id: `${id}-cooking-${i}`, cookedAt: at, recordedBy: null })).toReversed(),
   }
 }
 

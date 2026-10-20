@@ -69,16 +69,11 @@ const status = computed(() => {
           >
             <DishCard :dish="dish" />
           </NuxtLink>
-          <!-- In the order the card shows them: who added it, then the note. -->
+          <!-- Who added it, over the picture the card draws. -->
           <CardPersonButton
             v-if="dish.addedBy"
             :person="dish.addedBy"
             :board-id="board.id"
-          />
-          <NoteButton
-            v-if="dish.note"
-            :note="dish.note"
-            :beside-avatar="!!dish.addedBy"
           />
         </li>
       </TransitionGroup>

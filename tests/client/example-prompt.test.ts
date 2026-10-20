@@ -5,7 +5,7 @@ import { de } from '../../app/strings/de'
 import { en } from '../../app/strings/en'
 
 // A field's prompt with a made-up example in it, a new one each time it shows
-// (a Dish's note, a new Board's name, a new Column's name).
+// (a new Board's name, a new Column's name).
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -46,15 +46,15 @@ test('a new Column’s name field goes through its ten examples', () => {
 })
 
 test('picking another can reach the last example and never leaves the list', () => {
-  const note = useExamplePrompt(() => ['eins', 'zwei', 'drei'], example => example)
+  const picked = useExamplePrompt(() => ['eins', 'zwei', 'drei'], example => example)
 
   vi.spyOn(Math, 'random').mockReturnValue(0.999999)
-  note.pickAnother()
-  expect(note.prompt.value).toBe('drei')
+  picked.pickAnother()
+  expect(picked.prompt.value).toBe('drei')
 
   vi.spyOn(Math, 'random').mockReturnValue(0)
-  note.pickAnother()
-  expect(note.prompt.value).toBe('eins')
+  picked.pickAnother()
+  expect(picked.prompt.value).toBe('eins')
 })
 
 test('in another language, the prompt shows the same example in its words', () => {

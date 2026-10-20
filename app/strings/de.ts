@@ -46,26 +46,6 @@ export const de = {
   app: {
     name: 'malkochen',
   },
-  // A Dish's note field suggests one of these made-up notes, a new one each
-  // time it shows. Vegan, like everything in the app.
-  dishNote: {
-    examples: [
-      'mit extra Knoblauch',
-      'Tofu vorher gut auspressen',
-      'doppelte Menge Erdnusssoße',
-      'mit Räuchertofu und Frühlingszwiebeln',
-      'Kichererbsen über Nacht einweichen',
-      'statt Reis mit Couscous',
-      'schärfer als im Video',
-      'mit Kokosmilch statt Wasser',
-      'Linsen vorher kurz anrösten',
-      'mit Hefeflocken obendrauf',
-      'reicht locker für vier',
-      'Ofen auf 200 Grad, nicht 180',
-      'zum Schluss Zitronenabrieb drüber',
-    ],
-    prompt: (example: string) => `Optional, z. B. „${example}“`,
-  },
   // The links to the legal pages (utils/legal.ts), under the sign-in screen
   // and in the user menu.
   legal: {
@@ -139,9 +119,6 @@ export const de = {
   },
   dish: {
     addedBy: (name: string) => `Hinzugefügt von ${name}`,
-    // The note icon on a card, read out with the note itself; its Tooltip
-    // is the note alone.
-    note: (note: string) => `Notiz: ${note}`,
     // The Creator's field in edit mode, and read out before the Creator
     // (CONTEXT.md) where it shows as just its name.
     creator: 'Veröffentlicht von',
@@ -192,7 +169,8 @@ export const de = {
       'Klasse!',
     ],
     cookedCount: (count: number) => `${number(count)}× gekocht`,
-    addNote: 'Notiz hinzufügen',
+    // In the Gekocht toast: opens the comment field in the Dish detail.
+    comment: 'Kommentieren',
     cookFailed: (title: string) => `„${title}“ ließ sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,
     uncookFailed: (title: string) => `„${title}“ ließ sich nicht zurückholen.`,
   },
@@ -212,23 +190,11 @@ export const de = {
     backFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht zurückholen.`,
   },
   cooking: {
-    noteHeading: 'Notiz zum Kochen',
-    note: 'Notiz',
-    // About how it went this time, so not one of the Dish note examples.
-    notePrompt: 'Optional, z. B. „nächstes Mal mehr Knoblauch“',
-    save: 'Speichern',
-    saving: 'Speichert …',
-    close: 'Schließen',
-    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     summary: (count: number, last: Date) => `${number(count)}× gekocht · zuletzt ${addedDate(last)}`,
     date: (date: Date) => addedDate(date),
     by: (name: string) => `von ${name}`,
-    addNote: '+ Notiz',
-    addNoteLabel: (date: Date) => `Notiz zum Kochen am ${addedDate(date)} hinzufügen`,
-    editNoteLabel: (date: Date) => `Notiz zum Kochen am ${addedDate(date)} bearbeiten`,
     deleteLabel: (date: Date) => `Kochen am ${addedDate(date)} löschen`,
-    // Their Tooltips: the entry they sit in already shows the date.
-    editNoteTip: 'Notiz bearbeiten',
+    // Its Tooltip: the entry it sits in already shows the date.
     deleteTip: 'Kochen löschen',
     deleted: (date: Date) => `Kochen am ${addedDate(date)} gelöscht`,
     deleteFailed: 'Das Löschen hat nicht geklappt. Versuch es gleich noch mal.',
@@ -302,7 +268,6 @@ export const de = {
     edit: 'Bearbeiten',
     editing: 'Gericht bearbeiten',
     title: 'Titel',
-    note: 'Notiz',
     creatorPrompt: 'z. B. @christried oder ein Blog',
     source: 'Link',
     sourcePrompt: 'Link von TikTok, Instagram, YouTube, Pinterest oder einem Blog',
@@ -370,7 +335,6 @@ export const de = {
     withoutLink: 'Ohne Link hinzufügen',
     title: 'Titel',
     titlePrompt: 'Wie heißt das Gericht?',
-    note: 'Notiz',
     image: 'Bild',
     chooseImage: 'Bild wählen',
     save: 'Speichern',

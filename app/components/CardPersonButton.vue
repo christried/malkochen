@@ -2,10 +2,9 @@
 import type { DishAdder } from '~~/server/utils/dishes'
 
 // Who added a Dish, on its card (#213): the button lying over the Profile
-// Picture the card draws (DishCard), outside the card's link like the note's
-// (NoteButton), so hovering it or tapping it opens their popover
-// (PersonPopover) and neither opens the Dish nor, being a button, starts a
-// drag (useDishDrag). Screen readers get "Hinzugefügt von …" as its name.
+// Picture the card draws (DishCard), outside the card's link, so hovering
+// it or tapping it opens their popover (PersonPopover) and neither opens the
+// Dish nor, being a button, starts a drag (useDishDrag). Screen readers get "Hinzugefügt von …" as its name.
 //
 // It goes in the box the card fills. Where the picture is follows DishCard's
 // layout: the text column starts at 108px (10px padding, the 86px thumb, a

@@ -11,7 +11,6 @@ import { pictureOf } from './people'
 export interface CookingView {
   id: string
   cookedAt: string
-  note: string | null
   // Who recorded it; null once their account is gone.
   recordedBy: DishAdder | null
 }
@@ -22,7 +21,6 @@ function selectCookings() {
       id: cooking.id,
       dishId: cooking.dishId,
       cookedAt: cooking.cookedAt,
-      note: cooking.note,
       recorderId: user.id,
       // Recording one takes a Username (server/middleware/auth.ts).
       recorderName: user.username,
@@ -107,15 +105,6 @@ export function undoableCooking(cookingId: string, userId: string) {
 export async function isUndoableCooking(cookingId: string, userId: string): Promise<boolean> {
   const [found] = await db.select({ id: cooking.id }).from(cooking).where(undoableCooking(cookingId, userId))
   return found !== undefined
-}
-
-// Sets or (null) removes a Cooking's note (PRD story 53).
-export async function noteCooking(cookingId: string, userId: string, note: string | null): Promise<CookingView | null> {
-  const target = onMembersDish(cookingId, userId)
-  const updated = await db.update(cooking).set({ note }).where(target).returning({ id: cooking.id })
-  if (updated.length === 0) return null
-  const [row] = await selectCookings().where(target)
-  return row ? toView(row) : null
 }
 
 // Deletes a Cooking from the Cooking History (PRD story 48): a soft delete,

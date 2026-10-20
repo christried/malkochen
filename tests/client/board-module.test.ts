@@ -10,7 +10,7 @@ import { memoryTransport, type MemoryTransport } from './memory-transport'
 // the tests look at the Board and at what each operation answers.
 
 function dish(id: string): DishView {
-  return { id, code: `c${id}`, title: `Titel ${id}`, note: null, source: null, creator: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [] }
+  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [] }
 }
 
 // A Board with Ideen (a, b, c), Diese Woche (d) and Gekocht (empty).
@@ -233,7 +233,7 @@ test('a move into the Gekocht Column records a Cooking at once, filled in once s
   const cookingsOf = (id: string) => board.value!.columns.flatMap(c => c.dishes).find(d => d.id === id)!.cookings
 
   const into = module.moveDish('a', { columnId: 'gekocht' })!
-  expect(into).toMatchObject({ notice: 'cook', cooking: { note: null } })
+  expect(into).toMatchObject({ notice: 'cook', cooking: { recordedBy: null } })
   expect(cookingsOf('a')).toHaveLength(1)
   const recorded = (await into.settled)!.cooking!
   expect(recorded.id).toBeTruthy()
@@ -368,8 +368,8 @@ test('"Gekocht ✓" then a move that both fail leave the Dish where it was befor
 // Diese Woche's Dish d, cooked twice: on 20 and on 1 September.
 function cookedTwice(board: BoardView) {
   board.columns[1]!.dishes[0]!.cookings = [
-    { id: 'sept-20', cookedAt: '2020-09-20T18:00:00.000Z', note: 'mit Tofu', recordedBy: null },
-    { id: 'sept-1', cookedAt: '2020-09-01T18:00:00.000Z', note: null, recordedBy: null },
+    { id: 'sept-20', cookedAt: '2020-09-20T18:00:00.000Z', recordedBy: null },
+    { id: 'sept-1', cookedAt: '2020-09-01T18:00:00.000Z', recordedBy: null },
   ]
 }
 
@@ -485,10 +485,10 @@ test('an edit replaces the Dish’s fields with what the server saved', async ()
   const { board, module, shown } = setup()
   const shownDish = () => board.value!.columns[0]!.dishes[1]!
 
-  const result = await module.editDish('b', { title: '  Ofengemüse ', note: 'mit Tofu', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
+  const result = await module.editDish('b', { title: '  Ofengemüse ', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
 
   expect(result).not.toHaveProperty('notice')
-  expect(shownDish()).toMatchObject({ id: 'b', title: 'Ofengemüse', note: 'mit Tofu', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
+  expect(shownDish()).toMatchObject({ id: 'b', title: 'Ofengemüse', source: { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' } })
   expect(result.dish).toBe(shownDish())
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
 })
@@ -500,18 +500,6 @@ test('an edit whose new image couldn’t be stored keeps the image it had, and s
 
   expect(result).toMatchObject({ notice: 'imageNotReplaced', dish: { title: 'Neu', imageUrl: '/images/b.jpg' } })
   expect(board.value!.columns[0]!.dishes[1]!.imageUrl).toBe('/images/b.jpg')
-})
-
-test('a saved Cooking note shows in the Dish’s Cooking History as the server saved it; a blank one removes it', async () => {
-  const { board, module } = setup(cookedTwice)
-  const cookingsOf = () => board.value!.columns[1]!.dishes[0]!.cookings
-
-  const result = await module.noteCooking('d', 'sept-1', '  mit Reis ')
-  expect(result).toMatchObject({ cooking: { id: 'sept-1', note: 'mit Reis' } })
-  expect(cookingsOf()).toMatchObject([{ id: 'sept-20', note: 'mit Tofu' }, { id: 'sept-1', note: 'mit Reis' }])
-
-  await module.noteCooking('d', 'sept-20', '   ')
-  expect(cookingsOf()).toMatchObject([{ id: 'sept-20', note: null }, { id: 'sept-1', note: 'mit Reis' }])
 })
 
 test('an edit saved while "Gekocht ✓" is under way still lets a failed cook put the Dish back, and keeps its new title', async () => {
@@ -597,7 +585,7 @@ test('a Dish moved into another Board’s Gekocht Column records a Cooking at on
   const result = module.moveToBoard('d', INTO_FEIERABEND_GEKOCHT)!
 
   expect(shown().woche).toEqual([])
-  expect(result).toMatchObject({ notice: 'cook', cooking: { note: null }, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 }, focus: { column: 'woche' } })
+  expect(result).toMatchObject({ notice: 'cook', cooking: { recordedBy: null }, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 }, focus: { column: 'woche' } })
   expect(result.undo).toBeTypeOf('function')
   expect(result.dish.cookings.map(c => c.id)).toEqual(['', 'sept-20', 'sept-1'])
   const settled = (await result.settled)!

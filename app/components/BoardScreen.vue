@@ -67,20 +67,18 @@ function showNotice(text: string) {
   showToast({ text, duration: NOTICE_MS })
 }
 
-// The Cooking note sheet, from the Gekocht toast.
-const noting = ref<{ dish: DishView, cooking: CookingView } | null>(null)
-const notingCooking = computed({
-  get: () => noting.value?.cooking ?? null,
-  set: (cooking) => {
-    if (!cooking) noting.value = null
-  },
-})
-function addNote(dish: DishView, cooking: CookingView) {
-  noting.value = { dish, cooking }
+// "Kommentieren" in the Gekocht toast: the Dish detail, on the Board the
+// Dish is on now, opens with focus in its comment field (DishHistory).
+// Already open, the field takes focus there.
+const commentRequest = useCommentRequest()
+function commentOn(dish: DishView, toBoard?: BoardListing | null) {
+  commentRequest.value = dish.id
+  if (!toBoard && board.value && dishAt(board.value, route.params.dish)?.dish.id === dish.id) return
+  void navigateTo(dishPath(toBoard ?? address.value, dish))
 }
 
 // The client Board module: adding, editing, moving, cooking and deleting a
-// Dish, and a Cooking's note and delete, go through it, and the page turns
+// Dish, and deleting a Cooking, go through it, and the page turns
 // what it answers into Toasts, the Gekocht celebration, haptics and focus
 // (showResult). The forms under the page get it injected (useBoardModule).
 const boardModule = createBoardModule(board, httpTransport())
@@ -215,7 +213,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
 // state's loop. None while the Dish detail or a sheet covers it.
 const boardLoop = useBoardLoop(columnsEl, {
   liftedDishId: () => drag.value?.dish.id ?? null,
-  covered: () => !!route.params.dish || adding.value || menuOpen.value || choosingTarget.value || !!noting.value || showingShortcuts.value || showingSettings.value,
+  covered: () => !!route.params.dish || adding.value || menuOpen.value || choosingTarget.value || showingShortcuts.value || showingSettings.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
 useBoardSync(() => id, boardModule, () => dragging.value)
@@ -629,8 +627,8 @@ async function detailClosed(): Promise<boolean> {
 // confetti from `origin` (from the Gekocht pill without one; none if
 // `null`, as the caller set it off already), the Gekocht pill at the top
 // with Topfbert (naming `toBoard`, for a Dish moved into its Gekocht
-// Column), and the Gekocht toast at the bottom, offering "Notiz
-// hinzufügen" once the Cooking is recorded, and "Rückgängig". The Cooking
+// Column), and the Gekocht toast at the bottom, offering "Kommentieren"
+// and "Rückgängig". The Cooking
 // that makes the Dish a Klassiker (the 10th) celebrates that too.
 function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point | null, toBoard?: BoardListing | null) {
   const recorded = settled?.then(r => r.cooking ?? null) ?? Promise.resolve(null)
@@ -642,10 +640,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     ...toBoard && { unseen: t.dish.cookedOn(boardLabel(toBoard)) },
     duration: UNDO_WINDOW_MS,
     actions: [
-      { label: t.dish.addNote, run: async () => {
-        const cooking = await recorded
-        if (cooking) addNote(dish, cooking)
-      } },
+      { label: t.dish.comment, run: () => commentOn(dish, toBoard) },
       ...undo ? [{ label: t.dish.undo, run: () => void undo().then(r => showResult(r)) }] : [],
     ],
   })
@@ -860,16 +855,11 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       />
                     </span>
                     <template v-else>
-                    <!-- In the order the card shows them: who added it, then the note. -->
+                    <!-- Who added it, over the picture the card draws. -->
                     <CardPersonButton
                       v-if="dish.addedBy"
                       :person="dish.addedBy"
                       :board-id="board.id"
-                    />
-                    <NoteButton
-                      v-if="dish.note"
-                      :note="dish.note"
-                      :beside-avatar="!!dish.addedBy"
                     />
                     <button
                       type="button"
@@ -1018,11 +1008,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <AppToast v-model="toast" />
       </Teleport>
     </template>
-
-    <CookingNoteSheet
-      v-model:cooking="notingCooking"
-      :dish="noting?.dish ?? null"
-    />
 
     <AddDishSheet
       v-model:open="adding"

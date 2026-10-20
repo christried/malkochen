@@ -20,14 +20,12 @@ import { neverCookedScene } from '~/utils/never-cooked'
 // as the detail opens (its Comments; its Cookings are the Board's) and
 // writes Comments. Each write's result goes up as `comment`, for the detail
 // to show its notice. A Cooking still being recorded, or a Comment still
-// being written, shows but can't be changed yet.
-//
-// Until "Notes become Comments" (#333), a Cooking still shows its note and
-// the button to add or change it.
+// being written, shows but can't be changed yet. "Kommentieren" in the
+// Gekocht toast opens the detail with focus in the comment field
+// (useCommentRequest).
 const props = defineProps<{ dish: DishView, boardId: string, isOwner: boolean }>()
 const emit = defineEmits<{
   cook: [origin: Point]
-  note: [cooking: CookingView]
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
 }>()
@@ -62,10 +60,6 @@ function keyOf(entry: DishHistoryEntry): string {
   if (key === undefined) keys.set(of, key = ++lastKey)
   return `${entry.kind}-${key}`
 }
-
-// A Cooking of the last day gets the sage date pebble's glow on "+ Notiz".
-const DAY_MS = 24 * 60 * 60 * 1000
-const isFresh = (cooking: CookingView) => Date.now() - Date.parse(cooking.cookedAt) < DAY_MS
 
 const when = (at: string) => t.history.when(new Date(at))
 const nameOf = (person: { name: string } | null) => person?.name ?? t.history.deletedAccount
@@ -141,6 +135,17 @@ function onFieldEscape(event: KeyboardEvent) {
   event.stopPropagation()
   cancelEdit()
 }
+
+// "Kommentieren" in the Gekocht toast, for this Dish: focus goes to the
+// field, which scrolls it into view, once the detail around it has opened
+// (the page shows its dialog after this has mounted).
+const commentRequest = useCommentRequest()
+onMounted(() => watch([commentRequest, () => props.dish.id], async ([requested, dishId]) => {
+  if (requested !== dishId) return
+  commentRequest.value = null
+  await nextTick()
+  field.value?.focus()
+}, { immediate: true }))
 
 function remove(comment: CommentView) {
   menuFor.value = null
@@ -264,54 +269,28 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             <span class="shrink-0 text-caption text-text-muted">
               {{ when(entry.at) }}<template v-if="entry.kind === 'comment' && entry.comment.editedAt">, {{ t.history.edited }}</template>
             </span>
-            <template v-if="entry.kind === 'cooking'">
-              <button
-                type="button"
-                class="-my-1.5 flex h-8 items-center justify-center rounded-pill px-2.5 text-label text-text-muted transition-transform duration-tap ease-tap enabled:hover:bg-surface-muted active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-focus"
-                :class="{ 'w-8 px-0': entry.cooking.note, 'note-glow relative': !entry.cooking.note && isFresh(entry.cooking) }"
-                :aria-label="(entry.cooking.note ? t.cooking.editNoteLabel : t.cooking.addNoteLabel)(new Date(entry.cooking.cookedAt))"
-                :data-tooltip="entry.cooking.note ? t.cooking.editNoteTip : undefined"
-                :disabled="!entry.cooking.id"
-                @click="emit('note', entry.cooking)"
-              >
-                <svg
-                  v-if="entry.cooking.note"
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                ><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13 7l4 4" /></svg>
-                <template v-else>
-                  {{ t.cooking.addNote }}
-                </template>
-              </button>
-              <button
-                type="button"
-                class="-my-1.5"
-                :class="iconButton"
-                :aria-label="t.cooking.deleteLabel(new Date(entry.cooking.cookedAt))"
-                :data-tooltip="t.cooking.deleteTip"
-                :disabled="!entry.cooking.id"
-                @click="emit('deleteCooking', entry.cooking)"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
-              </button>
-            </template>
+            <button
+              v-if="entry.kind === 'cooking'"
+              type="button"
+              class="-my-1.5"
+              :class="iconButton"
+              :aria-label="t.cooking.deleteLabel(new Date(entry.cooking.cookedAt))"
+              :data-tooltip="t.cooking.deleteTip"
+              :disabled="!entry.cooking.id"
+              @click="emit('deleteCooking', entry.cooking)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+            </button>
             <button
               v-else-if="entry.kind === 'comment' && entry.comment.id && canDelete(entry.comment)"
               type="button"
@@ -348,12 +327,6 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             class="comment self-start whitespace-pre-line break-words px-3.5 py-2.5 font-display text-body-serif"
           >
             {{ entry.comment.text }}
-          </p>
-          <p
-            v-else-if="entry.kind === 'cooking' && entry.cooking.note"
-            class="whitespace-pre-line break-words font-display text-body-serif"
-          >
-            {{ entry.cooking.note }}
           </p>
           <span
             v-if="entry.kind === 'comment' && menuFor === entry.comment.id"
@@ -501,22 +474,6 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
 }
 .entry-move {
   transition: transform var(--dur-settle) var(--ease-settle);
-}
-/* "+ Notiz" on a fresh Cooking without a note glows three times: a butter
-   ring swells out of it and fades. Reduced motion: no glow. */
-.note-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: 0 0 0 2px var(--color-focus);
-  opacity: 0;
-  pointer-events: none;
-  animation: note-glow 1.2s var(--ease-fade) 600ms 3;
-}
-@keyframes note-glow {
-  0% { opacity: .9; scale: 1; }
-  100% { opacity: 0; scale: 1.25; }
 }
 @media (prefers-reduced-motion: reduce) {
   .entry-enter-active {

@@ -6,7 +6,7 @@ import { videoEmbed } from '~~/shared/video-embed'
 import type { CommentResult } from '~/board/dish-histories'
 
 // The Dish detail's contents: a large image, the title with the Creator
-// under it, the note, the Source with "Original öffnen", where the Dish is
+// under it, the Source with "Original öffnen", where the Dish is
 // (Board and Column), its Dish History ("Verlauf": who added it and when,
 // its Cookings and Comments, the comment field) with "Gekocht ✓",
 // "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
@@ -19,7 +19,6 @@ defineEmits<{
   move: []
   delete: []
   cook: [origin: Point]
-  note: [cooking: CookingView]
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
 }>()
@@ -205,14 +204,6 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}
       </p>
 
-      <p
-        v-if="dish.note"
-        class="whitespace-pre-line text-body"
-        data-morph-field="note"
-      >
-        {{ dish.note }}
-      </p>
-
       <div
         v-if="dish.source"
         class="flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-muted p-3 pl-4"
@@ -235,7 +226,6 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         :is-owner="board.isOwner"
         data-morph-field="history"
         @cook="origin => $emit('cook', origin)"
-        @note="cooking => $emit('note', cooking)"
         @delete-cooking="cooking => $emit('deleteCooking', cooking)"
         @comment="result => $emit('comment', result)"
       />
