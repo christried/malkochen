@@ -4,13 +4,16 @@ import type { CookingView } from '~~/server/utils/cookings'
 import type { DishHistoryEntry } from '~~/server/utils/dish-history'
 import type { DishView } from '~~/server/utils/dishes'
 import type { CommentResult } from '~/board/dish-histories'
+import type { VoteResult } from '~/board/dish-votes'
 import { neverCookedScene } from '~/utils/never-cooked'
 
 // A Dish's Dish History at the bottom of its detail ("Verlauf", #332; the
 // look #330 picked, its variant B): "3× gekocht · zuletzt 12. Sept." under its
-// achievement badge, "Gekocht ✓", and a line down the left with a dot per
-// entry, oldest first like a chat: a plus for who added the Dish, a pot for
-// each Cooking (with its bin), the author's Profile Picture for each
+// achievement badge, "Gekocht ✓", once Cooked "Wie war's?" with 👍 👎 for
+// the Member's Vote (#334), and a line down the left with a dot per entry,
+// oldest first like a chat: a plus for who added the Dish, a pot for each
+// Cooking (with its bin), the thumb for each Member's Vote, on a backdrop
+// of its own for up and for down, the author's Profile Picture for each
 // Comment, set in the detail's serif on a backdrop of its own. Under it the
 // comment field. A Comment's "…" offers its author "Bearbeiten" and
 // "Löschen", and the Owner "Löschen" on anyone's. Never cooked, it loops one
@@ -18,8 +21,8 @@ import { neverCookedScene } from '~/utils/never-cooked'
 //
 // The history comes from the Board module, which loads it from the server
 // as the detail opens (its Comments; its Cookings are the Board's) and
-// writes Comments. Each write's result goes up as `comment`, for the detail
-// to show its notice. A Cooking still being recorded, or a Comment still
+// writes Comments and Votes. Each write's result goes up as `comment` or
+// `vote`, for the detail to show its notice. A Cooking still being recorded, or a Comment still
 // being written, shows but can't be changed yet. "Kommentieren" in the
 // Gekocht toast opens the detail with focus in the comment field
 // (useCommentRequest).
@@ -28,6 +31,7 @@ const emit = defineEmits<{
   cook: [origin: Point]
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
+  vote: [result: VoteResult]
 }>()
 const t = useStrings()
 const boardModule = useBoardModule()
@@ -55,7 +59,7 @@ const keys = new WeakMap<object, number>()
 let lastKey = 0
 function keyOf(entry: DishHistoryEntry): string {
   if (entry.kind === 'added') return 'added'
-  const of = entry.kind === 'cooking' ? entry.cooking : entry.comment
+  const of = entry.kind === 'cooking' ? entry.cooking : entry.kind === 'vote' ? entry.vote : entry.comment
   let key = keys.get(of)
   if (key === undefined) keys.set(of, key = ++lastKey)
   return `${entry.kind}-${key}`
@@ -65,6 +69,13 @@ const when = (at: string) => t.history.when(new Date(at))
 const nameOf = (person: { name: string } | null) => person?.name ?? t.history.deletedAccount
 // One still being recorded was recorded by whoever is looking.
 const recorderOf = (cooking: CookingView) => cooking.id ? nameOf(cooking.recordedBy) : me.value?.name ?? ''
+
+// The Member's own Vote: thumbs up (true), down (false), or none.
+const myVote = computed(() => props.dish.votes.find(v => v.voter.id === me.value?.id)?.up ?? null)
+function vote(up: boolean | null) {
+  const result = me.value && boardModule.vote(props.dish.id, up, { id: me.value.id, name: me.value.name, image: me.value.image })
+  if (result) emit('vote', result)
+}
 
 const isOwn = (comment: CommentView) => !!me.value && comment.author?.id === me.value.id
 const canDelete = (comment: CommentView) => isOwn(comment) || props.isOwner
@@ -191,7 +202,18 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
     </div>
 
     <div
-      v-if="!dish.cookings.length"
+      v-if="dish.cookings.length"
+      class="flex items-center gap-3"
+      data-how-was-it
+    >
+      <span class="text-small text-text-muted">{{ t.history.howWasIt }}</span>
+      <VoteButtons
+        :mine="myVote"
+        @vote="vote"
+      />
+    </div>
+    <div
+      v-else
       class="mx-auto aspect-[510/354] w-[min(50vw,180px)]"
     >
       <SvgLoop
@@ -212,6 +234,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
         class="relative flex gap-3"
         :data-cooking="entry.kind === 'cooking' || undefined"
         :data-comment="entry.kind === 'comment' || undefined"
+        :data-vote-entry="entry.kind === 'vote' ? (entry.vote.up ? 'up' : 'down') : undefined"
         :data-history-added="entry.kind === 'added' || undefined"
       >
         <!-- The entry's dot on the line. -->
@@ -222,6 +245,12 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             :image="entry.comment.author?.image"
             :size="32"
           />
+          <span
+            v-else-if="entry.kind === 'vote'"
+            class="flex h-8 w-8 items-center justify-center rounded-full text-[15px]"
+            :class="entry.vote.up ? 'vote-up' : 'vote-down'"
+            aria-hidden="true"
+          >{{ entry.vote.up ? '👍' : '👎' }}</span>
           <span
             v-else
             class="flex h-8 w-8 items-center justify-center rounded-full"
@@ -258,6 +287,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
                 class="font-semibold"
               >{{ nameOf(entry.comment.author) }}</b>
               <template v-else-if="entry.kind === 'cooking'">{{ t.history.cooked(recorderOf(entry.cooking)) }}</template>
+              <template v-else-if="entry.kind === 'vote'">{{ t.history.voted(entry.vote.voter.name, entry.vote.up) }}</template>
               <PersonPopover
                 v-else-if="entry.by"
                 :person="entry.by"
@@ -438,6 +468,14 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
   width: 2px;
   border-radius: 2px;
   background: var(--color-line-strong);
+}
+/* A Vote's dot: thumbs up on sage, down on carrot, each apart from the
+   other entries' (#330). */
+.vote-up {
+  background: color-mix(in oklab, var(--color-sage) 45%, var(--color-surface-muted));
+}
+.vote-down {
+  background: color-mix(in oklab, var(--color-carrot) 35%, var(--color-surface-muted));
 }
 /* A Comment's backdrop, apart from the other entries' (#330). */
 .comment {

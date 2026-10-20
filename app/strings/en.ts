@@ -183,6 +183,11 @@ export const en: Strings = {
     commentRestoreFailed: 'Bringing it back didn’t work.',
     loadFailed: 'The comments couldn’t be loaded.',
     retry: 'Try again',
+    howWasIt: 'How was it?',
+    voteUp: 'Thumbs up',
+    voteDown: 'Thumbs down',
+    voted: (name: string, up: boolean) => up ? `${name} liked it` : `${name} didn’t like it much`,
+    voteFailed: `Your vote couldn’t be saved. ${tryAgain}`,
   },
   achievement: {
     level: {

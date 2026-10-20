@@ -623,26 +623,44 @@ async function detailClosed(): Promise<boolean> {
   return closed
 }
 
+// The Member's Vote on a Dish just cooked, from the Gekocht toast (#334).
+// `takeBack`: for "Rückgängig", the Vote is back to what it was before the
+// toast, as the Cooking goes again.
+function votingFor(dish: DishView) {
+  const mine = () => dish.votes.find(v => v.voter.id === me.value?.id)?.up ?? null
+  const before = mine()
+  function set(up: boolean | null) {
+    const result = me.value && boardModule.vote(dish.id, up, { id: me.value.id, name: me.value.name, image: me.value.image })
+    void result?.settled?.then(ended => ended.notice && showNotice(t.history[ended.notice]))
+  }
+  return { mine, set, takeBack: () => mine() !== before && set(before) }
+}
+
 // A Cooking recorded (PRD stories 49–55), as decided on #105: haptics,
 // confetti from `origin` (from the Gekocht pill without one; none if
 // `null`, as the caller set it off already), the Gekocht pill at the top
 // with Topfbert (naming `toBoard`, for a Dish moved into its Gekocht
-// Column), and the Gekocht toast at the bottom, offering "Kommentieren"
-// and "Rückgängig". The Cooking
-// that makes the Dish a Klassiker (the 10th) celebrates that too.
+// Column), and the Gekocht toast at the bottom, offering "Rückgängig",
+// "Wie war's?" with 👍 👎 (not for a Dish now on another Board) and
+// "Kommentieren". The Cooking that makes the Dish a Klassiker (the 10th)
+// celebrates that too.
 function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point | null, toBoard?: BoardListing | null) {
   const recorded = settled?.then(r => r.cooking ?? null) ?? Promise.resolve(null)
   hapticCelebrate()
   gekochtPill.show({ cheer: nextCheer(t.dish.cheers), ...toBoard && { board: boardLabel(toBoard) } })
   if (origin !== null) confetti.fire(origin ?? gekochtPill.origin())
+  const vote = toBoard ? undefined : votingFor(dish)
   showToast({
     text: t.dish.cook,
     ...toBoard && { unseen: t.dish.cookedOn(boardLabel(toBoard)) },
     duration: UNDO_WINDOW_MS,
-    actions: [
-      { label: t.dish.comment, run: () => commentOn(dish, toBoard) },
-      ...undo ? [{ label: t.dish.undo, run: () => void undo().then(r => showResult(r)) }] : [],
-    ],
+    actions: undo
+      ? [{ label: t.dish.undo, run: () => {
+          vote?.takeBack()
+          void undo().then(r => showResult(r))
+        } }]
+      : [],
+    howWasIt: { comment: { label: t.dish.comment, run: () => commentOn(dish, toBoard) }, ...vote && { vote } },
   })
   if (dish.cookings.length === MILESTONE_COOKINGS) void celebrateMilestone(dish, recorded)
 }
@@ -951,7 +969,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-show="!selecting"
       type="button"
       class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
-      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast }"
+      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt }"
       :aria-label="t.addDish.open"
       :data-tooltip="t.addDish.open"
       data-tour="add-button"
@@ -1205,6 +1223,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 }
 .fab-lifted {
   translate: 0 -76px;
+}
+/* Above the Gekocht toast's two rows (#334), on a phone, where the toast
+   spans the screen. */
+@media (max-width: 767px) {
+  .fab-lifted-more {
+    translate: 0 -124px;
+  }
 }
 /* Its aura (#285, main.css `.aura`): a 3px rim just outside the pebble, at
    every width, behind it. */

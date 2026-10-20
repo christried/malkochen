@@ -2,6 +2,7 @@
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { BoardResult } from '~/board/board-module'
 import type { CommentResult } from '~/board/dish-histories'
+import type { VoteResult } from '~/board/dish-votes'
 import { boardPath as pathOfBoard, dishAt } from '~~/shared/address'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
@@ -154,6 +155,14 @@ function showComment({ notice, undo, settled }: CommentResult) {
   void settled?.then(showComment)
 }
 
+// What a Vote answered (from "Wie war's?" in the Dish History): once
+// settled, a notice in the Toast if it couldn't be saved. Picking again is
+// its own undo, so none is offered.
+function showVote({ notice, settled }: VoteResult) {
+  if (notice) toast.value = { text: t.history[notice], duration: NOTICE_MS }
+  void settled?.then(showVote)
+}
+
 // Entering and leaving edit mode morphs one side's fields into the other's
 // (utils/edit-morph.ts), measured before the swap. Once edit mode has
 // opened, the card morph's arrival doesn't play again as the read-only Dish
@@ -204,6 +213,7 @@ watch(editing, async (isEditing) => {
           @cook="origin => actOnDish(boardModule.cookDish, { origin })"
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
           @comment="showComment"
+          @vote="showVote"
         />
       </template>
       <AppSheet
