@@ -10,7 +10,6 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 interface Dish {
   id: string
   title: string
-  note: string | null
   placeholder: string
   imageUrl: string | null
   source: { link: string, kind: string } | null
@@ -45,15 +44,16 @@ async function onBoard(caller: Caller, dishId: string): Promise<Dish | undefined
   return (await landingBoard(caller)).columns.flatMap(c => c.dishes).find(d => d.id === dishId)
 }
 
-test('a Member can change a Dish’s title and note', async () => {
+test('a Member can change a Dish’s title; a note sent along is not kept (#333)', async () => {
   const ada = await signIn(ALLOWLISTED[0])
-  const dish = await addDish(ada, { title: 'Dal', note: 'mit Kokosmilch' })
+  const dish = await addDish(ada, { title: 'Dal' })
 
   const res = await editDish(ada, dish.id, { title: '  Rote Linsen Dal ', note: 'mit Spinat' })
 
   expect(res.status).toBe(200)
   const edited = await res.json()
-  expect(edited).toMatchObject({ id: dish.id, title: 'Rote Linsen Dal', note: 'mit Spinat', placeholder: 'bowl' })
+  expect(edited).toMatchObject({ id: dish.id, title: 'Rote Linsen Dal', placeholder: 'bowl' })
+  expect(edited).not.toHaveProperty('note')
   expect(await onBoard(ada, dish.id)).toEqual(edited)
 })
 
@@ -87,7 +87,7 @@ test('a Source can be removed, and a web page may stay a blog', async () => {
 
 test('a Member can change and clear the Creator, and nothing else changes with it', async () => {
   const ada = await signIn(ALLOWLISTED[0])
-  const dish = await addDish(ada, { note: 'scharf', source: { link: TIKTOK }, creator: 'Scout, Suki & Stella' })
+  const dish = await addDish(ada, { source: { link: TIKTOK }, creator: 'Scout, Suki & Stella' })
 
   const changed = await (await editDish(ada, dish.id, { creator: ' @veganschnitzel ' })).json()
   expect(changed).toEqual({ ...dish, creator: '@veganschnitzel' })
@@ -109,7 +109,7 @@ test('editing other fields leaves the Creator as it is', async () => {
 
 test('choosing a Placeholder Image changes only the image', async () => {
   const ada = await signIn(ALLOWLISTED[0])
-  const dish = await addDish(ada, { note: 'scharf', placeholder: 'bowl', source: { link: TIKTOK } })
+  const dish = await addDish(ada, { placeholder: 'bowl', source: { link: TIKTOK } })
 
   const edited = await (await editDish(ada, dish.id, { placeholder: 'bread', imageUrl: null })).json()
 

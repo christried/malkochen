@@ -11,7 +11,6 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 interface Dish {
   id: string
   title: string
-  note: string | null
   creator: string | null
   source: { link: string, kind: string } | null
   cookings: unknown[]
@@ -241,7 +240,6 @@ test('deleted together, Dishes come back together, where they were and as they w
   const rosalind = await signIn(ROSALIND)
   const { id: boardId } = await landingBoard(rosalind)
   const a = await addDish(rosalind, 'Pilzrisotto', {
-    note: 'Mit Thymian',
     creator: '@christried',
     source: { link: 'https://www.example.com/pilzrisotto', kind: 'blog' },
   })
@@ -263,7 +261,6 @@ test('deleted together, Dishes come back together, where they were and as they w
   const after = await board(rosalind, boardId)
   expect(after.columns.map(c => c.dishes.map(d => d.id))).toEqual(before.columns.map(c => c.dishes.map(d => d.id)))
   expect(after.columns[0]!.dishes.find(d => d.id === a.id)).toMatchObject({
-    note: 'Mit Thymian',
     creator: '@christried',
     source: { link: 'https://www.example.com/pilzrisotto', kind: 'blog' },
   })

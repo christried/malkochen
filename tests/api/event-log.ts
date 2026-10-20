@@ -29,7 +29,7 @@ export async function watchEvents(): Promise<{ recorded: () => Promise<LoggedEve
 }
 
 // Every event recorded so far, each row as text: what must never be in the
-// log (titles, notes, names) must not be in that.
+// log (titles, Comments, names) must not be in that.
 export async function everyEventAsText(): Promise<string> {
   const rows = await query<{ row: string }>('select e::text as row from event_log e order by id')
   return rows.map(r => r.row).join('\n')
