@@ -2,10 +2,11 @@ import { historyEntries } from '../../app/utils/history-entries'
 import { commentsOfDish, type CommentView } from './comments'
 import type { CookingView } from './cookings'
 import { membersDish, type DishAdder } from './dishes'
+import type { VoteView } from './votes'
 
 // The Dish History (CONTEXT.md: Dish History, "Verlauf"): everything that
 // happened to a Dish, oldest first, as its detail shows it at the bottom:
-// when it was added and by whom, its Cookings and its Comments. Moves aren't
+// when it was added and by whom, its Cookings, Votes and Comments. Moves aren't
 // part of it, nor anything deleted. Built here, in the order
 // historyEntries tells it; the detail loads it as it opens (GET
 // /api/dishes/:id/history).
@@ -13,6 +14,7 @@ import { membersDish, type DishAdder } from './dishes'
 export type DishHistoryEntry =
   | { kind: 'added', at: string, by: DishAdder | null }
   | { kind: 'cooking', at: string, cooking: CookingView }
+  | { kind: 'vote', at: string, vote: VoteView }
   | { kind: 'comment', at: string, comment: CommentView }
 
 export interface DishHistory {
