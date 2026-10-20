@@ -11,7 +11,7 @@ import { webLink } from '~/utils/web-link'
 
 // Add Dish. First a link: pasting one looks it up right away (Source Lookup)
 // and shows a preview with the image and an editable Suggested Title. Or
-// "Ohne Link hinzufügen": a title, a note and a Placeholder Image. The image
+// "Ohne Link hinzufügen": a title and a Placeholder Image. The image
 // dialog also takes the Member's own photo ("Eigenes Foto"). Either way
 // the Member saves to the Board they are on (a Member of several Boards
 // may pick another), through the client Board module. If the link is
@@ -36,9 +36,6 @@ const lookup = useLinkLookup(link)
 const { status: lookupStatus, result, canonicalLink, tooMany: lookupTooMany } = lookup
 
 const title = ref('')
-const note = ref('')
-// The note field's made-up example, a new one each time the sheet opens.
-const noteExample = useExamplePrompt(() => t.dishNote.examples, example => t.dishNote.prompt(example))
 // The Placeholder Image goes by the title, else the link (handoff
 // illustrations.json autoPick), until the Member picks one.
 const pickedPlaceholder = ref<Placeholder | null>(null)
@@ -51,7 +48,6 @@ const boards = ref<BoardSummary[]>([])
 const linkId = useId()
 const titleId = useId()
 const titleHintId = useId()
-const noteId = useId()
 const boardSelectId = useId()
 const duplicateHintId = useId()
 const choosingImage = ref(false)
@@ -188,8 +184,6 @@ watch(open, async (isOpen) => {
   withoutLink.value = false
   link.value = ''
   title.value = ''
-  note.value = ''
-  noteExample.pickAnother()
   pickedPlaceholder.value = null
   photo.value = null
   boardId.value = props.boardId
@@ -214,7 +208,6 @@ async function save() {
   try {
     const added = await boardModule.addDish(target, {
       title: title.value,
-      note: note.value,
       placeholder: placeholder.value,
       source,
       creator: creator.value,
@@ -491,18 +484,6 @@ async function save() {
             :options="inlineOptions"
           />
         </div>
-
-        <AppField
-          :label="t.addDish.note"
-          :control-id="noteId"
-        >
-          <textarea
-            :id="noteId"
-            v-model="note"
-            maxlength="2000"
-            :placeholder="noteExample.prompt.value"
-          />
-        </AppField>
 
         <!-- During the Tour, the Dish goes onto the Board the Tour is on. -->
         <AppField

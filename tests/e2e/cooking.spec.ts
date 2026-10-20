@@ -6,12 +6,11 @@ import { cardAtRest, column, titles } from './board'
 import { ANY_CHEER, CHEERS, cheer, confetti, confettiOrigin, gekochtPill, topfbert } from './celebration'
 import { playing } from './clips'
 import { gotoHydrated, reloadHydrated } from './hydration'
-import { clickAndExpectSaving, holdRequests } from './loading'
 import { resetBoard, seedCookings, seedDish } from './seed'
 
 // Cooking (PRD stories 35, 48–55): "Gekocht ✓" on a card, the Gekocht toast
-// with "Notiz hinzufügen" and "Rückgängig", and the Cooking History in the
-// Dish detail. All Columns side by side (desktop), unless a test says
+// with "Kommentieren" and "Rückgängig", and the Cookings in the Dish
+// detail's Verlauf. All Columns side by side (desktop), unless a test says
 // otherwise. Hedy's Board is used by this file only.
 test.describe.configure({ mode: 'serial' })
 test.use({ viewport: { width: 1280, height: 800 } })
@@ -39,7 +38,7 @@ test('"Gekocht ✓", then undo: the Dish goes back where it was, without a Cooki
   await expect(titles(page, 'Gekocht')).toHaveText(['Chana Masala'])
   await expect(column(page, 'Gekocht').getByText('1× gekocht')).toBeVisible()
   const toast = gekochtToast(page)
-  await expect(toast.getByRole('button', { name: 'Notiz hinzufügen' })).toBeVisible()
+  await expect(toast.getByRole('button', { name: 'Kommentieren' })).toBeVisible()
 
   await toast.getByRole('button', { name: 'Rückgängig' }).click()
 
@@ -52,19 +51,24 @@ test('"Gekocht ✓", then undo: the Dish goes back where it was, without a Cooki
   await expect(page.getByText('1× gekocht')).toBeHidden()
 })
 
-test('a note from the toast shows in the Cooking History; cooking again counts', async ({ page }) => {
+// #333: "Kommentieren" in the Gekocht toast, in place of the Cooking note.
+test('"Kommentieren" in the Gekocht toast opens the Dish detail in its comment field; cooking again counts', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
   await gotoHydrated(page, '/')
 
   await page.getByRole('button', { name: 'Gekocht ✓: „Pad Thai“' }).click()
-  await gekochtToast(page).getByRole('button', { name: 'Notiz hinzufügen' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
-  await expect(sheet.getByLabel('Notiz')).toBeFocused()
-  await sheet.getByLabel('Notiz').fill('mit Räuchertofu besser')
-  const release = await holdRequests(page, 'PATCH', /\/api\/cookings\/[^/]+$/)
-  await clickAndExpectSaving(sheet.locator('button[type="submit"]'), 'Speichert …')
-  release()
-  await expect(sheet).toBeHidden()
+  await gekochtToast(page).getByRole('button', { name: 'Kommentieren' }).click()
+  const detail = page.getByRole('dialog', { name: 'Pad Thai' })
+  const field = detail.getByRole('textbox', { name: 'Kommentar' })
+  await expect(field).toBeFocused()
+  await expect(field).toBeInViewport()
+  await page.keyboard.type('mit Räuchertofu besser')
+  await page.keyboard.press('Enter')
+  // After its Cooking in the Verlauf.
+  await expect(detail.locator('[data-cooking], [data-comment]').last()).toContainText('mit Räuchertofu besser')
+  await expect(field).toHaveValue('')
+  await page.keyboard.press('Escape')
+  await expect(detail).toBeHidden()
 
   // Out of Gekocht and back in, from the menu: the history stays and grows.
   await page.getByRole('button', { name: 'Mehr zu „Pad Thai“' }).click()
@@ -80,14 +84,12 @@ test('a note from the toast shows in the Cooking History; cooking again counts',
 
   await reloadHydrated(page)
   await page.getByRole('link', { name: 'Pad Thai' }).click()
-  const detail = page.getByRole('dialog', { name: 'Pad Thai' })
   await expect(detail.locator('[data-cooking-summary]')).toContainText('2× gekocht · zuletzt')
-  const entries = detail.locator('[data-cooking]')
-  await expect(entries).toHaveCount(2)
-  await expect(entries.first()).toContainText('mit Räuchertofu besser')
+  await expect(detail.locator('[data-cooking]')).toHaveCount(2)
+  await expect(detail.locator('[data-comment]')).toContainText('mit Räuchertofu besser')
 })
 
-test('in the detail: add a note later, delete a Cooking with undo, and cook again', async ({ page }) => {
+test('in the detail: delete a Cooking with undo, and cook again', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
   await gotoHydrated(page, '/')
   await page.getByRole('link', { name: 'Pad Thai' }).click()
@@ -95,19 +97,11 @@ test('in the detail: add a note later, delete a Cooking with undo, and cook agai
   const entries = detail.locator('[data-cooking]')
   await expect(entries).toHaveCount(2)
 
-  // The newest Cooking, at the end of the Verlauf, has no note yet.
-  await entries.last().getByRole('button', { name: /^Notiz zum Kochen am .* hinzufügen$/ }).click()
-  const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
-  await sheet.getByLabel('Notiz').fill('doppelt Knoblauch')
-  await sheet.getByRole('button', { name: 'Speichern' }).click()
-  await expect(entries.last()).toContainText('doppelt Knoblauch')
-
   await entries.first().getByRole('button', { name: /^Kochen am .* löschen$/ }).click()
   await expect(entries).toHaveCount(1)
   await expect(detail.locator('[data-cooking-summary]')).toContainText('1× gekocht')
   await page.getByRole('status').getByRole('button', { name: 'Rückgängig' }).click()
   await expect(entries).toHaveCount(2)
-  await expect(entries.first()).toContainText('mit Räuchertofu besser')
 
   await entries.last().getByRole('button', { name: /^Kochen am .* löschen$/ }).click()
   await expect(entries).toHaveCount(1)
@@ -121,8 +115,6 @@ test('in the detail: add a note later, delete a Cooking with undo, and cook agai
 
   await reloadHydrated(page)
   await expect(entries).toHaveCount(2)
-  await expect(entries.first()).toContainText('mit Räuchertofu besser')
-  await expect(detail).not.toContainText('doppelt Knoblauch')
 })
 
 // As decided on #105: the celebration at the top, the actions at the bottom.
@@ -164,7 +156,7 @@ test('"Gekocht ✓" celebrates: veggie confetti, Topfbert in a pill at the top u
   await expect.poll(() => playing(topfbert(pill))).toEqual(['/clips/topfbert-idle-happy.svg'])
   // The toast at the bottom, with its actions.
   const toast = gekochtToast(page)
-  await expect(toast.getByRole('button', { name: 'Notiz hinzufügen' })).toBeVisible()
+  await expect(toast.getByRole('button', { name: 'Kommentieren' })).toBeVisible()
   const { height } = page.viewportSize()!
   const pillBox = (await pill.boundingBox())!
   expect(pillBox.y + pillBox.height).toBeLessThan(height / 4)
@@ -196,12 +188,12 @@ test('"Gekocht ✓" in the Dish detail celebrates there, at the top, with the to
   expect((await detail.locator('[data-toast]').boundingBox())!.y).toBeGreaterThan(height * 3 / 4)
 })
 
-// The note sheet opened from the Gekocht toast makes the Dish detail step back (scale
-// .96). The toast, on its way out, stays where it was meanwhile: it doesn't
-// jump into the side panel (desktop) or shrink with the screen (phone). Its
-// way out only moves it down, so its left edge and width stay; they're
-// sampled every frame until it's gone.
-test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toast where it was', async ({ page }) => {
+// "Kommentieren" in the Gekocht toast of the Dish detail already open puts
+// focus in its comment field. The toast, on its way out, stays where it
+// was meanwhile: it doesn't jump into the side panel (desktop) or shrink
+// with the screen (phone). Its way out only moves it down, so its left edge
+// and width stay; they're sampled every frame until it's gone.
+test('"Kommentieren" in the Gekocht toast in the Dish detail goes to the comment field and leaves the toast where it was', async ({ page }) => {
   await signIn(page, ALLOWLISTED[6])
   // A Dish for each screen size: cooked, it leaves Ideen.
   const runs = [{ viewport: { width: 1280, height: 800 }, title: 'Bibimbap' }, { viewport: { width: 360, height: 740 }, title: 'Gyoza' }]
@@ -227,10 +219,10 @@ test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toa
       }
       sample()
     }))
-    await gekochtToast(page).getByRole('button', { name: 'Notiz hinzufügen' }).click()
-    const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
-    await expect(sheet).toBeVisible()
-    await expect(detail).toHaveAttribute('data-covered')
+    await gekochtToast(page).getByRole('button', { name: 'Kommentieren' }).click()
+    const field = detail.getByRole('textbox', { name: 'Kommentar' })
+    await expect(field).toBeFocused()
+    await expect(field).toBeInViewport()
 
     const [first, ...rest] = await frames
     expect(rest.length, 'sampled until it left').toBeGreaterThan(3)
@@ -238,8 +230,6 @@ test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toa
       expect(Math.abs(frame.x - first!.x), `moved sideways at ${viewport.width}px`).toBeLessThan(1)
       expect(Math.abs(frame.width - first!.width), `changed width at ${viewport.width}px`).toBeLessThan(1)
     }
-    await page.keyboard.press('Escape')
-    await expect(sheet).toBeHidden()
     await page.keyboard.press('Escape')
     await expect(detail).toBeHidden()
   }
@@ -250,11 +240,11 @@ test('"Notiz hinzufügen" in the Gekocht toast in the Dish detail leaves the toa
 // long Creator (#118), which gives way with "…". The desktop Column is the
 // narrowest side by side (tablet's is 340px), and a 360px phone is about as
 // narrow as a card gets.
-test('"99× gekocht" shows in full beside a long Creator, an avatar and a note, side by side and on a phone', async ({ page }) => {
+test('"99× gekocht" shows in full beside a long Creator and an avatar, side by side and on a phone', async ({ page }) => {
   const title = 'Ofengemüse mit Räuchertofu und Zitronen-Tahini'
   const creator = 'Die vegane Familienküche von Oma Hildegard und ihren Enkeln'
   await signIn(page, ALLOWLISTED[6])
-  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Tofu geht auch.', addedBy: ALLOWLISTED[6], creator })
+  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: ALLOWLISTED[6], creator })
   await seedCookings(page, title, 99)
 
   for (const viewport of [{ width: 1280, height: 800 }, { width: 768, height: 900 }, { width: 360, height: 740 }]) {
@@ -278,7 +268,6 @@ test('"99× gekocht" shows in full beside a long Creator, an avatar and a note, 
       title: card.getByRole('heading', { name: title }),
       creator: shownCreator,
       avatar: card.locator('[data-added-by]'),
-      note: card.locator('[data-note-drawn]'),
       count,
       cook: page.getByRole('button', { name: `Gekocht ✓: „${title}“` }),
     }
@@ -394,10 +383,11 @@ test('the Gekocht toast\'s actions fit it in one row on a 360px phone', async ({
   expect(spare, `room to spare at 360px (${parts})`).toBeGreaterThanOrEqual(8)
 })
 
-// #170: narrower than that, the actions go below the text rather than being
-// cut off.
-test('on a 320px phone the Gekocht toast\'s actions go below its text, not cut off', async ({ page }) => {
-  const { fit, parts } = await gekochtToastFit(page, 320, 'Linsencurry')
+// #170: narrower than they fit, the actions go below the text rather than
+// being cut off. "Kommentieren" (#333) still fits one row at 320px, so a
+// screen narrower still.
+test('on a 280px screen the Gekocht toast\'s actions go below its text, not cut off', async ({ page }) => {
+  const { fit, parts } = await gekochtToastFit(page, 280, 'Linsencurry')
   expect(fit, parts).toEqual({ onScreen: true, overflowing: false, cut: [], actionsInOneRow: true, oneRow: false })
 })
 

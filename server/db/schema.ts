@@ -265,7 +265,6 @@ export const dish = pgTable('dish', {
   // Column's smallest, so they go on top without touching the others.
   position: integer('position').notNull(),
   title: text('title').notNull(),
-  note: text('note'),
   // The Source: its canonical link and kind, both null for a Dish without one.
   sourceLink: text('source_link'),
   sourceKind: text('source_kind').$type<SourceKind>(),
@@ -306,7 +305,6 @@ export const cooking = pgTable('cooking', {
   id: uuid('id').primaryKey().defaultRandom(),
   dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
   cookedAt: timestamp('cooked_at', { withTimezone: true }).notNull().defaultNow(),
-  note: text('note'),
   // Who recorded it; kept (as unknown) if their account is ever deleted.
   recordedBy: text('recorded_by').references(() => user.id, { onDelete: 'set null' }),
   // Set when a Member deletes it from the Cooking History, so "Rückgängig"
@@ -339,7 +337,7 @@ export const comment = pgTable('comment', {
 // The event log (#331): what happens on Boards, one row per event, for the
 // Operator's Admin Page to count. Written in the same transaction as the
 // change it records (server/utils/events.ts), only appended to, and kept
-// indefinitely, so it holds no content: never a title, note, name or link,
+// indefinitely, so it holds no content: never a title, Comment, name or link,
 // only when, which kind, the ids involved and a few non-textual details.
 // No foreign keys, so an event outlives the Board, Dish or account it names.
 

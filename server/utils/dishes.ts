@@ -28,7 +28,6 @@ export interface DishView {
   // Its short code, which ends its Address (shared/address.ts).
   code: string
   title: string
-  note: string | null
   source: DishSource | null
   // Who published the Source (CONTEXT.md: Creator); null if nobody is named.
   creator: string | null
@@ -66,7 +65,6 @@ export type AddedDish = PlacedDish & { imageNotStored?: true }
 
 export interface NewDish {
   title: string
-  note: string | null
   source: DishSource | null
   creator: string | null
   // Must already be a stored image (Image Store), never a third-party link.
@@ -101,7 +99,6 @@ function selectDishes() {
       code: dish.code,
       columnId: dish.columnId,
       title: dish.title,
-      note: dish.note,
       sourceLink: dish.sourceLink,
       sourceKind: dish.sourceKind,
       creator: dish.creator,
@@ -162,7 +159,7 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // they are. `imageUrl` must already be a stored image, never a third-party
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'note' | 'source' | 'creator' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -757,7 +754,6 @@ export async function addDish(
       columnId: firstColumn.id,
       position: sql`(select coalesce(min(${dish.position}), 0) - 1 from ${dish} where ${dish.columnId} = ${firstColumn.id})`,
       title: input.title,
-      note: input.note,
       sourceLink: input.source?.link ?? null,
       sourceKind: input.source?.kind ?? null,
       creator: input.creator,
@@ -783,7 +779,6 @@ export async function addDish(
     id,
     code: created.code,
     title: input.title,
-    note: input.note,
     source: input.source,
     creator: input.creator,
     imageUrl: input.imageUrl,

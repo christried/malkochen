@@ -68,7 +68,7 @@ test.beforeAll(async ({ browser }) => {
   const page = await newTab(browser)
   await signIn(page, VERA, { name: 'Vera' })
   await resetBoard(page)
-  await seedDish(page, { title: 'Miso-Ramen', sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'mit extra Knoblauch', addedBy: VERA, creator: '@nudelliebe' })
+  await seedDish(page, { title: 'Miso-Ramen', sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: VERA, creator: '@nudelliebe' })
   await seedCookings(page, 'Miso-Ramen', 1)
   await page.context().close()
 })
@@ -189,14 +189,12 @@ test('a Tooltip shows above a sheet, and what used to be a native title is a Too
   await openBoard(page)
   const card = page.getByRole('link', { name: 'Miso-Ramen', exact: true })
 
-  // On the card: the Creator and its note (NoteButton, over the card beside
-  // its link). Who added it opens their popover instead (user-popover.spec.ts).
-  for (const [part, text] of [['[data-creator]', '@nudelliebe'], ['[data-note-icon]', 'mit extra Knoblauch']] as const) {
-    await card.locator('xpath=..').locator(part).hover()
-    await expect(tooltip(page)).toHaveText(text)
-    await page.mouse.move(0, 0)
-    await expect(tooltip(page)).toBeHidden()
-  }
+  // On the card: the Creator. Who added it opens their popover instead
+  // (user-popover.spec.ts).
+  await card.locator('xpath=..').locator('[data-creator]').hover()
+  await expect(tooltip(page)).toHaveText('@nudelliebe')
+  await page.mouse.move(0, 0)
+  await expect(tooltip(page)).toBeHidden()
 
   // A sheet is in the top layer; the Tooltip of its close button is above it.
   await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()

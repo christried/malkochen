@@ -40,9 +40,8 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   await sheet.getByLabel('Titel').fill('Omas Linsensuppe')
   await expect(inline.getByRole('radio')).toHaveCount(8)
   await expect(inline.getByRole('radio', { name: 'Eintopf' })).toHaveAttribute('aria-checked', 'true')
-  // The note suggests one of the made-up examples (app/strings/de.ts).
-  await expect(sheet.getByLabel('Notiz')).toHaveAttribute('placeholder', /^Optional, z\. B\. „.+“$/)
-  await sheet.getByLabel('Notiz').fill('mit Räuchertofu und Frühlingszwiebeln')
+  // There is no note field: what to say about a Dish is a Comment (#333).
+  await expect(sheet.getByLabel('Notiz')).toHaveCount(0)
 
   await sheet.getByRole('button', { name: 'Bild wählen' }).click()
   const all = page.getByRole('dialog', { name: 'Bild wählen' })
@@ -66,20 +65,18 @@ test('an empty Board invites the first Dish, which then lands on top of Ideen', 
   await expect(sheet).toBeHidden()
   const card = ideen.getByRole('article').first()
   await expect(card).toHaveAccessibleName('Omas Linsensuppe')
-  await expect(ideen.getByRole('listitem').first().getByRole('button', { name: 'Notiz: mit Räuchertofu und Frühlingszwiebeln' })).toBeAttached()
   // No Source, no Source badge.
   await expect(card.locator('[data-source-badge]')).toHaveCount(0)
   await expect(card.locator('img[src="/placeholders/dumplings-light.svg"]')).toBeVisible()
   await expect(card.locator('img[src="/placeholders/dumplings-dark.svg"]')).toBeHidden()
   await expect(ideen.getByText('Füg deinen ersten Link ein!')).toHaveCount(0)
 
-  // A second Dish, without a note, goes above the first, also after a reload.
+  // A second Dish goes above the first, also after a reload.
   await addWithoutLink(page)
   await sheet.getByLabel('Titel').fill('Pad Thai')
   await sheet.getByRole('button', { name: 'Speichern' }).click()
   const titles = ideen.getByRole('heading', { level: 3 })
   await expect(titles).toHaveText(['Pad Thai', 'Omas Linsensuppe'])
-  await expect(ideen.getByRole('listitem').first().getByRole('button', { name: /^Notiz:/ })).toHaveCount(0)
 
   await reloadHydrated(page)
   await expect(titles).toHaveText(['Pad Thai', 'Omas Linsensuppe'])

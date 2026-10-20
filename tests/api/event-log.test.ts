@@ -94,7 +94,7 @@ test('adding a Dish records it with the kind of its Source, and none for a Dish 
   const log = await watchEvents()
 
   const linked = await addDish(teitelbaum, board.id, 'Shakshuka', { source: { link: 'https://www.tiktok.com/@koch/video/7300000000000000001' } })
-  const unlinked = await addDish(teitelbaum, board.id, 'Omas Linsensuppe', { note: 'Mit Essig' })
+  const unlinked = await addDish(teitelbaum, board.id, 'Omas Linsensuppe')
   const toured = await addDish(teitelbaum, board.id, 'Rundgang-Suppe', { tour: true })
 
   const userId = await idOf(teitelbaum)
@@ -395,11 +395,11 @@ test('a Comment refused records nothing: empty, by an outsider, edited or delete
   expect(await log.recorded()).toEqual([])
 })
 
-test('the log holds no content: no titles, notes, Comments, Board names, Usernames or emails', async () => {
+test('the log holds no content: no titles, Comments, Board names, Usernames or emails', async () => {
   const text = await everyEventAsText()
 
   expect(text).not.toBe('')
-  for (const content of ['Shakshuka', 'Linsensuppe', 'Essig', 'tiktok.com', 'Sonntagsessen', 'Tischrunde', 'Kreuzkümmel', 'Vom Owner', 'teitelbaum', 'wexler', 'sinclair', 'example.com']) {
+  for (const content of ['Shakshuka', 'Linsensuppe', 'tiktok.com', 'Sonntagsessen', 'Tischrunde', 'Kreuzkümmel', 'Vom Owner', 'teitelbaum', 'wexler', 'sinclair', 'example.com']) {
     expect(text).not.toContain(content)
   }
 })

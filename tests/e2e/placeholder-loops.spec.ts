@@ -5,7 +5,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import * as clips from './clips'
 import { gotoHydrated } from './hydration'
-import { removeStoredImages, resetBoard, seedDish, storedImage } from './seed'
+import { removeStoredImages, resetBoard, seedCookings, seedDish, storedImage } from './seed'
 
 // Placeholder Image loops (PRD stories 83–85; handoff illustrations.json
 // "rules"): a Placeholder loops only in focus (the Dish detail, the picker's
@@ -245,8 +245,9 @@ test('a clip takes its still\'s place without moving the layout', async ({ page 
 test('a loop pauses while scrolled off-screen, and plays again when back', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await resetBoard(page)
-  const note = Array.from({ length: 80 }, (_, i) => `Schritt ${i + 1}`).join('\n')
-  await seedDish(page, { title: 'Ramen', placeholder: 'ramen', note, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  // Its Verlauf makes the detail long enough to scroll the image away.
+  await seedDish(page, { title: 'Ramen', placeholder: 'ramen', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedCookings(page, 'Ramen', 30)
   await gotoHydrated(page, '/')
   const detail = await openDetail(page, 'Ramen')
   await expect.poll(() => playing(detail)).toHaveLength(1)

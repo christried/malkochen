@@ -98,7 +98,7 @@ test('a deep link opens the detail over its Board', async ({ page }) => {
   await expect(page.locator('h1', { hasText: 'Meine Küche' })).toBeAttached()
 })
 
-test('edits to the title, note and image persist; Abbrechen discards them', async ({ page }) => {
+test('edits to the title and image persist; Abbrechen discards them', async ({ page }) => {
   await signIn(page, ALLOWLISTED[0])
   await gotoHydrated(page, '/')
   let detail = await openDetail(page, 'Crispy Tofu')
@@ -110,7 +110,8 @@ test('edits to the title, note and image persist; Abbrechen discards them', asyn
 
   await detail.getByRole('button', { name: 'Bearbeiten' }).click()
   await detail.getByLabel('Titel').fill('Knuspriger Tofu')
-  await detail.getByLabel('Notiz').fill('Mit Maisstärke wird er knuspriger')
+  // No note field: what to say about a Dish is a Comment (#333).
+  await expect(detail.getByLabel('Notiz')).toHaveCount(0)
   await detail.getByRole('button', { name: 'Bild wählen' }).click()
   await page.getByRole('dialog', { name: 'Bild wählen' }).getByRole('radio', { name: 'Wok' }).click()
   await expect(detail.locator('img[src="/placeholders/wok-light.svg"]').first()).toBeVisible()
@@ -118,11 +119,10 @@ test('edits to the title, note and image persist; Abbrechen discards them', asyn
 
   detail = page.getByRole('dialog', { name: 'Knuspriger Tofu' })
   await expect(detail.getByRole('heading', { level: 1 })).toHaveText('Knuspriger Tofu')
-  await expect(detail.getByText('Mit Maisstärke wird er knuspriger')).toBeVisible()
   await expect(detail.locator('img[src="/placeholders/wok-light.svg"]').first()).toBeVisible()
 
   await reloadHydrated(page)
-  await expect(detail.getByText('Mit Maisstärke wird er knuspriger')).toBeVisible()
+  await expect(detail.getByRole('heading', { level: 1 })).toHaveText('Knuspriger Tofu')
   await expect(detail.locator('img[src="/placeholders/wok-light.svg"]').first()).toBeVisible()
   await detail.getByRole('button', { name: 'Schließen' }).click()
   await expect(page.getByRole('article', { name: 'Knuspriger Tofu' }).locator('img[src="/placeholders/wok-light.svg"]')).toBeVisible()
@@ -480,7 +480,7 @@ async function imageHeight(detail: Locator) {
 test('once the image has scrolled away, a compact bar settles in with close, the title and "Bearbeiten"', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 600 })
   await signIn(page, ALLOWLISTED[0])
-  await seedDish(page, { title: LONG, sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Jeden Sonntag.\nMit viel Knoblauch.' })
+  await seedDish(page, { title: LONG, sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await seedCookings(page, LONG, 12)
   await page.addInitScript(() => {
     const w = window as unknown as { morphs: number }

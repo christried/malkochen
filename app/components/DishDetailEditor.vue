@@ -7,7 +7,7 @@ import type { BoardResult } from '~/board/board-module'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
 import { webLink } from '~/utils/web-link'
 
-// The Dish detail's edit mode (PRD stories 43–45): title, Creator, note,
+// The Dish detail's edit mode (PRD stories 43–45): title, Creator,
 // image and Source. A new link is looked up (Source Lookup, as in Add Dish)
 // so it is saved as what it really is, but that never changes the image or
 // the Creator: only "Bild neu laden" (or "Bild vom Link" in the image
@@ -25,10 +25,6 @@ const title = ref(props.dish.title)
 const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
 onMounted(() => titleInput.value?.focus())
 const creator = ref(props.dish.creator ?? '')
-const note = ref(props.dish.note ?? '')
-// The note field's made-up example, a new one each time editing starts.
-const noteExample = useExamplePrompt(() => t.dishNote.examples, example => t.dishNote.prompt(example))
-onMounted(noteExample.pickAnother)
 const link = ref(props.dish.source?.link ?? '')
 // Looks a new link up as in Add Dish: at once when pasted, after a short
 // pause while typing. Only the latest lookup's answer counts.
@@ -36,7 +32,6 @@ const lookup = useLinkLookup(link)
 const placeholder = ref<Placeholder>(props.dish.placeholder)
 const titleId = useId()
 const creatorId = useId()
-const noteId = useId()
 const linkId = useId()
 const linkHintId = useId()
 
@@ -155,7 +150,6 @@ async function save() {
     const saved = await boardModule.editDish(props.dish.id, {
       title: title.value,
       creator: creator.value,
-      note: note.value,
       source,
       placeholder: placeholder.value,
       ...choice.kind === 'placeholder' && { imageUrl: null },
@@ -289,23 +283,6 @@ async function save() {
           autocomplete="off"
           :placeholder="t.detail.creatorPrompt"
         >
-      </AppField>
-    </div>
-
-    <div
-      class="flex flex-col"
-      data-morph-field="note"
-    >
-      <AppField
-        :label="t.detail.note"
-        :control-id="noteId"
-      >
-        <textarea
-          :id="noteId"
-          v-model="note"
-          maxlength="2000"
-          :placeholder="noteExample.prompt.value"
-        />
       </AppField>
     </div>
 

@@ -89,7 +89,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     target.dishes.splice(to, 0, found.dish)
     const placed = { ...structuredClone(found.dish), placement: { boardId: onto.id, columnId: target.id, index: to } }
     if (!recordsCooking(found.column, target, { cook })) return placed
-    const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), note: null, recordedBy: null }
+    const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), recordedBy: null }
     found.dish.cookings.unshift(cooking)
     return { ...placed, cookings: structuredClone(found.dish.cookings), cooking: structuredClone(cooking) }
   }
@@ -113,7 +113,6 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       id: `added-${++added}`,
       code: `new${added}`,
       title: input.title,
-      note: input.note || null,
       source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,
       creator: input.creator?.trim() || null,
       imageUrl: input.photo
@@ -133,16 +132,15 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return refused ? { ...placed, imageNotStored: true } : placed
   }
 
-  // Saves the fields sent, as the server reads them (trimmed; a blank note
-  // or Creator is none). A new image without its Image Ticket isn't stored: the Dish
+  // Saves the fields sent, as the server reads them (trimmed; a blank
+  // Creator is none). A new image without its Image Ticket isn't stored: the Dish
   // keeps the one it had. A new image starts in the centre unless its focus
   // point comes with it. Null for a Dish the server doesn't have.
   function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    const { title, note, source, creator, placeholder, imageUrl, imageTicket, imageFocus } = changes
+    const { title, source, creator, placeholder, imageUrl, imageTicket, imageFocus } = changes
     if (title !== undefined) dish.title = title.trim()
-    if (note !== undefined) dish.note = note?.trim() || null
     if (source !== undefined) dish.source = source && { link: source.link, kind: source.kind ?? 'other' }
     if (creator !== undefined) dish.creator = creator?.trim() || null
     if (placeholder !== undefined) dish.placeholder = placeholder
@@ -279,15 +277,6 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return { ...column }
   }
 
-  // Saves a Cooking's note, trimmed; a blank one is none. Null for a Cooking
-  // the server doesn't have.
-  function noteOnServer(cookingId: string, note: string): CookingView | null {
-    const cooking = located(dish => dish.cookings.some(c => c.id === cookingId))?.dish.cookings.find(c => c.id === cookingId)
-    if (!cooking) return null
-    cooking.note = note.trim() || null
-    return structuredClone(cooking)
-  }
-
   // The Dish History as the server builds it: added, then its Cookings and
   // Comments oldest first. Null for a Dish the server doesn't have.
   function historyOnServer(dishId: string): DishHistory | null {
@@ -371,7 +360,6 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     undoCooking: (cookingId, { columnId, index }) => answer('undoCooking', `${cookingId} ${columnId} ${index}`, () => undoOnServer(cookingId, columnId, index)),
     deleteCooking: cookingId => answer('deleteCooking', cookingId, () => deleteCookingOnServer(cookingId) || null).then(() => undefined),
     restoreCooking: cookingId => answer('restoreCooking', cookingId, () => restoreCookingOnServer(cookingId)),
-    noteCooking: (cookingId, note) => answer('noteCooking', cookingId, () => noteOnServer(cookingId, note)),
     moveDishes: (ids, columnId) => answer('moveDishes', `${ids.join()} ${columnId}`, () => moveManyOnServer(ids, columnId)),
     placeDishes: places => answer('placeDishes', places.map(p => `${p.dishId}:${p.columnId}:${p.index}`).join(), () => placeManyOnServer(places)),
     deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),

@@ -5,14 +5,14 @@ import { backdateCooking } from './time-travel'
 
 // Cooking (PRD stories 35, 48–55): moving a Dish into the Gekocht Column, by
 // "Verschieben nach…", a drop or the "Gekocht ✓" quick action, records a
-// Cooking dated now. "Rückgängig" puts the Dish back and removes it; a note
-// can be added; a single Cooking can be deleted (and restored). Hedy's Board
+// Cooking dated now. "Rückgängig" puts the Dish back and removes it; a single
+// Cooking can be deleted (and restored). A Cooking has no note: what is
+// said about it is a Comment (#333). Hedy's Board
 // is used by this file only.
 
 interface Cooking {
   id: string
   cookedAt: string
-  note: string | null
   recordedBy: { id: string, name: string } | null
 }
 interface Dish {
@@ -55,12 +55,6 @@ const moveDish = (caller: Caller, dishId: string, columnId: string, index?: numb
 const cookDish = (caller: Caller, dishId: string) => post(caller, `/api/dishes/${dishId}/cook`)
 const undoCooking = (caller: Caller, cookingId: string, columnId: unknown, index: unknown) =>
   post(caller, `/api/cookings/${cookingId}/undo`, { columnId, index })
-const noteCooking = (caller: Caller, cookingId: string, note: unknown) =>
-  caller.fetch(`/api/cookings/${cookingId}`, {
-    method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ note }),
-  })
 const deleteCooking = (caller: Caller, cookingId: string) => caller.fetch(`/api/cookings/${cookingId}`, { method: 'DELETE' })
 const restoreCooking = (caller: Caller, cookingId: string) => post(caller, `/api/cookings/${cookingId}/restore`)
 
@@ -93,7 +87,7 @@ test('moving a Dish into Gekocht records one Cooking dated now, by whoever moved
   expect(moved.cookings).toHaveLength(1)
   expect(moved.cooking).toEqual(moved.cookings[0])
   const cooking = moved.cooking!
-  expect(cooking).toMatchObject({ note: null, recordedBy: { name: expect.any(String) } })
+  expect(cooking).toMatchObject({ recordedBy: { name: expect.any(String) } })
   expect(Date.parse(cooking.cookedAt)).toBeGreaterThanOrEqual(before - 5000)
   expect(Date.parse(cooking.cookedAt)).toBeLessThanOrEqual(Date.now() + 5000)
   const found = await located(caller, dish.id)
@@ -334,20 +328,20 @@ test('cooking and its undo answer where the Dish now is, in Board order, with th
   expect((await located(caller, dish.id)).index).toBe(before.index)
 })
 
-test('a note can be added to a Cooking, changed and removed', async () => {
+test('a Cooking has no note, and nothing sets one (#333)', async () => {
   const caller = await hedy()
   const dish = await addDish(caller, 'Ofengemüse')
   const cooking = (await (await cookDish(caller, dish.id)).json() as Dish).cooking!
 
-  const res = await noteCooking(caller, cooking.id, '  mit Räuchertofu besser  ')
+  const res = await caller.fetch(`/api/cookings/${cooking.id}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ note: 'mit Räuchertofu besser' }),
+  })
 
-  expect(res.status).toBe(200)
-  expect(await res.json()).toEqual({ ...cooking, note: 'mit Räuchertofu besser' })
-  expect((await located(caller, dish.id)).dish.cookings[0]!.note).toBe('mit Räuchertofu besser')
-
-  expect(await (await noteCooking(caller, cooking.id, '   ')).json()).toMatchObject({ note: null })
-  expect((await noteCooking(caller, cooking.id, 'x'.repeat(2001))).status).toBe(400)
-  expect((await noteCooking(caller, cooking.id, 42)).status).toBe(400)
+  expect(res.ok).toBe(false)
+  expect(cooking).not.toHaveProperty('note')
+  expect((await located(caller, dish.id)).dish.cookings).toEqual([cooking])
 })
 
 test('a single Cooking can be deleted, and restored', async () => {
@@ -365,7 +359,6 @@ test('a single Cooking can be deleted, and restored', async () => {
   expect(found.dish.cookings).toEqual([second])
   expect(found.column.id).toBe(gekocht.id)
   expect((await deleteCooking(caller, first.id)).status).toBe(404)
-  expect((await noteCooking(caller, first.id, 'weg')).status).toBe(404)
 
   const restored = await restoreCooking(caller, first.id)
   expect(restored.status).toBe(200)
@@ -373,7 +366,7 @@ test('a single Cooking can be deleted, and restored', async () => {
   expect((await located(caller, dish.id)).dish.cookings).toEqual([second, first])
 })
 
-test('only Members can cook, undo, note, delete or restore; missing ones look the same', async () => {
+test('only Members can cook, undo, delete or restore; missing ones look the same', async () => {
   const caller = await hedy()
   const other = await linus()
   const { gekocht } = await columnsOf(caller)
@@ -382,13 +375,11 @@ test('only Members can cook, undo, note, delete or restore; missing ones look th
 
   expect((await cookDish(other, dish.id)).status).toBe(404)
   expect((await undoCooking(other, cooking.id, gekocht.id, 0)).status).toBe(404)
-  expect((await noteCooking(other, cooking.id, 'lecker')).status).toBe(404)
   expect((await deleteCooking(other, cooking.id)).status).toBe(404)
   expect((await restoreCooking(other, cooking.id)).status).toBe(404)
   expect((await located(caller, dish.id)).dish.cookings).toEqual([cooking])
 
   for (const id of [MISSING, 'not-a-cooking']) {
-    expect((await noteCooking(caller, id, 'lecker')).status).toBe(404)
     expect((await deleteCooking(caller, id)).status).toBe(404)
     expect((await restoreCooking(caller, id)).status).toBe(404)
     expect((await undoCooking(caller, id, gekocht.id, 0)).status).toBe(404)

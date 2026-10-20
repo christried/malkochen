@@ -7,7 +7,6 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 interface Dish {
   id: string
   title: string
-  note: string | null
   placeholder: string
   imageUrl: string | null
   source: { link: string, kind: string } | null
@@ -29,11 +28,11 @@ test('a Dish added without a Source lands at the top of the first Column', async
   const ada = await signIn(ALLOWLISTED[0])
   const board = await landingBoard(ada)
 
-  const res = await addDish(ada, board.id, { title: '  Omas Linsensuppe ', note: 'mit Räuchertofu und Frühlingszwiebeln', placeholder: 'eintopf' })
+  const res = await addDish(ada, board.id, { title: '  Omas Linsensuppe ', placeholder: 'eintopf' })
 
   expect(res.status).toBe(201)
   const { placement, ...created } = await res.json() as Placed
-  expect(created).toMatchObject({ title: 'Omas Linsensuppe', note: 'mit Räuchertofu und Frühlingszwiebeln', placeholder: 'eintopf', imageUrl: null, source: null })
+  expect(created).toMatchObject({ title: 'Omas Linsensuppe', placeholder: 'eintopf', imageUrl: null, source: null })
 
   const after = await landingBoard(ada)
   expect(after.columns[0]!.dishes[0]).toEqual(created)
@@ -53,15 +52,16 @@ test('the newest Dish goes on top and the others keep their order', async () => 
   expect(titles(await landingBoard(grace)).slice(0, 3)).toEqual(['Chana Masala', 'Pad Thai', 'Dal'])
 })
 
-test('the note is optional, and a blank note is no note', async () => {
+test('a Dish has no note: one sent along is not kept (#333)', async () => {
   const grace = await signIn(ALLOWLISTED[1])
   const board = await landingBoard(grace)
 
-  const without = await (await addDish(grace, board.id, { title: 'Porridge', placeholder: 'breakfast' })).json()
-  const blank = await (await addDish(grace, board.id, { title: 'Brot', note: '   ', placeholder: 'bread' })).json()
+  const res = await addDish(grace, board.id, { title: 'Brot', note: 'mit Kümmel', placeholder: 'bread' })
 
-  expect(without.note).toBeNull()
-  expect(blank.note).toBeNull()
+  expect(res.status).toBe(201)
+  const { placement: _, ...added } = await res.json() as Placed
+  expect(added).not.toHaveProperty('note')
+  expect((await landingBoard(grace)).columns[0]!.dishes[0]).toEqual(added)
 })
 
 test('a Dish keeps the Creator it was added with; without one, or a blank one, it has none', async () => {

@@ -9,9 +9,6 @@ const webLinkInput = z.url({ protocol: /^https?$/ }).max(2048)
 
 const dishTitle = z.string().trim().min(1).max(200)
 
-// Optional; a blank note is no note.
-export const dishNote = z.string().trim().max(2000).nullish().transform(note => note || null)
-
 // Who published the Source (CONTEXT.md: Creator), as Source Lookup found it
 // or a Member typed it. Optional; a blank one is none.
 const dishCreator = z.string().trim().max(100).nullish().transform(creator => creator || null)
@@ -39,7 +36,6 @@ const imageFocusInput = z.object({ x: percent, y: percent })
 // Adding a Dish (POST /api/boards/:id/dishes).
 export const addDishBody = z.object({
   title: dishTitle,
-  note: dishNote,
   // Its Placeholder Image, shown if there is no Source image.
   placeholder: z.enum(PLACEHOLDERS),
   source: sourceInput.nullish(),
@@ -61,7 +57,6 @@ export type AddDishBody = z.input<typeof addDishBody>
 // Changes to a Dish (PATCH /api/dishes/:id); only the fields sent change.
 export const dishEditBody = z.object({
   title: dishTitle.optional(),
-  note: dishNote.optional(),
   // Null removes the Source. Changing it never changes the image.
   source: sourceInput.nullable().optional(),
   // Blank clears it. Changing the Source never changes it.

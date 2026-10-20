@@ -436,7 +436,7 @@ test('a Dish moved to another Board, from the card’s menu or from its detail, 
 // #129: "Verschieben nach…" into another Board's Gekocht Column records a
 // Cooking there, and celebrates as cooking here does (#105): the pill at
 // the top names that Board, the confetti bursts from it, and the Gekocht
-// toast at the bottom offers "Notiz hinzufügen" and "Rückgängig".
+// toast at the bottom offers "Kommentieren" and "Rückgängig".
 function gekochtToast(page: Page) {
   return page.getByRole('status').filter({ hasText: 'Gekocht ✓' })
 }
@@ -468,7 +468,7 @@ test('a Dish moved into another Board’s Gekocht Column celebrates, naming that
   expect(origin.y).toBeLessThan(height / 8)
   expect((await pill.boundingBox())!.y).toBeLessThan(height / 8)
   const toast = gekochtToast(page)
-  await expect(toast.getByRole('button', { name: 'Notiz hinzufügen' })).toBeVisible()
+  await expect(toast.getByRole('button', { name: 'Kommentieren' })).toBeVisible()
   // Screen readers hear the Board from the toast: the pill is decoration.
   await expect(toast).toContainText('Gekocht ✓ in 🍲 Familie')
   await expect(page.getByText(/ist jetzt in/)).toHaveCount(0)
@@ -485,7 +485,7 @@ test('a Dish moved into another Board’s Gekocht Column celebrates, naming that
   await expect(page.getByRole('link', { name: 'Shakshuka' })).toHaveCount(0)
 })
 
-test('a Dish moved into another Board’s Gekocht Column from its detail celebrates over the Board once the detail has closed; a note from the toast goes with it', async ({ page }) => {
+test('a Dish moved into another Board’s Gekocht Column from its detail celebrates over the Board once the detail has closed; "Kommentieren" in the toast opens it on that Board', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await signIn(page, ALLOWLISTED[9])
   const from = await createBoard(page, 'Studio', '🎨')
@@ -507,16 +507,19 @@ test('a Dish moved into another Board’s Gekocht Column from its detail celebra
   await expect(pill).toHaveCount(1)
   await expect(page.getByRole('link', { name: 'Kaiserschmarrn' })).toHaveCount(0)
 
-  await gekochtToast(page).getByRole('button', { name: 'Notiz hinzufügen' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Notiz zum Kochen' })
-  await sheet.getByLabel('Notiz').fill('mit Apfelmus')
-  await sheet.getByRole('button', { name: 'Speichern' }).click()
-  await expect(sheet).toBeHidden()
+  // The Dish's detail, on the Board it is on now, in its comment field.
+  await gekochtToast(page).getByRole('button', { name: 'Kommentieren' }).click()
+  const moved = page.getByRole('dialog', { name: 'Kaiserschmarrn' })
+  const field = moved.getByRole('textbox', { name: 'Kommentar' })
+  await expect(field).toBeFocused()
+  await expect(page.locator('h1', { hasText: 'Oma' })).toBeAttached()
+  await page.keyboard.type('mit Apfelmus')
+  await moved.getByRole('button', { name: 'Senden' }).click()
+  await expect(moved.locator('[data-comment]')).toContainText('mit Apfelmus')
 
   await gotoHydrated(page, `/b/${to}/d/${dishId}`)
-  const moved = page.getByRole('dialog', { name: 'Kaiserschmarrn' })
   await expect(moved.locator('[data-cooking]')).toHaveCount(1)
-  await expect(moved.locator('[data-cooking]')).toContainText('mit Apfelmus')
+  await expect(moved.locator('[data-comment]')).toContainText('mit Apfelmus')
 })
 
 // Opening another Board (handoff "Skeleton shimmer"): its chrome shows at

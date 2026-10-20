@@ -102,7 +102,6 @@ for (const scheme of ['light', 'dark'] as const) {
     await sheet.getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
     sheet = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
     await expectLabelInBorder(page, sheet.getByLabel('Titel'), 'Titel')
-    await expectLabelInBorder(page, sheet.getByLabel('Notiz'), 'Notiz')
     await page.keyboard.press('Escape')
     await expect(sheet).toHaveCount(0)
 
@@ -112,7 +111,6 @@ for (const scheme of ['light', 'dark'] as const) {
     await detail.getByRole('button', { name: 'Bearbeiten' }).click()
     await expectLabelInBorder(page, detail.getByLabel('Titel'), 'Titel')
     await expectLabelInBorder(page, detail.getByLabel('Veröffentlicht von'), 'Veröffentlicht von')
-    await expectLabelInBorder(page, detail.getByLabel('Notiz'), 'Notiz')
     const link = detail.getByLabel('Link')
     await expectLabelInBorder(page, link, 'Link')
     await link.fill('kein Link')

@@ -96,7 +96,6 @@ export interface BoardTransport extends HistoryTransport {
   undoCooking: (cookingId: string, to: { columnId: string, index: number }) => Promise<PlacedDish>
   deleteCooking: (cookingId: string) => Promise<void>
   restoreCooking: (cookingId: string) => Promise<CookingView>
-  noteCooking: (cookingId: string, note: string) => Promise<CookingView>
   addColumn: (boardId: string, name: string) => Promise<ColumnView>
   // Several Dishes at once (POST /api/dishes/bulk), all or nothing.
   moveDishes: (dishIds: string[], columnId: string) => Promise<PlacedDish[]>
@@ -433,7 +432,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // and filled in once the server has recorded it. The Board's own
   // (reactive) copy, so filling it in shows.
   function recordPending(dish: DishView): CookingView {
-    dish.cookings.unshift({ id: '', cookedAt: new Date().toISOString(), note: null, recordedBy: null })
+    dish.cookings.unshift({ id: '', cookedAt: new Date().toISOString(), recordedBy: null })
     return dish.cookings[0]!
   }
 
@@ -591,20 +590,6 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     }
 
     return { dish, cooking, notice: 'cookingDeleted', undo, settled }
-  }
-
-  // A Cooking's note (PRD story 53), from the Cooking note sheet, which
-  // waits for it: once saved, the Cooking shows it in its Dish's Cooking
-  // History, found by the Dish's id wherever it is now. A blank note removes
-  // it. Null if the Dish isn't on the Board any more. A failed write rejects
-  // with WriteFailed, for the form to say so.
-  async function noteCooking(dishId: string, cookingId: string, note: string): Promise<BoardResult | null> {
-    const saved = await queued(cookingId, () => transport.noteCooking(cookingId, note))
-    const dish = find(dishId)?.dish
-    if (!dish) return null
-    const cooking = dish.cookings.find(c => c.id === cookingId)
-    if (cooking) Object.assign(cooking, saved)
-    return { dish, cooking: cooking ?? saved }
   }
 
   // A new Column (from the Board's add lane, on desktop): once the server
@@ -779,7 +764,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, noteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount, ...histories }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount, ...histories }
 }
 
 // What the transport reads rather than writes: never counted below.
