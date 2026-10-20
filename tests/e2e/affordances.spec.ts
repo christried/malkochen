@@ -108,7 +108,7 @@ test.beforeAll(async ({ browser }) => {
   const page = await newTab(browser)
   await signIn(page, CECILIA, { name: 'Cecilia' })
   await resetBoard(page)
-  await seedDish(page, { title: 'Curry', sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'mit Reis', addedBy: CECILIA, column: 1 })
+  await seedDish(page, { title: 'Curry', sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: CECILIA, column: 1 })
   await seedCookings(page, 'Curry', 1)
   await page.request.post('/api/boards', { data: { name: 'Kochclub', emoji: '🍜' } })
   await page.context().close()

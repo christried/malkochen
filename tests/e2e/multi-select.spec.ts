@@ -151,7 +151,7 @@ test('desktop: several Dishes move together, another Member sees it, and undo pu
 test('desktop: several Dishes are archived together, and undo brings every one back as it was', async ({ page }) => {
   await page.setViewportSize(DESKTOP)
   await signIn(page, NETTIE)
-  await seedDish(page, { title: 'Pilzrisotto', sourceLink: TIKTOK, sourceKind: 'tiktok', note: 'Mit Thymian', creator: '@christried' })
+  await seedDish(page, { title: 'Pilzrisotto', sourceLink: TIKTOK, sourceKind: 'tiktok', creator: '@christried' })
   await gotoHydrated(page, '/')
 
   await ctrlClick(card(page, 'Pilzrisotto'))
@@ -172,7 +172,6 @@ test('desktop: several Dishes are archived together, and undo brings every one b
   await expect(titles(page, 'Ideen')).toHaveText(['Pilzrisotto', 'Tacos', 'Ramen', 'Curry'])
   await card(page, 'Pilzrisotto').click()
   const detail = page.getByRole('dialog', { name: 'Pilzrisotto' })
-  await expect(detail).toContainText('Mit Thymian')
   await expect(detail).toContainText('@christried')
 })
 

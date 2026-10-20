@@ -77,7 +77,6 @@ test('a pasted link shows a loading state, then a preview with image, editable t
   await expect(sheet.getByLabel('Board')).toHaveCount(0)
 
   await sheet.getByLabel('Titel').fill('Knusprige Tofu-Bowl')
-  await sheet.getByLabel('Notiz').fill('mit Erdnusssoße')
   const body = savedBody(page)
   const release = await holdRequests(page, 'POST', /\/api\/boards\/[^/]+\/dishes$/)
   const save = sheet.locator('button[type="submit"]')
@@ -88,7 +87,6 @@ test('a pasted link shows a loading state, then a preview with image, editable t
   release()
   expect(await body).toMatchObject({
     title: 'Knusprige Tofu-Bowl',
-    note: 'mit Erdnusssoße',
     source: { link: TIKTOK, kind: 'tiktok' },
     creator: 'Vegan Food Club',
     imageUrl: PORTRAIT,

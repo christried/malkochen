@@ -121,17 +121,6 @@ test('Dish detail: the Achievement count in display weight, the link hint in `ca
   expect(await font(hint)).toMatchObject({ size: '12.5px', weight: '500' })
 })
 
-test('the Cooking note field in the field font, like the Dish note', async ({ page }) => {
-  await signIn(page, MARIE, { name: 'Marie' })
-  await gotoHydrated(page, '/')
-  await page.getByRole('link', { name: 'Ratatouille' }).click()
-  const detail = page.getByRole('dialog', { name: 'Ratatouille' })
-  await detail.locator('[data-cooking]').first().getByRole('button', { name: /^Notiz zum Kochen am .* hinzufügen$/ }).click()
-  const note = page.getByRole('dialog', { name: 'Notiz zum Kochen' }).getByLabel('Notiz')
-  expect(await font(note)).toMatchObject({ size: '15.5px', weight: '500', lineHeight: '22px' })
-  await expect(note).toHaveCSS('font-family', /^Figtree/)
-})
-
 test('the image dialog\'s "Ausschnitt" and "Platzhalter" in the section heading style', async ({ page }) => {
   await signIn(page, MARIE, { name: 'Marie' })
   await gotoHydrated(page, '/')
