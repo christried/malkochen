@@ -7,6 +7,7 @@ import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { AddedDish, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import type { VoteView } from '../../server/utils/votes'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
 // The in-memory transport for the client Board module's tests: a small fake
@@ -123,6 +124,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       addedBy: null,
       createdAt: new Date().toISOString(),
       cookings: [],
+      votes: [],
     }
     const column = boardId === server.id ? columnForNewDishes(server.columns)! : { id: 'elsewhere', dishes: [] as DishView[] }
     column.dishes.unshift(dish)
@@ -278,12 +280,13 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   }
 
   // The Dish History as the server builds it: added, then its Cookings and
-  // Comments oldest first. Null for a Dish the server doesn't have.
+  // Votes and Comments oldest first. Null for a Dish the server doesn't have.
   function historyOnServer(dishId: string): DishHistory | null {
     const dish = server.columns.flatMap(c => c.dishes).find(d => d.id === dishId)
     if (!dish) return null
     const rest = [
       ...dish.cookings.toReversed().map(cooking => ({ kind: 'cooking' as const, at: cooking.cookedAt, cooking })),
+      ...dish.votes.map(vote => ({ kind: 'vote' as const, at: vote.votedAt, vote })),
       ...(comments.get(dishId) ?? []).filter(c => !c.deleted).map(({ deleted: _, ...comment }) => ({ kind: 'comment' as const, at: comment.createdAt, comment })),
     ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
     return structuredClone({ dishId, entries: [{ kind: 'added' as const, at: dish.createdAt, by: dish.addedBy }, ...rest] })
@@ -321,6 +324,28 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     if (!comment) return null
     delete comment.deleted
     return structuredClone(comment)
+  }
+
+  // A Vote as the server keeps it: one per Member (the tests don't sign in,
+  // so always "Ich"), only on a Dish with a Cooking (409 otherwise); the
+  // same thumb again changes nothing. Null for a Dish the server doesn't
+  // have.
+  function setVoteOnServer(dishId: string, up: boolean): VoteView | null {
+    const dish = located(d => d.id === dishId)?.dish
+    if (!dish) return null
+    if (dish.cookings.length === 0) throw new WriteFailed(409)
+    const mine = dish.votes.find(v => v.voter.id === 'me')
+    if (mine?.up === up) return structuredClone(mine)
+    const vote = { voter: { id: 'me', name: 'Ich', image: null }, up, votedAt: new Date().toISOString() }
+    dish.votes = [...dish.votes.filter(v => v !== mine), vote]
+    return structuredClone(vote)
+  }
+
+  function takeBackVoteOnServer(dishId: string): true | null {
+    const dish = located(d => d.id === dishId)?.dish
+    if (!dish) return null
+    dish.votes = dish.votes.filter(v => v.voter.id !== 'me')
+    return true
   }
 
   // Answers a write as scripted, else runs it on the server: `run` answers
@@ -370,6 +395,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     editComment: (commentId, text) => answer('editComment', `${commentId} ${text}`, () => editCommentOnServer(commentId, text)),
     deleteComment: commentId => answer('deleteComment', commentId, () => deleteCommentOnServer(commentId)).then(() => undefined),
     restoreComment: commentId => answer('restoreComment', commentId, () => restoreCommentOnServer(commentId)),
+    setVote: (dishId, up) => answer('setVote', `${dishId} ${up}`, () => setVoteOnServer(dishId, up)),
+    takeBackVote: dishId => answer('takeBackVote', dishId, () => takeBackVoteOnServer(dishId)).then(() => undefined),
   }
 
   return {

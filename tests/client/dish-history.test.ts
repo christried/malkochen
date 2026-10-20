@@ -25,6 +25,7 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     createdAt: '2026-10-01T12:00:00.000Z',
     // Newest first, as the Board has them.
     cookings: cookedAt.map((at, i) => ({ id: `${id}-cooking-${i}`, cookedAt: at, recordedBy: null })).toReversed(),
+    votes: [],
   }
 }
 
