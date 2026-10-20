@@ -627,7 +627,7 @@ async function detailClosed(): Promise<boolean> {
 // `takeBack`: for "Rückgängig", the Vote is back to what it was before the
 // toast, as the Cooking goes again.
 function votingFor(dish: DishView) {
-  const mine = () => dish.votes.find(v => v.voter.id === me.value?.id)?.up ?? null
+  const mine = () => voteOf(dish, me.value?.id)
   const before = mine()
   function set(up: boolean | null) {
     const result = me.value && boardModule.vote(dish.id, up, { id: me.value.id, name: me.value.name, image: me.value.image })

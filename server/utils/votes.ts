@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { cooking, dish, user, vote } from '../db/schema'
 import { onMembersBoard, type DishAdder } from './dishes'
-import { insertEvents, voteEvent } from './events'
+import { insertEvents, voteEvent, withEvents } from './events'
 import { pictureOf } from './people'
 
 // Votes (CONTEXT.md: Vote): a Member's thumbs up or down on a Cooked Dish.
@@ -97,13 +97,10 @@ export async function setVote(dishId: string, userId: string, up: boolean): Prom
 // unless the Dish is on a Board they are a Member of and not archived.
 export async function takeBackVote(dishId: string, userId: string): Promise<boolean> {
   if (await cookedFor(dishId, userId) === null) return false
-  await db.execute(sql`
-    with changed as (
-      delete from ${vote} where ${and(eq(vote.dishId, dishId), eq(vote.userId, userId))}
-      returning dish_id, up
-    ),
-    recorded as (${insertEvents(voteEvent('vote_taken_back', userId), sql`from changed`)})
-    select from changed
-  `)
+  await withEvents(
+    db,
+    db.delete(vote).where(and(eq(vote.dishId, dishId), eq(vote.userId, userId))).returning({ dishId: vote.dishId, up: vote.up }),
+    voteEvent('vote_taken_back', userId),
+  )
   return true
 }

@@ -9,16 +9,16 @@ import { landingBoardId, removeUsers, seedDish } from './seed'
 // Votes (#334): "Wie war's?" with 👍 👎 in the Gekocht toast, which a thumb
 // keeps open, and under the Verlauf's heading in the Dish detail, where
 // each Member's Vote shows as an entry. How the toast fits a phone is in
-// cooking.spec.ts. Cori's Board is used by this file only; Mitchell joins
+// cooking.spec.ts. Tharp's Board is used by this file only; Vaughan joins
 // it.
 test.describe.configure({ mode: 'serial' })
 
-const CORI = ALLOWLISTED[91]
-const MITCHELL = ALLOWLISTED[92]
+const THARP = ALLOWLISTED[91]
+const VAUGHAN = ALLOWLISTED[92]
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
 // CI's retry runs the whole file again, on the same database.
-test.beforeAll(() => removeUsers(CORI, MITCHELL))
+test.beforeAll(() => removeUsers(THARP, VAUGHAN))
 
 function gekochtToast(page: Page) {
   return page.getByRole('status').filter({ hasText: 'Gekocht ✓' }).locator('[data-toast]')
@@ -35,9 +35,9 @@ async function openDish(page: Page, title: string) {
 
 test('a Vote from the Gekocht toast keeps it open and can be changed there, on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
-  await signIn(page, CORI)
+  await signIn(page, THARP)
   await gotoHydrated(page, '/')
-  await seedDish(page, { title: 'Shakshuka', sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: CORI })
+  await seedDish(page, { title: 'Shakshuka', sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: THARP })
   await reloadHydrated(page)
 
   await page.getByRole('button', { name: 'Gekocht ✓: „Shakshuka“' }).click()
@@ -62,7 +62,7 @@ test('a Vote from the Gekocht toast keeps it open and can be changed there, on a
 
 test('in the Dish detail the Member changes their Vote and takes it back; each Member\'s Vote shows in the Verlauf', async ({ page, browser }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
-  await signIn(page, CORI)
+  await signIn(page, THARP)
   const { howWasIt, votes } = await openDish(page, 'Shakshuka')
 
   await thumb(howWasIt, true).click()
@@ -73,7 +73,7 @@ test('in the Dish detail the Member changes their Vote and takes it back; each M
 
   const token = await inviteToken(page, await landingBoardId(page))
   const other = await newTab(browser)
-  await signIn(other, MITCHELL)
+  await signIn(other, VAUGHAN)
   const joined = await other.request.post(`/api/invites/${token}/join`, { headers: { origin: E2E_ORIGIN } })
   expect(joined.ok()).toBe(true)
   const theirs = await openDish(other, 'Shakshuka')
@@ -95,7 +95,7 @@ test('in the Dish detail the Member changes their Vote and takes it back; each M
 
 test('a Dish never Cooked has no "Wie war\'s?"', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
-  await signIn(page, CORI)
+  await signIn(page, THARP)
   await seedDish(page, { title: 'Bircher Müsli', sourceLink: TIKTOK, sourceKind: 'tiktok' })
   const { history, howWasIt } = await openDish(page, 'Bircher Müsli')
 

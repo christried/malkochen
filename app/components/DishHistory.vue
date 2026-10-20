@@ -71,7 +71,7 @@ const nameOf = (person: { name: string } | null) => person?.name ?? t.history.de
 const recorderOf = (cooking: CookingView) => cooking.id ? nameOf(cooking.recordedBy) : me.value?.name ?? ''
 
 // The Member's own Vote: thumbs up (true), down (false), or none.
-const myVote = computed(() => props.dish.votes.find(v => v.voter.id === me.value?.id)?.up ?? null)
+const myVote = computed(() => voteOf(props.dish, me.value?.id))
 function vote(up: boolean | null) {
   const result = me.value && boardModule.vote(props.dish.id, up, { id: me.value.id, name: me.value.name, image: me.value.image })
   if (result) emit('vote', result)
