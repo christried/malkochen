@@ -1,8 +1,8 @@
 import pg from 'pg'
 import { inject } from 'vitest'
 
-// The event log (#331) as the tests read it. No endpoint serves it yet (the
-// Admin Page, #321, will count it), so the tests read it in the server's
+// The event log (#331) as the tests read it. No endpoint serves it (the
+// Admin Page, #348, only counts it), so the tests read it in the server's
 // database, through here only: what a test checks is which events a write
 // recorded, not how the table stores them.
 

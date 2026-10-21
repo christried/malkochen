@@ -3,7 +3,8 @@ import { ALL_PERMISSIONS, type Permissions } from '../../shared/permissions'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
 import type { EventDetails, EventKind } from '../utils/events'
-import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import type { UsageKind } from '../utils/usage'
+import { bigint, boolean, check, date, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 // Drizzle schema; `pnpm db:generate` turns changes here into a migration under
 // ./migrations. Every timestamp is `timestamptz`, so values never depend on the
@@ -403,3 +404,15 @@ export const eventLog = pgTable('event_log', {
   userId: text('user_id'),
   details: jsonb('details').$type<EventDetails>(),
 }, t => [index('event_log_at_idx').on(t.at)])
+
+// ---------------------------------------------------------------------------
+// Usage the Admin Page (#348) compares with the free tiers, that no other
+// table holds: per UTC day (as Resend and Vercel count), the emails Resend
+// took, and the polls of open Boards, counted one in POLL_SAMPLE
+// (server/utils/usage.ts).
+
+export const usageCount = pgTable('usage_count', {
+  day: date('day').notNull(),
+  kind: text('kind').$type<UsageKind>().notNull(),
+  count: integer('count').notNull(),
+}, t => [primaryKey({ columns: [t.day, t.kind] })])

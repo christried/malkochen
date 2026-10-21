@@ -67,6 +67,16 @@ async function query(text: string, values: unknown[]): Promise<void> {
   }
 }
 
+// Gives a user the Google account a Google sign-in creates with them, as if
+// they had signed up with Google rather than the dev sign-in.
+export async function linkGoogleAccount(email: string): Promise<void> {
+  await query(
+    `insert into account (id, account_id, provider_id, user_id)
+     select gen_random_uuid()::text, gen_random_uuid()::text, 'google', id from "user" where email = $1`,
+    [email],
+  )
+}
+
 // Lets the sign-in code last sent to `email` expire, as if it had been sent
 // long enough ago.
 export async function expireSignInCode(email: string): Promise<void> {

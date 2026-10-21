@@ -2,22 +2,14 @@ import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import type { Language } from '../../shared/language'
 import { db, runAtomic, type Db } from '../db'
 import { archivedMembership, board, dish, eventLog, membership, user } from '../db/schema'
-import { accountDeletedEmail, createMailSender } from '../email'
-import { parseServerEnv } from '../env'
+import { accountDeletedEmail } from '../email'
 import { removeImageIfUnreferenced } from './cleanup'
 import { boardEvent, withEvents } from './events'
-
-const env = parseServerEnv(process.env)
+import { mailSender } from './mail'
 
 // The confirmation email, when the Resend API key is set, like the Email
 // Digest and the sign-in code.
-const sendEmails = env.RESEND_API_KEY
-  ? createMailSender({
-      apiKey: env.RESEND_API_KEY,
-      baseUrl: env.RESEND_BASE_URL || undefined,
-      onFailure: reason => console.warn(`[account-deletion] confirmation not sent: ${reason}`),
-    })
-  : null
+const sendEmails = mailSender(reason => console.warn(`[account-deletion] confirmation not sent: ${reason}`))
 
 type Memberships = typeof membership | typeof archivedMembership
 

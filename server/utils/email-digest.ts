@@ -2,8 +2,9 @@ import { and, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } f
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db'
 import { board, dish, emailDigest, membership, user } from '../db/schema'
-import { createMailSender, digestEmail, type BoardNews, type Email } from '../email'
+import { digestEmail, type BoardNews, type Email } from '../email'
 import { parseServerEnv } from '../env'
+import { mailSender } from './mail'
 import { slugOf } from './addresses'
 import { signInRefusal } from './auth'
 import { recipientLanguage } from './people'
@@ -12,13 +13,7 @@ const env = parseServerEnv(process.env)
 
 // The Email Digest (#220), when the Resend API key is set: one switch in a
 // Member's settings, for all their Boards. Without it, none is offered or sent.
-const sendEmails = env.RESEND_API_KEY
-  ? createMailSender({
-      apiKey: env.RESEND_API_KEY,
-      baseUrl: env.RESEND_BASE_URL || undefined,
-      onFailure: reason => console.warn(`[email-digest] not sent: ${reason}`),
-    })
-  : null
+const sendEmails = mailSender(reason => console.warn(`[email-digest] not sent: ${reason}`))
 
 export const digestOffered = sendEmails !== null
 
