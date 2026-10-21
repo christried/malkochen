@@ -108,7 +108,7 @@ test('Not unlocked, the invite landing and the error screen show stills only', a
   await signIn(page, LISE)
   const { id: boardId } = await (await page.request.post('/api/boards', { data: { name: 'Ruhig', emoji: '🌿' } })).json() as { id: string }
   await gotoHydrated(page, `/b/${boardId}/settings`)
-  const link = await page.getByLabel('Einladungslink').inputValue()
+  const link = await page.getByLabel('Einladungslink', { exact: true }).inputValue()
   await page.context().clearCookies()
   await gotoHydrated(page, link)
   // The intro's still is the loop's first frame.
