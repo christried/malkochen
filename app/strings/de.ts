@@ -43,6 +43,25 @@ function newDishCount(count: number): string {
   return `${number(count)} ${plural(count, { one: 'neues Gericht', other: 'neue Gerichte' })}`
 }
 
+// "1 Kommentar", "3 Kommentare" and "1 Daumen", "3 Daumen" (#351);
+// talkCounts gives both, leaving out a count of 0.
+function commentCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'Kommentar', other: 'Kommentare' })}`
+}
+
+function voteCount(count: number): string {
+  return `${number(count)} Daumen`
+}
+
+function talkCounts(comments: number, votes: number): string[] {
+  return [...comments ? [commentCount(comments)] : [], ...votes ? [voteCount(votes)] : []]
+}
+
+const hatOrHaben = (names: string[]) => plural(names.length, { one: 'hat', other: 'haben' })
+
+// A Vote on `dish`, as the Verlauf says it (history.voted).
+const voted = (name: string, dish: string, up: boolean) => up ? `${name} fand ${dish} gut 👍` : `${name} fand ${dish} nicht so gut 👎`
+
 export const de = {
   app: {
     name: 'malkochen',
@@ -668,6 +687,24 @@ export const de = {
     // Dishes, as many as fit, and how many more. About one Dish, it's only
     // the Board.
     body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` und ${number(more)} ${plural(more, { one: 'weiteres', other: 'weitere' })}`}`,
+    // Comments and Votes by others count too (#351). About one Comment:
+    // „Ada hat Linsen-Dal kommentiert" over the Board and the Comment's start.
+    commented: (name: string, dish: string) => `${name} hat ${dish} kommentiert`,
+    comment: (board: string, text: string) => `${board}: ${text}`,
+    // About one Vote, over the Board alone.
+    voted,
+    // About several things on one Dish: „Ada und Linus zu Linsen-Dal" over
+    // „🍪 Kochclub: 1 Kommentar, 1 Daumen".
+    onDish: (names: string[], dish: string) => `${someNames(names)} zu ${dish}`,
+    counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
+    // About several Dishes with no new ones: the Comments' title, else the
+    // Votes', over the Dishes they're on; the rest follows with `also`.
+    wrote: (names: string[], comments: number) => `${someNames(names)} ${hatOrHaben(names)} ${commentCount(comments)} geschrieben`,
+    gave: (names: string[], votes: number) => `${someNames(names)} ${hatOrHaben(names)} ${voteCount(votes)} gegeben`,
+    about: (board: string, titles: string[], more: number) => `${board}: zu ${more === 0 ? nameList(titles) : `${titles.join(', ')} und ${number(more)} weiteren`}`,
+    // What else is new, after a body: with new Dishes, `body` and then all
+    // Comments and Votes; else `about`, then the Votes.
+    also: (before: string, comments: number, votes: number) => `${before}. Dazu ${talkCounts(comments, votes).join(' und ')}.`,
   },
   // The Email Digest (#220): switched on in your settings, for all your
   // Boards; one email in the evening listing the Dishes others added since
@@ -679,6 +716,8 @@ export const de = {
     // The email (#325). `board`: the emoji and name of the one Board it's
     // about; null when it's about several.
     subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'auf deinen Boards'}`,
+    // With no new Dishes, the Comments and Votes instead (#351).
+    talkSubject: (comments: number, votes: number, board: string | null) => `${talkCounts(comments, votes).join(' und ')} ${board ? `in ${board}` : 'auf deinen Boards'}`,
     // The inbox's preview line: who added them, in the order the email
     // lists them.
     preheader: (names: string[]) => `Von ${someNames(names)}. Schau mal rein!`,
@@ -687,6 +726,11 @@ export const de = {
     intro: 'Das ist seit gestern auf deinen Boards dazugekommen:',
     addedBy: (name: string) => `von ${name}`,
     openBoard: 'Board öffnen',
+    // A Board's Comments and Votes since the last one, after its new Dishes
+    // (#351). `dish` may be a link, the Comment's start already cut.
+    history: 'Im Verlauf',
+    comment: (name: string, dish: string, text: string) => `${name} zu ${dish}: „${text}“`,
+    voted,
     why: 'Einmal am Abend, nur wenn’s was Neues gibt: So hast du’s in malkochen eingestellt.',
     // Then the link to your settings, where you switch it off.
     noMore: 'Keine Lust mehr?',

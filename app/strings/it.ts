@@ -40,6 +40,24 @@ function newDishCount(count: number): string {
   return `${number(count)} ${plural(count, { one: 'nuovo piatto', other: 'nuovi piatti' })}`
 }
 
+function commentCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'commento', other: 'commenti' })}`
+}
+
+function voteCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'pollice', other: 'pollici' })}`
+}
+
+function talkCounts(comments: number, votes: number): string[] {
+  return [...comments ? [commentCount(comments)] : [], ...votes ? [voteCount(votes)] : []]
+}
+
+// "ha dato un pollice": "A Ada è piaciuto …" (as history.voted says it)
+// would have to agree with the Dish's gender, which isn't known.
+const voted = (name: string, dish: string, up: boolean) => `${name} ha dato un pollice ${up ? 'in su' : 'in giù'} a ${dish} ${up ? '👍' : '👎'}`
+
+const haOrHanno = (names: string[]) => plural(names.length, { one: 'ha', other: 'hanno' })
+
 const tryAgain = 'Riprova tra un attimo.'
 const failed = `Non ha funzionato. ${tryAgain}`
 
@@ -573,18 +591,31 @@ export const it: Strings = {
     failed,
     added: (names: string[], count: number, dish: string) => `${someNames(names)} ${plural(names.length, { one: 'ha', other: 'hanno' })} aggiunto ${count === 1 ? dish : dishCount(count)}`,
     body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
+    commented: (name: string, dish: string) => `${name} ha commentato ${dish}`,
+    comment: (board: string, text: string) => `${board}: ${text}`,
+    voted,
+    onDish: (names: string[], dish: string) => `${someNames(names)} su ${dish}`,
+    counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
+    wrote: (names: string[], comments: number) => `${someNames(names)} ${haOrHanno(names)} scritto ${commentCount(comments)}`,
+    gave: (names: string[], votes: number) => `${someNames(names)} ${haOrHanno(names)} dato ${voteCount(votes)}`,
+    about: (board: string, titles: string[], more: number) => `${board}: su ${more === 0 ? nameList(titles) : `${titles.join(', ')} e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
+    also: (before: string, comments: number, votes: number) => `${before}. In più ${talkCounts(comments, votes).join(' e ')}.`,
   },
   emailDigest: {
     toggle: 'Email giornaliera',
     hint: 'La sera al tuo indirizzo email, quando altri hanno aggiunto nuovi piatti alle tue bacheche. Per tutti i tuoi dispositivi.',
     failed,
     subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'sulle tue bacheche'}`,
+    talkSubject: (comments: number, votes: number, board: string | null) => `${talkCounts(comments, votes).join(' e ')} ${board ? `in ${board}` : 'sulle tue bacheche'}`,
     preheader: (names: string[]) => `Da ${someNames(names)}. Dai un’occhiata!`,
     greeting: (name: string | null) => name ? `Ciao ${name}!` : 'Ciao!',
     intro: 'Ecco cosa c’è di nuovo sulle tue bacheche da ieri:',
     // "aggiunto da": "di Linus" would read as Linus's own dish.
     addedBy: (name: string) => `aggiunto da ${name}`,
     openBoard: 'Apri la bacheca',
+    history: 'Nella cronologia',
+    comment: (name: string, dish: string, text: string) => `${name} su ${dish}: “${text}”`,
+    voted,
     why: 'Una volta la sera, solo quando c’è qualcosa di nuovo: l’hai impostata così su malkochen.',
     noMore: 'Non ti serve più?',
     turnOff: 'Disattivala qui',
