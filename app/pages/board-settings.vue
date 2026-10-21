@@ -6,7 +6,7 @@ import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { invitePath } from '~~/shared/invite'
-import { ENFORCED_PERMISSIONS, permitsOn, type EnforcedPermission, type Permissions } from '~~/shared/permissions'
+import { ENFORCED_PERMISSIONS, viewerMay, type EnforcedPermission, type Permissions } from '~~/shared/permissions'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
@@ -351,8 +351,7 @@ function offArchive(dish: ArchivedDishView) {
 // Restoring needs "archive Dishes", as archiving does, or that the user
 // added the Dish.
 function mayRestore(dish: ArchivedDishView) {
-  if (!board.value) return false
-  return permitsOn(board.value.permissions, 'archiveDishes', board.value.members.find(m => m.isYou)?.id, { addedBy: dish.addedById })
+  return !!board.value && viewerMay(board.value, 'archiveDishes', { addedBy: dish.addedById })
 }
 
 async function restoreArchived(dish: ArchivedDishView) {
@@ -363,8 +362,11 @@ async function restoreArchived(dish: ArchivedDishView) {
     if (column) column.count += 1
     toast.value = { text: t.settings.restored(dish.title), duration: NOTICE_MS }
   }
-  catch {
-    failed()
+  catch (error) {
+    // Refused for the user's Permissions (the Owner just took "archive
+    // Dishes" away): it says so.
+    if ((error as { statusCode?: number } | null)?.statusCode === 403) toast.value = { text: t.dish.notAllowed(dish.title), duration: NOTICE_MS }
+    else failed()
     await refreshArchive()
   }
 }

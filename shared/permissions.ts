@@ -45,6 +45,12 @@ export function permitsOn(permissions: Permissions, permission: Permission, user
   return dish !== undefined && userId !== undefined && dish.addedBy === userId && OWN_DISH_PERMISSIONS.includes(permission)
 }
 
+// The same for the user looking at a Board, as its answer says: their
+// Permissions there, and which of its Members they are.
+export function viewerMay(board: { permissions: Permissions, members: { id: string, isYou: boolean }[] }, permission: Permission, dish?: { addedBy: string | null | undefined }): boolean {
+  return permitsOn(board.permissions, permission, board.members.find(m => m.isYou)?.id, dish)
+}
+
 // The Permissions the app enforces so far, which Board Settings shows and
 // lets the Owner switch (#340, #341). The others are stored but not yet
 // acted on; each joins this list with the ticket that enforces it (#342).

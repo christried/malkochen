@@ -563,6 +563,23 @@ test('a move or archive the server refuses (the Permission just went) goes back,
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
 })
 
+test('an undo, a Cooking delete or several Dishes the server refuses (403) say so too', async () => {
+  const { fake, module, board } = setup()
+  const deleted = module.deleteDish('b')!
+  await deleted.settled
+  fake.failNext('restoreDish', 403)
+  expect(await (await deleted.undo!()).settled).toMatchObject({ notice: 'notAllowed' })
+
+  board.value!.columns[2]!.dishes.push({ ...board.value!.columns[0]!.dishes[0]!, id: 'g', cookings: [{ id: 'k', cookedAt: '2026-10-01T12:00:00.000Z', recordedBy: null }] })
+  fake.failNext('deleteCooking', 403)
+  expect(await module.deleteCooking('g', 'k')!.settled).toMatchObject({ notice: 'notAllowed' })
+
+  fake.failNext('moveDishes', 403)
+  expect(await module.moveDishes(['a', 'c'], { columnId: 'woche' })!.settled).toMatchObject({ notice: 'notAllowedMany' })
+  fake.failNext('deleteDishes', 403)
+  expect(await module.deleteDishes(['a', 'c'])!.settled).toMatchObject({ notice: 'notAllowedMany' })
+})
+
 test('the Owner may do everything, whoever added the Dish', () => {
   const { module } = setup()
 

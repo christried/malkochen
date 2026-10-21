@@ -3,7 +3,7 @@ import type { BoardSummary } from '~~/server/utils/boards'
 import type { DuplicateDish } from '~~/server/utils/dishes'
 import { dishPath } from '~~/shared/address'
 import { FOCUS_CENTRE, focusPosition, type ImageFocus } from '~~/shared/image-focus'
-import { WriteFailed, type BoardResult } from '~/board/board-module'
+import { isRefused, type BoardResult } from '~/board/board-module'
 import { autoPlaceholder, PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
@@ -225,7 +225,7 @@ async function save() {
     open.value = false
   }
   catch (error) {
-    failed.value = error instanceof WriteFailed && error.status === 403 ? 'notAllowed' : 'failed'
+    failed.value = isRefused(error) ? 'notAllowed' : 'failed'
   }
   finally {
     saving.value = false

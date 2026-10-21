@@ -7,7 +7,7 @@ import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { AddedDish, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
-import { permitsOn, type Permission } from '../../shared/permissions'
+import { viewerMay, type Permission } from '../../shared/permissions'
 import { landingIndex, recordsCooking } from '../../shared/placement'
 import { createDishHistories, type HistoryTransport } from './dish-histories'
 import { createDishVotes, type VoteTransport } from './dish-votes'
@@ -37,8 +37,9 @@ function focusAfterLeaving(column: { id: string, dishes: { id: string }[] }, ind
 // a Cooking, and come with it. `imageNotStored`: an added Dish's Source
 // image couldn't be stored, so it has its Placeholder Image (`photoNotStored`:
 // the same for the Member's own photo); `imageNotReplaced`: an edited Dish's new image couldn't be, so it keeps
-// the one it had. `notAllowed`: the server refused a move or a delete the
-// user's Permissions no longer allow (the Owner just switched one off).
+// the one it had. `notAllowed`, in place of any failure: the server
+// refused a write the user's Permissions no longer allow (the Owner just
+// switched one off).
 export type Notice = 'deleted' | 'deleteFailed' | 'restoreFailed' | 'moveFailed' | 'cookFailed' | 'uncookFailed' | 'cook' | 'notAllowed'
   | 'cookingDeleted' | 'cookingDeleteFailed' | 'cookingRestoreFailed'
   | 'imageNotStored' | 'photoNotStored' | 'imageNotReplaced'
@@ -61,8 +62,9 @@ export interface BoardResult {
 // BoardResult does for one: the Dishes it was about, in Board order, a
 // notice, an undo, where focus goes, and what its write ended in. Its
 // notices are about the Dishes together: `movedMany` and `deletedMany` come
-// with an undo; the others say a write failed.
-export type BulkNotice = 'movedMany' | 'deletedMany' | 'moveManyFailed' | 'deleteManyFailed' | 'restoreManyFailed' | 'returnManyFailed'
+// with an undo; the others say a write failed (`notAllowedMany`: as the
+// user's Permissions no longer allow it).
+export type BulkNotice = 'movedMany' | 'deletedMany' | 'moveManyFailed' | 'deleteManyFailed' | 'restoreManyFailed' | 'returnManyFailed' | 'notAllowedMany'
 
 export interface BulkResult {
   dishes: DishView[]
@@ -88,8 +90,19 @@ function isGone(error: unknown) {
 
 // Whether a write failed because the user's Permissions don't allow it
 // (403), as the server has them.
-function isRefused(error: unknown) {
+export function isRefused(error: unknown) {
   return error instanceof WriteFailed && error.status === 403
+}
+
+// The notice for a write that failed with `error`: `notAllowed` if the
+// server refused it for the user's Permissions, else `notice`.
+function failedAs(error: unknown, notice: Notice): Notice {
+  return isRefused(error) ? 'notAllowed' : notice
+}
+
+// The same for a write of several Dishes.
+function failedManyAs(error: unknown, notice: BulkNotice): BulkNotice {
+  return isRefused(error) ? 'notAllowedMany' : notice
 }
 
 // How the module's writes reach the server: over HTTP in the app
@@ -239,9 +252,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // change shows.
   function may(permission: Permission, dishId?: string): boolean {
     if (!board.value) return false
-    const you = board.value.members.find(m => m.isYou)?.id
-    const dish = dishId === undefined ? undefined : { addedBy: find(dishId)?.dish.addedBy?.id }
-    return permitsOn(board.value.permissions, permission, you, dish)
+    return viewerMay(board.value, permission, dishId === undefined ? undefined : { addedBy: find(dishId)?.dish.addedBy?.id })
   }
 
   function column(columnId: string) {
@@ -361,27 +372,27 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const { origin: place, focus } = leave(dish, found.column)
     focusWhenGone.set(dishId, focus)
 
-    // True once deleted, else the notice saying why not.
-    const deleted = queued(dishId, () => transport.deleteDish(dishId)).then((): true => true, (error: unknown): true | Notice => {
-      if (isGone(error)) return true
+    // Why it wasn't deleted, as a notice; none once it is.
+    const notDeleted = queued(dishId, () => transport.deleteDish(dishId)).then(() => null, (error: unknown): Notice | null => {
+      if (isGone(error)) return null
       putBack(dish, place)
-      return isRefused(error) ? 'notAllowed' : 'deleteFailed'
+      return failedAs(error, 'deleteFailed')
     })
-    const settled = deleted.then((ended): BoardResult => ended === true ? { dish } : { dish, notice: ended })
+    const settled = notDeleted.then((notice): BoardResult => notice ? { dish, notice } : { dish })
 
     // "Rückgängig": once the delete has settled, the Dish is back at once,
     // with focus on it, and then where the server restored it. If that
     // fails, it goes again, with a notice.
     async function undo(): Promise<BoardResult> {
-      if (await deleted !== true) return { dish } // Never deleted, and back already.
+      if (await notDeleted) return { dish } // Never deleted, and back already.
       const back = putBack(dish, place)
       const restored = queued(dishId, () => transport.restoreDish(dishId)).then((placed): BoardResult => {
         settle(dish, placed)
         // Its Column was gone, so only now is it back to focus.
         return back ? { dish } : { dish, focus: { dish: dishId } }
-      }, (): BoardResult => {
+      }, (error: unknown): BoardResult => {
         takeOut(dishId)
-        return { dish, notice: 'restoreFailed' }
+        return { dish, notice: failedAs(error, 'restoreFailed') }
       })
       return { dish, ...back && { focus: { dish: dishId } }, settled: restored }
     }
@@ -453,7 +464,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         // Undone already, it is back, and nothing is left to tell.
         if (ended.undone) return { dish }
         if (latest()) moveBack(dish, back)
-        return { dish, notice: isRefused(error) ? 'notAllowed' : cooks ? 'cookFailed' : 'moveFailed' }
+        return { dish, notice: failedAs(error, cooks ? 'cookFailed' : 'moveFailed') }
       }
     })
 
@@ -520,10 +531,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
             if (shown) {
               const { focus } = leave(dish, shown.column)
               focusWhenGone.set(dishId, focus)
-              return { dish, notice: 'uncookFailed', focus }
+              return { dish, notice: failedAs(error, 'uncookFailed'), focus }
             }
           }
-          return { dish, notice: 'uncookFailed' }
+          return { dish, notice: failedAs(error, 'uncookFailed') }
         }
       })
       return { dish, focus: { dish: dishId }, settled: undoing }
@@ -568,7 +579,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         // Undone already, it is back, and nothing is left to tell.
         if (ended.undone) return { dish }
         if (latest()) moveBack(dish, back)
-        return { dish, notice: isRefused(error) ? 'notAllowed' : cooks ? 'cookFailed' : 'moveFailed' }
+        return { dish, notice: failedAs(error, cooks ? 'cookFailed' : 'moveFailed') }
       }
     })
 
@@ -599,27 +610,28 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const { dish } = found
     const [cooking] = dish.cookings.splice(at, 1) as [CookingView]
 
-    const deleted = queued(cookingId, () => transport.deleteCooking(cookingId)).then(() => true, (error: unknown) => {
-      if (isGone(error)) return true
+    // Why it wasn't deleted, as a notice; none once it is.
+    const notDeleted = queued(cookingId, () => transport.deleteCooking(cookingId)).then(() => null, (error: unknown): Notice | null => {
+      if (isGone(error)) return null
       putBackCooking(dishId, cooking)
-      return false
+      return failedAs(error, 'cookingDeleteFailed')
     })
-    const settled = deleted.then((ok): BoardResult => ok ? { dish, cooking } : { dish, cooking, notice: 'cookingDeleteFailed' })
+    const settled = notDeleted.then((notice): BoardResult => notice ? { dish, cooking, notice } : { dish, cooking })
 
     // "Rückgängig": once the delete has settled, the Cooking is back in
     // its Dish's Cooking History at once, and as the server restored it.
     // If that fails, it goes again, with a notice.
     async function undo(): Promise<BoardResult> {
-      if (!await deleted) return { dish, cooking } // Never deleted, and back already.
+      if (await notDeleted) return { dish, cooking } // Never deleted, and back already.
       putBackCooking(dishId, cooking)
       const restored = queued(cookingId, () => transport.restoreCooking(cookingId)).then((fields): BoardResult => {
         const back = find(dishId)?.dish.cookings.find(c => c.id === cookingId)
         if (back) Object.assign(back, fields)
         return { dish, cooking: back ?? cooking }
-      }, (): BoardResult => {
+      }, (error: unknown): BoardResult => {
         const now = find(dishId)?.dish
         if (now) removeFrom(now.cookings, now.cookings.find(c => c.id === cookingId))
-        return { dish, cooking, notice: 'cookingRestoreFailed' }
+        return { dish, cooking, notice: failedAs(error, 'cookingRestoreFailed') }
       })
       return { dish, cooking, settled: restored }
     }
@@ -707,10 +719,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         for (const id of ids) rolledBackTo.delete(id)
         return { dishes }
       }
-      catch {
+      catch (error) {
         // Back where the server still has them.
         putAllBack(dishes, dishes.map((dish, i) => rollBackTo(dish.id, origins[i]!)), latest)
-        return { dishes, notice: 'moveManyFailed' }
+        return { dishes, notice: failedManyAs(error, 'moveManyFailed') }
       }
     })
 
@@ -727,9 +739,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
           settleAll(dishes, await transport.placeDishes(places), latest)
           return { dishes }
         }
-        catch {
+        catch (error) {
           moveOn()
-          return { dishes, notice: 'returnManyFailed' }
+          return { dishes, notice: failedManyAs(error, 'returnManyFailed') }
         }
       })
       return { dishes, focus: { dish: ids[0]! }, settled: returned }
@@ -754,9 +766,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         await transport.deleteDishes(ids)
         return { dishes }
       }
-      catch {
+      catch (error) {
         putAllBack(dishes, origins)
-        return { dishes, notice: 'deleteManyFailed' }
+        return { dishes, notice: failedManyAs(error, 'deleteManyFailed') }
       }
     })
 
@@ -771,9 +783,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
           settleAll(dishes, await transport.restoreDishes(ids), latest)
           return { dishes }
         }
-        catch {
+        catch (error) {
           for (const id of ids) takeOut(id)
-          return { dishes, notice: 'restoreManyFailed' }
+          return { dishes, notice: failedManyAs(error, 'restoreManyFailed') }
         }
       })
       return { dishes, focus: { dish: ids[0]! }, settled: restored }

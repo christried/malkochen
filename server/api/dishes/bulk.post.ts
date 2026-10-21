@@ -11,8 +11,8 @@ import { areDishesOfMember, deleteDishes, moveDishes, placeDishes, restoreDishes
 //   (400), as putting back records no Cooking.
 // - `delete`: soft, as one Dish's delete (204); `restore` undoes it.
 // Each needs its Permission for every Dish: "move Dishes" (and "add
-// Dishes" on another Board moved to), "archive Dishes" (or that the user
-// added it); else 403, changing none.
+// Dishes" on another Board moved to; "move Dishes" there, putting back),
+// "archive Dishes" (or that the user added it); else 403, changing none.
 // Answers the Dishes placed (PlacedDish), in the order sent. One Dish that
 // is missing, deleted or on a Board the user isn't a Member of refuses all
 // (404); so does a Column on a Board the user isn't a Member of (400).
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event): Promise<PlacedDish[] | null> =>
       await requireMovePermission(request.dishIds, userId, [request.columnId])
       return await moveDishes(request.dishIds, userId, request.columnId) ?? refused(request.dishIds, userId)
     case 'place':
-      await requireMovePermission(request.places.map(p => p.dishId), userId, request.places.map(p => p.columnId))
+      await requireMovePermission(request.places.map(p => p.dishId), userId, request.places.map(p => p.columnId), { back: true })
       return await placeDishes(request.places, userId) ?? refused(request.places.map(p => p.dishId), userId)
     case 'delete':
       await requireDishPermission(request.dishIds, userId, 'archiveDishes')

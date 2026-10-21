@@ -132,6 +132,21 @@ test('moving a Dish to another Board takes "add Dishes" there', async () => {
   expect((await move(quimby, own, other.columns[0]!.id)).status).toBe(200)
 })
 
+test('putting a Dish back on the Board it came from takes "move Dishes" there, not "add Dishes"', async () => {
+  const { board, mitchell, quimby, own } = await sharedBoard('Rückfahrt', { addDishes: false })
+  const other = await newBoard(mitchell, 'Umsteigen')
+  expect((await send(quimby, 'POST', `/api/invites/${other.inviteToken}/join`)).status).toBe(200)
+  expect((await move(quimby, own, other.columns[0]!.id)).status).toBe(200)
+
+  const back = { action: 'place', places: [{ dishId: own.id, columnId: board.columns[0]!.id, index: 0 }] }
+  expect((await bulk(quimby, back)).status).toBe(200)
+
+  expect((await move(quimby, own, other.columns[0]!.id)).status).toBe(200)
+  const quimbyId = board.members.find(m => m.name === 'quimby')!.id
+  await send(mitchell, 'PATCH', `/api/boards/${board.id}/members/${quimbyId}/permissions`, { moveDishes: false })
+  await expectRefused(await bulk(quimby, back), 'moveDishes')
+})
+
 test('without "archive Dishes" a Member archives and restores only the Dishes they added', async () => {
   const { board, mitchell, quimby, theirs, own } = await sharedBoard('Speicher', { archiveDishes: false })
 

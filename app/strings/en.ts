@@ -153,6 +153,7 @@ export const en: Strings = {
     deleted: (count: number) => `${dishCount(count)} archived`,
     moveFailed: (count: number) => `${dishCount(count)} couldn’t be moved. ${tryAgain}`,
     deleteFailed: (count: number) => `${dishCount(count)} couldn’t be archived. ${tryAgain}`,
+    notAllowed: 'You can’t do that with these dishes on this board any more. The owner decides that.',
     backFailed: (count: number) => `${dishCount(count)} couldn’t be brought back.`,
   },
   cooking: {

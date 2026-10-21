@@ -196,6 +196,7 @@ export const de = {
     deleted: (count: number) => `${dishCount(count)} archiviert`,
     moveFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht verschieben. Versuch es gleich noch mal.`,
     deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht archivieren. Versuch es gleich noch mal.`,
+    notAllowed: 'Das darfst du mit diesen Gerichten auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
     backFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht zurückholen.`,
   },
   cooking: {

@@ -3,7 +3,7 @@ import type { SourceInput } from '~~/server/utils/dish-input'
 import type { DishView } from '~~/server/utils/dishes'
 import { FOCUS_CENTRE, focusPosition, sameFocus, type ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
-import { WriteFailed, type BoardResult } from '~/board/board-module'
+import { isRefused, type BoardResult } from '~/board/board-module'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
 import { webLink } from '~/utils/web-link'
 
@@ -162,7 +162,7 @@ async function save() {
     emit('saved', saved)
   }
   catch (error) {
-    failed.value = error instanceof WriteFailed && error.status === 403 ? 'notAllowed' : 'failed'
+    failed.value = isRefused(error) ? 'notAllowed' : 'failed'
   }
   finally {
     saving.value = false

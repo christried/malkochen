@@ -148,3 +148,35 @@ test('without moving and archiving, a Member can\'t drag or cook, and archives o
   await expect(bar.getByRole('button', { name: 'Archivieren' })).toBeVisible()
   await expect(bar.getByRole('button', { name: 'Verschieben' })).toHaveCount(0)
 })
+
+// Without "Gerichte bearbeiten" and "Gerichte archivieren" Radia edits, and
+// restores from the Archive, only the Dish Radia added.
+test('without editing and archiving, a Member edits and restores only their own Dishes', async ({ page, browser }) => {
+  const { boardId, radia } = await sharedBoard(page, browser, 'Kräutergarten')
+  const addDish = async (on: Page, title: string) => {
+    const res = await on.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl' } })
+    expect(res.status()).toBe(201)
+    return (await res.json() as { id: string }).id
+  }
+  const theirs = await addDish(page, 'Evelyns Bärlauchpesto')
+  const own = await addDish(radia, 'Radias Minztee')
+  const { members } = await (await page.request.get(`/api/boards/${boardId}`)).json() as { members: { id: string, name: string }[] }
+  const radiaId = members.find(m => m.name === 'radia')!.id
+  expect((await page.request.patch(`/api/boards/${boardId}/members/${radiaId}/permissions`, { data: { editDishes: false, archiveDishes: false } })).status()).toBe(200)
+
+  await gotoHydrated(radia, `/b/${boardId}`)
+  await radia.getByRole('link', { name: 'Evelyns Bärlauchpesto', exact: true }).click()
+  const detail = radia.getByRole('dialog', { name: 'Evelyns Bärlauchpesto' })
+  await expect(detail.getByRole('button', { name: 'Gekocht ✓' })).toBeVisible()
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toHaveCount(0)
+  await expect(detail.getByRole('button', { name: 'Archivieren' })).toHaveCount(0)
+  await gotoHydrated(radia, `/b/${boardId}`)
+  await radia.getByRole('link', { name: 'Radias Minztee', exact: true }).click()
+  await expect(radia.getByRole('dialog', { name: 'Radias Minztee' }).locator('[data-edit]')).toBeVisible()
+
+  for (const id of [theirs, own]) expect((await page.request.delete(`/api/dishes/${id}`)).status()).toBe(204)
+  await gotoHydrated(radia, `/b/${boardId}/settings`)
+  await expect(radia.getByRole('button', { name: '„Radias Minztee“ wiederherstellen' })).toBeVisible()
+  await expect(radia.locator('[data-archived-dish]')).toHaveCount(2)
+  await expect(radia.getByRole('button', { name: '„Evelyns Bärlauchpesto“ wiederherstellen' })).toHaveCount(0)
+})

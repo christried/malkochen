@@ -163,6 +163,7 @@ export const it: Strings = {
     deleted: (count: number) => dishesDone(count, 'archiviat'),
     moveFailed: (count: number) => `Non è stato possibile spostare ${dishCount(count)}. ${tryAgain}`,
     deleteFailed: (count: number) => `Non è stato possibile archiviare ${dishCount(count)}. ${tryAgain}`,
+    notAllowed: 'Con questi piatti non puoi più farlo su questa bacheca. Lo decide chi ne è titolare.',
     backFailed: (count: number) => `Non è stato possibile recuperare ${dishCount(count)}.`,
   },
   // A cooking (CONTEXT.md) is "una preparazione".

@@ -570,6 +570,7 @@ function bulkNoticeText(notice: BulkNotice, count: number, where?: { board?: str
     case 'deleteManyFailed': return t.selection.deleteFailed(count)
     case 'restoreManyFailed':
     case 'returnManyFailed': return t.selection.backFailed(count)
+    case 'notAllowedMany': return t.selection.notAllowed
   }
 }
 
