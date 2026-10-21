@@ -754,12 +754,19 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // asked, or started since: that change shows on the Board already, and
   // the server may have read the Board without it, which would undo it for
   // a moment. Dropped too while `paused` (a Dish is being dragged), or once
-  // the page shows another Board. The next poll brings what was dropped.
-  async function sync(ask: () => Promise<BoardView>, { paused = () => false }: { paused?: () => boolean } = {}) {
+  // the page shows another Board. The next poll brings what was dropped:
+  // answers whether it merged, and only a merged answer moves on the
+  // Board's version, so the next check still sees a dropped one as new.
+  async function sync(ask: () => Promise<BoardView>, { paused = () => false }: { paused?: () => boolean } = {}): Promise<boolean> {
     const asked = mark()
     const fresh = await ask()
-    if (!writesSince(asked) && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
+    if (writesSince(asked) || paused() || board.value?.id !== fresh.id) return false
+    merge(board.value, fresh)
+    return true
   }
+
+  // The Board Version (ADR 0008) of the Board as the app shows it.
+  const version = () => board.value?.version
 
   // Takes a Dish off the ones with something new in their Dish History.
   function clearNewInHistory(dishId: string) {
@@ -776,7 +783,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount, ...histories, ...votes }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, version, focusAfterDetail, dishCount, ...histories, ...votes }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

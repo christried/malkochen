@@ -745,6 +745,24 @@ test('a poll answered while a Dish is being dragged is dropped', async () => {
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
 })
 
+test('a poll says whether it merged the answer, and only a merged one moves on the Board Version the Board knows', async () => {
+  const { board, fake, module } = setup()
+  fake.server.version = 3
+
+  expect(await module.sync(askServer(fake), { paused: () => true })).toBe(false)
+  expect(board.value!.version).toBe(0)
+
+  const slow = askServerSlowly(fake)
+  const polled = module.sync(slow.ask)
+  await module.moveDish('b', { columnId: 'woche' })!.settled
+  slow.answer()
+  expect(await polled).toBe(false)
+  expect(board.value!.version).toBe(0)
+
+  expect(await module.sync(askServer(fake))).toBe(true)
+  expect(board.value!.version).toBe(3)
+})
+
 test('an added Column shows at the end of the Board as the server added it, empty', async () => {
   const { board, fake, module, shown } = setup()
 
