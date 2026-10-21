@@ -1,14 +1,19 @@
 import sharp from 'sharp'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { landingBoard, postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 import { storedImages } from './server-env'
+import { endLimitWindows } from './time-travel'
 
 // A Member's Profile Picture: their own upload (POST /api/me/pictures, then
 // PUT /api/me/picture with its picture ticket), else their Google photo,
 // else their initial (drawn by the client). Uploaded under the same rules as
 // "Eigenes Foto"; kept apart from the Google photo, so signing in again
 // leaves it be. Grete and Youyou are used by this file only.
+
+// More photos than one user may upload a day (server/rate-limits.ts): each
+// test starts as if the day were over.
+beforeEach(() => endLimitWindows('upload'))
 
 const GRETE = ALLOWLISTED[29]
 const YOUYOU = ALLOWLISTED[30]

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardSummary } from '~~/server/utils/boards'
 import { boardPath } from '~~/shared/address'
+import { BOARD_LIMIT_REACHED, BOARDS_PER_USER } from '~~/shared/board'
 
 // "Neues Board" (PRD story 61): a name and an emoji. The Board starts with
 // the default Columns, owned by whoever creates it, and opens straight away,
@@ -11,7 +12,8 @@ const t = useStrings()
 const name = ref('')
 const emoji = ref('🍜')
 const saving = ref(false)
-const failed = ref(false)
+// Why creating it didn't work, if it didn't.
+const problem = ref<string | null>(null)
 const nameId = useId()
 // The name field's made-up example, a new one each time the sheet opens.
 const nameExample = useExamplePrompt(() => t.boards.nameExamples, example => t.boards.namePrompt(example))
@@ -23,22 +25,25 @@ watch(open, (isOpen) => {
   name.value = ''
   emoji.value = '🍜'
   nameExample.pickAnother()
-  failed.value = false
+  problem.value = null
 })
 
 async function create() {
   const trimmed = name.value.trim()
   if (!trimmed || saving.value) return
   saving.value = true
-  failed.value = false
+  problem.value = null
   try {
     const created = await $fetch<BoardSummary>('/api/boards', { method: 'POST', body: { name: trimmed, emoji: emoji.value } })
     open.value = false
     justCreated.value = created.id
     await navigateTo(boardPath(created))
   }
-  catch {
-    failed.value = true
+  catch (error) {
+    const status = (error as { statusCode?: number }).statusCode
+    problem.value = status === BOARD_LIMIT_REACHED
+      ? t.boards.tooManyBoards(BOARDS_PER_USER)
+      : status === 429 ? t.boards.tooManyToday : t.boards.failed
   }
   finally {
     saving.value = false
@@ -79,11 +84,11 @@ async function create() {
         />
       </div>
       <p
-        v-if="failed"
+        v-if="problem"
         role="alert"
         class="text-small text-danger"
       >
-        {{ t.boards.failed }}
+        {{ problem }}
       </p>
       <!-- Creating, it shows its dots undimmed; create() ignores a second
            submit meanwhile. -->

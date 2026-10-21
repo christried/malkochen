@@ -14,7 +14,7 @@ import { intlFor } from './intl'
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear, moment } = intlFor('de')
+const { number, plural, day: addedDate, month: monthAndYear, moment, time } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -74,6 +74,8 @@ export const de = {
     tooManyTries: 'Zu viele Versuche. Lass dir einen neuen Code schicken.',
     codeExpired: 'Der Code ist abgelaufen. Lass dir einen neuen schicken.',
     tooFast: 'Zu viele Anfragen. Warte kurz und versuch es dann noch mal.',
+    // Over the hourly limit on sign-in codes (#347, server/rate-limits.ts).
+    tooManyCodes: (at: Date) => `Zu viele Codes angefordert. Ab ${time(at)} Uhr kannst du wieder einen anfordern.`,
   },
   notUnlocked: {
     headline: 'Bald geht’s los!',
@@ -339,7 +341,7 @@ export const de = {
     notAnImage: 'Das ist kein Foto, das ich lesen kann. JPEG, PNG, WebP oder HEIC gehen.',
     failed: 'Das Hochladen hat nicht geklappt. Versuch es gleich noch mal.',
     // Over the user's upload limit (server/rate-limits.ts).
-    tooMany: 'Zu viele Fotos auf einmal. In einer Weile klappt es wieder.',
+    tooMany: 'Für heute waren das genug Fotos. Morgen klappt es wieder.',
     // Shifting a Source image or own photo within the card's frame.
     focus: 'Ausschnitt',
     focusHint: 'Verschieb das Bild, bis das Essen im Rahmen ist.',
@@ -424,6 +426,10 @@ export const de = {
     namePrompt: (example: string) => `z. B. „${example}“`,
     emoji: 'Emoji',
     create: 'Board erstellen',
+    // At BOARDS_PER_USER Boards of their own (#347, shared/board.ts), and
+    // over the daily limit on creating Boards (server/rate-limits.ts).
+    tooManyBoards: (count: number) => `Du hast schon ${number(count)} eigene Boards. Lösch eins, dann kannst du ein neues erstellen.`,
+    tooManyToday: 'Das waren viele neue Boards für einen Tag. Morgen kannst du wieder eins erstellen.',
     creating: 'Erstellt …',
     close: 'Schließen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',

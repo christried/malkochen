@@ -37,6 +37,12 @@ export async function endLimitWindow(email: string, limited: string): Promise<vo
   )
 }
 
+// Ends every user's current window of a limit: for test files that make
+// more calls than one user may in a window, such as uploads in a day.
+export async function endLimitWindows(limited: string): Promise<void> {
+  await query(`update rate_limit_use set window_start = window_start - interval '2 days' where limited = $1`, [limited])
+}
+
 // The same two for a limit counted per IP address (CLIENT_RATE_LIMITS).
 export async function useUpClientLimit(client: string, limited: string, calls: number): Promise<void> {
   await query(

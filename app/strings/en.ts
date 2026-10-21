@@ -8,7 +8,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear, moment } = intlFor('en-GB')
+const { number, plural, day: addedDate, month: monthAndYear, moment, time } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -61,6 +61,8 @@ export const en: Strings = {
     tooManyTries: 'Too many tries. Get a new code sent to you.',
     codeExpired: 'That code has expired. Get a new one sent to you.',
     tooFast: 'Too many requests. Wait a little, then try again.',
+    // Over the hourly limit on sign-in codes (#347, server/rate-limits.ts).
+    tooManyCodes: (at: Date) => `Too many codes asked for. You can ask for a new one from ${time(at)}.`,
   },
   notUnlocked: {
     headline: 'Almost there!',
@@ -283,7 +285,7 @@ export const en: Strings = {
     tooLarge: 'That photo is too big. A smaller one or a JPEG will do.',
     notAnImage: 'That’s not a photo I can read. JPEG, PNG, WebP or HEIC work.',
     failed: `Uploading didn’t work. ${tryAgain}`,
-    tooMany: 'Too many photos at once. It’ll work again in a while.',
+    tooMany: 'That’s enough photos for today. It’ll work again tomorrow.',
     focus: 'Framing',
     focusHint: 'Move the image until the food is in the frame.',
     focusValue: (x: number, y: number) => `${x}% from the left, ${y}% from the top`,
@@ -359,6 +361,10 @@ export const en: Strings = {
     namePrompt: (example: string) => `e.g. “${example}”`,
     emoji: 'Emoji',
     create: 'Create board',
+    // At BOARDS_PER_USER Boards of their own (#347, shared/board.ts), and
+    // over the daily limit on creating Boards (server/rate-limits.ts).
+    tooManyBoards: (count: number) => `You already have ${number(count)} boards of your own. Delete one to create a new one.`,
+    tooManyToday: 'That was a lot of new boards for one day. You can create another tomorrow.',
     creating: 'Creating…',
     close: 'Close',
     failed,

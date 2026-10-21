@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, test } from 'vitest'
+import { CLIENT_RATE_LIMITS } from '../../server/rate-limits'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 import { startResendService, type ResendService } from '../support/resend-service'
-import { expireSignInCode } from './time-travel'
+import { endClientLimitWindow, expireSignInCode, useUpClientLimit } from './time-travel'
 
 // Email sign-in with a code (#345, ADR 0007): POST
 // /api/auth/email-otp/send-verification-otp { email, type: 'sign-in' } emails
@@ -16,6 +17,8 @@ const MAATHAI = ALLOWLISTED[113]
 const MONTESSORI = ALLOWLISTED[114]
 const NIGHTINGALE = ALLOWLISTED[115]
 const SANGER = ALLOWLISTED[116]
+const FARADAY = ALLOWLISTED[128]
+const HOOKE = ALLOWLISTED[129]
 
 let resend: ResendService
 
@@ -32,10 +35,11 @@ beforeEach(() => resend.forget())
 // counts each test apart. New each run, so a rerun against the same server
 // starts clean.
 let clients = 0
-function visitor(): Caller {
+function visitor(): Caller & { address: string } {
   const address = `2001:db8:${(Date.now() % 0xffff).toString(16)}:${(++clients).toString(16)}::1`
   const jar = new Map<string, string>()
   return {
+    address,
     fetch: async (path, init) => {
       const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ')
       const res = await fetch(`${inject('apiBaseUrl')}${path}`, {
@@ -148,6 +152,46 @@ describe('signing in with a code', () => {
     for (let i = 0; i < 6; i++) answers.push((await askForCode(browser, SANGER)).status)
 
     expect(answers).toEqual([200, 200, 200, 200, 200, 429])
+  })
+})
+
+// Codes per address and per IP address per hour (#347,
+// server/rate-limits.ts), so nobody can spam an inbox or use up the email
+// quota. Over either, no email goes out: 429 "TOO_MANY_CODES", with when
+// another code can be asked for.
+describe('limits on sign-in codes', () => {
+  async function refusedUntil(res: Response): Promise<number> {
+    expect(res.status).toBe(429)
+    const body = await res.json()
+    expect(body.code).toBe('TOO_MANY_CODES')
+    return new Date(body.retryAt).getTime()
+  }
+
+  test('an address gets only so many codes an hour, from any IP address', async () => {
+    const { calls } = CLIENT_RATE_LIMITS['sign-in-codes-per-address']
+    await useUpClientLimit(FARADAY, 'sign-in-codes-per-address', calls - 1)
+
+    expect((await askForCode(visitor(), FARADAY)).status).toBe(200)
+    const retryAt = await refusedUntil(await askForCode(visitor(), FARADAY))
+    expect(resend.sent).toHaveLength(1)
+    expect(retryAt).toBeGreaterThan(Date.now() + 55 * 60_000)
+    expect(retryAt).toBeLessThanOrEqual(Date.now() + 60 * 60_000)
+
+    await endClientLimitWindow(FARADAY, 'sign-in-codes-per-address')
+    expect((await askForCode(visitor(), FARADAY)).status).toBe(200)
+  })
+
+  test('an IP address gets only so many codes an hour, for any address', async () => {
+    const browser = visitor()
+    const { calls } = CLIENT_RATE_LIMITS['sign-in-codes-per-ip']
+    await useUpClientLimit(browser.address, 'sign-in-codes-per-ip', calls - 1)
+
+    expect((await askForCode(browser, HOOKE)).status).toBe(200)
+    await refusedUntil(await askForCode(browser, FARADAY))
+    expect((await askForCode(visitor(), HOOKE)).status).toBe(200)
+
+    await endClientLimitWindow(browser.address, 'sign-in-codes-per-ip')
+    expect((await askForCode(browser, HOOKE)).status).toBe(200)
   })
 })
 

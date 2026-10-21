@@ -11,7 +11,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear, moment } = intlFor('it-IT')
+const { number, plural, day: addedDate, month: monthAndYear, moment, time } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -70,6 +70,8 @@ export const it: Strings = {
     tooManyTries: 'Troppi tentativi. Fatti inviare un nuovo codice.',
     codeExpired: 'Il codice è scaduto. Fattene inviare uno nuovo.',
     tooFast: 'Troppe richieste. Aspetta un attimo e poi riprova.',
+    // Over the hourly limit on sign-in codes (#347, server/rate-limits.ts).
+    tooManyCodes: (at: Date) => `Troppi codici richiesti. Potrai chiederne uno nuovo dalle ${time(at)}.`,
   },
   notUnlocked: {
     headline: 'Ci siamo quasi!',
@@ -294,7 +296,7 @@ export const it: Strings = {
     tooLarge: 'La foto è troppo grande. Una più piccola o un JPEG andranno bene.',
     notAnImage: 'Questa non è una foto che riesco a leggere. Vanno bene JPEG, PNG, WebP o HEIC.',
     failed: `Il caricamento non è riuscito. ${tryAgain}`,
-    tooMany: 'Troppe foto tutte insieme. Tra un po’ funzionerà di nuovo.',
+    tooMany: 'Per oggi le foto bastano. Domani funzionerà di nuovo.',
     focus: 'Inquadratura',
     focusHint: 'Sposta l’immagine finché il piatto non è nella cornice.',
     focusValue: (x: number, y: number) => `${x}% da sinistra, ${y}% dall’alto`,
@@ -370,6 +372,10 @@ export const it: Strings = {
     namePrompt: (example: string) => `ad es. “${example}”`,
     emoji: 'Emoji',
     create: 'Crea la bacheca',
+    // At BOARDS_PER_USER Boards of their own (#347, shared/board.ts), and
+    // over the daily limit on creating Boards (server/rate-limits.ts).
+    tooManyBoards: (count: number) => `Hai già ${number(count)} bacheche tue. Eliminane una per crearne una nuova.`,
+    tooManyToday: 'Sono tante bacheche nuove per un giorno solo. Domani potrai crearne un’altra.',
     creating: 'Creazione…',
     close: 'Chiudi',
     failed,

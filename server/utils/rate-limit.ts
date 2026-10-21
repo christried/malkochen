@@ -39,8 +39,15 @@ export async function spendRateLimit(userId: string, limited: RateLimited): Prom
 // is still within its limit. It doesn't throw: what to do over the limit is
 // the caller's to decide.
 export async function withinClientLimit(event: H3Event, limited: ClientRateLimited): Promise<boolean> {
+  return await spendClientLimit(getRequestIP(event, { xForwardedFor: true }) ?? 'unknown', limited) === null
+}
+
+// Counts one more call to `limited` by `client` (an IP address, or what else
+// tells callers apart, such as the email address a sign-in code goes to).
+// Answers null within the limit; over it, when the window is over and calls
+// go through again.
+export async function spendClientLimit(client: string, limited: ClientRateLimited): Promise<Date | null> {
   const { calls, window } = CLIENT_RATE_LIMITS[limited]
-  const client = getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
   const windowOver = sql`now() - ${window}::interval`
   const inWindow = gt(clientLimitUse.windowStart, windowOver)
   const [counted] = await db
@@ -53,9 +60,13 @@ export async function withinClientLimit(event: H3Event, limited: ClientRateLimit
         windowStart: sql`case when ${inWindow} then ${clientLimitUse.windowStart} else now() end`,
       },
     })
-    .returning({ calls: clientLimitUse.calls, newWindow: sql<boolean>`${clientLimitUse.windowStart} = now()` })
+    .returning({
+      calls: clientLimitUse.calls,
+      newWindow: sql<boolean>`${clientLimitUse.windowStart} = now()`,
+      windowEnd: sql<string>`${clientLimitUse.windowStart} + ${window}::interval`,
+    })
   if (counted?.newWindow) {
     await db.delete(clientLimitUse).where(and(eq(clientLimitUse.limited, limited), lt(clientLimitUse.windowStart, windowOver)))
   }
-  return (counted?.calls ?? 0) <= calls
+  return counted && counted.calls > calls ? new Date(counted.windowEnd) : null
 }

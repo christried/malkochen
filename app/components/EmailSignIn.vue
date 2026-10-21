@@ -37,11 +37,17 @@ function startWait() {
 }
 onBeforeUnmount(() => clearInterval(ticking))
 
-interface AuthError { status: number, code?: string }
+// `retryAt`: over the hourly limit on codes (#347), when another can be
+// asked for.
+interface AuthError { status: number, code?: string, retryAt?: string }
 
 async function refuse(error: AuthError) {
   if (error.status === 403 && error.code === 'not_allowed') {
     await navigateTo({ path: '/login', query: { error: 'not_allowed' } })
+    return
+  }
+  if (error.code === 'TOO_MANY_CODES' && error.retryAt) {
+    problem.value = t.signIn.tooManyCodes(new Date(error.retryAt))
     return
   }
   problem.value = error.status === 429

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, gt, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 import { stringsFor } from '../../app/strings'
+import { BOARDS_PER_USER } from '../../shared/board'
 import type { Language } from '../../shared/language'
 import { ALL_PERMISSIONS, type Permissions } from '../../shared/permissions'
 import { db, runAtomic, type Db } from '../db'
@@ -185,12 +186,15 @@ function lastOpenedBoard(userId: string, where?: SQL) {
 }
 
 // Creates a Board (PRD story 61) with the default Columns, in the user's
-// `language`, and the user as its Owner.
-export async function createBoard(userId: string, { name, emoji }: NewBoard, language: Language): Promise<BoardSummary> {
+// `language`, and the user as its Owner. Null if they already have
+// BOARDS_PER_USER Boards of their own (#347): counted under the slugs' lock,
+// so Boards created at once can't all slip under it.
+export async function createBoard(userId: string, { name, emoji }: NewBoard, language: Language): Promise<BoardSummary | null> {
   const id = randomUUID()
-  await runAtomic(d => [lockSlugs(d), insertBoard(d, id, userId, { name, emoji }, language)])
+  const underLimit = sql`(select count(*) from ${membership} where user_id = ${userId} and is_owner) < ${BOARDS_PER_USER}`
+  await runAtomic(d => [lockSlugs(d), insertBoard(d, id, userId, { name, emoji }, language, { where: underLimit })])
   const [created] = await db.select({ slug: slugOf }).from(board).where(eq(board.id, id))
-  if (!created) throw new Error(`Board ${id} was not created`)
+  if (!created) return null
   return { id, slug: created.slug, name, emoji, isOwner: true, permissions: ALL_PERMISSIONS }
 }
 
