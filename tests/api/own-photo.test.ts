@@ -1,15 +1,20 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import sharp from 'sharp'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { landingBoard as landingBoardOf, postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 import { storedImages } from './server-env'
+import { endLimitWindows } from './time-travel'
 
 // "Eigenes Foto": a Member uploads their own photo to a Board they are on
 // (POST /api/boards/:id/photos) and gets back where it is stored, with a
 // photo ticket. Adding or editing a Dish with that photo makes it the Dish's
 // image. Told apart by content, scaled down, stripped of its metadata.
+
+// More photos than one user may upload a day (server/rate-limits.ts): each
+// test starts as if the day were over.
+beforeEach(() => endLimitWindows('upload'))
 
 interface Dish { id: string, imageUrl: string | null, placeholder: string }
 interface Board { id: string, columns: { dishes: Dish[] }[] }

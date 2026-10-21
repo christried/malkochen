@@ -26,6 +26,8 @@ export function intlFor(locale: string) {
     day: dayOf,
     // "März 2026" / "March 2026".
     month: (date: Date) => month.format(date),
+    // "14:35": a time of day, such as when a limit frees up again.
+    time: (at: Date) => time.format(at),
     // A moment as the Dish History tells it: `today` with its time ("20:55")
     // if it was today, else its day as `day` writes it.
     moment: (at: Date, today: (time: string) => string) =>

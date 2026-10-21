@@ -2,6 +2,7 @@ import pg from 'pg'
 import sharp from 'sharp'
 import { beforeAll, expect, inject, test } from 'vitest'
 import { RATE_LIMITS, type RateLimited } from '../../server/rate-limits'
+import { BOARDS_PER_USER } from '../../shared/board'
 import { landingBoard, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 import { endLimitWindow, useUpLimit } from './time-travel'
@@ -86,6 +87,35 @@ test('Own Photos and Profile Pictures share one limit', async () => {
   expect((await profilePicture(user)).status).toBe(429)
 
   await endLimitWindow(rachel, 'upload')
+})
+
+// Boards per user (#347): at most BOARDS_PER_USER Boards of their own,
+// refused at creation (409) until they delete one. Boards they're a Member
+// of don't count. Mendel is used by this test only.
+test('a user with BOARDS_PER_USER Boards of their own can create another only once one is deleted', async () => {
+  const mendel = ALLOWLISTED[127]
+  const user = await signIn(mendel)
+  await landingBoard(user) // their first Board, made on landing
+  const newBoard = () => user.fetch('/api/boards', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Noch ein Board', emoji: '🥕' }),
+  })
+  const ids: string[] = []
+  for (let owned = 1; owned < BOARDS_PER_USER; owned++) {
+    const created = await newBoard()
+    expect(created.status).toBe(201)
+    ids.push((await created.json() as { id: string }).id)
+  }
+  // Their daily limit on creating Boards is a different one.
+  await endLimitWindow(mendel, 'create-board')
+
+  const refused = await newBoard()
+  expect(refused.status).toBe(409)
+  expect(await refused.json()).toMatchObject({ statusMessage: 'Too many Boards' })
+
+  expect((await user.fetch(`/api/boards/${ids[0]}`, { method: 'DELETE' })).status).toBe(204)
+  expect((await newBoard()).status).toBe(201)
 })
 
 // Better Auth limits requests per IP address. Kept in the database, not in

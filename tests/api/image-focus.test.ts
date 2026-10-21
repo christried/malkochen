@@ -1,13 +1,18 @@
 import sharp from 'sharp'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { landingBoard as landingBoardOf, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
+import { endLimitWindows } from './time-travel'
 
 // A Dish's focus point: which part of its image shows in a frame that crops
 // it (the card's thumb, the detail's header, search results). Stored as a
 // point in percent of the image, shared by all Members; the centre unless a
 // Member shifted it. Only a Source image or an own photo has one: a new
 // image starts in the centre, and so does a Placeholder.
+
+// More photos than one user may upload a day (server/rate-limits.ts): each
+// test starts as if the day were over.
+beforeEach(() => endLimitWindows('upload'))
 
 interface Focus { x: number, y: number }
 interface Dish { id: string, imageUrl: string | null, imageFocus: Focus }

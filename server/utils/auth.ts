@@ -12,6 +12,7 @@ import { parseServerEnv } from '../env'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
 import { usernameTaken } from './people'
+import { spendClientLimit } from './rate-limit'
 import { emailSignInOffered, mailSignInCode, SIGN_IN_CODE_MINUTES } from './sign-in-code'
 
 const env = parseServerEnv(process.env)
@@ -61,13 +62,21 @@ const emailSignIn = emailOTP({
 // sign-in gate lets in, so malkochen never emails a code that can't be used.
 // A refusal reads "Not unlocked", like a refused Google sign-in. New users
 // are checked again on creation (validateUserInfo), returning ones on every
-// request (server/middleware/auth.ts).
+// request (server/middleware/auth.ts). Then only so many codes an hour per
+// IP address and per address (#347, server/rate-limits.ts); over either,
+// 429 "TOO_MANY_CODES" with `retryAt`, when another can be asked for.
 const beforeSendingCode = createAuthMiddleware(async (ctx) => {
   if (ctx.path !== '/email-otp/send-verification-otp') return
   const { email, type } = (ctx.body ?? {}) as { email?: unknown, type?: unknown }
   if (type !== 'sign-in') throw new APIError('BAD_REQUEST', { message: 'Only sign-in codes are sent' })
-  const refusal = signInRefusal({ email: String(email ?? ''), emailVerified: true })
+  const address = String(email ?? '').trim().toLowerCase()
+  const refusal = signInRefusal({ email: address, emailVerified: true })
   if (refusal) throw new APIError('FORBIDDEN', { code: refusal.error, message: refusal.errorDescription })
+  // The visitor's IP address as h3's getRequestIP reads it: the first of
+  // x-forwarded-for, which Vercel sets.
+  const ip = ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const retryAt = await spendClientLimit(ip, 'sign-in-codes-per-ip') ?? await spendClientLimit(address, 'sign-in-codes-per-address')
+  if (retryAt) throw new APIError('TOO_MANY_REQUESTS', { code: 'TOO_MANY_CODES', message: 'Too many sign-in codes', retryAt: retryAt.toISOString() })
 })
 
 const onlyUsedEndpoints = {
