@@ -69,6 +69,8 @@ CREATE TRIGGER board_version_owner AFTER UPDATE ON membership
   FOR EACH ROW WHEN (OLD.is_owner IS DISTINCT FROM NEW.is_owner OR OLD.board_id IS DISTINCT FROM NEW.board_id)
   EXECUTE FUNCTION board_version_by_board_id();--> statement-breakpoint
 -- How a Member shows on each of their Boards: their Username and picture.
+-- Every one of their Boards in one statement, rather than
+-- bump_board_version() for each.
 CREATE FUNCTION board_version_by_member() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE board SET version = version + 1
