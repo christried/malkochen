@@ -23,8 +23,9 @@ const localNow = sql`(now() at time zone ${ZONE})`
 const count = (where: SQL) => sql`count(e.id) filter (where ${where})::int`
 
 // The last `n` days or weeks, newest first, each with what the event log
-// holds for it. An event's period is found by its time, so the index on
-// `at` is used.
+// holds for it: a move is one to another Column (no reorder, no "Rückgängig"),
+// a Vote one given where there was none. An event's period is found by its
+// time, so the index on `at` is used.
 async function periods(unit: 'day' | 'week', n: number): Promise<Period[]> {
   const step = sql.raw(`interval '1 ${unit}'`)
   const unitName = sql.raw(`'${unit}'`)
@@ -37,7 +38,7 @@ async function periods(unit: 'day' | 'week', n: number): Promise<Period[]> {
     )
     select to_char(p.start, 'YYYY-MM-DD') as start,
       ${sql.join(bySource, sql`, `)},
-      ${count(sql`e.kind = 'dish_moved' and e.details->'undo' is null`)} as moves,
+      ${count(sql`e.kind = 'dish_moved' and e.details->'undo' is null and e.details->>'from' <> e.details->>'to'`)} as moves,
       ${count(sql`e.kind = 'cooking_recorded'`)} as cookings,
       ${count(sql`e.kind = 'comment_written'`)} as comments,
       ${count(sql`e.kind = 'vote_set'`)} as votes,
@@ -78,14 +79,15 @@ async function active(): Promise<AdminFigures['active']> {
 }
 
 // New users per day, newest first: by Google if a Google sign-in created
-// them, else by email (Better Auth's email sign-in creates no account row).
+// them (its account row comes with the user), else by email (Better Auth's
+// email sign-in creates no account row; a Google one linked later does).
 async function signUps(): Promise<SignUps[]> {
   const rows = await db.execute<{ start: string, google: number, email: number }>(sql`
     with p as (
       select generate_series(date_trunc('day', ${localNow}) - ${sql.raw(String(DAYS - 1))} * interval '1 day', date_trunc('day', ${localNow}), interval '1 day') as start
     ),
     u as (
-      select u.created_at, exists (select 1 from account a where a.user_id = u.id and a.provider_id = 'google') as google
+      select u.created_at, exists (select 1 from account a where a.user_id = u.id and a.provider_id = 'google' and a.created_at < u.created_at + interval '1 minute') as google
       from "user" u
       where u.created_at >= (date_trunc('day', ${localNow}) - ${sql.raw(String(DAYS - 1))} * interval '1 day') at time zone ${ZONE}
     )

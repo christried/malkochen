@@ -86,6 +86,8 @@ test('the days and weeks count Dishes added by Source, moves, Cookings, Comments
   const plain = await addDish(boole, board.id, 'Linsensuppe')
   const archived = await addDish(boole, board.id, 'Apfelkuchen')
   const moved = await addDish(boole, board.id, 'Rührei')
+  // A reorder within its Column isn't a move.
+  expect((await post(boole, `/api/dishes/${moved.id}/move`, { columnId: board.columns[0]!.id, index: 1 })).status).toBe(200)
   expect((await post(boole, `/api/dishes/${moved.id}/move`, { columnId: board.columns[1]!.id })).status).toBe(200)
   expect((await post(boole, `/api/dishes/${plain.id}/move`, { columnId: gekocht.id })).status).toBe(200)
   expect((await post(boole, `/api/dishes/${plain.id}/cook`)).status).toBe(200)

@@ -22,6 +22,8 @@ export async function countUsage(kind: UsageKind, count: number): Promise<void> 
 }
 
 // One poll of an open Board (GET /api/boards/:id/version), counted by chance.
+// Never rejects: a count missed must not fail the poll.
 export async function countPoll(random = Math.random): Promise<void> {
-  if (random() < 1 / POLL_SAMPLE) await countUsage('poll', POLL_SAMPLE)
+  if (random() >= 1 / POLL_SAMPLE) return
+  await countUsage('poll', POLL_SAMPLE).catch(error => console.warn(`[usage] poll not counted: ${error}`))
 }
