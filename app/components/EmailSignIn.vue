@@ -11,7 +11,7 @@ const props = defineProps<{
 }>()
 
 const t = useStrings()
-const { sendSignInCode, signInWithCode } = useAuth()
+const { askForSignInCode, signInWithCode } = useAuth()
 
 // How long until another code can be asked for. Better Auth allows a few a
 // minute per IP address (server/utils/auth.ts).
@@ -58,7 +58,7 @@ async function askForCode() {
   busy.value = true
   problem.value = null
   try {
-    const { error } = await sendSignInCode(email.value.trim())
+    const { error } = await askForSignInCode(email.value.trim())
     if (error) return await refuse(error)
     sent.value = true
     code.value = ''
@@ -106,7 +106,10 @@ function otherEmail() {
 }
 
 onMounted(() => {
-  if (props.fromLink) code.value = props.fromLink.code
+  if (!props.fromLink) return
+  // Off the address bar and out of the history: the code is used up now.
+  history.replaceState(history.state, '', '/login')
+  code.value = props.fromLink.code
 })
 
 const emailId = useId()

@@ -31,6 +31,25 @@ const escapeHtml = (text: string) => text
   .replaceAll('"', '&quot;')
   .replaceAll('\'', '&#39;')
 
+// The colours every email is written in.
+const INK = '#131211'
+const MUTED = '#6B6862'
+
+// An email's whole HTML document around its `content`, in `language`;
+// `preheader` is the inbox's preview line, if it has its own.
+function emailPage(language: Language, subject: string, content: string, preheader?: string): string {
+  return `<!doctype html>
+<html lang="${language}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0;padding:24px 16px;background:#F7F6F2;color:${INK};font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.5">
+${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">${escapeHtml(preheader)}</div>
+` : ''}<div style="max-width:560px;margin:0 auto">
+${content}
+</div>
+</body>
+</html>`
+}
+
 // Who an email goes to: their address, their Username to greet them with
 // (null before they picked one) and the language it's written in (theirs,
 // server/utils/people.ts recipientLanguage).
@@ -66,27 +85,16 @@ export function digestEmail(to: Recipient, boards: BoardNews[], origin: string):
     `${t.noMore} ${t.turnOff}: ${link(SETTINGS)}`,
   ].join('\n')
 
-  const ink = '#131211'
-  const muted = '#6B6862'
-  const html = `<!doctype html>
-<html lang="${to.language}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head>
-<body style="margin:0;padding:24px 16px;background:#F7F6F2;color:${ink};font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.5">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">${escapeHtml(t.preheader(adders))}</div>
-<div style="max-width:560px;margin:0 auto">
-<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(greeting)}</h1>
+  const html = emailPage(to.language, subject, `<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(greeting)}</h1>
 <p style="margin:0 0 16px">${escapeHtml(t.intro)}</p>
 ${boards.map(({ board, dishes }) => `<div style="background:#FFFFFF;border-radius:16px;padding:16px 20px;margin:0 0 16px">
-<h2 style="font-family:Georgia,serif;font-size:20px;font-weight:600;margin:0 0 8px"><a href="${escapeHtml(link(boardPath(board)))}" style="color:${ink};text-decoration:none">${escapeHtml(boardName(board))}</a></h2>
+<h2 style="font-family:Georgia,serif;font-size:20px;font-weight:600;margin:0 0 8px"><a href="${escapeHtml(link(boardPath(board)))}" style="color:${INK};text-decoration:none">${escapeHtml(boardName(board))}</a></h2>
 <ul style="margin:0 0 12px;padding:0 0 0 20px">
-${dishes.map(d => `<li style="margin:0 0 4px"><a href="${escapeHtml(link(dishPath(board, d)))}" style="color:${ink}">${escapeHtml(d.title)}</a> <span style="color:${muted}">${escapeHtml(t.addedBy(d.addedBy))}</span></li>`).join('\n')}
+${dishes.map(d => `<li style="margin:0 0 4px"><a href="${escapeHtml(link(dishPath(board, d)))}" style="color:${INK}">${escapeHtml(d.title)}</a> <span style="color:${MUTED}">${escapeHtml(t.addedBy(d.addedBy))}</span></li>`).join('\n')}
 </ul>
-<a href="${escapeHtml(link(boardPath(board)))}" style="display:inline-block;background:${ink};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.openBoard)}</a>
+<a href="${escapeHtml(link(boardPath(board)))}" style="display:inline-block;background:${INK};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.openBoard)}</a>
 </div>`).join('\n')}
-<p style="color:${muted};font-size:13px;margin:24px 0 0">${escapeHtml(t.why)} ${escapeHtml(t.noMore)} <a href="${escapeHtml(link(SETTINGS))}" style="color:${muted}">${escapeHtml(t.turnOff)}</a>.</p>
-</div>
-</body>
-</html>`
+<p style="color:${MUTED};font-size:13px;margin:24px 0 0">${escapeHtml(t.why)} ${escapeHtml(t.noMore)} <a href="${escapeHtml(link(SETTINGS))}" style="color:${MUTED}">${escapeHtml(t.turnOff)}</a>.</p>`, t.preheader(adders))
 
   return { to: to.email, subject, html, text }
 }
@@ -117,25 +125,15 @@ export function signInCodeEmail(to: { email: string, language: Language }, code:
     t.notYou,
   ].join('\n')
 
-  const ink = '#131211'
-  const muted = '#6B6862'
-  const html = `<!doctype html>
-<html lang="${to.language}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head>
-<body style="margin:0;padding:24px 16px;background:#F7F6F2;color:${ink};font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.5">
-<div style="max-width:560px;margin:0 auto">
-<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(t.headline)}</h1>
+  const html = emailPage(to.language, subject, `<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(t.headline)}</h1>
 <p style="margin:0 0 16px">${escapeHtml(t.intro)}</p>
 <div style="background:#FFFFFF;border-radius:16px;padding:16px 20px;margin:0 0 8px;text-align:center">
 <p style="font-family:Menlo,Consolas,monospace;font-size:32px;font-weight:600;letter-spacing:8px;margin:0">${escapeHtml(code)}</p>
 </div>
-<p style="color:${muted};font-size:14px;margin:0 0 24px">${escapeHtml(t.expires(minutes))}</p>
+<p style="color:${MUTED};font-size:14px;margin:0 0 24px">${escapeHtml(t.expires(minutes))}</p>
 <p style="margin:0 0 8px">${escapeHtml(t.linkIntro)}</p>
-<a href="${escapeHtml(link)}" style="display:inline-block;background:${ink};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.link)}</a>
-<p style="color:${muted};font-size:13px;margin:24px 0 0">${escapeHtml(t.notYou)}</p>
-</div>
-</body>
-</html>`
+<a href="${escapeHtml(link)}" style="display:inline-block;background:${INK};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.link)}</a>
+<p style="color:${MUTED};font-size:13px;margin:24px 0 0">${escapeHtml(t.notYou)}</p>`)
 
   return { to: to.email, subject, html, text }
 }

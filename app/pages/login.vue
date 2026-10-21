@@ -6,8 +6,9 @@ import { shareReturnPath } from '~/utils/shared-link'
 
 // Sign-in (Google, or email with a code: EmailSignIn), and the "Not
 // unlocked" screen for a refused one: Better Auth sends a refused Google
-// sign-in back here as /login?error=not_allowed (server/utils/auth.ts). Each loops its clip, drawn in code (SvgLoop):
-// Topfbert wow, like the tiles' Placeholders, and not-unlocked (#217).
+// sign-in back here as /login?error=not_allowed (server/utils/auth.ts).
+// Each loops its clip, drawn in code (SvgLoop): Topfbert wow, like the
+// tiles' Placeholders, and not-unlocked (#217).
 const t = useStrings()
 const { signInWithGoogle } = useAuth()
 

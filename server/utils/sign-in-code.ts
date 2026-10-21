@@ -24,7 +24,7 @@ export const SIGN_IN_CODE_MINUTES = 10
 
 // Emails `code` to `email`, in the language they chose if they have an
 // account, else in the one the browser asking for it wants (`acceptLanguage`).
-export async function sendSignInCode(email: string, code: string, acceptLanguage: string | null): Promise<void> {
+export async function mailSignInCode(email: string, code: string, acceptLanguage: string | null): Promise<void> {
   if (!sendEmails) return
   const [known] = await db
     .select({ language: user.language, browserLanguage: user.browserLanguage })

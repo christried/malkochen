@@ -15,7 +15,7 @@ export function useAuth() {
     signInWithGoogle: (callbackURL = '/') => authClient.signIn.social({ provider: 'google', callbackURL }),
     // Email sign-in (#345): asks for a code to be emailed, then signs in
     // with it. Each answers Better Auth's { data, error }.
-    sendSignInCode: (email: string) => authClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' }),
+    askForSignInCode: (email: string) => authClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' }),
     signInWithCode: (email: string, otp: string) => authClient.signIn.emailOtp({ email, otp }),
     signOut: async () => {
       // While still signed in: only the user can turn theirs off.

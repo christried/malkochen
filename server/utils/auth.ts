@@ -12,7 +12,7 @@ import { parseServerEnv } from '../env'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
 import { usernameTaken } from './people'
-import { emailSignInOffered, sendSignInCode, SIGN_IN_CODE_MINUTES } from './sign-in-code'
+import { emailSignInOffered, mailSignInCode, SIGN_IN_CODE_MINUTES } from './sign-in-code'
 
 const env = parseServerEnv(process.env)
 
@@ -44,14 +44,16 @@ const USED_AUTH_PATHS = new Set(['/sign-in/social', '/callback/google', '/email-
 // Google signs into that account. Only the sign-in kind of code is sent;
 // email verification, password reset and changing email are off.
 const SIGN_IN_TRIES = 5
+// Asking for a code, or signing in with one: calls per minute per IP address.
+const EMAIL_SIGN_IN_CALLS_PER_MINUTE = 5
 const emailSignIn = emailOTP({
   otpLength: 6,
   expiresIn: SIGN_IN_CODE_MINUTES * 60,
   allowedAttempts: SIGN_IN_TRIES,
   storeOTP: 'hashed',
-  rateLimit: { window: 60, max: SIGN_IN_TRIES },
+  rateLimit: { window: 60, max: EMAIL_SIGN_IN_CALLS_PER_MINUTE },
   sendVerificationOTP: async ({ email, otp, type }, ctx) => {
-    if (type === 'sign-in') await sendSignInCode(email, otp, ctx?.headers?.get('accept-language') ?? null)
+    if (type === 'sign-in') await mailSignInCode(email, otp, ctx?.headers?.get('accept-language') ?? null)
   },
 })
 
