@@ -94,6 +94,89 @@ describe('the message', () => {
   })
 })
 
+describe('Comments and Votes (#352)', () => {
+  const DAL = { title: 'Linsen-Dal', code: 'd1' }
+  const PASTA = { title: 'Cremige Pilzpasta', code: 'p2' }
+  const DAL_HISTORY = '/b/kochclub/linsen-dal-d1#verlauf'
+  const comment = (by: string, dish = DAL, text = 'Hab ich gestern nachgekocht, mit doppelt Ingwer. Super!') => ({ dish, by, comment: text })
+  const vote = (by: string, dish = DAL, up = true) => ({ dish, by, up })
+
+  test('one Comment: who commented on which Dish, the Board and the Comment below, and it opens the Dish at its Verlauf', () => {
+    expect(pushMessage('de', { board: BOARD, dishes: [], talk: [comment('Ada')] })).toEqual({
+      title: 'Ada hat Linsen-Dal kommentiert',
+      body: '🍪 Kochclub: Hab ich gestern nachgekocht, mit doppelt Ingwer. Super!',
+      tag: `board-${BOARD.id}`,
+      url: DAL_HISTORY,
+    })
+  })
+
+  test('a long Comment is cut to fit on whole words, on one line', () => {
+    const text = 'Hab ich gestern nachgekocht,\nmit doppelt Ingwer und viel mehr Knoblauch als im Rezept steht. Beim nächsten Mal nehme ich auch noch Kokosmilch dazu.'
+    const { body } = pushMessage('de', { board: BOARD, dishes: [], talk: [comment('Ada', DAL, text)] })
+    expect(body).toBe('🍪 Kochclub: Hab ich gestern nachgekocht, mit doppelt Ingwer und viel mehr Knoblauch als im Rezept steht. Beim …')
+    expect(body.length).toBeLessThanOrEqual(120)
+  })
+
+  test('a Comment that is one long word is cut by characters, never inside an emoji', () => {
+    const { body } = pushMessage('de', { board: BOARD, dishes: [], talk: [comment('Ada', DAL, '😋'.repeat(100))] })
+    expect(body).toMatch(/^🍪 Kochclub: (😋)+ …$/u)
+    expect(body.length).toBeLessThanOrEqual(120)
+  })
+
+  test('one Vote: who thought what of which Dish, the Board below', () => {
+    expect(pushMessage('de', { board: BOARD, dishes: [], talk: [vote('Ada')] })).toMatchObject({ title: 'Ada fand Linsen-Dal gut 👍', body: '🍪 Kochclub', url: DAL_HISTORY })
+    expect(pushMessage('de', { board: BOARD, dishes: [], talk: [vote('Ada', DAL, false)] }).title).toBe('Ada fand Linsen-Dal nicht so gut 👎')
+  })
+
+  test('several things on one Dish: who, the latest first, and how many of each; it opens the Dish at its Verlauf', () => {
+    expect(pushMessage('de', { board: BOARD, dishes: [], talk: [vote('Linus'), comment('Ada')] })).toMatchObject({
+      title: 'Linus und Ada zu Linsen-Dal',
+      body: '🍪 Kochclub: 1 Kommentar, 1 Daumen',
+      url: DAL_HISTORY,
+    })
+    expect(pushMessage('de', { board: BOARD, dishes: [], talk: [comment('Ada'), comment('Ada')] }).title).toBe('Ada zu Linsen-Dal')
+  })
+
+  test('Comments on several Dishes: who wrote how many, on which, then the Votes; it opens the Board', () => {
+    expect(pushMessage('de', { board: BOARD, dishes: [], talk: [comment('Ada', PASTA), vote('Linus', PASTA), comment('Linus'), comment('Ada')] })).toMatchObject({
+      title: 'Ada und Linus haben 3 Kommentare geschrieben',
+      body: '🍪 Kochclub: zu Cremige Pilzpasta und Linsen-Dal. Dazu 1 Daumen.',
+      url: '/b/kochclub',
+    })
+  })
+
+  test('only Votes on several Dishes: who gave how many', () => {
+    expect(pushMessage('de', { board: BOARD, dishes: [], talk: [vote('Ada', PASTA), vote('Ada', DAL, false)] })).toMatchObject({
+      title: 'Ada hat 2 Daumen gegeben',
+      body: '🍪 Kochclub: zu Cremige Pilzpasta und Linsen-Dal',
+    })
+  })
+
+  test('with new Dishes: the push about them, then how many Comments and Votes', () => {
+    const dishes = [{ title: 'Ramen', code: 'r3', addedBy: 'Ada' }, { title: 'Ofengemüse mit Tahini', code: 'o4', addedBy: 'Ada' }]
+    expect(pushMessage('de', { board: BOARD, dishes, talk: [comment('Linus'), vote('Linus', PASTA), comment('Ada', PASTA)] })).toMatchObject({
+      title: 'Ada hat 2 Gerichte hinzugefügt',
+      body: '🍪 Kochclub: Ramen, Ofengemüse mit Tahini. Dazu 2 Kommentare und 1 Daumen.',
+      url: '/b/kochclub',
+    })
+  })
+
+  test('a new Dish and a Comment on it are about one Dish: it opens that Dish at its Verlauf', () => {
+    const dishes = [{ ...DAL, addedBy: 'Ada' }]
+    expect(pushMessage('de', { board: BOARD, dishes, talk: [comment('Linus')] })).toMatchObject({
+      title: 'Ada hat Linsen-Dal hinzugefügt',
+      body: '🍪 Kochclub. Dazu 1 Kommentar.',
+      url: DAL_HISTORY,
+    })
+  })
+
+  test('in English and Italian', () => {
+    expect(pushMessage('en', { board: BOARD, dishes: [], talk: [comment('Ada')] }).title).toBe('Ada commented on Linsen-Dal')
+    expect(pushMessage('en', { board: BOARD, dishes: [], talk: [vote('Linus'), comment('Ada')] }).body).toBe('🍪 Kochclub: 1 comment, 1 thumb')
+    expect(pushMessage('it', { board: BOARD, dishes: [], talk: [vote('Ada')] }).title).toBe('Ada ha dato un pollice in su a Linsen-Dal 👍')
+  })
+})
+
 describe('in the recipient\'s language', () => {
   const dishes = [{ title: 'Linsen-Dal', code: 'c0', addedBy: 'Ada' }, { title: 'Ramen', code: 'c1', addedBy: 'Linus' }]
 

@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
 import { startPushService, type Device, type PushService } from './push-service'
@@ -298,4 +298,118 @@ test('each Member is notified in their own language: their choice, else what the
   finally {
     await hypatia.fetch('/api/me/language', json('PUT', { language: 'auto' }))
   }
+})
+
+// Comments and Votes (#352): the same notification per Board counts them
+// too, sent on a new Comment or a new Vote.
+describe('Comments and Votes', () => {
+  const comment = (caller: Caller, dish: Dish, text: string) => caller.fetch(`/api/dishes/${dish.id}/comments`, json('POST', { text }))
+  const vote = (caller: Caller, dish: Dish, up: boolean) => caller.fetch(`/api/dishes/${dish.id}/vote`, json('PUT', { up }))
+
+  async function commented(caller: Caller, dish: Dish, text: string): Promise<{ id: string }> {
+    const res = await comment(caller, dish, text)
+    expect(res.status).toBe(201)
+    return res.json()
+  }
+
+  async function voted(caller: Caller, dish: Dish, up: boolean) {
+    expect((await vote(caller, dish, up)).status).toBe(200)
+  }
+
+  async function cooked(caller: Caller, dish: Dish) {
+    expect((await caller.fetch(`/api/dishes/${dish.id}/cook`, { method: 'POST' })).status).toBe(200)
+  }
+
+  // A Board of Katalin's with Hypatia and Mileva, a Cooked Dish on it, and
+  // Hypatia's device; everyone has opened it since.
+  async function talkingBoard(name: string) {
+    const katalin = await signIn(KATALIN, { name: 'Katalin Karikó' })
+    const hypatia = await signIn(HYPATIA, { name: 'Hypatia' })
+    const mileva = await signIn(MILEVA, { name: 'Mileva' })
+    const board = await sharedBoard(katalin, [hypatia, mileva], name, '🍪')
+    const dal = await addDish(katalin, board.id, 'Linsen-Dal')
+    await cooked(katalin, dal)
+    for (const caller of [katalin, hypatia, mileva]) await open(caller, board.id)
+    await subscribed(hypatia, `hypatia-${name}`)
+    pushService.forget()
+    return { katalin, hypatia, mileva, board, dal, kati: await usernameOf(katalin), mile: await usernameOf(mileva) }
+  }
+
+  const messages = () => pushService.deliveries.map(d => d.message)
+
+  test('a Comment and a Vote each notify, about one Dish opening it at its Verlauf, counting both', async () => {
+    const { mileva, katalin, board, dal, kati, mile } = await talkingBoard('Verlauf')
+    const atHistory = `/b/${board.slug}/linsen-dal-${dal.code}#verlauf`
+
+    await commented(mileva, dal, 'Hab ich gestern nachgekocht. Super!')
+    expect(messages()).toEqual([{ title: `${mile} hat Linsen-Dal kommentiert`, body: '🍪 Verlauf: Hab ich gestern nachgekocht. Super!', tag: `board-${board.id}`, url: atHistory }])
+
+    await voted(katalin, dal, true)
+    expect(messages().at(-1)).toEqual({ title: `${kati} und ${mile} zu Linsen-Dal`, body: '🍪 Verlauf: 1 Kommentar, 1 Daumen', tag: `board-${board.id}`, url: atHistory })
+  })
+
+  test('counted together with new Dishes, until the Member opens the Board again', async () => {
+    const { katalin, hypatia, mileva, board, dal, kati } = await talkingBoard('Gemischt')
+
+    await addDish(katalin, board.id, 'Ramen')
+    await addDish(katalin, board.id, 'Shakshuka')
+    await commented(mileva, dal, 'Lecker')
+    await voted(mileva, dal, false)
+    expect(messages().at(-1)).toMatchObject({ title: `${kati} hat 2 Gerichte hinzugefügt`, body: '🍪 Gemischt: Shakshuka, Ramen. Dazu 1 Kommentar und 1 Daumen.', url: `/b/${board.slug}` })
+
+    await open(hypatia, board.id)
+    await voted(katalin, dal, true)
+    expect(messages().at(-1)!.title).toBe(`${kati} fand Linsen-Dal gut 👍`)
+  })
+
+  test('nothing about one\'s own, edits, changed or repeated Votes', async () => {
+    const { hypatia, mileva, dal } = await talkingBoard('Leise')
+    const theirs = await commented(mileva, dal, 'Erst mal')
+    await voted(mileva, dal, true)
+    pushService.forget()
+
+    // Hypatia's own: her device gets nothing.
+    await commented(hypatia, dal, 'Meins')
+    await voted(hypatia, dal, true)
+    // Mileva's edit, the same Vote again, and a changed one.
+    expect((await mileva.fetch(`/api/comments/${theirs.id}`, json('PATCH', { text: 'Doch anders' }))).status).toBe(200)
+    await voted(mileva, dal, true)
+    await voted(mileva, dal, false)
+
+    expect(pushService.deliveries).toEqual([])
+  })
+
+  test('a Vote changed since the Member last opened the Board isn\'t counted again', async () => {
+    const { hypatia, mileva, board, dal, mile } = await talkingBoard('Umgestimmt')
+    await voted(mileva, dal, true)
+    await open(hypatia, board.id)
+    await voted(mileva, dal, false)
+    pushService.forget()
+
+    await commented(mileva, dal, 'Doch nicht so')
+    expect(messages().map(m => m.title)).toEqual([`${mile} hat Linsen-Dal kommentiert`])
+  })
+
+  test('a deleted Comment and an Archived Dish are left out', async () => {
+    const { katalin, hypatia, mileva, board, dal, mile } = await talkingBoard('Weg')
+    const ramen = await addDish(katalin, board.id, 'Ramen')
+    await open(hypatia, board.id)
+    const deleted = await commented(mileva, dal, 'Ups')
+    expect((await mileva.fetch(`/api/comments/${deleted.id}`, { method: 'DELETE' })).status).toBe(204)
+    await commented(mileva, ramen, 'Zu Ramen')
+    expect((await katalin.fetch(`/api/dishes/${ramen.id}`, { method: 'DELETE' })).status).toBe(204)
+    pushService.forget()
+
+    await commented(mileva, dal, 'Jetzt aber')
+    expect(messages()).toEqual([expect.objectContaining({ title: `${mile} hat Linsen-Dal kommentiert`, body: '🍪 Weg: Jetzt aber' })])
+  })
+
+  test('a Member who may not comment and vote is still notified of others\'', async () => {
+    const { katalin, hypatia, mileva, board, dal, mile } = await talkingBoard('Zuschauen')
+    const { id } = await (await hypatia.fetch('/api/me')).json() as { id: string }
+    expect((await katalin.fetch(`/api/boards/${board.id}/members/${id}/permissions`, json('PATCH', { commentAndVote: false }))).status).toBe(200)
+
+    await commented(mileva, dal, 'Hallo')
+    expect(messages().map(m => m.title)).toEqual([`${mile} hat Linsen-Dal kommentiert`])
+  })
 })

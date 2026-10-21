@@ -110,6 +110,17 @@ test('with an app window open, a tap focuses it and has it open the Dish or Boar
   expect(sw.opened).toEqual([])
 })
 
+test('a tap about Comments or Votes opens the Dish at its Verlauf (#352)', async () => {
+  const open = window(`${ORIGIN}/b/kochclub`)
+  const sw = serviceWorker({ windows: [open] })
+  await sw.tap({ url: '/b/kochclub/linsen-dal-3f9k#verlauf' })
+  expect(open.postMessage).toHaveBeenCalledWith({ type: 'open', url: '/b/kochclub/linsen-dal-3f9k#verlauf' })
+
+  const closed = serviceWorker()
+  await closed.tap({ url: '/b/kochclub/linsen-dal-3f9k#verlauf' })
+  expect(closed.opened).toEqual(['/b/kochclub/linsen-dal-3f9k#verlauf'])
+})
+
 test('a tap never leaves the app: an address elsewhere opens the app\'s start', async () => {
   const sw = serviceWorker()
   await sw.tap({ url: 'https://evil.example/' })

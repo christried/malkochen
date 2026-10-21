@@ -109,7 +109,7 @@ A Dish another Member added to a Board since you last opened that Board (or join
 _Avoid_: Unread, notification
 
 **Push Notification**:
-A notification on a Member's device that other Members added Dishes to one of their Boards, sent only to devices the Member turned push notifications on for in their settings (off by default). One per Board, replaced as more Dishes come in: it counts the Dishes others added since the Member last had the Board open and names who added them; about one Dish, tapping it opens that Dish, else the Board. Nothing but adding a Dish sends one.
+A notification on a Member's device that other Members added Dishes to one of their Boards, or wrote Comments and gave Votes on its Dishes, sent only to devices the Member turned push notifications on for in their settings (off by default). One per Board, replaced as more comes in: it counts the Dishes, Comments and Votes others added since the Member last had the Board open and names who; about one Dish, tapping it opens that Dish (at its Dish History when it's about Comments or Votes), else the Board. Adding a Dish, writing a Comment and giving a new Vote send one; editing a Comment or changing a Vote doesn't. Nothing about one's own, about Archived Dishes, or about a deleted Comment. Members who may not comment and vote get them too.
 _Avoid_: Alert, reminder
 
 **Email Digest**:

@@ -44,6 +44,14 @@ export function dishPath(board: { slug: string }, dish: { title: string, code: s
   return `${boardPath(board)}/${dishSegment(dish)}`
 }
 
+// The Dish's detail scrolled to its Dish History ("Verlauf"), where its
+// Comments and Votes are (DishHistory).
+export const DISH_HISTORY_HASH = '#verlauf'
+
+export function dishHistoryPath(board: { slug: string }, dish: { title: string, code: string }): string {
+  return `${dishPath(board, dish)}${DISH_HISTORY_HASH}`
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function isUuid(text: string): boolean {
