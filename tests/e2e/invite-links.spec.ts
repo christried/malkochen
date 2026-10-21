@@ -17,7 +17,7 @@ async function ownersLink(page: Page, name: string, emoji: string): Promise<{ id
   expect(res.status()).toBe(201)
   const { id, slug } = await res.json()
   await gotoHydrated(page, `/b/${slug}/settings`)
-  const link = await page.getByLabel('Einladungslink').inputValue()
+  const link = await page.getByLabel('Einladungslink', { exact: true }).inputValue()
   expect(link).toMatch(new RegExp(`/invite/${slug}-[2-9a-hjkmnp-z]{17}$`))
   return { id, slug, link }
 }
@@ -69,13 +69,13 @@ test('a signed-in user opening the link joins at once, and a reset link stops wo
 
   // Only the Owner sees "Link zurücksetzen".
   await gotoHydrated(invited, `/b/${slug}/settings`)
-  await expect(invited.getByLabel('Einladungslink')).toHaveValue(link)
+  await expect(invited.getByLabel('Einladungslink', { exact: true })).toHaveValue(link)
   await expect(invited.getByRole('button', { name: 'Link zurücksetzen' })).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Link zurücksetzen' }).click()
   await page.getByRole('dialog', { name: 'Link zurücksetzen?' }).getByRole('button', { name: 'Link zurücksetzen' }).click()
   await expect(page.getByText('Neuer Link erstellt')).toBeVisible()
-  await expect(page.getByLabel('Einladungslink')).not.toHaveValue(link)
+  await expect(page.getByLabel('Einladungslink', { exact: true })).not.toHaveValue(link)
 
   const stranger = await secondBrowser(browser)
   await gotoHydrated(stranger, link)
@@ -88,7 +88,7 @@ test('a renamed Board’s link names it anew, and the link sent before still ope
   expect((await page.request.patch(`/api/boards/${id}`, { data: { name: 'Eintopfabend' } })).status()).toBe(200)
 
   await reloadHydrated(page)
-  await expect(page.getByLabel('Einladungslink')).toHaveValue(new RegExp(`/invite/eintopfabend-${secret}$`))
+  await expect(page.getByLabel('Einladungslink', { exact: true })).toHaveValue(new RegExp(`/invite/eintopfabend-${secret}$`))
 
   const invited = await secondBrowser(browser)
   await gotoHydrated(invited, link)
@@ -104,7 +104,7 @@ test('a link from before readable Invite Links still opens the invite, and setti
   await expect(invited.getByRole('heading', { level: 1 })).toHaveText('Du wurdest zu 🥗 Altes Linkdinner eingeladen')
 
   await reloadHydrated(page)
-  await expect(page.getByLabel('Einladungslink')).toHaveValue(new RegExp(`/invite/${slug}-${token}$`))
+  await expect(page.getByLabel('Einladungslink', { exact: true })).toHaveValue(new RegExp(`/invite/${slug}-${token}$`))
 })
 
 test('someone who asked for too many links that don’t exist is told to try again soon, not that the link is gone', async ({ page, browser }) => {

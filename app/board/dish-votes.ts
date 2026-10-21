@@ -9,8 +9,9 @@ import type { VoteView } from '../../server/utils/votes'
 // Dish History all show them from there.
 
 // What the page tells the Member about a Vote, as a key in its UI strings:
-// the write failed.
-export type VoteNotice = 'voteFailed'
+// the write failed (`voteNotAllowed`: refused as the user's Permissions no
+// longer allow it).
+export type VoteNotice = 'voteFailed' | 'voteNotAllowed'
 
 export interface VoteResult {
   // The Member's Vote now: null once taken back.
@@ -34,9 +35,13 @@ interface VoteHost {
   // Runs `write` after the writes queued before it under the same key
   // (board-module.ts).
   queued: <T>(key: string, write: () => Promise<T>, options: { moves: false }) => Promise<T>
+  // Whether a failed write was refused for the user's Permissions (403).
+  isRefused: (error: unknown) => boolean
+  // Whether the user may vote on the Board ("comment and vote").
+  mayVote: () => boolean
 }
 
-export function createDishVotes({ transport, find, queued }: VoteHost) {
+export function createDishVotes({ transport, find, queued, isRefused, mayVote }: VoteHost) {
   // Each Dish's Vote of the Member's as the server last had it, while a
   // Vote of theirs on it is under way: where a failed one goes back to,
   // also when one before it is still unconfirmed.
@@ -58,11 +63,11 @@ export function createDishVotes({ transport, find, queued }: VoteHost) {
   // server saved it. It waits for the Dish's writes before it, so a Vote
   // right after "Gekocht ✓" reaches the server once that Cooking is
   // recorded. If it fails, the Member's Vote is back to what the server
-  // has, with a notice. Null for a Dish not shown, never Cooked, or the
-  // Vote it has already.
+  // has, with a notice. Null for a Dish not shown, never Cooked, the Vote
+  // it has already, or without "comment and vote".
   function vote(dishId: string, up: boolean | null, voter: DishAdder): VoteResult | null {
     const dish = find(dishId)
-    if (!dish || dish.cookings.length === 0) return null
+    if (!dish || dish.cookings.length === 0 || !mayVote()) return null
     const before = dish.votes.find(v => v.voter.id === voter.id) ?? null
     if ((before?.up ?? null) === up) return null
     const now: VoteView | null = up === null ? null : { voter, up, votedAt: new Date().toISOString() }
@@ -76,9 +81,9 @@ export function createDishVotes({ transport, find, queued }: VoteHost) {
       // A later Vote under way shows its own thumb until it settles.
       if (underWay.get(dishId) === 1 && now && saved) Object.assign(now, saved)
       return { vote: now }
-    }, (): VoteResult => {
+    }, (error: unknown): VoteResult => {
       if (underWay.get(dishId) === 1) show(dishId, voter.id, confirmed.get(dishId) ?? null)
-      return { vote: confirmed.get(dishId) ?? null, notice: 'voteFailed' }
+      return { vote: confirmed.get(dishId) ?? null, notice: isRefused(error) ? 'voteNotAllowed' : 'voteFailed' }
     }).finally(() => underWay.set(dishId, underWay.get(dishId)! - 1))
 
     // "Rückgängig": once the Vote has settled, the Member's Vote is back to

@@ -660,14 +660,16 @@ function votingFor(dish: DishView) {
 // with Topfbert (naming `toBoard`, for a Dish moved into its Gekocht
 // Column), and the Gekocht toast at the bottom, offering "Rückgängig",
 // "Wie war's?" with 👍 👎 (not for a Dish now on another Board) and
-// "Kommentieren". The Cooking that makes the Dish a Klassiker (the 10th)
-// celebrates that too.
+// "Kommentieren", both only with "comment and vote" on the Dish's Board.
+// The Cooking that makes the Dish a Klassiker (the 10th) celebrates that
+// too.
 function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point | null, toBoard?: BoardListing | null) {
   const recorded = settled?.then(r => r.cooking ?? null) ?? Promise.resolve(null)
   hapticCelebrate()
   gekochtPill.show({ cheer: nextCheer(t.dish.cheers), ...toBoard && { board: boardLabel(toBoard) } })
   if (origin !== null) confetti.fire(origin ?? gekochtPill.origin())
-  const vote = toBoard ? undefined : votingFor(dish)
+  const mayCommentAndVote = toBoard ? toBoard.permissions.commentAndVote : boardModule.may('commentAndVote')
+  const vote = toBoard || !mayCommentAndVote ? undefined : votingFor(dish)
   showToast({
     text: t.dish.cook,
     ...toBoard && { unseen: t.dish.cookedOn(boardLabel(toBoard)) },
@@ -678,7 +680,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           void undo().then(r => showResult(r))
         } }]
       : [],
-    howWasIt: { comment: { label: t.dish.comment, run: () => commentOn(dish, toBoard) }, ...vote && { vote } },
+    ...mayCommentAndVote && { howWasIt: { comment: { label: t.dish.comment, run: () => commentOn(dish, toBoard) }, ...vote && { vote } } },
   })
   if (dish.cookings.length === MILESTONE_COOKINGS) void celebrateMilestone(dish, recorded)
 }
@@ -955,8 +957,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
               </template>
             </div>
           </section>
-          <!-- Desktop: a new Column is added here, after the last one. -->
+          <!-- Desktop: a new Column is added here, after the last one, with
+               "edit Columns". -->
           <AddColumnLane
+            v-if="boardModule.may('editColumns')"
             class="hidden desktop:block"
             @failed="showNotice(t.settings.failed)"
           />

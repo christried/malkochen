@@ -92,7 +92,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await openBoardSettings(page)
     await expectLabelInBorder(page, page.getByLabel('Name', { exact: true }), 'Name')
     await expectLabelInBorder(page, page.getByLabel('Neue Spalte'), 'Neue Spalte')
-    await expectLabelInBorder(page, page.getByLabel('Einladungslink'), 'Einladungslink')
+    await expectLabelInBorder(page, page.getByLabel('Einladungslink', { exact: true }), 'Einladungslink')
     await page.getByRole('link', { name: 'Zurück zum Board' }).click()
 
     // Add Dish: the link step, then the form.

@@ -12,6 +12,7 @@ export default defineEventHandler(async (event): Promise<ColumnView[]> => {
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Column order' })
   const user = requireUser(event)
+  await requirePermission(boardId, user.id, 'editColumns')
   const columns = await reorderColumns(boardId, user.id, parsed.data.columnIds)
   if (columns) return columns
   if (await isMember(boardId, user.id)) throw createError({ statusCode: 400, statusMessage: 'The order must name each Column of the Board once' })

@@ -180,3 +180,60 @@ test('without editing and archiving, a Member edits and restores only their own 
   await expect(radia.locator('[data-archived-dish]')).toHaveCount(2)
   await expect(radia.getByRole('button', { name: '„Evelyns Bärlauchpesto“ wiederherstellen' })).toHaveCount(0)
 })
+
+// The id of Radia on the Board, for Evelyn to switch Radia's Permissions.
+async function radiaOn(page: Page, boardId: string): Promise<string> {
+  const { members } = await (await page.request.get(`/api/boards/${boardId}`)).json() as { members: { id: string, name: string }[] }
+  return members.find(m => m.name === 'radia')!.id
+}
+
+// Without "Kommentieren und abstimmen" (#342) Radia reads the Verlauf,
+// Evelyn's Comment included, but has no comment field and no 👍/👎.
+test('without commenting and voting, a Member reads the Verlauf but has no comment field', async ({ page, browser }) => {
+  const { boardId, radia } = await sharedBoard(page, browser, 'Teestube')
+  const added = await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title: 'Evelyns Chai', placeholder: 'bowl' } })
+  expect(added.status()).toBe(201)
+  const { id: dishId } = await added.json() as { id: string }
+  expect((await page.request.post(`/api/dishes/${dishId}/cook`)).status()).toBe(200)
+  expect((await page.request.post(`/api/dishes/${dishId}/comments`, { data: { text: 'Mit viel Kardamom' } })).status()).toBe(201)
+  expect((await page.request.patch(`/api/boards/${boardId}/members/${await radiaOn(page, boardId)}/permissions`, { data: { commentAndVote: false } })).status()).toBe(200)
+
+  await gotoHydrated(radia, `/b/${boardId}`)
+  await radia.getByRole('link', { name: 'Evelyns Chai', exact: true }).click()
+  const history = radia.getByRole('dialog', { name: 'Evelyns Chai' }).locator('[data-dish-history]')
+  await expect(history.locator('[data-comment]')).toHaveText([/Mit viel Kardamom/])
+  await expect(history.locator('[data-cooking]')).toHaveCount(1)
+  await expect(history.getByRole('textbox', { name: 'Kommentar' })).toHaveCount(0)
+  await expect(history.locator('[data-how-was-it]')).toHaveCount(0)
+})
+
+// Without "Spalten bearbeiten", "Einladungslink teilen" and "Name und Emoji"
+// (#342) Radia's Board settings show the name, emoji and Columns without a
+// way to change them, and no Invite Link; the Board has no add-Column lane,
+// which comes back at the next check once Evelyn switches it on again.
+test('without Columns, the Invite Link and the Board name, a Member\'s settings only show them', async ({ page, browser }) => {
+  const { boardId, radia } = await sharedBoard(page, browser, 'Vorratskammer')
+  const radiaId = await radiaOn(page, boardId)
+  expect((await page.request.patch(`/api/boards/${boardId}/members/${radiaId}/permissions`, { data: { editColumns: false, shareInvite: false, editBoard: false } })).status()).toBe(200)
+
+  await gotoHydrated(radia, `/b/${boardId}/settings`)
+  await expect(radia.getByRole('textbox', { name: 'Name' })).toHaveValue('Vorratskammer')
+  await expect(radia.getByRole('textbox', { name: 'Name' })).not.toBeEditable()
+  await expect(radia.getByRole('button', { name: 'Emoji ändern' })).toHaveCount(0)
+  await expect(radia.getByRole('img', { name: 'Emoji ändern: 🥗' })).toBeVisible()
+  await expect(radia.getByRole('list', { name: 'Spalten' }).getByRole('listitem')).toHaveCount(3)
+  await expect(radia.locator('[data-grip]')).toHaveCount(0)
+  await expect(radia.getByRole('textbox', { name: 'Neue Spalte' })).toHaveCount(0)
+  await expect(radia.getByRole('heading', { name: 'Einladen' })).toHaveCount(0)
+  await expect(radia.getByRole('textbox', { name: 'Einladungslink' })).toHaveCount(0)
+  const own = radia.getByRole('group', { name: 'Was du hier darfst' })
+  for (const name of ['Spalten bearbeiten', 'Einladungslink teilen', 'Name und Emoji']) {
+    await expect(own.getByRole('switch', { name })).toHaveAttribute('aria-checked', 'false')
+  }
+
+  await fastPolls(radia)
+  await gotoHydrated(radia, `/b/${boardId}`)
+  await expect(radia.getByRole('button', { name: 'Neue Spalte' })).toHaveCount(0)
+  expect((await page.request.patch(`/api/boards/${boardId}/members/${radiaId}/permissions`, { data: { editColumns: true } })).status()).toBe(200)
+  await expect(radia.getByRole('button', { name: 'Neue Spalte' })).toBeVisible()
+})

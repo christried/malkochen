@@ -89,9 +89,11 @@ function isGone(error: unknown) {
 }
 
 // Whether a write failed because the user's Permissions don't allow it
-// (403), as the server has them.
+// (403), as the server has them: through the Board module (WriteFailed),
+// or straight through $fetch, as Board settings writes.
 export function isRefused(error: unknown) {
-  return error instanceof WriteFailed && error.status === 403
+  if (error instanceof WriteFailed) return error.status === 403
+  return (error as { statusCode?: number } | null)?.statusCode === 403
 }
 
 // The notice for a write that failed with `error`: `notAllowed` if the
@@ -642,10 +644,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // A new Column (from the Board's add lane, on desktop): once the server
   // has added it, at the end, it shows there, empty. Not optimistic, as it
   // has no id before. A failed write rejects with WriteFailed, for the form
-  // to say so.
+  // to say so; without "edit Columns", at once with 403, as the server would.
   async function addColumn(name: string): Promise<ColumnView> {
     const boardId = board.value?.id
     if (!boardId) throw new WriteFailed()
+    if (!may('editColumns')) throw new WriteFailed(403)
     const added = await transport.addColumn(boardId, name)
     if (board.value?.id === boardId) board.value.columns.push({ ...added, dishes: [] })
     return added
@@ -820,10 +823,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   }
 
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone })
+  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote') })
 
   // The Member's Votes on the Board's Dishes.
-  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued })
+  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote') })
 
   // How many Dishes are on the Board, the Gekocht Column's included: it
   // follows every operation and poll, as the cards do.

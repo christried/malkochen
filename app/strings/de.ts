@@ -244,6 +244,9 @@ export const de = {
     voteDown: 'Daumen runter',
     voted: (name: string, up: boolean) => up ? `${name} fand es gut` : `${name} fand es nicht so gut`,
     voteFailed: 'Deine Stimme ließ sich nicht speichern. Versuch es gleich noch mal.',
+    // Refused as the Owner just took "comment and vote" away.
+    commentNotAllowed: 'Auf diesem Board darfst du nicht mehr kommentieren. Das legt die Besitzer:in fest.',
+    voteNotAllowed: 'Auf diesem Board darfst du nicht mehr abstimmen. Das legt die Besitzer:in fest.',
   },
   achievement: {
     level: {
@@ -493,6 +496,10 @@ export const de = {
       editDishes: { label: 'Gerichte bearbeiten', hint: 'Titel, Bild, Creator und Link ändern. Eigene Gerichte immer.' },
       moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen und als gekocht markieren.' },
       archiveDishes: { label: 'Gerichte archivieren', hint: 'Gerichte archivieren und aus dem Archiv zurückholen. Eigene Gerichte immer.' },
+      editColumns: { label: 'Spalten bearbeiten', hint: 'Spalten hinzufügen, umbenennen, umsortieren und löschen.' },
+      shareInvite: { label: 'Einladungslink teilen', hint: 'Den Link sehen, kopieren und weitergeben.' },
+      commentAndVote: { label: 'Kommentieren und abstimmen', hint: 'Im Verlauf schreiben und Daumen geben. Lesen geht immer.' },
+      editBoard: { label: 'Name und Emoji', hint: 'Das Board umbenennen und sein Emoji ändern.' },
     },
     handOver: 'Besitz übertragen',
     handOverConfirm: (name: string) => `Besitz an ${name} übertragen?`,
@@ -531,6 +538,8 @@ export const de = {
     purgeBody: 'Das Gericht verschwindet dann mit seinem Bild und allem, was ihr dazu eingetragen habt. Das lässt sich nicht rückgängig machen.',
     purged: (title: string) => `„${title}“ ist endgültig gelöscht.`,
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    // A change refused as the Owner just switched the Permission off.
+    notAllowed: 'Das darfst du auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
   },
   // public/offline.html repeats these, for the service worker. It also has
   // the only copy of "malkochen ist gerade nicht erreichbar", which only it

@@ -14,7 +14,9 @@ export default defineEventHandler(async (event): Promise<ColumnView> => {
   const columnId = columnIdParam(event)
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A Column needs a name, and a subtitle has at most 40 characters' })
-  const edited = await editColumn(columnId, requireUser(event).id, parsed.data)
+  const user = requireUser(event)
+  await requireColumnPermission(columnId, user.id, 'editColumns')
+  const edited = await editColumn(columnId, user.id, parsed.data)
   if (!edited) throw columnNotFound()
   if (edited === 'gekocht') throw createError({ statusCode: 400, statusMessage: 'The Gekocht Column’s subtitle can’t be changed' })
   return edited

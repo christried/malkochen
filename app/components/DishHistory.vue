@@ -78,6 +78,9 @@ function vote(up: boolean | null) {
 }
 
 const isOwn = (comment: CommentView) => !!me.value && comment.author?.id === me.value.id
+// Without "comment and vote" the Verlauf is only to read: no comment field,
+// no editing, no 👍/👎. Deleting one's own Comment stays.
+const mayCommentAndVote = computed(() => boardModule.may('commentAndVote'))
 const canDelete = (comment: CommentView) => isOwn(comment) || props.isOwner
 
 // The "…" of one Comment at a time.
@@ -203,7 +206,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
     </div>
 
     <div
-      v-if="dish.cookings.length"
+      v-if="dish.cookings.length && mayCommentAndVote"
       class="flex items-center gap-3"
       data-how-was-it
     >
@@ -214,7 +217,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       />
     </div>
     <div
-      v-else
+      v-else-if="!dish.cookings.length"
       class="mx-auto aspect-[510/354] w-[min(50vw,180px)]"
     >
       <SvgLoop
@@ -364,7 +367,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             class="flex gap-1.5"
           >
             <button
-              v-if="isOwn(entry.comment)"
+              v-if="isOwn(entry.comment) && mayCommentAndVote"
               type="button"
               :class="menuButton"
               @click="edit(entry.comment)"
@@ -400,6 +403,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
 
     <!-- The comment field, under the Verlauf like a chat's. -->
     <form
+      v-if="mayCommentAndVote"
       class="flex flex-col gap-1.5"
       data-comment-form
       @submit.prevent="submit"

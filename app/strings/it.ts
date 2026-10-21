@@ -205,6 +205,8 @@ export const it: Strings = {
     voteDown: 'Pollice in giù',
     voted: (name: string, up: boolean) => up ? `A ${name} è piaciuto` : `A ${name} non è piaciuto molto`,
     voteFailed: `Il voto non è stato salvato. ${tryAgain}`,
+    commentNotAllowed: 'Su questa bacheca non puoi più commentare. Lo decide chi ne è titolare.',
+    voteNotAllowed: 'Su questa bacheca non puoi più votare. Lo decide chi ne è titolare.',
   },
   achievement: {
     level: {
@@ -431,6 +433,10 @@ export const it: Strings = {
       editDishes: { label: 'Modificare piatti', hint: 'Cambiare titolo, immagine, autore e link. Sempre per i propri piatti.' },
       moveDishes: { label: 'Spostare piatti', hint: 'Portare i piatti in altre colonne e segnarli come cucinati.' },
       archiveDishes: { label: 'Archiviare piatti', hint: 'Archiviare i piatti e recuperarli dall’archivio. Sempre per i propri piatti.' },
+      editColumns: { label: 'Modificare colonne', hint: 'Aggiungere, rinominare, riordinare ed eliminare colonne.' },
+      shareInvite: { label: 'Condividere il link d’invito', hint: 'Vedere, copiare e passare il link.' },
+      commentAndVote: { label: 'Commentare e votare', hint: 'Scrivere nella cronologia e dare un pollice. Leggere si può sempre.' },
+      editBoard: { label: 'Nome ed emoji', hint: 'Rinominare la bacheca e cambiarne l’emoji.' },
     },
     handOver: 'Cedi la bacheca',
     handOverConfirm: (name: string) => `Cedere la bacheca a ${name}?`,
@@ -465,6 +471,7 @@ export const it: Strings = {
     // "Hai …", as dish.deleted.
     purged: (title: string) => `Hai eliminato “${title}” per sempre.`,
     failed,
+    notAllowed: 'Su questa bacheca non puoi più farlo. Lo decide chi ne è titolare.',
   },
   offline: {
     headline: 'Sei offline.',

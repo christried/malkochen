@@ -18,8 +18,9 @@ import { historyEntries } from '../utils/history-entries'
 // What the page tells the Member about a Comment, as a key in its UI
 // strings. `commentDeleted` comes with an undo; the others say a write
 // failed (`commentFailed`: writing it, whose text the page gives back to
-// the field).
-export type CommentNotice = 'commentDeleted' | 'commentFailed' | 'commentEditFailed' | 'commentDeleteFailed' | 'commentRestoreFailed'
+// the field; `commentNotAllowed`: writing or editing it, refused as the
+// user's Permissions no longer allow it).
+export type CommentNotice = 'commentDeleted' | 'commentFailed' | 'commentEditFailed' | 'commentDeleteFailed' | 'commentRestoreFailed' | 'commentNotAllowed'
 
 export interface CommentResult {
   comment: CommentView
@@ -48,11 +49,15 @@ interface HistoryHost {
   // Runs `write` after the writes queued before it under the same key
   // (board-module.ts).
   queued: <T>(key: string, write: () => Promise<T>, options: { moves: false }) => Promise<T>
-  // Whether a failed write failed because the server no longer has it (404).
+  // Whether a failed write failed because the server no longer has it (404),
+  // or refused it for the user's Permissions (403).
   isGone: (error: unknown) => boolean
+  isRefused: (error: unknown) => boolean
+  // Whether the user may comment on the Board ("comment and vote").
+  mayComment: () => boolean
 }
 
-export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone }: HistoryHost) {
+export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -128,10 +133,11 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
   // writing it): it shows at the end of the Dish History at once, counted
   // on its card, and is filled in once the server has it. If the write
   // fails, it goes again, with a notice, and the result's Comment holds the
-  // text for the field. Null for a text the server would refuse.
+  // text for the field. Null for a text the server would refuse, or
+  // without "comment and vote".
   function writeComment(dishId: string, text: string, author: DishAdder): CommentResult | null {
     const said = commentText(text)
-    if (!said) return null
+    if (!said || !mayComment()) return null
     const list = listOf(dishId)
     list.push({ id: '', text: said, createdAt: new Date().toISOString(), editedAt: null, author })
     const pending = list.at(-1)!
@@ -139,10 +145,10 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
     const settled = tracked(dishId, () => transport.writeComment(dishId, said)).then((saved): CommentResult => {
       Object.assign(pending, saved)
       return { comment: pending }
-    }, (): CommentResult => {
+    }, (error: unknown): CommentResult => {
       removeFrom(listOf(dishId), pending)
       count(dishId, -1)
-      return { comment: pending, notice: 'commentFailed' }
+      return { comment: pending, notice: isRefused(error) ? 'commentNotAllowed' : 'commentFailed' }
     })
     return { comment: pending, settled }
   }
@@ -157,11 +163,12 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
   // once, marked "bearbeitet", then as the server saved it. If the edit
   // fails, the Comment is back as the server has it, with a notice; one the
   // server no longer has (deleted meanwhile) goes. Null for a Comment not
-  // shown, still being written, or a text the server would refuse.
+  // shown, still being written, a text the server would refuse, or
+  // without "comment and vote".
   function editComment(dishId: string, commentId: string, text: string): CommentResult | null {
     const said = commentText(text)
     const found = commentId ? comments.get(dishId)?.find(c => c.id === commentId) : undefined
-    if (!said || !found) return null
+    if (!said || !found || !mayComment()) return null
     const comment: CommentView = found
     if (said === comment.text) return { comment }
     if (!editsUnderWay.get(comment)) confirmed.set(comment, { text: comment.text, editedAt: comment.editedAt })
@@ -180,7 +187,7 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
         return { comment }
       }
       if (!editsUnderWay.get(comment)) Object.assign(comment, confirmed.get(comment))
-      return { comment, notice: 'commentEditFailed' }
+      return { comment, notice: isRefused(error) ? 'commentNotAllowed' : 'commentEditFailed' }
     })
     return { comment, settled }
   }

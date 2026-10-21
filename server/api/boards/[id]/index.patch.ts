@@ -10,7 +10,9 @@ export default defineEventHandler(async (event): Promise<BoardNameAndEmoji> => {
   const boardId = boardIdParam(event)
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Board changes' })
-  const edited = await editBoard(boardId, requireUser(event).id, parsed.data)
+  const user = requireUser(event)
+  await requirePermission(boardId, user.id, 'editBoard')
+  const edited = await editBoard(boardId, user.id, parsed.data)
   if (!edited) throw boardNotFound()
   return edited
 })

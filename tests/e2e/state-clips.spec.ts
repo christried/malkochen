@@ -286,7 +286,7 @@ test('the invite landing plays its intro, then hands over to the loop without a 
   await signIn(page, EMMY)
   const { id: boardId } = await (await page.request.post('/api/boards', { data: { name: 'Kochclub', emoji: '🍜' } })).json() as { id: string }
   await gotoHydrated(page, `/b/${boardId}/settings`)
-  const link = await page.getByLabel('Einladungslink').inputValue()
+  const link = await page.getByLabel('Einladungslink', { exact: true }).inputValue()
 
   const invited = await newTab(browser, { colorScheme: 'light' })
   const flashed = await watchForFlash(invited)

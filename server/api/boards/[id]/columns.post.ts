@@ -11,7 +11,9 @@ export default defineEventHandler(async (event): Promise<ColumnView> => {
   const boardId = boardIdParam(event)
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A Column needs a name' })
-  const added = await addColumn(boardId, requireUser(event).id, parsed.data.name)
+  const user = requireUser(event)
+  await requirePermission(boardId, user.id, 'editColumns')
+  const added = await addColumn(boardId, user.id, parsed.data.name)
   if (!added) throw boardNotFound()
   setResponseStatus(event, 201)
   return added
