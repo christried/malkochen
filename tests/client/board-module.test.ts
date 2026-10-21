@@ -580,6 +580,48 @@ test('an undo, a Cooking delete or several Dishes the server refuses (403) say s
   expect(await module.deleteDishes(['a', 'c'])!.settled).toMatchObject({ notice: 'notAllowedMany' })
 })
 
+test('without "edit Columns" adding a Column is refused at once: nothing sent, nothing shown', async () => {
+  const { fake, module, shown } = setup(asMemberWithout('editColumns'))
+  const before = shown()
+
+  await expect(module.addColumn('Wochenende')).rejects.toEqual(new WriteFailed(403))
+
+  expect(fake.sent).toEqual([])
+  expect(shown()).toEqual(before)
+  expect(module.may('editColumns')).toBe(false)
+})
+
+const ME = { id: 'me', name: 'Ich', image: null }
+const cooked = (board: BoardView) => board.columns[0]!.dishes[0]!.cookings.push({ id: 'k', cookedAt: '2026-10-01T12:00:00.000Z', recordedBy: null })
+
+test('without "comment and vote" no Comment is written or edited and no Vote given, on one\'s own Dish neither', async () => {
+  const { fake, module } = setup((board) => {
+    asMemberWithout('commentAndVote')(board)
+    cooked(board)
+  })
+  const { id } = fake.writeCommentElsewhere('a', 'Lecker')
+  await module.openDish('a')
+  const sentBefore = [...fake.sent]
+
+  expect(module.writeComment('a', 'Noch was', ME)).toBeNull()
+  expect(module.writeComment('c', 'Meins', ME)).toBeNull()
+  expect(module.editComment('a', id, 'Geändert')).toBeNull()
+  expect(module.vote('a', true, ME)).toBeNull()
+
+  expect(fake.sent).toEqual(sentBefore)
+  expect(module.historyOf('a').filter(e => e.kind === 'comment').map(e => e.kind === 'comment' && e.comment.text)).toEqual(['Lecker'])
+  expect(module.may('commentAndVote')).toBe(false)
+})
+
+test('a Comment or Vote the server refuses (the Permission just went) goes again, saying so', async () => {
+  const { fake, module } = setup(cooked)
+
+  fake.failNext('writeComment', 403)
+  expect(await module.writeComment('a', 'Lecker', ME)!.settled).toMatchObject({ notice: 'commentNotAllowed' })
+  fake.failNext('setVote', 403)
+  expect(await module.vote('a', true, ME)!.settled).toMatchObject({ vote: null, notice: 'voteNotAllowed' })
+})
+
 test('the Owner may do everything, whoever added the Dish', () => {
   const { module } = setup()
 

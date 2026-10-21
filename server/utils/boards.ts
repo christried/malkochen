@@ -56,8 +56,9 @@ export interface BoardView extends BoardSummary {
   // rest, so a change made meanwhile moves the version past it and the
   // next check loads the Board again.
   version: number
-  // The secret of its Invite Link, which every Member may share.
-  inviteToken: string
+  // The secret of its Invite Link, which every Member with "share the
+  // Invite Link" may share; null for the others, who never see it.
+  inviteToken: string | null
   // Everyone on it, the Owner first, as Board settings lists them.
   members: BoardMemberView[]
   columns: (ColumnView & { dishes: DishView[] })[]
@@ -249,6 +250,7 @@ export async function getBoard(boardId: string, userId: string, language: Langua
   ])
   return {
     ...view,
+    inviteToken: permissions.shareInvite ? view.inviteToken : null,
     permissions,
     members: members.map(({ permissions: stored, ...m }) => {
       const isYou = m.id === userId

@@ -6,13 +6,15 @@ import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { invitePath } from '~~/shared/invite'
-import { ENFORCED_PERMISSIONS, viewerMay, type EnforcedPermission, type Permissions } from '~~/shared/permissions'
+import { PERMISSIONS, viewerMay, type Permission, type Permissions } from '~~/shared/permissions'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
 // and emoji, its Columns, its Members, the Invite Link, its Archive and
 // leaving; for the Owner also removing Members, handing over ownership,
-// deleting Archived Dishes for good and deleting the Board.
+// deleting Archived Dishes for good and deleting the Board. What a Member's
+// Permissions don't allow is shown without a way to change it (the name,
+// emoji and Columns), or not at all (adding a Column, the Invite Link).
 // Its own page, not a child of the Board: any page under b/[board]/ opens over
 // the Board (a route group doesn't help, it is nested all the same), so it
 // lives here and sets its path. Every change saves at once; one that fails
@@ -35,9 +37,16 @@ const emoji = ref(board.value?.emoji ?? '')
 const rows = (view: BoardView | undefined): ColumnRow[] => view?.columns.map(c => ({ id: c.id, name: c.name, subtitle: c.subtitle, isGekocht: c.isGekocht, count: c.dishes.length })) ?? []
 const columns = ref(rows(board.value))
 
+// What the user may change here (their Permissions as the page loaded).
+const mayEditBoard = computed(() => board.value?.permissions.editBoard ?? false)
+const mayEditColumns = computed(() => board.value?.permissions.editColumns ?? false)
+
 const toast = ref<Toast | null>(null)
-function failed() {
-  toast.value = { text: t.settings.failed, duration: NOTICE_MS }
+// A change refused for the user's Permissions (the Owner just switched one
+// off) says so.
+function failed(error?: unknown) {
+  const refused = (error as { statusCode?: number } | null)?.statusCode === 403
+  toast.value = { text: refused ? t.settings.notAllowed : t.settings.failed, duration: NOTICE_MS }
 }
 
 // The Board's name and emoji, and its Address, which follows a new name.
@@ -47,8 +56,8 @@ async function saveBoard(changes: BoardChanges) {
   try {
     saved.value = await $fetch<BoardNameAndEmoji>(`/api/boards/${id.value}`, { method: 'PATCH', body: changes })
   }
-  catch {
-    failed()
+  catch (error) {
+    failed(error)
   }
   name.value = saved.value.name
   emoji.value = saved.value.emoji
@@ -80,9 +89,9 @@ async function renameColumn(column: ColumnRow, newName: string) {
   try {
     await $fetch(`/api/columns/${column.id}`, { method: 'PATCH', body: { name: newName } })
   }
-  catch {
+  catch (error) {
     column.name = old
-    failed()
+    failed(error)
   }
 }
 
@@ -93,9 +102,9 @@ async function setColumnSubtitle(column: ColumnRow, subtitle: string | null) {
   try {
     await $fetch(`/api/columns/${column.id}`, { method: 'PATCH', body: { subtitle } })
   }
-  catch {
+  catch (error) {
     column.subtitle = old
-    failed()
+    failed(error)
   }
 }
 
@@ -103,9 +112,9 @@ async function saveOrder(before: ColumnRow[]) {
   try {
     await $fetch(`/api/boards/${id.value}/columns`, { method: 'PUT', body: { columnIds: columns.value.map(c => c.id) } })
   }
-  catch {
+  catch (error) {
     columns.value = before
-    failed()
+    failed(error)
   }
 }
 
@@ -150,10 +159,10 @@ async function deleteColumn(column: ColumnRow, target?: ColumnRow) {
   try {
     await $fetch(`/api/columns/${column.id}`, { method: 'DELETE', query: target && { moveTo: target.id } })
   }
-  catch {
+  catch (error) {
     if (target) target.count -= column.count
     columns.value = before
-    if (target || !await gotDishes(column)) failed()
+    if (target || !await gotDishes(column)) failed(error)
   }
 }
 
@@ -168,8 +177,9 @@ async function gotDishes(column: ColumnRow): Promise<boolean> {
   return true
 }
 
-// The Invite Link (PRD stories 62, 63, 66): any Member copies or shares it;
-// only the Owner resets it, after confirming, since the old one then stops
+// The Invite Link (PRD stories 62, 63, 66): any Member with "share the
+// Invite Link" copies or shares it (the others never get it, so the section
+// isn't there); only the Owner resets it, after confirming, since the old one then stops
 // working wherever it was sent.
 const origin = useRequestURL().origin
 // The secret read from the Board itself, so a refetch never shows an old
@@ -279,8 +289,8 @@ function removeMember(member: BoardMemberView) {
 // saved at once; one that fails stays as it was, with a notice. The
 // Member's open Board follows at its next check. Every other Member sees
 // their own, read-only.
-const switchingPermission = ref<EnforcedPermission | null>(null)
-async function switchPermission(member: BoardMemberView, permission: EnforcedPermission) {
+const switchingPermission = ref<Permission | null>(null)
+async function switchPermission(member: BoardMemberView, permission: Permission) {
   if (!member.permissions || switchingPermission.value) return
   switchingPermission.value = permission
   try {
@@ -436,6 +446,7 @@ function confirmDelete() {
         </h2>
         <div class="flex items-end gap-3">
           <button
+            v-if="mayEditBoard"
             ref="emojiButton"
             type="button"
             class="emoji-pebble hover-grow flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px] transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
@@ -446,6 +457,12 @@ function confirmDelete() {
           >
             {{ emoji }}
           </button>
+          <span
+            v-else
+            role="img"
+            class="emoji-pebble flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px]"
+            :aria-label="`${t.settings.emoji}: ${emoji}`"
+          >{{ emoji }}</span>
           <AppField
             class="flex-1"
             :label="t.settings.name"
@@ -458,6 +475,7 @@ function confirmDelete() {
               required
               maxlength="60"
               autocomplete="off"
+              :readonly="!mayEditBoard"
               class="font-display text-title-s"
               @change="saveName"
               @keydown.enter="($event.target as HTMLInputElement).blur()"
@@ -478,6 +496,7 @@ function confirmDelete() {
         </h2>
         <ColumnSettingsList
           v-model="columns"
+          :readonly="!mayEditColumns"
           @rename="renameColumn"
           @subtitle="setColumnSubtitle"
           @reordered="saveOrder"
@@ -487,6 +506,7 @@ function confirmDelete() {
              field (handoff Input "withButton"): both sit on the bottom, the
              44px button 4px up in the 52px field. -->
         <form
+          v-if="mayEditColumns"
           class="mt-2 flex items-end gap-2.5"
           @submit.prevent="addColumn"
         >
@@ -542,7 +562,7 @@ function confirmDelete() {
             {{ t.settings.yourPermissions }}
           </p>
           <SettingsSwitch
-            v-for="permission in ENFORCED_PERMISSIONS"
+            v-for="permission in PERMISSIONS"
             :key="permission"
             :label="t.settings.permission[permission].label"
             :hint="t.settings.permission[permission].hint"
@@ -557,6 +577,7 @@ function confirmDelete() {
       </section>
 
       <section
+        v-if="board.inviteToken"
         class="flex flex-col gap-3"
         aria-labelledby="settings-invite"
       >
@@ -694,7 +715,7 @@ function confirmDelete() {
             {{ t.settings.permissions }}
           </p>
           <SettingsSwitch
-            v-for="permission in ENFORCED_PERMISSIONS"
+            v-for="permission in PERMISSIONS"
             :key="permission"
             :label="t.settings.permission[permission].label"
             :hint="t.settings.permission[permission].hint"

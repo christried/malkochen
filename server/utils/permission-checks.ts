@@ -1,7 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Permission } from '../../shared/permissions'
 import { db } from '../db'
-import { boardColumn, cooking, dish, membership } from '../db/schema'
+import { boardColumn, comment, cooking, dish, membership } from '../db/schema'
 import { allows, standingOn, type Standing } from './permissions'
 import { boardNotFound } from './session'
 
@@ -29,6 +29,24 @@ function notPermitted(permission: Permission) {
 export async function requireDishPermission(dishIds: string | string[], userId: string, permission: Permission): Promise<void> {
   const found = await dishesSeenBy(userId).where(inArray(dish.id, typeof dishIds === 'string' ? [dishIds] : dishIds))
   if (found.some(f => !allows(f, permission, userId, f))) throw notPermitted(permission)
+}
+
+// Throws 403 unless the user may take an action `permission` covers on the
+// Board of the Column `columnId`. One the user can't see is left to the
+// write, which answers "not found" for it.
+export async function requireColumnPermission(columnId: string, userId: string, permission: Permission): Promise<void> {
+  const [found] = await db
+    .select({ isOwner: membership.isOwner, permissions: membership.permissions })
+    .from(boardColumn)
+    .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
+    .where(eq(boardColumn.id, columnId))
+  if (found && !allows(found, permission, userId)) throw notPermitted(permission)
+}
+
+// The same for the Dish of the Comment `commentId`, deleted or not.
+export async function requireCommentPermission(commentId: string, userId: string, permission: Permission): Promise<void> {
+  const found = await dishesSeenBy(userId).innerJoin(comment, eq(comment.dishId, dish.id)).where(eq(comment.id, commentId))
+  if (found.some(f => !allows(f, permission, userId))) throw notPermitted(permission)
 }
 
 // Throws 403 unless the user may move the Dishes `dishIds` into the

@@ -194,6 +194,8 @@ export const en: Strings = {
     voteDown: 'Thumbs down',
     voted: (name: string, up: boolean) => up ? `${name} liked it` : `${name} didn’t like it much`,
     voteFailed: `Your vote couldn’t be saved. ${tryAgain}`,
+    commentNotAllowed: 'You can’t comment on this board any more. The owner decides that.',
+    voteNotAllowed: 'You can’t vote on this board any more. The owner decides that.',
   },
   achievement: {
     level: {
@@ -419,6 +421,10 @@ export const en: Strings = {
       editDishes: { label: 'Edit dishes', hint: 'Change the title, image, creator and link. Always for your own dishes.' },
       moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns and mark them as cooked.' },
       archiveDishes: { label: 'Archive dishes', hint: 'Archive dishes and bring them back from the archive. Always for your own dishes.' },
+      editColumns: { label: 'Edit columns', hint: 'Add, rename, reorder and delete columns.' },
+      shareInvite: { label: 'Share the invite link', hint: 'See, copy and pass on the link.' },
+      commentAndVote: { label: 'Comment and vote', hint: 'Write in the history and give a thumb. Reading always works.' },
+      editBoard: { label: 'Name and emoji', hint: 'Rename the board and change its emoji.' },
     },
     handOver: 'Hand over ownership',
     handOverConfirm: (name: string) => `Hand ownership over to ${name}?`,
@@ -452,6 +458,7 @@ export const en: Strings = {
     purgeBody: 'The dish disappears with its image and everything you’ve recorded for it. This can’t be undone.',
     purged: (title: string) => `“${title}” is deleted for good.`,
     failed,
+    notAllowed: 'You can’t do that on this board any more. The owner decides that.',
   },
   offline: {
     headline: 'You’re offline.',

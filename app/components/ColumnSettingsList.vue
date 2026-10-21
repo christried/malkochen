@@ -11,10 +11,12 @@ import { columnDeletion } from '~~/shared/placement'
 // (marked) and the last Column besides it. Open or not, a row is dragged by
 // its grip (its left end, up to just before its name). The order changes
 // here while dragging; `reordered` says a move is done, with the order
-// before it.
+// before it. `readonly` (a Member without "edit Columns"): the rows only
+// show the Columns, with no grip, and don't open.
 export type ColumnRow = ColumnView & { count: number }
 
 const columns = defineModel<ColumnRow[]>({ required: true })
+defineProps<{ readonly?: boolean }>()
 const emit = defineEmits<{
   rename: [column: ColumnRow, name: string]
   subtitle: [column: ColumnRow, subtitle: string | null]
@@ -167,6 +169,17 @@ function drop(event?: Event) {
              Chrome's touch adjustment, which would otherwise move a finger
              near its end onto the row's button beside it. -->
         <span
+          v-if="readonly"
+          aria-hidden="true"
+          class="flex shrink-0 items-center pl-4 pr-2"
+        >
+          <span
+            class="h-3 w-3 shrink-0 rounded-full"
+            :style="{ background: columnAccent(index) }"
+          />
+        </span>
+        <span
+          v-else
           aria-hidden="true"
           data-grip
           class="grip flex shrink-0 cursor-grab items-center gap-2 pl-2.5 pr-2 text-text-muted"
@@ -182,12 +195,12 @@ function drop(event?: Event) {
             :style="{ background: columnAccent(index) }"
           />
         </span>
-        <button
-          type="button"
-          class="toggle flex min-w-0 flex-1 items-center gap-3 py-3 pl-1 pr-3 text-left focus-visible:outline-2 focus-visible:outline-focus"
-          :aria-expanded="openedId === column.id"
-          :aria-controls="openedId === column.id ? `${panelId}-${column.id}` : undefined"
-          @click="toggle(column)"
+        <component
+          :is="readonly ? 'div' : 'button'"
+          v-bind="readonly ? {} : { 'type': 'button', 'aria-expanded': openedId === column.id, 'aria-controls': openedId === column.id ? `${panelId}-${column.id}` : undefined }"
+          class="flex min-w-0 flex-1 items-center gap-3 py-3 pl-1 pr-3 text-left"
+          :class="{ 'toggle focus-visible:outline-2 focus-visible:outline-focus': !readonly }"
+          @click="readonly || toggle(column)"
         >
           <span class="flex min-w-0 flex-1 flex-col">
             <span
@@ -203,6 +216,7 @@ function drop(event?: Event) {
           >{{ column.count }}</span>
           <span class="sr-only">{{ t.settings.dishCount(column.count) }}</span>
           <svg
+            v-if="!readonly"
             viewBox="0 0 24 24"
             width="18"
             height="18"
@@ -215,7 +229,7 @@ function drop(event?: Event) {
             class="chevron shrink-0"
             :class="{ flipped: openedId === column.id }"
           ><path d="M6 9l6 6 6-6" /></svg>
-        </button>
+        </component>
       </div>
       <div
         v-if="openedId === column.id"
@@ -296,7 +310,7 @@ function drop(event?: Event) {
     </li>
   </TransitionGroup>
   <p
-    v-if="!columns.some(deletable)"
+    v-if="!readonly && !columns.some(deletable)"
     :id="lastHintId"
     class="mt-2 px-1 text-small text-text-muted"
   >

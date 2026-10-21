@@ -9,7 +9,8 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 
 // Permissions (#340, CONTEXT.md): the Owner switches each Member's on or
 // off; the server refuses what a Member may not do, and the Owner may
-// always do everything. So far only "add Dishes" is enforced. Bassi owns
+// always do everything. Here "add Dishes"; the others in
+// dish-permissions.test.ts and board-permissions.test.ts. Bassi owns
 // the Boards made here, Herschel joins them, Fossey is the outsider; all
 // three are used by this file only.
 
