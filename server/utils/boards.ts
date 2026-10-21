@@ -59,6 +59,9 @@ export interface BoardView extends BoardSummary {
   // The secret of its Invite Link, which every Member with "share the
   // Invite Link" may share; null for the others, who never see it.
   inviteToken: string | null
+  // Its Default Permissions, which a Member joining through the Invite
+  // Link gets; only for the Owner, who sets them.
+  defaultPermissions?: Permissions
   // Everyone on it, the Owner first, as Board settings lists them.
   members: BoardMemberView[]
   columns: (ColumnView & { dishes: DishView[] })[]
@@ -229,12 +232,12 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoar
 // one of its Members. Members without a Username yet in the user's `language`.
 export async function getBoard(boardId: string, userId: string, language: Language): Promise<BoardView | null> {
   const [found] = await db
-    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, permissions: membership.permissions, version: board.version, inviteToken: board.inviteToken, newSince: membership.newSince })
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, permissions: membership.permissions, version: board.version, inviteToken: board.inviteToken, defaultPermissions: board.defaultPermissions, newSince: membership.newSince })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
   if (!found) return null
-  const { newSince, ...view } = found
+  const { newSince, defaultPermissions, ...view } = found
   const permissions = effectivePermissions(view)
 
   const columns = await db
@@ -251,6 +254,7 @@ export async function getBoard(boardId: string, userId: string, language: Langua
   return {
     ...view,
     inviteToken: permissions.shareInvite ? view.inviteToken : null,
+    ...view.isOwner && { defaultPermissions },
     permissions,
     members: members.map(({ permissions: stored, ...m }) => {
       const isYou = m.id === userId

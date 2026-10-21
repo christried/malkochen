@@ -31,6 +31,19 @@ export const ALL_PERMISSIONS: Permissions = {
   editBoard: true,
 }
 
+// "Nur ansehen": everything off but commenting and voting, the Owner's
+// shortcut for a Member who should only look (and say what they think).
+export const VIEW_ONLY: Permissions = {
+  addDishes: false,
+  editDishes: false,
+  moveDishes: false,
+  archiveDishes: false,
+  editColumns: false,
+  shareInvite: false,
+  commentAndVote: true,
+  editBoard: false,
+}
+
 // The Permissions that also hold for a Member's own Dishes: they may always
 // edit and archive the Dishes they added themselves.
 const OWN_DISH_PERMISSIONS: readonly Permission[] = ['editDishes', 'archiveDishes']

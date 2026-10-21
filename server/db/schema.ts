@@ -160,6 +160,10 @@ export const board = pgTable('board', {
   // can forget to; per-Member reading state (seen_at, last opened, which
   // Dishes they opened) never does.
   version: bigint('version', { mode: 'number' }).notNull().default(0),
+  // Its Default Permissions (CONTEXT.md): what a Member joining through
+  // its Invite Link gets (server/utils/invites.ts). Everything allowed
+  // until the Owner changes them.
+  defaultPermissions: jsonb('default_permissions').$type<Permissions>().notNull().default(ALL_PERMISSIONS),
 })
 
 // Every slug a Board has had, its current one too: a former one forwards to
@@ -217,8 +221,9 @@ export const membership = pgTable('membership', {
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   // Their Permissions (shared/permissions.ts), every flag present. Read
   // through server/utils/permissions.ts, which lets the Owner do
-  // everything whatever this holds. Everything allowed on joining, until
-  // the Board's Default Permissions come (#343).
+  // everything whatever this holds. A Member joining through the Invite
+  // Link gets the Board's Default Permissions; the Board's creator, and an
+  // Owner handing over, everything.
   permissions: jsonb('permissions').$type<Permissions>().notNull().default(ALL_PERMISSIONS),
 }, t => [
   primaryKey({ columns: [t.boardId, t.userId] }),

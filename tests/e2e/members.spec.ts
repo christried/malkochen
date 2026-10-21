@@ -94,6 +94,39 @@ test('the Owner switches off adding Dishes for a Member, whose add button goes w
   await expect(own).toBeDisabled()
 })
 
+// Default Permissions (#343): Evelyn sets "Für neue Mitglieder" to "Nur
+// ansehen"; Radia, following the Invite Link afterwards, joins with them:
+// no add button, nothing to cook or archive, and only commenting and voting
+// on in Radia's own Permissions.
+test('the Owner sets the Default Permissions, and a Member joining through the Invite Link has them', async ({ page, browser }) => {
+  await signIn(page, EVELYN)
+  const res = await page.request.post('/api/boards', { data: { name: 'Lesezirkel', emoji: '📚' } })
+  expect(res.status()).toBe(201)
+  const { id: boardId } = await res.json() as { id: string }
+  expect((await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title: 'Evelyns Apfelstrudel', placeholder: 'bowl' } })).status()).toBe(201)
+
+  await gotoHydrated(page, `/b/${boardId}/settings`)
+  const defaults = page.getByRole('region', { name: 'Für neue Mitglieder' })
+  await defaults.getByRole('button', { name: 'Nur ansehen' }).click()
+  await expect(defaults.getByRole('switch', { name: 'Gerichte hinzufügen' })).toHaveAttribute('aria-checked', 'false')
+  await expect(defaults.getByRole('switch', { name: 'Kommentieren und abstimmen' })).toHaveAttribute('aria-checked', 'true')
+
+  const radia = await newTab(browser)
+  await signIn(radia, RADIA)
+  await gotoHydrated(radia, `/invite/${await inviteToken(page, boardId)}`)
+  await expect(radia.getByRole('heading', { level: 1 })).toHaveText('📚 Lesezirkel')
+  await expect(radia.getByRole('link', { name: 'Evelyns Apfelstrudel', exact: true })).toBeVisible()
+  await expect(radia.getByRole('button', { name: 'Gericht hinzufügen' })).toHaveCount(0)
+  await expect(radia.locator('[data-cook]')).toHaveCount(0)
+  await expect(radia.getByRole('button', { name: 'Mehr zu „Evelyns Apfelstrudel“' })).toHaveCount(0)
+
+  await gotoHydrated(radia, `/b/${boardId}/settings`)
+  const own = radia.getByRole('group', { name: 'Was du hier darfst' })
+  await expect(own.getByRole('switch', { name: 'Gerichte hinzufügen' })).toHaveAttribute('aria-checked', 'false')
+  await expect(own.getByRole('switch', { name: 'Kommentieren und abstimmen' })).toHaveAttribute('aria-checked', 'true')
+  await expect(radia.getByRole('region', { name: 'Für neue Mitglieder' })).toHaveCount(0)
+})
+
 // Permissions on Dishes (#341): without "Gerichte verschieben" Radia can't
 // drag a card and sees no "Gekocht ✓"; without "Gerichte archivieren" the
 // "…" menu offers "Archivieren" only on the Dish Radia added.

@@ -1,3 +1,4 @@
+import type { Permissions } from '../../shared/permissions'
 import type { Strings } from '../strings/de'
 import type { TourCorner } from '../utils/tour-placement'
 
@@ -62,6 +63,11 @@ export interface TourSituation {
   // The targets on the page once the Board is idle. A step whose target
   // isn't there is left out.
   targets: readonly TourTarget[]
+  // The user's Permissions on the Board (#343). Without "add Dishes" the
+  // Dish steps are left out; without "move Dishes" step 5 only explains
+  // the Columns. Deleting the Tour's Dish needs no "archive Dishes": a
+  // Member may always archive the Dishes they added themselves.
+  permissions: Permissions
   install: TourInstall
 }
 
@@ -121,14 +127,15 @@ export interface TourStep {
 }
 
 // Every step, in the order they show: what it spotlights, and the target on
-// the page it can't do without (the Dish steps all start at the add button).
-const STEPS: { id: TourSlot, target: TourTarget | null, needs: TourTarget | null }[] = [
+// the page it can't do without (the Dish steps all start at the add button),
+// and the Permission it asks for.
+const STEPS: { id: TourSlot, target: TourTarget | null, needs: TourTarget | null, permission?: keyof Permissions }[] = [
   { id: 'hello', target: null, needs: null },
-  { id: 'addButton', target: 'add-button', needs: 'add-button' },
-  { id: 'addDishLink', target: 'add-dish-link', needs: 'add-button' },
-  { id: 'newCard', target: 'dish', needs: 'add-button' },
+  { id: 'addButton', target: 'add-button', needs: 'add-button', permission: 'addDishes' },
+  { id: 'addDishLink', target: 'add-dish-link', needs: 'add-button', permission: 'addDishes' },
+  { id: 'newCard', target: 'dish', needs: 'add-button', permission: 'addDishes' },
   { id: 'columns', target: 'columns', needs: 'columns' },
-  { id: 'deleteDish', target: 'dish-menu', needs: 'add-button' },
+  { id: 'deleteDish', target: 'dish-menu', needs: 'add-button', permission: 'addDishes' },
   { id: 'boardSwitcher', target: 'board-switcher', needs: 'board-switcher' },
   // Which of three it shows is picked as it comes: installing can be
   // offered meanwhile.
@@ -140,6 +147,7 @@ const DISH_STEPS: TourSlot[] = ['addButton', 'addDishLink', 'newCard', 'deleteDi
 export function startTour(situation: TourSituation): Tour {
   const steps = STEPS
     .filter(s => !s.needs || situation.targets.includes(s.needs))
+    .filter(s => !s.permission || situation.permissions[s.permission])
     .filter(s => s.id !== 'last' || situation.layout === 'phone')
     .map(s => s.id)
   return { status: 'running', situation, steps, at: 0, dishId: null, landedIn: null, dishIn: null, dishMenu: 'closed', kept: false }
@@ -237,8 +245,9 @@ function backFrom(tour: Tour): number {
 // Step 5's Column: the first after the one the Tour's Dish landed in that
 // isn't the Gekocht Column (moving there would record a Cooking), while the
 // Dish is on the Board and not there yet; else null, and step 5 just
-// explains the Columns.
-function moveTo({ situation: { columns }, landedIn, dishIn }: Tour): TourColumn | null {
+// explains the Columns. Always null without "move Dishes".
+function moveTo({ situation: { columns, permissions }, landedIn, dishIn }: Tour): TourColumn | null {
+  if (!permissions.moveDishes) return null
   const landed = columns.findIndex(c => c.id === landedIn)
   const column = landed < 0 ? null : columns.slice(landed + 1).find(c => !c.isGekocht)
   return column && dishIn && dishIn !== column.id ? column : null
