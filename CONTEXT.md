@@ -10,6 +10,10 @@ A shared board for collecting food people find online (TikTok, Instagram, food b
 A named space (with an emoji) of Columns holding Dishes. A user can belong to many Boards; a Board with more than one Member is simply a shared Board.
 _Avoid_: List, workspace, personal board
 
+**Board Version**:
+A number every change to what a Board's Members see on it moves on: its Dishes, Cookings, Votes, Comments, Columns, Members, name, emoji and Invite Link. What one Member has read or opened never moves it. An open Board asks only for it, and loads the whole Board when it moved (ADR 0008). Never shown to users, and not malkochen's Version.
+_Avoid_: Revision, etag, board timestamp
+
 **Board Switcher**:
 The Board's emoji and name at the top of a Board, which lists all of a user's Boards to switch between and starts a new one.
 _Avoid_: Board picker, board menu, dropdown
