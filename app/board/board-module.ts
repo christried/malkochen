@@ -89,9 +89,11 @@ function isGone(error: unknown) {
 }
 
 // Whether a write failed because the user's Permissions don't allow it
-// (403), as the server has them.
+// (403), as the server has them: through the Board module (WriteFailed),
+// or straight through $fetch, as Board settings writes.
 export function isRefused(error: unknown) {
-  return error instanceof WriteFailed && error.status === 403
+  if (error instanceof WriteFailed) return error.status === 403
+  return (error as { statusCode?: number } | null)?.statusCode === 403
 }
 
 // The notice for a write that failed with `error`: `notAllowed` if the

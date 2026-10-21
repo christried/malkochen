@@ -2,6 +2,7 @@
 import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ArchivedDishView, PlacedDish } from '~~/server/utils/dishes'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
+import { isRefused } from '~/board/board-module'
 import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
@@ -45,14 +46,25 @@ const toast = ref<Toast | null>(null)
 // A change refused for the user's Permissions (the Owner just switched one
 // off) says so.
 function failed(error?: unknown) {
-  const refused = (error as { statusCode?: number } | null)?.statusCode === 403
-  toast.value = { text: refused ? t.settings.notAllowed : t.settings.failed, duration: NOTICE_MS }
+  toast.value = { text: isRefused(error) ? t.settings.notAllowed : t.settings.failed, duration: NOTICE_MS }
+}
+// A change the user's Permissions don't allow is refused here, as the
+// server would, before it shows: true if so, with the notice.
+function notPermitted(permission: Permission): boolean {
+  if (board.value?.permissions[permission]) return false
+  toast.value = { text: t.settings.notAllowed, duration: NOTICE_MS }
+  return true
 }
 
 // The Board's name and emoji, and its Address, which follows a new name.
 // A blank name puts the saved one back.
 const saved = ref({ name: name.value, emoji: emoji.value, slug: board.value?.slug ?? '' })
 async function saveBoard(changes: BoardChanges) {
+  if (notPermitted('editBoard')) {
+    name.value = saved.value.name
+    emoji.value = saved.value.emoji
+    return
+  }
   try {
     saved.value = await $fetch<BoardNameAndEmoji>(`/api/boards/${id.value}`, { method: 'PATCH', body: changes })
   }
@@ -84,6 +96,7 @@ watch(choosingEmoji, async (open) => {
 
 // Columns.
 async function renameColumn(column: ColumnRow, newName: string) {
+  if (notPermitted('editColumns')) return
   const old = column.name
   column.name = newName
   try {
@@ -97,6 +110,7 @@ async function renameColumn(column: ColumnRow, newName: string) {
 
 // A Column Subtitle; null clears it.
 async function setColumnSubtitle(column: ColumnRow, subtitle: string | null) {
+  if (notPermitted('editColumns')) return
   const old = column.subtitle
   column.subtitle = subtitle
   try {
@@ -109,6 +123,10 @@ async function setColumnSubtitle(column: ColumnRow, subtitle: string | null) {
 }
 
 async function saveOrder(before: ColumnRow[]) {
+  if (notPermitted('editColumns')) {
+    columns.value = before
+    return
+  }
   try {
     await $fetch(`/api/boards/${id.value}/columns`, { method: 'PUT', body: { columnIds: columns.value.map(c => c.id) } })
   }
@@ -124,6 +142,7 @@ async function saveOrder(before: ColumnRow[]) {
 const newColumnExample = useExamplePrompt(() => t.settings.newColumnExamples, example => t.settings.newColumnPrompt(example))
 onMounted(newColumnExample.pickAnother)
 const { name: newColumn, canAdd: canAddColumn, submit: addColumn } = useNewColumn(async (columnName) => {
+  if (notPermitted('editColumns')) return
   const added = await postColumn(id.value, columnName)
   columns.value.push({ ...added, count: 0 })
   newColumnExample.pickAnother()
@@ -143,6 +162,7 @@ const targets = computed(() => columns.value.filter(c => c !== deleting.value))
 const moveTo = ref<string>()
 
 function askDelete(column: ColumnRow) {
+  if (notPermitted('editColumns')) return
   if (column.count === 0) return deleteColumn(column)
   // The Column the server picks by default. If it can't be deleted after
   // all (changed meanwhile), any other: the server then says why.
@@ -178,9 +198,9 @@ async function gotDishes(column: ColumnRow): Promise<boolean> {
 }
 
 // The Invite Link (PRD stories 62, 63, 66): any Member with "share the
-// Invite Link" copies or shares it (the others never get it, so the section
-// isn't there); only the Owner resets it, after confirming, since the old one then stops
-// working wherever it was sent.
+// Invite Link" copies or shares it (the others never get it, so the
+// section isn't there); only the Owner resets it, after confirming, since
+// the old one then stops working wherever it was sent.
 const origin = useRequestURL().origin
 // The secret read from the Board itself, so a refetch never shows an old
 // link; the slug follows a new name (any slug works: only the secret counts).
@@ -375,7 +395,7 @@ async function restoreArchived(dish: ArchivedDishView) {
   catch (error) {
     // Refused for the user's Permissions (the Owner just took "archive
     // Dishes" away): it says so.
-    if ((error as { statusCode?: number } | null)?.statusCode === 403) toast.value = { text: t.dish.notAllowed(dish.title), duration: NOTICE_MS }
+    if (isRefused(error)) toast.value = { text: t.dish.notAllowed(dish.title), duration: NOTICE_MS }
     else failed()
     await refreshArchive()
   }

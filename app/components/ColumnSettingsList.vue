@@ -16,7 +16,7 @@ import { columnDeletion } from '~~/shared/placement'
 export type ColumnRow = ColumnView & { count: number }
 
 const columns = defineModel<ColumnRow[]>({ required: true })
-defineProps<{ readonly?: boolean }>()
+const props = defineProps<{ readonly?: boolean }>()
 const emit = defineEmits<{
   rename: [column: ColumnRow, name: string]
   subtitle: [column: ColumnRow, subtitle: string | null]
@@ -62,6 +62,19 @@ const panelId = useId()
 const openedId = ref<string | null>(null)
 function toggle(column: ColumnRow) {
   openedId.value = openedId.value === column.id ? null : column.id
+}
+// What makes a row's summary the button that opens it; read-only, it is
+// only text.
+function toggleAttrs(column: ColumnRow) {
+  if (props.readonly) return {}
+  const opened = openedId.value === column.id
+  return {
+    'type': 'button',
+    'class': 'toggle focus-visible:outline-2 focus-visible:outline-focus',
+    'aria-expanded': opened,
+    'aria-controls': opened ? `${panelId}-${column.id}` : undefined,
+    'onClick': () => toggle(column),
+  }
 }
 
 // ↑/↓. When the Column reaches either end, focus goes to the other arrow.
@@ -197,10 +210,8 @@ function drop(event?: Event) {
         </span>
         <component
           :is="readonly ? 'div' : 'button'"
-          v-bind="readonly ? {} : { 'type': 'button', 'aria-expanded': openedId === column.id, 'aria-controls': openedId === column.id ? `${panelId}-${column.id}` : undefined }"
+          v-bind="toggleAttrs(column)"
           class="flex min-w-0 flex-1 items-center gap-3 py-3 pl-1 pr-3 text-left"
-          :class="{ 'toggle focus-visible:outline-2 focus-visible:outline-focus': !readonly }"
-          @click="readonly || toggle(column)"
         >
           <span class="flex min-w-0 flex-1 flex-col">
             <span

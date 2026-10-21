@@ -80,7 +80,7 @@ function vote(up: boolean | null) {
 const isOwn = (comment: CommentView) => !!me.value && comment.author?.id === me.value.id
 // Without "comment and vote" the Verlauf is only to read: no comment field,
 // no editing, no 👍/👎. Deleting one's own Comment stays.
-const mayTalk = computed(() => boardModule.may('commentAndVote'))
+const mayCommentAndVote = computed(() => boardModule.may('commentAndVote'))
 const canDelete = (comment: CommentView) => isOwn(comment) || props.isOwner
 
 // The "…" of one Comment at a time.
@@ -206,7 +206,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
     </div>
 
     <div
-      v-if="dish.cookings.length && mayTalk"
+      v-if="dish.cookings.length && mayCommentAndVote"
       class="flex items-center gap-3"
       data-how-was-it
     >
@@ -367,7 +367,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             class="flex gap-1.5"
           >
             <button
-              v-if="isOwn(entry.comment) && mayTalk"
+              v-if="isOwn(entry.comment) && mayCommentAndVote"
               type="button"
               :class="menuButton"
               @click="edit(entry.comment)"
@@ -403,7 +403,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
 
     <!-- The comment field, under the Verlauf like a chat's. -->
     <form
-      v-if="mayTalk"
+      v-if="mayCommentAndVote"
       class="flex flex-col gap-1.5"
       data-comment-form
       @submit.prevent="submit"
