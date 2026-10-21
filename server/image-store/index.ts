@@ -32,9 +32,12 @@ interface StoredImage {
   // Its public URL, exactly as save() answered it.
   url: string
   uploadedAt: Date
+  // Its size: what the Admin Page (#348) adds up as storage used.
+  bytes: number
 }
 
-// What the daily sweep (sweep.ts) needs of a Storage besides saving.
+// What the daily sweep (sweep.ts) and the Admin Page need of a Storage
+// besides saving.
 export interface SweptStorage extends Storage {
   list: (folder: ImageFolder) => Promise<StoredImage[]>
   remove: (urls: string[]) => Promise<void>
@@ -102,7 +105,7 @@ export function blobStorage(token: string): SweptStorage {
       let cursor: string | undefined
       do {
         const page = await list({ prefix: `${folder}/`, cursor, limit: BLOB_BATCH, token })
-        found.push(...page.blobs.map(b => ({ url: b.url, uploadedAt: b.uploadedAt })))
+        found.push(...page.blobs.map(b => ({ url: b.url, uploadedAt: b.uploadedAt, bytes: b.size })))
         cursor = page.hasMore ? page.cursor : undefined
       } while (cursor)
       return found
@@ -133,7 +136,7 @@ export function diskStorage(dir: string): SweptStorage {
       // A file gone between the two reads is simply not listed.
       const images = await Promise.all(names.map(async name => {
         const stats = await stat(join(dir, folder, name)).catch(ignoreMissing(null))
-        return stats && { url: `${DISK_URL_PREFIX}${folder}/${name}`, uploadedAt: stats.mtime }
+        return stats && { url: `${DISK_URL_PREFIX}${folder}/${name}`, uploadedAt: stats.mtime, bytes: stats.size }
       }))
       return images.filter(image => image !== null)
     },

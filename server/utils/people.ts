@@ -4,6 +4,7 @@ import { chooseLanguage, languageChoice, type Language, type LanguageChoice } fr
 import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { user } from '../db/schema'
+import { isOperator } from './operator'
 
 // A person's picture wherever the app shows them (the badges of who added or
 // cooked a Dish, Members, the header): their own Profile Picture, else their
@@ -20,7 +21,8 @@ export const usernameOf = (language: Language) => sql<string>`coalesce(${user.us
 // Username, empty until they have one), the picture shown for them, their
 // own Profile Picture, if they have one (for their settings), and what they are
 // still to be asked about their Username, the highest Tour version they
-// finished or skipped (null for none) and their language under Sprache.
+// finished or skipped (null for none), their language under Sprache, and
+// whether they are the Operator, who has the Admin Page (#348).
 export interface Me {
   id: string
   name: string
@@ -30,6 +32,7 @@ export interface Me {
   usernamePrompt: UsernamePrompt | null
   tourSeen: number | null
   language: LanguageChoice
+  isOperator: boolean
 }
 
 interface Signed {
@@ -70,6 +73,7 @@ export function meOf(signedIn: Signed): Me {
     usernamePrompt: !username ? 'pick' : usernameConfirmedAt ? null : 'confirm',
     tourSeen: tourSeen ?? null,
     language: languageChoice(language),
+    isOperator: isOperator(email),
   }
 }
 

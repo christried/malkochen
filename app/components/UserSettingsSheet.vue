@@ -9,7 +9,8 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // Picture, Darstellung, Sprache (LanguagePicker), the
 // Board's keyboard shortcuts (where there's a keyboard and mouse),
 // "Rundgang starten", which starts the Tour again (`startTour`: the Board
-// closes the sheet and starts it), signing out and, last, "Konto löschen". Opened by the cogwheel
+// closes the sheet and starts it), signing out and "Konto löschen"; last,
+// for the Operator only, the link to the Admin Page (#348). Opened by the cogwheel
 // in the Board's header (#282), and by /settings (pages/settings.vue).
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ startTour: [] }>()
@@ -417,6 +418,15 @@ async function deleteAccount() {
           </DangerButton>
         </div>
       </section>
+
+      <NuxtLink
+        v-if="me?.isOperator"
+        to="/admin"
+        class="flex flex-col gap-1 rounded-card bg-surface-muted p-4 transition-transform duration-tap ease-tap active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-focus"
+      >
+        <span class="font-semibold">{{ t.admin.link }}</span>
+        <span class="text-small text-text-muted">{{ t.admin.linkHint }}</span>
+      </NuxtLink>
     </div>
   </AppSheet>
 

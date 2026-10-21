@@ -24,6 +24,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   // Comma-separated email addresses allowed to sign in at all.
   ALLOWLIST_EMAILS: z.string().default(''),
+  // The Operator's email (CONTEXT.md, #348): the one user the Admin Page is
+  // for. Empty: nobody has it.
+  OPERATOR_EMAIL: z.union([z.literal(''), z.email()]).default(''),
   // Local dev and tests only: '1' enables POST /api/auth/dev/sign-in, which
   // signs in any Allowlisted email without Google.
   AUTH_DEV_BYPASS: z.enum(['', '0', '1']).default(''),

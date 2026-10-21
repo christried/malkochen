@@ -5,6 +5,7 @@
 // paths: the tests read it too, and their typecheck
 // (.nuxt/tsconfig.node.json) has no `~` aliases.
 import type { AchievementLevel } from '../utils/achievement'
+import type { SourceColumn } from '../../shared/admin'
 import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
@@ -722,6 +723,64 @@ export const de = {
     cancel: 'Abbrechen',
     wrongUsername: 'Das ist nicht dein Name.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+  },
+  // The Admin Page (#348): the Operator's figures, linked at the end of
+  // their settings. Plain tables; only the Operator ever sees them.
+  admin: {
+    link: 'Admin',
+    linkHint: 'Zahlen dazu, wie malkochen genutzt wird, und wie nah es an den kostenlosen Grenzen ist.',
+    title: 'Admin',
+    back: 'Zurück zum Board',
+    perDay: 'Pro Tag',
+    perWeek: 'Pro Woche',
+    day: 'Tag',
+    weekOf: 'Woche ab',
+    // A period's first day, from YYYY-MM-DD.
+    date: (start: string) => addedDate(new Date(`${start}T12:00:00Z`)),
+    count: (n: number) => number(n),
+    dishes: 'Neue Gerichte nach Quelle',
+    sources: {
+      'tiktok': 'TikTok',
+      'instagram-reel': 'Insta Reel',
+      'instagram-post': 'Insta Post',
+      'youtube-short': 'YouTube',
+      'pinterest-pin': 'Pinterest',
+      'blog': 'Blog',
+      'other': 'Andere',
+      'none': 'Ohne Link',
+    } satisfies Record<SourceColumn, string>,
+    total: 'Gesamt',
+    activity: 'Was auf den Boards passiert',
+    moves: 'Verschoben',
+    cookings: 'Gekocht',
+    comments: 'Kommentare',
+    votes: 'Daumen',
+    archived: 'Archiviert',
+    active: 'Aktiv',
+    activeHint: 'Wer auf einem Board etwas getan hat, und auf welchen Boards.',
+    people: 'Leute',
+    boards: 'Boards',
+    today: 'Heute',
+    week: 'Letzte 7 Tage',
+    month: 'Letzte 30 Tage',
+    signUps: 'Neu angemeldet',
+    signUpsHint: 'Gelöschte Konten zählen nicht mehr mit.',
+    google: 'Google',
+    email: 'E-Mail',
+    limits: 'Kostenlose Grenzen',
+    limitsHint: 'Was malkochen selbst zählen kann. Den Rest zeigen die Dashboards der Anbieter.',
+    figure: 'Was',
+    used: 'Genutzt',
+    free: 'Kostenlos',
+    share: 'Anteil',
+    database: 'Datenbank (Neon)',
+    blob: 'Bilder (Vercel Blob)',
+    emailsMonth: 'E-Mails diesen Monat (Resend)',
+    emailsToday: 'E-Mails heute (Resend)',
+    functionCalls: 'Funktionsaufrufe diesen Monat, aus den Abfragen offener Boards geschätzt (Vercel)',
+    megabytes: (bytes: number) => `${number(Math.round(bytes / 1_000_000))} MB`,
+    percent: (share: number) => `${number(Math.round(share * 100))} %`,
+    dashboards: 'Dashboards',
   },
   // The email confirming it (#346), in the language of whoever deleted it.
   accountDeletedEmail: {

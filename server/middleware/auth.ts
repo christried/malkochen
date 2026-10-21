@@ -1,5 +1,6 @@
 import { chooseLanguage } from '../../shared/language'
 import { auth, signInRefusal } from '../utils/auth'
+import { adminNotFound } from '../utils/operator'
 import { recordBrowserLanguage } from '../utils/people'
 
 // The security boundary for /api/**: every route needs a session, except
@@ -11,26 +12,32 @@ import { recordBrowserLanguage } from '../utils/people'
 // Page navigation is guarded separately by app/middleware/auth.global.ts.
 const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//, /^\/api\/csp-report$/]
 const BEFORE_USERNAME = [/^\/api\/me(\/username)?$/, /^\/api\/invites\//]
+const ADMIN_API = /^\/api\/admin(\/|$)/
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname
   if (!path.startsWith('/api/') || PUBLIC_API.some(p => p.test(path))) return
 
+  // The Admin Page's endpoints (#348) aren't there for anyone but the
+  // Operator, so the signed-out find nothing there either.
+  const refused = (statusCode: number, statusMessage: string) =>
+    ADMIN_API.test(path) ? adminNotFound() : createError({ statusCode, statusMessage })
+
   // event.headers, never toWebRequest(event): building a Request locks the
   // body stream, and every POST/PATCH handler after this would hang.
   const session = await auth.api.getSession({ headers: event.headers }).catch(() => null)
-  if (!session) throw createError({ statusCode: 401, statusMessage: 'Not signed in' })
+  if (!session) throw refused(401, 'Not signed in')
 
   // Someone taken off the Allowlist loses access even with a live session; so
   // does a session made before unverified emails were refused (#191).
   const refusal = signInRefusal(session.user)
-  if (refusal) throw createError({ statusCode: 403, statusMessage: refusal.errorDescription })
+  if (refusal) throw refused(403, refusal.errorDescription)
 
   // A new user picks their Username before anything else (#209): until then
   // only who they are, setting it, and following an Invite Link (which the
   // sign-in itself does too, server/utils/auth.ts) are open to them.
   if (!session.user.username && !BEFORE_USERNAME.some(p => p.test(path))) {
-    throw createError({ statusCode: 403, statusMessage: 'No Username yet' })
+    throw refused(403, 'No Username yet')
   }
   event.context.user = session.user
 
