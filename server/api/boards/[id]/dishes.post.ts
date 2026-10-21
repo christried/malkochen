@@ -19,6 +19,9 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   const parsed = addDishBody.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A title and a Placeholder Image are required' })
   const user = requireUser(event)
+  // Before anything is stored or counted: a Member without "add Dishes"
+  // gets 403, with or without a link, from the share target too.
+  await requirePermission(boardId, user.id, 'addDishes')
   await spendRateLimit(user.id, 'add-dish')
   const { source, imageUrl, imageTicket, photo, tour, ...rest } = parsed.data
   // Not copied for a non-Member, whom addDish then refuses.

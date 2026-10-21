@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, exists, gt, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 import { stringsFor } from '../../app/strings'
 import type { Language } from '../../shared/language'
+import { ALL_PERMISSIONS, type Permissions } from '../../shared/permissions'
 import { db, runAtomic, type Db } from '../db'
 import { board, boardColumn, boardSlug, dish, membership, user } from '../db/schema'
 import { freeSlug, lockSlugs, recordSlug, slugOf } from './addresses'
@@ -10,6 +11,7 @@ import { dishesByColumn, type DishView } from './dishes'
 import { newInHistoryDishIds } from './dish-opened'
 import { detailsOf, insertEvents } from './events'
 import { usernameOf, pictureOf } from './people'
+import { effectivePermissions, permits } from './permissions'
 
 // The Board a user gets on their first sign-in (PRD story 3), named in
 // their language.
@@ -44,6 +46,9 @@ type NewBoard = Pick<BoardNameAndEmoji, 'name' | 'emoji'>
 
 export interface BoardSummary extends BoardNameAndEmoji {
   isOwner: boolean
+  // What the user looking may do on it (server/utils/permissions.ts):
+  // everything for its Owner. The app hides what isn't allowed.
+  permissions: Permissions
 }
 
 export interface BoardView extends BoardSummary {
@@ -78,10 +83,13 @@ export interface BoardMember {
 }
 
 // A Member as Board settings lists them: whether they are the Owner, and
-// whether they are the user looking.
+// whether they are the user looking. Their Permissions only for the Owner
+// looking, who switches them, and for the user's own row, to see what they
+// may do there.
 export interface BoardMemberView extends BoardMember {
   isOwner: boolean
   isYou: boolean
+  permissions?: Permissions
 }
 
 // The user's Boards in a steady order, the one they joined first first, so
@@ -95,6 +103,7 @@ export async function listBoards(userId: string, language: Language): Promise<Bo
       name: board.name,
       emoji: board.emoji,
       isOwner: membership.isOwner,
+      storedPermissions: membership.permissions,
       dishCount: sql<number>`(select count(*) from ${dish} where ${dish.boardId} = ${board.id} and ${dish.deletedAt} is null)::int`,
     })
     .from(membership)
@@ -117,8 +126,9 @@ export async function listBoards(userId: string, language: Language): Promise<Bo
       .where(inArray(boardColumn.boardId, ids))
       .orderBy(asc(boardColumn.position)),
   ])
-  return boards.map(b => ({
+  return boards.map(({ storedPermissions, ...b }) => ({
     ...b,
+    permissions: effectivePermissions({ isOwner: b.isOwner, permissions: storedPermissions }),
     members: members.filter(m => m.boardId === b.id).map(({ boardId: _, ...m }) => m),
     columns: columns.filter(c => c.boardId === b.id).map(({ boardId: _, ...c }) => c),
   }))
@@ -146,13 +156,26 @@ export async function landingBoard(userId: string, language: Language): Promise<
   return created
 }
 
-// The Board the user opened last (or joined last, if they opened none yet).
-function lastOpenedBoard(userId: string) {
+// Where something shared to malkochen opens (pages/share.vue): the Board
+// the user opened last of those they may add Dishes to, with Add Dish open
+// (`canAdd`). If they may add to none, the usual landing, without it.
+export async function landingToAdd(userId: string, language: Language): Promise<{ boardId: string, slug: string, canAdd: boolean }> {
+  const [addable] = await lastOpenedBoard(userId, permits('addDishes'))
+  if (addable) return { ...addable, canAdd: true }
+  const landing = await landingBoard(userId, language)
+  // A first landing has just created their own Board, theirs to add to.
+  const [created] = await lastOpenedBoard(userId, permits('addDishes'))
+  return created ? { ...created, canAdd: true } : { ...landing, canAdd: false }
+}
+
+// The Board the user opened last (or joined last, if they opened none yet),
+// of those whose membership `where` holds for.
+function lastOpenedBoard(userId: string, where?: SQL) {
   return db
     .select({ boardId: membership.boardId, slug: slugOf })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
-    .where(eq(membership.userId, userId))
+    .where(and(eq(membership.userId, userId), where))
     .orderBy(sql`${membership.lastOpenedAt} desc nulls last`, desc(membership.joinedAt))
     .limit(1)
 }
@@ -164,7 +187,7 @@ export async function createBoard(userId: string, { name, emoji }: NewBoard, lan
   await runAtomic(d => [lockSlugs(d), insertBoard(d, id, userId, { name, emoji }, language)])
   const [created] = await db.select({ slug: slugOf }).from(board).where(eq(board.id, id))
   if (!created) throw new Error(`Board ${id} was not created`)
-  return { id, slug: created.slug, name, emoji, isOwner: true }
+  return { id, slug: created.slug, name, emoji, isOwner: true, permissions: ALL_PERMISSIONS }
 }
 
 // One statement inserting a Board with its slug (after lockSlugs), its
@@ -205,12 +228,13 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoar
 // one of its Members. Members without a Username yet in the user's `language`.
 export async function getBoard(boardId: string, userId: string, language: Language): Promise<BoardView | null> {
   const [found] = await db
-    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, version: board.version, inviteToken: board.inviteToken, newSince: membership.newSince })
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, permissions: membership.permissions, version: board.version, inviteToken: board.inviteToken, newSince: membership.newSince })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
   if (!found) return null
   const { newSince, ...view } = found
+  const permissions = effectivePermissions(view)
 
   const columns = await db
     .select(columnView)
@@ -225,7 +249,11 @@ export async function getBoard(boardId: string, userId: string, language: Langua
   ])
   return {
     ...view,
-    members: members.map(m => ({ ...m, isYou: m.id === userId })),
+    permissions,
+    members: members.map(({ permissions: stored, ...m }) => {
+      const isYou = m.id === userId
+      return { ...m, isYou, ...(view.isOwner || isYou) && { permissions: effectivePermissions({ isOwner: m.isOwner, permissions: stored }) } }
+    }),
     columns: columns.map(c => ({ ...c, dishes: dishes.get(c.id) ?? [] })),
     newDishIds,
     newInHistoryDishIds: newInHistory,
@@ -307,10 +335,11 @@ export async function editBoard(boardId: string, userId: string, changes: BoardC
 }
 
 // The Board's Members, the Owner first, then in the order they joined; those
-// without a Username yet in `language`.
+// without a Username yet in `language`. With their stored Permissions,
+// which only Board settings may show (BoardMemberView).
 export function boardMembers(boardId: string, language: Language) {
   return db
-    .select({ id: user.id, name: usernameOf(language), image: pictureOf, isOwner: membership.isOwner })
+    .select({ id: user.id, name: usernameOf(language), image: pictureOf, isOwner: membership.isOwner, permissions: membership.permissions })
     .from(membership)
     .innerJoin(user, eq(user.id, membership.userId))
     .where(eq(membership.boardId, boardId))

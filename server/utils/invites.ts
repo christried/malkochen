@@ -58,7 +58,7 @@ export async function inviteView(secret: string, language: Language): Promise<In
   const members = await boardMembers(found.id, language).limit(LANDING_MEMBERS)
   const [owner] = members
   if (!owner?.isOwner) return null
-  const strip = ({ isOwner: _, ...m }: typeof owner): BoardMember => m
+  const strip = ({ isOwner: _, permissions: __, ...m }: typeof owner): BoardMember => m
   return { board: { name: found.name, emoji: found.emoji }, owner: strip(owner), members: members.map(strip) }
 }
 
