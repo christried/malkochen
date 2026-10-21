@@ -5,6 +5,7 @@ import { signIn } from './auth'
 import { column, titles } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
+import { FAST_POLL_MS, fastPolls } from './polls'
 
 // Sync between Members and "Neu" markers (PRD stories 37, 38): others'
 // changes show up while the Board is open, by polling and when the app
@@ -32,16 +33,6 @@ async function addDish(page: Page, boardId: string, title: string): Promise<stri
   const res = await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl' } })
   expect(res.status()).toBe(201)
   return (await res.json()).id
-}
-
-// The open Board polls every second instead of every 5 (useBoardSync's
-// test-only setting), for the tests that wait for polls. Not for those
-// where a poll arriving early would pass for the refresh they check.
-const FAST_POLL_MS = 1_000
-async function fastPolls(page: Page) {
-  await page.addInitScript((ms) => {
-    (window as { e2ePollMs?: number }).e2ePollMs = ms
-  }, FAST_POLL_MS)
 }
 
 function card(page: Page, columnName: string, title: string) {
@@ -80,6 +71,24 @@ test('another Member\'s new Dish, edit and move show up without a reload, their 
   expect((await dorothy.request.post(`/api/dishes/${dishId}/move`, { data: { columnId: gekochtId } })).status()).toBe(200)
   await expect(titles(page, 'Gekocht')).toHaveText(['Dorothys Linsen-Dal'], { timeout: 10_000 })
   await expect(titles(page, 'Ideen')).toHaveText(['Alans Auflauf'])
+})
+
+test('an open Board only checks its version until another Member changes it, and then loads itself with their Dish', async ({ page, browser }) => {
+  await fastPolls(page)
+  const { boardId, dorothy } = await sharedBoard(page, browser, 'Gewürzregal')
+  const asked: string[] = []
+  page.on('request', (req) => {
+    const path = new URL(req.url()).pathname
+    if (path.startsWith(`/api/boards/${boardId}/`)) asked.push(path.slice(path.lastIndexOf('/') + 1))
+  })
+  await gotoHydrated(page, `/b/${boardId}`)
+
+  await expect.poll(() => asked.filter(a => a === 'version').length).toBeGreaterThanOrEqual(3)
+  expect(asked).not.toContain('seen')
+
+  await addDish(dorothy, boardId, 'Za’atar-Brot')
+  await expect(titles(page, 'Ideen')).toHaveText(['Za’atar-Brot'], { timeout: 10_000 })
+  expect(asked).toContain('seen')
 })
 
 test('another Member’s change to a Dish’s Creator shows up without a reload, and so does clearing it', async ({ page, browser }) => {
@@ -165,9 +174,10 @@ test('every Dish another Member added while I was away is "Neu" when I open the 
   await expect(column(page, 'Ideen').locator('[data-neu]')).toHaveCount(0)
 })
 
-// Lets the open Board's next poll go out (page.clock installed) and come back.
+// Lets the open Board's next tick go out (page.clock installed) and come
+// back: the version check, or the Board itself when that is due.
 async function nextPoll(page: Page) {
-  const seen = page.waitForResponse(res => res.url().endsWith('/seen') && res.ok())
+  const seen = page.waitForResponse(res => /\/(version|seen)$/.test(res.url()) && res.ok())
   await page.clock.runFor(6_000)
   await seen
 }

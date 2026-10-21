@@ -3,6 +3,7 @@ import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
+import { fastPolls } from './polls'
 import { landingBoardId, removeUsers, seedDish } from './seed'
 
 // What a Dish's card shows of its Dish History (#335): the chip on its
@@ -20,11 +21,7 @@ const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 test.beforeAll(() => removeUsers(YALOW, WIDNALL))
 
 test('another Member\'s Comment marks the card; opening the Dish clears it', async ({ page, browser }) => {
-  // The open Board polls every second instead of every 5 (useBoardSync's
-  // test-only setting), as in sync.spec.ts.
-  await page.addInitScript(() => {
-    (window as { e2ePollMs?: number }).e2ePollMs = 1_000
-  })
+  await fastPolls(page)
   await signIn(page, YALOW)
   await gotoHydrated(page, '/')
   await seedDish(page, { title: 'Linsen-Dal', sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: YALOW })
