@@ -243,3 +243,87 @@ describe('the account deleted email', () => {
     expect(accountDeletedEmail({ email: 'ada@example.com', name: 'Ada', language: 'it' }).text).toContain('Ciao Ada, come richiesto abbiamo eliminato il tuo account malkochen.')
   })
 })
+
+// Comments and Votes (#353): after a Board's new Dishes, „Im Verlauf" lists
+// the Comments and Votes others gave on its Dishes.
+describe('Comments and Votes', () => {
+  const DAL = { title: 'Linsen-Dal', code: 'cd34' }
+  const PASTA = { title: 'Cremige Pilzpasta', code: 'gh78' }
+
+  test('a section per Board after its new Dishes: who, on which Dish (linked at its Verlauf), the Comment\'s start or the thumb', () => {
+    const email = digestEmail(ADA, [{
+      board: KOCHCLUB,
+      dishes: [{ title: 'Ramen', code: 'ab12', addedBy: 'Grace' }],
+      talk: [
+        { dish: DAL, by: 'Linus', comment: 'Hab ich gestern nachgekocht, mit doppelt Ingwer. Super!' },
+        { dish: PASTA, by: 'Linus', up: true },
+        { dish: DAL, by: 'Grace', up: false },
+      ],
+    }], ORIGIN)
+
+    expect(email.subject).toBe('1 neues Gericht in 🍜 Kochclub')
+    expect(email.html).toContain('Von Grace und Linus. Schau mal rein!')
+    for (const part of [email.text, email.html]) {
+      expect(part).toContain('Im Verlauf')
+      expect(part.indexOf('Ramen')).toBeLessThan(part.indexOf('Im Verlauf'))
+      expect(part).toContain('https://malkochen.example/b/kochclub/linsen-dal-cd34#verlauf')
+      expect(part).toContain('https://malkochen.example/b/kochclub/cremige-pilzpasta-gh78#verlauf')
+    }
+    expect(email.text).toContain('Linus zu Linsen-Dal: „Hab ich gestern nachgekocht, mit doppelt Ingwer. Super!“')
+    expect(email.text).toContain('Linus fand Cremige Pilzpasta gut 👍')
+    expect(email.text).toContain('Grace fand Linsen-Dal nicht so gut 👎')
+    expect(email.html).toMatch(/Linus zu <a href="https:\/\/malkochen\.example\/b\/kochclub\/linsen-dal-cd34#verlauf"[^>]*>Linsen-Dal<\/a>: „Hab ich gestern nachgekocht, mit doppelt Ingwer\. Super!“/)
+  })
+
+  test('a long Comment is cut to its first ~100 characters, at a word', () => {
+    const long = `${'Wort '.repeat(30)}Ende`
+    const email = digestEmail(ADA, [{ board: KOCHCLUB, dishes: [], talk: [{ dish: DAL, by: 'Linus', comment: long }] }], ORIGIN)
+    const [, quoted] = email.text.match(/„(.*)“/)!
+    expect(quoted).toBe(`${'Wort '.repeat(20).trim()} …`)
+    expect(email.text).not.toContain('Ende')
+  })
+
+  test('without new Dishes, the subject counts the Comments and Votes; the Board shows only its Verlauf', () => {
+    const talk = [
+      { dish: DAL, by: 'Linus', comment: 'Lecker' },
+      { dish: DAL, by: 'Grace', comment: 'Ja!' },
+      { dish: PASTA, by: 'Grace', up: true },
+    ]
+    const one = digestEmail(ADA, [{ board: KOCHCLUB, dishes: [], talk }], ORIGIN)
+    expect(one.subject).toBe('2 Kommentare und 1 Daumen in 🍜 Kochclub')
+    expect(one.html).not.toContain('<ul style="margin:0 0 12px;padding:0 0 0 20px">\n\n</ul>')
+
+    const two = digestEmail(ADA, [
+      { board: KOCHCLUB, dishes: [], talk: [{ dish: DAL, by: 'Linus', up: false }] },
+      { board: SONNTAG, dishes: [], talk: [{ dish: PASTA, by: 'Grace', up: true }] },
+    ], ORIGIN)
+    expect(two.subject).toBe('2 Daumen auf deinen Boards')
+
+    // New Dishes on one Board, Comments on another: the subject counts the Dishes.
+    const mixed = digestEmail(ADA, [
+      { board: KOCHCLUB, dishes: [{ title: 'Ramen', code: 'ab12', addedBy: 'Grace' }] },
+      { board: SONNTAG, dishes: [], talk: [{ dish: PASTA, by: 'Grace', comment: 'Mmh' }] },
+    ], ORIGIN)
+    expect(mixed.subject).toBe('1 neues Gericht auf deinen Boards')
+  })
+
+  test('what Members typed in a Comment is escaped in the HTML', () => {
+    const email = digestEmail(ADA, [{ board: KOCHCLUB, dishes: [], talk: [{ dish: { title: '<b>Dal</b>', code: 'cd34' }, by: 'Li<nus>', comment: '<script>alert(1)</script>' }] }], ORIGIN)
+    expect(email.html).not.toContain('<script>')
+    expect(email.html).not.toContain('<b>Dal')
+    expect(email.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+    expect(email.html).toContain('Li&lt;nus&gt; zu')
+  })
+
+  test('in English and Italian', () => {
+    const news = [{ board: KOCHCLUB, dishes: [], talk: [{ dish: DAL, by: 'Linus', comment: 'Yum' }, { dish: PASTA, by: 'Grace', up: true }] }]
+    const en = digestEmail({ ...ADA, language: 'en' }, news, ORIGIN)
+    expect(en.subject).toBe('1 comment and 1 thumb in 🍜 Kochclub')
+    expect(en.text).toContain('In the history')
+    expect(en.text).toContain('Linus on Linsen-Dal: “Yum”')
+    const it = digestEmail({ ...ADA, language: 'it' }, news, ORIGIN)
+    expect(it.text).toContain('Nella cronologia')
+    expect(it.text).toContain('Linus su Linsen-Dal: “Yum”')
+    expect(it.text).toContain('Grace ha dato un pollice in su a Cremige Pilzpasta 👍')
+  })
+})

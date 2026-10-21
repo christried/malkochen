@@ -586,7 +586,7 @@ export const en: Strings = {
   },
   emailDigest: {
     toggle: 'Daily email',
-    hint: 'In the evening to your email address, when others have added new dishes to your boards. For all your devices.',
+    hint: 'In the evening to your email address, when others have added, commented on or given a thumb to dishes on your boards. For all your devices.',
     failed,
     subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'on your boards'}`,
     talkSubject: (comments: number, votes: number, board: string | null) => `${talkCounts(comments, votes).join(' and ')} ${board ? `in ${board}` : 'on your boards'}`,

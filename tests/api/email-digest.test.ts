@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
 import { startResendService, type ResendService, type SentEmail } from '../support/resend-service'
@@ -270,4 +270,134 @@ test('each recipient gets it in their own language: their choice, else what thei
   finally {
     await wu.fetch('/api/me/language', json('PUT', { language: 'auto' }))
   }
+})
+
+// Comments and Votes (#353): after a Board's new Dishes, „Im Verlauf" lists
+// the Comments others wrote and the Votes they gave since the last run.
+describe('Comments and Votes', () => {
+  async function commented(caller: Caller, dish: Dish, text: string): Promise<{ id: string }> {
+    const res = await caller.fetch(`/api/dishes/${dish.id}/comments`, json('POST', { text }))
+    expect(res.status).toBe(201)
+    return res.json()
+  }
+
+  async function voted(caller: Caller, dish: Dish, up: boolean) {
+    expect((await caller.fetch(`/api/dishes/${dish.id}/vote`, json('PUT', { up }))).status).toBe(200)
+  }
+
+  async function cooked(caller: Caller, dish: Dish) {
+    expect((await caller.fetch(`/api/dishes/${dish.id}/cook`, { method: 'POST' })).status).toBe(200)
+  }
+
+  // A Board of Wu's with Conway and Perey and a Cooked Dish on it, covered
+  // by a run already; Wu has the digest on.
+  async function talkingBoard(name: string) {
+    const wu = await switchedOnFor(await signIn(WU))
+    const conway = await signIn(CONWAY)
+    const perey = await signIn(PEREY)
+    const board = await sharedBoard(wu, [conway, perey], name, '🍪')
+    const dal = await addDish(wu, board.id, 'Linsen-Dal')
+    await cooked(wu, dal)
+    await run()
+    resend.forget()
+    return { wu, conway, perey, board, dal, con: await usernameOf(conway), per: await usernameOf(perey) }
+  }
+
+  test('a section per Board after its new Dishes: who wrote or gave what, on which Dish', async () => {
+    const { conway, perey, board, dal, con, per } = await talkingBoard('Verlauf')
+    const ramen = await addDish(perey, board.id, 'Ramen')
+    await commented(conway, dal, 'Hab ich gestern nachgekocht. Super!')
+    await voted(perey, dal, false)
+
+    await run()
+
+    const [email] = emailsTo(WU)
+    expect(email!.subject).toBe('1 neues Gericht in 🍪 Verlauf')
+    expect(email!.text).toContain(`/b/${board.slug}/ramen-${ramen.code}`)
+    expect(email!.text).toContain('Im Verlauf')
+    expect(email!.text).toContain(`${con} zu Linsen-Dal: „Hab ich gestern nachgekocht. Super!“`)
+    expect(email!.text).toContain(`${per} fand Linsen-Dal nicht so gut 👎`)
+    expect(email!.text).toContain(`/b/${board.slug}/linsen-dal-${dal.code}#verlauf`)
+  })
+
+  test('without new Dishes, the Comments and Votes alone make a digest', async () => {
+    const { conway, dal, con } = await talkingBoard('Nur Gerede')
+    await commented(conway, dal, 'Lecker')
+    await voted(conway, dal, true)
+
+    await run()
+
+    const [email] = emailsTo(WU)
+    expect(email!.subject).toBe('1 Kommentar und 1 Daumen in 🍪 Nur Gerede')
+    expect(email!.text).toContain(`${con} fand Linsen-Dal gut 👍`)
+  })
+
+  test('each listed once: the next run has only what came since, and a Vote changed since isn\'t listed again', async () => {
+    const { conway, perey, dal, per } = await talkingBoard('Einmal')
+    const first = await commented(conway, dal, 'Erster')
+    await voted(perey, dal, true)
+    await run()
+    expect(emailsTo(WU)).toHaveLength(1)
+
+    resend.forget()
+    // Edited, and changed: nothing new.
+    expect((await conway.fetch(`/api/comments/${first.id}`, json('PATCH', { text: 'Erster, bearbeitet' }))).status).toBe(200)
+    await voted(perey, dal, false)
+    await run()
+    expect(emailsTo(WU)).toEqual([])
+
+    await commented(conway, dal, 'Zweiter')
+    await run()
+    const [email] = emailsTo(WU)
+    expect(email!.text).toContain('„Zweiter“')
+    expect(email!.text).not.toContain('Erster')
+    expect(email!.text).not.toContain(per)
+  })
+
+  test('nothing of one\'s own, from before joining, deleted, or on an Archived Dish', async () => {
+    const { wu, conway, perey, board, dal } = await talkingBoard('Leise')
+    // Wu's own.
+    await commented(wu, dal, 'Meins')
+    await voted(wu, dal, true)
+    // Deleted again.
+    const deleted = await commented(conway, dal, 'Ups')
+    expect((await conway.fetch(`/api/comments/${deleted.id}`, { method: 'DELETE' })).status).toBe(204)
+    // On a Dish archived since.
+    const ramen = await addDish(wu, board.id, 'Ramen')
+    await cooked(wu, ramen)
+    await run()
+    resend.forget()
+    await commented(perey, ramen, 'Zu Ramen')
+    await voted(perey, ramen, true)
+    expect((await wu.fetch(`/api/dishes/${ramen.id}`, { method: 'DELETE' })).status).toBe(204)
+
+    // Before Wu joined: Conway's Board, talked about first.
+    const later = await sharedBoard(conway, [perey], 'Später dabei')
+    const gnocchi = await addDish(conway, later.id, 'Gnocchi')
+    await cooked(conway, gnocchi)
+    await commented(perey, gnocchi, 'Vor Wus Zeit')
+    await voted(perey, gnocchi, true)
+    const { inviteToken } = await getBoard(conway, later.id)
+    expect((await wu.fetch(`/api/invites/${inviteToken}/join`, { method: 'POST' })).status).toBe(200)
+
+    await run()
+
+    expect(emailsTo(WU)).toEqual([])
+  })
+
+  test('in the recipient\'s language', async () => {
+    const { wu, conway, dal, con } = await talkingBoard('Sprachen')
+    expect((await wu.fetch('/api/me/language', json('PUT', { language: 'en' }))).status).toBe(200)
+    try {
+      await commented(conway, dal, 'Yum')
+      await run()
+      const [email] = emailsTo(WU)
+      expect(email!.subject).toBe('1 comment in 🍪 Sprachen')
+      expect(email!.text).toContain('In the history')
+      expect(email!.text).toContain(`${con} on Linsen-Dal: “Yum”`)
+    }
+    finally {
+      await wu.fetch('/api/me/language', json('PUT', { language: 'auto' }))
+    }
+  })
 })
