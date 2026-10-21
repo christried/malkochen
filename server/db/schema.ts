@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm'
+import { ALL_PERMISSIONS, type Permissions } from '../../shared/permissions'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceKind } from '../source-lookup'
 import type { EventDetails, EventKind } from '../utils/events'
@@ -214,6 +215,11 @@ export const membership = pgTable('membership', {
   // New too, until the next open moves it on.
   newSince: timestamp('new_since', { withTimezone: true }),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  // Their Permissions (shared/permissions.ts), every flag present. Read
+  // through server/utils/permissions.ts, which lets the Owner do
+  // everything whatever this holds. Everything allowed on joining, until
+  // the Board's Default Permissions come (#343).
+  permissions: jsonb('permissions').$type<Permissions>().notNull().default(ALL_PERMISSIONS),
 }, t => [
   primaryKey({ columns: [t.boardId, t.userId] }),
   index('membership_user_id_idx').on(t.userId),
@@ -232,6 +238,7 @@ export const archivedMembership = pgTable('archived_membership', {
   seenAt: timestamp('seen_at', { withTimezone: true }),
   newSince: timestamp('new_since', { withTimezone: true }),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull(),
+  permissions: jsonb('permissions').$type<Permissions>().notNull().default(ALL_PERMISSIONS),
 }, t => [
   primaryKey({ columns: [t.boardId, t.userId] }),
   index('archived_membership_user_id_idx').on(t.userId),

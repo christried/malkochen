@@ -312,6 +312,7 @@ export const it: Strings = {
     failed,
     imageNotStored: (title: string) => `Non è stato possibile salvare l’immagine dal link. Ora “${title}” ha un’immagine segnaposto.`,
     photoNotStored: (title: string) => `Non è stato possibile salvare la tua foto. Ora “${title}” ha un’immagine segnaposto.`,
+    notAllowed: 'Su questa bacheca non puoi aggiungere piatti. Lo decide chi ne è titolare.',
   },
   placeholders: {
     pasta: 'Pasta',
@@ -419,6 +420,12 @@ export const it: Strings = {
     // "il/la titolare": the same word for anyone.
     owner: 'Titolare',
     manageMember: (name: string) => `Gestisci ${name}`,
+    permissions: 'Permessi',
+    yourPermissions: 'Cosa puoi fare qui',
+    yourPermissionsHint: 'Lo decide chi è titolare della bacheca.',
+    permission: {
+      addDishes: { label: 'Aggiungere piatti', hint: 'Mettere nuovi piatti sulla bacheca, anche condividendoli.' },
+    },
     handOver: 'Cedi la bacheca',
     handOverConfirm: (name: string) => `Cedere la bacheca a ${name}?`,
     handOverBody: (name: string) => `${name} potrà rimuovere membri, reimpostare il link ed eliminare la bacheca. Tu resti tra i membri.`,

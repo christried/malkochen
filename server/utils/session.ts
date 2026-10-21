@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3'
 import { chooseLanguage, type Language } from '../../shared/language'
+import type { Permission } from '../../shared/permissions'
 import type { SessionUser } from './auth'
+import { allows, standingOn } from './permissions'
 
 declare module 'h3' {
   interface H3EventContext {
@@ -90,4 +92,16 @@ export function commentIdParam(event: H3Event): string {
   const id = getRouterParam(event, 'id') ?? ''
   if (!UUID.test(id)) throw commentNotFound()
   return id
+}
+
+// Throws unless the user may take an action `permission` covers on the
+// Board, on `dish` if it is about one (server/utils/permissions.ts): 404
+// for a non-Member, as boardNotFound; 403 for a Member without the
+// Permission, with the Permission it needs, which the app names kindly.
+export async function requirePermission(boardId: string, userId: string, permission: Permission, dish?: { addedBy: string | null }): Promise<void> {
+  const standing = await standingOn(boardId, userId)
+  if (!standing) throw boardNotFound()
+  if (!allows(standing, permission, userId, dish)) {
+    throw createError({ statusCode: 403, statusMessage: 'Not permitted on this Board', data: { permission } })
+  }
 }

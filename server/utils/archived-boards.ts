@@ -1,4 +1,5 @@
 import { and, desc, eq, exists, isNotNull, isNull, lt, sql } from 'drizzle-orm'
+import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { db, runAtomic, type Db } from '../db'
 import { archivedMembership, board, dish, membership } from '../db/schema'
 import { membershipOf, ownerOf, type BoardNameAndEmoji, type BoardSummary } from './boards'
@@ -37,7 +38,7 @@ function archivedOwnerOf(d: Db, boardId: string, userId: string) {
 
 // The columns both membership tables have, in one order: keep it in step
 // with both.
-const membershipColumns = sql.raw('board_id, user_id, is_owner, last_opened_at, seen_at, new_since, joined_at')
+const membershipColumns = sql.raw('board_id, user_id, is_owner, last_opened_at, seen_at, new_since, joined_at, permissions')
 
 // Moves the Board's memberships, as they are, from one table to the other
 // (`from` and `to`), only while the Board is archived (`archived`) or not.
@@ -124,7 +125,8 @@ export async function restoreBoard(boardId: string, userId: string): Promise<Boa
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId), membership.isOwner))
-  return restored ?? null
+  // The Owner's: everything.
+  return restored ? { ...restored, permissions: ALL_PERMISSIONS } : null
 }
 
 // "Endgültig löschen" (story 45): the Owner deletes an Archived Board for

@@ -6,6 +6,7 @@ import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { invitePath } from '~~/shared/invite'
+import { ENFORCED_PERMISSIONS, type EnforcedPermission, type Permissions } from '~~/shared/permissions'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
@@ -274,6 +275,28 @@ function removeMember(member: BoardMemberView) {
   )
 }
 
+// Permissions (#340): in a Member's sheet the Owner switches each one,
+// saved at once; one that fails stays as it was, with a notice. The
+// Member's open Board follows at its next check. Every other Member sees
+// their own, read-only.
+const switchingPermission = ref<EnforcedPermission | null>(null)
+async function switchPermission(member: BoardMemberView, permission: EnforcedPermission) {
+  if (!member.permissions || switchingPermission.value) return
+  switchingPermission.value = permission
+  try {
+    member.permissions = await $fetch<Permissions>(
+      `/api/boards/${id.value}/members/${encodeURIComponent(member.id)}/permissions`,
+      { method: 'PATCH', body: { [permission]: !member.permissions[permission] } },
+    )
+  }
+  catch {
+    failed()
+  }
+  finally {
+    switchingPermission.value = null
+  }
+}
+
 // Leaving (any Member but the Owner) and deleting (the Owner, after typing
 // the Board's name) both end on the Board used last -- or a new "Meine
 // Küche" for someone left on no Board at all.
@@ -497,6 +520,31 @@ function confirmDelete() {
           :is-owner="board.isOwner"
           @manage="manage"
         />
+        <div
+          v-if="!board.isOwner"
+          role="group"
+          aria-labelledby="settings-your-permissions"
+          class="flex flex-col gap-3 rounded-card bg-surface-muted p-4"
+        >
+          <p
+            id="settings-your-permissions"
+            class="text-button"
+          >
+            {{ t.settings.yourPermissions }}
+          </p>
+          <SettingsSwitch
+            v-for="permission in ENFORCED_PERMISSIONS"
+            :key="permission"
+            :label="t.settings.permission[permission].label"
+            :hint="t.settings.permission[permission].hint"
+            :checked="board.permissions[permission]"
+            :busy="false"
+            disabled
+          />
+          <p class="text-small text-text-muted">
+            {{ t.settings.yourPermissionsHint }}
+          </p>
+        </div>
       </section>
 
       <section
@@ -623,6 +671,29 @@ function confirmDelete() {
         >
           {{ memberAction === 'hand-over' ? t.settings.handOverBody(selectedMember.name) : t.settings.removeBody(selectedMember.name) }}
         </p>
+        <div
+          v-else-if="selectedMember.permissions"
+          role="group"
+          aria-labelledby="settings-member-permissions"
+          class="mt-5 flex flex-col gap-3 rounded-card bg-surface-muted p-4"
+        >
+          <p
+            id="settings-member-permissions"
+            class="text-button"
+          >
+            {{ t.settings.permissions }}
+          </p>
+          <SettingsSwitch
+            v-for="permission in ENFORCED_PERMISSIONS"
+            :key="permission"
+            :label="t.settings.permission[permission].label"
+            :hint="t.settings.permission[permission].hint"
+            :checked="selectedMember.permissions[permission]"
+            :busy="switchingPermission === permission"
+            :disabled="switchingPermission !== null"
+            @toggle="switchPermission(selectedMember, permission)"
+          />
+        </div>
         <div class="mt-5 flex flex-col gap-2">
           <template v-if="!memberAction">
             <button

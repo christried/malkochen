@@ -297,8 +297,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // shows before the server has it. Saved to this Board, it shows where the
   // server put it, at the top of the Column that takes new Dishes as the
   // server has the Columns; saved to another Board, it doesn't show here.
-  // A failed write rejects with WriteFailed, for the form to say so.
+  // A failed write rejects with WriteFailed, for the form to say so; on
+  // this Board without "add Dishes" (its Permissions as last loaded), at
+  // once with 403, as the server would.
   async function addDish(boardId: string, input: AddDishBody): Promise<BoardResult> {
+    if (board.value?.id === boardId && !board.value.permissions.addDishes) throw new WriteFailed(403)
     const { imageNotStored, placement, ...fields } = await transport.addDish(boardId, input)
     // Another Board's Column isn't on this one.
     const into = column(placement.columnId)

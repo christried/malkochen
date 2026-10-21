@@ -4,6 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
 import { inviteToken } from './invite'
+import { fastPolls } from './polls'
 
 // Members and Owner rules (PRD stories 62, 67–71) in Board settings. Evelyn
 // owns the Boards; Radia joins them. Both are used by this file only.
@@ -67,4 +68,28 @@ test('a Member leaves, and lands on another Board', async ({ page, browser }) =>
   await expect(radia.getByRole('heading', { level: 1 })).not.toHaveText('🥗 Mensa')
   await gotoHydrated(page, `/b/${boardId}/settings`)
   await expect(memberRows(page)).toHaveText([/evelyn/])
+})
+
+// Permissions (#340): the Owner switches "Gerichte hinzufügen" off in
+// Radia's sheet; their open Board loses its add button at its next check,
+// and their Board settings show it off, read-only.
+test('the Owner switches off adding Dishes for a Member, whose add button goes without a reload', async ({ page, browser }) => {
+  const { boardId, radia } = await sharedBoard(page, browser, 'Suppenküche')
+  await fastPolls(radia)
+  await gotoHydrated(radia, `/b/${boardId}`)
+  const addButton = radia.getByRole('button', { name: 'Gericht hinzufügen' })
+  await expect(addButton).toBeVisible()
+
+  await gotoHydrated(page, `/b/${boardId}/settings`)
+  await page.getByRole('button', { name: 'radia verwalten' }).click()
+  const adding = page.getByRole('dialog', { name: 'radia' }).getByRole('group', { name: 'Rechte' }).getByRole('switch', { name: 'Gerichte hinzufügen' })
+  await expect(adding).toHaveAttribute('aria-checked', 'true')
+  await adding.click()
+  await expect(adding).toHaveAttribute('aria-checked', 'false')
+
+  await expect(addButton).toHaveCount(0)
+  await gotoHydrated(radia, `/b/${boardId}/settings`)
+  const own = radia.getByRole('group', { name: 'Was du hier darfst' }).getByRole('switch', { name: 'Gerichte hinzufügen' })
+  await expect(own).toHaveAttribute('aria-checked', 'false')
+  await expect(own).toBeDisabled()
 })

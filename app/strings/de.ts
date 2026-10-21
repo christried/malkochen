@@ -357,6 +357,8 @@ export const de = {
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     imageNotStored: (title: string) => `Das Bild vom Link ließ sich nicht speichern. „${title}“ hat jetzt ein Platzhalterbild.`,
     photoNotStored: (title: string) => `Dein Foto ließ sich nicht speichern. „${title}“ hat jetzt ein Platzhalterbild.`,
+    // Refused for want of the Permission (403): the Owner switched it off.
+    notAllowed: 'Auf diesem Board darfst du keine Gerichte hinzufügen. Das legt die Besitzer:in fest.',
   },
   placeholders: {
     pasta: 'Pasta',
@@ -477,6 +479,14 @@ export const de = {
     you: 'du',
     owner: 'Besitzer:in',
     manageMember: (name: string) => `${name} verwalten`,
+    // Permissions (CONTEXT.md: "Rechte"): the Owner switches a Member's
+    // in their sheet; every other Member sees their own, read-only.
+    permissions: 'Rechte',
+    yourPermissions: 'Was du hier darfst',
+    yourPermissionsHint: 'Das legt die Besitzer:in des Boards fest.',
+    permission: {
+      addDishes: { label: 'Gerichte hinzufügen', hint: 'Neue Gerichte aufs Board legen, auch über Teilen.' },
+    },
     handOver: 'Besitz übertragen',
     handOverConfirm: (name: string) => `Besitz an ${name} übertragen?`,
     handOverBody: (name: string) => `${name} kann dann Mitglieder entfernen, den Link zurücksetzen und das Board löschen. Du bleibst Mitglied.`,
