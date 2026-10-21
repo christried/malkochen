@@ -10,7 +10,7 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 // Default Permissions, "Nur ansehen" and handing over ownership (#343,
 // CONTEXT.md): what a new Member gets on joining, the shortcut that leaves
 // a Member only commenting and voting, and whose Permissions a handover
-// leaves. Tereshkova owns the Boards made here, Cori and Avery join them;
+// leaves. Tereshkova owns the Boards made here, Lonsdale and Avery join them;
 // all three are used by this file only.
 
 interface Member { id: string, name: string, isYou: boolean, isOwner: boolean, permissions?: Permissions }
@@ -27,7 +27,7 @@ interface Board {
 }
 
 const tereshkova = () => signIn(ALLOWLISTED[107])
-const cori = () => signIn(ALLOWLISTED[108])
+const lonsdale = () => signIn(ALLOWLISTED[108])
 const avery = () => signIn(ALLOWLISTED[109])
 
 const json = (body: unknown): RequestInit => ({ headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
@@ -67,7 +67,7 @@ test('the Default Permissions allow everything until the Owner changes them; onl
   const { board, owner } = await newBoard('Wostok')
   expect(board.defaultPermissions).toEqual(ALL_PERMISSIONS)
 
-  const member = await cori()
+  const member = await lonsdale()
   await join(member, board)
   expect((await getBoard(member, board.id)).permissions).toEqual(ALL_PERMISSIONS)
   expect((await getBoard(member, board.id)).defaultPermissions).toBeUndefined()
@@ -76,7 +76,7 @@ test('the Default Permissions allow everything until the Owner changes them; onl
 
 test('a Member joining through the Invite Link gets the Default Permissions; those already on keep theirs', async () => {
   const { board, owner } = await newBoard('Saljut')
-  const early = await cori()
+  const early = await lonsdale()
   await join(early, board)
 
   const res = await setDefaults(owner, board.id, { addDishes: false, editColumns: false })
@@ -97,7 +97,7 @@ test('a Member joining through the Invite Link gets the Default Permissions; tho
 
 test('only the Owner changes the Default Permissions', async () => {
   const { board, owner } = await newBoard('Mir')
-  const member = await cori()
+  const member = await lonsdale()
   await join(member, board)
 
   expect((await setDefaults(member, board.id, { addDishes: false })).status).toBe(403)
@@ -110,14 +110,14 @@ test('only the Owner changes the Default Permissions', async () => {
 test('"Nur ansehen" leaves a Member only commenting and voting', async () => {
   const { board, owner } = await newBoard('Skylab')
   const dish = await (await postDish(owner, board.id, { title: 'Tereshkovas Soljanka', placeholder: 'bowl' })).json() as Dish
-  const member = await cori()
+  const member = await lonsdale()
   await join(member, board)
 
-  const res = await setPermissions(owner, board.id, memberId(await getBoard(owner, board.id), 'cori'), VIEW_ONLY)
+  const res = await setPermissions(owner, board.id, memberId(await getBoard(owner, board.id), 'lonsdale'), VIEW_ONLY)
   expect(res.status).toBe(200)
   expect(await res.json()).toEqual({ ...Object.fromEntries(Object.keys(ALL_PERMISSIONS).map(p => [p, false])), commentAndVote: true })
 
-  await expectRefused(await postDish(member, board.id, { title: 'Coris Pelmeni', placeholder: 'bowl' }), 'addDishes')
+  await expectRefused(await postDish(member, board.id, { title: 'Lonsdales Pelmeni', placeholder: 'bowl' }), 'addDishes')
   await expectRefused(await send(member, 'PATCH', `/api/dishes/${dish.id}`, { title: 'Umbenannt' }), 'editDishes')
   await expectRefused(await send(member, 'POST', `/api/dishes/${dish.id}/move`, { columnId: board.columns[1]!.id }), 'moveDishes')
   await expectRefused(await send(member, 'DELETE', `/api/dishes/${dish.id}`), 'archiveDishes')
@@ -127,13 +127,13 @@ test('"Nur ansehen" leaves a Member only commenting and voting', async () => {
 
 test('handing over: the new Owner has everything, the former Owner keeps everything until the new Owner changes it', async () => {
   const { board, owner } = await newBoard('Sojus')
-  const member = await cori()
+  const member = await lonsdale()
   await join(member, board)
-  const coriId = memberId(await getBoard(owner, board.id), 'cori')
+  const lonsdaleId = memberId(await getBoard(owner, board.id), 'lonsdale')
   const tereshkovaId = memberId(await getBoard(owner, board.id), 'tereshkova')
-  await setPermissions(owner, board.id, coriId, VIEW_ONLY)
+  await setPermissions(owner, board.id, lonsdaleId, VIEW_ONLY)
 
-  expect((await handOver(owner, board.id, coriId)).status).toBe(204)
+  expect((await handOver(owner, board.id, lonsdaleId)).status).toBe(204)
 
   expect((await getBoard(member, board.id)).permissions).toEqual(ALL_PERMISSIONS)
   const former = await getBoard(owner, board.id)
@@ -144,7 +144,7 @@ test('handing over: the new Owner has everything, the former Owner keeps everyth
   expect((await setPermissions(member, board.id, tereshkovaId, { editBoard: false })).status).toBe(200)
   expect((await getBoard(owner, board.id)).permissions).toEqual({ ...ALL_PERMISSIONS, editBoard: false })
 
-  // Handed back, Cori keeps everything too, not the "Nur ansehen" from before.
+  // Handed back, Lonsdale keeps everything too, not the "Nur ansehen" from before.
   expect((await handOver(member, board.id, tereshkovaId)).status).toBe(204)
   expect((await getBoard(member, board.id)).permissions).toEqual(ALL_PERMISSIONS)
 })
