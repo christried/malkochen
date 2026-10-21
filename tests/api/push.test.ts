@@ -379,6 +379,17 @@ describe('Comments and Votes', () => {
     expect(pushService.deliveries).toEqual([])
   })
 
+  test('a Vote changed since the Member last opened the Board isn\'t counted again', async () => {
+    const { hypatia, mileva, board, dal, mile } = await talkingBoard('Umgestimmt')
+    await voted(mileva, dal, true)
+    await open(hypatia, board.id)
+    await voted(mileva, dal, false)
+    pushService.forget()
+
+    await commented(mileva, dal, 'Doch nicht so')
+    expect(messages().map(m => m.title)).toEqual([`${mile} hat Linsen-Dal kommentiert`])
+  })
+
   test('a deleted Comment and an Archived Dish are left out', async () => {
     const { katalin, hypatia, mileva, board, dal, mile } = await talkingBoard('Weg')
     const ramen = await addDish(katalin, board.id, 'Ramen')

@@ -2,7 +2,7 @@ import { and, desc, eq, exists, gt, inArray, isNotNull, isNull, ne, or, sql } fr
 import { alias } from 'drizzle-orm/pg-core'
 import type { Language } from '../../shared/language'
 import { db } from '../db'
-import { board, comment, dish, membership, pushSubscription, user, vote } from '../db/schema'
+import { board, comment, dish, eventLog, membership, pushSubscription, user, vote } from '../db/schema'
 import { parseServerEnv } from '../env'
 import { createPushSender, isPushEndpoint, pushMessage, type BoardNews, type PushTarget } from '../push'
 import { slugOf } from './addresses'
@@ -163,7 +163,7 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
         code: dish.code,
         // Writing one takes a Username, as voting does.
         by: sql<string>`${user.username}`,
-        comment: comment.text,
+        text: comment.text,
         at: comment.createdAt,
       })
       .from(membership)
@@ -190,7 +190,12 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
       .innerJoin(vote, and(
         eq(vote.dishId, dish.id),
         ne(vote.userId, membership.userId),
-        or('voteOn' in latest ? and(eq(vote.dishId, latest.voteOn), eq(vote.userId, actorId)) : undefined, gt(vote.votedAt, since)),
+        // Given since, not just changed since: a changed Vote never counts
+        // again. Taken back and given again, it is a new one.
+        or('voteOn' in latest ? and(eq(vote.dishId, latest.voteOn), eq(vote.userId, actorId)) : undefined, exists(db
+          .select({ id: eventLog.id })
+          .from(eventLog)
+          .where(and(eq(eventLog.kind, 'vote_set'), eq(eventLog.dishId, vote.dishId), eq(eventLog.userId, vote.userId), gt(eventLog.at, since))))),
       ))
       .innerJoin(user, eq(user.id, vote.userId))
       .where(toNotify),
@@ -199,9 +204,9 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
   const news = new Map<string, { language: Language, news: Required<BoardNews> }>(
     members.map(m => [m.id, { language: recipientLanguage(m), news: { board: found, dishes: [], talk: [] } }]),
   )
-  for (const { recipient, ...dish } of added) news.get(recipient)?.news.dishes.push(dish)
+  for (const { recipient, ...addedDish } of added) news.get(recipient)?.news.dishes.push(addedDish)
   const talk = [
-    ...comments.map(({ recipient, title, code, by, comment, at }) => ({ recipient, at, said: { dish: { title, code }, by, comment } })),
+    ...comments.map(({ recipient, title, code, by, text, at }) => ({ recipient, at, said: { dish: { title, code }, by, comment: text } })),
     ...votes.map(({ recipient, title, code, by, up, at }) => ({ recipient, at, said: { dish: { title, code }, by, up } })),
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
   for (const { recipient, said } of talk) news.get(recipient)?.news.talk.push(said)

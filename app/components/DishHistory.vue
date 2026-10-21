@@ -167,9 +167,11 @@ onMounted(() => watch([commentRequest, () => props.dish.id], async ([requested, 
 }, { immediate: true }))
 
 // Opened at its Verlauf (a push about Comments or Votes, #352): it scrolls
-// into view once it has loaded, so the detail is long enough to get there,
-// and the detail has risen into place, which would put it off by as much.
-// (Scroll-driven animations never finish: they aren't waited for.)
+// into view once it has loaded (before, the detail may be too short to
+// scroll that far) and once the detail has finished rising into place
+// (during, the scroll would miss by how far it still has to rise). Only
+// animations on the document's timeline are waited for: scroll-driven
+// ones never finish.
 const route = useRoute()
 const section = useTemplateRef<HTMLElement>('section')
 watch([() => route.hash, loaded], async ([hash, dishId]) => {
