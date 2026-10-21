@@ -2,9 +2,10 @@ import { beforeAll, describe, expect, inject, test } from 'vitest'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 
 // Better Auth mounts all its built-in endpoints under /api/auth/**. malkochen
-// uses only Google sign-in (and its callback), get-session, sign-out and, in
-// tests, the dev sign-in; every other path is turned off (#191): the other
-// built-in endpoints of better-auth 1.7.6, and any a later version adds.
+// uses only Google sign-in (and its callback), email sign-in with a code
+// (#345), get-session, sign-out and, in tests, the dev sign-in; every other
+// path is turned off (#191): the other built-in endpoints of better-auth
+// 1.7.6 and its email-otp plugin, and any a later version adds.
 const DISABLED = [
   '/ok',
   '/error',
@@ -34,6 +35,15 @@ const DISABLED = [
   '/reset-password',
   '/send-verification-email',
   '/verify-email',
+  '/email-otp/create-verification-otp',
+  '/email-otp/get-verification-otp',
+  '/email-otp/check-verification-otp',
+  '/email-otp/verify-email',
+  '/email-otp/request-password-reset',
+  '/forget-password/email-otp',
+  '/email-otp/reset-password',
+  '/email-otp/request-email-change',
+  '/email-otp/change-email',
 ]
 
 // A JSON POST as a browser sends it: Better Auth refuses cookie-carrying

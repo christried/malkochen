@@ -50,7 +50,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // The Email Digest (#220, server/utils/email-digest.ts): the Resend API key
   // it is sent with, from the verified christried.me domain. Whether it is
   // set also reaches the client (nuxt.config.ts runtimeConfig). Empty: the
-  // settings offer no digest and nothing is sent.
+  // settings offer no digest and nothing is sent. Email sign-in's codes
+  // (#345, server/utils/sign-in-code.ts) go out with it too; empty, the
+  // sign-in page offers Google only.
   RESEND_API_KEY: z.union([z.literal(''), z.string().regex(/^re_\w+$/, 'must be a Resend API key (re_…)')]).default(''),
   // Tests only: where Resend's API is instead (a stand-in that keeps what is
   // sent). Empty: Resend itself.

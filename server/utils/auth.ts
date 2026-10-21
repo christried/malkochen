@@ -2,6 +2,7 @@ import { betterAuth, type BetterAuthPlugin } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthEndpoint, createAuthMiddleware } from 'better-auth/api'
 import { setSessionCookie } from 'better-auth/cookies'
+import { emailOTP } from 'better-auth/plugins/email-otp'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { USERNAME_MAX, usernameProblem } from '../../shared/username'
@@ -11,6 +12,7 @@ import { parseServerEnv } from '../env'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
 import { usernameTaken } from './people'
+import { emailSignInOffered, mailSignInCode, SIGN_IN_CODE_MINUTES } from './sign-in-code'
 
 const env = parseServerEnv(process.env)
 
@@ -27,11 +29,46 @@ export function signInRefusal(user: { email?: unknown, emailVerified?: unknown }
 }
 
 // The only Better Auth endpoints malkochen uses: Google sign-in and its
-// callback, the session, sign-out and (local dev, tests) the dev sign-in.
+// callback, email sign-in (asking for a code, signing in with it), the
+// session, sign-out and (local dev, tests) the dev sign-in.
 // Every other path under /api/auth answers 404, so nobody can, say, set any
 // name or image through /update-user (#191). An allowlist, not Better Auth's
 // disabledPaths: a built-in endpoint a later Better Auth adds stays off too.
-const USED_AUTH_PATHS = new Set(['/sign-in/social', '/callback/google', '/get-session', '/sign-out', '/dev/sign-in'])
+const USED_AUTH_PATHS = new Set(['/sign-in/social', '/callback/google', '/email-otp/send-verification-otp', '/sign-in/email-otp', '/get-session', '/sign-out', '/dev/sign-in'])
+
+// Email sign-in with a code (#345, ADR 0007): a 6-digit code by email, typed
+// where sign-in started, plus a link that signs in where it opens. A code
+// works once, for SIGN_IN_CODE_MINUTES, and takes 5 wrong tries; asking for
+// a new one replaces it. Better Auth limits both endpoints per IP address.
+// A user is one user per email address, so an address that signed in with
+// Google signs into that account. Only the sign-in kind of code is sent;
+// email verification, password reset and changing email are off.
+const SIGN_IN_TRIES = 5
+// Asking for a code, or signing in with one: calls per minute per IP address.
+const EMAIL_SIGN_IN_CALLS_PER_MINUTE = 5
+const emailSignIn = emailOTP({
+  otpLength: 6,
+  expiresIn: SIGN_IN_CODE_MINUTES * 60,
+  allowedAttempts: SIGN_IN_TRIES,
+  storeOTP: 'hashed',
+  rateLimit: { window: 60, max: EMAIL_SIGN_IN_CALLS_PER_MINUTE },
+  sendVerificationOTP: async ({ email, otp, type }, ctx) => {
+    if (type === 'sign-in') await mailSignInCode(email, otp, ctx?.headers?.get('accept-language') ?? null)
+  },
+})
+
+// Before a code is sent: only the sign-in kind, and only to an address the
+// sign-in gate lets in, so malkochen never emails a code that can't be used.
+// A refusal reads "Not unlocked", like a refused Google sign-in. New users
+// are checked again on creation (validateUserInfo), returning ones on every
+// request (server/middleware/auth.ts).
+const beforeSendingCode = createAuthMiddleware(async (ctx) => {
+  if (ctx.path !== '/email-otp/send-verification-otp') return
+  const { email, type } = (ctx.body ?? {}) as { email?: unknown, type?: unknown }
+  if (type !== 'sign-in') throw new APIError('BAD_REQUEST', { message: 'Only sign-in codes are sent' })
+  const refusal = signInRefusal({ email: String(email ?? ''), emailVerified: true })
+  if (refusal) throw new APIError('FORBIDDEN', { code: refusal.error, message: refusal.errorDescription })
+})
 
 const onlyUsedEndpoints = {
   id: 'only-used-endpoints',
@@ -139,6 +176,7 @@ export const auth = betterAuth({
     validateUserInfo: ({ user }) => signInRefusal(user),
   },
   hooks: {
+    before: beforeSendingCode,
     // A sign-in that goes through joins the remembered invite's Board (PRD
     // stories 4, 5, 64) before the app picks where to land, so a first-time
     // user arriving this way never gets "Meine Küche". A refused sign-in
@@ -153,7 +191,7 @@ export const auth = betterAuth({
       ctx.setCookie(REMEMBERED_INVITE_COOKIE, '', FORGOTTEN_INVITE_COOKIE)
     }),
   },
-  plugins: [onlyUsedEndpoints, ...(env.AUTH_DEV_BYPASS === '1' ? [devSignIn] : [])],
+  plugins: [onlyUsedEndpoints, ...(emailSignInOffered ? [emailSignIn] : []), ...(env.AUTH_DEV_BYPASS === '1' ? [devSignIn] : [])],
 })
 
 export type SessionUser = typeof auth.$Infer.Session.user

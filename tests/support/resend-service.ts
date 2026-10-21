@@ -1,9 +1,10 @@
 import { createServer, type Server } from 'node:http'
-import { RESEND_PORT } from '../support/test-auth-env'
+import { RESEND_PORT } from './test-auth-env'
 
-// A stand-in for Resend's API, for the API tests of the Email Digest: the
-// test server sends its emails here (RESEND_BASE_URL, test-auth-env.ts), and
-// it keeps them. It can be told to refuse them. Never Resend itself.
+// A stand-in for Resend's API, for the tests of the emails malkochen sends
+// (the Email Digest, the sign-in code): the test server, API or browser,
+// sends its emails here (RESEND_BASE_URL, test-auth-env.ts), and it keeps
+// them. It can be told to refuse them. Never Resend itself.
 
 export interface SentEmail {
   from: string

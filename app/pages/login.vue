@@ -4,10 +4,11 @@ import { boardLabel } from '~~/shared/board'
 import type { Placeholder } from '~~/shared/placeholders'
 import { shareReturnPath } from '~/utils/shared-link'
 
-// Sign-in, and the "Not unlocked" screen for a refused one: Better Auth sends
-// a refused Google sign-in back here as /login?error=not_allowed
-// (server/utils/auth.ts). Each loops its clip, drawn in code (SvgLoop):
-// Topfbert wow, like the tiles' Placeholders, and not-unlocked (#217).
+// Sign-in (Google, or email with a code: EmailSignIn), and the "Not
+// unlocked" screen for a refused one: Better Auth sends a refused Google
+// sign-in back here as /login?error=not_allowed (server/utils/auth.ts).
+// Each loops its clip, drawn in code (SvgLoop): Topfbert wow, like the
+// tiles' Placeholders, and not-unlocked (#217).
 const t = useStrings()
 const { signInWithGoogle } = useAuth()
 
@@ -26,6 +27,13 @@ const route = useRoute()
 // Back to what was shared to malkochen, if that's what brought the visitor
 // here (middleware/auth.global.ts); else to the Board used last.
 const returnPath = computed(() => shareReturnPath(typeof route.query.redirect === 'string' ? route.query.redirect : undefined))
+
+// Email sign-in, if the server can send the code (RESEND_API_KEY). The
+// email's link comes back here with the address and the code.
+const emailSignIn = useRuntimeConfig().public.emailSignIn
+const fromLink = typeof route.query.email === 'string' && typeof route.query.code === 'string'
+  ? { email: route.query.email, code: route.query.code }
+  : undefined
 
 const notUnlocked = computed(() => route.query.error === 'not_allowed')
 const failed = computed(() => Boolean(route.query.error) && !notUnlocked.value)
@@ -75,7 +83,17 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'breakfast', 'burger
         <p class="mt-4 max-w-md text-body text-text-muted">
           {{ notUnlockedBody }}
         </p>
+        <!-- Back to the sign-in choices: Google, or email if offered. -->
         <button
+          v-if="emailSignIn"
+          type="button"
+          class="mt-8 rounded-pill bg-surface-muted px-6 py-4 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          @click="navigateTo('/login')"
+        >
+          {{ t.notUnlocked.otherAccount }}
+        </button>
+        <button
+          v-else
           type="button"
           class="mt-8 rounded-pill bg-surface-muted px-6 py-4 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
           :disabled="signingIn"
@@ -140,6 +158,15 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'breakfast', 'burger
         >
           {{ signingIn ? t.signIn.pending : t.signIn.google }}
         </button>
+        <template v-if="emailSignIn">
+          <p class="my-4 text-small text-text-muted">
+            {{ t.signIn.or }}
+          </p>
+          <EmailSignIn
+            :return-path="returnPath"
+            :from-link="fromLink"
+          />
+        </template>
       </template>
     </main>
     <footer class="px-4 pb-4">

@@ -5,7 +5,7 @@ import { beforeAll, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 import { watchEvents } from './event-log'
-import { startResendService } from './resend-service'
+import { startResendService } from '../support/resend-service'
 import { CRON_SECRET, IMAGE_DIR, storedImages } from './server-env'
 import { backdateDeletion } from './time-travel'
 
