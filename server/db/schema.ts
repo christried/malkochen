@@ -152,6 +152,13 @@ export const board = pgTable('board', {
   // everything that goes by membership; the cleanup purges it after
   // RESTORABLE_FOR (server/utils/archived-boards.ts).
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  // Its Board Version (ADR 0008): moves on with every change to what its
+  // Members see on it, so an open Board asks only for this (GET
+  // /api/boards/:id/version) and loads the whole Board when it moved.
+  // Only the database's triggers move it (migration 0032), so no write
+  // can forget to; per-Member reading state (seen_at, last opened, which
+  // Dishes they opened) never does.
+  version: bigint('version', { mode: 'number' }).notNull().default(0),
 })
 
 // Every slug a Board has had, its current one too: a former one forwards to

@@ -47,6 +47,10 @@ export interface BoardSummary extends BoardNameAndEmoji {
 }
 
 export interface BoardView extends BoardSummary {
+  // Its Board Version (ADR 0008) as of this answer: it was read before the
+  // rest, so a change made meanwhile moves the version past it and the
+  // next check loads the Board again.
+  version: number
   // The secret of its Invite Link, which every Member may share.
   inviteToken: string
   // Everyone on it, the Owner first, as Board settings lists them.
@@ -201,7 +205,7 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoar
 // one of its Members. Members without a Username yet in the user's `language`.
 export async function getBoard(boardId: string, userId: string, language: Language): Promise<BoardView | null> {
   const [found] = await db
-    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, inviteToken: board.inviteToken, newSince: membership.newSince })
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, version: board.version, inviteToken: board.inviteToken, newSince: membership.newSince })
     .from(membership)
     .innerJoin(board, eq(board.id, membership.boardId))
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
@@ -226,6 +230,18 @@ export async function getBoard(boardId: string, userId: string, language: Langua
     newDishIds,
     newInHistoryDishIds: newInHistory,
   }
+}
+
+// The Board's version (ADR 0008), or null unless the user is one of its
+// Members. One read by the membership's and the Board's primary keys, and
+// no write: it is what an open Board asks every few seconds.
+export async function boardVersion(boardId: string, userId: string): Promise<number | null> {
+  const [found] = await db
+    .select({ version: board.version })
+    .from(membership)
+    .innerJoin(board, eq(board.id, membership.boardId))
+    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+  return found?.version ?? null
 }
 
 // The ids of the Board's Dishes that Members other than the user added after `since`.

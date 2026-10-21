@@ -42,6 +42,7 @@ function setup() {
     name: 'Kochclub',
     emoji: '🍜',
     isOwner: true,
+    version: 0,
     inviteToken: 'token',
     members: [],
     newDishIds: [],
