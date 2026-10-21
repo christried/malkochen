@@ -40,13 +40,16 @@ function newDishCount(count: number): string {
   return `${number(count)} ${plural(count, { one: 'nuovo piatto', other: 'nuovi piatti' })}`
 }
 
-// "1 commento", "3 commenti" and "1 pollice", "3 pollici", leaving out a
-// count of 0.
+function commentCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'commento', other: 'commenti' })}`
+}
+
+function voteCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'pollice', other: 'pollici' })}`
+}
+
 function talkCounts(comments: number, votes: number): string[] {
-  return [
-    ...comments ? [`${number(comments)} ${plural(comments, { one: 'commento', other: 'commenti' })}`] : [],
-    ...votes ? [`${number(votes)} ${plural(votes, { one: 'pollice', other: 'pollici' })}`] : [],
-  ]
+  return [...comments ? [commentCount(comments)] : [], ...votes ? [voteCount(votes)] : []]
 }
 
 // "ha dato un pollice": "A Ada è piaciuto …" (as history.voted says it)
@@ -593,8 +596,8 @@ export const it: Strings = {
     voted,
     onDish: (names: string[], dish: string) => `${someNames(names)} su ${dish}`,
     counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
-    wrote: (names: string[], comments: number) => `${someNames(names)} ${haOrHanno(names)} scritto ${talkCounts(comments, 0)[0]}`,
-    gave: (names: string[], votes: number) => `${someNames(names)} ${haOrHanno(names)} dato ${talkCounts(0, votes)[0]}`,
+    wrote: (names: string[], comments: number) => `${someNames(names)} ${haOrHanno(names)} scritto ${commentCount(comments)}`,
+    gave: (names: string[], votes: number) => `${someNames(names)} ${haOrHanno(names)} dato ${voteCount(votes)}`,
     about: (board: string, titles: string[], more: number) => `${board}: su ${more === 0 ? nameList(titles) : `${titles.join(', ')} e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
     also: (before: string, comments: number, votes: number) => `${before}. In più ${talkCounts(comments, votes).join(' e ')}.`,
   },

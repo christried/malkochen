@@ -31,13 +31,16 @@ function newDishCount(count: number): string {
   return `${number(count)} new ${plural(count, { one: 'dish', other: 'dishes' })}`
 }
 
-// "1 comment", "3 comments" and "1 thumb", "3 thumbs", leaving out a count
-// of 0.
+function commentCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'comment', other: 'comments' })}`
+}
+
+function voteCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'thumb', other: 'thumbs' })}`
+}
+
 function talkCounts(comments: number, votes: number): string[] {
-  return [
-    ...comments ? [`${number(comments)} ${plural(comments, { one: 'comment', other: 'comments' })}`] : [],
-    ...votes ? [`${number(votes)} ${plural(votes, { one: 'thumb', other: 'thumbs' })}`] : [],
-  ]
+  return [...comments ? [commentCount(comments)] : [], ...votes ? [voteCount(votes)] : []]
 }
 
 const voted = (name: string, dish: string, up: boolean) => up ? `${name} liked ${dish} 👍` : `${name} didn’t like ${dish} much 👎`
@@ -576,8 +579,8 @@ export const en: Strings = {
     voted,
     onDish: (names: string[], dish: string) => `${someNames(names)} on ${dish}`,
     counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
-    wrote: (names: string[], comments: number) => `${someNames(names)} wrote ${talkCounts(comments, 0)[0]}`,
-    gave: (names: string[], votes: number) => `${someNames(names)} gave ${talkCounts(0, votes)[0]}`,
+    wrote: (names: string[], comments: number) => `${someNames(names)} wrote ${commentCount(comments)}`,
+    gave: (names: string[], votes: number) => `${someNames(names)} gave ${voteCount(votes)}`,
     about: (board: string, titles: string[], more: number) => `${board}: on ${more === 0 ? nameList(titles) : `${titles.join(', ')} and ${number(more)} more`}`,
     also: (before: string, comments: number, votes: number) => `${before}. Plus ${talkCounts(comments, votes).join(' and ')}.`,
   },

@@ -43,14 +43,21 @@ function newDishCount(count: number): string {
   return `${number(count)} ${plural(count, { one: 'neues Gericht', other: 'neue Gerichte' })}`
 }
 
-// "1 Kommentar", "3 Kommentare" and "1 Daumen", "3 Daumen", leaving out a
-// count of 0 (#351): ["3 Kommentare", "1 Daumen"].
-function talkCounts(comments: number, votes: number): string[] {
-  return [
-    ...comments ? [`${number(comments)} ${plural(comments, { one: 'Kommentar', other: 'Kommentare' })}`] : [],
-    ...votes ? [`${number(votes)} Daumen`] : [],
-  ]
+// "1 Kommentar", "3 Kommentare" and "1 Daumen", "3 Daumen" (#351);
+// talkCounts gives both, leaving out a count of 0.
+function commentCount(count: number): string {
+  return `${number(count)} ${plural(count, { one: 'Kommentar', other: 'Kommentare' })}`
 }
+
+function voteCount(count: number): string {
+  return `${number(count)} Daumen`
+}
+
+function talkCounts(comments: number, votes: number): string[] {
+  return [...comments ? [commentCount(comments)] : [], ...votes ? [voteCount(votes)] : []]
+}
+
+const hatOrHaben = (names: string[]) => plural(names.length, { one: 'hat', other: 'haben' })
 
 // A Vote on `dish`, as the Verlauf says it (history.voted).
 const voted = (name: string, dish: string, up: boolean) => up ? `${name} fand ${dish} gut 👍` : `${name} fand ${dish} nicht so gut 👎`
@@ -692,8 +699,8 @@ export const de = {
     counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
     // About several Dishes with no new ones: the Comments' title, else the
     // Votes', over the Dishes they're on; the rest follows with `also`.
-    wrote: (names: string[], comments: number) => `${someNames(names)} ${plural(names.length, { one: 'hat', other: 'haben' })} ${talkCounts(comments, 0)[0]} geschrieben`,
-    gave: (names: string[], votes: number) => `${someNames(names)} ${plural(names.length, { one: 'hat', other: 'haben' })} ${talkCounts(0, votes)[0]} gegeben`,
+    wrote: (names: string[], comments: number) => `${someNames(names)} ${hatOrHaben(names)} ${commentCount(comments)} geschrieben`,
+    gave: (names: string[], votes: number) => `${someNames(names)} ${hatOrHaben(names)} ${voteCount(votes)} gegeben`,
     about: (board: string, titles: string[], more: number) => `${board}: zu ${more === 0 ? nameList(titles) : `${titles.join(', ')} und ${number(more)} weiteren`}`,
     // What else is new, after a body: with new Dishes, `body` and then all
     // Comments and Votes; else `about`, then the Votes.
