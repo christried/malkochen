@@ -30,6 +30,13 @@ const post = (caller: Caller, path: string, body?: unknown) =>
 
 const deleteAccount = (caller: Caller, username: string) => caller.fetch('/api/me', { method: 'DELETE', ...json({ username }) })
 
+// The caller's Username, as the dev sign-in made it (another file may have
+// taken the one from their address first).
+const usernameOf = async (caller: Caller): Promise<string> => ((await (await caller.fetch('/api/me')).json()) as { name: string }).name
+
+// Deletes the caller's account the way the app does, with their Username.
+const deleteOwn = async (caller: Caller) => deleteAccount(caller, await usernameOf(caller))
+
 const getBoard = async (caller: Caller, id: string): Promise<Board> => (await caller.fetch(`/api/boards/${id}`)).json()
 const dishesOf = (board: Board) => board.columns.flatMap(c => c.dishes)
 
@@ -70,7 +77,7 @@ afterAll(() => resend.close())
 test('the wrong Username refuses, and the account stays', async () => {
   const salk = await signIn(SALK)
 
-  const res = await deleteAccount(salk, 'jenner')
+  const res = await deleteAccount(salk, `${await usernameOf(salk)}x`)
 
   expect(res.status).toBe(400)
   expect((await res.json()).data.message).toBe('Das ist nicht dein Name.')
@@ -81,7 +88,7 @@ test('the right Username, whatever the case, deletes the account, every session 
   const phone = await signIn(CORI)
   const laptop = await signIn(CORI)
 
-  expect((await deleteAccount(phone, 'Cori')).status).toBe(204)
+  expect((await deleteAccount(phone, (await usernameOf(phone)).toUpperCase())).status).toBe(204)
 
   expect((await phone.fetch('/api/me')).status).toBe(401)
   expect((await laptop.fetch('/api/me')).status).toBe(401)
@@ -101,12 +108,12 @@ test('a Board owned with others passes to the Member who joined first, and keeps
   expect((await vote(jenner, dish.id, true)).status).toBe(200)
   // Another deleted account's Vote on the same Dish doesn't clash with it.
   expect((await vote(snow, dish.id, false)).status).toBe(200)
-  expect((await deleteAccount(snow, 'snow')).status).toBe(204)
+  expect((await deleteOwn(snow)).status).toBe(204)
 
-  expect((await deleteAccount(jenner, 'jenner')).status).toBe(204)
+  expect((await deleteOwn(jenner)).status).toBe(204)
 
   const after = await getBoard(lister, board.id)
-  expect(after.members.map(m => [m.name, m.isOwner])).toEqual([['lister', true], ['fleming', false]])
+  expect(after.members.map(m => [m.name, m.isOwner])).toEqual([[await usernameOf(lister), true], [await usernameOf(fleming), false]])
   const [kept] = dishesOf(after)
   expect(kept).toMatchObject({ id: dish.id, addedBy: null, cookings: [{ recordedBy: null }] })
   expect(kept!.votes.map(v => [v.voter, v.up])).toEqual([[null, true], [null, false]])
@@ -121,7 +128,7 @@ test('a Board only they are on is deleted for good, with its images', async () =
   await addDish(pasteur, board.id, { photo })
   expect((await anonymous().fetch(photo.url)).status).toBe(200)
 
-  expect((await deleteAccount(pasteur, 'pasteur')).status).toBe(204)
+  expect((await deleteOwn(pasteur)).status).toBe(204)
 
   expect((await anonymous().fetch(`/api/invites/${board.inviteToken}`)).status).toBe(404)
   expect((await anonymous().fetch(photo.url)).status).toBe(404)
@@ -133,7 +140,7 @@ test('an Archived Board they own with others passes on too, for the new Owner to
   const board = await boardOf(harvey, 'Kreislauf', fleming)
   expect((await harvey.fetch(`/api/boards/${board.id}`, { method: 'DELETE' })).status).toBe(204)
 
-  expect((await deleteAccount(harvey, 'harvey')).status).toBe(204)
+  expect((await deleteOwn(harvey)).status).toBe(204)
 
   const archived = await (await fleming.fetch('/api/boards/archived')).json() as { id: string }[]
   expect(archived.map(b => b.id)).toContain(board.id)
@@ -142,8 +149,8 @@ test('an Archived Board they own with others passes on too, for the new Owner to
 
 test('signing up again afterwards makes a new user', async () => {
   const salk = await signIn(SALK)
-  const before = await (await salk.fetch('/api/me')).json() as { id: string, name: string }
-  expect((await deleteAccount(salk, before.name)).status).toBe(204)
+  const before = await (await salk.fetch('/api/me')).json() as { id: string }
+  expect((await deleteOwn(salk)).status).toBe(204)
 
   const again = await (await (await signIn(SALK)).fetch('/api/me')).json() as { id: string }
 
