@@ -9,10 +9,11 @@
 export interface PollCadence {
   // While the Member acted or a change arrived in the last `quietAfterMs`.
   activeMs: number
+  // After `quietAfterMs` without either.
   quietMs: number
+  quietAfterMs: number
   // After `idleAfterMs` without either.
   idleMs: number
-  quietAfterMs: number
   idleAfterMs: number
 }
 
