@@ -6,9 +6,9 @@ import type { BoardNews, Talk } from '../push'
 // The emails malkochen sends, and how they go out (Resend's API, through
 // `fetch`): the Email Digest (#220), which a Member who switched it on gets
 // in the evening, listing the Dishes others added to their Boards since the
-// last one and the Comments and Votes they gave (#353), the sign-in code (#345) and the confirmation of a deleted
-// account (#346). Pure apart from that request; who
-// gets a digest, with which Dishes, is server/utils/email-digest.ts.
+// last one and the Comments and Votes they gave (#353), the sign-in code
+// (#345) and the confirmation of a deleted account (#346). Pure apart from
+// that request; who gets a digest, with what, is server/utils/email-digest.ts.
 
 export type { BoardNews }
 
@@ -78,17 +78,18 @@ function commentStart(comment: string): string {
 // with at least one Dish, Comment or Vote): its new Dishes, then the
 // Comments and Votes on its Dishes („Im Verlauf", #353), each newest first,
 // linking back to the app at `origin`.
-export function digestEmail(to: Recipient, boards: BoardNews[], origin: string): Email {
+export function digestEmail(to: Recipient, news: BoardNews[], origin: string): Email {
+  const boards = news.map(({ talk = [], ...rest }) => ({ ...rest, talk }))
   const t = stringsFor(to.language).emailDigest
   const count = boards.reduce((sum, b) => sum + b.dishes.length, 0)
-  const talk = boards.flatMap(b => b.talk ?? [])
+  const talk = boards.flatMap(b => b.talk)
   const comments = talk.filter(one => 'comment' in one).length
   const link = (path: string) => `${origin}${path}`
   const boardName = (board: BoardNews['board']) => `${board.emoji} ${board.name}`
   const onlyBoard = boards.length === 1 ? boardName(boards[0]!.board) : null
   // Without new Dishes, the Comments and Votes are counted instead.
   const subject = count > 0 ? t.subject(count, onlyBoard) : t.talkSubject(comments, talk.length - comments, onlyBoard)
-  const names = [...new Set(boards.flatMap(b => [...b.dishes.map(d => d.addedBy), ...(b.talk ?? []).map(one => one.by)]))]
+  const names = [...new Set(boards.flatMap(b => [...b.dishes.map(d => d.addedBy), ...b.talk.map(one => one.by)]))]
   const greeting = t.greeting(to.name)
   // A Comment or Vote as its line, with `dish` as given (a link in the
   // HTML) and what Members typed through `escape`.
@@ -99,7 +100,7 @@ export function digestEmail(to: Recipient, boards: BoardNews[], origin: string):
   const text = [
     greeting,
     t.intro,
-    ...boards.flatMap(({ board, dishes, talk = [] }) => [
+    ...boards.flatMap(({ board, dishes, talk }) => [
       '',
       boardName(board),
       ...dishes.map(d => `- ${d.title} (${t.addedBy(d.addedBy)}): ${link(dishPath(board, d))}`),
@@ -113,7 +114,7 @@ export function digestEmail(to: Recipient, boards: BoardNews[], origin: string):
 
   const html = emailPage(to.language, subject, `<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(greeting)}</h1>
 <p style="margin:0 0 16px">${escapeHtml(t.intro)}</p>
-${boards.map(({ board, dishes, talk = [] }) => `<div style="background:#FFFFFF;border-radius:16px;padding:16px 20px;margin:0 0 16px">
+${boards.map(({ board, dishes, talk }) => `<div style="background:#FFFFFF;border-radius:16px;padding:16px 20px;margin:0 0 16px">
 <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:600;margin:0 0 8px"><a href="${escapeHtml(link(boardPath(board)))}" style="color:${INK};text-decoration:none">${escapeHtml(boardName(board))}</a></h2>
 ${dishes.length > 0 ? `<ul style="margin:0 0 12px;padding:0 0 0 20px">
 ${dishes.map(d => `<li style="margin:0 0 4px"><a href="${escapeHtml(link(dishPath(board, d)))}" style="color:${INK}">${escapeHtml(d.title)}</a> <span style="color:${MUTED}">${escapeHtml(t.addedBy(d.addedBy))}</span></li>`).join('\n')}

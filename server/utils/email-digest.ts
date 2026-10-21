@@ -211,6 +211,7 @@ async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
   const talk = [
     ...comments.map(({ recipient, board: found, title, code, by, text, at }) => ({ recipient, found, at, said: { dish: { title, code }, by, comment: text } })),
     ...votes.map(({ recipient, board: found, title, code, by, up, at }) => ({ recipient, found, at, said: { dish: { title, code }, by, up } })),
+  // Newest first; at the same moment, Comments before Votes, as listed.
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
   for (const { recipient, found, said } of talk) newsOf(recipient, found).talk.push(said)
   return new Map([...byRecipient].map(([recipient, boards]) => [
