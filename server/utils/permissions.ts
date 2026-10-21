@@ -1,18 +1,16 @@
 import { and, eq, exists, not, sql } from 'drizzle-orm'
-import { ALL_PERMISSIONS, type Permission, type Permissions } from '../../shared/permissions'
+import { ALL_PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
 import { db } from '../db'
 import { membership } from '../db/schema'
 import { ownerOf } from './boards'
 
 // The one check of Permissions (CONTEXT.md): may this user do this on this
 // Board, and on this Dish? Every write a Permission covers asks it before
-// writing, through requirePermission (server/utils/session.ts): #340
-// adding Dishes, #341 and #342 the rest. The Owner may always do
+// writing, through requirePermission and the others in
+// permission-checks.ts: #340 adding Dishes, #341 editing, moving and
+// archiving them, #342 the rest. The Owner may always do
 // everything, whatever their stored Permissions say; a Member may always
 // edit and archive the Dishes they added themselves.
-
-// The Permissions that also hold for a Member's own Dishes.
-const OWN_DISH_PERMISSIONS: readonly Permission[] = ['editDishes', 'archiveDishes']
 
 // A Member's standing on a Board: whether they are its Owner, and their
 // stored Permissions.
@@ -30,8 +28,7 @@ export function effectivePermissions({ isOwner, permissions }: Standing): Permis
 // Whether a Member standing so may take an action `permission` covers, on
 // `dish` if it is about one (who added it).
 export function allows(standing: Standing, permission: Permission, userId: string, dish?: { addedBy: string | null }): boolean {
-  if (effectivePermissions(standing)[permission]) return true
-  return dish !== undefined && dish.addedBy === userId && OWN_DISH_PERMISSIONS.includes(permission)
+  return permitsOn(effectivePermissions(standing), permission, userId, dish)
 }
 
 // The same in SQL, for a query over memberships: whether the Member may

@@ -14,6 +14,7 @@ export default defineEventHandler(async (event): Promise<MovedDish> => {
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Column' })
   const user = requireUser(event)
+  await requireMovePermission([dishId], user.id, [parsed.data.columnId])
   const moved = await moveDish(dishId, user.id, parsed.data.columnId, { index: parsed.data.index })
   if (moved) return moved
   if (await isDishMember(dishId, user.id)) throw createError({ statusCode: 400, statusMessage: 'Column not on one of your Boards' })

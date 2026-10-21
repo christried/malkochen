@@ -498,6 +498,96 @@ test('a Member without "add Dishes" is refused at once: nothing sent, nothing sh
   expect(shown()).toEqual(before)
 })
 
+// A Member (not the Owner) without the Permissions `off`, who added Dish c.
+function asMemberWithout(...off: (keyof typeof ALL_PERMISSIONS)[]) {
+  return (board: BoardView) => {
+    board.isOwner = false
+    board.permissions = { ...ALL_PERMISSIONS, ...Object.fromEntries(off.map(p => [p, false])) }
+    board.members = [{ id: 'me', name: 'Ich', image: null, isOwner: false, isYou: true }]
+    board.columns[0]!.dishes[2]!.addedBy = { id: 'me', name: 'Ich', image: null }
+  }
+}
+
+test('without "edit Dishes" an edit of another\'s Dish is refused at once; one\'s own goes through', async () => {
+  const { fake, module, shown } = setup(asMemberWithout('editDishes'))
+  const before = shown()
+
+  await expect(module.editDish('a', { title: 'Neu' })).rejects.toEqual(new WriteFailed(403))
+  expect(fake.sent).toEqual([])
+  expect(shown()).toEqual(before)
+  expect(module.may('editDishes', 'a')).toBe(false)
+
+  expect(module.may('editDishes', 'c')).toBe(true)
+  await module.editDish('c', { title: 'Neu' })
+  expect(fake.sent).toEqual(['editDish c'])
+})
+
+test('without "move Dishes" no move, cook or Cooking delete starts, one\'s own Dish neither', async () => {
+  const { board, fake, module, shown } = setup(asMemberWithout('moveDishes'))
+  board.value!.columns[2]!.dishes.push({ ...board.value!.columns[0]!.dishes[0]!, id: 'g', cookings: [{ id: 'k', cookedAt: '2026-10-01T12:00:00.000Z', recordedBy: null }] })
+  const before = shown()
+
+  expect(module.moveDish('c', { columnId: 'woche' })).toBeNull()
+  expect(module.cookDish('c')).toBeNull()
+  expect(module.moveToBoard('a', { boardId: 'feierabend', columnId: 'f-ideen', isGekocht: false })).toBeNull()
+  expect(module.moveDishes(['a', 'c'], { columnId: 'woche' })).toBeNull()
+  expect(module.deleteCooking('g', 'k')).toBeNull()
+
+  expect(fake.sent).toEqual([])
+  expect(shown()).toEqual(before)
+  expect(module.may('moveDishes', 'c')).toBe(false)
+})
+
+test('without "archive Dishes" only one\'s own Dishes are archived, and several only if all are', () => {
+  const { fake, module, shown } = setup(asMemberWithout('archiveDishes'))
+
+  expect(module.deleteDish('a')).toBeNull()
+  expect(module.deleteDishes(['a', 'c'])).toBeNull()
+  expect(fake.sent).toEqual([])
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+
+  expect(module.deleteDish('c')).not.toBeNull()
+  expect(shown().ideen).toEqual(['a', 'b'])
+})
+
+test('a move or archive the server refuses (the Permission just went) goes back, saying so', async () => {
+  const { fake, module, shown } = setup()
+  fake.failNext('moveDish', 403)
+  const moved = module.moveDish('a', { columnId: 'woche' })!
+  expect(await moved.settled).toMatchObject({ notice: 'notAllowed' })
+
+  fake.failNext('deleteDish', 403)
+  const deleted = module.deleteDish('b')!
+  expect(await deleted.settled).toMatchObject({ notice: 'notAllowed' })
+  expect(await deleted.undo!()).toEqual({ dish: deleted.dish })
+  expect(shown().ideen).toEqual(['a', 'b', 'c'])
+})
+
+test('an undo, a Cooking delete or several Dishes the server refuses (403) say so too', async () => {
+  const { fake, module, board } = setup()
+  const deleted = module.deleteDish('b')!
+  await deleted.settled
+  fake.failNext('restoreDish', 403)
+  expect(await (await deleted.undo!()).settled).toMatchObject({ notice: 'notAllowed' })
+
+  board.value!.columns[2]!.dishes.push({ ...board.value!.columns[0]!.dishes[0]!, id: 'g', cookings: [{ id: 'k', cookedAt: '2026-10-01T12:00:00.000Z', recordedBy: null }] })
+  fake.failNext('deleteCooking', 403)
+  expect(await module.deleteCooking('g', 'k')!.settled).toMatchObject({ notice: 'notAllowed' })
+
+  fake.failNext('moveDishes', 403)
+  expect(await module.moveDishes(['a', 'c'], { columnId: 'woche' })!.settled).toMatchObject({ notice: 'notAllowedMany' })
+  fake.failNext('deleteDishes', 403)
+  expect(await module.deleteDishes(['a', 'c'])!.settled).toMatchObject({ notice: 'notAllowedMany' })
+})
+
+test('the Owner may do everything, whoever added the Dish', () => {
+  const { module } = setup()
+
+  expect(module.may('editDishes', 'a')).toBe(true)
+  expect(module.may('moveDishes', 'a')).toBe(true)
+  expect(module.may('archiveDishes', 'a')).toBe(true)
+})
+
 test('an edit replaces the Dish’s fields with what the server saved', async () => {
   const { board, module, shown } = setup()
   const shownDish = () => board.value!.columns[0]!.dishes[1]!

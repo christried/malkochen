@@ -12,6 +12,8 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   const parsed = dishEditBody.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Dish changes' })
   const user = requireUser(event)
+  // Anyone's Dish with "edit Dishes", else only one the user added.
+  await requireDishPermission(dishId, user.id, 'editDishes')
   const { source, imageUrl, imageTicket, photo, imageFocus, ...rest } = parsed.data
   // A reloaded image costs what adding a Dish from a link does.
   if (imageUrl) await spendRateLimit(user.id, 'add-dish')

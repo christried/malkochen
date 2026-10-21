@@ -20,6 +20,7 @@ export default defineEventHandler(async (event): Promise<PlacedDish> => {
   const parsed = body.safeParse(await readBody(event).catch(() => null))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid place' })
   const user = requireUser(event)
+  await requireCookingPermission(cookingId, user.id, [parsed.data.columnId])
   const dishId = await cookingDishId(cookingId, user.id)
   if (!dishId) throw cookingNotFound()
   const undone = await undoCooking(cookingId, dishId, user.id, parsed.data.columnId, parsed.data.index)

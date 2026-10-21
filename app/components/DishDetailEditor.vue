@@ -3,7 +3,7 @@ import type { SourceInput } from '~~/server/utils/dish-input'
 import type { DishView } from '~~/server/utils/dishes'
 import { FOCUS_CENTRE, focusPosition, sameFocus, type ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
-import type { BoardResult } from '~/board/board-module'
+import { isRefused, type BoardResult } from '~/board/board-module'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
 import { webLink } from '~/utils/web-link'
 
@@ -134,13 +134,15 @@ async function sourceToSave(): Promise<SourceInput | null> {
 }
 
 const saving = ref(false)
-const failed = ref(false)
+// Why saving failed: the Member may no longer edit this Dish (the Owner
+// just switched "edit Dishes" off), or anything else.
+const failed = ref<'notAllowed' | 'failed' | null>(null)
 const canSave = computed(() => title.value.trim() !== '' && !linkInvalid.value && reload.value !== 'looking' && !saving.value)
 
 async function save() {
   if (!canSave.value) return
   saving.value = true
-  failed.value = false
+  failed.value = null
   const choice = image.value
   // A failed reload is over: saving looks the link up again, and what that
   // finds mustn't become the image.
@@ -159,8 +161,8 @@ async function save() {
     })
     emit('saved', saved)
   }
-  catch {
-    failed.value = true
+  catch (error) {
+    failed.value = isRefused(error) ? 'notAllowed' : 'failed'
   }
   finally {
     saving.value = false
@@ -318,7 +320,7 @@ async function save() {
       role="alert"
       class="text-small text-danger"
     >
-      {{ t.detail.failed }}
+      {{ failed === 'notAllowed' ? t.detail.notAllowed : t.detail.failed }}
     </p>
 
     <!-- Saving, it shows its dots undimmed; save() ignores a second submit

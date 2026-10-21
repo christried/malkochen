@@ -195,6 +195,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
         </p>
       </div>
       <CookButton
+        v-if="boardModule.may('moveDishes')"
         class="shrink-0 px-4 py-2.5"
         :cooked="dish.cookings.length > 0"
         @cook="origin => emit('cook', origin)"
@@ -300,7 +301,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               {{ when(entry.at) }}<template v-if="entry.kind === 'comment' && entry.comment.editedAt">, {{ t.history.edited }}</template>
             </span>
             <button
-              v-if="entry.kind === 'cooking'"
+              v-if="entry.kind === 'cooking' && boardModule.may('moveDishes')"
               type="button"
               class="-my-1.5"
               :class="iconButton"

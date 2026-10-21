@@ -5,7 +5,10 @@ import { deleteDish } from '../../utils/dishes'
 // brings it back, from "Rückgängig" or the Board's Archive.
 export default defineEventHandler(async (event) => {
   const dishId = dishIdParam(event)
-  if (!await deleteDish(dishId, requireUser(event).id)) throw dishNotFound()
+  const userId = requireUser(event).id
+  // Anyone's Dish with "archive Dishes", else only one the user added.
+  await requireDishPermission(dishId, userId, 'archiveDishes')
+  if (!await deleteDish(dishId, userId)) throw dishNotFound()
   setResponseStatus(event, 204)
   return null
 })

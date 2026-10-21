@@ -22,7 +22,8 @@ const t = useStrings()
 const otherBoards = ref<BoardListing[]>([])
 onMounted(async () => {
   const boards = await $fetch<BoardListing[]>('/api/boards').catch(() => [])
-  otherBoards.value = boards.filter(b => b.id !== props.board.id)
+  // Only those the user may add Dishes to, as moving there adds one.
+  otherBoards.value = boards.filter(b => b.id !== props.board.id && b.permissions.addDishes)
 })
 
 // One group per Board, each Column with its accent. This Board's group is

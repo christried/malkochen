@@ -80,6 +80,9 @@ export function useDishDrag(
     // A long-press let go where it started.
     press?: (dishId: string) => void
     paused?: () => boolean
+    // Cards stay where they are (the user may not move Dishes): a mouse
+    // never lifts one, and a finger's long-press only selects it (`press`).
+    pinned?: () => boolean
   },
 ) {
   const drag = ref<DishDrag | null>(null)
@@ -94,6 +97,8 @@ export function useDishDrag(
     startX: number
     startY: number
     timer?: ReturnType<typeof setTimeout>
+    // Pinned, a finger held long enough: letting go selects the card.
+    pressed?: boolean
   } | null = null
   let pointer = { x: 0, y: 0, id: -1 }
   let samples: { x: number, t: number }[] = []
@@ -111,9 +116,11 @@ export function useDishDrag(
     const card = target.closest<HTMLElement>('[data-dish-id]')
     if (!card?.dataset.dishId) return
     const mouse = event.pointerType === 'mouse' && isFinePointer()
+    const pinned = options.pinned?.() ?? false
+    if (pinned && mouse) return
     pending = { pointerId: event.pointerId, dishId: card.dataset.dishId, card, mouse, startX: event.clientX, startY: event.clientY }
     pointer = { x: event.clientX, y: event.clientY, id: event.pointerId }
-    if (!mouse) pending.timer = setTimeout(() => lift(), LONG_PRESS_MS)
+    if (!mouse) pending.timer = setTimeout(pinned ? holdPressed : lift, LONG_PRESS_MS)
   }
 
   function onMove(event: PointerEvent) {
@@ -146,8 +153,23 @@ export function useDishDrag(
     return Math.max(-3, Math.min(3, speed * 0.02))
   }
 
+  // A pinned card held long enough: it isn't lifted, but letting go there
+  // selects it.
+  function holdPressed() {
+    if (!pending) return
+    pending.pressed = true
+    hapticLongPress()
+  }
+
   function onUp(event: PointerEvent) {
     if (event.pointerId !== pointer.id) return
+    if (pending?.pressed) {
+      const { dishId } = pending
+      cancelPending()
+      swallowClick = true
+      setTimeout(() => (swallowClick = false), 400)
+      return options.press?.(dishId)
+    }
     if (pending) return cancelPending()
     if (drag.value?.phase === 'lifted') release()
   }

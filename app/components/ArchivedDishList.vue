@@ -4,9 +4,10 @@ import { daysLeft } from '~/utils/archive'
 
 // The Board's Archive in Board Settings (#336; CONTEXT.md: Archived Dish):
 // each Archived Dish, the newest archived first, with who archived it, when,
-// and how many days it has left. Any Member restores one; the Owner also
+// and how many days it has left. A Member with "archive Dishes" restores
+// any (`mayRestore`), one without it those they added; the Owner also
 // deletes one for good (`purge`, which asks first).
-defineProps<{ dishes: ArchivedDishView[], isOwner: boolean }>()
+defineProps<{ dishes: ArchivedDishView[], isOwner: boolean, mayRestore: (dish: ArchivedDishView) => boolean }>()
 defineEmits<{ restore: [dish: ArchivedDishView], purge: [dish: ArchivedDishView] }>()
 const t = useStrings()
 
@@ -58,6 +59,7 @@ function archivedLine({ archivedBy, archivedAt }: ArchivedDishView) {
       </div>
       <div class="flex flex-wrap gap-2">
         <button
+          v-if="mayRestore(dish)"
           type="button"
           class="rounded-pill bg-inverse px-5 py-3 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           :aria-label="t.settings.restoreDish(dish.title)"
