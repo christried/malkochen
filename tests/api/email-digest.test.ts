@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
-import { startResendService, type ResendService, type SentEmail } from './resend-service'
+import { startResendService, type ResendService, type SentEmail } from '../support/resend-service'
 import { CRON_SECRET } from './server-env'
 import { TEST_RESEND_API_KEY } from '../support/test-auth-env'
 

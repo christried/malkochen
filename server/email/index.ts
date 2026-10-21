@@ -3,10 +3,11 @@ import { boardPath, dishPath } from '../../shared/address'
 import type { Language } from '../../shared/language'
 import type { BoardNews } from '../push'
 
-// The Email Digest (#220): the email a Member who switched it on gets in the
-// evening, listing the Dishes others added to their Boards since the last
-// one, and how it goes out (Resend's API, through `fetch`). Pure apart from
-// that request; who gets one, with which Dishes, is server/utils/email-digest.ts.
+// The emails malkochen sends, and how they go out (Resend's API, through
+// `fetch`): the Email Digest (#220), which a Member who switched it on gets
+// in the evening, listing the Dishes others added to their Boards since the
+// last one, and the sign-in code (#345). Pure apart from that request; who
+// gets a digest, with which Dishes, is server/utils/email-digest.ts.
 
 export type { BoardNews }
 
@@ -83,6 +84,55 @@ ${dishes.map(d => `<li style="margin:0 0 4px"><a href="${escapeHtml(link(dishPat
 <a href="${escapeHtml(link(boardPath(board)))}" style="display:inline-block;background:${ink};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.openBoard)}</a>
 </div>`).join('\n')}
 <p style="color:${muted};font-size:13px;margin:24px 0 0">${escapeHtml(t.why)} ${escapeHtml(t.noMore)} <a href="${escapeHtml(link(SETTINGS))}" style="color:${muted}">${escapeHtml(t.turnOff)}</a>.</p>
+</div>
+</body>
+</html>`
+
+  return { to: to.email, subject, html, text }
+}
+
+// Where the link in a sign-in email leads: the sign-in page, which signs in
+// with the code it carries (app/pages/login.vue).
+export function signInLinkPath(email: string, code: string): string {
+  return `/login?${new URLSearchParams({ email, code })}`
+}
+
+// The email with a sign-in code (#345, ADR 0007): the code to type where
+// sign-in started, valid for `minutes`, and a link at `origin` that signs in
+// wherever it opens.
+export function signInCodeEmail(to: { email: string, language: Language }, code: string, minutes: number, origin: string): Email {
+  const t = stringsFor(to.language).signInEmail
+  const subject = t.subject(code)
+  const link = `${origin}${signInLinkPath(to.email, code)}`
+
+  const text = [
+    t.headline,
+    '',
+    t.intro,
+    code,
+    t.expires(minutes),
+    '',
+    `${t.linkIntro} ${link}`,
+    '',
+    t.notYou,
+  ].join('\n')
+
+  const ink = '#131211'
+  const muted = '#6B6862'
+  const html = `<!doctype html>
+<html lang="${to.language}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0;padding:24px 16px;background:#F7F6F2;color:${ink};font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.5">
+<div style="max-width:560px;margin:0 auto">
+<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(t.headline)}</h1>
+<p style="margin:0 0 16px">${escapeHtml(t.intro)}</p>
+<div style="background:#FFFFFF;border-radius:16px;padding:16px 20px;margin:0 0 8px;text-align:center">
+<p style="font-family:Menlo,Consolas,monospace;font-size:32px;font-weight:600;letter-spacing:8px;margin:0">${escapeHtml(code)}</p>
+</div>
+<p style="color:${muted};font-size:14px;margin:0 0 24px">${escapeHtml(t.expires(minutes))}</p>
+<p style="margin:0 0 8px">${escapeHtml(t.linkIntro)}</p>
+<a href="${escapeHtml(link)}" style="display:inline-block;background:${ink};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.link)}</a>
+<p style="color:${muted};font-size:13px;margin:24px 0 0">${escapeHtml(t.notYou)}</p>
 </div>
 </body>
 </html>`

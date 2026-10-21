@@ -60,3 +60,9 @@ async function query(text: string, values: unknown[]): Promise<void> {
     await client.end()
   }
 }
+
+// Lets the sign-in code last sent to `email` expire, as if it had been sent
+// long enough ago.
+export async function expireSignInCode(email: string): Promise<void> {
+  await query(`update verification set expires_at = now() - interval '1 minute' where identifier = $1`, [`sign-in-otp-${email}`])
+}

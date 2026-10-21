@@ -60,6 +60,20 @@ export const de = {
     google: 'Mit Google anmelden',
     pending: 'Einen Moment …',
     failed: 'Die Anmeldung hat nicht geklappt. Versuch es gleich noch mal.',
+    // Email sign-in with a code (#345): below Google, after "oder".
+    or: 'oder',
+    email: 'E-Mail-Adresse',
+    sendCode: 'Code per E-Mail schicken',
+    codeSent: (email: string) => `Wir haben dir einen Code an ${email} geschickt.`,
+    code: 'Code aus der E-Mail',
+    withCode: 'Anmelden',
+    resend: 'Neuen Code schicken',
+    resendIn: (seconds: number) => `Neuer Code in ${seconds} s`,
+    otherEmail: 'Andere Adresse',
+    wrongCode: 'Der Code stimmt nicht. Versuch es noch mal.',
+    tooManyTries: 'Zu viele Versuche. Lass dir einen neuen Code schicken.',
+    codeExpired: 'Der Code ist abgelaufen. Lass dir einen neuen schicken.',
+    tooFast: 'Zu viele Anfragen. Warte kurz und versuch es dann noch mal.',
   },
   notUnlocked: {
     headline: 'Bald geht’s los!',
@@ -670,6 +684,17 @@ export const de = {
     // Then the link to your settings, where you switch it off.
     noMore: 'Keine Lust mehr?',
     turnOff: 'Hier ausschalten',
+  },
+  // The email with the sign-in code (#345, server/email/index.ts): the code
+  // to type where sign-in started, and a link that signs in where it opens.
+  signInEmail: {
+    subject: (code: string) => `${code} ist dein Code für malkochen`,
+    headline: 'Dein Code zum Anmelden',
+    intro: 'Gib diesen Code in malkochen ein, da wo du die Anmeldung gestartet hast:',
+    expires: (minutes: number) => `Er gilt ${minutes} Minuten und nur einmal.`,
+    linkIntro: 'Oder melde dich direkt auf diesem Gerät an:',
+    link: 'Anmelden',
+    notYou: 'Du wolltest dich nicht anmelden? Dann ignorier diese E-Mail einfach.',
   },
   // The Board's keyboard shortcuts (utils/shortcuts.ts): the "?" dialog and
   // the section in your settings.

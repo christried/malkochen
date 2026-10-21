@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { createMailSender, digestEmail, type Email } from '../../server/email'
+import { createMailSender, digestEmail, signInCodeEmail, type Email } from '../../server/email'
 
-// Seam 6: the Email Digest's email and its sending, with Resend faked at
+// Seam 6: the emails malkochen sends (the Email Digest, the sign-in code)
+// and their sending, with Resend faked at
 // its `fetch`. Who gets one, with which Dishes, is covered at Seam 1
 // (tests/api/email-digest.test.ts).
 
@@ -186,5 +187,38 @@ describe('sending', () => {
     const send = createMailSender({ apiKey: 're_test_key', fetch: resend.fetch })
     expect(await send([])).toEqual({ sent: [], failed: [] })
     expect(resend.calls).toHaveLength(0)
+  })
+})
+
+describe('the sign-in code email', () => {
+  test('gives the code, how long it works, and a link that signs in with it', () => {
+    const email = signInCodeEmail({ email: 'ada@example.com', language: 'de' }, '042137', 10, ORIGIN)
+
+    expect(email.to).toBe('ada@example.com')
+    expect(email.subject).toBe('042137 ist dein Code für malkochen')
+    for (const part of [email.text, email.html]) {
+      expect(part).toContain('Dein Code zum Anmelden')
+      expect(part).toContain('Gib diesen Code in malkochen ein, da wo du die Anmeldung gestartet hast:')
+      expect(part).toContain('042137')
+      expect(part).toContain('Er gilt 10 Minuten und nur einmal.')
+      expect(part).toContain('Oder melde dich direkt auf diesem Gerät an:')
+      expect(part).toContain('Du wolltest dich nicht anmelden? Dann ignorier diese E-Mail einfach.')
+    }
+    expect(email.text).toContain('https://malkochen.example/login?email=ada%40example.com&code=042137')
+    expect(email.html).toMatch(/<a href="https:\/\/malkochen\.example\/login\?email=ada%40example\.com&amp;code=042137"[^>]*>Anmelden<\/a>/)
+  })
+
+  test('in English and Italian', () => {
+    const en = signInCodeEmail({ email: 'ada@example.com', language: 'en' }, '042137', 10, ORIGIN)
+    expect(en.subject).toBe('042137 is your malkochen code')
+    expect(en.text).toContain('Type this code into malkochen, where you started signing in:')
+    expect(en.text).toContain('It works for 10 minutes, and only once.')
+    expect(en.html).toContain('>Sign in</a>')
+
+    const it = signInCodeEmail({ email: 'ada@example.com', language: 'it' }, '042137', 10, ORIGIN)
+    expect(it.subject).toBe('042137 è il tuo codice per malkochen')
+    expect(it.text).toContain('Inserisci questo codice in malkochen, dove hai iniziato ad accedere:')
+    expect(it.text).toContain('Vale 10 minuti e una sola volta.')
+    expect(it.html).toContain('>Accedi</a>')
   })
 })

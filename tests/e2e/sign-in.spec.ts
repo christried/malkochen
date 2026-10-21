@@ -88,8 +88,8 @@ for (const [screen, path] of [['the sign-in screen', '/login'], ['the "Not unloc
     await expect(links).toHaveText(['Impressum', 'Datenschutz'])
     await expect(links.nth(0)).toHaveAttribute('href', 'https://christried.me/imprint.html')
     await expect(links.nth(1)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
-    // Under the screen's button, and big enough to tap.
-    const button = (await page.getByRole('main').getByRole('button').boundingBox())!
+    // Under the screen's last button, and big enough to tap.
+    const button = (await page.getByRole('main').getByRole('button').last().boundingBox())!
     for (const link of await links.all()) {
       const box = (await link.boundingBox())!
       expect(box.y).toBeGreaterThanOrEqual(button.y + button.height)
