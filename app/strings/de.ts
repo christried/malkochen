@@ -147,6 +147,8 @@ export const de = {
     movedToBoard: (title: string, board: string, column: string) => `„${title}“ ist jetzt in ${board} · ${column}`,
     thisBoard: 'Dieses Board',
     moveFailed: (title: string) => `„${title}“ ließ sich nicht verschieben. Versuch es gleich noch mal.`,
+    // A move or archive refused as the Owner just took the Permission away.
+    notAllowed: (title: string) => `Mit „${title}“ darfst du das auf diesem Board nicht mehr. Das legt die Besitzer:in fest.`,
     cook: 'Gekocht ✓',
     // Under "Gekocht ✓" in the celebration's pill, for a Dish moved into
     // another Board's Gekocht Column: that Board, with its emoji.
@@ -298,6 +300,7 @@ export const de = {
     saving: 'Speichert …',
     cancel: 'Abbrechen',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    notAllowed: 'Dieses Gericht darfst du nicht mehr bearbeiten. Das legt die Besitzer:in fest.',
     imageNotStored: (title: string) => `Das neue Bild ließ sich nicht speichern. „${title}“ behält sein bisheriges Bild.`,
   },
   // The Source pill on a Dish's image: short, so it fits on a card's.
@@ -486,6 +489,9 @@ export const de = {
     yourPermissionsHint: 'Das legt die Besitzer:in des Boards fest.',
     permission: {
       addDishes: { label: 'Gerichte hinzufügen', hint: 'Neue Gerichte aufs Board legen, auch über Teilen.' },
+      editDishes: { label: 'Gerichte bearbeiten', hint: 'Titel, Bild, Creator und Link ändern. Eigene Gerichte immer.' },
+      moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen und als gekocht markieren.' },
+      archiveDishes: { label: 'Gerichte archivieren', hint: 'Gerichte archivieren und aus dem Archiv zurückholen. Eigene Gerichte immer.' },
     },
     handOver: 'Besitz übertragen',
     handOverConfirm: (name: string) => `Besitz an ${name} übertragen?`,

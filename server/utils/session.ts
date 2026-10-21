@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import { chooseLanguage, type Language } from '../../shared/language'
 import type { Permission } from '../../shared/permissions'
 import type { SessionUser } from './auth'
-import { allows, standingOn } from './permissions'
+import { allows, boardsOfColumns, cookingDishStanding, dishStandings, standingOn, type DishStanding } from './permissions'
 
 declare module 'h3' {
   interface H3EventContext {
@@ -101,7 +101,43 @@ export function commentIdParam(event: H3Event): string {
 export async function requirePermission(boardId: string, userId: string, permission: Permission, dish?: { addedBy: string | null }): Promise<void> {
   const standing = await standingOn(boardId, userId)
   if (!standing) throw boardNotFound()
-  if (!allows(standing, permission, userId, dish)) {
-    throw createError({ statusCode: 403, statusMessage: 'Not permitted on this Board', data: { permission } })
+  if (!allows(standing, permission, userId, dish)) throw notPermitted(permission)
+}
+
+function notPermitted(permission: Permission) {
+  return createError({ statusCode: 403, statusMessage: 'Not permitted on this Board', data: { permission } })
+}
+
+// Throws 403 unless the user may take an action `permission` covers on
+// each of the Dishes `dishIds`, archived ones too. One the user can't see
+// is left to the write, which answers "not found" for it.
+export async function requireDishPermission(dishIds: string | string[], userId: string, permission: Permission): Promise<void> {
+  const ids = typeof dishIds === 'string' ? [dishIds] : dishIds
+  if ((await dishStandings(ids, userId)).some(found => !allows(found, permission, userId, found))) throw notPermitted(permission)
+}
+
+// Throws 403 unless the user may move the Dishes `dishIds` into the Columns
+// `columnIds`: "move Dishes" for each Dish, never its own without it, and
+// "add Dishes" on a Column's Board where one of them isn't yet.
+export async function requireMovePermission(dishIds: string[], userId: string, columnIds: string[]): Promise<void> {
+  const found = await dishStandings(dishIds, userId)
+  await requireMovesOf(found, userId, columnIds)
+}
+
+// The same for the Dish of a Cooking: taking it back moves the Dish, and
+// deleting or restoring it changes what the Gekocht Column says about it,
+// both of which "move Dishes" covers. `columnIds`: where it goes back to.
+export async function requireCookingPermission(cookingId: string, userId: string, columnIds: string[] = []): Promise<void> {
+  const found = await cookingDishStanding(cookingId, userId)
+  if (found) await requireMovesOf([found], userId, columnIds)
+}
+
+async function requireMovesOf(found: DishStanding[], userId: string, columnIds: string[]) {
+  if (found.some(f => !allows(f, 'moveDishes', userId, f))) throw notPermitted('moveDishes')
+  for (const boardId of await boardsOfColumns(columnIds)) {
+    if (found.every(f => f.boardId === boardId)) continue
+    const standing = await standingOn(boardId, userId)
+    // A Board the user isn't a Member of the write refuses itself.
+    if (standing && !allows(standing, 'addDishes', userId)) throw notPermitted('addDishes')
   }
 }

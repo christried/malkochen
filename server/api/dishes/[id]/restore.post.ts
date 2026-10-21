@@ -6,7 +6,11 @@ import { restoreDish, type PlacedDish } from '../../../utils/dishes'
 // its Column is gone), and the answer says where that is (PlacedDish).
 // Restoring one that isn't archived changes nothing.
 export default defineEventHandler(async (event): Promise<PlacedDish> => {
-  const restored = await restoreDish(dishIdParam(event), requireUser(event).id)
+  const dishId = dishIdParam(event)
+  const userId = requireUser(event).id
+  // As archiving it: anyone's with "archive Dishes", else only one's own.
+  await requireDishPermission(dishId, userId, 'archiveDishes')
+  const restored = await restoreDish(dishId, userId)
   if (!restored) throw dishNotFound()
   return restored
 })

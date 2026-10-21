@@ -1,7 +1,7 @@
-import { and, eq, exists, not, sql } from 'drizzle-orm'
-import { ALL_PERMISSIONS, type Permission, type Permissions } from '../../shared/permissions'
+import { and, eq, exists, inArray, not, sql } from 'drizzle-orm'
+import { ALL_PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
 import { db } from '../db'
-import { membership } from '../db/schema'
+import { boardColumn, cooking, dish, membership } from '../db/schema'
 import { ownerOf } from './boards'
 
 // The one check of Permissions (CONTEXT.md): may this user do this on this
@@ -10,9 +10,6 @@ import { ownerOf } from './boards'
 // adding Dishes, #341 and #342 the rest. The Owner may always do
 // everything, whatever their stored Permissions say; a Member may always
 // edit and archive the Dishes they added themselves.
-
-// The Permissions that also hold for a Member's own Dishes.
-const OWN_DISH_PERMISSIONS: readonly Permission[] = ['editDishes', 'archiveDishes']
 
 // A Member's standing on a Board: whether they are its Owner, and their
 // stored Permissions.
@@ -30,8 +27,7 @@ export function effectivePermissions({ isOwner, permissions }: Standing): Permis
 // Whether a Member standing so may take an action `permission` covers, on
 // `dish` if it is about one (who added it).
 export function allows(standing: Standing, permission: Permission, userId: string, dish?: { addedBy: string | null }): boolean {
-  if (effectivePermissions(standing)[permission]) return true
-  return dish !== undefined && dish.addedBy === userId && OWN_DISH_PERMISSIONS.includes(permission)
+  return permitsOn(effectivePermissions(standing), permission, userId, dish)
 }
 
 // The same in SQL, for a query over memberships: whether the Member may
@@ -47,6 +43,41 @@ export async function standingOn(boardId: string, userId: string): Promise<Stand
     .from(membership)
     .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
   return found ?? null
+}
+
+// A Dish as the check sees it: its Board, who added it, and the user's
+// standing on that Board.
+export interface DishStanding extends Standing {
+  boardId: string
+  addedBy: string | null
+}
+
+// Each of the Dishes `dishIds` on a Board the user is a Member of, archived
+// ones too. Those missing, or on a Board the user isn't a Member of, aren't
+// there: the write itself answers "not found" for them.
+export function dishStandings(dishIds: string[], userId: string): Promise<DishStanding[]> {
+  return db
+    .select({ boardId: dish.boardId, addedBy: dish.addedBy, isOwner: membership.isOwner, permissions: membership.permissions })
+    .from(dish)
+    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
+    .where(inArray(dish.id, dishIds))
+}
+
+// The Dish of a Cooking, deleted or not, as dishStandings sees it.
+export async function cookingDishStanding(cookingId: string, userId: string): Promise<DishStanding | null> {
+  const [found] = await db
+    .select({ boardId: dish.boardId, addedBy: dish.addedBy, isOwner: membership.isOwner, permissions: membership.permissions })
+    .from(cooking)
+    .innerJoin(dish, eq(dish.id, cooking.dishId))
+    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
+    .where(eq(cooking.id, cookingId))
+  return found ?? null
+}
+
+// The Boards of the Columns `columnIds`, of those that exist.
+export async function boardsOfColumns(columnIds: string[]): Promise<string[]> {
+  const found = await db.selectDistinct({ boardId: boardColumn.boardId }).from(boardColumn).where(inArray(boardColumn.id, columnIds))
+  return found.map(c => c.boardId)
 }
 
 // Why a Member's Permissions couldn't be switched: the user isn't the

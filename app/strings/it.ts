@@ -124,6 +124,7 @@ export const it: Strings = {
     movedToBoard: (title: string, board: string, column: string) => `“${title}” ora è in ${column} su ${board}`,
     thisBoard: 'Questa bacheca',
     moveFailed: (title: string) => `Non è stato possibile spostare “${title}”. ${tryAgain}`,
+    notAllowed: (title: string) => `Con “${title}” non puoi più farlo su questa bacheca. Lo decide chi ne è titolare.`,
     cook: 'Cucinato ✓',
     cookedOn: (board: string) => `su ${board}`,
     cookWord: 'Cucinato',
@@ -259,6 +260,7 @@ export const it: Strings = {
     saving: 'Salvataggio…',
     cancel: 'Annulla',
     failed,
+    notAllowed: 'Non puoi più modificare questo piatto. Lo decide chi ne è titolare.',
     imageNotStored: (title: string) => `Non è stato possibile salvare la nuova immagine. “${title}” tiene quella di prima.`,
   },
   sources: {
@@ -425,6 +427,9 @@ export const it: Strings = {
     yourPermissionsHint: 'Lo decide chi è titolare della bacheca.',
     permission: {
       addDishes: { label: 'Aggiungere piatti', hint: 'Mettere nuovi piatti sulla bacheca, anche condividendoli.' },
+      editDishes: { label: 'Modificare piatti', hint: 'Cambiare titolo, immagine, autore e link. Sempre per i propri piatti.' },
+      moveDishes: { label: 'Spostare piatti', hint: 'Portare i piatti in altre colonne e segnarli come cucinati.' },
+      archiveDishes: { label: 'Archiviare piatti', hint: 'Archiviare i piatti e recuperarli dall’archivio. Sempre per i propri piatti.' },
     },
     handOver: 'Cedi la bacheca',
     handOverConfirm: (name: string) => `Cedere la bacheca a ${name}?`,

@@ -7,6 +7,7 @@ import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { AddedDish, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
+import { permitsOn, type Permission } from '../../shared/permissions'
 import { landingIndex, recordsCooking } from '../../shared/placement'
 import { createDishHistories, type HistoryTransport } from './dish-histories'
 import { createDishVotes, type VoteTransport } from './dish-votes'
@@ -36,8 +37,9 @@ function focusAfterLeaving(column: { id: string, dishes: { id: string }[] }, ind
 // a Cooking, and come with it. `imageNotStored`: an added Dish's Source
 // image couldn't be stored, so it has its Placeholder Image (`photoNotStored`:
 // the same for the Member's own photo); `imageNotReplaced`: an edited Dish's new image couldn't be, so it keeps
-// the one it had.
-export type Notice = 'deleted' | 'deleteFailed' | 'restoreFailed' | 'moveFailed' | 'cookFailed' | 'uncookFailed' | 'cook'
+// the one it had. `notAllowed`: the server refused a move or a delete the
+// user's Permissions no longer allow (the Owner just switched one off).
+export type Notice = 'deleted' | 'deleteFailed' | 'restoreFailed' | 'moveFailed' | 'cookFailed' | 'uncookFailed' | 'cook' | 'notAllowed'
   | 'cookingDeleted' | 'cookingDeleteFailed' | 'cookingRestoreFailed'
   | 'imageNotStored' | 'photoNotStored' | 'imageNotReplaced'
 
@@ -82,6 +84,12 @@ export class WriteFailed extends Error {
 // about (404): another Member deleted it.
 function isGone(error: unknown) {
   return error instanceof WriteFailed && error.status === 404
+}
+
+// Whether a write failed because the user's Permissions don't allow it
+// (403), as the server has them.
+function isRefused(error: unknown) {
+  return error instanceof WriteFailed && error.status === 403
 }
 
 // How the module's writes reach the server: over HTTP in the app
@@ -224,6 +232,18 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     return board.value ? dishOnBoard(board.value, dishId) : null
   }
 
+  // Whether the user may take an action `permission` covers on this Board,
+  // on the Dish `dishId` if it is about one: their Permissions as the Board
+  // last loaded, as the server would decide (shared/permissions.ts). The
+  // page hides what isn't allowed; each operation refuses it, before any
+  // change shows.
+  function may(permission: Permission, dishId?: string): boolean {
+    if (!board.value) return false
+    const you = board.value.members.find(m => m.isYou)?.id
+    const dish = dishId === undefined ? undefined : { addedBy: find(dishId)?.dish.addedBy?.id }
+    return permitsOn(board.value.permissions, permission, you, dish)
+  }
+
   function column(columnId: string) {
     return board.value?.columns.find(c => c.id === columnId)
   }
@@ -317,8 +337,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // can't bring back what it changed. The Cooking History and Votes stay
   // the Board's own: an edit never changes them, and a Cooking still being
   // recorded or a Vote under way shows there. A failed
-  // write rejects with WriteFailed, for the form to say so.
+  // write rejects with WriteFailed, for the form to say so; without "edit
+  // Dishes" for it, at once with 403, as the server would.
   async function editDish(dishId: string, changes: DishEditBody): Promise<BoardResult> {
+    if (!may('editDishes', dishId)) throw new WriteFailed(403)
     const { imageNotStored, ...saved } = await queued(dishId, () => transport.editDish(dishId, changes), { moves: false })
     const shown = find(dishId)?.dish
     if (shown) {
@@ -330,26 +352,28 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
 
   // Deleting a Dish (PRD story 47): its card goes at once. If the delete
   // fails, it comes back with a notice; one the server no longer has
-  // (another Member deleted it) counts as deleted.
+  // (another Member deleted it) counts as deleted. Null without "archive
+  // Dishes" for it.
   function deleteDish(dishId: string): BoardResult | null {
     const found = find(dishId)
-    if (!found) return null
+    if (!found || !may('archiveDishes', dishId)) return null
     const { dish } = found
     const { origin: place, focus } = leave(dish, found.column)
     focusWhenGone.set(dishId, focus)
 
-    const deleted = queued(dishId, () => transport.deleteDish(dishId)).then(() => true, (error: unknown) => {
+    // True once deleted, else the notice saying why not.
+    const deleted = queued(dishId, () => transport.deleteDish(dishId)).then((): true => true, (error: unknown): true | Notice => {
       if (isGone(error)) return true
       putBack(dish, place)
-      return false
+      return isRefused(error) ? 'notAllowed' : 'deleteFailed'
     })
-    const settled = deleted.then((ok): BoardResult => ok ? { dish } : { dish, notice: 'deleteFailed' })
+    const settled = deleted.then((ended): BoardResult => ended === true ? { dish } : { dish, notice: ended })
 
     // "Rückgängig": once the delete has settled, the Dish is back at once,
     // with focus on it, and then where the server restored it. If that
     // fails, it goes again, with a notice.
     async function undo(): Promise<BoardResult> {
-      if (!await deleted) return { dish } // Never deleted, and back already.
+      if (await deleted !== true) return { dish } // Never deleted, and back already.
       const back = putBack(dish, place)
       const restored = queued(dishId, () => transport.restoreDish(dishId)).then((placed): BoardResult => {
         settle(dish, placed)
@@ -373,7 +397,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   //
   // Into the Gekocht Column it records a Cooking (stories 49–55): it shows
   // in the Dish's Cooking History at once, and the Gekocht toast (`cook`)
-  // offers "Rückgängig". Null if it wouldn't move or record one.
+  // offers "Rückgängig". Null if it wouldn't move or record one, or without
+  // "move Dishes".
   function moveDish(dishId: string, to: Destination): BoardResult | null {
     return move(dishId, to, () => transport.moveDish(dishId, to))
   }
@@ -389,7 +414,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   function move(dishId: string, to: Destination, write: () => Promise<MovedDish>, { cook = false } = {}): BoardResult | null {
     const found = find(dishId)
     const target = column(to.columnId)
-    if (!found || !target || !board.value) return null
+    if (!found || !target || !board.value || !may('moveDishes')) return null
     const { dish, column: from } = found
     const index = from.dishes.indexOf(dish)
     const landing = landingIndex(target, dishId, to.index)
@@ -428,7 +453,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         // Undone already, it is back, and nothing is left to tell.
         if (ended.undone) return { dish }
         if (latest()) moveBack(dish, back)
-        return { dish, notice: cooks ? 'cookFailed' : 'moveFailed' }
+        return { dish, notice: isRefused(error) ? 'notAllowed' : cooks ? 'cookFailed' : 'moveFailed' }
       }
     })
 
@@ -509,7 +534,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // 46): it leaves this Board at once, for the top of that Column, keeping
   // its Cooking History. If the move fails, it comes back exactly where it
   // was, with a notice; one the server no longer has (another Member
-  // deleted it) stays gone. Null if it isn't on this Board.
+  // deleted it) stays gone. Null if it isn't on this Board, or without
+  // "move Dishes".
   //
   // Into that Board's Gekocht Column it records a Cooking, as a move into
   // this Board's would (#129): it shows in the Dish's Cooking History at
@@ -517,7 +543,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // the Dish back here.
   function moveToBoard(dishId: string, to: BoardDestination): BoardResult | null {
     const found = find(dishId)
-    if (!found) return null
+    if (!found || !may('moveDishes')) return null
     const { dish } = found
     const cooks = recordsCooking(found.column, { id: to.columnId, isGekocht: to.isGekocht })
     const { origin, focus } = leave(dish, found.column)
@@ -542,7 +568,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         // Undone already, it is back, and nothing is left to tell.
         if (ended.undone) return { dish }
         if (latest()) moveBack(dish, back)
-        return { dish, notice: cooks ? 'cookFailed' : 'moveFailed' }
+        return { dish, notice: isRefused(error) ? 'notAllowed' : cooks ? 'cookFailed' : 'moveFailed' }
       }
     })
 
@@ -563,7 +589,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Deleting a Cooking from a Dish's Cooking History (PRD story 48): it
   // goes at once. If the delete fails, it is back with a notice; one the
   // server no longer has (another Member deleted it) counts as deleted.
+  // Null without "move Dishes", which covers what the Gekocht Column says.
   function deleteCooking(dishId: string, cookingId: string): BoardResult | null {
+    if (!may('moveDishes')) return null
     const found = find(dishId)
     // One still being recorded has no id yet: nothing to delete on the server.
     const at = cookingId ? found?.dish.cookings.findIndex(c => c.id === cookingId) ?? -1 : -1
@@ -653,8 +681,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // one already in that Column stays where it is. They go there at once,
   // then where the server put them. Never into a Gekocht Column: cooking
   // stays one Dish at a time. If the move fails, every Dish goes back
-  // exactly where it was, with a notice. Null if none would move.
+  // exactly where it was, with a notice. Null if none would move, or
+  // without "move Dishes".
   function moveDishes(dishIds: string[], to: Destination | BoardDestination): BulkResult | null {
+    if (!may('moveDishes')) return null
     const here = 'boardId' in to ? null : column(to.columnId)
     if ('boardId' in to ? to.isGekocht : !here || here.isGekocht) return null
     const moving = inBoardOrder(dishIds).filter(f => f.column !== here)
@@ -709,10 +739,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   }
 
   // Deleting several selected Dishes (#218): their cards go at once. If the
-  // delete fails, they come back with a notice.
+  // delete fails, they come back with a notice. Null unless "archive
+  // Dishes" holds for every one of them.
   function deleteDishes(dishIds: string[]): BulkResult | null {
     const found = inBoardOrder(dishIds)
-    if (found.length === 0) return null
+    if (found.length === 0 || found.some(f => !may('archiveDishes', f.dish.id))) return null
     const dishes = found.map(f => f.dish)
     const ids = dishes.map(d => d.id)
     const { origins, focus } = leaveAll(found)
@@ -786,7 +817,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, version, focusAfterDetail, dishCount, ...histories, ...votes }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, version, focusAfterDetail, dishCount, may, ...histories, ...votes }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

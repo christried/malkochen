@@ -114,6 +114,7 @@ export const en: Strings = {
     movedToBoard: (title: string, board: string, column: string) => `“${title}” is now in ${column} on ${board}`,
     thisBoard: 'This board',
     moveFailed: (title: string) => `“${title}” couldn’t be moved. ${tryAgain}`,
+    notAllowed: (title: string) => `You can’t do that with “${title}” on this board any more. The owner decides that.`,
     cook: 'Cooked ✓',
     cookedOn: (board: string) => `on ${board}`,
     cookWord: 'Cooked',
@@ -248,6 +249,7 @@ export const en: Strings = {
     saving: 'Saving…',
     cancel: 'Cancel',
     failed,
+    notAllowed: 'You can’t edit this dish any more. The owner decides that.',
     imageNotStored: (title: string) => `The new image couldn’t be saved. “${title}” keeps its old one.`,
   },
   sources: {
@@ -413,6 +415,9 @@ export const en: Strings = {
     yourPermissionsHint: 'The board’s owner decides this.',
     permission: {
       addDishes: { label: 'Add dishes', hint: 'Put new dishes on the board, by sharing too.' },
+      editDishes: { label: 'Edit dishes', hint: 'Change the title, image, creator and link. Always for your own dishes.' },
+      moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns and mark them as cooked.' },
+      archiveDishes: { label: 'Archive dishes', hint: 'Archive dishes and bring them back from the archive. Always for your own dishes.' },
     },
     handOver: 'Hand over ownership',
     handOverConfirm: (name: string) => `Hand ownership over to ${name}?`,

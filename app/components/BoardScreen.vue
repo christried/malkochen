@@ -207,7 +207,8 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   },
   landed: columnId => cueColumn({ columnId, kind: 'drop' }),
   press: dishId => selection.toggle(dishId),
-  paused: () => selecting.value,
+  // Without "move Dishes" no card lifts.
+  paused: () => selecting.value || !mayMove.value,
 })
 // What plays on the Board: the lifted card's Placeholder, the hovered
 // card's, or one where the Board comes to rest; and beside it an empty
@@ -342,6 +343,10 @@ const adding = ref(false)
 // something shared. Once the Owner switches it off, the next check of the
 // Board takes the button away (useBoardSync).
 const mayAdd = computed(() => board.value?.permissions.addDishes ?? false)
+// The same for moving Dishes: no drag, no "Gekocht ✓", no "Verschieben
+// nach…". Archiving goes by each Dish, as one's own may always be.
+const mayMove = computed(() => boardModule.may('moveDishes'))
+const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
 // Your settings (UserSettingsSheet), from the header's cogwheel (#282).
 const showingSettings = ref(false)
 
@@ -478,7 +483,9 @@ const { arrivingId, flyIn } = useSavedDishFlight(columnsEl)
 
 
 // The card's "…" menu: "Verschieben nach…", which lists the Board's other
-// Columns and the user's other Boards in the same sheet, and "Löschen".
+// Columns and the user's other Boards in the same sheet, and "Löschen";
+// each only if the user may (mayMove, mayArchive), and the menu only if
+// either is left.
 const menuDish = ref<DishView | null>(null)
 const menuOpen = computed({
   get: () => menuDish.value !== null,
@@ -890,6 +897,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       :board-id="board.id"
                     />
                     <button
+                      v-if="mayMove || mayArchive(dish)"
                       type="button"
                       class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
                       :aria-label="t.dish.menu(dish.title)"
@@ -919,6 +927,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       /></svg>
                     </button>
                     <CookButton
+                      v-if="mayMove"
                       class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
                       :cooked="dish.cookings.length > 0"
                       :label="t.dish.cookLabel(dish.title)"
@@ -1006,6 +1015,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <SelectionBar
       v-if="selecting"
       :count="selection.selectedIds.value.length"
+      :can-move="mayMove"
+      :can-delete="selection.selectedIds.value.every(dishId => boardModule.may('archiveDishes', dishId))"
       :lifted="!!toast"
       @move="choosingTarget = true"
       @delete="deleteSelected"
@@ -1058,6 +1069,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       >
         <template v-if="!choosingColumn">
           <button
+            v-if="mayMove"
             type="button"
             class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
             data-tour="menu-move"
@@ -1066,6 +1078,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             {{ t.dish.moveTo }}
           </button>
           <DangerButton
+            v-if="menuDish && mayArchive(menuDish)"
             data-tour="menu-delete"
             @click="deleteFromMenu"
           >

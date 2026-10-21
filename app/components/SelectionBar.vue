@@ -3,8 +3,9 @@
 // what can be done with all of them at once, "Verschieben" and "Löschen".
 // No "Gekocht": cooking stays one Dish at a time. Its × ends the
 // selection. Shaped like the Toast (handoff Toast colours), which it takes
-// the place of; a Toast still showing pushes it up.
-defineProps<{ count: number, lifted?: boolean }>()
+// the place of; a Toast still showing pushes it up. Each action only if the
+// user may take it on all of them (their Permissions).
+defineProps<{ count: number, lifted?: boolean, canMove: boolean, canDelete: boolean }>()
 defineEmits<{ move: [], delete: [], close: [] }>()
 const t = useStrings()
 </script>
@@ -37,6 +38,7 @@ const t = useStrings()
       {{ t.selection.count(count) }}
     </p>
     <button
+      v-if="canMove"
       type="button"
       class="shrink-0 rounded-pill px-3.5 py-2 text-button transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
       aria-haspopup="dialog"
@@ -45,6 +47,7 @@ const t = useStrings()
       {{ t.selection.move }}
     </button>
     <button
+      v-if="canDelete"
       type="button"
       class="danger-fill shrink-0 rounded-pill px-3.5 py-2 text-button transition-[scale,background-color] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
       @click="$emit('delete')"

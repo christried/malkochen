@@ -12,7 +12,10 @@ import type { VoteResult } from '~/board/dish-votes'
 // its Cookings, Votes and Comments, the comment field) with "Gekocht ✓",
 // "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
 // at the top keeps close, the title and "Bearbeiten" at hand
-// (useDetailScroll).
+// (useDetailScroll). Each action only for a Member it is allowed to
+// (their Permissions): "Bearbeiten" with "edit Dishes", "Verschieben
+// nach…" and "Gekocht ✓" with "move Dishes", "Löschen" with "archive
+// Dishes"; the last and the first also for a Dish they added themselves.
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
 defineEmits<{
   close: []
@@ -25,6 +28,8 @@ defineEmits<{
   vote: [result: VoteResult]
 }>()
 const t = useStrings()
+const boardModule = useBoardModule()
+const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
 
 const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useTemplateRef('bar'))
 
@@ -92,6 +97,7 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           {{ dish.title }}
         </p>
         <button
+          v-if="mayEdit"
           type="button"
           class="shrink-0 rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           @click="$emit('edit')"
@@ -147,6 +153,7 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           <AppIcon name="close" />
         </button>
         <button
+          v-if="mayEdit"
           type="button"
           class="rounded-pill bg-glass px-4 py-2.5 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           data-edit
@@ -238,6 +245,7 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         data-morph-field="buttons"
       >
         <button
+          v-if="boardModule.may('moveDishes')"
           type="button"
           class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           aria-haspopup="dialog"
@@ -246,7 +254,10 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         >
           {{ t.dish.moveTo }}
         </button>
-        <DangerButton @click="$emit('delete')">
+        <DangerButton
+          v-if="boardModule.may('archiveDishes', dish.id)"
+          @click="$emit('delete')"
+        >
           {{ t.dish.delete }}
         </DangerButton>
       </div>

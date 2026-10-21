@@ -643,6 +643,9 @@ export interface ArchivedDishView {
   // Who archived it; null if unknown (their account is gone, or it was
   // archived before this was kept).
   archivedBy: DishAdder | null
+  // Who added it, for the Archive to offer restoring it to them without
+  // "archive Dishes" (shared/permissions.ts).
+  addedById: string | null
   // When the daily cleanup purges it for good, at the earliest.
   purgesAt: string
 }
@@ -658,6 +661,7 @@ export async function archivedDishes(boardId: string): Promise<ArchivedDishView[
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
       placeholder: dish.placeholder,
+      addedById: dish.addedBy,
       archivedAt: sql<Date>`${dish.deletedAt}`.mapWith(dish.deletedAt),
       purgesAt: sql<Date>`${dish.deletedAt} + ${RESTORABLE_FOR}::interval`.mapWith(dish.deletedAt),
       archiverId: user.id,

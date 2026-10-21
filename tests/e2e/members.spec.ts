@@ -93,3 +93,42 @@ test('the Owner switches off adding Dishes for a Member, whose add button goes w
   await expect(own).toHaveAttribute('aria-checked', 'false')
   await expect(own).toBeDisabled()
 })
+
+// Permissions on Dishes (#341): without "Gerichte verschieben" Radia can't
+// drag a card and sees no "Gekocht ✓"; without "Gerichte archivieren" the
+// "…" menu offers "Archivieren" only on the Dish Radia added.
+test('without moving and archiving, a Member can\'t drag or cook, and archives only their own Dishes', async ({ page, browser }) => {
+  const { boardId, radia } = await sharedBoard(page, browser, 'Gemüsegarten')
+  const addDish = async (on: Page, title: string) =>
+    expect((await on.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl' } })).status()).toBe(201)
+  await addDish(page, 'Evelyns Kürbissuppe')
+  await addDish(radia, 'Radias Rote Bete')
+  await fastPolls(radia)
+  await gotoHydrated(radia, `/b/${boardId}`)
+  const cookButtons = radia.locator('[data-cook]')
+  await expect(cookButtons).toHaveCount(2)
+
+  await gotoHydrated(page, `/b/${boardId}/settings`)
+  await page.getByRole('button', { name: 'radia verwalten' }).click()
+  const rights = page.getByRole('dialog', { name: 'radia' }).getByRole('group', { name: 'Rechte' })
+  for (const name of ['Gerichte verschieben', 'Gerichte archivieren']) {
+    const permission = rights.getByRole('switch', { name })
+    await permission.click()
+    await expect(permission).toHaveAttribute('aria-checked', 'false')
+  }
+
+  await expect(cookButtons).toHaveCount(0)
+  const theirs = radia.getByRole('link', { name: 'Evelyns Kürbissuppe', exact: true })
+  const start = (await theirs.boundingBox())!
+  await radia.mouse.move(start.x + start.width / 2, start.y + start.height / 2)
+  await radia.mouse.down()
+  await radia.mouse.move(start.x + start.width / 2 + 400, start.y + start.height / 2, { steps: 12 })
+  await expect(radia.getByTestId('drag-card')).toHaveCount(0)
+  await radia.mouse.up()
+
+  await expect(radia.getByRole('button', { name: 'Mehr zu „Evelyns Kürbissuppe“' })).toHaveCount(0)
+  await radia.getByRole('button', { name: 'Mehr zu „Radias Rote Bete“' }).click()
+  const menu = radia.getByRole('dialog', { name: 'Radias Rote Bete' })
+  await expect(menu.getByRole('button', { name: 'Archivieren' })).toBeVisible()
+  await expect(menu.getByRole('button', { name: 'Verschieben nach…' })).toHaveCount(0)
+})

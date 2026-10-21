@@ -6,7 +6,7 @@ import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { invitePath } from '~~/shared/invite'
-import { ENFORCED_PERMISSIONS, type EnforcedPermission, type Permissions } from '~~/shared/permissions'
+import { ENFORCED_PERMISSIONS, permitsOn, type EnforcedPermission, type Permissions } from '~~/shared/permissions'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
@@ -348,6 +348,13 @@ function offArchive(dish: ArchivedDishView) {
   if (archive.value) archive.value = { dishes: archive.value.dishes.filter(d => d.id !== dish.id) }
 }
 
+// Restoring needs "archive Dishes", as archiving does, or that the user
+// added the Dish.
+function mayRestore(dish: ArchivedDishView) {
+  if (!board.value) return false
+  return permitsOn(board.value.permissions, 'archiveDishes', board.value.members.find(m => m.isYou)?.id, { addedBy: dish.addedById })
+}
+
 async function restoreArchived(dish: ArchivedDishView) {
   offArchive(dish)
   try {
@@ -635,6 +642,7 @@ function confirmDelete() {
           v-if="archive"
           :dishes="archive.dishes"
           :is-owner="board.isOwner"
+          :may-restore="mayRestore"
           @restore="restoreArchived"
           @purge="dish => purging = dish"
         />
