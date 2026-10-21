@@ -7,8 +7,8 @@ import { sharedLink } from '~/utils/shared-link'
 // it opens the Board used last of those the user may add Dishes to, with
 // Add Dish open (BoardScreen's `add`) and the first web link that was
 // shared filled in. Shared content without one opens it empty. If they may
-// add to no Board, just the Board used last opens. Signed out, the page guard sends the visitor to sign
-// in first and back here after.
+// add to no Board, just the Board used last opens. Signed out, the page
+// guard sends the visitor to sign in first and back here after.
 const route = useRoute()
 const part = (name: string) => {
   const value = route.query[name]
