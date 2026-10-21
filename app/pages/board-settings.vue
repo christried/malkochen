@@ -2,6 +2,7 @@
 import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ArchivedDishView, PlacedDish } from '~~/server/utils/dishes'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
+import type { PermissionControl } from '~/components/PermissionSwitches.vue'
 import { isRefused } from '~/board/board-module'
 import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
@@ -13,8 +14,8 @@ import { columnDeletion } from '~~/shared/placement'
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
 // and emoji, its Columns, its Members, the Invite Link, its Archive and
 // leaving; for the Owner also each Member's Permissions and the Default
-// Permissions, removing Members, handing over ownership,
-// deleting Archived Dishes for good and deleting the Board. What a Member's
+// Permissions, removing Members, handing over ownership, deleting Archived
+// Dishes for good and deleting the Board. What a Member's
 // Permissions don't allow is shown without a way to change it (the name,
 // emoji and Columns), or not at all (adding a Column, the Invite Link).
 // Its own page, not a child of the Board: any page under b/[board]/ opens over
@@ -311,11 +312,10 @@ function removeMember(member: BoardMemberView) {
 // for the Default Permissions, which a Member joining gets. Saved at once;
 // one that fails stays as it was, with a notice. The Member's open Board
 // follows at its next check. Every other Member sees their own, read-only.
-type PermissionsBusy = Permission | 'viewOnly' | null
-const switchingPermission = ref<PermissionsBusy>(null)
-const switchingDefault = ref<PermissionsBusy>(null)
+const switchingPermission = ref<PermissionControl | null>(null)
+const switchingDefault = ref<PermissionControl | null>(null)
 // The Permissions saved at `path`, or null if that failed.
-async function savePermissions(path: string, changes: Partial<Permissions>, busy: Ref<PermissionsBusy>, what: Exclude<PermissionsBusy, null>): Promise<Permissions | null> {
+async function savePermissions(path: string, changes: Partial<Permissions>, busy: Ref<PermissionControl | null>, what: PermissionControl): Promise<Permissions | null> {
   if (busy.value) return null
   busy.value = what
   try {
@@ -329,12 +329,12 @@ async function savePermissions(path: string, changes: Partial<Permissions>, busy
     busy.value = null
   }
 }
-async function switchPermissions(member: BoardMemberView, changes: Partial<Permissions>, what: Exclude<PermissionsBusy, null>) {
+async function switchPermissions(member: BoardMemberView, changes: Partial<Permissions>, what: PermissionControl) {
   if (!member.permissions) return
   const saved = await savePermissions(`/api/boards/${id.value}/members/${encodeURIComponent(member.id)}/permissions`, changes, switchingPermission, what)
   if (saved) member.permissions = saved
 }
-async function switchDefaults(changes: Partial<Permissions>, what: Exclude<PermissionsBusy, null>) {
+async function switchDefaults(changes: Partial<Permissions>, what: PermissionControl) {
   const saved = await savePermissions(`/api/boards/${id.value}/default-permissions`, changes, switchingDefault, what)
   // A new object: useFetch's data is a shallow ref.
   if (saved && board.value) board.value = { ...board.value, defaultPermissions: saved }

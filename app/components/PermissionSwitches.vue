@@ -6,15 +6,19 @@ import { PERMISSIONS, VIEW_ONLY, type Permission, type Permissions } from '~~/sh
 // has "Nur ansehen" to switch all but commenting and voting off at once;
 // `switched` says what to change, and which control is busy until it's
 // saved (`busy`). `readonly`: a Member's own, to see only.
+
+// A switch, or "Nur ansehen".
+export type PermissionControl = Permission | 'viewOnly'
+
 defineProps<{
   title: string
   permissions: Permissions
-  busy: Permission | 'viewOnly' | null
+  busy: PermissionControl | null
   readonly?: boolean
   // Below the switches.
   hint?: string
 }>()
-const emit = defineEmits<{ switched: [changes: Partial<Permissions>, busy: Permission | 'viewOnly'] }>()
+const emit = defineEmits<{ switched: [changes: Partial<Permissions>, busy: PermissionControl] }>()
 const t = useStrings()
 const titleId = useId()
 const viewOnlyHintId = useId()
