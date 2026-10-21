@@ -113,7 +113,7 @@ A notification on a Member's device that other Members added Dishes to one of th
 _Avoid_: Alert, reminder
 
 **Email Digest**:
-One email in the evening ("Tägliche E-Mail") listing the Dishes other Members added to a user's Boards since the last one, each with its Board and who added it, sent only to users who switched it on in their settings (off by default; one switch for all their Boards and devices). Nothing new, no email; a Dish is never listed twice, nor one added to a Board before they joined it.
+One email in the evening ("Tägliche E-Mail") listing the Dishes other Members added to a user's Boards since the last one, each with its Board and who added it, and after them, per Board, the Comments others wrote (the start of each) and the Votes they gave on its Dishes ("Im Verlauf"), sent only to users who switched it on in their settings (off by default; one switch for all their Boards and devices). Nothing new, no email; nothing is listed twice (a changed Vote isn't listed again), nor from before they joined the Board, nor one's own, nor anything on an Archived Dish or a deleted Comment.
 _Avoid_: Newsletter, summary, report
 
 **Placeholder Image**:

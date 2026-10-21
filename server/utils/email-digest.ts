@@ -1,7 +1,7 @@
-import { and, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm'
-import { alias } from 'drizzle-orm/pg-core'
+import { and, desc, eq, exists, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm'
+import { alias, type AnyPgColumn } from 'drizzle-orm/pg-core'
 import { db } from '../db'
-import { board, dish, emailDigest, membership, user } from '../db/schema'
+import { board, comment, dish, emailDigest, eventLog, membership, user, vote } from '../db/schema'
 import { digestEmail, type BoardNews, type Email } from '../email'
 import { parseServerEnv } from '../env'
 import { mailSender } from './mail'
@@ -43,7 +43,8 @@ export interface DigestReport {
 
 // The daily run: each Member who switched the digest on gets one email
 // listing the Dishes other Members added to their Boards since the last run
-// (and since they joined each Board), if there are any. What it covered is
+// (and since they joined each Board), and the Comments and Votes they gave
+// on them (#353), if there are any. What it covered is
 // never listed again; a digest that didn't go out is covered by the next
 // run instead.
 export async function sendDigests(): Promise<DigestReport> {
@@ -82,7 +83,7 @@ async function digestEmails(covered: Coverage[]): Promise<Map<string, Email>> {
     .map(r => [r.id, digestEmail({ ...r, language: recipientLanguage(r) }, news.get(r.id)!, origin)]))
 }
 
-// What one run covers for a Member: the Dishes added in (since, until].
+// What one run covers for a Member: what was added in (since, until].
 interface Coverage {
   userId: string
   since: Date
@@ -118,39 +119,100 @@ async function uncover(covered: Coverage[]): Promise<void> {
 }
 
 // What each Member gets, by user id: per Board they are on (by name), the
-// Dishes other Members added in what this run covers for them, newest first. Members with
-// nothing new are left out.
+// Dishes other Members added in what this run covers for them, and the
+// Comments others wrote and the Votes they gave on its Dishes in it (#353),
+// each newest first. Never on a Dish archived since, nor a Comment deleted
+// since; nothing from before they joined the Board. A Vote counts when it
+// was given in it, not when changed: given before, it was listed then.
+// Members with nothing new are left out.
 async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
-  const rows = await db
-    .select({
-      recipient: membership.userId,
-      board: { id: board.id, slug: slugOf, name: board.name, emoji: board.emoji },
-      title: dish.title,
-      code: dish.code,
-      // Adding takes a Username (server/middleware/auth.ts).
-      addedBy: sql<string>`${user.username}`,
-    })
-    .from(membership)
-    .innerJoin(board, eq(board.id, membership.boardId))
-    .innerJoin(dish, and(
-      eq(dish.boardId, membership.boardId),
-      isNull(dish.deletedAt),
-      isNotNull(dish.addedBy),
-      ne(dish.addedBy, membership.userId),
-      gt(dish.createdAt, membership.joinedAt),
-    ))
-    .innerJoin(user, eq(user.id, dish.addedBy))
-    .where(or(...covered.map(c => and(eq(membership.userId, c.userId), gt(dish.createdAt, c.since), lte(dish.createdAt, c.until)))))
-    .orderBy(desc(dish.createdAt), desc(dish.id))
+  const onBoard = and(eq(dish.boardId, membership.boardId), isNull(dish.deletedAt))
+  const inCoverage = (at: AnyPgColumn) => or(...covered.map(c => and(eq(membership.userId, c.userId), gt(at, c.since), lte(at, c.until))))
+  const boardColumns = { id: board.id, slug: slugOf, name: board.name, emoji: board.emoji }
+  const [added, comments, votes] = await Promise.all([
+    db
+      .select({
+        recipient: membership.userId,
+        board: boardColumns,
+        title: dish.title,
+        code: dish.code,
+        // Adding takes a Username (server/middleware/auth.ts).
+        addedBy: sql<string>`${user.username}`,
+      })
+      .from(membership)
+      .innerJoin(board, eq(board.id, membership.boardId))
+      .innerJoin(dish, and(
+        onBoard,
+        isNotNull(dish.addedBy),
+        ne(dish.addedBy, membership.userId),
+        gt(dish.createdAt, membership.joinedAt),
+      ))
+      .innerJoin(user, eq(user.id, dish.addedBy))
+      .where(inCoverage(dish.createdAt))
+      .orderBy(desc(dish.createdAt), desc(dish.id)),
+    db
+      .select({
+        recipient: membership.userId,
+        board: boardColumns,
+        title: dish.title,
+        code: dish.code,
+        // Writing one takes a Username, as voting does.
+        by: sql<string>`${user.username}`,
+        text: comment.text,
+        at: comment.createdAt,
+      })
+      .from(membership)
+      .innerJoin(board, eq(board.id, membership.boardId))
+      .innerJoin(dish, onBoard)
+      .innerJoin(comment, and(
+        eq(comment.dishId, dish.id),
+        isNull(comment.deletedAt),
+        ne(comment.authorId, membership.userId),
+        gt(comment.createdAt, membership.joinedAt),
+      ))
+      .innerJoin(user, eq(user.id, comment.authorId))
+      .where(inCoverage(comment.createdAt)),
+    db
+      .select({
+        recipient: membership.userId,
+        board: boardColumns,
+        title: dish.title,
+        code: dish.code,
+        by: sql<string>`${user.username}`,
+        up: vote.up,
+        at: vote.votedAt,
+      })
+      .from(membership)
+      .innerJoin(board, eq(board.id, membership.boardId))
+      .innerJoin(dish, onBoard)
+      .innerJoin(vote, and(eq(vote.dishId, dish.id), ne(vote.userId, membership.userId)))
+      .innerJoin(user, eq(user.id, vote.userId))
+      .where(exists(db
+        .select({ id: eventLog.id })
+        .from(eventLog)
+        .where(and(
+          eq(eventLog.kind, 'vote_set'),
+          eq(eventLog.dishId, vote.dishId),
+          eq(eventLog.userId, vote.userId),
+          gt(eventLog.at, membership.joinedAt),
+          inCoverage(eventLog.at),
+        )))),
+  ])
 
-  const byRecipient = new Map<string, Map<string, BoardNews>>()
-  for (const { recipient, board: found, ...added } of rows) {
-    const boards = byRecipient.get(recipient) ?? new Map<string, BoardNews>()
-    const news = boards.get(found.id) ?? { board: found, dishes: [] }
-    news.dishes.push(added)
-    boards.set(found.id, news)
+  const byRecipient = new Map<string, Map<string, Required<BoardNews>>>()
+  const newsOf = (recipient: string, found: BoardNews['board']) => {
+    const boards = byRecipient.get(recipient) ?? new Map<string, Required<BoardNews>>()
     byRecipient.set(recipient, boards)
+    const news = boards.get(found.id) ?? { board: found, dishes: [], talk: [] }
+    boards.set(found.id, news)
+    return news
   }
+  for (const { recipient, board: found, ...addedDish } of added) newsOf(recipient, found).dishes.push(addedDish)
+  const talk = [
+    ...comments.map(({ recipient, board: found, title, code, by, text, at }) => ({ recipient, found, at, said: { dish: { title, code }, by, comment: text } })),
+    ...votes.map(({ recipient, board: found, title, code, by, up, at }) => ({ recipient, found, at, said: { dish: { title, code }, by, up } })),
+  ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
+  for (const { recipient, found, said } of talk) newsOf(recipient, found).talk.push(said)
   return new Map([...byRecipient].map(([recipient, boards]) => [
     recipient,
     [...boards.values()].toSorted((a, b) => a.board.name.localeCompare(b.board.name, 'de')),

@@ -603,7 +603,7 @@ export const it: Strings = {
   },
   emailDigest: {
     toggle: 'Email giornaliera',
-    hint: 'La sera al tuo indirizzo email, quando altri hanno aggiunto nuovi piatti alle tue bacheche. Per tutti i tuoi dispositivi.',
+    hint: 'La sera al tuo indirizzo email, quando altri hanno aggiunto, commentato o dato un pollice a piatti sulle tue bacheche. Per tutti i tuoi dispositivi.',
     failed,
     subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'sulle tue bacheche'}`,
     talkSubject: (comments: number, votes: number, board: string | null) => `${talkCounts(comments, votes).join(' e ')} ${board ? `in ${board}` : 'sulle tue bacheche'}`,

@@ -711,7 +711,7 @@ export const de = {
   // the last one (server/email/index.ts).
   emailDigest: {
     toggle: 'Tägliche E-Mail',
-    hint: 'Abends an deine E-Mail-Adresse, wenn andere neue Gerichte zu deinen Boards hinzugefügt haben. Für alle deine Geräte.',
+    hint: 'Abends an deine E-Mail-Adresse, wenn andere auf deinen Boards Gerichte hinzugefügt, kommentiert oder Daumen gegeben haben. Für alle deine Geräte.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     // The email (#325). `board`: the emoji and name of the one Board it's
     // about; null when it's about several.
