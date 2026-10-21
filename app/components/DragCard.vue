@@ -8,6 +8,7 @@ import type { ClipMotion } from '~/utils/motion'
 defineProps<{
   drag: DishDrag
   isNew: boolean
+  newInHistory: boolean
   motion: ClipMotion
 }>()
 </script>
@@ -31,6 +32,7 @@ defineProps<{
       <DishCard
         :dish="drag.dish"
         :is-new="isNew"
+        :new-in-history="newInHistory"
         :motion="motion"
         seen
       />

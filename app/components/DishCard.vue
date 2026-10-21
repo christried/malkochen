@@ -8,10 +8,13 @@ import type { ClipMotion } from '~/utils/motion'
 // "Gekocht ✓" in its bottom-right one, so the title and the bottom line leave
 // room for them. "N× gekocht" goes under the title, above the button, where
 // it has the whole width. A New Dish wears the "Neu" pebble on the thumb's
-// corner.
+// corner, and the thumb's other top corner the chip with its Votes and
+// Comments (HistoryChip).
 const props = defineProps<{
   dish: DishView
   isNew?: boolean
+  // Something new in its Dish History since you last opened it (#335).
+  newInHistory?: boolean
   // Shown before (the dragged copy of a card): no pop-in, no ring.
   seen?: boolean
   // The Placeholder's loop, when the Board lets this card play it.
@@ -77,6 +80,10 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
         :kind="dish.source.kind"
         dot-only
         class="absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)]"
+      />
+      <HistoryChip
+        :dish="dish"
+        :new-in-history="newInHistory"
       />
     </div>
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">

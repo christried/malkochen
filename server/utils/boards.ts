@@ -7,6 +7,7 @@ import { board, boardColumn, boardSlug, dish, membership, user } from '../db/sch
 import { freeSlug, lockSlugs, recordSlug, slugOf } from './addresses'
 import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
+import { newInHistoryDishIds } from './dish-opened'
 import { detailsOf, insertEvents } from './events'
 import { usernameOf, pictureOf } from './people'
 
@@ -53,6 +54,9 @@ export interface BoardView extends BoardSummary {
   columns: (ColumnView & { dishes: DishView[] })[]
   // Its New Dishes for the user looking (PRD story 37), marked "Neu".
   newDishIds: string[]
+  // Its Dishes with something new in their Dish History for the user
+  // looking (#335), since they last opened them (dish-opened.ts).
+  newInHistoryDishIds: string[]
 }
 
 // A Board as the Board switcher lists it: how many Dishes it holds, its
@@ -209,16 +213,18 @@ export async function getBoard(boardId: string, userId: string, language: Langua
     .from(boardColumn)
     .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))
-  const [dishes, members, newDishIds] = await Promise.all([
+  const [dishes, members, newDishIds, newInHistory] = await Promise.all([
     dishesByColumn(columns.map(c => c.id)),
     boardMembers(boardId, language),
     newSince ? newDishesSince(boardId, userId, newSince) : [],
+    newInHistoryDishIds(boardId, userId),
   ])
   return {
     ...view,
     members: members.map(m => ({ ...m, isYou: m.id === userId })),
     columns: columns.map(c => ({ ...c, dishes: dishes.get(c.id) ?? [] })),
     newDishIds,
+    newInHistoryDishIds: newInHistory,
   }
 }
 

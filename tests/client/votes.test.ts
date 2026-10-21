@@ -27,6 +27,7 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     createdAt: '2026-10-01T12:00:00.000Z',
     cookings: cookedAt.map((at, i) => ({ id: `${id}-cooking-${i}`, cookedAt: at, recordedBy: null })).toReversed(),
     votes: [],
+    commentCount: 0,
   }
 }
 
@@ -44,6 +45,7 @@ function setup() {
     inviteToken: 'token',
     members: [],
     newDishIds: [],
+    newInHistoryDishIds: [],
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a')] },
       { id: 'gekocht', name: 'Gekocht', subtitle: 'Schon geschafft!', isGekocht: true, dishes: [cooked] },

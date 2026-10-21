@@ -35,6 +35,7 @@ const id = opened?.boardId ?? ''
 const board = opened?.loaded ?? ref<BoardView>()
 const address = useOpenBoardAddress()
 const newDishIds = computed(() => new Set(board.value?.newDishIds))
+const newInHistoryDishIds = computed(() => new Set(board.value?.newInHistoryDishIds))
 
 // You, for your photo in the header, which opens the user menu. Phones have
 // no room for it there.
@@ -853,6 +854,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       <DishCard
                         :dish="dish"
                         :is-new="newDishIds.has(dish.id)"
+                        :new-in-history="newInHistoryDishIds.has(dish.id)"
                         :motion="state === 'card' ? boardLoop.motionOf(dish.id) : null"
                         @motion-ended="boardLoop.ended(dish.id)"
                       />
@@ -953,6 +955,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-if="drag"
       :drag="drag"
       :is-new="newDishIds.has(drag.dish.id)"
+      :new-in-history="newInHistoryDishIds.has(drag.dish.id)"
       :motion="boardLoop.motionOf(drag.dish.id)"
     />
 

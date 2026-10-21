@@ -80,7 +80,7 @@ async function votesOn(caller: Caller, boardId: string, dishId: string): Promise
 }
 
 async function historyVotes(caller: Caller, dishId: string): Promise<Vote[]> {
-  const res = await caller.fetch(`/api/dishes/${dishId}/history`)
+  const res = await caller.fetch(`/api/dishes/${dishId}/open`, { method: 'POST' })
   expect(res.status).toBe(200)
   const { entries } = await res.json() as { entries: Entry[] }
   return entries.flatMap(e => e.kind === 'vote' ? [e.vote] : [])
@@ -187,7 +187,7 @@ test('the Dish History shows each Member\'s current Vote, at the time it was las
   const members = await voted(vaughan, dish.id, true)
   const owners = await voted(tharp, dish.id, true)
 
-  const res = await vaughan.fetch(`/api/dishes/${dish.id}/history`)
+  const res = await vaughan.fetch(`/api/dishes/${dish.id}/open`, { method: 'POST' })
   const { entries } = await res.json() as { entries: Entry[] }
   expect(entries.map(e => e.kind)).toEqual(['added', 'cooking', 'vote', 'vote'])
   expect(entries.slice(2)).toEqual([

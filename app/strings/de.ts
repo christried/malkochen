@@ -124,6 +124,13 @@ export const de = {
     creator: 'Veröffentlicht von',
     // The marker on a New Dish (CONTEXT.md).
     new: 'Neu',
+    // What the chip on a card's image shows of its Dish History (#335),
+    // read out in its place: its Votes, how many Comments, and whether
+    // there's something new in it since you last opened the Dish.
+    votesUp: (count: number) => `${count}× Daumen hoch`,
+    votesDown: (count: number) => `${count}× Daumen runter`,
+    comments: (count: number) => count === 1 ? '1 Kommentar' : `${count} Kommentare`,
+    newInHistory: 'Neues im Verlauf',
     menu: (title: string) => `Mehr zu „${title}“`,
     // The same button's Tooltip: the card under it already says which Dish.
     more: 'Mehr',

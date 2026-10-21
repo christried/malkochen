@@ -153,7 +153,7 @@ A Member's thumbs up or thumbs down on a Cooked Dish. Any Member can give one, o
 _Avoid_: Rating, like, review, score
 
 **Dish History**:
-Everything that happened to a Dish, at the bottom of its detail like a chat ("Verlauf"), oldest first: when it was added, its Cookings, Votes and Comments. Moves aren't part of it.
+Everything that happened to a Dish, at the bottom of its detail like a chat ("Verlauf"), oldest first: when it was added, its Cookings, Votes and Comments. Moves aren't part of it. The Dish's card shows its Votes and how many Comments it has, and turns orange when another Member added a Comment, Vote or Cooking since you last opened the Dish ("Neues im Verlauf"), until you open it. That's apart from a New Dish's "Neu".
 _Avoid_: Cooking History, timeline, activity feed, log
 
 **Archived Dish**:

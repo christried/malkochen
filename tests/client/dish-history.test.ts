@@ -26,6 +26,7 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     // Newest first, as the Board has them.
     cookings: cookedAt.map((at, i) => ({ id: `${id}-cooking-${i}`, cookedAt: at, recordedBy: null })).toReversed(),
     votes: [],
+    commentCount: 0,
   }
 }
 
@@ -40,6 +41,7 @@ function setup() {
     inviteToken: 'token',
     members: [],
     newDishIds: [],
+    newInHistoryDishIds: [],
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a')] },
       { id: 'gekocht', name: 'Gekocht', subtitle: 'Schon geschafft!', isGekocht: true, dishes: [dish('b', ['2026-10-02T12:00:00.000Z', '2026-10-04T12:00:00.000Z'])] },
@@ -73,7 +75,7 @@ test('once loaded, its Comments show among the Cookings in time order', async ()
   const late = fake.writeCommentElsewhere('b', 'Wieder super')
   fake.comments.get('b')![1]!.createdAt = '2026-10-05T18:00:00.000Z'
 
-  expect(await module.loadHistory('b')).toBe(true)
+  expect(await module.openDish('b')).toBe(true)
 
   expect(shown('b')).toEqual([
     'added Ada',
@@ -87,15 +89,15 @@ test('once loaded, its Comments show among the Cookings in time order', async ()
 test('a history that fails to load leaves the Dish History without Comments', async () => {
   const { fake, module, shown } = setup()
   fake.writeCommentElsewhere('a', 'Hallo')
-  fake.failNext('dishHistory', 500)
+  fake.failNext('openDish', 500)
 
-  expect(await module.loadHistory('a')).toBe(false)
+  expect(await module.openDish('a')).toBe(false)
   expect(shown('a')).toEqual(['added Ada'])
 })
 
 test('a written Comment shows at the end at once, trimmed, and is filled in once the server has it', async () => {
   const { fake, module, shown } = setup()
-  await module.loadHistory('a')
+  await module.openDish('a')
   const held = fake.holdNext('writeComment')
 
   const result = module.writeComment('a', '  Lecker!  ', ME)!
@@ -113,7 +115,7 @@ test('a written Comment shows at the end at once, trimmed, and is filled in once
 
 test('a Comment whose write fails goes again, with a notice, and its text for the field', async () => {
   const { fake, module, shown } = setup()
-  await module.loadHistory('a')
+  await module.openDish('a')
   fake.failNext('writeComment', 500)
 
   const settled = await module.writeComment('a', 'Zu salzig', ME)!.settled!
@@ -133,7 +135,7 @@ test('an empty or too long Comment is never sent', () => {
 test('an edit shows the new text marked "bearbeitet" at once, then as the server saved it', async () => {
   const { fake, module, shown } = setup()
   const { id } = fake.writeCommentElsewhere('a', 'Zu salzig')
-  await module.loadHistory('a')
+  await module.openDish('a')
   const held = fake.holdNext('editComment')
 
   const result = module.editComment('a', id, ' Etwas zu salzig ')!
@@ -148,7 +150,7 @@ test('an edit shows the new text marked "bearbeitet" at once, then as the server
 test('an edit that fails puts the Comment back as it was, with a notice; the same text again sends nothing', async () => {
   const { fake, module, shown } = setup()
   const { id } = fake.writeCommentElsewhere('a', 'Zu salzig')
-  await module.loadHistory('a')
+  await module.openDish('a')
   fake.failNext('editComment', 500)
 
   expect((await module.editComment('a', id, 'Viel zu salzig')!.settled!).notice).toBe('commentEditFailed')
@@ -161,7 +163,7 @@ test('an edit that fails puts the Comment back as it was, with a notice; the sam
 test('two edits in a row: the later one shows until it settles, and one that fails goes back to what the server has', async () => {
   const { fake, module, shown } = setup()
   const { id } = fake.writeCommentElsewhere('a', 'Eins')
-  await module.loadHistory('a')
+  await module.openDish('a')
   const held = fake.holdNext('editComment')
 
   const first = module.editComment('a', id, 'Zwei')!
@@ -180,7 +182,7 @@ test('deleting a Comment takes it out at once; "Rückgängig" brings it back in 
   const { fake, module, shown } = setup()
   const first = fake.writeCommentElsewhere('a', 'Eins')
   const second = fake.writeCommentElsewhere('a', 'Zwei')
-  await module.loadHistory('a')
+  await module.openDish('a')
 
   const result = module.deleteComment('a', first.id)!
 
@@ -196,7 +198,7 @@ test('deleting a Comment takes it out at once; "Rückgängig" brings it back in 
 test('a delete that fails puts the Comment back, with a notice', async () => {
   const { fake, module, shown } = setup()
   const { id } = fake.writeCommentElsewhere('a', 'Bleibt')
-  await module.loadHistory('a')
+  await module.openDish('a')
   fake.failNext('deleteComment', 500)
 
   expect((await module.deleteComment('a', id)!.settled!).notice).toBe('commentDeleteFailed')
@@ -206,7 +208,7 @@ test('a delete that fails puts the Comment back, with a notice', async () => {
 test('undo pressed while the delete is under way waits for it, then brings the Comment back', async () => {
   const { fake, module, shown } = setup()
   const { id } = fake.writeCommentElsewhere('a', 'Doch nicht')
-  await module.loadHistory('a')
+  await module.openDish('a')
   const held = fake.holdNext('deleteComment')
   const result = module.deleteComment('a', id)!
 
@@ -221,7 +223,7 @@ test('undo pressed while the delete is under way waits for it, then brings the C
 test('a Comment another Member deleted already (404) counts as deleted; an undo that fails takes it out again, with a notice', async () => {
   const { fake, module, shown } = setup()
   const { id } = fake.writeCommentElsewhere('a', 'Weg')
-  await module.loadHistory('a')
+  await module.openDish('a')
   fake.deleteCommentElsewhere(id)
 
   const result = module.deleteComment('a', id)!
@@ -237,8 +239,8 @@ test('a Comment another Member deleted already (404) counts as deleted; an undo 
 test('a history loading while the Member writes their first Comment keeps it beside the ones it loaded', async () => {
   const { fake, module, shown } = setup()
   const theirs = fake.writeCommentElsewhere('a', 'Von Ada')
-  const heldLoad = fake.holdNext('dishHistory')
-  const loading = module.loadHistory('a')
+  const heldLoad = fake.holdNext('openDish')
+  const loading = module.openDish('a')
   const heldWrite = fake.holdNext('writeComment')
   const written = module.writeComment('a', 'Von mir', ME)!
 
@@ -254,11 +256,11 @@ test('a history loading while the Member writes their first Comment keeps it bes
 test('a history loaded again while a delete is under way doesn\'t bring the Comment back', async () => {
   const { fake, module, shown } = setup()
   const { id } = fake.writeCommentElsewhere('a', 'Weg damit')
-  await module.loadHistory('a')
+  await module.openDish('a')
   const held = fake.holdNext('deleteComment')
   module.deleteComment('a', id)
 
-  await module.loadHistory('a')
+  await module.openDish('a')
 
   expect(shown('a')).toEqual(['added Ada'])
   held.succeed()
@@ -266,7 +268,7 @@ test('a history loaded again while a delete is under way doesn\'t bring the Comm
 
 test('Cookings recorded and deleted on the Board show in the Dish History at once', async () => {
   const { module, shown } = setup()
-  await module.loadHistory('b')
+  await module.openDish('b')
 
   const cooked = module.cookDish('b')!
   expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', 'cooking '])

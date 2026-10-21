@@ -25,7 +25,7 @@ export function httpTransport(): BoardTransport {
     placeDishes: places => asWrite(bulk({ action: 'place', places })),
     deleteDishes: dishIds => asWrite(bulk({ action: 'delete', dishIds })).then(() => undefined),
     restoreDishes: dishIds => asWrite(bulk({ action: 'restore', dishIds })),
-    dishHistory: dishId => asWrite($fetch<DishHistory>(`/api/dishes/${dishId}/history`)),
+    openDish: dishId => asWrite($fetch<DishHistory>(`/api/dishes/${dishId}/open`, { method: 'POST' })),
     writeComment: (dishId, text) => asWrite($fetch<CommentView>(`/api/dishes/${dishId}/comments`, { method: 'POST', body: { text } })),
     editComment: (commentId, text) => asWrite($fetch<CommentView>(`/api/comments/${commentId}`, { method: 'PATCH', body: { text } })),
     deleteComment: commentId => asWrite($fetch<unknown>(`/api/comments/${commentId}`, { method: 'DELETE' })).then(() => undefined),
