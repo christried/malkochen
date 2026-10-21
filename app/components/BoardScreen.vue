@@ -207,8 +207,9 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   },
   landed: columnId => cueColumn({ columnId, kind: 'drop' }),
   press: dishId => selection.toggle(dishId),
-  // Without "move Dishes" no card lifts.
-  paused: () => selecting.value || !mayMove.value,
+  paused: () => selecting.value,
+  // Without "move Dishes" no card lifts; a long-press still selects one.
+  pinned: () => !mayMove.value,
 })
 // What plays on the Board: the lifted card's Placeholder, the hovered
 // card's, or one where the Board comes to rest; and beside it an empty

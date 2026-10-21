@@ -131,4 +131,20 @@ test('without moving and archiving, a Member can\'t drag or cook, and archives o
   const menu = radia.getByRole('dialog', { name: 'Radias Rote Bete' })
   await expect(menu.getByRole('button', { name: 'Archivieren' })).toBeVisible()
   await expect(menu.getByRole('button', { name: 'Verschieben nach…' })).toHaveCount(0)
+  await menu.getByRole('button', { name: 'Schließen' }).click()
+  await expect(menu).toHaveCount(0)
+
+  // On a phone a long-press still selects the Dish, to archive it with
+  // others, though it doesn't lift.
+  await radia.setViewportSize({ width: 390, height: 844 })
+  const own = radia.getByRole('link', { name: 'Radias Rote Bete', exact: true })
+  const box = (await own.boundingBox())!
+  const at = { pointerId: 11, pointerType: 'touch', isPrimary: true, clientX: box.x + box.width / 2, clientY: box.y + box.height / 2, bubbles: true }
+  await own.dispatchEvent('pointerdown', at)
+  await radia.waitForTimeout(450)
+  await expect(radia.getByTestId('drag-card')).toHaveCount(0)
+  await radia.getByTestId('columns').dispatchEvent('pointerup', at)
+  const bar = radia.getByRole('toolbar', { name: 'Auswahl' })
+  await expect(bar.getByRole('button', { name: 'Archivieren' })).toBeVisible()
+  await expect(bar.getByRole('button', { name: 'Verschieben' })).toHaveCount(0)
 })
