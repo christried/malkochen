@@ -90,7 +90,11 @@ export async function deleteAccount(deleted: { id: string, email: string, userna
   ])
 
   const urls = [...images.map(i => i.url), deleted.ownPicture].filter(url => url != null)
-  for (const url of new Set(urls)) await removeImageIfUnreferenced(url)
+  // The account is gone by now: an image that won't go is left to the daily
+  // sweep rather than failing the deletion.
+  for (const url of new Set(urls)) {
+    await removeImageIfUnreferenced(url).catch((err: unknown) => console.warn(`[account-deletion] image not removed: ${err instanceof Error ? err.message : String(err)} (${url})`))
+  }
 
   if (sendEmails) await sendEmails([accountDeletedEmail({ email: deleted.email, name: deleted.username, language })])
 }

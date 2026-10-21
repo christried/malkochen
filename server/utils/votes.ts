@@ -58,7 +58,7 @@ export async function votesByDish(dishIds: string[]): Promise<Map<string, VoteVi
   const byDish = new Map<string, VoteView[]>(dishIds.map(id => [id, []]))
   if (dishIds.length === 0) return byDish
 
-  const rows = await selectVotes().where(inArray(vote.dishId, dishIds)).orderBy(asc(vote.votedAt), asc(vote.id))
+  const rows = await selectVotes().where(inArray(vote.dishId, dishIds)).orderBy(asc(vote.votedAt), asc(vote.userId), asc(vote.id))
   for (const row of rows) byDish.get(row.dishId)?.push(toView(row))
   return byDish
 }
