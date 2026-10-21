@@ -31,6 +31,17 @@ function newDishCount(count: number): string {
   return `${number(count)} new ${plural(count, { one: 'dish', other: 'dishes' })}`
 }
 
+// "1 comment", "3 comments" and "1 thumb", "3 thumbs", leaving out a count
+// of 0.
+function talkCounts(comments: number, votes: number): string[] {
+  return [
+    ...comments ? [`${number(comments)} ${plural(comments, { one: 'comment', other: 'comments' })}`] : [],
+    ...votes ? [`${number(votes)} ${plural(votes, { one: 'thumb', other: 'thumbs' })}`] : [],
+  ]
+}
+
+const voted = (name: string, dish: string, up: boolean) => up ? `${name} liked ${dish} 👍` : `${name} didn’t like ${dish} much 👎`
+
 const tryAgain = 'Try again in a moment.'
 const failed = `That didn’t work. ${tryAgain}`
 
@@ -560,17 +571,30 @@ export const en: Strings = {
     failed,
     added: (names: string[], count: number, dish: string) => `${someNames(names)} added ${count === 1 ? dish : dishCount(count)}`,
     body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` and ${number(more)} more`}`,
+    commented: (name: string, dish: string) => `${name} commented on ${dish}`,
+    comment: (board: string, text: string) => `${board}: ${text}`,
+    voted,
+    onDish: (names: string[], dish: string) => `${someNames(names)} on ${dish}`,
+    counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
+    wrote: (names: string[], comments: number) => `${someNames(names)} wrote ${talkCounts(comments, 0)[0]}`,
+    gave: (names: string[], votes: number) => `${someNames(names)} gave ${talkCounts(0, votes)[0]}`,
+    about: (board: string, titles: string[], more: number) => `${board}: on ${more === 0 ? nameList(titles) : `${titles.join(', ')} and ${number(more)} more`}`,
+    also: (before: string, comments: number, votes: number) => `${before}. Plus ${talkCounts(comments, votes).join(' and ')}.`,
   },
   emailDigest: {
     toggle: 'Daily email',
     hint: 'In the evening to your email address, when others have added new dishes to your boards. For all your devices.',
     failed,
     subject: (count: number, board: string | null) => `${newDishCount(count)} ${board ? `in ${board}` : 'on your boards'}`,
+    talkSubject: (comments: number, votes: number, board: string | null) => `${talkCounts(comments, votes).join(' and ')} ${board ? `in ${board}` : 'on your boards'}`,
     preheader: (names: string[]) => `From ${someNames(names)}. Take a look!`,
     greeting: (name: string | null) => name ? `Hi ${name}!` : 'Hi!',
     intro: 'Here’s what’s new on your boards since yesterday:',
     addedBy: (name: string) => `by ${name}`,
     openBoard: 'Open board',
+    history: 'In the history',
+    comment: (name: string, dish: string, text: string) => `${name} on ${dish}: “${text}”`,
+    voted,
     why: 'Once in the evening, only when there’s something new: that’s how you set it up in malkochen.',
     noMore: 'Had enough?',
     turnOff: 'Turn it off here',

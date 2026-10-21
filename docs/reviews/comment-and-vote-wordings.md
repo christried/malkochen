@@ -143,6 +143,22 @@ They say what each switch sends, and both say „Gerichte" only today.
 - **Subject:** A, Dishes first.
 - **Hints:** A for both: plain, and they name all three things.
 
-## Chosen
+## Chosen (2026-10-21)
 
-(Filled in after the user's choice.)
+The user took every recommendation. The German, English and Italian are in `app/strings/` (`push` and `emailDigest`); #352 and #353 build the push and the Digest with them.
+
+- **1a, one Comment:** A. „Ada hat Linsen-Dal kommentiert" over „🍪 Kochclub: Hab ich gestern nachgekocht, mit doppelt Ingwer. Super!", the Comment cut to fit.
+- **1b, one Vote:** A. „Ada fand Linsen-Dal gut 👍" or „Ada fand Linsen-Dal nicht so gut 👎" over „🍪 Kochclub". In Italian „Ada ha dato un pollice in su a … 👍": the Verlauf's „A Ada è piaciuto" would have to agree with the Dish's gender.
+- **1c, several things on one Dish:** A. „Ada und Linus zu Linsen-Dal" over „🍪 Kochclub: 1 Kommentar, 1 Daumen".
+- **1d, several Dishes:** B. With new Dishes, #325's push and then „Dazu 3 Kommentare und 1 Daumen." in the body. Without, „Ada und Linus haben 3 Kommentare geschrieben" (only Votes: „Ada hat 2 Daumen gegeben") over „🍪 Kochclub: zu Linsen-Dal und Cremige Pilzpasta" („zu Linsen-Dal, Ramen und 3 weiteren"), then „Dazu 1 Daumen." when there are Votes too.
+- **Votes in a count:** „Daumen" („thumb", „pollice").
+- **Digest heading:** „Im Verlauf".
+- **Digest lines:** A. „Ada zu Linsen-Dal: „Hab ich gestern nachgekocht …““ and „Linus fand Cremige Pilzpasta gut 👍".
+- **Subject:** A. With new Dishes as today; without, „3 Kommentare und 1 Daumen in 🍪 Kochclub" („… auf deinen Boards" with several).
+- **Hints:** A. They go in with #352 (push) and #353 (Digest), not before, so no switch promises what isn't sent yet:
+
+| | Push Notifications | Email Digest |
+|---|---|---|
+| de | Auf diesem Gerät, wenn jemand auf deinen Boards ein Gericht hinzufügt, kommentiert oder einen Daumen gibt. | Abends an deine E-Mail-Adresse, wenn andere auf deinen Boards Gerichte hinzugefügt, kommentiert oder Daumen gegeben haben. Für alle deine Geräte. |
+| en | On this device, when someone adds, comments on or gives a thumb to a dish on your boards. | In the evening to your email address, when others have added, commented on or given a thumb to dishes on your boards. For all your devices. |
+| it | Su questo dispositivo, quando qualcuno aggiunge, commenta o dà un pollice a un piatto sulle tue bacheche. | La sera al tuo indirizzo email, quando altri hanno aggiunto, commentato o dato un pollice a piatti sulle tue bacheche. Per tutti i tuoi dispositivi. |
