@@ -53,7 +53,7 @@ export function createDishVotes({ transport, find, queued, isRefused, mayVote }:
   function show(dishId: string, voterId: string, vote: VoteView | null) {
     const dish = find(dishId)
     if (!dish) return
-    const others = dish.votes.filter(v => v.voter.id !== voterId)
+    const others = dish.votes.filter(v => v.voter?.id !== voterId)
     dish.votes = vote ? [...others, vote] : others
   }
 
@@ -68,7 +68,7 @@ export function createDishVotes({ transport, find, queued, isRefused, mayVote }:
   function vote(dishId: string, up: boolean | null, voter: DishAdder): VoteResult | null {
     const dish = find(dishId)
     if (!dish || dish.cookings.length === 0 || !mayVote()) return null
-    const before = dish.votes.find(v => v.voter.id === voter.id) ?? null
+    const before = dish.votes.find(v => v.voter?.id === voter.id) ?? null
     if ((before?.up ?? null) === up) return null
     const now: VoteView | null = up === null ? null : { voter, up, votedAt: new Date().toISOString() }
     if (!underWay.get(dishId)) confirmed.set(dishId, before)

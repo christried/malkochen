@@ -9,7 +9,7 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // Picture, Darstellung, Sprache (LanguagePicker), the
 // Board's keyboard shortcuts (where there's a keyboard and mouse),
 // "Rundgang starten", which starts the Tour again (`startTour`: the Board
-// closes the sheet and starts it), and signing out. Opened by the cogwheel
+// closes the sheet and starts it), signing out and, last, "Konto löschen". Opened by the cogwheel
 // in the Board's header (#282), and by /settings (pages/settings.vue).
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ startTour: [] }>()
@@ -123,6 +123,36 @@ function usePicture() {
 
 function removePicture() {
   return changePicture(() => $fetch<Me>(OWN_PICTURE, { method: 'DELETE' }))
+}
+
+// "Konto löschen" (#346): what happens is said first, then the Username is
+// typed (whatever the case, as the server takes it) to delete the account
+// for good. Done, the visitor lands signed out on the sign-in page.
+const confirmingDelete = ref(false)
+const typedUsername = ref('')
+const deletingAccount = ref(false)
+const deleteFailed = ref<string | null>(null)
+watch(confirmingDelete, () => {
+  typedUsername.value = ''
+  deleteFailed.value = null
+})
+const usernameTyped = computed(() => !!me.value?.name && typedUsername.value.trim().toLowerCase() === me.value.name.toLowerCase())
+
+async function deleteAccount() {
+  if (!usernameTyped.value || deletingAccount.value) return
+  deletingAccount.value = true
+  deleteFailed.value = null
+  try {
+    await $fetch('/api/me', { method: 'DELETE', body: { username: typedUsername.value } })
+    hapticReject()
+    await navigateTo('/login')
+  }
+  catch (error) {
+    deleteFailed.value = (error as { data?: { data?: { message?: string } } }).data?.data?.message ?? t.deleteAccount.failed
+  }
+  finally {
+    deletingAccount.value = false
+  }
 }
 </script>
 
@@ -366,7 +396,88 @@ function removePicture() {
       >
         {{ t.userSettings.signOut }}
       </button>
+
+      <section
+        v-if="me"
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-delete-account"
+      >
+        <h3
+          id="settings-delete-account"
+          class="section-heading px-1"
+        >
+          {{ t.deleteAccount.heading }}
+        </h3>
+        <div class="flex flex-col items-start gap-3 rounded-card bg-surface-muted p-4">
+          <p class="text-small text-text-muted">
+            {{ t.deleteAccount.hint }}
+          </p>
+          <DangerButton @click="confirmingDelete = true">
+            {{ t.deleteAccount.open }}
+          </DangerButton>
+        </div>
+      </section>
     </div>
+  </AppSheet>
+
+  <AppSheet
+    v-model:open="confirmingDelete"
+    variant="dialog"
+    :title="t.deleteAccount.title"
+    :close-label="t.deleteAccount.cancel"
+  >
+    <form
+      v-if="me"
+      class="mt-3 flex flex-col gap-2"
+      novalidate
+      @submit.prevent="deleteAccount"
+    >
+      <ul class="flex list-disc flex-col gap-2 pl-5 text-body text-text-muted">
+        <li
+          v-for="line in t.deleteAccount.what"
+          :key="line"
+        >
+          {{ line }}
+        </li>
+      </ul>
+      <AppField
+        class="mt-3"
+        :label="t.deleteAccount.typeToConfirm(me.name)"
+        control-id="settings-delete-account-name"
+      >
+        <input
+          id="settings-delete-account-name"
+          v-model="typedUsername"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          @keydown.enter="usernameTyped || shake($event.target as Element)"
+        >
+      </AppField>
+      <p
+        role="alert"
+        class="text-small text-danger empty:hidden"
+      >{{ deleteFailed ?? '' }}</p>
+      <DangerButton
+        type="submit"
+        class="mt-3 disabled:opacity-50"
+        :disabled="!usernameTyped || deletingAccount"
+      >
+        <BusyLabel
+          :label="t.deleteAccount.confirm"
+          :busy-label="t.deleteAccount.deleting"
+          :busy="deletingAccount"
+        />
+      </DangerButton>
+      <button
+        type="button"
+        class="rounded-pill px-5 py-3 text-button text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+        @click="confirmingDelete = false"
+      >
+        {{ t.deleteAccount.cancel }}
+      </button>
+    </form>
   </AppSheet>
 
   <!-- Beside the sheet, not in it: opened over it, the sheet steps back. -->

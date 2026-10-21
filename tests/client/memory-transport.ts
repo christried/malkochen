@@ -356,7 +356,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
     if (dish.cookings.length === 0) throw new WriteFailed(409)
-    const mine = dish.votes.find(v => v.voter.id === 'me')
+    const mine = dish.votes.find(v => v.voter?.id === 'me')
     if (mine?.up === up) return structuredClone(mine)
     const vote = { voter: { id: 'me', name: 'Ich', image: null }, up, votedAt: new Date().toISOString() }
     dish.votes = [...dish.votes.filter(v => v !== mine), vote]
@@ -366,7 +366,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   function takeBackVoteOnServer(dishId: string): true | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    dish.votes = dish.votes.filter(v => v.voter.id !== 'me')
+    dish.votes = dish.votes.filter(v => v.voter?.id !== 'me')
     return true
   }
 

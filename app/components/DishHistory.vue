@@ -291,7 +291,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
                 class="font-semibold"
               >{{ nameOf(entry.comment.author) }}</b>
               <template v-else-if="entry.kind === 'cooking'">{{ t.history.cooked(recorderOf(entry.cooking)) }}</template>
-              <template v-else-if="entry.kind === 'vote'">{{ t.history.voted(entry.vote.voter.name, entry.vote.up) }}</template>
+              <template v-else-if="entry.kind === 'vote'">{{ t.history.voted(nameOf(entry.vote.voter), entry.vote.up) }}</template>
               <PersonPopover
                 v-else-if="entry.by"
                 :person="entry.by"

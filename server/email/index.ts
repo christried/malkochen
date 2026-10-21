@@ -6,7 +6,8 @@ import type { BoardNews } from '../push'
 // The emails malkochen sends, and how they go out (Resend's API, through
 // `fetch`): the Email Digest (#220), which a Member who switched it on gets
 // in the evening, listing the Dishes others added to their Boards since the
-// last one, and the sign-in code (#345). Pure apart from that request; who
+// last one, the sign-in code (#345) and the confirmation of a deleted
+// account (#346). Pure apart from that request; who
 // gets a digest, with which Dishes, is server/utils/email-digest.ts.
 
 export type { BoardNews }
@@ -136,6 +137,20 @@ export function signInCodeEmail(to: { email: string, language: Language }, code:
 <p style="color:${MUTED};font-size:13px;margin:24px 0 0">${escapeHtml(t.notYou)}</p>`)
 
   return { to: to.email, subject, html, text }
+}
+
+// The email confirming that `to` deleted their account (#346), greeting them
+// by the Username they had.
+export function accountDeletedEmail(to: { email: string, name: string, language: Language }): Email {
+  const t = stringsFor(to.language).accountDeletedEmail
+  const greeting = t.greeting(to.name)
+  const text = [t.headline, '', greeting, '', t.kept, '', t.again, '', t.notYou].join('\n')
+  const html = emailPage(to.language, t.subject, `<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(t.headline)}</h1>
+<p style="margin:0 0 16px">${escapeHtml(greeting)}</p>
+<p style="margin:0 0 16px">${escapeHtml(t.kept)}</p>
+<p style="margin:0 0 16px">${escapeHtml(t.again)}</p>
+<p style="color:${MUTED};font-size:13px;margin:24px 0 0">${escapeHtml(t.notYou)}</p>`)
+  return { to: to.email, subject: t.subject, html, text }
 }
 
 // Who each email reached, and who it didn't (Resend refused the batch or

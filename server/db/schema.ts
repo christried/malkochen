@@ -355,16 +355,22 @@ export const comment = pgTable('comment', {
 // ---------------------------------------------------------------------------
 // Votes (CONTEXT.md: Vote): a Member's thumbs up or down on a Cooked Dish,
 // one per Dish and Member (server/utils/votes.ts). Taking it back removes
-// the row; it goes with their account.
+// the row.
 
 export const vote = pgTable('vote', {
+  id: uuid('id').primaryKey().defaultRandom(),
   dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // Who gave it; kept (as "Gelöschtes Konto") if their account is deleted,
+  // so a Dish can have several Votes by nobody.
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
   // Thumbs up; false is thumbs down.
   up: boolean('up').notNull(),
   // When it was last set: the Dish History shows it then.
   votedAt: timestamp('voted_at', { withTimezone: true }).notNull().defaultNow(),
-}, t => [primaryKey({ columns: [t.dishId, t.userId] })])
+}, t => [
+  // One per Dish and Member; nulls are distinct, so not for Votes by nobody.
+  uniqueIndex('vote_dish_id_user_id_idx').on(t.dishId, t.userId),
+])
 
 // ---------------------------------------------------------------------------
 // When each Member last opened each Dish's detail (#335): what other
