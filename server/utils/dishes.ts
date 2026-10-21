@@ -9,6 +9,7 @@ import { boardColumn, cooking, dish, membership, user } from '../db/schema'
 import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
 import { cookingEvent, detailsOf, dishEvent, recordEvents, withEvents } from './events'
 import { pictureOf, shownAs } from './people'
+import { votesByDish, type VoteView } from './votes'
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -41,6 +42,9 @@ export interface DishView {
   createdAt: string
   // Its Cooking History, newest first; "N× gekocht" counts it.
   cookings: CookingView[]
+  // Its Votes (CONTEXT.md: Vote), one per Member who gave one, in the order
+  // they were last set.
+  votes: VoteView[]
 }
 
 // What saving a Dish answers: the Dish, and whether a Source image that was
@@ -119,7 +123,7 @@ function selectDishes() {
 
 type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
 
-function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[]): DishView {
+function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[]): DishView {
   return {
     ...row,
     imageFocus: { x: imageFocusX, y: imageFocusY },
@@ -127,13 +131,15 @@ function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY,
     addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
     createdAt: row.createdAt.toISOString(),
     cookings,
+    votes,
   }
 }
 
-// The rows as Dishes, each with its Cooking History.
+// The rows as Dishes, each with its Cooking History and Votes.
 async function toViews(rows: DishRow[]): Promise<DishView[]> {
-  const cookings = await cookingsByDish(rows.map(row => row.id))
-  return rows.map(row => toView(row, cookings.get(row.id) ?? []))
+  const ids = rows.map(row => row.id)
+  const [cookings, votes] = await Promise.all([cookingsByDish(ids), votesByDish(ids)])
+  return rows.map(row => toView(row, cookings.get(row.id) ?? [], votes.get(row.id) ?? []))
 }
 
 // The one Dish matching `where`, if any.
@@ -170,7 +176,7 @@ function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
 }
 
 // The Dish, if it is on a Board the user is a Member of and not deleted.
-function onMembersBoard(dishId: string, userId: string) {
+export function onMembersBoard(dishId: string, userId: string) {
   return and(onMembersBoardIncludingDeleted(dishId, userId), isNull(dish.deletedAt))
 }
 
@@ -787,5 +793,6 @@ export async function addDish(
     addedBy: shownAs(adder),
     createdAt: created.createdAt.toISOString(),
     cookings: [],
+    votes: [],
   })
 }

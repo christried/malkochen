@@ -4,11 +4,12 @@ import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import { videoEmbed } from '~~/shared/video-embed'
 import type { CommentResult } from '~/board/dish-histories'
+import type { VoteResult } from '~/board/dish-votes'
 
 // The Dish detail's contents: a large image, the title with the Creator
 // under it, the Source with "Original öffnen", where the Dish is
 // (Board and Column), its Dish History ("Verlauf": who added it and when,
-// its Cookings and Comments, the comment field) with "Gekocht ✓",
+// its Cookings, Votes and Comments, the comment field) with "Gekocht ✓",
 // "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
 // at the top keeps close, the title and "Bearbeiten" at hand
 // (useDetailScroll).
@@ -21,6 +22,7 @@ defineEmits<{
   cook: [origin: Point]
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
+  vote: [result: VoteResult]
 }>()
 const t = useStrings()
 
@@ -228,6 +230,7 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         @cook="origin => $emit('cook', origin)"
         @delete-cooking="cooking => $emit('deleteCooking', cooking)"
         @comment="result => $emit('comment', result)"
+        @vote="result => $emit('vote', result)"
       />
 
       <div

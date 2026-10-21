@@ -37,6 +37,11 @@ export type EventKind =
   | 'comment_edited'
   | 'comment_deleted'
   | 'comment_restored'
+  // A Vote (CONTEXT.md) given where the Member had none, changed to the
+  // other thumb, and taken back.
+  | 'vote_set'
+  | 'vote_changed'
+  | 'vote_taken_back'
 
 // What an event says beyond its Board, Dish and user, by kind. `undo`: the
 // write was a "Rückgängig", taking back the one before it.
@@ -54,6 +59,9 @@ export type EventDetails =
   // comment_written, comment_edited, comment_deleted, comment_restored:
   // which Comment, never its text.
   | { comment: string }
+  // vote_set, vote_changed: the thumb it is now; vote_taken_back: the one
+  // it was.
+  | { up: boolean }
   // member_removed: who the Owner removed.
   | { member: string }
 
@@ -143,5 +151,17 @@ export function commentEvent(kind: EventKind, user: string): EventValues {
     dish: sql`changed.dish_id`,
     user,
     details: sql`jsonb_build_object('comment', changed.id)`,
+  }
+}
+
+// The event of a Vote a write changed (`changed`, its row), on the Board
+// its Dish is on.
+export function voteEvent(kind: EventKind, user: string): EventValues {
+  return {
+    kind,
+    board: sql`(select ${dish.boardId} from ${dish} where ${dish.id} = changed.dish_id)`,
+    dish: sql`changed.dish_id`,
+    user,
+    details: sql`jsonb_build_object('up', changed.up)`,
   }
 }

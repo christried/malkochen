@@ -4,6 +4,7 @@ import type { CookingView } from '~~/server/utils/cookings'
 import type { BulkBody } from '~~/server/utils/dish-input'
 import type { DishHistory } from '~~/server/utils/dish-history'
 import type { AddedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
+import type { VoteView } from '~~/server/utils/votes'
 import { WriteFailed, type BoardTransport } from './board-module'
 
 // The client Board module's writes over HTTP, for the app. A failed request
@@ -29,6 +30,8 @@ export function httpTransport(): BoardTransport {
     editComment: (commentId, text) => asWrite($fetch<CommentView>(`/api/comments/${commentId}`, { method: 'PATCH', body: { text } })),
     deleteComment: commentId => asWrite($fetch<unknown>(`/api/comments/${commentId}`, { method: 'DELETE' })).then(() => undefined),
     restoreComment: commentId => asWrite($fetch<CommentView>(`/api/comments/${commentId}/restore`, { method: 'POST' })),
+    setVote: (dishId, up) => asWrite($fetch<VoteView>(`/api/dishes/${dishId}/vote`, { method: 'PUT', body: { up } })),
+    takeBackVote: dishId => asWrite($fetch<unknown>(`/api/dishes/${dishId}/vote`, { method: 'DELETE' })).then(() => undefined),
   }
 }
 

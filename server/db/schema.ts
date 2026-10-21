@@ -334,6 +334,20 @@ export const comment = pgTable('comment', {
 }, t => [index('comment_dish_id_idx').on(t.dishId, t.createdAt)])
 
 // ---------------------------------------------------------------------------
+// Votes (CONTEXT.md: Vote): a Member's thumbs up or down on a Cooked Dish,
+// one per Dish and Member (server/utils/votes.ts). Taking it back removes
+// the row; it goes with their account.
+
+export const vote = pgTable('vote', {
+  dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // Thumbs up; false is thumbs down.
+  up: boolean('up').notNull(),
+  // When it was last set: the Dish History shows it then.
+  votedAt: timestamp('voted_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.dishId, t.userId] })])
+
+// ---------------------------------------------------------------------------
 // The event log (#331): what happens on Boards, one row per event, for the
 // Operator's Admin Page to count. Written in the same transaction as the
 // change it records (server/utils/events.ts), only appended to, and kept

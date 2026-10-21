@@ -194,6 +194,11 @@ export const it: Strings = {
     commentRestoreFailed: 'Il recupero non è riuscito.',
     loadFailed: 'Non è stato possibile caricare i commenti.',
     retry: 'Riprova',
+    howWasIt: 'Com’era?',
+    voteUp: 'Pollice in su',
+    voteDown: 'Pollice in giù',
+    voted: (name: string, up: boolean) => up ? `A ${name} è piaciuto` : `A ${name} non è piaciuto molto`,
+    voteFailed: `Il voto non è stato salvato. ${tryAgain}`,
   },
   achievement: {
     level: {

@@ -227,6 +227,13 @@ export const de = {
     commentRestoreFailed: 'Das Zurückholen hat nicht geklappt.',
     loadFailed: 'Die Kommentare ließen sich nicht laden.',
     retry: 'Erneut versuchen',
+    // Votes (CONTEXT.md: Vote): "Wie war’s?" with 👍 👎, in the Verlauf and
+    // the Gekocht toast.
+    howWasIt: 'Wie war’s?',
+    voteUp: 'Daumen hoch',
+    voteDown: 'Daumen runter',
+    voted: (name: string, up: boolean) => up ? `${name} fand es gut` : `${name} fand es nicht so gut`,
+    voteFailed: 'Deine Stimme ließ sich nicht speichern. Versuch es gleich noch mal.',
   },
   achievement: {
     level: {

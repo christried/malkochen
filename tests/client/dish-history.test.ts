@@ -25,6 +25,7 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     createdAt: '2026-10-01T12:00:00.000Z',
     // Newest first, as the Board has them.
     cookings: cookedAt.map((at, i) => ({ id: `${id}-cooking-${i}`, cookedAt: at, recordedBy: null })).toReversed(),
+    votes: [],
   }
 }
 
@@ -51,6 +52,7 @@ function setup() {
   const shown = (dishId: string) => module.historyOf(dishId).map((e) => {
     if (e.kind === 'added') return `added ${e.by?.name}`
     if (e.kind === 'cooking') return `cooking ${e.cooking.id}`
+    if (e.kind === 'vote') return `vote ${e.vote.voter.name} ${e.vote.up}`
     return `comment ${e.comment.id || 'pending'} ${e.comment.text}${e.comment.editedAt ? ' (bearbeitet)' : ''}`
   })
   return { board, fake, module, shown }

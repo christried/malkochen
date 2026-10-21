@@ -9,6 +9,7 @@ import type { AddedDish, DishPlace, DishPlacement, DishView, MovedDish, PlacedDi
 import { dishOnBoard } from '../../shared/board'
 import { landingIndex, recordsCooking } from '../../shared/placement'
 import { createDishHistories, type HistoryTransport } from './dish-histories'
+import { createDishVotes, type VoteTransport } from './dish-votes'
 
 // The client Board module (spec #61): owns the app's copy of an open Board.
 // Every change to it goes through an operation here, which changes the
@@ -85,8 +86,9 @@ function isGone(error: unknown) {
 
 // How the module's writes reach the server: over HTTP in the app
 // (http-transport.ts), in memory under test. A failed write rejects with
-// WriteFailed. With the Dish History's (dish-histories.ts).
-export interface BoardTransport extends HistoryTransport {
+// WriteFailed. With the Dish History's (dish-histories.ts) and the Votes'
+// (dish-votes.ts).
+export interface BoardTransport extends HistoryTransport, VoteTransport {
   addDish: (boardId: string, dish: AddDishBody) => Promise<AddedDish>
   editDish: (dishId: string, changes: DishEditBody) => Promise<SavedDish>
   deleteDish: (dishId: string) => Promise<void>
@@ -270,8 +272,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Dish where it is until the next poll brings that Column. Its Cooking
   // History keeps the Cookings it shows as they are, filled in (the pending
   // one with the Cooking the server recorded): the detail keys its entries
-  // by them, and new ones would redraw them all.
-  function settle(dish: DishView, { placement, cooking, cookings, ...fields }: MovedDish) {
+  // by them, and new ones would redraw them all. Its Votes stay the Board's
+  // own: a move never changes them, and a Vote still under way shows there.
+  function settle(dish: DishView, { placement, cooking, cookings, votes: _, ...fields }: MovedDish) {
     Object.assign(dish, fields)
     dish.cookings = keepShownCookings(dish.cookings, cookings, cooking)
     const into = column(placement.columnId)
@@ -308,14 +311,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Editing a Dish (PRD stories 43–45), from the Dish detail, which waits
   // for it: once saved, its card and the detail show the Dish as the server
   // saved it. It waits for the Dish's writes before it, so their answers
-  // can't bring back what it changed. The Cooking History stays the Board's own: an edit never
-  // changes it, and a Cooking still being recorded shows there. A failed
+  // can't bring back what it changed. The Cooking History and Votes stay
+  // the Board's own: an edit never changes them, and a Cooking still being
+  // recorded or a Vote under way shows there. A failed
   // write rejects with WriteFailed, for the form to say so.
   async function editDish(dishId: string, changes: DishEditBody): Promise<BoardResult> {
     const { imageNotStored, ...saved } = await queued(dishId, () => transport.editDish(dishId, changes), { moves: false })
     const shown = find(dishId)?.dish
     if (shown) {
-      const { cookings: _, ...fields } = saved
+      const { cookings: _, votes: __, ...fields } = saved
       Object.assign(shown, fields)
     }
     return { dish: shown ?? saved, ...imageNotStored && { notice: 'imageNotReplaced' } }
@@ -760,11 +764,14 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // The Dish History of the Dishes whose detail opens, and their Comments.
   const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, queued, isGone })
 
+  // The Member's Votes on the Board's Dishes.
+  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued })
+
   // How many Dishes are on the Board, the Gekocht Column's included: it
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount, ...histories }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount, ...histories, ...votes }
 }
 
 // What the transport reads rather than writes: never counted below.
