@@ -125,6 +125,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       createdAt: new Date().toISOString(),
       cookings: [],
       votes: [],
+      commentCount: 0,
     }
     const column = boardId === server.id ? columnForNewDishes(server.columns)! : { id: 'elsewhere', dishes: [] as DishView[] }
     column.dishes.unshift(dish)
@@ -292,17 +293,36 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return structuredClone({ dishId, entries: [{ kind: 'added' as const, at: dish.createdAt, by: dish.addedBy }, ...rest] })
   }
 
+  // Opening a Dish as the server records it: it has nothing new for the
+  // Member any more. Answers its history.
+  function openOnServer(dishId: string): DishHistory | null {
+    const history = historyOnServer(dishId)
+    if (history) server.newInHistoryDishIds = server.newInHistoryDishIds.filter(id => id !== dishId)
+    return history
+  }
+
+  // Counts a Comment more (or fewer) on its Dish on the server.
+  function countOnServer(dishId: string, by: number) {
+    const dish = server.columns.flatMap(c => c.dishes).find(d => d.id === dishId)
+    if (dish) dish.commentCount += by
+  }
+
   // A Comment as the server keeps it: trimmed. By nobody in particular (the
   // tests don't sign in). Null for a Dish the server doesn't have.
   function writeCommentOnServer(dishId: string, text: string): CommentView | null {
     if (!server.columns.some(c => c.dishes.some(d => d.id === dishId))) return null
     const comment = { id: `comment-${++commentsWritten}`, text: text.trim(), createdAt: new Date().toISOString(), editedAt: null, author: { id: 'me', name: 'Ich', image: null } }
     comments.set(dishId, [...comments.get(dishId) ?? [], comment])
+    countOnServer(dishId, 1)
     return structuredClone(comment)
   }
 
   function commentOnServer(commentId: string) {
     return [...comments.values()].flat().find(c => c.id === commentId) ?? null
+  }
+
+  function dishOfComment(commentId: string) {
+    return [...comments].find(([, list]) => list.some(c => c.id === commentId))?.[0] ?? ''
   }
 
   function editCommentOnServer(commentId: string, text: string): CommentView | null {
@@ -316,12 +336,14 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const comment = commentOnServer(commentId)
     if (!comment || comment.deleted) return null
     comment.deleted = true
+    countOnServer(dishOfComment(commentId), -1)
     return true
   }
 
   function restoreCommentOnServer(commentId: string): CommentView | null {
     const comment = commentOnServer(commentId)
     if (!comment) return null
+    if (comment.deleted) countOnServer(dishOfComment(commentId), 1)
     delete comment.deleted
     return structuredClone(comment)
   }
@@ -390,7 +412,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),
     restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
-    dishHistory: dishId => answer('dishHistory', dishId, () => historyOnServer(dishId)),
+    openDish: dishId => answer('openDish', dishId, () => openOnServer(dishId)),
     writeComment: (dishId, text) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text)),
     editComment: (commentId, text) => answer('editComment', `${commentId} ${text}`, () => editCommentOnServer(commentId, text)),
     deleteComment: commentId => answer('deleteComment', commentId, () => deleteCommentOnServer(commentId)).then(() => undefined),

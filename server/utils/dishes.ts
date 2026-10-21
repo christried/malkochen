@@ -6,6 +6,7 @@ import { columnForNewDishes } from '../../shared/placement'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, membership, user } from '../db/schema'
+import { commentCountsByDish } from './comments'
 import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
 import { cookingEvent, detailsOf, dishEvent, recordEvents, withEvents } from './events'
 import { pictureOf, shownAs } from './people'
@@ -45,6 +46,8 @@ export interface DishView {
   // Its Votes (CONTEXT.md: Vote), one per Member who gave one, in the order
   // they were last set.
   votes: VoteView[]
+  // How many Comments it has, as its card shows.
+  commentCount: number
 }
 
 // What saving a Dish answers: the Dish, and whether a Source image that was
@@ -123,7 +126,7 @@ function selectDishes() {
 
 type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
 
-function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[]): DishView {
+function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
   return {
     ...row,
     imageFocus: { x: imageFocusX, y: imageFocusY },
@@ -132,14 +135,16 @@ function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY,
     createdAt: row.createdAt.toISOString(),
     cookings,
     votes,
+    commentCount,
   }
 }
 
-// The rows as Dishes, each with its Cooking History and Votes.
+// The rows as Dishes, each with its Cooking History, Votes and how many
+// Comments it has.
 async function toViews(rows: DishRow[]): Promise<DishView[]> {
   const ids = rows.map(row => row.id)
-  const [cookings, votes] = await Promise.all([cookingsByDish(ids), votesByDish(ids)])
-  return rows.map(row => toView(row, cookings.get(row.id) ?? [], votes.get(row.id) ?? []))
+  const [cookings, votes, commentCounts] = await Promise.all([cookingsByDish(ids), votesByDish(ids), commentCountsByDish(ids)])
+  return rows.map(row => toView(row, cookings.get(row.id) ?? [], votes.get(row.id) ?? [], commentCounts.get(row.id) ?? 0))
 }
 
 // The one Dish matching `where`, if any.
@@ -794,5 +799,6 @@ export async function addDish(
     createdAt: created.createdAt.toISOString(),
     cookings: [],
     votes: [],
+    commentCount: 0,
   })
 }

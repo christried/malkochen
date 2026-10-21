@@ -47,7 +47,7 @@ const summary = computed(() => {
 // Loaded as the detail opens, and again for another Dish.
 const loadFailed = ref(false)
 async function load() {
-  loadFailed.value = !await boardModule.loadHistory(props.dish.id)
+  loadFailed.value = !await boardModule.openDish(props.dish.id)
 }
 onMounted(load)
 watch(() => props.dish.id, load)

@@ -47,7 +47,7 @@ const editComment = (caller: Caller, commentId: string, text: unknown) =>
   caller.fetch(`/api/comments/${commentId}`, { method: 'PATCH', ...json({ text }) })
 const deleteComment = (caller: Caller, commentId: string) => caller.fetch(`/api/comments/${commentId}`, { method: 'DELETE' })
 const restoreComment = (caller: Caller, commentId: string) => post(caller, `/api/comments/${commentId}/restore`)
-const historyOf = (caller: Caller, dishId: string) => caller.fetch(`/api/dishes/${dishId}/history`)
+const historyOf = (caller: Caller, dishId: string) => caller.fetch(`/api/dishes/${dishId}/open`, { method: 'POST' })
 
 async function idOf(caller: Caller): Promise<string> {
   return ((await (await caller.fetch('/api/me')).json()) as { id: string }).id

@@ -8,8 +8,9 @@ import { historyEntries } from '../utils/history-entries'
 
 // The Board module's part for the Dish History ("Verlauf", #332) of the
 // Dishes whose detail opens: loaded from the server as the detail opens,
-// and its Comments written, edited and deleted as optimistic writes, like
-// the Board's own (board-module.ts). Its Cookings are the Board's: the
+// which clears the card's mark for what's new in it (#335), and its
+// Comments written, edited and deleted as optimistic writes, like the
+// Board's own (board-module.ts), which the card's Comment count follows. Its Cookings are the Board's: the
 // module changes those as Dishes are cooked and Cookings deleted, so the
 // history shows them from there, never a copy that could lag behind.
 
@@ -28,7 +29,8 @@ export interface CommentResult {
 
 // How the Dish History reaches the server (BoardTransport).
 export interface HistoryTransport {
-  dishHistory: (dishId: string) => Promise<DishHistory>
+  // Records that the Member opened the Dish, answering its history.
+  openDish: (dishId: string) => Promise<DishHistory>
   writeComment: (dishId: string, text: string) => Promise<CommentView>
   editComment: (commentId: string, text: string) => Promise<CommentView>
   deleteComment: (commentId: string) => Promise<void>
@@ -40,6 +42,8 @@ interface HistoryHost {
   transport: HistoryTransport
   // The Dish as the Board shows it, if it is on the Board.
   find: (dishId: string) => DishView | undefined
+  // Takes the card's mark for what's new in the Dish's history off.
+  seen: (dishId: string) => void
   // Runs `write` after the writes queued before it under the same key
   // (board-module.ts).
   queued: <T>(key: string, write: () => Promise<T>, options: { moves: false }) => Promise<T>
@@ -47,7 +51,7 @@ interface HistoryHost {
   isGone: (error: unknown) => boolean
 }
 
-export function createDishHistories({ transport, find, queued, isGone }: HistoryHost) {
+export function createDishHistories({ transport, find, seen, queued, isGone }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -73,18 +77,26 @@ export function createDishHistories({ transport, find, queued, isGone }: History
     return comments.get(dishId)!
   }
 
-  // Loads a Dish's history from the server, as its detail opens. If a
+  // Counts `by` more (or fewer) Comments on the Dish's card.
+  function count(dishId: string, by: number) {
+    const dish = find(dishId)
+    if (dish) dish.commentCount = Math.max(0, dish.commentCount + by)
+  }
+
+  // Opening a Dish's detail: its card's mark for what's new goes at once,
+  // and its history loads from the server, which records the opening. If a
   // Comment write of the Dish was under way or started meanwhile, the
   // server may have answered without it, so the answer is dropped, unless
   // it is the first to load: then the Comments shown that it doesn't have
   // (the Member's own, written meanwhile) stay beside it. False if it
   // couldn't load.
-  async function loadHistory(dishId: string): Promise<boolean> {
+  async function openDish(dishId: string): Promise<boolean> {
+    seen(dishId)
     const asked = writes.get(dishId) ?? 0
     const quiet = !underWay.get(dishId)
     let history: DishHistory
     try {
-      history = await transport.dishHistory(dishId)
+      history = await transport.openDish(dishId)
     }
     catch {
       return false
@@ -112,8 +124,9 @@ export function createDishHistories({ transport, find, queued, isGone }: History
   }
 
   // Writing a Comment (PRD #318 stories 6–8), by `author` (the Member
-  // writing it): it shows at the end of the Dish History at once, and is
-  // filled in once the server has it. If the write fails, it goes again,
+  // writing it): it shows at the end of the Dish History at once, counted
+  // on its card, and is filled in once the server has it. If the write
+  // fails, it goes again,
   // with a notice, and the result's Comment holds the text for the field.
   // Null for a text the server would refuse.
   function writeComment(dishId: string, text: string, author: DishAdder): CommentResult | null {
@@ -122,11 +135,13 @@ export function createDishHistories({ transport, find, queued, isGone }: History
     const list = listOf(dishId)
     list.push({ id: '', text: said, createdAt: new Date().toISOString(), editedAt: null, author })
     const pending = list.at(-1)!
+    count(dishId, 1)
     const settled = tracked(dishId, () => transport.writeComment(dishId, said)).then((saved): CommentResult => {
       Object.assign(pending, saved)
       return { comment: pending }
     }, (): CommentResult => {
       removeFrom(listOf(dishId), pending)
+      count(dishId, -1)
       return { comment: pending, notice: 'commentFailed' }
     })
     return { comment: pending, settled }
@@ -171,11 +186,12 @@ export function createDishHistories({ transport, find, queued, isGone }: History
   }
 
   // Puts a Comment back into its Dish's history, in time order, whatever
-  // was written meanwhile.
+  // was written meanwhile, and counts it again.
   function putBack(dishId: string, comment: CommentView) {
     deletedHere.delete(comment.id)
     const list = listOf(dishId)
     if (list.includes(comment)) return
+    count(dishId, 1)
     // As the server orders them: by time, then id.
     const at = list.findIndex(c => c.id && (c.createdAt > comment.createdAt || (c.createdAt === comment.createdAt && c.id > comment.id)))
     list.splice(at === -1 ? list.length : at, 0, comment)
@@ -190,6 +206,7 @@ export function createDishHistories({ transport, find, queued, isGone }: History
     if (!found) return null
     const comment: CommentView = found
     removeFrom(listOf(dishId), comment)
+    count(dishId, -1)
     deletedHere.add(commentId)
 
     const deleted = tracked(dishId, () => queued(commentId, () => transport.deleteComment(commentId), { moves: false })).then(() => true, (error: unknown) => {
@@ -210,6 +227,7 @@ export function createDishHistories({ transport, find, queued, isGone }: History
         return { comment }
       }, (): CommentResult => {
         removeFrom(listOf(dishId), comment)
+        count(dishId, -1)
         deletedHere.add(commentId)
         return { comment, notice: 'commentRestoreFailed' }
       })
@@ -219,7 +237,7 @@ export function createDishHistories({ transport, find, queued, isGone }: History
     return { comment, notice: 'commentDeleted', undo, settled }
   }
 
-  return { loadHistory, historyOf, writeComment, editComment, deleteComment }
+  return { openDish, historyOf, writeComment, editComment, deleteComment }
 }
 
 function removeFrom<T>(list: T[], item: T) {

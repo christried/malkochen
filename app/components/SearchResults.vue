@@ -67,7 +67,10 @@ const status = computed(() => {
             :aria-label="`${dish.title}, ${column.name}`"
             class="block rounded-card transition-transform duration-tap ease-tap active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
-            <DishCard :dish="dish" />
+            <DishCard
+              :dish="dish"
+              :new-in-history="board.newInHistoryDishIds.includes(dish.id)"
+            />
           </NuxtLink>
           <!-- Who added it, over the picture the card draws. -->
           <CardPersonButton

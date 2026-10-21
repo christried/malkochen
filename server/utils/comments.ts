@@ -67,6 +67,17 @@ export async function commentsOfDish(dishId: string): Promise<CommentView[]> {
   return rows.map(toView)
 }
 
+// How many Comments each of the given Dishes has, without the deleted ones.
+export async function commentCountsByDish(dishIds: string[]): Promise<Map<string, number>> {
+  if (dishIds.length === 0) return new Map()
+  const rows = await db
+    .select({ dishId: comment.dishId, count: sql<number>`count(*)::int` })
+    .from(comment)
+    .where(and(inArray(comment.dishId, dishIds), isNull(comment.deletedAt)))
+    .groupBy(comment.dishId)
+  return new Map(rows.map(r => [r.dishId, r.count]))
+}
+
 // The Dishes on a Board the user is a Member of (its Owner, `owning`), not
 // archived.
 function membersDishes(userId: string, { owning = false } = {}) {

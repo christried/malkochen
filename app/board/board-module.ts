@@ -761,8 +761,13 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     if (!writesSince(asked) && !paused() && board.value?.id === fresh.id) merge(board.value, fresh)
   }
 
+  // Takes a Dish off the ones with something new in their Dish History.
+  function seen(dishId: string) {
+    if (board.value) removeFrom(board.value.newInHistoryDishIds, dishId)
+  }
+
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, queued, isGone })
+  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, seen, queued, isGone })
 
   // The Member's Votes on the Board's Dishes.
   const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued })
@@ -774,9 +779,6 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, focusAfterDetail, dishCount, ...histories, ...votes }
 }
 
-// What the transport reads rather than writes: never counted below.
-const READS = new Set<keyof BoardTransport>(['dishHistory'])
-
 // `uncounted`, counting its writes while under way and as they start, for
 // sync to tell whether one was under way when a poll asked (`mark`), or
 // started since (`writesSince`).
@@ -785,7 +787,7 @@ function counted(uncounted: BoardTransport) {
   let started = 0
   const writes: Record<string, (...args: unknown[]) => Promise<unknown>> = {}
   for (const [name, write] of Object.entries(uncounted) as [string, (...args: unknown[]) => Promise<unknown>][]) {
-    writes[name] = READS.has(name as keyof BoardTransport) ? write : (...args) => {
+    writes[name] = (...args) => {
       underWay++
       started++
       // One that throws rather than rejecting ends like one that rejects.

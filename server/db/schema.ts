@@ -348,6 +348,18 @@ export const vote = pgTable('vote', {
 }, t => [primaryKey({ columns: [t.dishId, t.userId] })])
 
 // ---------------------------------------------------------------------------
+// When each Member last opened each Dish's detail (#335): what other
+// Members added to its Dish History since marks its card for them
+// (server/utils/dish-opened.ts). A Member without a row for a Dish counts
+// from when they joined its Board.
+
+export const dishOpened = pgTable('dish_opened', {
+  dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.dishId, t.userId] })])
+
+// ---------------------------------------------------------------------------
 // The event log (#331): what happens on Boards, one row per event, for the
 // Operator's Admin Page to count. Written in the same transaction as the
 // change it records (server/utils/events.ts), only appended to, and kept
