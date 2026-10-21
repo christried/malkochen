@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { createMailSender, digestEmail, signInCodeEmail, type Email } from '../../server/email'
+import { accountDeletedEmail, createMailSender, digestEmail, signInCodeEmail, type Email } from '../../server/email'
 
-// Seam 6: the emails malkochen sends (the Email Digest, the sign-in code)
+// Seam 6: the emails malkochen sends (the Email Digest, the sign-in code,
+// the account deleted email)
 // and their sending, with Resend faked at
 // its `fetch`. Who gets one, with which Dishes, is covered at Seam 1
 // (tests/api/email-digest.test.ts).
@@ -220,5 +221,25 @@ describe('the sign-in code email', () => {
     expect(it.text).toContain('Inserisci questo codice in malkochen, dove hai iniziato ad accedere:')
     expect(it.text).toContain('Vale 10 minuti e una sola volta.')
     expect(it.html).toContain('>Accedi</a>')
+  })
+})
+
+describe('the account deleted email', () => {
+  test('confirms it, greeting them by Username, and says what stays and how to come back', () => {
+    const email = accountDeletedEmail({ email: 'ada@example.com', name: 'Ada', language: 'de' })
+
+    expect(email.to).toBe('ada@example.com')
+    expect(email.subject).toBe('Dein malkochen-Konto ist gelöscht')
+    for (const part of [email.text, email.html]) {
+      expect(part).toContain('Hallo Ada, wie gewünscht haben wir dein Konto bei malkochen gelöscht.')
+      expect(part).toContain('„Gelöschtes Konto“')
+      expect(part).toContain('Melde dich einfach neu an.')
+    }
+    expect(email.html).toContain('<html lang="de">')
+  })
+
+  test('in English and Italian', () => {
+    expect(accountDeletedEmail({ email: 'ada@example.com', name: 'Ada', language: 'en' }).subject).toBe('Your malkochen account is deleted')
+    expect(accountDeletedEmail({ email: 'ada@example.com', name: 'Ada', language: 'it' }).text).toContain('Ciao Ada, come richiesto abbiamo eliminato il tuo account malkochen.')
   })
 })

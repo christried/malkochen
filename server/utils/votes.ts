@@ -13,7 +13,8 @@ import { pictureOf } from './people'
 // it was last set (dish-history.ts). Every write records its event.
 
 export interface VoteView {
-  voter: DishAdder
+  // Null once their account is gone ("Gelöschtes Konto").
+  voter: DishAdder | null
   // Thumbs up; false is thumbs down.
   up: boolean
   // When it was last set.
@@ -42,14 +43,14 @@ function selectVotes() {
       voterImage: pictureOf,
     })
     .from(vote)
-    .innerJoin(user, eq(user.id, vote.userId))
+    .leftJoin(user, eq(user.id, vote.userId))
     .$dynamic()
 }
 
 type VoteRow = Awaited<ReturnType<typeof selectVotes>>[number]
 
 function toView({ dishId: _, voterId, voterName, voterImage, ...row }: VoteRow): VoteView {
-  return { ...row, voter: { id: voterId, name: voterName ?? '', image: voterImage }, votedAt: row.votedAt.toISOString() }
+  return { ...row, voter: voterId === null ? null : { id: voterId, name: voterName ?? '', image: voterImage }, votedAt: row.votedAt.toISOString() }
 }
 
 // The Votes of each of the given Dishes, in the order they were last set.
@@ -57,7 +58,7 @@ export async function votesByDish(dishIds: string[]): Promise<Map<string, VoteVi
   const byDish = new Map<string, VoteView[]>(dishIds.map(id => [id, []]))
   if (dishIds.length === 0) return byDish
 
-  const rows = await selectVotes().where(inArray(vote.dishId, dishIds)).orderBy(asc(vote.votedAt), asc(vote.userId))
+  const rows = await selectVotes().where(inArray(vote.dishId, dishIds)).orderBy(asc(vote.votedAt), asc(vote.userId), asc(vote.id))
   for (const row of rows) byDish.get(row.dishId)?.push(toView(row))
   return byDish
 }

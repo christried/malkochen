@@ -63,7 +63,7 @@ test('user settings: the email in `small`, the sections under one heading style'
   await expectSmall(sheet.getByText(MARIE))
   // Under the sheet's own title.
   const headings = sheet.getByRole('heading', { level: 3 })
-  await expect(headings).toHaveText(['Konto', 'Benachrichtigungen', 'Darstellung', 'Sprache', 'Tastenkürzel', 'Rundgang'])
+  await expect(headings).toHaveText(['Konto', 'Benachrichtigungen', 'Darstellung', 'Sprache', 'Tastenkürzel', 'Rundgang', 'Konto löschen'])
   for (const heading of await headings.all()) await expectSectionHeading(heading)
 })
 

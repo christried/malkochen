@@ -246,6 +246,13 @@
       "when": 1792583052775,
       "tag": "0034_default_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792588791376,
+      "tag": "0035_account_deletion",
+      "breakpoints": true
     }
   ]
 }

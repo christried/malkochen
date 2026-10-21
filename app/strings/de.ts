@@ -696,6 +696,36 @@ export const de = {
     link: 'Anmelden',
     notYou: 'Du wolltest dich nicht anmelden? Dann ignorier diese E-Mail einfach.',
   },
+  // "Konto löschen" at the end of your settings (#346, CONTEXT.md: Deleted
+  // Account): what happens, said before, then the Username typed to confirm.
+  deleteAccount: {
+    heading: 'Konto löschen',
+    hint: 'Du kannst dein Konto jederzeit löschen. Das lässt sich nicht rückgängig machen.',
+    open: 'Konto löschen',
+    title: 'Konto löschen?',
+    what: [
+      'Was du auf Boards mit anderen hinzugefügt hast, bleibt: Gerichte, wann sie gekocht wurden, Kommentare und Daumen. Dort steht dann „Gelöschtes Konto“ statt deines Namens.',
+      'Boards, die dir gehören und auf denen noch andere sind, übernimmt, wer am längsten dabei ist.',
+      'Boards, auf denen nur du bist, werden gelöscht, mit allen Gerichten und Bildern.',
+      'Dein Profilbild, deine Benachrichtigungen und alle deine Anmeldungen sind sofort weg.',
+      'Du bekommst eine Bestätigung per E-Mail. Später kannst du dich wieder anmelden, mit einem neuen Konto.',
+    ],
+    typeToConfirm: (name: string) => `Tipp zum Bestätigen „${name}“ ein`,
+    confirm: 'Endgültig löschen',
+    deleting: 'Wird gelöscht …',
+    cancel: 'Abbrechen',
+    wrongUsername: 'Das ist nicht dein Name.',
+    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+  },
+  // The email confirming it (#346), in the language of whoever deleted it.
+  accountDeletedEmail: {
+    subject: 'Dein malkochen-Konto ist gelöscht',
+    headline: 'Dein Konto ist gelöscht',
+    greeting: (name: string) => `Hallo ${name}, wie gewünscht haben wir dein Konto bei malkochen gelöscht.`,
+    kept: 'Was du auf Boards mit anderen hinzugefügt hast, steht dort jetzt als „Gelöschtes Konto“. Boards, auf denen nur du warst, sind gelöscht.',
+    again: 'Wenn du wiederkommen willst: Melde dich einfach neu an.',
+    notYou: 'Das warst nicht du? Dann antworte auf diese E-Mail.',
+  },
   // The Board's keyboard shortcuts (utils/shortcuts.ts): the "?" dialog and
   // the section in your settings.
   shortcuts: {

@@ -59,9 +59,9 @@ function setup() {
   const module = createBoardModule(board, fake.transport)
   // The Dish's Votes as the Board shows them, as "Ada 👎".
   const votes = (dishId: string) => board.value!.columns.flatMap(c => c.dishes).find(d => d.id === dishId)!.votes
-    .map(v => `${v.voter.name} ${v.up ? '👍' : '👎'}`)
+    .map(v => `${v.voter?.name} ${v.up ? '👍' : '👎'}`)
   const onServer = (dishId: string) => fake.server.columns.flatMap(c => c.dishes).find(d => d.id === dishId)!.votes
-    .map(v => `${v.voter.name} ${v.up ? '👍' : '👎'}`)
+    .map(v => `${v.voter?.name} ${v.up ? '👍' : '👎'}`)
   return { fake, module, votes, onServer }
 }
 
