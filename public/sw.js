@@ -84,11 +84,12 @@ self.addEventListener('push', (event) => {
   }))
 })
 
-// Its address in the app, as a path: one elsewhere opens the app's start.
+// Its address in the app, as a path (and the part of the page, as in a
+// Dish at its Verlauf): one elsewhere opens the app's start.
 function appPath(url) {
   if (typeof url !== 'string') return '/'
   const target = new URL(url, self.location.origin)
-  return target.origin === self.location.origin ? target.pathname + target.search : '/'
+  return target.origin === self.location.origin ? target.pathname + target.search + target.hash : '/'
 }
 
 // A tap opens the Dish or Board it is about: in the app window that is open

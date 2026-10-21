@@ -568,7 +568,7 @@ export const en: Strings = {
   push: {
     heading: 'Notifications',
     toggle: 'Push notifications',
-    hint: 'On this device, when someone adds a dish to one of your boards.',
+    hint: 'On this device, when someone adds, comments on or gives a thumb to a dish on your boards.',
     blocked: 'Your browser is blocking notifications from malkochen. Allow them in the site settings, then you can turn them on here.',
     unsupported: 'This browser can’t receive push notifications.',
     failed,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { DISH_HISTORY_HASH } from '~~/shared/address'
 import type { CommentView } from '~~/server/utils/comments'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishHistoryEntry } from '~~/server/utils/dish-history'
@@ -46,8 +47,12 @@ const summary = computed(() => {
 
 // Loaded as the detail opens, and again for another Dish.
 const loadFailed = ref(false)
+// The Dish whose history has loaded (or failed to).
+const loaded = ref<string | null>(null)
 async function load() {
-  loadFailed.value = !await boardModule.openDish(props.dish.id)
+  const dishId = props.dish.id
+  loadFailed.value = !await boardModule.openDish(dishId)
+  loaded.value = dishId
 }
 onMounted(load)
 watch(() => props.dish.id, load)
@@ -161,6 +166,22 @@ onMounted(() => watch([commentRequest, () => props.dish.id], async ([requested, 
   field.value?.focus()
 }, { immediate: true }))
 
+// Opened at its Verlauf (a push about Comments or Votes, #352): it scrolls
+// into view once it has loaded, so the detail is long enough to get there,
+// and the detail has risen into place, which would put it off by as much.
+// (Scroll-driven animations never finish: they aren't waited for.)
+const route = useRoute()
+const section = useTemplateRef<HTMLElement>('section')
+watch([() => route.hash, loaded], async ([hash, dishId]) => {
+  if (hash !== DISH_HISTORY_HASH || dishId !== props.dish.id) return
+  await nextTick()
+  const at = section.value
+  if (!at) return
+  const rising = document.getAnimations().filter(a => a.timeline === document.timeline && a.effect instanceof KeyframeEffect && a.effect.target instanceof Node && a.effect.target.contains(at))
+  await Promise.allSettled(rising.map(a => a.finished))
+  at.scrollIntoView({ block: 'start' })
+})
+
 function remove(comment: CommentView) {
   menuFor.value = null
   if (editing.value === comment) cancelEdit()
@@ -174,8 +195,9 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
 
 <template>
   <section
+    ref="section"
     :aria-labelledby="headingId"
-    class="mt-2 flex flex-col gap-4 border-t border-line pt-5"
+    class="mt-2 flex scroll-mt-20 flex-col gap-4 border-t border-line pt-5"
     data-dish-history
   >
     <AchievementBadge

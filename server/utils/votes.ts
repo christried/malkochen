@@ -71,14 +71,15 @@ async function cookedFor(dishId: string, userId: string): Promise<boolean | null
 }
 
 // Gives the user's Vote on a Dish, or changes the one they gave; the same
-// thumb again changes nothing, not even when it was set. Null unless the
-// Dish is on a Board they are a Member of and not archived.
-export async function setVote(dishId: string, userId: string, up: boolean): Promise<VoteView | VoteRefusal | null> {
+// thumb again changes nothing, not even when it was set. `given`: it is a
+// new Vote, not a changed or the same one (it notifies, push.ts). Null
+// unless the Dish is on a Board they are a Member of and not archived.
+export async function setVote(dishId: string, userId: string, up: boolean): Promise<{ vote: VoteView, given: boolean } | VoteRefusal | null> {
   const cooked = await cookedFor(dishId, userId)
   if (cooked === null) return null
   if (!cooked) return 'uncooked'
   const theirs = and(eq(vote.dishId, dishId), eq(vote.userId, userId))
-  await db.execute(sql`
+  const { rows: [outcome] } = await db.execute<{ given: boolean }>(sql`
     with earlier as (select from ${vote} where ${theirs}),
     changed as (
       insert into ${vote} (dish_id, user_id, up)
@@ -88,10 +89,10 @@ export async function setVote(dishId: string, userId: string, up: boolean): Prom
     ),
     given as (${insertEvents(voteEvent('vote_set', userId), sql`from changed where not exists (select from earlier)`)}),
     switched as (${insertEvents(voteEvent('vote_changed', userId), sql`from changed where exists (select from earlier)`)})
-    select from changed
+    select exists (select from changed) and not exists (select from earlier) as given
   `)
   const [row] = await selectVotes().where(theirs)
-  return row ? toView(row) : null
+  return row ? { vote: toView(row), given: outcome?.given === true } : null
 }
 
 // Takes the user's Vote on a Dish back; with none, nothing changes. False

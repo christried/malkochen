@@ -675,7 +675,7 @@ export const de = {
   push: {
     heading: 'Benachrichtigungen',
     toggle: 'Push-Benachrichtigungen',
-    hint: 'Auf diesem Gerät, wenn jemand ein Gericht zu einem deiner Boards hinzufügt.',
+    hint: 'Auf diesem Gerät, wenn jemand auf deinen Boards ein Gericht hinzufügt, kommentiert oder einen Daumen gibt.',
     blocked: 'Dein Browser blockiert Benachrichtigungen von malkochen. Erlaube sie in den Website-Einstellungen, dann kannst du sie hier einschalten.',
     unsupported: 'Dieser Browser kann keine Push-Benachrichtigungen empfangen.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',

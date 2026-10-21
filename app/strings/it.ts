@@ -585,7 +585,7 @@ export const it: Strings = {
   push: {
     heading: 'Notifiche',
     toggle: 'Notifiche push',
-    hint: 'Su questo dispositivo, quando qualcuno aggiunge un piatto a una delle tue bacheche.',
+    hint: 'Su questo dispositivo, quando qualcuno aggiunge, commenta o dà un pollice a un piatto sulle tue bacheche.',
     blocked: 'Il tuo browser blocca le notifiche di malkochen. Consentile nelle impostazioni del sito, poi potrai attivarle qui.',
     unsupported: 'Questo browser non può ricevere notifiche push.',
     failed,
