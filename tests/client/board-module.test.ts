@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 import { ref } from 'vue'
 import { createBoardModule, WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
+import { ALL_PERMISSIONS } from '../../shared/permissions'
 import type { DishView } from '../../server/utils/dishes'
 import { memoryTransport, type MemoryTransport } from './memory-transport'
 
@@ -21,6 +22,7 @@ function boardFixture(): BoardView {
     name: 'Kochclub',
     emoji: '🍜',
     isOwner: true,
+    permissions: ALL_PERMISSIONS,
     version: 0,
     inviteToken: 'token',
     members: [],
@@ -481,6 +483,19 @@ test('an added Dish whose own photo the server refused says so, apart from a Sou
   const taken = await module.addDish('board', { title: 'Falafel', placeholder: 'bowl', photo: { url: '/images/dishes/foto.jpg', ticket: 'ticket' } })
   expect(taken).not.toHaveProperty('notice')
   expect(taken.dish.imageUrl).toBe('/images/dishes/foto.jpg')
+})
+
+test('a Member without "add Dishes" is refused at once: nothing sent, nothing shown', async () => {
+  const { fake, module, shown } = setup((board) => {
+    board.isOwner = false
+    board.permissions = { ...board.permissions, addDishes: false }
+  })
+  const before = shown()
+
+  await expect(module.addDish('board', { title: 'Chana Masala', placeholder: 'bowl' })).rejects.toEqual(new WriteFailed(403))
+
+  expect(fake.sent).toEqual([])
+  expect(shown()).toEqual(before)
 })
 
 test('an edit replaces the Dish’s fields with what the server saved', async () => {

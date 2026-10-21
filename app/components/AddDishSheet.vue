@@ -3,7 +3,7 @@ import type { BoardSummary } from '~~/server/utils/boards'
 import type { DuplicateDish } from '~~/server/utils/dishes'
 import { dishPath } from '~~/shared/address'
 import { FOCUS_CENTRE, focusPosition, type ImageFocus } from '~~/shared/image-focus'
-import type { BoardResult } from '~/board/board-module'
+import { WriteFailed, type BoardResult } from '~/board/board-module'
 import { autoPlaceholder, PLACEHOLDERS, type Placeholder } from '~~/shared/placeholders'
 import { badgeKind } from '~~/shared/source-badge'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
@@ -52,7 +52,9 @@ const boardSelectId = useId()
 const duplicateHintId = useId()
 const choosingImage = ref(false)
 const saving = ref(false)
-const failed = ref(false)
+// Why saving failed: the Member may not add Dishes to that Board (any
+// more: the Owner just switched it off), or anything else.
+const failed = ref<'notAllowed' | 'failed' | null>(null)
 
 const showForm = computed(() => withoutLink.value || lookupStatus.value === 'found' || lookupStatus.value === 'failed')
 
@@ -187,18 +189,19 @@ watch(open, async (isOpen) => {
   pickedPlaceholder.value = null
   photo.value = null
   boardId.value = props.boardId
-  failed.value = false
+  failed.value = null
   if (props.sharedLink) {
     lookup.pasted()
     link.value = props.sharedLink
   }
-  boards.value = await $fetch<BoardSummary[]>('/api/boards').catch(() => [])
+  // Only the Boards the Member may add Dishes to.
+  boards.value = (await $fetch<BoardSummary[]>('/api/boards').catch(() => [])).filter(b => b.permissions.addDishes)
 })
 
 async function save() {
   if (!canSave.value) return
   saving.value = true
-  failed.value = false
+  failed.value = null
   const target = boardId.value
   const source = withoutLink.value
     ? null
@@ -221,8 +224,8 @@ async function save() {
     emit('added', added, image?.getBoundingClientRect() ?? null)
     open.value = false
   }
-  catch {
-    failed.value = true
+  catch (error) {
+    failed.value = error instanceof WriteFailed && error.status === 403 ? 'notAllowed' : 'failed'
   }
   finally {
     saving.value = false
@@ -511,7 +514,7 @@ async function save() {
           role="alert"
           class="text-small text-danger"
         >
-          {{ t.addDish.failed }}
+          {{ failed === 'notAllowed' ? t.addDish.notAllowed : t.addDish.failed }}
         </p>
 
         <!-- Saving, it shows its dots undimmed; save() ignores a second

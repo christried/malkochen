@@ -301,6 +301,7 @@ export const en: Strings = {
     failed,
     imageNotStored: (title: string) => `The image from the link couldn’t be saved. “${title}” has a placeholder image now.`,
     photoNotStored: (title: string) => `Your photo couldn’t be saved. “${title}” has a placeholder image now.`,
+    notAllowed: 'You can’t add dishes to this board. The owner decides that.',
   },
   placeholders: {
     pasta: 'Pasta',
@@ -407,6 +408,12 @@ export const en: Strings = {
     you: 'you',
     owner: 'Owner',
     manageMember: (name: string) => `Manage ${name}`,
+    permissions: 'Permissions',
+    yourPermissions: 'What you can do here',
+    yourPermissionsHint: 'The board’s owner decides this.',
+    permission: {
+      addDishes: { label: 'Add dishes', hint: 'Put new dishes on the board, by sharing too.' },
+    },
     handOver: 'Hand over ownership',
     handOverConfirm: (name: string) => `Hand ownership over to ${name}?`,
     handOverBody: (name: string) => `${name} can then remove members, reset the link and delete the board. You stay a member.`,

@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 import { ref } from 'vue'
 import { createBoardModule } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
+import { ALL_PERMISSIONS } from '../../shared/permissions'
 import type { DishView } from '../../server/utils/dishes'
 import { memoryTransport } from './memory-transport'
 
@@ -38,6 +39,7 @@ function setup() {
     name: 'Kochclub',
     emoji: '🍜',
     isOwner: true,
+    permissions: ALL_PERMISSIONS,
     version: 0,
     inviteToken: 'token',
     members: [],

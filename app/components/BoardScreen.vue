@@ -337,6 +337,11 @@ watch(() => route.params.dish, (dish) => {
 }, { immediate: true })
 
 const adding = ref(false)
+// Whether the user may add Dishes here (their Permissions, as the Board last
+// loaded): without it there is no add button, no "N" and no Add Dish for
+// something shared. Once the Owner switches it off, the next check of the
+// Board takes the button away (useBoardSync).
+const mayAdd = computed(() => board.value?.permissions.addDishes ?? false)
 // Your settings (UserSettingsSheet), from the header's cogwheel (#282).
 const showingSettings = ref(false)
 
@@ -351,9 +356,11 @@ const openedToAdd = ref(false)
 onMounted(() => {
   const { add, settings, ...rest } = route.query
   if (typeof add === 'string') {
-    sharedLink.value = add
-    adding.value = true
-    openedToAdd.value = true
+    if (mayAdd.value) {
+      sharedLink.value = add
+      adding.value = true
+      openedToAdd.value = true
+    }
   }
   else if (settings !== undefined) {
     showingSettings.value = true
@@ -416,6 +423,7 @@ const searchBar = useTemplateRef<{ focus: () => void }>('searchBar')
 useBoardShortcuts((shortcut) => {
   switch (shortcut.action) {
     case 'addDish':
+      if (!mayAdd.value) return false
       adding.value = true
       return true
     case 'search':
@@ -969,6 +977,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     />
 
     <button
+      v-if="mayAdd"
       v-show="!selecting"
       type="button"
       class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
