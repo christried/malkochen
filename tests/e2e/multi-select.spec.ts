@@ -46,6 +46,10 @@ async function longPress(page: Page, target: Locator) {
   await page.waitForTimeout(450)
   await page.getByTestId('columns').dispatchEvent('pointerup', at)
   await expect(page.getByTestId('drag-card')).toHaveCount(0)
+  // A release's click is swallowed for 400ms after it (useDishDrag). This
+  // pointerup fires none, so a tap that soon would be swallowed instead; a
+  // finger never taps again that fast.
+  await page.waitForTimeout(450)
 }
 
 test('desktop: Ctrl-click selects Dishes across Columns, the bar counts them, Escape leaves with nothing changed', async ({ page }) => {
