@@ -83,7 +83,7 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
       />
       <HistoryChip
         :dish="dish"
-        :is-new="newInHistory"
+        :new-in-history="newInHistory"
       />
     </div>
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">

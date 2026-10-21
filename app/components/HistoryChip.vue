@@ -8,7 +8,7 @@ import type { DishView } from '~~/server/utils/dishes'
 // pebble's orange; with nothing to count, it is then just a dot. It stays
 // clear of "Neu" (top left) and the Source badge (bottom left). Screen
 // readers hear it as one line instead.
-const props = defineProps<{ dish: DishView, isNew?: boolean }>()
+const props = defineProps<{ dish: DishView, newInHistory?: boolean }>()
 const t = useStrings()
 
 const up = computed(() => props.dish.votes.filter(v => v.up).length)
@@ -20,17 +20,17 @@ const lines = computed(() => [
 ].filter(line => line.count > 0))
 const said = computed(() => [
   ...lines.value.map(line => line.said(line.count)),
-  ...props.isNew ? [t.dish.newInHistory] : [],
+  ...props.newInHistory ? [t.dish.newInHistory] : [],
 ].join(', '))
 </script>
 
 <template>
   <span
-    v-if="lines.length || isNew"
+    v-if="lines.length || newInHistory"
     class="absolute right-1.5 top-1.5 inline-flex flex-col items-stretch gap-1 rounded-[11px] p-1.5 text-[11.5px] font-semibold leading-none tabular-nums"
-    :class="isNew ? 'chip-new text-neu-ink' : 'bg-glass text-text backdrop-blur-sm'"
+    :class="newInHistory ? 'chip-new text-neu-ink' : 'bg-glass text-text backdrop-blur-sm'"
     data-history-chip
-    :data-new="isNew || undefined"
+    :data-new="newInHistory || undefined"
   >
     <span class="sr-only">{{ said }}</span>
     <span

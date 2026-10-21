@@ -762,12 +762,12 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   }
 
   // Takes a Dish off the ones with something new in their Dish History.
-  function seen(dishId: string) {
+  function clearNewInHistory(dishId: string) {
     if (board.value) removeFrom(board.value.newInHistoryDishIds, dishId)
   }
 
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, seen, queued, isGone })
+  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone })
 
   // The Member's Votes on the Board's Dishes.
   const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued })

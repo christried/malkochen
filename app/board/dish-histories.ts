@@ -10,9 +10,10 @@ import { historyEntries } from '../utils/history-entries'
 // Dishes whose detail opens: loaded from the server as the detail opens,
 // which clears the card's mark for what's new in it (#335), and its
 // Comments written, edited and deleted as optimistic writes, like the
-// Board's own (board-module.ts), which the card's Comment count follows. Its Cookings are the Board's: the
-// module changes those as Dishes are cooked and Cookings deleted, so the
-// history shows them from there, never a copy that could lag behind.
+// Board's own (board-module.ts), which the card's Comment count follows.
+// Its Cookings are the Board's: the module changes those as Dishes are
+// cooked and Cookings deleted, so the history shows them from there, never
+// a copy that could lag behind.
 
 // What the page tells the Member about a Comment, as a key in its UI
 // strings. `commentDeleted` comes with an undo; the others say a write
@@ -43,7 +44,7 @@ interface HistoryHost {
   // The Dish as the Board shows it, if it is on the Board.
   find: (dishId: string) => DishView | undefined
   // Takes the card's mark for what's new in the Dish's history off.
-  seen: (dishId: string) => void
+  clearNewInHistory: (dishId: string) => void
   // Runs `write` after the writes queued before it under the same key
   // (board-module.ts).
   queued: <T>(key: string, write: () => Promise<T>, options: { moves: false }) => Promise<T>
@@ -51,7 +52,7 @@ interface HistoryHost {
   isGone: (error: unknown) => boolean
 }
 
-export function createDishHistories({ transport, find, seen, queued, isGone }: HistoryHost) {
+export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -91,7 +92,7 @@ export function createDishHistories({ transport, find, seen, queued, isGone }: H
   // (the Member's own, written meanwhile) stay beside it. False if it
   // couldn't load.
   async function openDish(dishId: string): Promise<boolean> {
-    seen(dishId)
+    clearNewInHistory(dishId)
     const asked = writes.get(dishId) ?? 0
     const quiet = !underWay.get(dishId)
     let history: DishHistory
@@ -126,9 +127,8 @@ export function createDishHistories({ transport, find, seen, queued, isGone }: H
   // Writing a Comment (PRD #318 stories 6–8), by `author` (the Member
   // writing it): it shows at the end of the Dish History at once, counted
   // on its card, and is filled in once the server has it. If the write
-  // fails, it goes again,
-  // with a notice, and the result's Comment holds the text for the field.
-  // Null for a text the server would refuse.
+  // fails, it goes again, with a notice, and the result's Comment holds the
+  // text for the field. Null for a text the server would refuse.
   function writeComment(dishId: string, text: string, author: DishAdder): CommentResult | null {
     const said = commentText(text)
     if (!said) return null
