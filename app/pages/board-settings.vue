@@ -2,18 +2,20 @@
 import type { BoardChanges, BoardMemberView, BoardNameAndEmoji, BoardView } from '~~/server/utils/boards'
 import type { ArchivedDishView, PlacedDish } from '~~/server/utils/dishes'
 import type { ColumnRow } from '~/components/ColumnSettingsList.vue'
+import type { PermissionControl } from '~/components/PermissionSwitches.vue'
 import { isRefused } from '~/board/board-module'
 import { postColumn } from '~/board/http-transport'
 import { boardPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { invitePath } from '~~/shared/invite'
-import { PERMISSIONS, viewerMay, type Permission, type Permissions } from '~~/shared/permissions'
+import { viewerMay, type Permission, type Permissions } from '~~/shared/permissions'
 import { columnDeletion } from '~~/shared/placement'
 
 // Board settings (PRD stories 57–60, 62–71), for any Member: the Board's name
 // and emoji, its Columns, its Members, the Invite Link, its Archive and
-// leaving; for the Owner also removing Members, handing over ownership,
-// deleting Archived Dishes for good and deleting the Board. What a Member's
+// leaving; for the Owner also each Member's Permissions and the Default
+// Permissions, removing Members, handing over ownership, deleting Archived
+// Dishes for good and deleting the Board. What a Member's
 // Permissions don't allow is shown without a way to change it (the name,
 // emoji and Columns), or not at all (adding a Column, the Invite Link).
 // Its own page, not a child of the Board: any page under b/[board]/ opens over
@@ -305,26 +307,37 @@ function removeMember(member: BoardMemberView) {
   )
 }
 
-// Permissions (#340): in a Member's sheet the Owner switches each one,
-// saved at once; one that fails stays as it was, with a notice. The
-// Member's open Board follows at its next check. Every other Member sees
-// their own, read-only.
-const switchingPermission = ref<Permission | null>(null)
-async function switchPermission(member: BoardMemberView, permission: Permission) {
-  if (!member.permissions || switchingPermission.value) return
-  switchingPermission.value = permission
+// Permissions (#340, #343): in a Member's sheet the Owner switches each
+// one, or all but commenting and voting off ("Nur ansehen"), and the same
+// for the Default Permissions, which a Member joining gets. Saved at once;
+// one that fails stays as it was, with a notice. The Member's open Board
+// follows at its next check. Every other Member sees their own, read-only.
+const switchingPermission = ref<PermissionControl | null>(null)
+const switchingDefault = ref<PermissionControl | null>(null)
+// The Permissions saved at `path`, or null if that failed.
+async function savePermissions(path: string, changes: Partial<Permissions>, busy: Ref<PermissionControl | null>, what: PermissionControl): Promise<Permissions | null> {
+  if (busy.value) return null
+  busy.value = what
   try {
-    member.permissions = await $fetch<Permissions>(
-      `/api/boards/${id.value}/members/${encodeURIComponent(member.id)}/permissions`,
-      { method: 'PATCH', body: { [permission]: !member.permissions[permission] } },
-    )
+    return await $fetch<Permissions>(path, { method: 'PATCH', body: changes })
   }
   catch {
     failed()
+    return null
   }
   finally {
-    switchingPermission.value = null
+    busy.value = null
   }
+}
+async function switchPermissions(member: BoardMemberView, changes: Partial<Permissions>, what: PermissionControl) {
+  if (!member.permissions) return
+  const saved = await savePermissions(`/api/boards/${id.value}/members/${encodeURIComponent(member.id)}/permissions`, changes, switchingPermission, what)
+  if (saved) member.permissions = saved
+}
+async function switchDefaults(changes: Partial<Permissions>, what: PermissionControl) {
+  const saved = await savePermissions(`/api/boards/${id.value}/default-permissions`, changes, switchingDefault, what)
+  // A new object: useFetch's data is a shallow ref.
+  if (saved && board.value) board.value = { ...board.value, defaultPermissions: saved }
 }
 
 // Leaving (any Member but the Owner) and deleting (the Owner, after typing
@@ -569,31 +582,36 @@ function confirmDelete() {
           :is-owner="board.isOwner"
           @manage="manage"
         />
-        <div
+        <PermissionSwitches
           v-if="!board.isOwner"
-          role="group"
-          aria-labelledby="settings-your-permissions"
-          class="flex flex-col gap-3 rounded-card bg-surface-muted p-4"
+          :title="t.settings.yourPermissions"
+          :permissions="board.permissions"
+          :busy="null"
+          readonly
+          :hint="t.settings.yourPermissionsHint"
+        />
+      </section>
+
+      <section
+        v-if="board.defaultPermissions"
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-for-new-members"
+      >
+        <h2
+          id="settings-for-new-members"
+          class="section-heading px-1"
         >
-          <p
-            id="settings-your-permissions"
-            class="text-button"
-          >
-            {{ t.settings.yourPermissions }}
-          </p>
-          <SettingsSwitch
-            v-for="permission in PERMISSIONS"
-            :key="permission"
-            :label="t.settings.permission[permission].label"
-            :hint="t.settings.permission[permission].hint"
-            :checked="board.permissions[permission]"
-            :busy="false"
-            disabled
-          />
-          <p class="text-small text-text-muted">
-            {{ t.settings.yourPermissionsHint }}
-          </p>
-        </div>
+          {{ t.settings.forNewMembers }}
+        </h2>
+        <p class="px-1 text-small text-text-muted">
+          {{ t.settings.forNewMembersHint }}
+        </p>
+        <PermissionSwitches
+          :title="t.settings.permissions"
+          :permissions="board.defaultPermissions"
+          :busy="switchingDefault"
+          @switched="switchDefaults"
+        />
       </section>
 
       <section
@@ -722,29 +740,14 @@ function confirmDelete() {
         >
           {{ memberAction === 'hand-over' ? t.settings.handOverBody(selectedMember.name) : t.settings.removeBody(selectedMember.name) }}
         </p>
-        <div
+        <PermissionSwitches
           v-else-if="selectedMember.permissions"
-          role="group"
-          aria-labelledby="settings-member-permissions"
-          class="mt-5 flex flex-col gap-3 rounded-card bg-surface-muted p-4"
-        >
-          <p
-            id="settings-member-permissions"
-            class="text-button"
-          >
-            {{ t.settings.permissions }}
-          </p>
-          <SettingsSwitch
-            v-for="permission in PERMISSIONS"
-            :key="permission"
-            :label="t.settings.permission[permission].label"
-            :hint="t.settings.permission[permission].hint"
-            :checked="selectedMember.permissions[permission]"
-            :busy="switchingPermission === permission"
-            :disabled="switchingPermission !== null"
-            @toggle="switchPermission(selectedMember, permission)"
-          />
-        </div>
+          class="mt-5"
+          :title="t.settings.permissions"
+          :permissions="selectedMember.permissions"
+          :busy="switchingPermission"
+          @switched="(changes, what) => selectedMember && switchPermissions(selectedMember, changes, what)"
+        />
         <div class="mt-5 flex flex-col gap-2">
           <template v-if="!memberAction">
             <button

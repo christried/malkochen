@@ -1,7 +1,8 @@
 import { and, eq, exists, not, sql } from 'drizzle-orm'
-import { ALL_PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
+import { z } from 'zod'
+import { ALL_PERMISSIONS, PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
 import { db } from '../db'
-import { membership } from '../db/schema'
+import { board, membership } from '../db/schema'
 import { ownerOf } from './boards'
 
 // The one check of Permissions (CONTEXT.md): may this user do this on this
@@ -11,6 +12,11 @@ import { ownerOf } from './boards'
 // archiving them, #342 the rest. The Owner may always do
 // everything, whatever their stored Permissions say; a Member may always
 // edit and archive the Dishes they added themselves.
+
+// What switching Permissions sends: any of them, each on or off; at least
+// one. A Member's, or the Board's Default Permissions.
+export const permissionChanges = z.strictObject(Object.fromEntries(PERMISSIONS.map(p => [p, z.boolean().optional()])) as Record<Permission, z.ZodOptional<z.ZodBoolean>>)
+  .refine(changes => Object.keys(changes).length > 0)
 
 // A Member's standing on a Board: whether they are its Owner, and their
 // stored Permissions.
@@ -74,4 +80,21 @@ export async function setPermissions(boardId: string, userId: string, memberId: 
   if (updated) return updated.permissions
   // Nothing changed: the Member is gone, or the user handed over meanwhile.
   return (await standingOn(boardId, userId))?.isOwner ? 'not-member' : 'forbidden'
+}
+
+// The Owner switches some of the Board's Default Permissions, which a
+// Member joining through the Invite Link gets; the others stay as they are.
+// Answers them all now, 'forbidden' unless the user is the Owner, or null
+// for a non-Member.
+export async function setDefaultPermissions(boardId: string, userId: string, changes: Partial<Permissions>): Promise<Permissions | 'forbidden' | null> {
+  const standing = await standingOn(boardId, userId)
+  if (!standing) return null
+  if (!standing.isOwner) return 'forbidden'
+  // Only while the user is still the Owner.
+  const [updated] = await db
+    .update(board)
+    .set({ defaultPermissions: sql`${board.defaultPermissions} || ${JSON.stringify(changes)}::jsonb` })
+    .where(and(eq(board.id, boardId), exists(ownerOf(boardId, userId))))
+    .returning({ defaultPermissions: board.defaultPermissions })
+  return updated?.defaultPermissions ?? 'forbidden'
 }

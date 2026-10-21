@@ -1,4 +1,5 @@
 import { and, eq, exists, not, sql, type SQL } from 'drizzle-orm'
+import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { db, runAtomic } from '../db'
 import { membership } from '../db/schema'
 import { membershipOf, ownerOf } from './boards'
@@ -36,7 +37,9 @@ export async function removeMember(boardId: string, userId: string, memberId: st
 export type HandOverRefusal = 'forbidden' | 'self' | 'not-member'
 
 // The Owner makes another Member the Owner and stays on as a Member (PRD
-// story 68). 'handed-over' once done, null for a non-Member.
+// story 68). The new Owner has every Permission as Owner; the former one
+// keeps every one too, until the new Owner changes them (#343).
+// 'handed-over' once done, null for a non-Member.
 export async function handOver(boardId: string, userId: string, memberId: string): Promise<'handed-over' | HandOverRefusal | null> {
   const [found] = await membershipOf(boardId, userId)
   if (!found) return null
@@ -56,7 +59,7 @@ export async function handOver(boardId: string, userId: string, memberId: string
       .set({ isOwner: false })
       .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), not(membership.isOwner))),
     d.update(membership)
-      .set({ isOwner: false })
+      .set({ isOwner: false, permissions: ALL_PERMISSIONS })
       .where(and(
         eq(membership.boardId, boardId),
         eq(membership.userId, userId),

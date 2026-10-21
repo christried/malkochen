@@ -6,8 +6,9 @@ import { startTour, tourAfter, tourBrowser, tourStep, TOUR_VERSION, type Tour, t
 
 // The Tour (CONTEXT.md, #298) on the Board: feeds the Tour module what the
 // Board is like and what the user chooses, and draws its steps (TourLayer).
-// It starts by itself for a user who hasn't seen this version yet, once the
-// Board is idle (`idle`: nothing open over it, no search, no selection, no
+// It never asks for what the user's Permissions on the Board don't allow
+// (#343). It starts by itself for a user who hasn't seen this version yet,
+// once the Board is idle (`idle`: nothing open over it, no search, no selection, no
 // drag) and the splash has gone, unless the Board opened to add a shared
 // link (`autoStart` false), and starts again from Your Settings (`start`).
 // Finishing or skipping it records the version, for every device, and says
@@ -56,6 +57,7 @@ function start() {
     layout: isPhoneLayout() ? 'phone' : 'larger',
     columns: props.board.columns,
     targets: TARGETS.filter(target => tourTargetElements({ target, also: null, dishId: null, columnId: null }).length > 0),
+    permissions: props.board.permissions,
     install: {
       installed: matchMedia('(display-mode: standalone)').matches,
       offered: installPrompt.offered.value,

@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { de } from '../../app/strings/de'
+import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { startTour, tourAfter, tourBrowser, tourStep, type Tour, type TourColumn, type TourEvent, type TourInstall, type TourSituation } from '../../app/tour/tour'
 
 // Seam 4: the Tour module (CONTEXT.md → Tour, #298, #299), a step machine
@@ -15,7 +16,7 @@ const GEKOCHT: TourColumn = { id: 'gekocht', name: 'Gekocht', isGekocht: true }
 const NOT_OFFERED: TourInstall = { installed: false, offered: false, browser: 'chrome' }
 
 function situation(change: Partial<TourSituation> = {}): TourSituation {
-  return { layout: 'phone', columns: [IDEEN, WOCHE, GEKOCHT], targets: ['add-button', 'columns', 'board-switcher'], install: NOT_OFFERED, ...change }
+  return { layout: 'phone', columns: [IDEEN, WOCHE, GEKOCHT], targets: ['add-button', 'columns', 'board-switcher'], permissions: ALL_PERMISSIONS, install: NOT_OFFERED, ...change }
 }
 
 type Happening = TourEvent['type'] | TourEvent
@@ -394,6 +395,26 @@ test.each([
   ['step 6', atDelete],
 ] as const)('Überspringen on %s ends the Tour as skipped', (_, at) => {
   expect(after(at(), 'skip').status).toBe('skipped')
+})
+
+// Permissions (#343): the Tour never asks for what the Member may not do.
+test('without "add Dishes", the Dish steps are all left out, even with an add button on the page', () => {
+  const tour = startTour(situation({ permissions: { ...ALL_PERMISSIONS, addDishes: false } }))
+
+  expect(tour.steps).toEqual(['hello', 'columns', 'boardSwitcher', 'last'])
+})
+
+test('without "move Dishes", step 5 just explains the Columns, and Weiter goes on to deleting the Dish', () => {
+  const tour = atMove({ permissions: { ...ALL_PERMISSIONS, moveDishes: false } })
+
+  expect(step(tour)).toMatchObject({ id: 'columns', handsOn: false, buttons: ['back', 'next', 'skip'] })
+  expect(stepId(after(tour, 'next'))).toBe('deleteDish')
+})
+
+test('without "archive Dishes", deleting the Tour\'s Dish still shows: a Member may always archive their own', () => {
+  const tour = atMove({ permissions: { ...ALL_PERMISSIONS, archiveDishes: false } })
+
+  expect(stepId(after(tour, { type: 'dishMoved', dishId: 'dish', columnId: 'woche' }))).toBe('deleteDish')
 })
 
 // Step 8, phones only: the share tip once installed, else how to install.

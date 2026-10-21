@@ -491,6 +491,12 @@ export const de = {
     permissions: 'Rechte',
     yourPermissions: 'Was du hier darfst',
     yourPermissionsHint: 'Das legt die Besitzer:in des Boards fest.',
+    // The shortcut: everything off but commenting and voting.
+    viewOnly: 'Nur ansehen',
+    viewOnlyHint: 'Schaltet alles aus außer Kommentieren und abstimmen.',
+    // The Default Permissions, which a new Member gets.
+    forNewMembers: 'Für neue Mitglieder',
+    forNewMembersHint: 'Wer über den Einladungslink dazukommt, bekommt diese Rechte. Wer schon dabei ist, behält die bisherigen.',
     permission: {
       addDishes: { label: 'Gerichte hinzufügen', hint: 'Neue Gerichte aufs Board legen, auch über Teilen.' },
       editDishes: { label: 'Gerichte bearbeiten', hint: 'Titel, Bild, Creator und Link ändern. Eigene Gerichte immer.' },
@@ -503,7 +509,7 @@ export const de = {
     },
     handOver: 'Besitz übertragen',
     handOverConfirm: (name: string) => `Besitz an ${name} übertragen?`,
-    handOverBody: (name: string) => `${name} kann dann Mitglieder entfernen, den Link zurücksetzen und das Board löschen. Du bleibst Mitglied.`,
+    handOverBody: (name: string) => `${name} kann dann Mitglieder entfernen, den Link zurücksetzen und das Board löschen. Du bleibst Mitglied und darfst weiter alles, bis ${name} das ändert.`,
     handedOver: (name: string) => `${name} hat jetzt den Besitz.`,
     removeMember: 'Vom Board entfernen',
     removeConfirm: (name: string) => `${name} entfernen?`,

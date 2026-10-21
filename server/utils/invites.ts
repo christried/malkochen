@@ -66,7 +66,8 @@ export async function inviteView(secret: string, language: Language): Promise<In
 // already on it, only this changes (story 65): following the link counts as
 // opening the Board, so the app lands on it next. The Board's id and the
 // slug of its Address, or null if no Board has the secret (or it was
-// archived meanwhile).
+// archived meanwhile). A new Member gets the Board's Default Permissions;
+// one already on it keeps theirs.
 export async function joinByInvite(secret: string, userId: string): Promise<{ boardId: string, slug: string } | null> {
   const found = await boardOf(secret)
   if (!found) return null
@@ -76,8 +77,8 @@ export async function joinByInvite(secret: string, userId: string): Promise<{ bo
   const { rows } = await withEvents(
     db,
     sql`
-      insert into ${membership} (board_id, user_id, last_opened_at, seen_at)
-      select ${board.id}, ${userId}, ${now}, ${now} from ${board}
+      insert into ${membership} (board_id, user_id, last_opened_at, seen_at, permissions)
+      select ${board.id}, ${userId}, ${now}, ${now}, ${board.defaultPermissions} from ${board}
       where ${board.id} = ${found.id} and ${board.deletedAt} is null
       for share
       on conflict (board_id, user_id) do update set last_opened_at = excluded.last_opened_at, seen_at = excluded.seen_at
