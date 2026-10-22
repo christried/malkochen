@@ -25,7 +25,7 @@ export const usernameOf = (language: Language) => sql<string>`coalesce(${user.us
 // still to be asked about their Username, the highest Tour version they
 // finished or skipped (null for none), their language under Sprache,
 // whether they are the Operator, who has the Admin Page (#348), the app's
-// Version (empty before 1.0.0) and whether it is newer than the last one
+// Version and whether it is newer than the last one
 // they opened the Changelog in (#354).
 export interface Me {
   id: string
