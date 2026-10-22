@@ -398,7 +398,8 @@ export const eventLog = pgTable('event_log', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
   at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
   kind: text('kind').$type<EventKind>().notNull(),
-  boardId: uuid('board_id').notNull(),
+  // None for an event of malkochen as a whole (open_sign_up_switched).
+  boardId: uuid('board_id'),
   dishId: uuid('dish_id'),
   // Who did it.
   userId: text('user_id'),
@@ -416,3 +417,13 @@ export const usageCount = pgTable('usage_count', {
   kind: text('kind').$type<UsageKind>().notNull(),
   count: integer('count').notNull(),
 }, t => [primaryKey({ columns: [t.day, t.kind] })])
+
+// ---------------------------------------------------------------------------
+// malkochen's own settings, which the Operator changes on the Admin Page
+// without a redeploy: one row. `openSignUp`: Open Sign-up (CONTEXT.md, #350),
+// off until the Operator switches it on.
+
+export const setting = pgTable('setting', {
+  id: boolean('id').primaryKey().default(true),
+  openSignUp: boolean('open_sign_up').notNull().default(false),
+}, t => [check('setting_one_row', sql`${t.id}`)])

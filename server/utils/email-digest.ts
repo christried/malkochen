@@ -69,7 +69,7 @@ export async function sendDigests(): Promise<DigestReport> {
 }
 
 // Each digest to send, by user id: everyone with news who may still sign
-// in. Someone taken off the Allowlist since gets nothing.
+// in.
 async function digestEmails(covered: Coverage[]): Promise<Map<string, Email>> {
   const news = await newsFor(covered)
   if (news.size === 0) return new Map()

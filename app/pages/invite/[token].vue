@@ -25,7 +25,7 @@ const lookupRefused = tooMany(lookupFailed.value?.statusCode)
 if (lookupRefused) throw lookupRefused
 // The same request the page guard just made, so it isn't sent twice. It
 // fails for anyone who can't use the app yet: 401 signed out, 403 signed in
-// but off the Allowlist.
+// but refused by the sign-in gate.
 const { error: noAccess } = await useFetch('/api/me', { key: `me:${route.fullPath}` })
 
 if (invite.value && !noAccess.value) {

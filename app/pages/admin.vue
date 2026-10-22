@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { SOURCE_COLUMNS, type AdminFigures, type Period, type Usage } from '~~/shared/admin'
 
-// The Admin Page (#348, PRD #321 stories 26–33, 39): the Operator's figures
+// The Admin Page (#348, PRD #321 stories 26–36, 39): the Operator's figures
 // on how malkochen is used, as plain tables, linked at the end of their
 // settings. Counts only, never content. For anyone else the API answers
 // "not found", and so does this page.
@@ -44,6 +44,26 @@ const limitRows = computed(() => {
   ].map(row => ({ ...row, share: row.usage.used / row.usage.free }))
 })
 
+// "Anmeldung offen" (#350): Open Sign-up, switched at once on the server.
+// `failed`: the last switch didn't work out, and it stays as it was.
+const openSignUp = reactive({ busy: false, failed: false })
+async function switchOpenSignUp() {
+  if (!figures.value || openSignUp.busy) return
+  const on = !figures.value.openSignUp
+  openSignUp.busy = true
+  openSignUp.failed = false
+  try {
+    await $fetch('/api/admin/open-sign-up', { method: 'PUT', body: { on } })
+    figures.value.openSignUp = on
+  }
+  catch {
+    openSignUp.failed = true
+  }
+  finally {
+    openSignUp.busy = false
+  }
+}
+
 // Where the rest of each free tier is shown.
 const DASHBOARDS = [
   { name: 'Vercel', href: 'https://vercel.com/dashboard' },
@@ -74,6 +94,32 @@ const DASHBOARDS = [
           {{ t.admin.title }}
         </h1>
       </header>
+
+      <section
+        class="flex flex-col gap-3"
+        aria-labelledby="admin-sign-up"
+      >
+        <h2
+          id="admin-sign-up"
+          class="section-heading px-1"
+        >
+          {{ t.admin.signUp }}
+        </h2>
+        <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
+          <SettingsSwitch
+            :label="t.admin.openSignUp"
+            :hint="t.admin.openSignUpHint"
+            :checked="figures.openSignUp"
+            :busy="openSignUp.busy"
+            :disabled="openSignUp.busy"
+            @toggle="switchOpenSignUp"
+          />
+          <p
+            role="alert"
+            class="text-small text-danger empty:hidden"
+          >{{ openSignUp.failed ? t.admin.openSignUpFailed : '' }}</p>
+        </div>
+      </section>
 
       <section
         class="flex flex-col gap-3"

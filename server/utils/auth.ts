@@ -10,6 +10,7 @@ import { db } from '../db'
 import * as schema from '../db/schema'
 import { parseServerEnv } from '../env'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
+import { openSignUpOn } from './open-sign-up'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
 import { usernameTaken } from './people'
 import { spendClientLimit } from './rate-limit'
@@ -17,16 +18,19 @@ import { emailSignInOffered, mailSignInCode, SIGN_IN_CODE_MINUTES } from './sign
 
 const env = parseServerEnv(process.env)
 
-function allowlistRefusal(email: string) {
-  return isAllowlisted(email, env.ALLOWLIST_EMAILS) ? undefined : NOT_ALLOWLISTED
+// The gate on every sign-in, and on every request after it: everyone who has
+// an account signs in (#350), as long as Google calls their email verified.
+// Better Auth would otherwise create a user whose email Google marks
+// unverified.
+export function signInRefusal(user: { emailVerified?: unknown }) {
+  return user.emailVerified === true ? undefined : UNVERIFIED_EMAIL
 }
 
-// The gate on every sign-in, and on every request after it: the email must be
-// on the Allowlist and verified by Google. Better Auth would otherwise create
-// a user whose email Google marks unverified. Both refusals read "Not
-// unlocked".
-export function signInRefusal(user: { email?: unknown, emailVerified?: unknown }) {
-  return user.emailVerified === true ? allowlistRefusal(String(user.email)) : UNVERIFIED_EMAIL
+// The gate on a new user, signing up: as on every sign-in, and Open Sign-up
+// is on or the email is on the Allowlist. Both refusals read "Not unlocked".
+export async function signUpRefusal(user: { email?: unknown, emailVerified?: unknown }) {
+  return signInRefusal(user)
+    ?? (isAllowlisted(String(user.email), env.ALLOWLIST_EMAILS) || await openSignUpOn() ? undefined : NOT_ALLOWLISTED)
 }
 
 // The only Better Auth endpoints malkochen uses: Google sign-in and its
@@ -58,11 +62,12 @@ const emailSignIn = emailOTP({
   },
 })
 
-// Before a code is sent: only the sign-in kind, and only to an address the
-// sign-in gate lets in, so malkochen never emails a code that can't be used.
-// A refusal reads "Not unlocked", like a refused Google sign-in. New users
-// are checked again on creation (validateUserInfo), returning ones on every
-// request (server/middleware/auth.ts). Then only so many codes an hour per
+// Before a code is sent: only the sign-in kind, and only to an address that
+// has an account or that the sign-up gate lets in, so malkochen never emails
+// a code that can't be used. A refusal reads "Not unlocked", like a refused
+// Google sign-in. New users are checked again on creation
+// (validateUserInfo), returning ones on every request
+// (server/middleware/auth.ts). Then only so many codes an hour per
 // IP address and per address (#347, server/rate-limits.ts); over either,
 // 429 "TOO_MANY_CODES" with `retryAt`, when another can be asked for.
 const beforeSendingCode = createAuthMiddleware(async (ctx) => {
@@ -70,7 +75,8 @@ const beforeSendingCode = createAuthMiddleware(async (ctx) => {
   const { email, type } = (ctx.body ?? {}) as { email?: unknown, type?: unknown }
   if (type !== 'sign-in') throw new APIError('BAD_REQUEST', { message: 'Only sign-in codes are sent' })
   const address = String(email ?? '').trim().toLowerCase()
-  const refusal = signInRefusal({ email: address, emailVerified: true })
+  const known = await ctx.context.internalAdapter.findUserByEmail(address)
+  const refusal = !known && await signUpRefusal({ email: address, emailVerified: true })
   if (refusal) throw new APIError('FORBIDDEN', { code: refusal.error, message: refusal.errorDescription })
   // The visitor's IP address as h3's getRequestIP reads it: the first of
   // x-forwarded-for, which Vercel sets.
@@ -103,9 +109,9 @@ async function giveUsername(userId: string, name: string, confirmed: boolean) {
 // Local dev and tests only (AUTH_DEV_BYPASS=1, refused on Vercel production
 // and preview by server/env.ts): POST /api/auth/dev/sign-in
 // { email, name?, image?, emailVerified? } signs in without Google. It goes
-// through the same sign-in gate (Allowlist, verified email) and the
-// same user and session creation as a Google sign-in; only the OAuth round
-// trip is skipped.
+// through the same gates (verified email; for a new user, the Allowlist or
+// Open Sign-up) and the same user and session creation as a Google sign-in;
+// only the OAuth round trip is skipped.
 const devSignIn = {
   id: 'dev-sign-in',
   endpoints: {
@@ -130,7 +136,7 @@ const devSignIn = {
       // A new user goes through validateUserInfo inside createUser, exactly
       // like a first Google sign-in; a returning one is checked here, like
       // Google's repeat sign-in.
-      const refusal = existing && signInRefusal({ email, emailVerified })
+      const refusal = existing && signInRefusal({ emailVerified })
       if (refusal) throw new APIError('FORBIDDEN', { code: refusal.error, message: refusal.errorDescription })
 
       const user = existing
@@ -179,10 +185,10 @@ export const auth = betterAuth({
       // guard (server/middleware/auth.ts) sets it.
       browserLanguage: { type: 'string', required: false, input: false },
     },
-    // Runs on user creation and, for Google, on every repeat sign-in too, so
-    // someone removed from the Allowlist can't sign in again. Gets what Google
-    // says about the user, emailVerified included.
-    validateUserInfo: ({ user }) => signInRefusal(user),
+    // Runs on user creation (the sign-up gate) and, for Google, on every
+    // repeat sign-in too (the sign-in gate). Gets what Google says about the
+    // user, emailVerified included.
+    validateUserInfo: ({ user, source }) => source.action === 'create-user' ? signUpRefusal(user) : signInRefusal(user),
   },
   hooks: {
     before: beforeSendingCode,

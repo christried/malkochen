@@ -60,6 +60,8 @@ export interface AdminFigures {
     // which are most of them.
     functionCalls: Usage
   }
+  // Open Sign-up (#350): whether anyone may sign up, not only the Allowlist.
+  openSignUp: boolean
 }
 
 export const DAYS = 14

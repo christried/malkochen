@@ -260,6 +260,13 @@
       "when": 1792601294207,
       "tag": "0036_usage_count",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792650363397,
+      "tag": "0037_open_sign_up",
+      "breakpoints": true
     }
   ]
 }

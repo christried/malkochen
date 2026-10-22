@@ -8,7 +8,7 @@ import { inject } from 'vitest'
 
 export interface LoggedEvent {
   kind: string
-  boardId: string
+  boardId: string | null
   dishId: string | null
   userId: string | null
   details: Record<string, unknown> | null
