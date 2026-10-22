@@ -63,7 +63,7 @@ export const en: Strings = {
     isNew: 'New',
     unreleased: 'Just landed',
     version: (version: string) => `Version ${version}`,
-    date: (date: string) => dayWithYear(new Date(`${date}T12:00:00Z`)),
+    date: dayWithYear,
     empty: 'This is where you\'ll soon see what changes in malkochen.',
     sections: {
       added: 'Added',

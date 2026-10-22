@@ -28,6 +28,7 @@ useHead({ title: () => `${t.changelog.title} · ${t.app.name}` })
 
 // Signed out, /api/me answers 401 and there's nothing to record.
 const { data: me } = useMe()
+// Typed as a plain string: Nitro's route typing runs too deep here.
 const VERSION_SEEN: string = '/api/me/version-seen'
 onMounted(async () => {
   if (!me.value?.newVersion) return

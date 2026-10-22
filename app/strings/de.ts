@@ -87,7 +87,7 @@ export const de = {
     unreleased: 'Gerade neu',
     version: (version: string) => `Version ${version}`,
     // A Version's day, from YYYY-MM-DD.
-    date: (date: string) => dayWithYear(new Date(`${date}T12:00:00Z`)),
+    date: dayWithYear,
     empty: 'Hier steht bald, was sich bei malkochen ändert.',
     sections: {
       added: 'Hinzugefügt',

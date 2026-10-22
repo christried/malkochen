@@ -24,8 +24,9 @@ export function intlFor(locale: string) {
     number: (count: number) => numbers.format(count),
     plural: (count: number, forms: PluralForms) => forms[plurals.select(count)] ?? forms.other,
     day: dayOf,
-    // "30. Okt. 2026": with its year always, such as a Version's day.
-    dayWithYear: (at: Date) => day.format(at),
+    // "30. Okt. 2026": a calendar day from YYYY-MM-DD, such as a Version's,
+    // with its year always. Noon UTC is that day in German time too.
+    dayWithYear: (date: string) => day.format(new Date(`${date}T12:00:00Z`)),
     // "März 2026" / "March 2026".
     month: (date: Date) => month.format(date),
     // "14:35": a time of day, such as when a limit frees up again.
