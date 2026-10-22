@@ -17,7 +17,7 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Sprachen: malkochen spricht Deutsch, Englisch und Italienisch. Such dir deine in deinen Einstellungen aus, und Hell oder Dunkel gleich mit.
 - Benachrichtigungen: Push-Benachrichtigungen auf deinen Geräten und eine tägliche E-Mail, wenn du magst, sobald andere auf deinen Boards Gerichte dazulegen, kommentieren oder abstimmen.
 - Der Rundgang: Topfbert zeigt dir alles, wenn du zum ersten Mal ein Board öffnest, und noch mal, wann immer du ihn in deinen Einstellungen startest.
-- Anmelden: mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
+- Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
 [Unreleased]: https://github.com/christried/malkochen/compare/v1.0.0...HEAD

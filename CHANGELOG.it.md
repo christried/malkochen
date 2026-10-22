@@ -17,7 +17,7 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Lingue: malkochen parla tedesco, inglese e italiano. Scegli la tua nelle impostazioni, e già che ci sei anche chiaro o scuro.
 - Notifiche: notifiche push sui tuoi dispositivi e un’email giornaliera, se le vuoi, quando altri aggiungono piatti, commentano o votano sulle tue bacheche.
 - Il tour: Topfbert ti fa vedere tutto la prima volta che apri una bacheca, e di nuovo quando vuoi, dalle impostazioni.
-- Accesso: con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
+- Aperto a tutti: chiunque può iscriversi, con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
 - Novità: questa pagina, in fondo alle tue impostazioni e segnata come Nuovo dopo ogni aggiornamento.
 
 [Unreleased]: https://github.com/christried/malkochen/compare/v1.0.0...HEAD

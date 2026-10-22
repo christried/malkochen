@@ -17,7 +17,7 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - Languages: malkochen speaks German, English and Italian. Pick yours in your settings, and light or dark while you’re there.
 - Notifications: push notifications on your devices and a daily email, if you want them, when others add dishes, comment or vote on your boards.
 - The tour: Topfbert shows you round the first time you open a board, and again whenever you start it in your settings.
-- Signing in: use Google or a code we email you, and delete your account yourself whenever you like.
+- Open to everyone: anyone can sign up, with Google or a code we email you, and delete your account yourself whenever you like.
 - What’s new: this page, linked at the end of your settings and marked New after every update.
 
 [Unreleased]: https://github.com/christried/malkochen/compare/v1.0.0...HEAD
