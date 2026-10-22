@@ -41,12 +41,21 @@ async function switchAs(caller: Caller, on: boolean) {
   expect((await switchOpenSignUp(caller, on)).status).toBe(200)
 }
 
-const askForCode = (email: string) => anonymous().fetch('/api/auth/email-otp/send-verification-otp', {
+const postAuth = (path: string, body: unknown) => anonymous().fetch(path, {
   method: 'POST',
   // An address of its own, so Better Auth's limit per address counts this file apart.
   headers: { 'content-type': 'application/json', 'origin': inject('apiBaseUrl'), 'x-forwarded-for': `2001:db8:350::${(++strangers).toString(16)}` },
-  body: JSON.stringify({ email, type: 'sign-in' }),
+  body: JSON.stringify(body),
 })
+
+const askForCode = (email: string) => postAuth('/api/auth/email-otp/send-verification-otp', { email, type: 'sign-in' })
+
+// Signs in with the code in the last email sent to `email`.
+function signInWithCode(email: string) {
+  const sent = resend.sent.findLast(e => e.to.includes(email))
+  if (!sent) throw new Error(`no email to ${email}`)
+  return postAuth('/api/auth/sign-in/email-otp', { email, otp: sent.text.match(/\b\d{6}\b/)![0] })
+}
 
 test('off, a stranger is refused "Not unlocked" with Google and by email', async () => {
   const email = stranger()
@@ -70,11 +79,23 @@ test('on, a stranger signs up with Google and by email', async () => {
 
     const byEmail = stranger()
     expect((await askForCode(byEmail)).status).toBe(200)
-    expect(resend.sent.some(e => e.to.includes(byEmail))).toBe(true)
+    expect((await signInWithCode(byEmail)).status).toBe(200)
   }
   finally {
     await switchAs(operator, false)
   }
+})
+
+test('a code sent while it was on no longer signs a stranger up once it is off', async () => {
+  const operator = await signIn(OPERATOR)
+  const email = stranger()
+  await switchAs(operator, true)
+  expect((await askForCode(email)).status).toBe(200)
+  await switchAs(operator, false)
+
+  const res = await signInWithCode(email)
+  expect(res.status).toBe(403)
+  expect((await res.json()).code).toBe('not_allowed')
 })
 
 test('off again, no new stranger signs up, but one who signed up meanwhile still signs in and uses the API', async () => {
