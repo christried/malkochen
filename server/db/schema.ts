@@ -50,6 +50,10 @@ export const user = pgTable('user', {
   // there to ask: the Email Digest, Push Notifications. Only the API's guard
   // (server/middleware/auth.ts) sets it; Better Auth just reads it.
   browserLanguage: text('browser_language'),
+  // The last Version (CONTEXT.md) they opened the Changelog in; null for
+  // none. Older than the app's, Your Settings marks "Was ist neu" as new.
+  // Only PUT /api/me/version-seen sets it; Better Auth just reads it.
+  versionSeen: text('version_seen'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, t => [

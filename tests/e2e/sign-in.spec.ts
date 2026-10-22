@@ -78,16 +78,17 @@ test('a refused sign-in shows the friendly "Not unlocked" screen', async ({ page
 })
 
 // The legal pages are on christried.me, outside the app, so anyone can read
-// them without signing in.
+// them without signing in; the Changelog (#354, changelog.spec.ts) beside them.
 for (const [screen, path] of [['the sign-in screen', '/login'], ['the "Not unlocked" screen', '/login?error=not_allowed']] as const) {
-  test(`${screen} links to Impressum and Datenschutz in its footer, signed out`, async ({ page }) => {
+  test(`${screen} links to the Changelog, Impressum and Datenschutz in its footer, signed out`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoHydrated(page, path)
 
     const links = page.getByRole('contentinfo').getByRole('link')
-    await expect(links).toHaveText(['Impressum', 'Datenschutz'])
-    await expect(links.nth(0)).toHaveAttribute('href', 'https://christried.me/imprint.html')
-    await expect(links.nth(1)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
+    await expect(links).toHaveText(['Was ist neu', 'Impressum', 'Datenschutz'])
+    await expect(links.nth(0)).toHaveAttribute('href', '/changelog')
+    await expect(links.nth(1)).toHaveAttribute('href', 'https://christried.me/imprint.html')
+    await expect(links.nth(2)).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
     // Under the screen's last button, and big enough to tap.
     const button = (await page.getByRole('main').getByRole('button').last().boundingBox())!
     for (const link of await links.all()) {

@@ -82,3 +82,9 @@ export async function linkGoogleAccount(email: string): Promise<void> {
 export async function expireSignInCode(email: string): Promise<void> {
   await query(`update verification set expires_at = now() - interval '1 minute' where identifier = $1`, [`sign-in-otp-${email}`])
 }
+
+// Makes `version` the last Version a user saw the Changelog in, as if they
+// had opened it back then (an older app can't be run here).
+export async function setVersionSeen(email: string, version: string): Promise<void> {
+  await query(`update "user" set version_seen = $2 where email = $1`, [email, version])
+}
