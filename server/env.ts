@@ -61,8 +61,8 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // sent). Empty: Resend itself.
   RESEND_BASE_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
   // Tests only: the Version the server runs as (server/version.ts), in
-  // place of package.json's, so a Changelog with no Version yet still has
-  // one to mark "Neu". Empty: package.json's.
+  // place of package.json's, so the tests see the same one whatever the
+  // newest Version is. Empty: package.json's.
   MALKOCHEN_VERSION: z.union([z.literal(''), z.string().regex(/^\d+\.\d+\.\d+$/, 'must be a Version such as 1.0.0')]).default(''),
   // Set by Vercel itself; used to refuse the dev bypass there and to require
   // the Blob token.

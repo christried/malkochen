@@ -12,7 +12,7 @@ How to keep the Changelog (`CONTEXT.md` → Changelog, Version) without the user
 - **"Gerade neu" goes first.** If there are lines under `## [Unreleased]` when a spec is closed, they are rewritten into their own patch first, dated the same day, just below the spec's. `[Unreleased]` stays, empty.
 - **A PR outside a spec that users notice** adds its line under `## [Unreleased]` in the same PR. The page shows it at once as "Gerade neu"; it gets its Version with the next spec.
 - **A minor Version only after asking.** If a spec's feature looks big enough for one (1.1.0 rather than 1.0.8), ask the user and wait for their yes. Without it, a patch, even the 37th.
-- **The app's version follows.** `package.json`'s `version` is the newest Version in the files (the same test checks it). Before 1.0.0 it has none; the release of 1.0.0 (#356) adds it.
+- **The app's version follows.** `package.json`'s `version` is the newest Version in the files (the same test checks it). It became 1.0.0 with the release (#356).
 - **Every spec ends with this ticket.** `/to-tickets` on a spec adds "Changelog entry and Version for this spec" as its last ticket, blocked by every other ticket of the spec.
 
 ## Closing a spec, step by step
@@ -24,7 +24,7 @@ How to keep the Changelog (`CONTEXT.md` → Changelog, Version) without the user
 5. Update the link references at the bottom of each file (below).
 6. Set `package.json`'s `version` to the spec's Version.
 7. Run `pnpm vitest run tests/client/changelog.test.ts`.
-8. After the merge, tag the merge commit on `main` with the Version (`git tag v1.0.2 <merge commit>`, `git push origin v1.0.2`) and the one cut from `[Unreleased]` the same way, so the link references lead somewhere. The first tag, `v1.0.0`, comes with the release of 1.0.0 (#356).
+8. After the merge, tag the merge commit on `main` with the Version (`git tag v1.0.2 <merge commit>`, `git push origin v1.0.2`) and the one cut from `[Unreleased]` the same way, so the link references lead somewhere. The first tag, `v1.0.0`, marks the release of 1.0.0 (#356).
 
 The link references, one per Version and one for `[Unreleased]`, newest first:
 

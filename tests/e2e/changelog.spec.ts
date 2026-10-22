@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { TEST_VERSION } from '../support/test-version'
@@ -11,6 +12,10 @@ import { openUserSettings } from './settings-sheet'
 // Babbage is used by this file only.
 const BABBAGE = ALLOWLISTED[130]
 
+// The newest Version, which the page reads from the files (package.json's
+// matches it: tests/client/changelog.test.ts).
+const { version: NEWEST } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }
+
 test('signed out, the sign-in screen links to the Changelog, which opens without signing in', async ({ page }) => {
   await gotoHydrated(page, '/login')
 
@@ -18,9 +23,9 @@ test('signed out, the sign-in screen links to the Changelog, which opens without
 
   await expect(page).toHaveURL('/changelog')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Was ist neu')
-  // No Version yet, nor anything under "Gerade neu".
-  await expect(page.getByText('Hier steht bald, was sich bei malkochen ändert.')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Gerade neu' })).toHaveCount(0)
+  // The newest Version, its sections in German.
+  await expect(page.getByRole('heading', { level: 2, name: `Version ${NEWEST}` })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Hinzugefügt' }).first()).toBeVisible()
 
   await reloadHydrated(page)
   await expect(page).toHaveURL('/changelog')
