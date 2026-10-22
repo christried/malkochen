@@ -424,7 +424,7 @@ async function deleteAccount() {
       <NuxtLink
         v-if="me?.isOperator"
         to="/admin"
-        class="flex flex-col gap-1 rounded-card bg-surface-muted p-4 transition-transform duration-tap ease-tap active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-focus"
+        class="flex flex-col gap-1 rounded-card bg-surface-muted p-4 transition-[box-shadow,scale] duration-tap ease-tap hover:shadow-card active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-focus"
       >
         <span class="font-semibold">{{ t.admin.link }}</span>
         <span class="text-small text-text-muted">{{ t.admin.linkHint }}</span>
@@ -432,7 +432,7 @@ async function deleteAccount() {
 
       <NuxtLink
         to="/changelog"
-        class="flex flex-col gap-1 rounded-card bg-surface-muted p-4 transition-transform duration-tap ease-tap active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-focus"
+        class="flex flex-col gap-1 rounded-card bg-surface-muted p-4 transition-[box-shadow,scale] duration-tap ease-tap hover:shadow-card active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-focus"
       >
         <span class="flex items-center gap-2.5">
           <span class="font-semibold">{{ t.changelog.title }}</span>
