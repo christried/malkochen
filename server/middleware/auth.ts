@@ -28,8 +28,9 @@ export default defineEventHandler(async (event) => {
   const session = await auth.api.getSession({ headers: event.headers }).catch(() => null)
   if (!session) throw refused(401, 'Not signed in')
 
-  // Someone taken off the Allowlist loses access even with a live session; so
-  // does a session made before unverified emails were refused (#191).
+  // A session made before unverified emails were refused (#191) loses
+  // access. Being off the Allowlist doesn't: everyone who has an account
+  // signs in (#350).
   const refusal = signInRefusal(session.user)
   if (refusal) throw refused(403, refusal.errorDescription)
 

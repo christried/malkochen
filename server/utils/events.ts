@@ -42,6 +42,9 @@ export type EventKind =
   | 'vote_set'
   | 'vote_changed'
   | 'vote_taken_back'
+  // The Operator switched Open Sign-up (CONTEXT.md) on or off: an event of
+  // malkochen as a whole, on no Board.
+  | 'open_sign_up_switched'
 
 // What an event says beyond its Board, Dish and user, by kind. `undo`: the
 // write was a "Rückgängig", taking back the one before it.
@@ -64,6 +67,8 @@ export type EventDetails =
   | { up: boolean }
   // member_removed: who the Owner removed.
   | { member: string }
+  // open_sign_up_switched: whether it is on now.
+  | { on: boolean }
 
 // One event per row of the statement it is recorded with: its kind, and
 // SQL for its Board, Dish and details over that row. `user` did it.
