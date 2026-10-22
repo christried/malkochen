@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { readdirSync } from 'node:fs'
 import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
 import { E2E_ORIGIN, testAuthEnv } from '../support/test-auth-env'
+import { TEST_VERSION } from '../support/test-version'
 import durations from './durations.json'
 import { planShard } from './shards'
 
@@ -31,7 +32,7 @@ async function main(): Promise<number> {
       const child = spawn(['pnpm', 'exec', 'playwright', 'test', ...args].join(' '), {
         stdio: 'inherit',
         shell: true,
-        env: { ...process.env, ...testAuthEnv(E2E_ORIGIN), DATABASE_URL: database.url, MALKOCHEN_E2E: '1' },
+        env: { ...process.env, ...testAuthEnv(E2E_ORIGIN), DATABASE_URL: database.url, MALKOCHEN_VERSION: TEST_VERSION, MALKOCHEN_E2E: '1' },
       })
       // Ctrl+C reaches Playwright directly; the wrapper only outlives it so
       // `finally` can drop the database.

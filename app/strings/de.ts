@@ -6,6 +6,7 @@
 // (.nuxt/tsconfig.node.json) has no `~` aliases.
 import type { AchievementLevel } from '../utils/achievement'
 import type { SourceColumn } from '../../shared/admin'
+import type { SectionKind } from '../../shared/changelog'
 import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
@@ -15,7 +16,7 @@ import { intlFor } from './intl'
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear, moment, time } = intlFor('de')
+const { number, plural, day: addedDate, dayWithYear, month: monthAndYear, moment, time } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -71,6 +72,30 @@ export const de = {
   legal: {
     impressum: 'Impressum',
     privacy: 'Datenschutz',
+  },
+  // The Changelog (pages/changelog.vue, #354): its title, also the link at
+  // the end of Your Settings and under the sign-in screen; `current` says
+  // which Version you have, under that link, and `isNew` marks it while the
+  // app's Version is newer than the last one you opened it in. `unreleased`
+  // heads what's live but in no Version yet; `sections` name Keep a
+  // Changelog's sections.
+  changelog: {
+    title: 'Was ist neu',
+    back: 'Zurück',
+    current: (version: string) => `Du nutzt malkochen ${version}.`,
+    isNew: 'Neu',
+    unreleased: 'Gerade neu',
+    version: (version: string) => `Version ${version}`,
+    // A Version's day, from YYYY-MM-DD.
+    date: (date: string) => dayWithYear(new Date(`${date}T12:00:00Z`)),
+    empty: 'Hier steht bald, was sich bei malkochen ändert.',
+    sections: {
+      added: 'Hinzugefügt',
+      changed: 'Geändert',
+      removed: 'Entfernt',
+      fixed: 'Behoben',
+      security: 'Sicherheit',
+    } satisfies Record<SectionKind, string>,
   },
   signIn: {
     // "Was willst du malkochen?": the app's name (app.name) goes between

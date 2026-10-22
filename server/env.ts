@@ -60,6 +60,10 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // Tests only: where Resend's API is instead (a stand-in that keeps what is
   // sent). Empty: Resend itself.
   RESEND_BASE_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
+  // Tests only: the Version the server runs as (server/version.ts), in
+  // place of package.json's, so a Changelog with no Version yet still has
+  // one to mark "Neu". Empty: package.json's.
+  MALKOCHEN_VERSION: z.union([z.literal(''), z.string().regex(/^\d+\.\d+\.\d+$/, 'must be a Version such as 1.0.0')]).default(''),
   // Set by Vercel itself; used to refuse the dev bypass there and to require
   // the Blob token.
   VERCEL_ENV: z.string().optional(),
@@ -69,6 +73,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
 ).refine(
   env => !(env.RESEND_BASE_URL !== '' && isDeployed(env.VERCEL_ENV)),
   { path: ['RESEND_BASE_URL'], message: 'must never be set in Vercel production or preview' },
+).refine(
+  env => !(env.MALKOCHEN_VERSION !== '' && isDeployed(env.VERCEL_ENV)),
+  { path: ['MALKOCHEN_VERSION'], message: 'must never be set in Vercel production or preview' },
 ).refine(
   env => env.BLOB_READ_WRITE_TOKEN !== '' || !isDeployed(env.VERCEL_ENV),
   { path: ['BLOB_READ_WRITE_TOKEN'], message: 'is required in Vercel production and preview' },

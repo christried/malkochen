@@ -11,7 +11,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, month: monthAndYear, moment, time } = intlFor('it-IT')
+const { number, plural, day: addedDate, dayWithYear, month: monthAndYear, moment, time } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -68,6 +68,23 @@ export const it: Strings = {
   legal: {
     impressum: 'Note legali',
     privacy: 'Privacy',
+  },
+  changelog: {
+    title: 'Novità',
+    back: 'Indietro',
+    current: (version: string) => `Stai usando malkochen ${version}.`,
+    isNew: 'Nuovo',
+    unreleased: 'Appena arrivato',
+    version: (version: string) => `Versione ${version}`,
+    date: (date: string) => dayWithYear(new Date(`${date}T12:00:00Z`)),
+    empty: 'Qui vedrai presto cosa cambia in malkochen.',
+    sections: {
+      added: 'Aggiunto',
+      changed: 'Modificato',
+      removed: 'Rimosso',
+      fixed: 'Corretto',
+      security: 'Sicurezza',
+    },
   },
   signIn: {
     headline: { before: 'Cosa cuciniamo su ', after: '?' },

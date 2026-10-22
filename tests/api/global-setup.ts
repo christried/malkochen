@@ -6,6 +6,7 @@ import { dirname } from 'node:path'
 import type { TestProject } from 'vitest/node'
 import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
 import { testAuthEnv } from '../support/test-auth-env'
+import { TEST_VERSION } from '../support/test-version'
 import { CRON_SECRET, IMAGE_DIR, SERVER_LOG } from './server-env'
 
 // Seam 1 (the server API): builds the app once, boots the production server
@@ -59,7 +60,7 @@ export default async function setup(project: TestProject) {
   const server = spawn(process.execPath, ['.output/server/index.mjs'], {
     // stderr is shown as before and kept in SERVER_LOG as well.
     stdio: ['inherit', 'inherit', 'pipe'],
-    env: { ...process.env, ...testAuthEnv(baseUrl), IMAGE_DIR, CRON_SECRET, NODE_ENV: 'production', DATABASE_URL: database.url, PORT: String(PORT), HOST: '127.0.0.1' },
+    env: { ...process.env, ...testAuthEnv(baseUrl), IMAGE_DIR, CRON_SECRET, MALKOCHEN_VERSION: TEST_VERSION, NODE_ENV: 'production', DATABASE_URL: database.url, PORT: String(PORT), HOST: '127.0.0.1' },
   })
   server.stderr!.on('data', (chunk: Buffer) => {
     process.stderr.write(chunk)

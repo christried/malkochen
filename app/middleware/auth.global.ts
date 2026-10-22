@@ -3,7 +3,8 @@
 // /login. A signed-in user who is still to pick or confirm their Username
 // goes to /username first and is taken on from there; nobody else sees that
 // page. The invite landing is open to everyone and decides for itself: it
-// leads to the invited Board, which then sends them to /username.
+// leads to the invited Board, which then sends them to /username. The
+// Changelog is open to everyone too.
 // The API has its own boundary (server/middleware/auth.ts); this only
 // decides which page to show.
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -17,6 +18,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   else if (status === 401) useLanguageChoice().value = 'auto'
 
   if (to.path.startsWith('/invite/')) return
+  // The Changelog (#354) is for everyone, signed in or not.
+  if (to.path === '/changelog') return
   if (to.path === '/login') {
     if (!error.value) return navigateTo('/')
     return

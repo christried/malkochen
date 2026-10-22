@@ -267,6 +267,13 @@
       "when": 1792650363397,
       "tag": "0037_open_sign_up",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792653125313,
+      "tag": "0038_version_seen",
+      "breakpoints": true
     }
   ]
 }

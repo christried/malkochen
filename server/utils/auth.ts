@@ -184,6 +184,9 @@ export const auth = betterAuth({
       // The language their browser asked for last (#328): only the API's
       // guard (server/middleware/auth.ts) sets it.
       browserLanguage: { type: 'string', required: false, input: false },
+      // The last Version they opened the Changelog in (#354): only
+      // PUT /api/me/version-seen sets it.
+      versionSeen: { type: 'string', required: false, input: false },
     },
     // Runs on user creation (the sign-up gate) and, for Google, on every
     // repeat sign-in too (the sign-in gate). Gets what Google says about the

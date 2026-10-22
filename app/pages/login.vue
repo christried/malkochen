@@ -169,7 +169,12 @@ const HERO_PLACEHOLDERS: Placeholder[] = ['pasta', 'ramen', 'breakfast', 'burger
         </template>
       </template>
     </main>
-    <footer class="px-4 pb-4">
+    <!-- What malkochen is, before joining: the Changelog (#354) beside the legal pages. -->
+    <footer class="flex flex-wrap items-center justify-center gap-x-2 px-4 pb-4">
+      <NuxtLink
+        to="/changelog"
+        class="inline-flex min-h-11 items-center rounded-chip px-2 text-small text-text-muted underline-offset-4 transition-colors duration-fade ease-fade hover:text-text hover:underline focus-visible:text-text focus-visible:outline-2 focus-visible:outline-focus"
+      >{{ t.changelog.title }}</NuxtLink>
       <LegalLinks class="justify-center" />
     </footer>
   </div>
