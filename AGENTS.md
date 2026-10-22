@@ -24,7 +24,7 @@ When asked to implement without a ticket number (e.g. a bare `/implement`, or "n
 
 Every change users notice goes into the Changelog (`CHANGELOG.md`, `CHANGELOG.de.md`, `CHANGELOG.it.md`, all three in the same PR). How to write it: `docs/agents/changelog.md`. The code review checks it (`CODING_STANDARDS.md`).
 
-- Only what users notice, under Added, Changed, Removed, Fixed or Security, in the app's tone. Never tests, CI, refactors or docs.
+- Only what users notice, under Added, Changed, Removed, Fixed or Security, in the app's tone. Never tests, CI, refactors, docs or dependency updates.
 - A spec's last ticket writes the spec's one entry and dates its Version, a patch. Any lines under `[Unreleased]` are first rewritten into a patch of their own, just before it.
 - A PR outside a spec that users notice adds its line under `[Unreleased]`.
 - A minor Version only after asking the user and getting their yes; otherwise always a patch.

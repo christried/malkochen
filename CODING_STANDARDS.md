@@ -12,4 +12,4 @@ The Changelog (`CONTEXT.md` → Changelog, Version) is kept in every PR, not aft
 - Sections are `Added`, `Changed`, `Removed`, `Fixed` and `Security`, in English in all three files.
 - Lines are in the app's tone (casual, warm, "du" and "tu"), plain sentences, no Markdown.
 - All three files change together, with the same Versions and dates.
-- A minor Version only with the user's yes, quoted or linked in the PR. Otherwise a patch.
+- A minor Version only after asking the user and getting their yes. Otherwise a patch.
