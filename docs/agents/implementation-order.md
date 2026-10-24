@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session, on its own branch, through a PR.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -330,6 +330,7 @@ From the Snackbert and Staging grilling session on 2026-10-24 (`CONTEXT.md` → 
 
 | # | Ticket | Note |
 |---|---|---|
+| christried/snackbert#10 | Gemini 2.5 Flash is retired: move analysis to Gemini 3.8 Flash and 3.1 Flash-Lite in europe-west1 | **Urgent**, so first: Snackbert's analysis broke on 2026-10-20. Snackbert repo (see Phase 21 for how to work its tickets). Not part of #413 |
 | #414 | Staging groundwork in the repo: one CI check, Staging tells itself apart, staging deploys on | PR into `main`, today's flow |
 | #415 | Vercel side of Staging: domain, Blob store, generated variables | Vercel MCP only. Ends with the hand-off comment for #416 |
 | #416 | Your steps for Staging: DNS, Google, Resend, Neon, addresses | `ready-for-human`: skip, the user does it |
@@ -364,6 +365,22 @@ From the grilling session on 2026-10-24 (`docs/reviews/review4.md`, `CONTEXT.md`
 | #408 | Mail avatar in Gmail | `ready-for-human`: skip, the user does it |
 | #409 | Datenschutz for review 4 | The user OKs the wording before merge |
 | #410 | Changelog entry and Version for this spec | 1.1.0 (agreed). Blocked by every other ticket of #388, #408 too |
+
+### Phase 21: Snackbert (#421)
+
+From the Snackbert and Staging grilling session on 2026-10-24 (`CONTEXT.md` → Snackbert, Snackbert Question, Snackbert Report; ADR 0010). Each ticket is a sub-issue of #421, with GitHub blocking links as well as its `## Blocked by` section, across both repos. No Changelog ticket: only the two Snackbert users ever notice it.
+
+Tickets written `christried/snackbert#n` live in the Snackbert repo: read them with `gh issue view <n> -R christried/snackbert`, work them in a local clone of it (next to this one), PR into its `master`, deploy with `firebase deploy --only functions`. Snackbert has no Staging; malkochen's tickets land on `staging` as usual.
+
+| # | Ticket | Note |
+|---|---|---|
+| christried/snackbert#11 | Function for malkochen: account check and Snackbert Report | Snackbert repo. New test seam (Vitest, Firebase faked) and a CI job there. Stores both caller secrets |
+| christried/snackbert#12 | Analysis reads Dish details: Dish-only meals, the Dish in the research prompt, URL context | Snackbert repo. The user compares a few real Reports |
+| #422 | Prototype: the Snackbert Question and the report sheet | Ends with the user's decisions. Blocks #424 |
+| #423 | Snackbert in Your Settings: account check, switch with consent, Datenschutz, the stand-in | Migration. New env vars `SNACKBERT_URL`, `SNACKBERT_SECRET` (production and Staging). The user OKs the wording before merge |
+| #424 | Sending a Snackbert Report from the Dish History | The first end-to-end path |
+| #425 | The Snackbert Question after a Cooking | |
+| #426 | Device check: real Snackbert Reports from Staging | `ready-for-human`: skip, the user does it |
 
 ## Keeping this file current
 
