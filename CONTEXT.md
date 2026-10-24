@@ -97,20 +97,36 @@ The account, channel or blog that published a Source (e.g. a TikTok handle or a 
 _Avoid_: Uploader, author, owner
 
 **Supported Source**:
-A kind of Source malkochen fully supports, with an image reliably found: TikTok video, Instagram Reel, Instagram post, YouTube Short, Pinterest Pin, food blog page. Each also yields a Suggested Title and a Creator whenever the Source shows one; when it doesn't, the Dish is titled by hand. Any other link is still accepted, on a best-effort basis.
+A kind of Source malkochen fully supports, with an image reliably found: TikTok video, Instagram Reel, Instagram post, YouTube Short, Pinterest Pin, food blog page. Each also yields a Suggested Title, a Creator and a Caption whenever the Source shows one; when it doesn't, the Dish is titled by hand. Any other link is still accepted, on a best-effort basis.
 _Avoid_: Platform, integration
 
 **Suggested Title**:
 The title proposed from the Source when a Dish is being added, which the user can edit before saving. One that the Source writes mostly in capitals is proposed in normal case ("CREMIGE PILZPASTA" becomes "Cremige Pilzpasta"); titles typed by hand stay as written.
 _Avoid_: Inferred title, auto title
 
+**Caption**:
+The text a Source shows with its post (a TikTok or Instagram caption, a YouTube or Pinterest description, a food blog's summary), found when the Dish is added and shown in the Dish's detail, folded to a few lines. It's the Source's text, so no Member edits it; search finds Dishes by it.
+_Avoid_: Description (that's a Column Subtitle), note, post text
+
+**Dish Link**:
+A link to one Dish that anyone can open, signed in or not, to see its image, title, Creator and Source, and copy it to a Board of their own. Like an Invite Link it ends in a secret, so it can't be guessed from the Dish's Address. It stops working once the Dish is archived.
+_Avoid_: Share link (that's an Invite Link), public link, permalink
+
+**Copy**:
+A new Dish made from another one ("Kopieren"), through its Dish Link or into another of one's own Boards. It takes the title, image (an Own Photo too, with its Focus Point), Source, Creator and Caption, but none of the Cookings, Comments or Votes, and counts as added by whoever copied it. From then on the two Dishes are unrelated.
+_Avoid_: Duplicate, clone
+
 **New Dish**:
 A Dish another Member added to a Board since you last opened that Board (or joined it, if you never opened it), including ones added while you have it open. Marked "Neu" until you open the Board again; coming back to the app after half an hour or more away counts as opening it.
 _Avoid_: Unread, notification
 
 **Push Notification**:
-A notification on a Member's device that other Members added Dishes to one of their Boards, or wrote Comments and gave Votes on its Dishes, sent only to devices the Member turned push notifications on for in their settings (off by default). One per Board, replaced as more comes in: it counts the Dishes, Comments and Votes others added since the Member last had the Board open and names who; about one Dish, tapping it opens that Dish (at its Dish History when it's about Comments or Votes), else the Board. Adding a Dish, writing a Comment and giving a new Vote send one; editing a Comment or changing a Vote doesn't. Nothing about one's own, about Archived Dishes, or about a deleted Comment. Members who may not comment and vote get them too.
+A notification on a Member's device that other Members added Dishes to one of their Boards, or wrote Comments and gave Votes on its Dishes, sent only to devices the Member turned push notifications on for in their settings (off by default). One per Board, replaced as more comes in: it counts the Dishes, Comments and Votes others added since the Member last had the Board open and names who; about one Dish, tapping it opens that Dish (at its Dish History when it's about Comments or Votes), else the Board. Adding a Dish, writing a Comment and giving a new Vote send one; editing a Comment or changing a Vote doesn't. Nothing about one's own, about Archived Dishes, or about a deleted Comment. Members who may not comment and vote get them too. Its title says who and on which Board ("Von Mara in Kochen lecker"); its text names the Dish by title, Creator and the Source's platform; its picture is the Dish's image, the newest Dish's when it's about several.
 _Avoid_: Alert, reminder
+
+**Notification Prompt**:
+Topfbert asking a user, on a Board, to switch on Push Notifications (only in the installed app, on a device where they're off) or the Email Digest (while it's off), with "Einschalten" and "Später". Each is asked at most once every 30 days, never two within 48 hours of each other, never in the same visit as the Tour or the Changelog Popup, and not before a new user's second day.
+_Avoid_: Reminder, nag, banner
 
 **Email Digest**:
 One email in the evening ("Tägliche E-Mail") listing the Dishes other Members added to a user's Boards since the last one, each with its Board and who added it, and after them, per Board, the Comments others wrote (the start of each) and the Votes they gave on its Dishes ("Im Verlauf"), sent only to users who switched it on in their settings (off by default; one switch for all their Boards and devices). Nothing new, no email; nothing is listed twice (a changed Vote isn't listed again), nor from before they joined the Board, nor one's own, nor anything on an Archived Dish or a deleted Comment.
@@ -171,20 +187,24 @@ _Avoid_: Deleted Board
 ### Running malkochen
 
 **Operator**:
-The one person who runs malkochen, and the only one who can open the Admin Page.
+The one person who runs malkochen, and the only one who can open the Admin Page. They can open every Board with all of an Owner's rights without being a Member: they're listed as a Member only on Boards they created or joined, and anything they add anywhere still shows their Username.
 _Avoid_: Admin, superuser, Owner (an Owner owns one Board)
 
 **Admin Page**:
-The Operator's page of figures on how malkochen is used (Dishes added, moves, Cookings, Comments, active users and Boards, sign-ups), reached from their Your Settings. It shows counts only, never other people's Dish titles or Comments.
+The Operator's page on how malkochen is used, reached from their Your Settings: figures (Dishes added, moves, Cookings, Comments, active users and Boards, sign-ups), the Event Log to filter by user, Board, kind and time, and every Board, to open any of them.
 _Avoid_: Dashboard, admin panel, admin console
 
 **Event Log**:
-What happens on Boards, recorded for the Admin Page to count: an event each time a Dish is added, moved, archived, restored or deleted for good, a Cooking is recorded, deleted or restored, a Comment is written, edited, deleted or restored, a Vote is given, changed or taken back, a Board is created, archived, restored or deleted for good, and a Member joins, leaves or is removed; also each time the Operator switches Open Sign-up, the one event on no Board. Each says when, what kind, which Board, Dish and user, never any content (no titles, Comments or names), and is kept indefinitely. Shown nowhere but as counts on the Admin Page.
+Everything that happens in malkochen, one event each time: on Boards (Dishes added, edited, moved, copied, archived, restored or deleted for good; Cookings, Comments and Votes; Columns, Permissions and the Invite Link changed; Boards created, archived, restored or deleted for good; Members joining, leaving or removed) and around them (sign-ups, sign-ins, Username and Your Settings changed, accounts deleted, Push Notifications and Email Digests sent, the Operator switching Open Sign-up). Each says when, what kind and which Board, Dish and user, and is kept indefinitely. The Admin Page shows names, titles and Comments as they are now, so what's been deleted shows as deleted there, never as it was.
 _Avoid_: Activity feed, audit log, Dish History
 
 **Changelog**:
-The page listing what changed for users in each Version ("Was ist neu"), newest first, with what's done but not yet in a Version on top ("Gerade neu"). Only what users notice goes in.
+The page listing what changed for users in each Version ("Was ist neu"), newest first, with what's done but not yet in a Version on top ("Gerade neu"), linked at the bottom of every Board and in Your Settings. Only what users notice goes in.
 _Avoid_: Release notes, updates, news
+
+**Changelog Popup**:
+The Changelog entries of every Version a user hasn't seen yet ("Was ist neu"), shown once, the first time they open malkochen after a new Version; that counts as having seen the Changelog. Never in the same visit as the Tour; a new user's first Version counts as seen.
+_Avoid_: News popup, update dialog, release notes
 
 **Version**:
 malkochen's number, starting at 1.0.0. Each finished spec, and each batch of smaller changes, is a patch (1.0.1, 1.0.2, …); a minor Version (1.1.0) only when the user calls a feature big enough for one.
