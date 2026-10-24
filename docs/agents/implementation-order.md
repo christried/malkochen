@@ -324,6 +324,34 @@ From the grilling session on 2026-10-18 (`docs/reviews/next-spec-brief.md`, `CON
 | #355 | The Changelog rule for agents | |
 | #356 | Release 1.0.0 | |
 
+### Phase 20: review 4 (#388)
+
+From the grilling session on 2026-10-24 (`docs/reviews/review4.md`, `CONTEXT.md`, ADR 0009). Each ticket is a sub-issue of #388, with GitHub blocking links as well as its `## Blocked by` section. Don't close #388 as part of a ticket. The Snackbert integration isn't here: it gets its own grilling session.
+
+| # | Ticket | Note |
+|---|---|---|
+| #390 | Bundle: review 4 small fixes | First: the sheet fix is the user's top priority (user feedback) |
+| #391 | Impressum and Datenschutz in malkochen, up to date with 1.0.0 | Second: the live privacy policy predates 1.0.0. The user OKs the wording before merge; also a PR in `christried.github.io` |
+| #392 | Prototype: Changelog page, Changelog Popup, Notification Prompt, Dish Link page | Ends with the user's decisions. Blocks #401, #405, #406, #407 |
+| #393 | Caption | Migration |
+| #394 | "Video abspielen" only for a video that plays in malkochen | Migration |
+| #395 | Fill in Captions and playable video for existing Dishes | After #393 and #394. Check in production that the job finished |
+| #396 | One Board access check | Refactor, no behaviour change; makes #397 a one-place change |
+| #397 | The Operator opens every Board | ADR 0009 |
+| #398 | Event Log: everything on Boards | Migration. Before #401, #402 and #407, which add their own kinds on it |
+| #399 | Event Log: everything around Boards | |
+| #400 | Admin Page: the Event Log to filter | After #397 and #398 |
+| #401 | Dish Link: share a Dish and open it signed out | Migration. After #392 |
+| #402 | Copy a Dish into another of your Boards | |
+| #403 | Copy from a Dish Link, through sign-up | After #401 and #402 |
+| #404 | Push Notifications: who, where, what, with the Dish's image | Replaces #351's wordings |
+| #405 | Changelog page redesign and the footer | After #391 and #392 |
+| #406 | Changelog Popup | After #405 |
+| #407 | Notification Prompts | After #406. Migration |
+| #408 | Mail avatar in Gmail | `ready-for-human`: skip, the user does it |
+| #409 | Datenschutz for review 4 | The user OKs the wording before merge |
+| #410 | Changelog entry and Version for this spec | 1.1.0 (agreed). Blocked by every other ticket of #388, #408 too |
+
 ## Keeping this file current
 
 When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.
