@@ -184,6 +184,20 @@ _Avoid_: Deleted Dish, trash, bin
 A Board its Owner deleted, kept under "Archiv" in the Owner's Board Switcher for 30 days. The Owner can restore it, with its Members, until then or delete it for good sooner.
 _Avoid_: Deleted Board
 
+### Snackbert
+
+**Snackbert**:
+A separate Android app for keeping track of what one eats, with a mascot of the same name, run by the same Operator. It's private: only the few people with a Snackbert account can use it from malkochen, and nobody else ever sees it there.
+_Avoid_: Snackbert integration, nutrition app, the tracker
+
+**Snackbert Question**:
+Snackbert's head popping up after a Cooking to ask the Member who recorded it whether they dare tell him about it. It comes once the Cooking can no longer be undone, after a Klassiker celebration and never during the Tour, and only for Members who switched Snackbert on in Your Settings. "Nein" sends him away for that Cooking.
+_Avoid_: Prompt (that's a Notification Prompt), popup, nag
+
+**Snackbert Report**:
+One Cooking a Member told Snackbert they ate ("Snackbert melden"), sent with the Dish's details and, if they like, a photo of their portion, a recording or a few words about it. Each Member reports for themselves, from the Snackbert Question or later from the Cooking in the Dish History, where it then shows as reported to them alone. What Snackbert makes of it stays in Snackbert.
+_Avoid_: Meal log, entry, submission, sync
+
 ### Running malkochen
 
 **Operator**:
@@ -199,7 +213,7 @@ Everything that happens in malkochen, one event each time: on Boards (Dishes add
 _Avoid_: Activity feed, audit log, Dish History
 
 **Changelog**:
-The page listing what changed for users in each Version ("Was ist neu"), newest first, with what's done but not yet in a Version on top ("Gerade neu"), linked at the bottom of every Board and in Your Settings. Only what users notice goes in.
+The page listing what changed for users in each Version ("Was ist neu"), newest first, with what's Staged but not yet Released on top ("Gerade neu", so only Staging ever shows it), linked at the bottom of every Board and in Your Settings. Only what users notice goes in.
 _Avoid_: Release notes, updates, news
 
 **Changelog Popup**:
@@ -207,5 +221,13 @@ The Changelog entries of every Version a user hasn't seen yet ("Was ist neu"), s
 _Avoid_: News popup, update dialog, release notes
 
 **Version**:
-malkochen's number, starting at 1.0.0. Each finished spec, and each batch of smaller changes, is a patch (1.0.1, 1.0.2, …); a minor Version (1.1.0) only when the user calls a feature big enough for one.
-_Avoid_: Release, build
+malkochen's number, starting at 1.0.0. Each Release is one Version: a patch (1.0.1, 1.0.2, …), or a minor Version (1.1.0) only when the Operator calls a feature in it big enough for one.
+_Avoid_: Release (that's how a Version reaches everyone), build
+
+**Staging**:
+The Operator's own copy of malkochen at staging.malkochen.christried.me, with its own accounts, Boards and Allowlist, where changes are tried out before they're Released. A change that's there but not yet Released is Staged. Nothing on Staging ever reaches production's users.
+_Avoid_: Preview, test server, beta
+
+**Release**:
+Everything Staged reaching everyone at once, as one Version ("Release 1.1.0"). A fix that can't wait is a Release of its own.
+_Avoid_: Rollout, deploy, launch, Version (that's the number a Release brings)
