@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session, on its own branch, through a PR.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -324,13 +324,26 @@ From the grilling session on 2026-10-18 (`docs/reviews/next-spec-brief.md`, `CON
 | #355 | The Changelog rule for agents | |
 | #356 | Release 1.0.0 | |
 
-### Phase 20: review 4 (#388)
+### Phase 19b: Staging (#413), before Phase 20
 
-From the grilling session on 2026-10-24 (`docs/reviews/review4.md`, `CONTEXT.md`, ADR 0009). Each ticket is a sub-issue of #388, with GitHub blocking links as well as its `## Blocked by` section. Don't close #388 as part of a ticket. The Snackbert integration isn't here: it gets its own grilling session.
+From the Snackbert and Staging grilling session on 2026-10-24 (`CONTEXT.md` → Staging, Release, Version). Each ticket is a sub-issue of #413, with GitHub blocking links as well as its `## Blocked by` section. Phase 20 runs through Staging and goes out as Release 1.1.0, so #390 is blocked by #418. #414 and #415 can run side by side. #414 is the last PR into `main` the old way; from #417 on, everything lands on `staging`.
 
 | # | Ticket | Note |
 |---|---|---|
-| #390 | Bundle: review 4 small fixes | First: the sheet fix is the user's top priority (user feedback) |
+| #414 | Staging groundwork in the repo: one CI check, Staging tells itself apart, staging deploys on | PR into `main`, today's flow |
+| #415 | Vercel side of Staging: domain, Blob store, generated variables | Vercel MCP only. Ends with the hand-off comment for #416 |
+| #416 | Your steps for Staging: DNS, Google, Resend, Neon, addresses | `ready-for-human`: skip, the user does it |
+| #417 | The switch: staging branch as default, ruleset on main and staging, Staging live | Needs the user's Chrome for the Google sign-in |
+| #418 | The new flow written down: development docs, Changelog rule, agent rules, implement-loop | The first PR into `staging`. Unblocks #390 |
+| #419 | Device check: Staging on the phone | `ready-for-human`: skip, the user does it |
+
+### Phase 20: review 4 (#388)
+
+From the grilling session on 2026-10-24 (`docs/reviews/review4.md`, `CONTEXT.md`, ADR 0009). Each ticket is a sub-issue of #388, with GitHub blocking links as well as its `## Blocked by` section. Don't close #388 as part of a ticket. The Snackbert integration isn't here: it has its own spec, after this phase.
+
+| # | Ticket | Note |
+|---|---|---|
+| #390 | Bundle: review 4 small fixes | First of the phase: the sheet fix is the user's top priority (user feedback). After #418 |
 | #391 | Impressum and Datenschutz in malkochen, up to date with 1.0.0 | Second: the live privacy policy predates 1.0.0. The user OKs the wording before merge; also a PR in `christried.github.io` |
 | #392 | Prototype: Changelog page, Changelog Popup, Notification Prompt, Dish Link page | Ends with the user's decisions. Blocks #401, #405, #406, #407 |
 | #393 | Caption | Migration |
