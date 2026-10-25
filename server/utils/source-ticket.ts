@@ -1,26 +1,64 @@
+import { videoEmbed } from '../../shared/video-embed'
+import type { DishSource } from './dishes'
 import { sourceTickets } from './image-store'
 
 // Source Tickets (server/image-store/tickets.ts): what Source Lookup read from a
 // Source, signed for the Member who asked, so a Dish keeps a Caption only if
-// Source Lookup found it, never one a client makes up. The facts are built in
-// this one place, so the ticket and the check always agree on them.
+// Source Lookup found it, never one a client makes up. The same goes for
+// whether an Instagram post has a video that plays in malkochen (#394). The
+// facts are built in this one place, so the ticket and the check always agree
+// on them.
 
-// The facts a Source Ticket vouches for: the canonical link and the Caption
-// (null when the Source shows none). A ticket says what Source Lookup read,
-// including "no Caption" for a link without one.
-export function sourceFacts(result: { canonicalLink: string, caption: string | null }): string {
-  return JSON.stringify({ link: result.canonicalLink, caption: result.caption })
+// The facts a Source Ticket vouches for: the canonical link, the Caption
+// (null when the Source shows none) and whether the Source has a video that
+// plays in malkochen. A ticket says what Source Lookup read, including "no
+// Caption" for a link without one.
+export interface SourceFacts {
+  canonicalLink: string
+  caption: string | null
+  playableVideo: boolean
+}
+
+export function sourceFacts(result: SourceFacts): string {
+  return JSON.stringify({ link: result.canonicalLink, caption: result.caption, playableVideo: result.playableVideo })
 }
 
 // The Source Ticket GET /api/source-lookup answers with, for the Member asking.
-export function issueSourceTicket(userId: string, result: { canonicalLink: string, caption: string | null }): string {
+export function issueSourceTicket(userId: string, result: SourceFacts): string {
   return sourceTickets.issue(userId, sourceFacts(result))
 }
 
-// The Caption a client sent with a Source, if the ticket it sent is one Source
-// Lookup signed for that same link and Caption and for this Member; else none.
-export function checkedCaption(userId: string, sent: { link: string, caption: string | null, ticket: string | null | undefined }): string | null {
+// The Caption and the playable-video value a client sent with a Source, if the
+// ticket it sent is one Source Lookup signed for that same link, Caption and
+// value and for this Member; else none (null).
+export function checkedSourceFacts(userId: string, sent: { link: string, caption: string | null, playableVideo: boolean | null | undefined, ticket: string | null | undefined }): { caption: string | null, playableVideo: boolean } | null {
   if (!sent.ticket) return null
-  const vouched = sourceTickets.check(userId, sourceFacts({ canonicalLink: sent.link, caption: sent.caption }), sent.ticket)
-  return vouched ? sent.caption : null
+  const playableVideo = sent.playableVideo ?? false
+  const vouched = sourceTickets.check(userId, sourceFacts({ canonicalLink: sent.link, caption: sent.caption, playableVideo }), sent.ticket)
+  return vouched ? { caption: sent.caption, playableVideo } : null
+}
+
+// What a Dish keeps of its Source's facts (#393, #394), from what the client
+// sent with the Source. The Caption only with a valid ticket. Whether a video
+// plays: for TikTok and YouTube Shorts read from the link alone (no ticket
+// needed); for Instagram only with a valid ticket, else null (not known); false
+// for any other Source. No Source: nothing known.
+export function storedSourceFacts(
+  userId: string,
+  source: DishSource | null,
+  sent: { caption: string | null, playableVideo: boolean | null | undefined, ticket: string | null | undefined },
+): { caption: string | null, playableVideo: boolean | null } {
+  if (!source) return { caption: null, playableVideo: null }
+  const checked = checkedSourceFacts(userId, { link: source.link, ...sent })
+  const caption = checked?.caption ?? null
+  switch (source.kind) {
+    case 'tiktok':
+    case 'youtube-short':
+      return { caption, playableVideo: videoEmbed(source) !== null }
+    case 'instagram-reel':
+    case 'instagram-post':
+      return { caption, playableVideo: checked?.playableVideo ?? null }
+    default:
+      return { caption, playableVideo: false }
+  }
 }

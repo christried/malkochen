@@ -34,10 +34,10 @@ async function me(caller: Caller): Promise<{ id: string }> {
 }
 
 // The Source Ticket Source Lookup signs for the Member it answers: the link
-// and Caption it read (the facts server/utils/source-ticket.ts signs).
+// Caption and playableVideo (false) it read (the facts server/utils/source-ticket.ts signs).
 async function sourceTicket(issuedTo: Caller, link: string, caption: string | null): Promise<string> {
   const { id } = await me(issuedTo)
-  return createImageTickets(SECRET, { purpose: 'source' }).issue(id, JSON.stringify({ link, caption }))
+  return createImageTickets(SECRET, { purpose: 'source' }).issue(id, JSON.stringify({ link, caption, playableVideo: false }))
 }
 
 async function addDish(caller: Caller, body: Record<string, unknown>): Promise<Dish> {

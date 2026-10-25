@@ -281,6 +281,13 @@
       "when": 1792936791319,
       "tag": "0039_dish_caption",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792955296271,
+      "tag": "0040_dish_playable_video",
+      "breakpoints": true
     }
   ]
 }
