@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { guessSource } from '../../../source-lookup'
-import { isMember } from '../../../utils/boards'
+import { isMember } from '../../../utils/board-access'
 import { dishWithSource, type DuplicateDish } from '../../../utils/dishes'
 
 const query = z.object({ link: z.url({ protocol: /^https?$/ }).max(2048) })

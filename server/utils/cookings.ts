@@ -1,7 +1,8 @@
 import { and, desc, eq, gt, inArray, isNotNull, isNull, notExists, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db'
-import { cooking, dish, membership, user } from '../db/schema'
+import { cooking, dish, user } from '../db/schema'
+import { accessibleBoardIds } from './board-access'
 import type { DishAdder } from './dishes'
 import { cookingEvent, withEvents } from './events'
 import { pictureOf } from './people'
@@ -62,8 +63,7 @@ function onMembersDish(cookingId: string, userId: string, { includingDeleted = f
     inArray(cooking.dishId, db
       .select({ id: dish.id })
       .from(dish)
-      .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
-      .where(isNull(dish.deletedAt))),
+      .where(and(isNull(dish.deletedAt), inArray(dish.boardId, accessibleBoardIds(userId))))),
   )
 }
 

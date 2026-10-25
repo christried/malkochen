@@ -2,7 +2,8 @@ import { and, desc, eq, exists, isNotNull, isNull, lt, sql } from 'drizzle-orm'
 import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { db, runAtomic, type Db } from '../db'
 import { archivedMembership, board, dish, membership } from '../db/schema'
-import { membershipOf, ownerOf, type BoardNameAndEmoji, type BoardSummary } from './boards'
+import type { BoardNameAndEmoji, BoardSummary } from './boards'
+import { accessOn, ownerOf } from './board-access'
 import { slugOf } from './addresses'
 import { RESTORABLE_FOR } from './dishes'
 import { boardEvent, withEvents } from './events'
@@ -63,7 +64,7 @@ function moveMemberships(d: Db, boardId: string, from: typeof membership | typeo
 // Member. 'archived' once it is, 'forbidden' for a Member who isn't the
 // Owner, null for a non-Member (an Archived Board has none).
 export async function archiveBoard(boardId: string, userId: string): Promise<'archived' | 'forbidden' | null> {
-  const [found] = await membershipOf(boardId, userId)
+  const [found] = await accessOn(boardId, userId)
   if (!found) return null
   if (!found.isOwner) return 'forbidden'
   // Archiving locks the Board's row first, so a join through its Invite Link

@@ -1,9 +1,9 @@
-import { and, eq, exists, not, sql } from 'drizzle-orm'
+import { and, eq, exists, not, sql, type SQLWrapper } from 'drizzle-orm'
 import { z } from 'zod'
 import { ALL_PERMISSIONS, PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
 import { db } from '../db'
 import { board, membership } from '../db/schema'
-import { ownerOf } from './boards'
+import { ownerOf, standingOn } from './board-access'
 
 // The one check of Permissions (CONTEXT.md): may this user do this on this
 // Board, and on this Dish? Every write a Permission covers asks it before
@@ -37,19 +37,11 @@ export function allows(standing: Standing, permission: Permission, userId: strin
   return permitsOn(effectivePermissions(standing), permission, userId, dish)
 }
 
-// The same in SQL, for a query over memberships: whether the Member may
-// take an action `permission` covers that isn't about one Dish.
-export function permits(permission: Permission) {
-  return sql<boolean>`(${membership.isOwner} or coalesce((${membership.permissions} ->> ${permission})::boolean, false))`
-}
-
-// The user's standing on the Board, or null unless they are a Member.
-export async function standingOn(boardId: string, userId: string): Promise<Standing | null> {
-  const [found] = await db
-    .select({ isOwner: membership.isOwner, permissions: membership.permissions })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
-  return found ?? null
+// The same in SQL, for a query over the user's access (board-access.ts,
+// `access` by default: the Membership's row): whether the Member may take
+// an action `permission` covers that isn't about one Dish.
+export function permits(permission: Permission, { isOwner, permissions }: { isOwner: SQLWrapper, permissions: SQLWrapper } = membership) {
+  return sql<boolean>`(${isOwner} or coalesce((${permissions} ->> ${permission})::boolean, false))`
 }
 
 // Why a Member's Permissions couldn't be switched: the user isn't the
