@@ -12,13 +12,30 @@ test('signed out, the Impressum opens in malkochen, German', async ({ page }) =>
   await expect(page).toHaveURL('/impressum')
 })
 
-test('signed out, the Datenschutz shows German as binding, then English and Italian', async ({ page }) => {
+test('signed out, the Datenschutz opens in German: its heading, the binding note, and German marked as the current language', async ({ page }) => {
   await gotoHydrated(page, '/datenschutz')
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Datenschutzerklärung')
-  await expect(page.locator('#de')).toContainText('verbindlich')
-  await expect(page.locator('#en')).toBeVisible()
-  await expect(page.locator('#it')).toBeVisible()
+  await expect(page.getByText('Verbindliche Fassung')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Deutsch' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByText('Privacy policy')).toHaveCount(0)
+})
+
+test('?lang=en opens the English Datenschutz, and its link leads back to the German one', async ({ page }) => {
+  await gotoHydrated(page, '/datenschutz?lang=en')
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy policy')
+  await expect(page.locator('article')).toHaveAttribute('lang', 'en')
+  await page.getByRole('link', { name: 'Zur verbindlichen deutschen Fassung' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Datenschutzerklärung')
+  await expect(page).toHaveURL(/\?lang=de$/)
+})
+
+test('the Datenschutz switches to the Italian text from the language switcher', async ({ page }) => {
+  await gotoHydrated(page, '/datenschutz')
+
+  await page.getByRole('link', { name: 'Italiano' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Informativa sulla privacy')
 })
 
 test('the sign-in screen links to the Impressum and the Datenschutz in malkochen', async ({ page }) => {
