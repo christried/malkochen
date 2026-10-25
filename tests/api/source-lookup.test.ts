@@ -38,6 +38,7 @@ test('a link answers with what Source Lookup knows about it, even when that is n
     suggestedTitle: '',
     creator: null,
     caption: null,
+    playableVideo: false,
     imageUrl: null,
     // Only a found image comes with an Image Ticket.
     imageTicket: null,
