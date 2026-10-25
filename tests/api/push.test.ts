@@ -192,6 +192,7 @@ test('one notification per Board counts the Dishes added since the Member last o
   expect(pushService.deliveries.at(-1)!.message).toEqual({
     title: `Von ${kati} in Kochclub`,
     body: '5 neue Gerichte: Ramen, Dal, Tofu-Nuggets, Pilzpasta, Omas Linsensuppe',
+    lang: 'de',
     tag,
     url: `/b/${board.slug}`,
   })
