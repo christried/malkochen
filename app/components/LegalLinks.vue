@@ -1,11 +1,8 @@
 <script setup lang="ts">
 // "Impressum" and "Datenschutz" side by side (utils/legal.ts), small and
-// muted: in the sign-in screen's footer, at the end of the user menu and, on
-// phones, of the Board switcher. Each opens in a new tab, so the app stays
-// where it was; `chosen` says one was, for a panel to close. `menu`: as rows
-// of a menu (UserMenu), which moves focus between them itself.
-defineProps<{ menu?: boolean }>()
-defineEmits<{ chosen: [] }>()
+// muted: in the sign-in screen's footer, on the Username page and at the end
+// of the Board (AppFooterLinks). Each opens in a new tab, so the app stays
+// where it was.
 const t = useStrings()
 </script>
 
@@ -17,10 +14,7 @@ const t = useStrings()
       :href="link.href"
       target="_blank"
       rel="noopener noreferrer"
-      :role="menu ? 'menuitem' : undefined"
-      :tabindex="menu ? -1 : undefined"
       class="inline-flex min-h-11 items-center rounded-chip px-2 underline-offset-4 transition-colors duration-fade ease-fade hover:text-text hover:underline focus-visible:text-text focus-visible:outline-2 focus-visible:outline-focus"
-      @click="$emit('chosen')"
     >{{ t.legal[link.label] }}</a>
   </div>
 </template>

@@ -22,7 +22,7 @@ test.beforeEach(async ({ page }) => {
   await signIn(page, JEAN, { name: 'Jean Bartik', image: PHOTO })
 })
 
-test('your Profile Picture on the Board opens a menu with who is signed in, signing out and the legal pages, and no way into your settings', async ({ page }) => {
+test('your Profile Picture on the Board opens a menu with who is signed in and signing out, and no way into your settings', async ({ page }) => {
   await gotoHydrated(page, '/')
 
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
@@ -33,11 +33,8 @@ test('your Profile Picture on the Board opens a menu with who is signed in, sign
   await expect(menu).toBeVisible()
   await expect(avatar).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator(`img[src="${PHOTO}"]`).filter({ visible: true })).toHaveCount(2)
-  // Your settings are the cogwheel's (#282). Its last rows: the legal pages,
-  // in malkochen.
-  await expect(menu.getByRole('menuitem')).toHaveText(['Abmelden', 'Impressum', 'Datenschutz'])
-  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', '/impressum')
-  await expect(menu.getByRole('menuitem', { name: 'Datenschutz' })).toHaveAttribute('href', '/datenschutz')
+  // Your settings are the cogwheel's (#282), the legal pages the Board's footer.
+  await expect(menu.getByRole('menuitem')).toHaveText(['Abmelden'])
 })
 
 test('the cogwheel in the Board\'s header opens your settings over the Board, and closing them puts focus back on it', async ({ page }) => {
@@ -142,25 +139,15 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
   const menu = page.getByRole('menu')
   const signOut = menu.getByRole('menuitem', { name: 'Abmelden' })
-  const impressum = menu.getByRole('menuitem', { name: 'Impressum' })
-  const privacy = menu.getByRole('menuitem', { name: 'Datenschutz' })
 
-  // Opening moves focus onto the first row; the arrows go round.
+  // Opening moves focus onto the first row; with one row, the arrows stay on it.
   await avatar.focus()
   await page.keyboard.press('Enter')
   await expect(signOut).toBeFocused()
   await page.keyboard.press('ArrowDown')
-  await expect(impressum).toBeFocused()
-  await page.keyboard.press('ArrowDown')
-  await expect(privacy).toBeFocused()
-  await page.keyboard.press('ArrowDown')
-  await expect(signOut).toBeFocused()
-  await page.keyboard.press('ArrowUp')
-  await expect(privacy).toBeFocused()
-  await page.keyboard.press('Home')
   await expect(signOut).toBeFocused()
   await page.keyboard.press('End')
-  await expect(privacy).toBeFocused()
+  await expect(signOut).toBeFocused()
 
   // Escape closes it and hands focus back to your picture.
   await page.keyboard.press('Escape')
@@ -170,8 +157,6 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
 
   // ArrowUp opens it on the last row.
   await page.keyboard.press('ArrowUp')
-  await expect(privacy).toBeFocused()
-  await page.keyboard.press('Home')
   await expect(signOut).toBeFocused()
   await page.keyboard.press('Enter')
 
@@ -179,7 +164,7 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
   expect((await page.request.get('/api/me')).status()).toBe(401)
 })
 
-test('Tab closes the user menu, and Space chooses a legal page like Enter', async ({ page, context }) => {
+test('Tab closes the user menu', async ({ page }) => {
   await gotoHydrated(page, '/')
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
   const menu = page.getByRole('menu')
@@ -188,16 +173,6 @@ test('Tab closes the user menu, and Space chooses a legal page like Enter', asyn
   await page.keyboard.press('Enter')
   await expect(menu).toBeVisible()
   await page.keyboard.press('Tab')
-  await expect(menu).toHaveCount(0)
-
-  await avatar.focus()
-  await page.keyboard.press('Enter')
-  await page.keyboard.press('ArrowDown')
-  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toBeFocused()
-  const opened = context.waitForEvent('page')
-  await page.keyboard.press(' ')
-
-  await (await opened).waitForURL(`${E2E_ORIGIN}/impressum`)
   await expect(menu).toHaveCount(0)
 })
 
@@ -212,26 +187,7 @@ test('the user menu closes on a press anywhere else', async ({ page }) => {
   await expect(page.getByRole('menu')).toHaveCount(0)
 })
 
-test('a legal page chosen from the user menu opens in a new tab; the menu closes and focus is back on your picture', async ({ page, context }) => {
-  await gotoHydrated(page, '/')
-  const avatar = page.getByRole('button', { name: 'Dein Konto' })
-  const menu = page.getByRole('menu')
-  await avatar.click()
-
-  // A press beside the two links chooses nothing: the menu stays open.
-  const row = (await menu.getByRole('menuitem', { name: 'Datenschutz' }).locator('xpath=..').boundingBox())!
-  await page.mouse.click(row.x + row.width - 8, row.y + row.height / 2)
-  await expect(avatar).toHaveAttribute('aria-expanded', 'true')
-
-  await menu.getByRole('menuitem', { name: 'Impressum' }).focus()
-  const opened = context.waitForEvent('page')
-  await page.keyboard.press('Enter')
-  await (await opened).waitForURL(`${E2E_ORIGIN}/impressum`)
-  await expect(menu).toHaveCount(0)
-  await expect(avatar).toBeFocused()
-})
-
-test('on a phone the legal pages are the last rows of the Board switcher, and the cogwheel opens your settings as a bottom sheet', async ({ page }) => {
+test('on a phone the cogwheel opens your settings as a bottom sheet', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await gotoHydrated(page, '/')
   const board = page.url()
@@ -241,17 +197,8 @@ test('on a phone the legal pages are the last rows of the Board switcher, and th
   const switcher = page.getByRole('button', { name: /Board wechseln/ })
   await switcher.click()
   const panel = page.getByRole('navigation', { name: 'Deine Boards' })
-  // Your settings are the cogwheel's, so the switcher is only about Boards
-  // (#282): no settings row before the legal pages.
-  await expect(panel.locator('a, button').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })).toHaveText(['Impressum', 'Datenschutz'])
-  const legalRow = panel.getByRole('listitem').last()
-  await expect(legalRow.getByRole('link')).toHaveText(['Impressum', 'Datenschutz'])
-  await expect(legalRow.getByRole('link', { name: 'Impressum' })).toHaveAttribute('href', '/impressum')
-  await expect(legalRow.getByRole('link', { name: 'Datenschutz' })).toHaveAttribute('href', '/datenschutz')
-  // A press beside the two links chooses nothing: the switcher stays open.
-  const row = (await legalRow.boundingBox())!
-  await page.mouse.click(row.x + row.width - 8, row.y + row.height / 2)
-  await expect(switcher).toHaveAttribute('aria-expanded', 'true')
+  // Your settings are the cogwheel's, so the switcher is only about Boards (#282).
+  await expect(panel.locator('a, button').filter({ hasText: /Einstellungen/ })).toHaveCount(0)
   await switcher.click()
   await expect(panel).toHaveCount(0)
   const cogwheel = page.locator('header').getByRole('button', { name: 'Einstellungen', exact: true })
