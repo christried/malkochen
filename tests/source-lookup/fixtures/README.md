@@ -19,6 +19,7 @@ Upstream responses for Seam 2. Recorded on 2026-09-30 unless noted.
 | `instagram-embed-broken.html` | Recorded 2026-10-05: `instagram.com/p/AAAAAAAAAAA/embed/captioned/` (no such post), reduced to its `<body>` markup. Instagram answers 200 with an `EmbedBrokenMedia` block. |
 | `instagram-embed-video.html` | Recorded 2026-10-16: `instagram.com/reel/Cw2sj1dqqLh/embed/` as served to Source Lookup's user agent, reduced to its `<body>` markup (verbatim; scripts and styles left out). A Reel Instagram's embed plays in place. |
 | `instagram-embed-watch-on-instagram.html` | Recorded 2026-10-16 like the one above, for `/reel/DFvsVH_OD9h/embed/`: a Reel Instagram's embed only shows with "Auf Instagram ansehen" (a `WatchOnInstagramContainer` block), which opens Instagram (#279). |
+| `instagram-embed-photo.html` | Hand-made from `instagram-embed-video.html`: `data-media-type="GraphImage"` and the links pointing to `/p/`, as the embed page of a photo post (#394). |
 | `instagram-login-page.html` | Hand-made: what a login wall offers (no image). |
 | other `blog-*.html`, `broken-page.html` | Hand-made to cover one metadata shape each. |
 | `youtube-short-page.html` | Recorded 2026-10-25: `youtube.com/shorts/tPEE9ZwTmy0` as served to Source Lookup's user agent, reduced to its description, `og:` and title tags (verbatim, one per line). |

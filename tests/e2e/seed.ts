@@ -17,17 +17,17 @@ export async function landingBoardId(page: Page): Promise<string> {
 // the fixture hosts). tests/e2e/run.ts points DATABASE_URL at the throwaway
 // database the dev server uses. `addedBy` is the email of whoever added it,
 // signed in before; without it, nobody did.
-export async function seedDish(page: Page, dish: { title: string, imageUrl?: string, sourceLink: string, sourceKind: string, column?: number, placeholder?: Placeholder, addedBy?: string, creator?: string, caption?: string }) {
+export async function seedDish(page: Page, dish: { title: string, imageUrl?: string, sourceLink: string, sourceKind: string, column?: number, placeholder?: Placeholder, addedBy?: string, creator?: string, caption?: string, playableVideo?: boolean }) {
   const boardId = await landingBoardId(page)
   const board = await (await page.request.get(`/api/boards/${boardId}`)).json() as { columns: { id: string }[] }
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
   await client.connect()
   try {
     const { rows: [seeded] } = await client.query<{ added_by: string | null }>(
-      `insert into dish (board_id, column_id, position, title, placeholder, image_url, source_link, source_kind, added_by, creator, caption)
-       values ($1, $2, (select coalesce(min(position), 0) - 1 from dish where column_id = $2), $3, $4, $5, $6, $7, (select id from "user" where email = $8), $9, $10)
+      `insert into dish (board_id, column_id, position, title, placeholder, image_url, source_link, source_kind, added_by, creator, caption, playable_video)
+       values ($1, $2, (select coalesce(min(position), 0) - 1 from dish where column_id = $2), $3, $4, $5, $6, $7, (select id from "user" where email = $8), $9, $10, $11)
        returning added_by`,
-      [boardId, board.columns[dish.column ?? 0]!.id, dish.title, dish.placeholder ?? 'bowl', dish.imageUrl ?? null, dish.sourceLink, dish.sourceKind, dish.addedBy ?? null, dish.creator ?? null, dish.caption ?? null],
+      [boardId, board.columns[dish.column ?? 0]!.id, dish.title, dish.placeholder ?? 'bowl', dish.imageUrl ?? null, dish.sourceLink, dish.sourceKind, dish.addedBy ?? null, dish.creator ?? null, dish.caption ?? null, dish.playableVideo ?? null],
     )
     if (dish.addedBy && !seeded?.added_by) throw new Error(`seedDish: ${dish.addedBy} hasn't signed in yet`)
   }

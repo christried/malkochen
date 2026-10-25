@@ -139,6 +139,6 @@ export const webPage: Strategy = {
     const suggestedTitle = shortenTitle(withoutSiteName(title, siteName))
     // The meta description, whatever kind the page is (best effort).
     const caption = captionOf(meta.get('description'))
-    return { kind: suggestedTitle || imageUrl ? 'blog' : 'other', canonicalLink, suggestedTitle, creator, imageUrl, caption }
+    return { kind: suggestedTitle || imageUrl ? 'blog' : 'other', canonicalLink, suggestedTitle, creator, imageUrl, caption, playableVideo: false }
   },
 }

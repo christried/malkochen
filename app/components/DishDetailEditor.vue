@@ -125,16 +125,16 @@ function usePhoto(photo: UploadedPhoto) {
 // The Source as saved (#393): the Dish's own, or what Source Lookup says the new
 // link is (canonical link and kind). With a new link, also the Caption and the
 // Source Ticket Source Lookup signed for it; the server keeps the Caption only
-// with that ticket. Unchanged, the server keeps the Dish's Caption, so neither
-// is sent. If the lookup fails, the server reads the kind from the link itself
+// with that ticket. The same goes for whether the Source has a video that plays
+// (#394). Unchanged, the server keeps what the Dish has, so none of it is sent. If the lookup fails, the server reads the kind from the link itself
 // and the new Source has no Caption.
-async function sourceToSave(): Promise<{ source: SourceInput | null, caption?: string | null, sourceTicket?: string }> {
+async function sourceToSave(): Promise<{ source: SourceInput | null, caption?: string | null, playableVideo?: boolean, sourceTicket?: string }> {
   const target = sourceLink.value
   if (!target) return { source: null }
   if (linkUnchanged.value && props.dish.source) return { source: { ...props.dish.source } }
   const result = await lookup.lookUpNow()
   return result
-    ? { source: { link: result.canonicalLink, kind: result.kind }, caption: result.caption, sourceTicket: result.sourceTicket }
+    ? { source: { link: result.canonicalLink, kind: result.kind }, caption: result.caption, playableVideo: result.playableVideo, sourceTicket: result.sourceTicket }
     : { source: { link: target } }
 }
 
@@ -153,12 +153,13 @@ async function save() {
   // finds mustn't become the image.
   if (reload.value === 'failed') reloadAsked.value = false
   try {
-    const { source, caption, sourceTicket } = await sourceToSave()
+    const { source, caption, playableVideo, sourceTicket } = await sourceToSave()
     const saved = await boardModule.editDish(props.dish.id, {
       title: title.value,
       creator: creator.value,
       source,
       caption,
+      playableVideo,
       sourceTicket,
       placeholder: placeholder.value,
       ...choice.kind === 'placeholder' && { imageUrl: null },

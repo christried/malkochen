@@ -66,7 +66,7 @@ function username(html: string): string | null {
   return span && decodeEntities(html.slice(span.end).split('<', 1)[0] ?? '')
 }
 
-type Findings = Omit<SourceLookupResult, keyof SourceGuess>
+type Findings = Omit<SourceLookupResult, keyof SourceGuess | 'playableVideo'>
 
 // The embed page gets half the lookup's time, so the post page still can
 // answer when it stalls.
@@ -87,14 +87,16 @@ async function postPageImage(http: Http, post: SourceGuess): Promise<string | nu
   return httpUrl(meta.get('og:image')) ?? httpUrl(meta.get('twitter:image'))
 }
 
-// Whether Instagram's embed plays a post's video in place (#279), as the
-// Dish detail's player would load it (shared/video-embed.ts). For some
-// Reels, often ones with licensed music, Instagram's embed shows only the
-// cover and "Auf Instagram ansehen", which opens Instagram; it says so in a
-// "WatchOnInstagramContainer" block (checked 2026-10-16). The embed page
-// tells the player nothing different, so only the page shows it. Null: not
-// an Instagram post, or the page showed neither (broken, unreachable), and
-// the player finds out itself.
+// Whether Instagram's embed plays a post's video in place (#279, checked when
+// a Dish is added since #394), as the Dish detail's player would load it
+// (shared/video-embed.ts). For some Reels, often ones with licensed music,
+// Instagram's embed shows only the cover and "Auf Instagram ansehen", which
+// opens Instagram; it says so in a "WatchOnInstagramContainer" block (checked
+// 2026-10-16). The embed page tells the player nothing different, so only the
+// page shows it. Null: not an Instagram post, or the page showed neither
+// (broken, unreachable), and the player finds out itself. Photo posts and
+// carousels (their embed's data-media-type isn't GraphVideo) play no video:
+// false.
 export async function playsInPlace(http: Http, link: string): Promise<boolean | null> {
   let url: URL
   try {
@@ -107,6 +109,8 @@ export async function playsInPlace(http: Http, link: string): Promise<boolean | 
   if (!post) return null
   const html = (await http.page(`${post.canonicalLink}embed/`)).html ?? ''
   if (findTag(html, 'div', 'WatchOnInstagramContainer')) return false
+  const mediaType = html.match(/data-media-type="([^"]*)"/)?.[1]
+  if (mediaType !== undefined && mediaType !== 'GraphVideo') return false
   return findTag(html, 'a', 'EmbeddedMedia') ? true : null
 }
 
@@ -122,7 +126,7 @@ export const instagram: Strategy = {
       : postLink(url)
     if (!post) return nothingFound(guess(url))
 
-    const embed = await embedPage(http, post, timeoutMs)
-    return { ...post, ...embed, imageUrl: embed.imageUrl ?? await postPageImage(http, post) }
+    const [embed, played] = await Promise.all([embedPage(http, post, timeoutMs), playsInPlace(http, post.canonicalLink)])
+    return { ...post, ...embed, playableVideo: played === true, imageUrl: embed.imageUrl ?? await postPageImage(http, post) }
   },
 }

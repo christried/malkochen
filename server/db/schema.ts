@@ -299,6 +299,12 @@ export const dish = pgTable('dish', {
   // when the Dish is added or its Source changes; never edited by a Member.
   // Null when the Source shows none, or there is no Source.
   caption: text('caption'),
+  // Whether the Source has a video malkochen's player plays in place (#394),
+  // read when the Dish is added or its Source changes: a TikTok video, a
+  // YouTube Short, an Instagram post whose embed plays it. False for anything
+  // else. Null when not known yet (every Dish from before #394 until #395
+  // fills it in), or there is no Source.
+  playableVideo: boolean('playable_video'),
   // The image: a copy in the Image Store if there is one, else the
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),

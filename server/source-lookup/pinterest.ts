@@ -74,6 +74,6 @@ export const pinterest: Strategy = {
     const found = pin(SHORT_HOST.test(url.hostname) ? await http.resolve(url.href, hop => pin(hop) !== null) : url)
     if (!found) return nothingFound({ kind: 'pinterest-pin', canonicalLink: withoutTracking(url) })
     const [page, oembed] = await Promise.all([pinPage(http, found, timeoutMs), fromOembed(http, found)])
-    return { ...found, ...page, ...oembed }
+    return { ...found, ...page, ...oembed, playableVideo: false }
   },
 }
