@@ -2,6 +2,7 @@ import { asString, httpUrl } from './link'
 import { captionOf } from './caption'
 import { creatorName } from './creator'
 import { shortenTitle } from './title'
+import { videoEmbed } from '../../shared/video-embed'
 import type { Strategy } from './types'
 
 // TikTok: public oEmbed, no key. Short links (vm./vt.tiktok.com, /t/…) are
@@ -30,14 +31,17 @@ export const tiktok: Strategy = {
   async lookup(url, { http }) {
     const post = isPost(url) ? url : await http.resolve(url.href, isPost)
     const oembed = await http.json(`https://www.tiktok.com/oembed?url=${encodeURIComponent(canonical(post))}`)
+    const canonicalLink = canonical(post, asString(oembed?.author_unique_id))
     return {
       kind: 'tiktok',
-      canonicalLink: canonical(post, asString(oembed?.author_unique_id)),
+      canonicalLink,
       suggestedTitle: shortenTitle(asString(oembed?.title)),
       creator: creatorName(oembed?.author_name),
       imageUrl: httpUrl(oembed?.thumbnail_url),
       // oEmbed's title is the caption itself.
       caption: captionOf(oembed?.title),
+      // A photo post has no /video/<id>.
+      playableVideo: videoEmbed({ kind: 'tiktok', link: canonicalLink }) !== null,
     }
   },
 }

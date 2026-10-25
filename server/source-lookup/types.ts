@@ -29,6 +29,10 @@ export interface SourceLookupResult {
   // The Caption (CONTEXT.md): the text the Source shows with its post; null
   // when it shows none, or none could be read.
   caption: string | null
+  // Whether the Source has a video malkochen's player plays in place (#394): a
+  // TikTok video, a YouTube Short, an Instagram post whose embed plays it;
+  // false for anything else, and when it can't be told.
+  playableVideo: boolean
 }
 
 // What a link says about itself before any request.
@@ -36,7 +40,7 @@ export type SourceGuess = Pick<SourceLookupResult, 'kind' | 'canonicalLink'>
 
 // The answer when nothing more than the guess could be found.
 export function nothingFound(guess: SourceGuess): SourceLookupResult {
-  return { ...guess, suggestedTitle: '', creator: null, imageUrl: null, caption: null }
+  return { ...guess, suggestedTitle: '', creator: null, imageUrl: null, caption: null, playableVideo: false }
 }
 
 // Given a link, return what we know about it. Never rejects.

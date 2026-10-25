@@ -22,6 +22,7 @@ describe('TikTok', () => {
       creator: 'Scout, Suki & Stella',
       imageUrl: expect.stringMatching(/^https:\/\/p16-common-sign\.tiktokcdn-eu\.com\/tos-maliva-p-0068\/2367c7d45cf54a1397abd/),
       caption: expect.stringMatching(/^Scramble up ur name & I’ll try to guess it/),
+      playableVideo: true,
     })
   })
 
@@ -91,6 +92,7 @@ describe('TikTok', () => {
       creator: null,
       imageUrl: null,
       caption: null,
+      playableVideo: true,
     })
   })
 })
@@ -114,9 +116,11 @@ describe('Instagram', () => {
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(EMBED_IMAGE),
       caption: expect.stringMatching(/^Easy Overnight Bread Rolls/),
+      playableVideo: false,
     })
-    // Everything came from the embed page: the post page isn't asked.
-    expect(upstream.requested).toEqual([INSTAGRAM_REEL_EMBED])
+    // Everything came from the embed pages: the post page isn't asked (the
+    // plain embed page only says whether the video plays).
+    expect(upstream.requested).toEqual([INSTAGRAM_REEL_EMBED, 'https://www.instagram.com/reel/C0WUh-tqkxU/embed/'])
   })
 
   test('a post is its own kind of Source, read from its own embed page', async () => {
@@ -129,6 +133,7 @@ describe('Instagram', () => {
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(EMBED_IMAGE),
       caption: expect.stringMatching(/^Easy Overnight Bread Rolls/),
+      playableVideo: false,
     })
   })
 
@@ -155,6 +160,7 @@ describe('Instagram', () => {
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(EMBED_IMAGE),
       caption: null,
+      playableVideo: false,
     })
   })
 
@@ -172,6 +178,7 @@ describe('Instagram', () => {
       creator: null,
       imageUrl: expect.stringMatching(POST_PAGE_IMAGE),
       caption: null,
+      playableVideo: false,
     })
   })
 
@@ -198,6 +205,7 @@ describe('Instagram', () => {
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(POST_PAGE_IMAGE),
       caption: expect.stringMatching(/^Easy Overnight Bread Rolls/),
+      playableVideo: false,
     })
   })
 
@@ -240,6 +248,7 @@ describe('Instagram', () => {
       creator: null,
       imageUrl: null,
       caption: null,
+      playableVideo: false,
     })
   })
 })
@@ -307,6 +316,7 @@ describe('YouTube Shorts', () => {
       creator: 'Mylo the Cat',
       imageUrl: VERTICAL_THUMBNAIL,
       caption: null,
+      playableVideo: true,
     })
   })
 
@@ -346,6 +356,7 @@ describe('Pinterest', () => {
       creator: 'Kent Brewster',
       imageUrl: 'https://i.pinimg.com/736x/a7/66/56/a76656e966b1958f568d63c3f1c05aec.jpg',
       caption: 'Have you heard of Pinterest? Yes right? What about ? I just read the first report of live pinning on Mashable and I must say it is quite intriguing. Looks',
+      playableVideo: false,
     })
   })
 
@@ -387,6 +398,7 @@ describe('Pinterest', () => {
       creator: 'Kent Brewster',
       imageUrl: PIN_IMAGE_736,
       caption: null,
+      playableVideo: false,
     })
   })
 
@@ -494,6 +506,7 @@ describe('blogs and other links', () => {
       creator: 'Jeanine Donofrio',
       imageUrl: 'https://cdn.loveandlemons.com/wp-content/uploads/2020/01/brownie-recipe-500x500.jpg',
       caption: 'The best brownie recipe! Made with cocoa powder and chocolate chips, these homemade brownies are fudgy, gooey, super chocolaty, and easy to make!',
+      playableVideo: false,
     })
   })
 
@@ -505,6 +518,7 @@ describe('blogs and other links', () => {
       creator: 'Lena Müller',
       imageUrl: 'https://veggie-kueche.example/wp-content/uploads/2025/03/knuspriger-tofu.jpg',
       caption: null,
+      playableVideo: false,
     })
   })
 
@@ -535,6 +549,7 @@ describe('blogs and other links', () => {
       creator: 'Salt & Pan',
       imageUrl: 'https://cdn.salt-and-pan.example/shakshuka.jpg',
       caption: null,
+      playableVideo: false,
     })
   })
 
@@ -564,6 +579,7 @@ describe('blogs and other links', () => {
       creator: null,
       imageUrl: null,
       caption: null,
+      playableVideo: false,
     })
   })
 
@@ -581,7 +597,7 @@ describe('blogs and other links', () => {
 })
 
 describe('never fails', () => {
-  const nothing = { suggestedTitle: '', creator: null, imageUrl: null, caption: null }
+  const nothing = { suggestedTitle: '', creator: null, imageUrl: null, caption: null, playableVideo: false }
 
   test('an upstream that errors gives an empty result', async () => {
     const { lookup } = lookupWith([['https://down.example/', () => status(500)]])
@@ -596,6 +612,8 @@ describe('never fails', () => {
       kind: 'tiktok',
       canonicalLink: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
       ...nothing,
+      // The link names a video whatever the oEmbed answers.
+      playableVideo: true,
     })
   })
 
@@ -609,6 +627,7 @@ describe('never fails', () => {
       kind: 'youtube-short',
       canonicalLink: 'https://www.youtube.com/shorts/tPEE9ZwTmy0',
       ...nothing,
+      playableVideo: true,
     })
   })
 
@@ -852,5 +871,78 @@ describe('Caption', () => {
     const { lookup } = lookupWith([])
 
     expect((await lookup('https://nothing.example/')).caption).toBeNull()
+  })
+})
+
+describe('Playable video (#394)', () => {
+  const REEL_EMBED = 'https://www.instagram.com/reel/DFvsVH_OD9h/embed/'
+  const REEL_CAPTIONED = 'https://www.instagram.com/reel/DFvsVH_OD9h/embed/captioned/'
+  const POST_EMBED = 'https://www.instagram.com/p/DFvsVH_OD9h/embed/'
+  const POST_CAPTIONED = 'https://www.instagram.com/p/DFvsVH_OD9h/embed/captioned/'
+
+  test('a TikTok video plays', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed.json'))]])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')).playableVideo).toBe(true)
+  })
+
+  test('a TikTok photo post does not', async () => {
+    const { lookup, upstream } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed.json'))]])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/photo/6718335390845095173')).playableVideo).toBe(false)
+  })
+
+  test('a YouTube Short plays', async () => {
+    const { lookup } = lookupWith([[YOUTUBE_OEMBED, () => json(fixture('youtube-oembed.json'))], [VERTICAL_THUMBNAIL, () => status(200)]])
+
+    expect((await lookup('https://youtube.com/shorts/tPEE9ZwTmy0')).playableVideo).toBe(true)
+  })
+
+  test('an Instagram Reel whose embed plays it, plays', async () => {
+    const { lookup, upstream } = lookupWith([
+      [REEL_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))],
+      [REEL_EMBED, () => html(fixture('instagram-embed-video.html'))],
+    ])
+
+    expect((await lookup('https://www.instagram.com/reel/DFvsVH_OD9h/')).playableVideo).toBe(true)
+    expect(upstream.requested).toContain(REEL_EMBED)
+  })
+
+  test('an Instagram Reel whose embed only says "Auf Instagram ansehen" does not', async () => {
+    const { lookup } = lookupWith([
+      [REEL_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))],
+      [REEL_EMBED, () => html(fixture('instagram-embed-watch-on-instagram.html'))],
+    ])
+
+    expect((await lookup('https://www.instagram.com/reel/DFvsVH_OD9h/')).playableVideo).toBe(false)
+  })
+
+  test('an Instagram photo post does not', async () => {
+    const { lookup } = lookupWith([
+      [POST_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))],
+      [POST_EMBED, () => html(fixture('instagram-embed-photo.html'))],
+    ])
+
+    expect((await lookup('https://www.instagram.com/p/DFvsVH_OD9h/')).playableVideo).toBe(false)
+  })
+
+  test('an Instagram post whose embed can\'t be read is not known to play', async () => {
+    const { lookup } = lookupWith([[POST_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))]])
+
+    expect((await lookup('https://www.instagram.com/p/DFvsVH_OD9h/')).playableVideo).toBe(false)
+  })
+
+  test('a blog page and a Pin do not', async () => {
+    const blog = lookupWith([['https://example.com/', () => html(fixture('blog-og-only.html'))]])
+    const pin = lookupWith([[PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))], [PIN_IMAGE_736, () => status(200)]])
+
+    expect((await blog.lookup('https://example.com/rezept')).playableVideo).toBe(false)
+    expect((await pin.lookup('https://www.pinterest.com/pin/3166662040284/')).playableVideo).toBe(false)
+  })
+
+  test('nothing found does not play', async () => {
+    const { lookup } = lookupWith([])
+
+    expect((await lookup('kein Link')).playableVideo).toBe(false)
   })
 })
