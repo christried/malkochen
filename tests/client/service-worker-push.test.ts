@@ -60,10 +60,11 @@ function serviceWorker({ windows = [] as FakeWindow[] } = {}) {
 const window = (url: string): FakeWindow => ({ url, focus: vi.fn(async () => undefined), postMessage: vi.fn() })
 
 const MESSAGE = {
-  title: 'Chris hat Omas Linsensuppe hinzugefügt',
-  body: '🍪 Kochclub',
+  title: 'Von Chris in Kochclub',
+  body: 'Omas Linsensuppe von Mara auf TikTok',
   tag: 'board-42',
   url: '/b/kochclub/omas-linsensuppe-3f9k',
+  image: 'https://images.example/omas-linsensuppe.jpg',
 }
 
 test('a push shows the Board\'s notification, replacing the one before it and alerting again', async () => {
@@ -77,10 +78,26 @@ test('a push shows the Board\'s notification, replacing the one before it and al
       body: MESSAGE.body,
       tag: 'board-42',
       renotify: true,
-      icon: '/icons/icon-192.png',
       data: { url: MESSAGE.url },
     }),
   }])
+})
+
+test('the Dish\'s image is the icon, and the malkochen mark the badge', async () => {
+  const sw = serviceWorker()
+
+  await sw.push(MESSAGE)
+
+  expect(sw.shown[0]!.options).toMatchObject({ icon: MESSAGE.image, badge: '/icons/badge-96.png' })
+})
+
+test('without a picture (a Placeholder Image), the app icon shows, with the mark as badge', async () => {
+  const sw = serviceWorker()
+
+  const { image: _, ...withoutPicture } = MESSAGE
+  await sw.push(withoutPicture)
+
+  expect(sw.shown[0]!.options).toMatchObject({ icon: '/icons/icon-192.png', badge: '/icons/badge-96.png' })
 })
 
 test('a push that isn\'t one of the app\'s shows nothing', async () => {

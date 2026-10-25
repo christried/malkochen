@@ -2,6 +2,7 @@ import webpush from 'web-push'
 import { stringsFor } from '../../app/strings'
 import { boardPath, dishHistoryPath, dishPath } from '../../shared/address'
 import type { Language } from '../../shared/language'
+import type { SourceKind } from '../source-lookup'
 
 // Push notifications (#219): what a Member's device shows when others added
 // Dishes to one of their Boards, or commented and voted on them (#352), and
@@ -10,43 +11,67 @@ import type { Language } from '../../shared/language'
 // server/utils/push.ts.
 
 // What the service worker (public/sw.js) shows: one notification per Board
-// (`tag`), replaced as more Dishes come in, and the app address it opens.
+// (`tag`), replaced as more Dishes come in, the app address it opens, and
+// the Dish's picture when it has one (none for a Placeholder Image).
 export interface PushMessage {
   title: string
   body: string
   tag: string
   url: string
+  image?: string
+}
+
+// A Dish others added: its Username, and for a push its Creator, the kind of
+// its Source and its image (null for a Placeholder Image). The Email Digest
+// leaves those out.
+export interface DishNews {
+  title: string
+  code: string
+  addedBy: string
+  creator?: string | null
+  kind?: SourceKind | null
+  image?: string | null
 }
 
 // The Dishes others added to a Board since a Member last opened it, and the
 // Comments and Votes they gave on its Dishes (#352).
 export interface BoardNews {
   board: { id: string, slug: string, name: string, emoji: string }
-  // Newest first, each with the Username of who added it.
-  dishes: { title: string, code: string, addedBy: string }[]
+  // Newest first.
+  dishes: DishNews[]
   // Newest first, each with the Username of who wrote or gave it; none
   // when left out.
   talk?: Talk[]
 }
 
 // A Comment (its text) or a Vote (up or down) on a Dish.
-export type Talk = { dish: { title: string, code: string }, by: string } & ({ comment: string } | { up: boolean })
+export type Talk = { dish: { title: string, code: string, image?: string | null }, by: string } & ({ comment: string } | { up: boolean })
+
+// The platform a Source's kind names in a push (its Creator is shown
+// alongside, CONTEXT.md). A blog or another link names none.
+const PLATFORMS: Partial<Record<SourceKind, string>> = {
+  'tiktok': 'TikTok',
+  'instagram-reel': 'Instagram',
+  'instagram-post': 'Instagram',
+  'youtube-short': 'YouTube',
+  'pinterest-pin': 'Pinterest',
+}
 
 // How long the body gets with its list of Dish titles: a push carries at
 // most 4 KB, and a phone shows a line or two anyway.
 const MAX_BODY = 120
 
-// „Chris hat 5 Gerichte hinzugefügt" over „🍪 Kochclub: Dal, Ramen und 3
-// weitere", the latest adder named first, then how many Comments and Votes
-// there are too (#351). Without new Dishes: about one Comment or Vote, who
-// and on which Dish (and the Comment's start); about more on one Dish, who
-// and how many; about several Dishes, who wrote (else gave) how many, and
-// on which. About one Dish it opens that Dish, at its Verlauf when it's
-// about Comments or Votes; about several, the Board. In the recipient's
-// `language` (server/utils/people.ts recipientLanguage).
+// The title names who, on which Board: „Von Mara und Tom in Kochen lecker".
+// The body: one Dish with its Creator and platform, or several Dishes as
+// many whole titles as fit, then the Comments and Votes counted ("Dazu …")
+// when there are some; about Comments and Votes alone, the Dish's start or
+// thumb, or their counts over the Dishes they're on. It opens the Dish (at
+// its Verlauf when it's about Comments or Votes), or the Board when it's
+// about several. The picture is the newest Dish's, or the Dish's of a
+// Comment or Vote. In the recipient's `language` (server/utils/people.ts
+// recipientLanguage).
 export function pushMessage(language: Language, { board, dishes, talk = [] }: BoardNews): PushMessage {
   const t = stringsFor(language).push
-  const boardName = `${board.emoji} ${board.name}`
   const comments = talk.filter(said => 'comment' in said)
   const votes = talk.length - comments.length
   const talkedAbout = uniqueDishes(talk.map(said => said.dish))
@@ -54,33 +79,37 @@ export function pushMessage(language: Language, { board, dishes, talk = [] }: Bo
   const [only] = about.length === 1 ? about : []
   const tag = `board-${board.id}`
   const url = !only ? boardPath(board) : talk.length > 0 ? dishHistoryPath(board, only) : dishPath(board, only)
+  const title = t.title(names([...dishes.map(d => d.addedBy), ...talk.map(s => s.by)]), board.name)
+  const picture = (dishes.length > 0 ? dishes[0]!.image : talk[0]?.dish.image) ?? null
+  const shown = picture ? { image: picture } : {}
 
   if (dishes.length > 0) {
     const withTalk = (text: string) => talk.length > 0 ? t.also(text, comments.length, votes) : text
     const [one] = dishes.length === 1 ? dishes : []
     return {
-      title: t.added(names(dishes.map(d => d.addedBy)), dishes.length, one?.title ?? ''),
-      body: one ? withTalk(boardName) : fitted((titles, more) => withTalk(t.body(boardName, titles, more)), dishes.map(d => d.title)),
+      title,
+      body: one ? withTalk(t.dish(one.title, one.creator ?? null, platformOf(one.kind ?? null))) : fitted((titles, more) => withTalk(t.dishes(dishes.length, titles, more)), dishes.map(d => d.title)),
       tag,
       url,
+      ...shown,
     }
   }
   const [said] = talk.length === 1 ? talk : []
   if (said && 'comment' in said) {
-    return { title: t.commented(said.by, said.dish.title), body: cutComment(text => t.comment(boardName, text), said.comment), tag, url }
+    return { title, body: cutComment(text => t.comment(said.dish.title, text), said.comment), tag, url, ...shown }
   }
-  if (said) return { title: t.voted(said.by, said.dish.title, said.up), body: boardName, tag, url }
-  if (only) return { title: t.onDish(names(talk.map(s => s.by)), only.title), body: t.counts(boardName, comments.length, votes), tag, url }
+  if (said) return { title, body: t.vote(said.dish.title, said.up), tag, url, ...shown }
+  if (only) return { title, body: t.talkOn(only.title, comments.length, votes), tag, url, ...shown }
   return {
-    title: comments.length > 0 ? t.wrote(names(comments.map(c => c.by)), comments.length) : t.gave(names(talk.map(s => s.by)), votes),
-    body: fitted((titles, more) => {
-      const on = t.about(boardName, titles, more)
-      return comments.length > 0 && votes > 0 ? t.also(on, 0, votes) : on
-    }, talkedAbout.map(d => d.title)),
+    title,
+    body: fitted((titles, more) => t.aboutDishes(comments.length, votes, titles, more), talkedAbout.map(d => d.title)),
     tag,
     url,
+    ...shown,
   }
 }
+
+const platformOf = (kind: SourceKind | null): string | null => kind ? PLATFORMS[kind] ?? null : null
 
 // Each once, in the order first named.
 const names = (all: string[]) => [...new Set(all)]
