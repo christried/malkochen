@@ -28,6 +28,9 @@ jobs:
       - id: filter
         uses: dorny/paths-filter@v3
         with:
+          # A file counts only when every pattern below holds for it. The
+          # default ('some') lets '**' alone match every file, docs included.
+          predicate-quantifier: every
           filters: |
             code:
               - '**'
