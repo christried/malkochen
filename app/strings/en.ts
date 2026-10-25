@@ -55,6 +55,8 @@ export const en: Strings = {
   legal: {
     impressum: 'Imprint',
     privacy: 'Privacy',
+    languages: 'Languages',
+    bindingVersion: 'Read the binding German version',
   },
   changelog: {
     title: 'What\'s new',
