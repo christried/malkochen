@@ -9,6 +9,9 @@ import { dish, eventLog } from '../db/schema'
 // transaction as its change, so there is an event exactly when the change
 // went through. Never content: only ids, the kind and these details.
 
+export type PromptKind = 'push' | 'digest'
+export type PromptAnswer = 'on' | 'later'
+
 export type EventKind =
   | 'board_created'
   // "Board löschen" (CONTEXT.md: Archived Board).
@@ -64,6 +67,10 @@ export type EventKind =
   | 'board_emoji_changed'
   // The Owner made another Member the Owner.
   | 'ownership_handed_over'
+  // A Notification Prompt (CONTEXT.md) shown to a user, and how they answered
+  // it: events of no Board.
+  | 'prompt_shown'
+  | 'prompt_answered'
 
 // What an event says beyond its Board, Dish and user, by kind. `undo`: the
 // write was a "Rückgängig", taking back the one before it.
@@ -101,6 +108,10 @@ export type EventDetails =
   | { permission: Permission, on: boolean }
   // ownership_handed_over: to whom.
   | { member: string }
+  // prompt_shown: which prompt; prompt_answered: and "Einschalten" ('on') or
+  // "Später" ('later').
+  | { which: PromptKind }
+  | { which: PromptKind, answer: PromptAnswer }
 
 // The fields of a Dish an edit can change (dish_edited): the title, the
 // image (or its Placeholder), the Source, the Creator and the Focus Point.
