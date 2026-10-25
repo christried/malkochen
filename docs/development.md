@@ -150,3 +150,5 @@ cd remotion
 npm install
 npm run dev      # Remotion Studio, to check the scenes by eye
 ```
+
+<!-- Docs-only CI probe for #414. Not for merging. -->
