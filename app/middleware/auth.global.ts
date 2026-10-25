@@ -20,6 +20,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path.startsWith('/invite/')) return
   // The Changelog (#354) is for everyone, signed in or not.
   if (to.path === '/changelog') return
+  // PROTOTYPE #392 (throwaway): the Dish Link prototype is open in dev only.
+  if (import.meta.dev && to.path.startsWith('/prototype392')) return
   if (to.path === '/login') {
     if (!error.value) return navigateTo('/')
     return
