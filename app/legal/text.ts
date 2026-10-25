@@ -1,8 +1,9 @@
 import type { Language } from '../../shared/language'
 
 // A legal text as the pages show it (pages/impressum.vue, pages/datenschutz.vue,
-// components/LegalText.vue). A block is a paragraph, or a list of items. Inside
-// a paragraph or an item, **text** is set bold and nothing else is marked up.
+// components/LegalSections.vue). A block is a paragraph, or a list of items.
+// Inside a paragraph or an item, **text** is set bold and `code` in code type;
+// nothing else is marked up.
 
 export type LegalBlock = string | { list: string[] }
 
