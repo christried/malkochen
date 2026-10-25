@@ -5,6 +5,7 @@ import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { TEST_VERSION } from '../support/test-version'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
+import { setSeen } from './seed'
 import { openUserSettings } from './settings-sheet'
 
 // The Changelog (CONTEXT.md, #354): "Was ist neu", readable without signing
@@ -34,6 +35,8 @@ test('signed out, the sign-in screen links to the Changelog, which opens without
 
 test('"Was ist neu" ends Your Settings with the Version, marked "Neu" until the Changelog has been opened', async ({ page }) => {
   await signIn(page, BABBAGE, { name: 'Charles Babbage' })
+  // A new account starts with the app's Version as seen (#406).
+  await setSeen(BABBAGE, { version: '0.9.0' })
 
   const sheet = await openUserSettings(page)
   const link = sheet.getByRole('link', { name: /^Was ist neu/ })

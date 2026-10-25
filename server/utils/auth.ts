@@ -9,6 +9,7 @@ import { USERNAME_MAX, usernameProblem } from '../../shared/username'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { parseServerEnv } from '../env'
+import { APP_VERSION } from '../version'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { openSignUpOn } from './open-sign-up'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
@@ -185,8 +186,10 @@ export const auth = betterAuth({
       // guard (server/middleware/auth.ts) sets it.
       browserLanguage: { type: 'string', required: false, input: false },
       // The last Version they opened the Changelog in (#354): only
-      // PUT /api/me/version-seen sets it.
-      versionSeen: { type: 'string', required: false, input: false },
+      // PUT /api/me/version-seen sets it. A new account starts with the
+      // app's own as seen (#406): the Changelog Popup is for what changed
+      // since they joined.
+      versionSeen: { type: 'string', required: false, input: false, defaultValue: APP_VERSION || undefined },
     },
     // Runs on user creation (the sign-up gate) and, for Google, on every
     // repeat sign-in too (the sign-in gate). Gets what Google says about the

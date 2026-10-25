@@ -14,6 +14,10 @@ import type { TourCorner } from '../utils/tour-placement'
 // gets this one once; raising it shows the next Tour to everyone again.
 export const TOUR_VERSION = 1
 
+// How long the Board stays idle before the Tour, or the Changelog Popup,
+// shows by itself: its cards have risen in by then.
+export const SETTLE_MS = 1200
+
 // What a step spotlights: the elements marked `data-tour="<name>"`. 'dish'
 // is a Dish's card and 'dish-menu' its ⋯, the one with the step's `dishId`;
 // 'column' is a Column's tab (phones) or lane, and 'menu-column' its choice

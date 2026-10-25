@@ -1,10 +1,5 @@
 <script setup lang="ts">
 import type { Me } from '~~/server/utils/people'
-import { parseChangelog, type Changelog } from '~~/shared/changelog'
-import type { Language } from '~~/shared/language'
-import english from '~~/CHANGELOG.md?raw'
-import german from '~~/CHANGELOG.de.md?raw'
-import italian from '~~/CHANGELOG.it.md?raw'
 
 // The Changelog (CONTEXT.md, #354, PRD #323 stories 1–10): what changed for
 // users in each Version, newest first, in the viewer's language, with what's
@@ -18,15 +13,9 @@ import italian from '~~/CHANGELOG.it.md?raw'
 // copies its link, the newest marked, and on desktop a rail of the Versions
 // that follows the scroll.
 
-const CHANGELOGS: Record<Language, Changelog> = {
-  en: parseChangelog(english),
-  de: parseChangelog(german),
-  it: parseChangelog(italian),
-}
-
 const t = useStrings()
 const language = useLanguage()
-const changelog = computed(() => CHANGELOGS[language.value])
+const changelog = computed(() => changelogFor(language.value))
 
 useHead({ title: () => `${t.changelog.title} · ${t.app.name}` })
 
