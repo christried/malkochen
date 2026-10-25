@@ -31,5 +31,5 @@ Every change users notice goes into the Changelog (`CHANGELOG.md`, `CHANGELOG.de
 - Only what users notice, under Added, Changed, Removed, Fixed or Security, in the app's tone. Never tests, CI, refactors, docs or dependency updates.
 - A PR outside a spec that users notice adds its line under `[Unreleased]`.
 - A spec's last ticket ("Changelog entry for this spec") writes the spec's one entry under `[Unreleased]`, with no Version and no date. A spec nobody notices gets no such ticket.
-- A Release dates everything under `[Unreleased]` as one Version: a patch, or a minor only after the Operator's yes. The Operator says "Release"; the steps are in `docs/agents/changelog.md`.
+- A Release dates everything under `[Unreleased]` as one Version: a patch, or a minor only after the Operator's yes. The Operator says "Release"; the flow is in `docs/development.md`.
 - `/to-tickets` on a spec adds "Changelog entry for this spec" as the spec's last ticket, blocked by all its other tickets.

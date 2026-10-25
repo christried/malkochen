@@ -25,15 +25,15 @@ How to keep the Changelog (`CONTEXT.md` → Changelog, Version) without the user
 
 ## Cutting a Release, step by step
 
-When the Operator says "Release". The steps are also in `docs/development.md`.
+When the Operator says "Release", the Release's first PR, into `staging`, does this to the Changelog files and `package.json`. The rest of the flow (the check on Staging, the PR to `main`, the tag) is in `docs/development.md`.
 
-1. In a PR into `staging`, rewrite `[Unreleased]` into one new Version: the newest Version plus one, or the minor the Operator agreed to, today's date. Keep `## [Unreleased]` above it, empty.
+1. Rewrite `[Unreleased]` into one new Version: the newest Version plus one, or the minor the Operator agreed to, today's date. Keep `## [Unreleased]` above it, empty.
 2. Do it in all three files, the same Version and date in each.
 3. Update the link references at the bottom of each file (below).
 4. Set `package.json`'s `version` to the new Version.
 5. Run `pnpm vitest run tests/client/changelog.test.ts`.
-6. Merge on green CI. Then a PR `staging` → `main` titled "Release x.y.z", merged on green CI with a merge commit, straight after.
-7. Tag the merge commit on `main`: `git tag v1.0.2 <merge commit>`, `git push origin v1.0.2`. The first tag, `v1.0.0`, marks the release of 1.0.0 (#356).
+
+The first tag, `v1.0.0`, marks the release of 1.0.0 (#356).
 
 The link references, one per Version and one for `[Unreleased]`, newest first:
 
