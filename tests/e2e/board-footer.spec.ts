@@ -5,12 +5,12 @@ import { signIn } from './auth'
 import { gotoHydrated } from './hydration'
 
 // The footer at the end of the Board (#405, spec #388): "Was ist neu" and the
-// legal pages, not in the menus any more. Read only, so Lise is shared with
-// nobody's changes; she is used by this file only.
-const LISE = ALLOWLISTED[59]
+// legal pages, not in the menus any more. Read only; Claude Shannon is used
+// by this file only.
+const SHANNON = ALLOWLISTED[133]
 
 test.beforeEach(async ({ page }) => {
-  await signIn(page, LISE)
+  await signIn(page, SHANNON)
 })
 
 async function openFooter(page: Page) {
