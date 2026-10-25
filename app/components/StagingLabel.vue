@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// The small "Staging" label on every page of Staging (#414): so the Operator
-// always knows which app he is in. Fixed in a corner, above the content, and
-// it never catches a tap. app.vue renders it only where the runtime flag says
+// The small "Staging" label on every page of Staging (#414), so it is always
+// clear which app is open. Fixed in a corner, above the content, and it never
+// catches a tap. app.vue renders it only where the build's runtime flag says
 // the app runs as Staging (nuxt.config.ts).
 </script>
 
