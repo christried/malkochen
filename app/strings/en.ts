@@ -118,6 +118,7 @@ export const en: Strings = {
     toApp: 'Go to malkochen',
   },
   board: {
+    asOperator: "You're seeing this board as malkochen's operator.",
     footer: 'About malkochen',
     emptyBoardTitle: 'Nothing here yet.',
     emptyBoardBody: 'Paste your first link!',
@@ -689,6 +690,15 @@ export const en: Strings = {
     activeHint: 'Who did something on a board, and on which boards.',
     people: 'People',
     boards: 'Boards',
+    boardSearch: 'Search boards or owners',
+    boardOwner: 'Owner',
+    boardMembers: 'Members',
+    boardDishes: 'Dishes',
+    boardLastActive: 'Last active',
+    boardArchived: 'Archived',
+    noBoards: 'No boards found.',
+    // A Board's last activity, from an ISO time.
+    lastActive: (at: string) => addedDate(new Date(at)),
     today: 'Today',
     week: 'Last 7 days',
     month: 'Last 30 days',

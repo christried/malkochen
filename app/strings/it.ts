@@ -129,6 +129,7 @@ export const it: Strings = {
     toApp: 'Vai a malkochen',
   },
   board: {
+    asOperator: 'Stai vedendo questa bacheca come gestore di malkochen.',
     footer: 'Su malkochen',
     emptyBoardTitle: 'Ancora niente qui.',
     emptyBoardBody: 'Incolla il tuo primo link!',
@@ -705,6 +706,15 @@ export const it: Strings = {
     activeHint: 'Chi ha fatto qualcosa su una bacheca, e su quali bacheche.',
     people: 'Persone',
     boards: 'Bacheche',
+    boardSearch: 'Cerca bacheche o proprietari',
+    boardOwner: 'Proprietario',
+    boardMembers: 'Membri',
+    boardDishes: 'Piatti',
+    boardLastActive: 'Ultima attività',
+    boardArchived: 'Archiviata',
+    noBoards: 'Nessuna bacheca trovata.',
+    // A Board's last activity, from an ISO time.
+    lastActive: (at: string) => addedDate(new Date(at)),
     today: 'Oggi',
     week: 'Ultimi 7 giorni',
     month: 'Ultimi 30 giorni',
