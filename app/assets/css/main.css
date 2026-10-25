@@ -608,6 +608,14 @@ html[data-theme-reveal="fade"] *::after {
   .field :is(input, textarea)::placeholder {
     color: var(--color-text-muted);
   }
+  /* Chrome's autofill paints the control's box, and the notch lies over it:
+     the label would sit in a coloured gap. The fill is held back (its
+     transition takes ages, so the control stays as it is) and the text
+     keeps the theme's colour. */
+  .field > :is(input, select, textarea):-webkit-autofill {
+    -webkit-text-fill-color: var(--color-text);
+    transition: background-color 600000s 0s, color 600000s 0s;
+  }
   /* A select: our own chevron (an 18px AppIcon after it), 16px in. */
   .field > select {
     appearance: none;

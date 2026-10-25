@@ -118,3 +118,31 @@ for (const scheme of ['light', 'dark'] as const) {
     await expectColours(page, link, l => [l.danger, l.danger])
   })
 }
+
+// The sign-in email field: its label in the border, empty and filled (#390).
+// The code field is the same component (AppField).
+test('the sign-in email field has its label in the border, empty and filled', async ({ page }) => {
+  await gotoHydrated(page, '/login')
+  const email = page.getByLabel('E-Mail-Adresse')
+  await expectLabelInBorder(page, email, 'E-Mail-Adresse')
+  await email.fill('ada@example.com')
+  await expectLabelInBorder(page, email, 'E-Mail-Adresse')
+})
+
+// The Comment field (#390): no space above it, and its button and placeholder
+// centred in its line.
+test('the Comment field has no space above it, and its button sits level with its line', async ({ page }) => {
+  await signIn(page, ALLOWLISTED[33])
+  await resetBoard(page)
+  await seedDish(page, { title: 'Ofengemüse', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await gotoHydrated(page, '/')
+  await page.getByRole('link', { name: 'Ofengemüse' }).click()
+  const detail = page.getByRole('dialog', { name: 'Ofengemüse' })
+  const field = detail.getByRole('textbox', { name: 'Kommentar' })
+  const send = detail.getByRole('button', { name: 'Senden' })
+  const form = await detail.locator('[data-comment-form]').boundingBox()
+  const box = await field.boundingBox()
+  const button = await send.boundingBox()
+  expect(box!.y - form!.y).toBeLessThanOrEqual(1)
+  expect(Math.abs((box!.y + box!.height / 2) - (button!.y + button!.height / 2))).toBeLessThanOrEqual(1)
+})
