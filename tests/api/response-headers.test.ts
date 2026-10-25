@@ -29,6 +29,14 @@ test.each(['/api/health', '/icons/icon.svg'])('%s, which is no page, has no poli
   expect(res.headers.get('content-security-policy')).toBe('frame-ancestors \'none\'')
 })
 
+// Staging alone asks search engines to stay away (#414): production's answers
+// carry no X-Robots-Tag, a page, an API answer or a file from public/ alike.
+test.each(['/login', '/api/health', '/icons/icon.svg'])('%s carries no X-Robots-Tag: production is not Staging', async (path) => {
+  const res = await anonymous().fetch(path)
+
+  expect(res.headers.get('x-robots-tag')).toBeNull()
+})
+
 test.each(['/login', '/no-such-page'])('the page %s is stored by no cache', async (path) => {
   const res = await anonymous().fetch(path)
 
