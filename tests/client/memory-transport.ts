@@ -116,7 +116,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       title: input.title,
       source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,
       creator: input.creator?.trim() || null,
-      caption: input.source ? input.caption?.trim() || null : null,
+      // As the server does, with the ticket only checked for being sent.
+      caption: input.source && input.sourceTicket ? input.caption?.trim() || null : null,
       imageUrl: input.photo
         ? (input.photo.ticket ? input.photo.url : null)
         : input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
@@ -143,11 +144,15 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    const { title, source, creator, caption, placeholder, imageUrl, imageTicket, imageFocus } = changes
+    const { title, source, creator, caption, sourceTicket, placeholder, imageUrl, imageTicket, imageFocus } = changes
     if (title !== undefined) dish.title = title.trim()
     if (source !== undefined) {
+      const linkChanged = source?.link !== dish.source?.link
       dish.source = source && { link: source.link, kind: source.kind ?? 'other' }
-      dish.caption = source ? caption?.trim() || null : null
+      // As the server does: a new link keeps a Caption only with its ticket
+      // (the fake only checks that one is sent), the same link keeps the Dish's.
+      if (!source) dish.caption = null
+      else if (linkChanged) dish.caption = sourceTicket ? caption?.trim() || null : null
     }
     if (creator !== undefined) dish.creator = creator?.trim() || null
     if (placeholder !== undefined) dish.placeholder = placeholder

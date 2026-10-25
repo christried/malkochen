@@ -41,5 +41,7 @@ test('a link answers with what Source Lookup knows about it, even when that is n
     imageUrl: null,
     // Only a found image comes with an Image Ticket.
     imageTicket: null,
+    // Always a Source Ticket: it vouches for what was read, here nothing.
+    sourceTicket: expect.any(String),
   })
 })

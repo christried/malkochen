@@ -122,18 +122,20 @@ function usePhoto(photo: UploadedPhoto) {
   reloadAsked.value = false
 }
 
-// The Source as saved, with its Caption (#393): the Dish's own, or what Source
-// Lookup says the new link is (canonical link, kind and Caption). If the lookup
-// fails, the server reads the kind from the link itself, and the Dish has no
-// Caption for the new Source.
-async function sourceToSave(): Promise<{ source: SourceInput | null, caption: string | null }> {
+// The Source as saved (#393): the Dish's own, or what Source Lookup says the new
+// link is (canonical link and kind). With a new link, also the Caption and the
+// Source Ticket Source Lookup signed for it; the server keeps the Caption only
+// with that ticket. Unchanged, the server keeps the Dish's Caption, so neither
+// is sent. If the lookup fails, the server reads the kind from the link itself
+// and the new Source has no Caption.
+async function sourceToSave(): Promise<{ source: SourceInput | null, caption?: string | null, sourceTicket?: string }> {
   const target = sourceLink.value
-  if (!target) return { source: null, caption: null }
-  if (linkUnchanged.value && props.dish.source) return { source: { ...props.dish.source }, caption: props.dish.caption }
+  if (!target) return { source: null }
+  if (linkUnchanged.value && props.dish.source) return { source: { ...props.dish.source } }
   const result = await lookup.lookUpNow()
   return result
-    ? { source: { link: result.canonicalLink, kind: result.kind }, caption: result.caption }
-    : { source: { link: target }, caption: null }
+    ? { source: { link: result.canonicalLink, kind: result.kind }, caption: result.caption, sourceTicket: result.sourceTicket }
+    : { source: { link: target } }
 }
 
 const saving = ref(false)
@@ -151,12 +153,13 @@ async function save() {
   // finds mustn't become the image.
   if (reload.value === 'failed') reloadAsked.value = false
   try {
-    const { source, caption } = await sourceToSave()
+    const { source, caption, sourceTicket } = await sourceToSave()
     const saved = await boardModule.editDish(props.dish.id, {
       title: title.value,
       creator: creator.value,
       source,
       caption,
+      sourceTicket,
       placeholder: placeholder.value,
       ...choice.kind === 'placeholder' && { imageUrl: null },
       ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },

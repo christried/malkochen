@@ -37,6 +37,10 @@ export const photoTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'p
 export const storePicture = createPhotoStore({ storage, folder: 'pictures', square: PICTURE_SIDE, onFailure: reason => console.warn(`[image-store] picture not stored: ${reason}`) })
 export const pictureTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'picture' })
 
+// What Source Lookup read from a Source (its canonical link and Caption), signed
+// for the Member who asked; see server/utils/source-ticket.ts.
+export const sourceTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'source' })
+
 export interface DishImageRequest {
   photo?: { url: string, ticket: string } | null
   imageUrl?: string | null

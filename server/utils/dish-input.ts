@@ -18,6 +18,9 @@ const dishCreator = z.string().trim().max(100).nullish().transform(creator => cr
 // Lookup keeps it.
 const dishCaption = z.string().nullish().transform(caption => captionOf(caption))
 
+// The Source Ticket that came with a Caption (server/utils/source-ticket.ts).
+const sourceTicketInput = z.string().max(500).nullish()
+
 // The canonical link and kind from Source Lookup. The kind is read from the
 // link itself; the one sent only tells a blog from any other web page.
 const sourceInput = z.object({ link: webLinkInput, kind: z.enum(SOURCE_KINDS).optional() })
@@ -45,8 +48,10 @@ export const addDishBody = z.object({
   placeholder: z.enum(PLACEHOLDERS),
   source: sourceInput.nullish(),
   creator: dishCreator,
-  // The Caption of that Source; none without one.
+  // The Caption of that Source, and the Source Ticket Source Lookup signed for
+  // it: a Caption without a valid ticket is not kept (server/utils/source-ticket.ts).
   caption: dishCaption,
+  sourceTicket: sourceTicketInput,
   // The Source image Source Lookup found (third-party) and the Image Ticket it
   // came with; copied on save, but only with a valid ticket.
   imageUrl: webLinkInput.nullish(),
@@ -68,8 +73,10 @@ export const dishEditBody = z.object({
   source: sourceInput.nullable().optional(),
   // Blank clears it. Changing the Source never changes it.
   creator: dishCreator.optional(),
-  // The Caption of the Source sent with it; without one, the Dish has none.
+  // The Caption of the Source sent with it, and its Source Ticket; read only
+  // when the Source's link changes (server/api/dishes/[id].patch.ts).
   caption: dishCaption.optional(),
+  sourceTicket: sourceTicketInput.optional(),
   placeholder: z.enum(PLACEHOLDERS).optional(),
   // Null drops the stored image, so the Dish shows its Placeholder. A link is
   // the image "Bild neu laden" found (third-party) and needs the Image Ticket

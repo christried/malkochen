@@ -6,9 +6,6 @@
 const props = defineProps<{ caption: string }>()
 const t = useStrings()
 
-const FOLDED_LINES = 4
-const foldStyle = { display: '-webkit-box', WebkitLineClamp: FOLDED_LINES, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as const
-
 const folded = ref(true)
 const text = useTemplateRef<HTMLElement>('text')
 // Whether the folded text is cut short. Once it is, the toggle stays while
@@ -46,7 +43,7 @@ onBeforeUnmount(() => observer?.disconnect())
     <p
       ref="text"
       class="whitespace-pre-line break-words text-body text-text"
-      :style="folded ? foldStyle : undefined"
+      :class="folded && 'line-clamp-4 overflow-hidden'"
     >{{ caption }}</p>
     <button
       v-if="cut"
