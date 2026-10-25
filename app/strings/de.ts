@@ -94,6 +94,9 @@ export const de = {
     version: (version: string) => `Version ${version}`,
     // A Version's day, from YYYY-MM-DD.
     date: dayWithYear,
+    // The Changelog Popup (#406): closes it / opens the whole Changelog.
+    popupDone: 'Alles klar',
+    popupAll: 'Alle Änderungen',
     empty: 'Hier steht bald, was sich bei malkochen ändert.',
     sections: {
       added: 'Hinzugefügt',

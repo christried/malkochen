@@ -175,3 +175,22 @@ export async function storedImage(width: number, height: number): Promise<string
 export async function removeStoredImages() {
   await Promise.all(written.splice(0).map(path => rm(path, { force: true })))
 }
+
+// What a user has seen, for users signed in before. A new account starts
+// with the app's Version as the last it opened the Changelog in (`version`
+// sets another, null none) and the Tour not seen (`tourSeen` sets its
+// version). What isn't given stays.
+export async function setSeen(email: string, seen: { version?: string | null, tourSeen?: number }) {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    const { rowCount } = await client.query(
+      'update "user" set version_seen = case when $2::boolean then $3 else version_seen end, tour_seen = coalesce($4::int, tour_seen) where email = $1',
+      [email, seen.version !== undefined, seen.version ?? null, seen.tourSeen ?? null],
+    )
+    if (!rowCount) throw new Error(`setSeen: ${email} hasn't signed in yet`)
+  }
+  finally {
+    await client.end()
+  }
+}

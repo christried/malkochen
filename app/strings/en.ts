@@ -72,6 +72,9 @@ export const en: Strings = {
     copyFailed: 'Couldn’t copy the link.',
     version: (version: string) => `Version ${version}`,
     date: dayWithYear,
+    // The Changelog Popup (#406): closes it / opens the whole Changelog.
+    popupDone: 'Got it',
+    popupAll: 'All changes',
     empty: 'This is where you\'ll soon see what changes in malkochen.',
     sections: {
       added: 'Added',
