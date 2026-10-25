@@ -88,15 +88,15 @@ async function postPageImage(http: Http, post: SourceGuess): Promise<string | nu
 }
 
 // Whether Instagram's embed plays a post's video in place (#279, checked when
-// a Dish is added since #394), as the
-// Dish detail's player would load it (shared/video-embed.ts). For some
-// Reels, often ones with licensed music, Instagram's embed shows only the
-// cover and "Auf Instagram ansehen", which opens Instagram; it says so in a
-// "WatchOnInstagramContainer" block (checked 2026-10-16). The embed page
-// tells the player nothing different, so only the page shows it. Null: not
-// an Instagram post, or the page showed neither (broken, unreachable), and
-// the player finds out itself. Photo posts and carousels (their embed's
-// data-media-type isn't GraphVideo) play no video: false.
+// a Dish is added since #394), as the Dish detail's player would load it
+// (shared/video-embed.ts). For some Reels, often ones with licensed music,
+// Instagram's embed shows only the cover and "Auf Instagram ansehen", which
+// opens Instagram; it says so in a "WatchOnInstagramContainer" block (checked
+// 2026-10-16). The embed page tells the player nothing different, so only the
+// page shows it. Null: not an Instagram post, or the page showed neither
+// (broken, unreachable), and the player finds out itself. Photo posts and
+// carousels (their embed's data-media-type isn't GraphVideo) play no video:
+// false.
 export async function playsInPlace(http: Http, link: string): Promise<boolean | null> {
   let url: URL
   try {

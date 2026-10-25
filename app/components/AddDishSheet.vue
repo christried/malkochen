@@ -80,10 +80,10 @@ const creator = computed(() => withoutLink.value ? null : result.value?.creator 
 // The Caption (CONTEXT.md) of the Source, saved with the Dish, which shows it
 // in its detail. The sheet doesn't show it.
 const caption = computed(() => withoutLink.value ? null : result.value?.caption ?? null)
-// The Source Ticket Source Lookup signed for that Caption and for whether the
-// Source has a video that plays (#394, saved too): the server keeps them only
-// with it.
+// Whether the Source has a video that plays in malkochen (#394), saved too.
 const playableVideo = computed(() => withoutLink.value ? null : result.value?.playableVideo ?? null)
+// The Source Ticket Source Lookup signed for that Caption and video: the
+// server keeps them only with it.
 const sourceTicket = computed(() => withoutLink.value ? null : result.value?.sourceTicket ?? null)
 // The Source shows no title (a Pin, a post without a caption): ask for one,
 // kindly.

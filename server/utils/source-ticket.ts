@@ -5,8 +5,9 @@ import { sourceTickets } from './image-store'
 // Source Tickets (server/image-store/tickets.ts): what Source Lookup read from a
 // Source, signed for the Member who asked, so a Dish keeps a Caption only if
 // Source Lookup found it, never one a client makes up. The same goes for
-// whether an Instagram post has a video that plays in malkochen (#394). The facts are built in
-// this one place, so the ticket and the check always agree on them.
+// whether an Instagram post has a video that plays in malkochen (#394). The
+// facts are built in this one place, so the ticket and the check always agree
+// on them.
 
 // The facts a Source Ticket vouches for: the canonical link, the Caption
 // (null when the Source shows none) and whether the Source has a video that
