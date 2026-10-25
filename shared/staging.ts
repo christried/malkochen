@@ -6,7 +6,7 @@
 //   answer, the files in public/ included, gets its headers from the build.
 // - server/routes/manifest.webmanifest.ts reads it at runtime, from the env
 //   the server validates (server/env.ts).
-// Shared, so the rule is one line and tested without a server.
+// Shared, so the rule is one line and tested without a server. (CI probe)
 
 export function isStaging(vercelEnv: string | undefined): boolean {
   return vercelEnv === 'preview'
