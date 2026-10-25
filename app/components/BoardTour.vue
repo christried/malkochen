@@ -2,7 +2,7 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { Me } from '~~/server/utils/people'
 import { dishOnBoard } from '~~/shared/board'
-import { startTour, tourAfter, tourBrowser, tourStep, TOUR_VERSION, type Tour, type TourButton, type TourEvent, type TourTarget } from '~/tour/tour'
+import { startTour, tourAfter, tourBrowser, tourStep, SETTLE_MS, TOUR_VERSION, type Tour, type TourButton, type TourEvent, type TourTarget } from '~/tour/tour'
 
 // The Tour (CONTEXT.md, #298) on the Board: feeds the Tour module what the
 // Board is like and what the user chooses, and draws its steps (TourLayer).
@@ -38,21 +38,19 @@ const props = defineProps<{
   menu: { dishId: string, choosing: boolean } | null
 }>()
 const adding = defineModel<boolean>('adding', { required: true })
-const emit = defineEmits<{ ended: [], closeMenu: [] }>()
+const emit = defineEmits<{ ended: [], closeMenu: [], started: [] }>()
 const t = useStrings()
 const { data: me } = useMe()
 const splashUp = useSplashUp()
 const installPrompt = useInstallPrompt()
 
-// How long the Board stays idle before the Tour starts by itself: its cards
-// have risen in by then.
-const SETTLE_MS = 1200
 const TARGETS: TourTarget[] = ['add-button', 'columns', 'board-switcher']
 
 const tour = shallowRef<Tour | null>(null)
 const step = computed(() => tour.value && tourStep(tour.value, t.tour))
 
 function start() {
+  emit('started')
   tour.value = startTour({
     layout: isPhoneLayout() ? 'phone' : 'larger',
     columns: props.board.columns,

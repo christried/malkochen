@@ -1,4 +1,5 @@
-import { expect, test } from 'vitest'
+import { expect, inject, test } from 'vitest'
+import { startResendService } from '../support/resend-service'
 import { TEST_VERSION } from '../support/test-version'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 import { setVersionSeen } from './time-travel'
@@ -11,17 +12,43 @@ import { setVersionSeen } from './time-travel'
 const BABBAGE = ALLOWLISTED[130]
 const BOOLE = ALLOWLISTED[131]
 const SHANNON = ALLOWLISTED[132]
+const KAY = ALLOWLISTED[140]
 
-interface Me { newVersion: boolean }
+interface Me { newVersion: boolean, versionSeen: string | null }
 
 const me = async (caller: Caller): Promise<Me> => (await caller.fetch('/api/me')).json()
 
 const recordSeen = (caller: Caller) => caller.fetch('/api/me/version-seen', { method: 'PUT' })
 
-test('a new user has a newer Version to see', async () => {
+// A new account starts with the app's Version as seen (#406): the Changelog
+// Popup is for what changed since they joined, not for what was there.
+test('a new user starts with the app Version as seen, so there is nothing new to see', async () => {
   const babbage = await signIn(BABBAGE)
 
-  expect((await me(babbage)).newVersion).toBe(true)
+  expect(await me(babbage)).toMatchObject({ newVersion: false, versionSeen: TEST_VERSION })
+})
+
+test('so does a new user who signs in with an emailed code', async () => {
+  const resend = await startResendService()
+  try {
+    const address = '2001:db8:406::1'
+    const post = (path: string, body: unknown) => fetch(`${inject('apiBaseUrl')}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'origin': inject('apiBaseUrl'), 'x-forwarded-for': address },
+      body: JSON.stringify(body),
+    })
+    await post('/api/auth/email-otp/send-verification-otp', { email: KAY, type: 'sign-in' })
+    const otp = resend.sent.findLast(e => e.to.includes(KAY))!.text.match(/\b\d{6}\b/)![0]
+    const res = await post('/api/auth/sign-in/email-otp', { email: KAY, otp })
+    expect(res.status).toBe(200)
+    const cookie = res.headers.getSetCookie().map(c => c.split(';')[0]).join('; ')
+
+    const mine = await (await fetch(`${inject('apiBaseUrl')}/api/me`, { headers: { cookie } })).json() as Me
+    expect(mine).toMatchObject({ newVersion: false, versionSeen: TEST_VERSION })
+  }
+  finally {
+    await resend.close()
+  }
 })
 
 test('once seen, it is no longer new, on every device the user signs in on', async () => {
