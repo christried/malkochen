@@ -34,10 +34,10 @@ test('your Profile Picture on the Board opens a menu with who is signed in, sign
   await expect(avatar).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator(`img[src="${PHOTO}"]`).filter({ visible: true })).toHaveCount(2)
   // Your settings are the cogwheel's (#282). Its last rows: the legal pages,
-  // on christried.me.
+  // in malkochen.
   await expect(menu.getByRole('menuitem')).toHaveText(['Abmelden', 'Impressum', 'Datenschutz'])
-  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/imprint.html')
-  await expect(menu.getByRole('menuitem', { name: 'Datenschutz' })).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
+  await expect(menu.getByRole('menuitem', { name: 'Impressum' })).toHaveAttribute('href', '/impressum')
+  await expect(menu.getByRole('menuitem', { name: 'Datenschutz' })).toHaveAttribute('href', '/datenschutz')
 })
 
 test('the cogwheel in the Board\'s header opens your settings over the Board, and closing them puts focus back on it', async ({ page }) => {
@@ -180,8 +180,6 @@ test('the user menu works by keyboard: open, move, Escape, and "Abmelden" signs 
 })
 
 test('Tab closes the user menu, and Space chooses a legal page like Enter', async ({ page, context }) => {
-  // christried.me is outside the app: answered here, not by the network.
-  await context.route('https://christried.me/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Impressum</title>' }))
   await gotoHydrated(page, '/')
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
   const menu = page.getByRole('menu')
@@ -199,7 +197,7 @@ test('Tab closes the user menu, and Space chooses a legal page like Enter', asyn
   const opened = context.waitForEvent('page')
   await page.keyboard.press(' ')
 
-  expect((await opened).url()).toBe('https://christried.me/imprint.html')
+  await (await opened).waitForURL(`${E2E_ORIGIN}/impressum`)
   await expect(menu).toHaveCount(0)
 })
 
@@ -215,8 +213,6 @@ test('the user menu closes on a press anywhere else', async ({ page }) => {
 })
 
 test('a legal page chosen from the user menu opens in a new tab; the menu closes and focus is back on your picture', async ({ page, context }) => {
-  // christried.me is outside the app: answered here, not by the network.
-  await context.route('https://christried.me/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Impressum</title>' }))
   await gotoHydrated(page, '/')
   const avatar = page.getByRole('button', { name: 'Dein Konto' })
   const menu = page.getByRole('menu')
@@ -230,7 +226,7 @@ test('a legal page chosen from the user menu opens in a new tab; the menu closes
   await menu.getByRole('menuitem', { name: 'Impressum' }).focus()
   const opened = context.waitForEvent('page')
   await page.keyboard.press('Enter')
-  expect((await opened).url()).toBe('https://christried.me/imprint.html')
+  await (await opened).waitForURL(`${E2E_ORIGIN}/impressum`)
   await expect(menu).toHaveCount(0)
   await expect(avatar).toBeFocused()
 })
@@ -250,8 +246,8 @@ test('on a phone the legal pages are the last rows of the Board switcher, and th
   await expect(panel.locator('a, button').filter({ hasText: /Einstellungen|Impressum|Datenschutz/ })).toHaveText(['Impressum', 'Datenschutz'])
   const legalRow = panel.getByRole('listitem').last()
   await expect(legalRow.getByRole('link')).toHaveText(['Impressum', 'Datenschutz'])
-  await expect(legalRow.getByRole('link', { name: 'Impressum' })).toHaveAttribute('href', 'https://christried.me/imprint.html')
-  await expect(legalRow.getByRole('link', { name: 'Datenschutz' })).toHaveAttribute('href', 'https://christried.me/privacy-malkochen.html')
+  await expect(legalRow.getByRole('link', { name: 'Impressum' })).toHaveAttribute('href', '/impressum')
+  await expect(legalRow.getByRole('link', { name: 'Datenschutz' })).toHaveAttribute('href', '/datenschutz')
   // A press beside the two links chooses nothing: the switcher stays open.
   const row = (await legalRow.boundingBox())!
   await page.mouse.click(row.x + row.width - 8, row.y + row.height / 2)
