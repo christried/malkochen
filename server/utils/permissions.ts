@@ -2,7 +2,7 @@ import { and, eq, exists, not, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { ALL_PERMISSIONS, PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
 import { db } from '../db'
-import { board, membership } from '../db/schema'
+import { board, eventLog, membership } from '../db/schema'
 import { ownerOf } from './boards'
 
 // The one check of Permissions (CONTEXT.md): may this user do this on this
@@ -67,7 +67,7 @@ export async function setPermissions(boardId: string, userId: string, memberId: 
   // Merged into what is stored, only while the user is still the Owner.
   // Setting flags to what they are already moves no Board Version: its
   // trigger (migration 0033) only counts Permissions that differ.
-  const [updated] = await db
+  const update = db
     .update(membership)
     .set({ permissions: sql`${membership.permissions} || ${JSON.stringify(changes)}::jsonb` })
     .where(and(
@@ -77,6 +77,24 @@ export async function setPermissions(boardId: string, userId: string, memberId: 
       exists(ownerOf(boardId, userId)),
     ))
     .returning({ permissions: membership.permissions })
+  // One event per Permission that actually switched, read from the Member's
+  // Permissions before (earlier, in the same snapshot).
+  const { rows } = await db.execute(sql`
+    with earlier as (
+      select ${membership.permissions} as permissions from ${membership}
+      where ${and(eq(membership.boardId, boardId), eq(membership.userId, memberId))}
+    ),
+    changed as (${update.getSQL()}),
+    recorded as (
+      insert into ${eventLog} (kind, board_id, dish_id, user_id, details)
+      select 'permission_changed', ${boardId}::uuid, null, ${userId}::text,
+        jsonb_build_object('member', ${memberId}::text, 'permission', p.key, 'on', p.value::boolean)
+      from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
+      where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean
+    )
+    select permissions from changed
+  `)
+  const [updated] = rows as { permissions: Permissions }[]
   if (updated) return updated.permissions
   // Nothing changed: the Member is gone, or the user handed over meanwhile.
   return (await standingOn(boardId, userId))?.isOwner ? 'not-member' : 'forbidden'
@@ -90,11 +108,25 @@ export async function setDefaultPermissions(boardId: string, userId: string, cha
   const standing = await standingOn(boardId, userId)
   if (!standing) return null
   if (!standing.isOwner) return 'forbidden'
-  // Only while the user is still the Owner.
-  const [updated] = await db
+  // Only while the user is still the Owner. One event per Permission that
+  // actually switched, read from the Board's Default Permissions before.
+  const update = db
     .update(board)
     .set({ defaultPermissions: sql`${board.defaultPermissions} || ${JSON.stringify(changes)}::jsonb` })
     .where(and(eq(board.id, boardId), exists(ownerOf(boardId, userId))))
-    .returning({ defaultPermissions: board.defaultPermissions })
-  return updated?.defaultPermissions ?? 'forbidden'
+    .returning({ permissions: board.defaultPermissions })
+  const { rows } = await db.execute(sql`
+    with earlier as (select ${board.defaultPermissions} as permissions from ${board} where ${eq(board.id, boardId)}),
+    changed as (${update.getSQL()}),
+    recorded as (
+      insert into ${eventLog} (kind, board_id, dish_id, user_id, details)
+      select 'default_permission_changed', ${boardId}::uuid, null, ${userId}::text,
+        jsonb_build_object('permission', p.key, 'on', p.value::boolean)
+      from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
+      where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean
+    )
+    select permissions from changed
+  `)
+  const [updated] = rows as { permissions: Permissions }[]
+  return updated?.permissions ?? 'forbidden'
 }

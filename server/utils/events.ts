@@ -1,4 +1,5 @@
-import { sql, type SQL, type SQLWrapper } from 'drizzle-orm'
+import { and, sql, type SQL, type SQLWrapper } from 'drizzle-orm'
+import type { Permission } from '../../shared/permissions'
 import type { SourceKind } from '../source-lookup'
 import type { Db } from '../db'
 import { dish, eventLog } from '../db/schema'
@@ -45,6 +46,24 @@ export type EventKind =
   // The Operator switched Open Sign-up (CONTEXT.md) on or off: an event of
   // malkochen as a whole, on no Board.
   | 'open_sign_up_switched'
+  // "Bearbeiten" on a Dish: which of its fields changed (EventDetails).
+  | 'dish_edited'
+  // Board settings: Columns added, renamed, given or without a Column
+  // Subtitle, put in a new order, and deleted.
+  | 'column_added'
+  | 'column_renamed'
+  | 'column_subtitle_changed'
+  | 'column_reordered'
+  | 'column_deleted'
+  // A Member's Permission switched, and the Board's Default Permissions.
+  | 'permission_changed'
+  | 'default_permission_changed'
+  // The Invite Link given a new secret, the old one stops working.
+  | 'invite_link_reset'
+  | 'board_renamed'
+  | 'board_emoji_changed'
+  // The Owner made another Member the Owner.
+  | 'ownership_handed_over'
 
 // What an event says beyond its Board, Dish and user, by kind. `undo`: the
 // write was a "Rückgängig", taking back the one before it.
@@ -69,6 +88,23 @@ export type EventDetails =
   | { member: string }
   // open_sign_up_switched: whether it is on now.
   | { on: boolean }
+  // dish_edited: which of its fields changed, never their values.
+  | { fields: DishField[] }
+  // column_added, column_renamed, column_reordered and column_deleted: which
+  // Column (column_reordered: none, it is the Board's).
+  | { column: string }
+  // column_subtitle_changed: which Column, and whether it has a Subtitle now.
+  | { column: string, on: boolean }
+  // permission_changed: whose, which Permission, and whether it is on now.
+  | { member: string, permission: Permission, on: boolean }
+  // default_permission_changed: which Permission, and whether it is on now.
+  | { permission: Permission, on: boolean }
+  // ownership_handed_over: to whom.
+  | { member: string }
+
+// The fields of a Dish an edit can change (dish_edited): the title, the
+// image (or its Placeholder), the Source, the Creator and the Focus Point.
+export type DishField = 'title' | 'image' | 'source' | 'creator' | 'focus'
 
 // One event per row of the statement it is recorded with: its kind, and
 // SQL for its Board, Dish and details over that row. `user` did it.
@@ -78,6 +114,9 @@ export interface EventValues {
   dish?: SQL
   user: string
   details?: SQL
+  // Only for the rows this holds for (over the write's `changed` row, and
+  // its `earlier` one if given).
+  when?: SQL
 }
 
 // Details known before the write, as SQL.
@@ -105,23 +144,34 @@ export function recordEvents(d: Db, event: EventValues, from: SQL) {
 }
 
 // `write` (an insert, update or delete returning the rows it changed, an
-// `id` among them if `earlier` is given) with its event recorded for each
-// of those rows, in one statement. The event reads them as `changed`, and,
-// when `earlier` selects them by `id`, as they were before as `earlier`:
-// only the rows in both get one then, and only those `where` holds for.
-// Answers the changed rows, every one. (`getSQL()`, as a query builder put
-// in SQL as is would be wrapped in parentheses, which a `with` query that
-// writes may not be.)
-export function withEvents(d: Db, write: SQLWrapper, event: EventValues, { earlier, where }: { earlier?: SQL, where?: SQL } = {}) {
+// `id` among them if `earlier` is given) with its event, or events, recorded
+// for each of those rows, in one statement. The events read them as
+// `changed`, and, when `earlier` selects them by `id`, as they were before
+// as `earlier`: only the rows in both get one then, and only those `where`
+// holds for (and each event's own `when`). With `once`, one event per
+// statement, however many rows it changed. Answers the changed rows, every
+// one. (`getSQL()`, as a query builder put in SQL as is would be wrapped in
+// parentheses, which a `with` query that writes may not be.)
+export function withEvents(
+  d: Db,
+  write: SQLWrapper,
+  event: EventValues | EventValues[],
+  { earlier, where, once = false }: { earlier?: SQL, where?: SQL, once?: boolean } = {},
+) {
+  const events = Array.isArray(event) ? event : [event]
   return d.execute<Record<string, unknown>>(sql`
     with ${earlier ? sql`earlier as (${earlier}), ` : sql``}changed as (${write.getSQL()}),
-    recorded as (
-      ${insertEvents(event, sql`from changed
-        ${earlier ? sql`join earlier using (id)` : sql``}
-        ${where ? sql`where ${where}` : sql``}`)}
-    )
+    ${sql.join(events.map((e, i) => sql`recorded${sql.raw(String(i))} as (${insertEvents(e, eventRows(e, { earlier, where, once }))})`), sql`, `)}
     select * from changed
   `)
+}
+
+// The rows an event is recorded for, as the `from` of its insert.
+function eventRows(event: EventValues, { earlier, where, once }: { earlier?: SQL, where?: SQL, once: boolean }): SQL {
+  const conditions = [where, event.when].filter((c): c is SQL => c !== undefined)
+  return sql`from ${once ? sql`(select * from changed limit 1) changed` : sql`changed`}
+    ${earlier ? sql`join earlier using (id)` : sql``}
+    ${conditions.length > 0 ? sql`where ${and(...conditions)}` : sql``}`
 }
 
 // The event of a Board, or of a membership of it, a write changed
@@ -169,4 +219,10 @@ export function voteEvent(kind: EventKind, user: string): EventValues {
     user,
     details: sql`jsonb_build_object('up', changed.up)`,
   }
+}
+
+// The event of a Column a write changed (`changed`, its row, with its
+// `board_id`), on the Board it is on.
+export function columnEvent(kind: EventKind, user: string, details?: SQL): EventValues {
+  return { kind, board: sql`changed.board_id`, user, details: details ?? sql`jsonb_build_object('column', changed.id)` }
 }

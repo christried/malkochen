@@ -3,7 +3,7 @@ import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { db, runAtomic } from '../db'
 import { membership } from '../db/schema'
 import { membershipOf, ownerOf } from './boards'
-import { boardEvent, detailsOf, withEvents, type EventValues } from './events'
+import { boardEvent, detailsOf, recordEvents, withEvents, type EventValues } from './events'
 
 // Members and the Owner (CONTEXT.md): any Member but the Owner can leave; the
 // Owner removes Members, hands ownership over and deletes the Board
@@ -69,6 +69,16 @@ export async function handOver(boardId: string, userId: string, memberId: string
     d.update(membership)
       .set({ isOwner: true })
       .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), ownerFree)),
+    // Recorded only if this hand-over made the Member the Owner, from the
+    // one who was.
+    recordEvents(d, {
+      kind: 'ownership_handed_over',
+      board: sql`${boardId}::uuid`,
+      user: userId,
+      details: detailsOf({ member: memberId }),
+    }, sql`from (select 1) as changed
+      where exists (select 1 from ${membership} as m where m.board_id = ${boardId} and m.user_id = ${memberId} and m.is_owner)
+      and not exists (select 1 from ${membership} as m where m.board_id = ${boardId} and m.user_id = ${userId} and m.is_owner)`),
   ])
   const [owner] = await ownerOf(boardId, memberId)
   if (owner) return 'handed-over'

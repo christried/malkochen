@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import sharp from 'sharp'
 import { postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 import { everyEventAsText, watchEvents } from './event-log'
@@ -395,11 +396,157 @@ test('a Comment refused records nothing: empty, by an outsider, edited or delete
   expect(await log.recorded()).toEqual([])
 })
 
+test('adding, renaming, subtitling, reordering and deleting Columns each record an event; what changes nothing records nothing', async () => {
+  const teitelbaum = await owner()
+  const board = await createBoard(teitelbaum, 'Spalten')
+  const log = await watchEvents()
+
+  const added = await post(teitelbaum, `/api/boards/${board.id}/columns`, { name: 'Vielleicht' })
+  expect(added.status).toBe(201)
+  const column = await added.json() as { id: string }
+  const patch = (body: unknown) => teitelbaum.fetch(`/api/columns/${column.id}`, { method: 'PATCH', ...json(body) })
+  expect((await patch({ name: 'Irgendwann' })).status).toBe(200)
+  // The same name again is no rename.
+  expect((await patch({ name: 'Irgendwann' })).status).toBe(200)
+  expect((await patch({ subtitle: 'Für Gäste' })).status).toBe(200)
+  expect((await patch({ subtitle: 'Für Gäste' })).status).toBe(200)
+  expect((await patch({ name: 'Bald', subtitle: null })).status).toBe(200)
+
+  const columns = (await getBoard(teitelbaum, board.id)).columns
+  const reordered = [columns[1]!, columns[0]!, ...columns.slice(2)]
+  expect((await teitelbaum.fetch(`/api/boards/${board.id}/columns`, { method: 'PUT', ...json({ columnIds: reordered.map(c => c.id) }) })).status).toBe(200)
+  expect((await teitelbaum.fetch(`/api/columns/${column.id}`, { method: 'DELETE' })).status).toBe(204)
+
+  const userId = await idOf(teitelbaum)
+  const event = (kind: string, details: Record<string, unknown> | null = null) => ({ kind, boardId: board.id, dishId: null, userId, details })
+  expect(await log.recorded()).toEqual([
+    event('column_added', { column: column.id }),
+    event('column_renamed', { column: column.id }),
+    event('column_subtitle_changed', { column: column.id, on: true }),
+    event('column_renamed', { column: column.id }),
+    event('column_subtitle_changed', { column: column.id, on: false }),
+    event('column_reordered'),
+    event('column_deleted', { column: column.id }),
+  ])
+})
+
+test('renaming a Board and changing its emoji each record an event; the same name or emoji records nothing', async () => {
+  const teitelbaum = await owner()
+  const board = await createBoard(teitelbaum, 'Alt')
+  const log = await watchEvents()
+  const patch = (body: unknown) => teitelbaum.fetch(`/api/boards/${board.id}`, { method: 'PATCH', ...json(body) })
+
+  expect((await patch({ name: 'Neu' })).status).toBe(200)
+  expect((await patch({ name: 'Neu' })).status).toBe(200)
+  expect((await patch({ emoji: '🍲' })).status).toBe(200)
+  expect((await patch({ name: 'Neu', emoji: '🍲' })).status).toBe(200)
+
+  const userId = await idOf(teitelbaum)
+  expect(await log.recorded()).toEqual([
+    { kind: 'board_renamed', boardId: board.id, dishId: null, userId, details: null },
+    { kind: 'board_emoji_changed', boardId: board.id, dishId: null, userId, details: null },
+  ])
+})
+
+test('resetting the Invite Link records it, by the Owner', async () => {
+  const teitelbaum = await owner()
+  const board = await createBoard(teitelbaum, 'Einladung')
+  const log = await watchEvents()
+
+  expect((await post(teitelbaum, `/api/boards/${board.id}/invite/reset`)).status).toBe(200)
+  expect((await post(teitelbaum, `/api/boards/${board.id}/invite/reset`)).status).toBe(200)
+
+  const userId = await idOf(teitelbaum)
+  expect(await log.recorded()).toEqual([
+    { kind: 'invite_link_reset', boardId: board.id, dishId: null, userId, details: null },
+    { kind: 'invite_link_reset', boardId: board.id, dishId: null, userId, details: null },
+  ])
+})
+
+test('handing ownership over records it, with the Member it went to', async () => {
+  const teitelbaum = await owner()
+  const wexler = await member()
+  const board = await createBoard(teitelbaum, 'Staffel')
+  await join(wexler, board)
+  const [ownerId, memberId] = [await idOf(teitelbaum), await idOf(wexler)]
+  const log = await watchEvents()
+
+  expect((await post(teitelbaum, `/api/boards/${board.id}/owner`, { userId: memberId })).ok).toBe(true)
+
+  expect(await log.recorded()).toEqual([
+    { kind: 'ownership_handed_over', boardId: board.id, dishId: null, userId: ownerId, details: { member: memberId } },
+  ])
+})
+
+test('a Member\'s Permission switched records which and whether it is on; the same setting records nothing', async () => {
+  const teitelbaum = await owner()
+  const wexler = await member()
+  const board = await createBoard(teitelbaum, 'Rechte')
+  await join(wexler, board)
+  const memberId = await idOf(wexler)
+  const setPermissions = (body: unknown) => teitelbaum.fetch(`/api/boards/${board.id}/members/${memberId}/permissions`, { method: 'PATCH', ...json(body) })
+  expect((await setPermissions({ addDishes: false, editDishes: false })).status).toBe(200)
+  const log = await watchEvents()
+
+  expect((await setPermissions({ addDishes: true, editDishes: false })).status).toBe(200)
+  expect((await setPermissions({ addDishes: true })).status).toBe(200)
+  expect((await setPermissions({ editDishes: true })).status).toBe(200)
+
+  const userId = await idOf(teitelbaum)
+  expect(await log.recorded()).toEqual([
+    { kind: 'permission_changed', boardId: board.id, dishId: null, userId, details: { member: memberId, permission: 'addDishes', on: true } },
+    { kind: 'permission_changed', boardId: board.id, dishId: null, userId, details: { member: memberId, permission: 'editDishes', on: true } },
+  ])
+})
+
+test('the Board\'s Default Permissions switched record which and whether it is on; the same setting records nothing', async () => {
+  const teitelbaum = await owner()
+  const board = await createBoard(teitelbaum, 'Vorgabe')
+  const setDefaults = (body: unknown) => teitelbaum.fetch(`/api/boards/${board.id}/default-permissions`, { method: 'PATCH', ...json(body) })
+  expect((await setDefaults({ editDishes: false })).status).toBe(200)
+  const log = await watchEvents()
+
+  expect((await setDefaults({ editDishes: true })).status).toBe(200)
+  expect((await setDefaults({ editDishes: true })).status).toBe(200)
+
+  expect(await log.recorded()).toEqual([
+    { kind: 'default_permission_changed', boardId: board.id, dishId: null, userId: await idOf(teitelbaum), details: { permission: 'editDishes', on: true } },
+  ])
+})
+
+test('editing a Dish records which of its fields changed, never their values; an edit that changes nothing records nothing', async () => {
+  const teitelbaum = await owner()
+  const board = await createBoard(teitelbaum, 'Bearbeitet')
+  const bytes = await sharp({ create: { width: 900, height: 1600, channels: 3, background: '#7a4' } }).jpeg().toBuffer()
+  const uploadRes = await teitelbaum.fetch(`/api/boards/${board.id}/photos`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array(bytes) })
+  const photo = await uploadRes.json() as { url: string, ticket: string }
+  const dish = await addDish(teitelbaum, board.id, 'Shakshuka', { source: { link: 'https://www.tiktok.com/@koch/video/7300000000000000001' }, photo })
+  const log = await watchEvents()
+  const edit = (body: unknown) => teitelbaum.fetch(`/api/dishes/${dish.id}`, { method: 'PATCH', ...json(body) })
+
+  expect((await edit({ title: 'Shakshuka mit Ei' })).status).toBe(200)
+  expect((await edit({ title: 'Shakshuka mit Ei' })).status).toBe(200)
+  expect((await edit({ creator: 'Mara' })).status).toBe(200)
+  expect((await edit({ source: { link: 'https://www.tiktok.com/@koch/video/7300000000000000002' } })).status).toBe(200)
+  expect((await edit({ imageFocus: { x: 10, y: 20 } })).status).toBe(200)
+  expect((await edit({ title: 'Shakshuka, scharf', creator: 'Tom' })).status).toBe(200)
+
+  const userId = await idOf(teitelbaum)
+  const event = (fields: string[]) => ({ kind: 'dish_edited', boardId: board.id, dishId: dish.id, userId, details: { fields } })
+  expect(await log.recorded()).toEqual([
+    event(['title']),
+    event(['creator']),
+    event(['source']),
+    event(['focus']),
+    event(['title', 'creator']),
+  ])
+})
+
 test('the log holds no content: no titles, Comments, Board names, Usernames or emails', async () => {
   const text = await everyEventAsText()
 
   expect(text).not.toBe('')
-  for (const content of ['Shakshuka', 'Linsensuppe', 'tiktok.com', 'Sonntagsessen', 'Tischrunde', 'Kreuzkümmel', 'Vom Owner', 'teitelbaum', 'wexler', 'sinclair', 'example.com']) {
+  for (const content of ['Shakshuka', 'Linsensuppe', 'tiktok.com', 'Sonntagsessen', 'Tischrunde', 'Kreuzkümmel', 'Vom Owner', 'teitelbaum', 'wexler', 'sinclair', 'example.com', 'Mara', 'Für Gäste', 'Vielleicht', 'Irgendwann']) {
     expect(text).not.toContain(content)
   }
 })
