@@ -37,6 +37,9 @@ export interface DishView {
   // The Caption (CONTEXT.md): the text the Source shows with its post; null if
   // it shows none. Read-only for Members.
   caption: string | null
+  // Whether its Source has a video that plays in malkochen (#394); null when
+  // not known yet.
+  playableVideo: boolean | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -79,6 +82,7 @@ export interface NewDish {
   source: DishSource | null
   creator: string | null
   caption: string | null
+  playableVideo: boolean | null
   // Must already be a stored image (Image Store), never a third-party link.
   imageUrl: string | null
   // Where that image is shifted to; the centre if left out. Without an
@@ -115,6 +119,7 @@ function selectDishes() {
       sourceKind: dish.sourceKind,
       creator: dish.creator,
       caption: dish.caption,
+      playableVideo: dish.playableVideo,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -176,7 +181,7 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // they are. `imageUrl` must already be a stored image, never a third-party
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'playableVideo' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -781,6 +786,7 @@ export async function addDish(
       sourceKind: input.source?.kind ?? null,
       creator: input.creator,
       caption: input.caption,
+      playableVideo: input.playableVideo,
       imageUrl: input.imageUrl,
       imageFocusX: focus.x,
       imageFocusY: focus.y,
@@ -806,6 +812,7 @@ export async function addDish(
     source: input.source,
     creator: input.creator,
     caption: input.caption,
+    playableVideo: input.playableVideo,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

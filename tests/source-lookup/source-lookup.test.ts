@@ -887,7 +887,7 @@ describe('Playable video (#394)', () => {
   })
 
   test('a TikTok photo post does not', async () => {
-    const { lookup, upstream } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed.json'))]])
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed.json'))]])
 
     expect((await lookup('https://www.tiktok.com/@scout2015/photo/6718335390845095173')).playableVideo).toBe(false)
   })

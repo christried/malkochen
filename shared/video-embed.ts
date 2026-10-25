@@ -81,3 +81,17 @@ export function instagramPostShown(data: unknown): { height: number | null } | n
   const height = details?.height
   return { height: typeof height === 'number' && height > 0 ? height : null }
 }
+
+// What the pill on a Dish's image offers (#394): "Video abspielen" ('play') or
+// nothing. A Dish says whether its Source has a video that plays in malkochen
+// (`playableVideo`, found when the Source was added). One without that yet
+// (null, until #395 fills it in) is decided as before: TikTok and YouTube
+// always, an Instagram post by what Instagram's embed says now
+// (`playsInPlace`; undefined while still asking, null when it can't tell).
+export function videoPill(dish: { source: DishSource | null, playableVideo: boolean | null }, playsInPlace: boolean | null | undefined): 'play' | null {
+  const embed = videoEmbed(dish.source)
+  if (!embed) return null
+  if (dish.playableVideo !== null) return dish.playableVideo ? 'play' : null
+  if (embed.platform !== 'instagram') return 'play'
+  return playsInPlace === undefined || playsInPlace === false ? null : 'play'
+}

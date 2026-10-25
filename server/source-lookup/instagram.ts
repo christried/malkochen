@@ -66,7 +66,7 @@ function username(html: string): string | null {
   return span && decodeEntities(html.slice(span.end).split('<', 1)[0] ?? '')
 }
 
-type Findings = Omit<SourceLookupResult, keyof SourceGuess>
+type Findings = Omit<SourceLookupResult, keyof SourceGuess | 'playableVideo'>
 
 // The embed page gets half the lookup's time, so the post page still can
 // answer when it stalls.

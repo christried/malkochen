@@ -286,7 +286,6 @@ export const en: Strings = {
     videoPlayer: (platform: VideoPlatform) => `Video from ${VIDEO_PLATFORMS[platform]}`,
     videoUnavailable: 'This video can’t be played here.',
     openOnInstagram: 'Open on Instagram',
-    watchOnInstagram: 'Watch on Instagram',
     noSource: 'No link',
     // After the Board's emoji, as in German.
     placement: (board: string, column: string) => `${board} · ${column}`,
