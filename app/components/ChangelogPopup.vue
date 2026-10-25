@@ -51,11 +51,14 @@ async function close() {
 <template>
   <dialog
     ref="dialog"
-    class="popup m-auto open:flex max-h-[min(560px,80dvh)] w-[min(420px,calc(100%-32px))] flex-col gap-3.5 rounded-dialog border-0 bg-surface p-5 text-text shadow-dialog"
+    class="popup m-auto max-h-[min(560px,80dvh)] w-[min(420px,calc(100%-32px))] overflow-hidden rounded-dialog border-0 bg-surface p-0 text-text shadow-dialog"
     :aria-labelledby="titleId"
     @cancel.prevent="close"
     @click.self="close"
   >
+    <!-- The card itself: only the backdrop is the dialog's own, so a click
+         on the dialog element is a click outside the card. -->
+    <div class="flex max-h-[min(560px,80dvh)] flex-col gap-3.5 p-5">
     <div class="flex shrink-0 items-end gap-3">
       <TopfbertIdle
         mood="wow"
@@ -101,6 +104,7 @@ async function close() {
       >
         {{ t.changelog.popupDone }}
       </button>
+    </div>
     </div>
   </dialog>
 </template>

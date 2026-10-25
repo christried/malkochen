@@ -89,6 +89,22 @@ test('in a visit with the Tour the popup stays away, during it and after it', as
   expect(await newVersion(page)).toBe(true)
 })
 
+test('a tap on the card’s own padding keeps it open; a tap outside it closes it and marks the Version seen', async ({ page }) => {
+  await setSeen(HOPPER, { version: '0.9.0', tourSeen: TOUR_VERSION })
+  await gotoHydrated(page, '/')
+  await expect(popup(page)).toBeVisible()
+  const box = (await popup(page).boundingBox())!
+
+  await page.mouse.click(box.x + box.width - 8, box.y + 8)
+  await page.waitForTimeout(300)
+  await expect(popup(page)).toBeVisible()
+  expect(await newVersion(page)).toBe(true)
+
+  await page.mouse.click(4, 4)
+  await expect(popup(page)).toBeHidden()
+  await expect.poll(() => newVersion(page)).toBe(false)
+})
+
 test('"Alle Änderungen" opens the whole Changelog', async ({ page }) => {
   await setSeen(HOPPER, { version: '0.9.0', tourSeen: TOUR_VERSION })
   await gotoHydrated(page, '/')
