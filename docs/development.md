@@ -20,7 +20,7 @@ malkochen runs in three places. Each has its own database, images, accounts and 
 2. A PR `staging` → `main` titled "Release x.y.z", merged on green CI with a merge commit.
 3. Tag the merge commit on `main` as `vx.y.z` and push the tag. Check that the production deploy is READY with its migration applied, then smoke-test production.
 
-**A hotfix**, a fix that can't wait is a Release of its own. Branch from `main` and open a PR into `main` with a patch Version: `main`'s newest Version plus one, dated, in all three Changelog files, with the link references and `package.json`. Merge it on green CI, check the production deploy is READY with its migration applied, and tag the merge commit `vx.y.z`. The same day, open a PR `main` → `staging`. Its Changelog files will conflict: keep the lines under `[Unreleased]` above the hotfix's Version, then run `pnpm vitest run tests/client/changelog.test.ts`.
+**A hotfix.** A fix that can't wait is a Release of its own. Branch from `main` and open a PR into `main` with a patch Version: `main`'s newest Version plus one, dated, in all three Changelog files, with the link references and `package.json`. Merge it on green CI, check the production deploy is READY with its migration applied, and tag the merge commit `vx.y.z`. The same day, open a PR `main` → `staging`. Its Changelog files will conflict: keep the lines under `[Unreleased]` above the hotfix's Version, then run `pnpm vitest run tests/client/changelog.test.ts`.
 
 **Staging's daily jobs** don't run: Vercel runs crons in production only. Never start the Email Digest (`/api/cron/email-digest`) on Staging: its copy holds real addresses, so it would mail real users.
 
