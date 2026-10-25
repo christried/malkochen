@@ -4,7 +4,7 @@ import { createFoundImageStore } from '../image-store/found-image'
 import { createPhotoStore, PICTURE_SIDE } from '../image-store/photo'
 import { createImageTickets } from '../image-store/tickets'
 import { parseServerEnv } from '../env'
-import { isMember } from './boards'
+import { isMember } from './board-access'
 
 const { BLOB_READ_WRITE_TOKEN, BETTER_AUTH_SECRET, IMAGE_DIR: imageDir } = parseServerEnv(process.env)
 

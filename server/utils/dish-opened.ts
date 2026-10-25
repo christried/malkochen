@@ -1,6 +1,7 @@
 import { and, eq, exists, gt, isNull, ne, or, sql, type AnyColumn } from 'drizzle-orm'
 import { db } from '../db'
-import { comment, cooking, dish, dishOpened, membership, vote } from '../db/schema'
+import { comment, cooking, dish, dishOpened, vote } from '../db/schema'
+import { accessOf } from './board-access'
 import { isDishMember } from './dishes'
 
 // What a Dish's card marks as new in its Dish History (#335; PRD #318
@@ -23,12 +24,13 @@ export async function markDishOpened(dishId: string, userId: string): Promise<bo
 // The ids of the Board's Dishes with something new in their Dish History
 // for the user.
 export async function newInHistoryDishIds(boardId: string, userId: string): Promise<string[]> {
-  const since = sql`coalesce(${dishOpened.openedAt}, ${membership.joinedAt})`
+  const access = accessOf(userId)
+  const since = sql`coalesce(${dishOpened.openedAt}, ${access.joinedAt})`
   const byOthers = (column: AnyColumn) => sql`${column} is distinct from ${userId}`
   const rows = await db
     .select({ id: dish.id })
     .from(dish)
-    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
+    .innerJoin(access, eq(access.boardId, dish.boardId))
     .leftJoin(dishOpened, and(eq(dishOpened.dishId, dish.id), eq(dishOpened.userId, userId)))
     .where(and(
       eq(dish.boardId, boardId),
