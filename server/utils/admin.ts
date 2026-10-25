@@ -1,5 +1,5 @@
 import { sql, type SQL } from 'drizzle-orm'
-import { DAYS, SOURCE_COLUMNS, WEEKS, type Active, type AdminFigures, type Period, type SignUps, type SourceColumn } from '../../shared/admin'
+import { DAYS, SOURCE_COLUMNS, WEEKS, type Active, type AdminBoard, type AdminFigures, type Period, type SignUps, type SourceColumn } from '../../shared/admin'
 import { db } from '../db'
 import { IMAGE_FOLDERS } from '../image-store'
 import { storage } from './image-store'
@@ -130,4 +130,33 @@ async function limits(): Promise<AdminFigures['limits']> {
 export async function adminFigures(): Promise<AdminFigures> {
   const [days, weeks, activeNow, signUpDays, used, openSignUp] = await Promise.all([periods('day', DAYS), periods('week', WEEKS), active(), signUps(), limits(), openSignUpOn()])
   return { days, weeks, active: activeNow, signUps: signUpDays, limits: used, openSignUp }
+}
+
+// Every Board, live and Archived, for the Admin Page (#397): the newest
+// activity first, 200 at most. `query` (trimmed; empty means all) matches
+// the Board's name or its Owner's Username, whatever the case.
+export async function adminBoards(query: string): Promise<AdminBoard[]> {
+  const needle = `%${query.trim().replace(/[\\%_]/g, String.raw`\$&`)}%`
+  const { rows } = await db.execute<{ id: string, slug: string, emoji: string, name: string, owner: string | null, members: number, dishes: number, lastActivity: Date | null, archived: boolean }>(sql`
+    with people as (
+      select board_id, user_id, is_owner from membership
+      union all
+      select board_id, user_id, is_owner from archived_membership
+    ), activity as (
+      select board_id, max(at) as at from event_log where board_id is not null group by board_id
+    )
+    select b.id, coalesce(b.slug, b.id::text) as slug, b.emoji, b.name, o.username as owner,
+      (select count(*) from people p where p.board_id = b.id)::int as members,
+      (select count(*) from dish d where d.board_id = b.id and d.deleted_at is null)::int as dishes,
+      a.at as "lastActivity", b.deleted_at is not null as archived
+    from board b
+    left join lateral (
+      select u.username from people p join "user" u on u.id = p.user_id where p.board_id = b.id and p.is_owner limit 1
+    ) o on true
+    left join activity a on a.board_id = b.id
+    where (${needle} = '%%' or b.name ilike ${needle} or o.username ilike ${needle})
+    order by a.at desc nulls last, b.name
+    limit 200
+  `)
+  return rows.map(row => ({ ...row, lastActivity: row.lastActivity === null ? null : new Date(row.lastActivity).toISOString() }))
 }

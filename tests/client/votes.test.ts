@@ -50,6 +50,7 @@ function setup() {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a')] },
       { id: 'gekocht', name: 'Gekocht', subtitle: 'Schon geschafft!', isGekocht: true, dishes: [cooked] },
