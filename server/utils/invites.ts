@@ -166,15 +166,20 @@ async function refundMiss(client: string) {
     .where(eq(inviteMiss.client, client))
 }
 
-// What `find` finds for this client's Invite Link: 429 while the client has
-// missed too often, 404 (a miss) if it finds nothing.
-export async function lookUpInvite<T>(event: H3Event, find: () => Promise<T | null>): Promise<T> {
+// What `find` finds for this client's secret link (an Invite Link, or a Dish
+// Link, server/utils/dish-links.ts: one counter for both, which is what a
+// guesser hits): 429 while the client has missed too often, `notFound` (a miss) if it finds nothing.
+export async function lookUpSecret<T>(event: H3Event, find: () => Promise<T | null>, notFound: () => Error): Promise<T> {
   const client = clientOf(event)
   if (await reserveMiss(client)) throw tooManyMisses()
   const found = await find()
-  if (found === null) throw inviteNotFound()
+  if (found === null) throw notFound()
   await refundMiss(client)
   return found
+}
+
+export function lookUpInvite<T>(event: H3Event, find: () => Promise<T | null>): Promise<T> {
+  return lookUpSecret(event, find, inviteNotFound)
 }
 
 // ---------------------------------------------------------------------------

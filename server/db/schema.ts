@@ -179,7 +179,8 @@ export const boardSlug = pgTable('board_slug', {
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
 }, t => [index('board_slug_board_id_idx').on(t.boardId)])
 
-// Invite Link lookups of a secret no Board has, per client (its IP address),
+// Lookups of a secret no Board has (an Invite Link) or no Dish has (a Dish
+// Link), counted together, per client (its IP address),
 // since the window started: too many, and the client gets no answer about
 // any link for the rest of the window (server/utils/invites.ts).
 export const inviteMiss = pgTable('invite_miss', {
@@ -314,6 +315,11 @@ export const dish = pgTable('dish', {
   // unless a Member shifted it; a Placeholder Image doesn't use it.
   imageFocusX: smallint('image_focus_x').notNull().default(50),
   imageFocusY: smallint('image_focus_y').notNull().default(50),
+  // The Dish Link's secret (CONTEXT.md: Dish Link), made the first time a
+  // Member shares the Dish (random_invite_secret(), migration 0014: the same
+  // alphabet and length as an Invite Link's), kept through archive and
+  // restore, gone with the Dish.
+  linkSecret: text('link_secret').unique(),
   // Who added it; kept (as unknown) if their account is ever deleted.
   addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
