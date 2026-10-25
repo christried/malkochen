@@ -145,3 +145,13 @@ test('a tap never leaves the app: an address elsewhere opens the app\'s start', 
   await sw.tap(undefined)
   expect(sw.opened).toEqual(['/', '/', '/'])
 })
+
+test('the notification is in the message\'s language, German when it names none', async () => {
+  const sw = serviceWorker()
+
+  await sw.push({ ...MESSAGE, lang: 'en' })
+  await sw.push(MESSAGE)
+
+  expect(sw.shown[0]!.options).toMatchObject({ lang: 'en' })
+  expect(sw.shown[1]!.options).toMatchObject({ lang: 'de' })
+})

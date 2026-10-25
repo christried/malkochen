@@ -50,6 +50,7 @@ describe('the message', () => {
     expect(pushMessage('de', { board: BOARD, dishes: [dal] })).toEqual({
       title: 'Von Ada in Kochclub',
       body: 'Linsen-Dal von Mara auf TikTok',
+      lang: 'de',
       tag: `board-${BOARD.id}`,
       url: '/b/kochclub/linsen-dal-c0',
       image: PICTURE,
@@ -75,6 +76,7 @@ describe('the message', () => {
     expect(pushMessage('de', { board: BOARD, dishes })).toEqual({
       title: 'Von Ada in Kochclub',
       body: '3 neue Gerichte: Linsen-Dal, Cremige Pilzpasta, Ofengemüse mit Tahini',
+      lang: 'de',
       tag: `board-${BOARD.id}`,
       url: '/b/kochclub',
       image: PICTURE,
@@ -134,6 +136,7 @@ describe('Comments and Votes (#352)', () => {
     expect(pushMessage('de', { board: BOARD, dishes: [], talk: [comment('Ada')] })).toEqual({
       title: 'Von Ada in Kochclub',
       body: 'Kommentar zu Linsen-Dal: „Hab ich gestern nachgekocht, mit doppelt Ingwer. Super!“',
+      lang: 'de',
       tag: `board-${BOARD.id}`,
       url: DAL_HISTORY,
       image: PICTURE,
@@ -222,6 +225,7 @@ describe('in the recipient\'s language', () => {
 
   test('English', () => {
     expect(pushMessage('en', { board: BOARD, dishes: dishes.slice(0, 1) })).toMatchObject({ title: 'From Ada in Kochclub', body: 'Linsen-Dal by Mara on YouTube' })
+    expect(pushMessage('en', { board: BOARD, dishes: dishes.slice(0, 1) }).lang).toBe('en')
     expect(pushMessage('en', { board: BOARD, dishes })).toMatchObject({ title: 'From Ada and Linus in Kochclub', body: '2 new dishes: Linsen-Dal, Ramen' })
   })
 

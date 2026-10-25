@@ -19,6 +19,8 @@ export interface PushMessage {
   tag: string
   url: string
   image?: string
+  // The language the title and body are in, for the notification's `lang`.
+  lang: Language
 }
 
 // A Dish others added: its Username, and for a push its Creator, the kind of
@@ -70,7 +72,11 @@ const MAX_BODY = 120
 // about several. The picture is the newest Dish's, or the Dish's of a
 // Comment or Vote. In the recipient's `language` (server/utils/people.ts
 // recipientLanguage).
-export function pushMessage(language: Language, { board, dishes, talk = [] }: BoardNews): PushMessage {
+export function pushMessage(language: Language, news: BoardNews): PushMessage {
+  return { ...composeMessage(language, news), lang: language }
+}
+
+function composeMessage(language: Language, { board, dishes, talk = [] }: BoardNews): Omit<PushMessage, 'lang'> {
   const t = stringsFor(language).push
   const comments = talk.filter(said => 'comment' in said)
   const votes = talk.length - comments.length

@@ -181,6 +181,7 @@ test('one notification per Board counts the Dishes added since the Member last o
   expect(pushService.deliveries.map(d => d.message)).toEqual([{
     title: `Von ${kati} in Kochclub`,
     body: 'Omas Linsensuppe',
+    lang: 'de',
     tag,
     url: `/b/${board.slug}/omas-linsensuppe-${soup.code}`,
   }])
@@ -207,6 +208,7 @@ test('one notification per Board counts the Dishes added since the Member last o
   expect(pushService.deliveries.map(d => d.message)).toEqual([{
     title: `Von ${mile} in Kochclub`,
     body: 'Miso-Ramen',
+    lang: 'de',
     tag,
     url: `/b/${board.slug}/miso-ramen-${ramen.code}`,
   }])
@@ -224,6 +226,7 @@ test('a Dish\'s Creator and Source name it in the notification, and a Placeholde
   expect(pushService.deliveries.at(-1)!.message).toEqual({
     title: `Von ${await usernameOf(katalin)} in Kochclub`,
     body: 'Omas Linsensuppe von Omas Küche auf TikTok',
+    lang: 'de',
     tag: `board-${board.id}`,
     url: expect.stringMatching(/^\/b\/kochclub(-\d+)?\/omas-linsensuppe-/),
   })
@@ -361,10 +364,10 @@ describe('Comments and Votes', () => {
     const atHistory = `/b/${board.slug}/linsen-dal-${dal.code}#verlauf`
 
     await commented(mileva, dal, 'Hab ich gestern nachgekocht. Super!')
-    expect(messages()).toEqual([{ title: `Von ${mile} in Verlauf`, body: 'Kommentar zu Linsen-Dal: „Hab ich gestern nachgekocht. Super!“', tag: `board-${board.id}`, url: atHistory }])
+    expect(messages()).toEqual([{ title: `Von ${mile} in Verlauf`, body: 'Kommentar zu Linsen-Dal: „Hab ich gestern nachgekocht. Super!“', lang: 'de', tag: `board-${board.id}`, url: atHistory }])
 
     await voted(katalin, dal, true)
-    expect(messages().at(-1)).toEqual({ title: `Von ${kati} und ${mile} in Verlauf`, body: 'Linsen-Dal: 1 Kommentar, 1 Daumen', tag: `board-${board.id}`, url: atHistory })
+    expect(messages().at(-1)).toEqual({ title: `Von ${kati} und ${mile} in Verlauf`, body: 'Linsen-Dal: 1 Kommentar, 1 Daumen', lang: 'de', tag: `board-${board.id}`, url: atHistory })
   })
 
   test('counted together with new Dishes, until the Member opens the Board again', async () => {

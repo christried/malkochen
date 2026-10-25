@@ -56,7 +56,6 @@ function talkCounts(comments: number, votes: number): string[] {
 // would have to agree with the Dish's gender, which isn't known.
 const voted = (name: string, dish: string, up: boolean) => `${name} ha dato un pollice ${up ? 'in su' : 'in giù'} a ${dish} ${up ? '👍' : '👎'}`
 
-
 const tryAgain = 'Riprova tra un attimo.'
 const failed = `Non ha funzionato. ${tryAgain}`
 

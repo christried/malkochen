@@ -58,7 +58,6 @@ function talkCounts(comments: number, votes: number): string[] {
   return [...comments ? [commentCount(comments)] : [], ...votes ? [voteCount(votes)] : []]
 }
 
-
 // A Vote on `dish`, as the Verlauf says it (history.voted).
 const voted = (name: string, dish: string, up: boolean) => up ? `${name} fand ${dish} gut 👍` : `${name} fand ${dish} nicht so gut 👎`
 
