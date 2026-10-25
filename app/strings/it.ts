@@ -56,8 +56,6 @@ function talkCounts(comments: number, votes: number): string[] {
 // would have to agree with the Dish's gender, which isn't known.
 const voted = (name: string, dish: string, up: boolean) => `${name} ha dato un pollice ${up ? 'in su' : 'in giù'} a ${dish} ${up ? '👍' : '👎'}`
 
-const haOrHanno = (names: string[]) => plural(names.length, { one: 'ha', other: 'hanno' })
-
 const tryAgain = 'Riprova tra un attimo.'
 const failed = `Non ha funzionato. ${tryAgain}`
 
@@ -77,6 +75,12 @@ export const it: Strings = {
     current: (version: string) => `Stai usando malkochen ${version}.`,
     isNew: 'Nuovo',
     unreleased: 'Appena arrivato',
+    eyebrow: 'Versioni',
+    versionPrefix: 'Versione ',
+    newest: 'Più recente',
+    copyLink: (v: string) => `Copia il link alla versione ${v}`,
+    copied: 'Link copiato',
+    copyFailed: 'Non è stato possibile copiare il link.',
     version: (version: string) => `Versione ${version}`,
     date: dayWithYear,
     empty: 'Qui vedrai presto cosa cambia in malkochen.',
@@ -125,6 +129,7 @@ export const it: Strings = {
     toApp: 'Vai a malkochen',
   },
   board: {
+    footer: 'Su malkochen',
     emptyBoardTitle: 'Ancora niente qui.',
     emptyBoardBody: 'Incolla il tuo primo link!',
     emptyColumn: 'Ancora niente qui.',
@@ -287,6 +292,9 @@ export const it: Strings = {
     close: 'Chiudi',
     goneMeanwhile: (title: string) => `“${title}” non è più su questa bacheca.`,
     openOriginal: 'Apri l’originale',
+    // The Caption, folded and unfolded (#393).
+    captionMore: 'altro',
+    captionLess: 'meno',
     playVideo: 'Riproduci il video',
     videoPlayer: (platform: VideoPlatform) => `Video da ${VIDEO_PLATFORMS[platform]}`,
     videoUnavailable: 'Questo video non si può riprodurre qui.',
@@ -608,16 +616,13 @@ export const it: Strings = {
     blocked: 'Il tuo browser blocca le notifiche di malkochen. Consentile nelle impostazioni del sito, poi potrai attivarle qui.',
     unsupported: 'Questo browser non può ricevere notifiche push.',
     failed,
-    added: (names: string[], count: number, dish: string) => `${someNames(names)} ${plural(names.length, { one: 'ha', other: 'hanno' })} aggiunto ${count === 1 ? dish : dishCount(count)}`,
-    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
-    commented: (name: string, dish: string) => `${name} ha commentato ${dish}`,
-    comment: (board: string, text: string) => `${board}: ${text}`,
-    voted,
-    onDish: (names: string[], dish: string) => `${someNames(names)} su ${dish}`,
-    counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
-    wrote: (names: string[], comments: number) => `${someNames(names)} ${haOrHanno(names)} scritto ${commentCount(comments)}`,
-    gave: (names: string[], votes: number) => `${someNames(names)} ${haOrHanno(names)} dato ${voteCount(votes)}`,
-    about: (board: string, titles: string[], more: number) => `${board}: su ${more === 0 ? nameList(titles) : `${titles.join(', ')} e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
+    title: (names: string[], board: string) => `Da ${someNames(names)} in ${board}`,
+    dish: (title: string, creator: string | null, platform: string | null) => `${title}${creator ? ` di ${creator}` : ''}${platform ? ` su ${platform}` : ''}`,
+    dishes: (count: number, titles: string[], more: number) => `${number(count)} nuovi piatti: ${titles.join(', ')}${more === 0 ? '' : ` e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
+    comment: (dish: string, text: string) => `Commento a ${dish}: “${text}”`,
+    vote: (dish: string, up: boolean) => `${dish} ${up ? '👍' : '👎'}`,
+    talkOn: (dish: string, comments: number, votes: number) => `${dish}: ${talkCounts(comments, votes).join(', ')}`,
+    aboutDishes: (comments: number, votes: number, titles: string[], more: number) => `${talkCounts(comments, votes).join(' e ')} su ${more === 0 ? nameList(titles) : `${titles.join(', ')} e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
     also: (before: string, comments: number, votes: number) => `${before}. In più ${talkCounts(comments, votes).join(' e ')}.`,
   },
   emailDigest: {

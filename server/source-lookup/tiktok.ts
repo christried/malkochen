@@ -1,4 +1,5 @@
 import { asString, httpUrl } from './link'
+import { captionOf } from './caption'
 import { creatorName } from './creator'
 import { shortenTitle } from './title'
 import type { Strategy } from './types'
@@ -35,6 +36,8 @@ export const tiktok: Strategy = {
       suggestedTitle: shortenTitle(asString(oembed?.title)),
       creator: creatorName(oembed?.author_name),
       imageUrl: httpUrl(oembed?.thumbnail_url),
+      // oEmbed's title is the caption itself.
+      caption: captionOf(oembed?.title),
     }
   },
 }

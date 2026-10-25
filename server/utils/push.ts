@@ -143,6 +143,9 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
         recipient: membership.userId,
         title: dish.title,
         code: dish.code,
+        creator: dish.creator,
+        kind: dish.sourceKind,
+        image: dish.imageUrl,
         // Adding takes a Username (server/middleware/auth.ts).
         addedBy: sql<string>`${user.username}`,
       })
@@ -161,6 +164,7 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
         recipient: membership.userId,
         title: dish.title,
         code: dish.code,
+        image: dish.imageUrl,
         // Writing one takes a Username, as voting does.
         by: sql<string>`${user.username}`,
         text: comment.text,
@@ -181,6 +185,7 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
         recipient: membership.userId,
         title: dish.title,
         code: dish.code,
+        image: dish.imageUrl,
         by: sql<string>`${user.username}`,
         up: vote.up,
         at: vote.votedAt,
@@ -206,8 +211,8 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
   )
   for (const { recipient, ...addedDish } of added) news.get(recipient)?.news.dishes.push(addedDish)
   const talk = [
-    ...comments.map(({ recipient, title, code, by, text, at }) => ({ recipient, at, said: { dish: { title, code }, by, comment: text } })),
-    ...votes.map(({ recipient, title, code, by, up, at }) => ({ recipient, at, said: { dish: { title, code }, by, up } })),
+    ...comments.map(({ recipient, title, code, image, by, text, at }) => ({ recipient, at, said: { dish: { title, code, image }, by, comment: text } })),
+    ...votes.map(({ recipient, title, code, image, by, up, at }) => ({ recipient, at, said: { dish: { title, code, image }, by, up } })),
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
   for (const { recipient, said } of talk) news.get(recipient)?.news.talk.push(said)
   for (const [id, { news: theirs }] of news) {

@@ -973,6 +973,17 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       />
     </div>
 
+    <!-- What malkochen is and the legal pages, after the last Dish (#405):
+         not fixed, so the FAB's room below (main's pb-32) keeps it clear. -->
+    <footer
+      data-testid="board-footer"
+      class="mt-10 flex justify-center"
+    >
+      <nav :aria-label="t.board.footer">
+        <AppFooterLinks />
+      </nav>
+    </footer>
+
     <!-- The dragged card, following the pointer above everything. -->
     <DragCard
       v-if="drag"

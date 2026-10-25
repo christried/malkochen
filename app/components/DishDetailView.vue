@@ -213,6 +213,12 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}
       </p>
 
+      <!-- Nothing in its place without a Caption (#393). -->
+      <DishCaption
+        v-if="dish.caption"
+        :caption="dish.caption"
+      />
+
       <div
         v-if="dish.source"
         class="flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-muted p-3 pl-4"

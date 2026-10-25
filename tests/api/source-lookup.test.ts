@@ -37,8 +37,11 @@ test('a link answers with what Source Lookup knows about it, even when that is n
     canonicalLink: 'http://127.0.0.1/rezept',
     suggestedTitle: '',
     creator: null,
+    caption: null,
     imageUrl: null,
     // Only a found image comes with an Image Ticket.
     imageTicket: null,
+    // Always a Source Ticket: it vouches for what was read, here nothing.
+    sourceTicket: expect.any(String),
   })
 })

@@ -78,8 +78,11 @@ self.addEventListener('push', (event) => {
     body: message.body,
     tag: message.tag,
     renotify: true,
-    icon: '/icons/icon-192.png',
-    lang: 'de',
+    // The Dish's picture, or the app icon for a Placeholder Image; the
+    // malkochen mark in the status bar.
+    icon: typeof message.image === 'string' ? message.image : '/icons/icon-192.png',
+    badge: '/icons/badge-96.png',
+    lang: typeof message.lang === 'string' ? message.lang : 'de',
     data: { url: message.url },
   }))
 })

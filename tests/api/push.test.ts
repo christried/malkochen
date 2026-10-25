@@ -3,6 +3,8 @@ import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
 import { startPushService, type Device, type PushService } from './push-service'
 
+const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
+
 // Push notifications (#219): a Member turns them on per device in their
 // settings (PUT /api/me/push stores that device's subscription, DELETE
 // removes it). When a Member adds a Dish, every other Member of the Board who
@@ -177,8 +179,9 @@ test('one notification per Board counts the Dishes added since the Member last o
   // One Dish: it is named, and opening the notification opens it.
   const soup = await addDish(katalin, board.id, 'Omas Linsensuppe')
   expect(pushService.deliveries.map(d => d.message)).toEqual([{
-    title: `${kati} hat Omas Linsensuppe hinzugefügt`,
-    body: '🍪 Kochclub',
+    title: `Von ${kati} in Kochclub`,
+    body: 'Omas Linsensuppe',
+    lang: 'de',
     tag,
     url: `/b/${board.slug}/omas-linsensuppe-${soup.code}`,
   }])
@@ -187,8 +190,9 @@ test('one notification per Board counts the Dishes added since the Member last o
   // counting all of them, opens the Board.
   for (const title of ['Pilzpasta', 'Tofu-Nuggets', 'Dal', 'Ramen']) await addDish(katalin, board.id, title)
   expect(pushService.deliveries.at(-1)!.message).toEqual({
-    title: `${kati} hat 5 Gerichte hinzugefügt`,
-    body: '🍪 Kochclub: Ramen, Dal, Tofu-Nuggets, Pilzpasta, Omas Linsensuppe',
+    title: `Von ${kati} in Kochclub`,
+    body: '5 neue Gerichte: Ramen, Dal, Tofu-Nuggets, Pilzpasta, Omas Linsensuppe',
+    lang: 'de',
     tag,
     url: `/b/${board.slug}`,
   })
@@ -196,18 +200,37 @@ test('one notification per Board counts the Dishes added since the Member last o
 
   // Another Member adds one too: both are named, the latest first.
   await addDish(mileva, board.id, 'Shakshuka')
-  expect(pushService.deliveries.at(-1)!.message.title).toBe(`${mile} und ${kati} haben 6 Gerichte hinzugefügt`)
+  expect(pushService.deliveries.at(-1)!.message.title).toBe(`Von ${mile} und ${kati} in Kochclub`)
 
   // Hypatia opens the Board: counting starts again.
   await open(hypatia, board.id)
   pushService.forget()
   const ramen = await addDish(mileva, board.id, 'Miso-Ramen')
   expect(pushService.deliveries.map(d => d.message)).toEqual([{
-    title: `${mile} hat Miso-Ramen hinzugefügt`,
-    body: '🍪 Kochclub',
+    title: `Von ${mile} in Kochclub`,
+    body: 'Miso-Ramen',
+    lang: 'de',
     tag,
     url: `/b/${board.slug}/miso-ramen-${ramen.code}`,
   }])
+})
+
+test('a Dish\'s Creator and Source name it in the notification, and a Placeholder Image is no picture', async () => {
+  const katalin = await signIn(KATALIN, { name: 'Katalin Karikó' })
+  const hypatia = await signIn(HYPATIA, { name: 'Hypatia' })
+  const board = await sharedBoard(katalin, [hypatia], 'Kochclub', '🍪')
+  await subscribed(hypatia, 'hypatia-creator')
+
+  const res = await postDish(katalin, board.id, { title: 'Omas Linsensuppe', placeholder: 'bowl', creator: 'Omas Küche', source: { link: TIKTOK } })
+  expect(res.status).toBe(201)
+
+  expect(pushService.deliveries.at(-1)!.message).toEqual({
+    title: `Von ${await usernameOf(katalin)} in Kochclub`,
+    body: 'Omas Linsensuppe von Omas Küche auf TikTok',
+    lang: 'de',
+    tag: `board-${board.id}`,
+    url: expect.stringMatching(/^\/b\/kochclub(-\d+)?\/omas-linsensuppe-/),
+  })
 })
 
 test('a Dish added during the Tour notifies nobody, and is a New Dish for the other Members all the same', async () => {
@@ -292,8 +315,8 @@ test('each Member is notified in their own language: their choice, else what the
     await addDish(katalin, board.id, 'Ramen')
 
     const titleOn = (device: string) => pushService.deliveries.find(d => d.device === device)!.message.title
-    expect(titleOn('hypatia-it')).toBe(`${kati} ha aggiunto Ramen`)
-    expect(titleOn('mileva-en')).toBe(`${kati} added Ramen`)
+    expect(titleOn('hypatia-it')).toBe(`Da ${kati} in Kochclub`)
+    expect(titleOn('mileva-en')).toBe(`From ${kati} in Kochclub`)
   }
   finally {
     await hypatia.fetch('/api/me/language', json('PUT', { language: 'auto' }))
@@ -342,24 +365,24 @@ describe('Comments and Votes', () => {
     const atHistory = `/b/${board.slug}/linsen-dal-${dal.code}#verlauf`
 
     await commented(mileva, dal, 'Hab ich gestern nachgekocht. Super!')
-    expect(messages()).toEqual([{ title: `${mile} hat Linsen-Dal kommentiert`, body: '🍪 Verlauf: Hab ich gestern nachgekocht. Super!', tag: `board-${board.id}`, url: atHistory }])
+    expect(messages()).toEqual([{ title: `Von ${mile} in Verlauf`, body: 'Kommentar zu Linsen-Dal: „Hab ich gestern nachgekocht. Super!“', lang: 'de', tag: `board-${board.id}`, url: atHistory }])
 
     await voted(katalin, dal, true)
-    expect(messages().at(-1)).toEqual({ title: `${kati} und ${mile} zu Linsen-Dal`, body: '🍪 Verlauf: 1 Kommentar, 1 Daumen', tag: `board-${board.id}`, url: atHistory })
+    expect(messages().at(-1)).toEqual({ title: `Von ${kati} und ${mile} in Verlauf`, body: 'Linsen-Dal: 1 Kommentar, 1 Daumen', lang: 'de', tag: `board-${board.id}`, url: atHistory })
   })
 
   test('counted together with new Dishes, until the Member opens the Board again', async () => {
-    const { katalin, hypatia, mileva, board, dal, kati } = await talkingBoard('Gemischt')
+    const { katalin, hypatia, mileva, board, dal, kati, mile } = await talkingBoard('Gemischt')
 
     await addDish(katalin, board.id, 'Ramen')
     await addDish(katalin, board.id, 'Shakshuka')
     await commented(mileva, dal, 'Lecker')
     await voted(mileva, dal, false)
-    expect(messages().at(-1)).toMatchObject({ title: `${kati} hat 2 Gerichte hinzugefügt`, body: '🍪 Gemischt: Shakshuka, Ramen. Dazu 1 Kommentar und 1 Daumen.', url: `/b/${board.slug}` })
+    expect(messages().at(-1)).toMatchObject({ title: `Von ${kati} und ${mile} in Gemischt`, body: '2 neue Gerichte: Shakshuka, Ramen. Dazu 1 Kommentar und 1 Daumen.', url: `/b/${board.slug}` })
 
     await open(hypatia, board.id)
     await voted(katalin, dal, true)
-    expect(messages().at(-1)!.title).toBe(`${kati} fand Linsen-Dal gut 👍`)
+    expect(messages().at(-1)).toMatchObject({ title: `Von ${kati} in Gemischt`, body: 'Linsen-Dal 👍' })
   })
 
   test('nothing about one\'s own, edits, changed or repeated Votes', async () => {
@@ -387,7 +410,7 @@ describe('Comments and Votes', () => {
     pushService.forget()
 
     await commented(mileva, dal, 'Doch nicht so')
-    expect(messages().map(m => m.title)).toEqual([`${mile} hat Linsen-Dal kommentiert`])
+    expect(messages().map(m => m.title)).toEqual([`Von ${mile} in Umgestimmt`])
   })
 
   test('a deleted Comment and an Archived Dish are left out', async () => {
@@ -401,7 +424,7 @@ describe('Comments and Votes', () => {
     pushService.forget()
 
     await commented(mileva, dal, 'Jetzt aber')
-    expect(messages()).toEqual([expect.objectContaining({ title: `${mile} hat Linsen-Dal kommentiert`, body: '🍪 Weg: Jetzt aber' })])
+    expect(messages()).toEqual([expect.objectContaining({ title: `Von ${mile} in Weg`, body: 'Kommentar zu Linsen-Dal: „Jetzt aber“' })])
   })
 
   test('a Member who may not comment and vote is still notified of others\'', async () => {
@@ -410,6 +433,6 @@ describe('Comments and Votes', () => {
     expect((await katalin.fetch(`/api/boards/${board.id}/members/${id}/permissions`, json('PATCH', { commentAndVote: false }))).status).toBe(200)
 
     await commented(mileva, dal, 'Hallo')
-    expect(messages().map(m => m.title)).toEqual([`${mile} hat Linsen-Dal kommentiert`])
+    expect(messages().map(m => m.title)).toEqual([`Von ${mile} in Zuschauen`])
   })
 })
