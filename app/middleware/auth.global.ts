@@ -18,6 +18,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   else if (status === 401) useLanguageChoice().value = 'auto'
 
   if (to.path.startsWith('/invite/')) return
+  // A Dish Link (#401) is for anyone who has it, signed in or not.
+  if (to.path.startsWith('/d/')) return
   // The Changelog (#354) is for everyone, signed in or not.
   if (to.path === '/changelog') return
   // So are the Impressum and the Datenschutz (#391), linked from the sign-in screen.

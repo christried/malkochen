@@ -117,6 +117,15 @@ export const en: Strings = {
     invalidBody: 'Maybe it was reset. Ask for a new one.',
     toApp: 'Go to malkochen',
   },
+  // The Dish Link page (CONTEXT.md: Dish Link, #401).
+  dishLink: {
+    // The Creator, "von pastaqueen".
+    by: (name: string) => `by ${name}`,
+    toSource: 'View source',
+    goneTitle: 'This dish isn’t here any more',
+    goneBody: 'It may have been archived or deleted.',
+    toApp: 'Go to malkochen',
+  },
   board: {
     footer: 'About malkochen',
     emptyBoardTitle: 'Nothing here yet.',
@@ -277,6 +286,10 @@ export const en: Strings = {
   },
   detail: {
     close: 'Close',
+    // "Link teilen" (Dish Link, #401).
+    shareLink: 'Share link',
+    linkCopied: 'Link copied',
+    shareFailed: 'Couldn’t share the link.',
     goneMeanwhile: (title: string) => `“${title}” isn’t on this board any more.`,
     openOriginal: 'Open original',
     // The Caption, folded and unfolded (#393).

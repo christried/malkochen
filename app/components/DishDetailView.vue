@@ -16,8 +16,9 @@ import type { VoteResult } from '~/board/dish-votes'
 // (their Permissions): "Bearbeiten" with "edit Dishes", "Verschieben
 // nach…" and "Gekocht ✓" with "move Dishes", "Löschen" with "archive
 // Dishes"; the last and the first also for a Dish they added themselves.
+// "Link teilen" (Dish Link, #401) is for every Member who sees the Dish.
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
-defineEmits<{
+const emit = defineEmits<{
   close: []
   edit: []
   move: []
@@ -26,10 +27,45 @@ defineEmits<{
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
   vote: [result: VoteResult]
+  // Something to tell the Member, as a Toast.
+  notice: [text: string]
 }>()
 const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
+
+// "Link teilen": the Dish's Dish Link (made on the first share), then the
+// phone's share sheet, or on a computer the link on the clipboard.
+const origin = useRequestURL().origin
+const sharing = ref(false)
+async function shareLink() {
+  if (sharing.value) return
+  sharing.value = true
+  try {
+    const { path } = await $fetch<{ path: string }>(`/api/dishes/${props.dish.id}/link`, { method: 'POST' })
+    const url = `${origin}${path}`
+    if (typeof navigator.share === 'function' && matchMedia('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ title: props.dish.title, url })
+      }
+      catch (err) {
+        // Closing the share sheet without sharing is no failure.
+        if (!(err instanceof DOMException && err.name === 'AbortError')) throw err
+      }
+    }
+    else {
+      await navigator.clipboard.writeText(url)
+      hapticConfirm()
+      emit('notice', t.detail.linkCopied)
+    }
+  }
+  catch {
+    emit('notice', t.detail.shareFailed)
+  }
+  finally {
+    sharing.value = false
+  }
+}
 
 const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useTemplateRef('bar'))
 
@@ -215,6 +251,24 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         >
           {{ t.detail.openOriginal }}
         </a>
+      </div>
+
+      <!-- Full width under the Creator and Source, on a phone and in the
+           desktop panel alike (#392 decision 5). #402 adds "Kopieren" under it. -->
+      <div
+        class="flex flex-col gap-2"
+        data-share-actions
+      >
+        <button
+          type="button"
+          class="flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+          :disabled="sharing"
+          data-share-link
+          @click="shareLink"
+        >
+          <AppIcon name="link" />
+          {{ t.detail.shareLink }}
+        </button>
       </div>
 
       <DishHistory
