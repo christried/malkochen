@@ -3,7 +3,7 @@ import { alias } from 'drizzle-orm/pg-core'
 import type { Language } from '../../shared/language'
 import { db } from '../db'
 import { board, dish, membership, user } from '../db/schema'
-import { isMember } from './boards'
+import { accessOf, isMember } from './board-access'
 import { pictureOf, usernameOf } from './people'
 
 // What the user popover (#213) shows about someone, seen from one of the
@@ -31,14 +31,14 @@ export async function personCard(boardId: string, viewerId: string, personId: st
   if (!await isMember(boardId, viewerId)) return 'not-member'
 
   const theirs = alias(membership, 'theirs')
+  const mine = accessOf(viewerId)
   const sharedBoards = await db
     .select({ id: board.id, name: board.name, emoji: board.emoji })
-    .from(membership)
-    .innerJoin(theirs, and(eq(theirs.boardId, membership.boardId), eq(theirs.userId, personId)))
-    .innerJoin(board, eq(board.id, membership.boardId))
+    .from(mine)
+    .innerJoin(theirs, and(eq(theirs.boardId, mine.boardId), eq(theirs.userId, personId)))
+    .innerJoin(board, eq(board.id, mine.boardId))
     // In the viewer's order of their Boards (the switcher's).
-    .where(eq(membership.userId, viewerId))
-    .orderBy(asc(membership.joinedAt), asc(board.createdAt), asc(board.id))
+    .orderBy(asc(mine.joinedAt), asc(board.createdAt), asc(board.id))
   if (sharedBoards.length === 0) return null
 
   const [[person], [added]] = await Promise.all([

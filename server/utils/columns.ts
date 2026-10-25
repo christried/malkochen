@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, eq, exists, inArray, isNotNull, isNull, not, sql } from 'drizzle-orm'
 import { columnDeletion, type ColumnRefusal } from '../../shared/placement'
 import { db, runAtomic, type Db } from '../db'
-import { boardColumn, dish, membership } from '../db/schema'
-import { membershipOf } from './boards'
+import { boardColumn, dish } from '../db/schema'
+import { accessibleBoardIds, accessOn } from './board-access'
 import { boardEvent, columnEvent, withEvents } from './events'
 
 // Columns (CONTEXT.md: Column, Gekocht Column), as Board settings manages
@@ -35,7 +35,7 @@ export interface ColumnChanges {
 function onMembersBoard(columnId: string, userId: string) {
   return and(
     eq(boardColumn.id, columnId),
-    inArray(boardColumn.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+    inArray(boardColumn.boardId, accessibleBoardIds(userId)),
   )
 }
 
@@ -59,7 +59,7 @@ export async function addColumn(boardId: string, userId: string, name: string): 
         insert into ${boardColumn} (id, board_id, name, position)
         select ${id}, ${boardId}, ${name},
           (select coalesce(max(position), -1) + 1 from ${boardColumn} where board_id = ${boardId})
-        where ${exists(membershipOf(boardId, userId))}
+        where ${exists(accessOn(boardId, userId))}
         returning id, board_id
       `,
       columnEvent('column_added', userId),
@@ -120,7 +120,7 @@ export async function reorderColumns(boardId: string, userId: string, columnIds:
         .set({ position: sql`array_position(${ids}, ${boardColumn.id}) - 1` })
         .where(and(
           eq(boardColumn.boardId, boardId),
-          exists(membershipOf(boardId, userId)),
+          exists(accessOn(boardId, userId)),
           sql`cardinality(${ids}) = (select count(distinct x) from unnest(${ids}) as x)`,
           sql`${ids} <@ array(select ${boardColumn.id} from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
           sql`cardinality(${ids}) = (select count(*) from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,

@@ -5,7 +5,8 @@ import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
-import { boardColumn, cooking, dish, membership, user } from '../db/schema'
+import { boardColumn, cooking, dish, user } from '../db/schema'
+import { accessibleBoardIds, accessOn, ownedBoardIds } from './board-access'
 import { commentCountsByDish } from './comments'
 import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
 import { cookingEvent, detailsOf, dishEvent, recordEvents, withEvents } from './events'
@@ -176,7 +177,7 @@ export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' |
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
   return and(
     eq(dish.id, dishId),
-    inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+    inArray(dish.boardId, accessibleBoardIds(userId)),
   )
 }
 
@@ -426,8 +427,7 @@ function movableTo(target: SQL | undefined, userId: string, columnId: string) {
     exists(db
       .select({ id: boardColumn.id })
       .from(boardColumn)
-      .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
-      .where(eq(boardColumn.id, columnId))),
+      .where(and(eq(boardColumn.id, columnId), inArray(boardColumn.boardId, accessibleBoardIds(userId))))),
   )
 }
 
@@ -521,7 +521,7 @@ function allOnMembersBoards(ids: string[], userId: string, { deleted = false } =
     .from(dish)
     .where(and(
       inArray(dish.id, ids),
-      inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+      inArray(dish.boardId, accessibleBoardIds(userId)),
       deleted ? undefined : isNull(dish.deletedAt),
     ))
   return sql`(${counted}) = ${ids.length}`
@@ -533,8 +533,7 @@ function allColumnsOfMember(ids: string[], userId: string, { noGekocht = false }
   const counted = db
     .select({ count: sql<number>`count(*)` })
     .from(boardColumn)
-    .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
-    .where(and(inArray(boardColumn.id, ids), noGekocht ? eq(boardColumn.isGekocht, false) : undefined))
+    .where(and(inArray(boardColumn.id, ids), inArray(boardColumn.boardId, accessibleBoardIds(userId)), noGekocht ? eq(boardColumn.isGekocht, false) : undefined))
   return sql`(${counted}) = ${ids.length}`
 }
 
@@ -724,7 +723,7 @@ export async function archivedDishes(boardId: string): Promise<ArchivedDishView[
 // the user is a Member of.
 export async function purgeDish(dishId: string, userId: string): Promise<{ imageUrl: string | null } | 'forbidden' | null> {
   const archived = and(onMembersBoardIncludingDeleted(dishId, userId), isNotNull(dish.deletedAt))
-  const ownersBoard = inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(and(eq(membership.userId, userId), membership.isOwner)))
+  const ownersBoard = inArray(dish.boardId, ownedBoardIds(userId))
   const [found] = await db.select({ isOwner: sql<boolean>`${ownersBoard}` }).from(dish).where(archived)
   if (!found) return null
   if (!found.isOwner) return 'forbidden'
@@ -790,8 +789,7 @@ export async function addDish(
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
     .from(boardColumn)
-    .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, adder.id)))
-    .where(eq(boardColumn.boardId, boardId))
+    .where(and(eq(boardColumn.boardId, boardId), exists(accessOn(boardId, adder.id))))
     .orderBy(asc(boardColumn.position))
   const firstColumn = columnForNewDishes(columns)
   if (!firstColumn) return null

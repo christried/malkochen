@@ -1,7 +1,8 @@
 import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm'
 import { dishRef, dishSegment, isUuid, slugify } from '../../shared/address'
 import { db, type Db } from '../db'
-import { board, boardSlug, dish, membership } from '../db/schema'
+import { board, boardSlug, dish } from '../db/schema'
+import { accessibleBoardIds } from './board-access'
 
 // Readable addresses (CONTEXT.md: Address; shared/address.ts builds them).
 // The server picks a Board's slug, keeps every slug it ever had, and finds
@@ -64,8 +65,7 @@ export async function boardAddress(ref: string, userId: string, dishPart?: strin
   const [found] = await db
     .select({ boardId: board.id, slug: slugOf })
     .from(board)
-    .innerJoin(membership, and(eq(membership.boardId, board.id), eq(membership.userId, userId)))
-    .where(isUuid(ref) ? or(eq(board.id, ref), bySlug) : bySlug)
+    .where(and(isUuid(ref) ? or(eq(board.id, ref), bySlug) : bySlug, inArray(board.id, accessibleBoardIds(userId))))
   if (!found) return null
   if (dishPart === undefined) return { ...found, dish: null }
 
@@ -77,9 +77,9 @@ export async function boardAddress(ref: string, userId: string, dishPart?: strin
     .select({ boardId: dish.boardId, slug: slugOf, title: dish.title, code: dish.code })
     .from(dish)
     .innerJoin(board, eq(board.id, dish.boardId))
-    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
     .where(and(
       isNull(dish.deletedAt),
+      inArray(dish.boardId, accessibleBoardIds(userId)),
       'id' in wanted ? eq(dish.id, wanted.id) : eq(dish.code, wanted.code),
     ))
   if (!shown) return { ...found, dish: dishPart }

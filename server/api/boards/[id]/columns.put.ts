@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isMember } from '../../../utils/boards'
+import { isMember } from '../../../utils/board-access'
 import { reorderColumns, type ColumnView } from '../../../utils/columns'
 
 const body = z.strictObject({ columnIds: z.array(z.uuid()).min(1).max(100) })

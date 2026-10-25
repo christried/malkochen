@@ -1,9 +1,10 @@
-import { and, eq, exists, not, sql } from 'drizzle-orm'
+import { and, eq, exists, not, sql, type SQLWrapper } from 'drizzle-orm'
 import { z } from 'zod'
 import { ALL_PERMISSIONS, PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
 import { db } from '../db'
-import { board, eventLog, membership } from '../db/schema'
-import { ownerOf } from './boards'
+import { board, membership } from '../db/schema'
+import { ownerOf, standingOn } from './board-access'
+import { insertEvents } from './events'
 
 // The one check of Permissions (CONTEXT.md): may this user do this on this
 // Board, and on this Dish? Every write a Permission covers asks it before
@@ -37,19 +38,11 @@ export function allows(standing: Standing, permission: Permission, userId: strin
   return permitsOn(effectivePermissions(standing), permission, userId, dish)
 }
 
-// The same in SQL, for a query over memberships: whether the Member may
-// take an action `permission` covers that isn't about one Dish.
-export function permits(permission: Permission) {
-  return sql<boolean>`(${membership.isOwner} or coalesce((${membership.permissions} ->> ${permission})::boolean, false))`
-}
-
-// The user's standing on the Board, or null unless they are a Member.
-export async function standingOn(boardId: string, userId: string): Promise<Standing | null> {
-  const [found] = await db
-    .select({ isOwner: membership.isOwner, permissions: membership.permissions })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
-  return found ?? null
+// The same in SQL, for a query over the user's access (board-access.ts,
+// `access` by default: the Membership's row): whether the Member may take
+// an action `permission` covers that isn't about one Dish.
+export function permits(permission: Permission, { isOwner, permissions }: { isOwner: SQLWrapper, permissions: SQLWrapper } = membership) {
+  return sql<boolean>`(${isOwner} or coalesce((${permissions} ->> ${permission})::boolean, false))`
 }
 
 // Why a Member's Permissions couldn't be switched: the user isn't the
@@ -86,12 +79,16 @@ export async function setPermissions(boardId: string, userId: string, memberId: 
     ),
     changed as (${update.getSQL()}),
     recorded as (
-      insert into ${eventLog} (kind, board_id, dish_id, user_id, details)
-      select 'permission_changed', ${boardId}::uuid, null, ${userId}::text,
-        jsonb_build_object('member', ${memberId}::text, 'permission', p.key, 'on', p.value::boolean)
-      from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
-      where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean
-    )
+      ${insertEvents(
+        {
+          kind: 'permission_changed',
+          board: sql`${boardId}::uuid`,
+          user: userId,
+          details: sql`jsonb_build_object('member', ${memberId}::text, 'permission', p.key, 'on', p.value::boolean)`,
+        },
+        sql`from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
+          where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean`,
+      )})
     select permissions from changed
   `)
   const [updated] = rows as { permissions: Permissions }[]
@@ -119,12 +116,16 @@ export async function setDefaultPermissions(boardId: string, userId: string, cha
     with earlier as (select ${board.defaultPermissions} as permissions from ${board} where ${eq(board.id, boardId)}),
     changed as (${update.getSQL()}),
     recorded as (
-      insert into ${eventLog} (kind, board_id, dish_id, user_id, details)
-      select 'default_permission_changed', ${boardId}::uuid, null, ${userId}::text,
-        jsonb_build_object('permission', p.key, 'on', p.value::boolean)
-      from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
-      where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean
-    )
+      ${insertEvents(
+        {
+          kind: 'default_permission_changed',
+          board: sql`${boardId}::uuid`,
+          user: userId,
+          details: sql`jsonb_build_object('permission', p.key, 'on', p.value::boolean)`,
+        },
+        sql`from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
+          where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean`,
+      )})
     select default_permissions as permissions from changed
   `)
   const [updated] = rows as { permissions: Permissions }[]

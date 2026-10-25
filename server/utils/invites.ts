@@ -5,7 +5,8 @@ import type { Language } from '../../shared/language'
 import { db } from '../db'
 import { board, inviteMiss, membership } from '../db/schema'
 import { slugOf } from './addresses'
-import { boardMembers, membershipOf, type BoardMember, type BoardNameAndEmoji } from './boards'
+import { boardMembers, type BoardMember, type BoardNameAndEmoji } from './boards'
+import { accessOn } from './board-access'
 import { withEvents } from './events'
 
 // Invite Links (CONTEXT.md): /invite/<Board slug>-<secret> lets a signed-in
@@ -95,7 +96,7 @@ export async function joinByInvite(secret: string, userId: string): Promise<{ bo
 // with its old slug or any other.
 // 'forbidden' for a Member who isn't the Owner, null for a non-Member.
 export async function resetInvite(boardId: string, userId: string): Promise<{ inviteToken: string } | 'forbidden' | null> {
-  const [found] = await membershipOf(boardId, userId)
+  const [found] = await accessOn(boardId, userId)
   if (!found) return null
   if (!found.isOwner) return 'forbidden'
   const { rows } = await withEvents(

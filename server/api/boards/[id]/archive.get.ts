@@ -1,4 +1,4 @@
-import { isMember } from '../../../utils/boards'
+import { isMember } from '../../../utils/board-access'
 import { archivedDishes, type ArchivedDishView } from '../../../utils/dishes'
 
 // GET /api/boards/:id/archive — the Board's Archive in Board Settings: its
