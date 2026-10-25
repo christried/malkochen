@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Prototype #392 Review</title>
+<style>
+:root{--bg:#fff8fb;--fg:#4a2b3a;--muted:#8a6b7a;--line:#e8d4de;--card:#fff;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#231520;--fg:#f6e9ef;--muted:#b9a0ad;--line:#4a3442;--card:#2c1d29;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#231520;--fg:#f6e9ef;--muted:#b9a0ad;--line:#4a3442;--card:#2c1d29;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif;padding:0 max(16px,env(safe-area-inset-left,0px)) 0 max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1200px;margin:0 auto;padding-block:24px 48px;display:flex;flex-direction:column;gap:36px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:0 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:14px;margin:18px 0 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+p{max-width:70ch;margin:0 0 8px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.grid.wide{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.shot{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0}
+.shot img{display:block;width:100%;height:auto;border-radius:6px}
+.shot figcaption{font-size:12px;margin-bottom:6px;color:var(--muted)}
+.shot.desk img{max-height:none}
+</style></head><body><main>
+<header><h1>Prototyp #392: Changelog, Popup, Hinweis, Dish Link</h1>
+<p>Alle Bilder: Varianten auf den echten Seiten (dev only). Oben jeweils die Variante, darunter Licht und Dunkel auf Telefon (360px) und Desktop. Die Varianten lassen sich in der schwebenden Leiste oben wechseln.</p></header>
+<section><h2>1. Changelog-Seite</h2>
+<p>A: wie heute. B: Winnie CL-a, Schiene links am Desktop. C: Winnie CL-a ohne Schiene, Sprungleiste oben.</p>
+<h3>A: Heute: Karten mit Versionsname-Zeile</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/changelog-A-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/changelog-A-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/changelog-A-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/changelog-A-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>B: Winnie CL-a: grosse Zahl, Schiene links</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/changelog-B-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/changelog-B-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/changelog-B-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/changelog-B-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>C: Winnie CL-a ohne Schiene: Sprungleiste oben</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/changelog-C-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/changelog-C-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/changelog-C-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/changelog-C-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+</section>
+<section><h2>2. Was ist neu (Popup)</h2><p>A: Blatt von unten. B: mittig mit Topfbert. C: Streifen oben, zusammengefasst.</p>
+<h3>A: Blatt von unten</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/popup-A-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/popup-A-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/popup-A-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/popup-A-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>B: Mittig mit Topfbert</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/popup-B-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/popup-B-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/popup-B-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/popup-B-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>C: Streifen oben, zusammengefasst</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/popup-C-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/popup-C-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/popup-C-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/popup-C-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+</section>
+<section><h2>3. Hinweis (Push und E-Mail-Digest)</h2><p>A: Karte unten, Topfbert links. B: Karte oben im Board.</p>
+<h3>push, A: Karte unten</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/prompt-push-A-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/prompt-push-A-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/prompt-push-A-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/prompt-push-A-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>push, B: Karte oben</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/prompt-push-B-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/prompt-push-B-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/prompt-push-B-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/prompt-push-B-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>digest, A: Karte unten</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/prompt-digest-A-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/prompt-digest-A-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/prompt-digest-A-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/prompt-digest-A-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>digest, B: Karte oben</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/prompt-digest-B-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/prompt-digest-B-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/prompt-digest-B-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/prompt-digest-B-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>B, Teilen B</h3><div class="grid wide"><figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/dish-B-shareB-phone-light.png" alt="phone, light"></figure><figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/dish-B-shareB-desktop-light.png" alt="desktop, light"></figure><figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/dish-B-shareB-phone-dark.png" alt="phone, dark"></figure><figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/dish-B-shareB-desktop-dark.png" alt="desktop, dark"></figure></div><h3>C, Teilen B</h3><div class="grid wide"><figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/dish-C-shareB-phone-light.png" alt="phone, light"></figure><figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/dish-C-shareB-desktop-light.png" alt="desktop, light"></figure><figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/dish-C-shareB-phone-dark.png" alt="phone, dark"></figure><figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/dish-C-shareB-desktop-dark.png" alt="desktop, dark"></figure></div>
+</section>
+<section><h2>4. Dish Link (ausgeloggt)</h2><p>A: zentrierte Karte. B: Vollbild-Bild mit Text darüber. C: Bild oben, Blatt überlappt. Darunter der Dish-Detail-Ausschnitt mit den Teilen-Knöpfen: A Symbole in der Kopfzeile, B zwei Pillen (im Bild als zweiter Abschnitt, Varianten A und B).</p>
+<h3>A: Zentrierte Karte (Teilen A)</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/dish-A-shareA-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/dish-A-shareA-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/dish-A-shareA-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/dish-A-shareA-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>B: Vollbild-Bild (Teilen A)</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/dish-B-shareA-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/dish-B-shareA-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/dish-B-shareA-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/dish-B-shareA-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>C: Bild oben, Blatt überlappt (Teilen A)</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/dish-C-shareA-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/dish-C-shareA-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/dish-C-shareA-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/dish-C-shareA-desktop-dark.png" alt="desktop, dark"></figure>
+</div>
+<h3>Teilen B (Dish-Detail-Ausschnitt, Variante B mit Vollbild A)</h3><div class="grid wide">
+<figure class="shot"><figcaption>phone, light</figcaption><img loading="lazy" src="shots/dish-A-shareB-phone-light.png" alt="phone, light"></figure>
+<figure class="shot"><figcaption>desktop, light</figcaption><img loading="lazy" src="shots/dish-A-shareB-desktop-light.png" alt="desktop, light"></figure>
+<figure class="shot"><figcaption>phone, dark</figcaption><img loading="lazy" src="shots/dish-A-shareB-phone-dark.png" alt="phone, dark"></figure>
+<figure class="shot"><figcaption>desktop, dark</figcaption><img loading="lazy" src="shots/dish-A-shareB-desktop-dark.png" alt="desktop, dark"></figure>
+</div></section>
+</main></body></html>
