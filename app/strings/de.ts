@@ -336,6 +336,9 @@ export const de = {
     close: 'Schließen',
     goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',
+    // The Caption, folded and unfolded (#393).
+    captionMore: 'mehr',
+    captionLess: 'weniger',
     // Click-to-play video (#221).
     playVideo: 'Video abspielen',
     videoPlayer: (platform: VideoPlatform) => `Video von ${VIDEO_PLATFORMS[platform]}`,

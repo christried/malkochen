@@ -34,6 +34,9 @@ export interface DishView {
   source: DishSource | null
   // Who published the Source (CONTEXT.md: Creator); null if nobody is named.
   creator: string | null
+  // The Caption (CONTEXT.md): the text the Source shows with its post; null if
+  // it shows none. Read-only for Members.
+  caption: string | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -75,6 +78,7 @@ export interface NewDish {
   title: string
   source: DishSource | null
   creator: string | null
+  caption: string | null
   // Must already be a stored image (Image Store), never a third-party link.
   imageUrl: string | null
   // Where that image is shifted to; the centre if left out. Without an
@@ -110,6 +114,7 @@ function selectDishes() {
       sourceLink: dish.sourceLink,
       sourceKind: dish.sourceKind,
       creator: dish.creator,
+      caption: dish.caption,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -171,7 +176,7 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // they are. `imageUrl` must already be a stored image, never a third-party
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -724,13 +729,18 @@ export async function dishWithSource(boardId: string, canonicalLink: string): Pr
   return found ?? null
 }
 
-// The Board's Dishes whose title contains the query, ignoring case (PRD
-// story 36), in Board order: Column by Column, each in its own order.
-// Deleted Dishes don't count.
+// The Board's Dishes whose title, Creator or Caption contains the query,
+// ignoring case (PRD story 36), in Board order: Column by Column, each in its
+// own order. Deleted Dishes don't count.
 export async function searchDishes(boardId: string, query: string): Promise<DishView[]> {
+  const pattern = `%${escapeLike(query)}%`
   const rows = await selectDishes()
     .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
-    .where(and(eq(dish.boardId, boardId), isNull(dish.deletedAt), ilike(dish.title, `%${escapeLike(query)}%`)))
+    .where(and(
+      eq(dish.boardId, boardId),
+      isNull(dish.deletedAt),
+      or(ilike(dish.title, pattern), ilike(dish.creator, pattern), ilike(dish.caption, pattern)),
+    ))
     .orderBy(asc(boardColumn.position), asc(dish.position), desc(dish.createdAt), desc(dish.id))
   return toViews(rows)
 }
@@ -770,6 +780,7 @@ export async function addDish(
       sourceLink: input.source?.link ?? null,
       sourceKind: input.source?.kind ?? null,
       creator: input.creator,
+      caption: input.caption,
       imageUrl: input.imageUrl,
       imageFocusX: focus.x,
       imageFocusY: focus.y,
@@ -794,6 +805,7 @@ export async function addDish(
     title: input.title,
     source: input.source,
     creator: input.creator,
+    caption: input.caption,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

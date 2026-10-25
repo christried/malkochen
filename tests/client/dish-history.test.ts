@@ -19,6 +19,7 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     title: `Titel ${id}`,
     source: null,
     creator: null,
+    caption: null,
     imageUrl: null,
     imageFocus: { x: 50, y: 50 },
     placeholder: 'bowl',
