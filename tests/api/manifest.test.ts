@@ -38,7 +38,8 @@ test('the manifest is served at its address, as a web app manifest, named malkoc
   const res = await anonymous().fetch('/manifest.webmanifest')
 
   expect(res.status).toBe(200)
-  expect(res.headers.get('content-type')).toContain('application/manifest+json')
+  expect(res.headers.get('content-type')).toBe('application/manifest+json; charset=utf-8')
+  expect(res.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
   expect(await res.json()).toEqual(PRODUCTION_MANIFEST)
 })
 
