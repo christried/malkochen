@@ -125,7 +125,7 @@ export async function setDefaultPermissions(boardId: string, userId: string, cha
       from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
       where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean
     )
-    select permissions from changed
+    select default_permissions as permissions from changed
   `)
   const [updated] = rows as { permissions: Permissions }[]
   return updated?.permissions ?? 'forbidden'

@@ -1,8 +1,9 @@
-import { expect, test } from 'vitest'
 import sharp from 'sharp'
+import { beforeEach, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 import { everyEventAsText, watchEvents } from './event-log'
+import { endLimitWindows } from './time-travel'
 
 // The event log (#331): what happens on Boards is recorded, one event per
 // write, in the same transaction, so the Operator's Admin Page (#321) has
@@ -27,7 +28,15 @@ interface Board {
   columns: Column[]
 }
 
+// Each test may make more Boards and Dishes than one user's daily limit allows.
+beforeEach(() => {
+  endLimitWindows('create-board')
+  endLimitWindows('add-dish')
+})
+
 const owner = () => signIn(ALLOWLISTED[82])
+// For the tests that would otherwise pass the Board cap (BOARDS_PER_USER) of one owner.
+const freshOwner = () => signIn(ALLOWLISTED[135])
 const member = () => signIn(ALLOWLISTED[83])
 const outsider = () => signIn(ALLOWLISTED[84])
 
@@ -410,7 +419,8 @@ test('adding, renaming, subtitling, reordering and deleting Columns each record 
   expect((await patch({ name: 'Irgendwann' })).status).toBe(200)
   expect((await patch({ subtitle: 'Für Gäste' })).status).toBe(200)
   expect((await patch({ subtitle: 'Für Gäste' })).status).toBe(200)
-  expect((await patch({ name: 'Bald', subtitle: null })).status).toBe(200)
+  expect((await patch({ name: 'Bald' })).status).toBe(200)
+  expect((await patch({ subtitle: null })).status).toBe(200)
 
   const columns = (await getBoard(teitelbaum, board.id)).columns
   const reordered = [columns[1]!, columns[0]!, ...columns.slice(2)]
@@ -464,7 +474,7 @@ test('resetting the Invite Link records it, by the Owner', async () => {
 })
 
 test('handing ownership over records it, with the Member it went to', async () => {
-  const teitelbaum = await owner()
+  const teitelbaum = await freshOwner()
   const wexler = await member()
   const board = await createBoard(teitelbaum, 'Staffel')
   await join(wexler, board)
@@ -479,7 +489,7 @@ test('handing ownership over records it, with the Member it went to', async () =
 })
 
 test('a Member\'s Permission switched records which and whether it is on; the same setting records nothing', async () => {
-  const teitelbaum = await owner()
+  const teitelbaum = await freshOwner()
   const wexler = await member()
   const board = await createBoard(teitelbaum, 'Rechte')
   await join(wexler, board)
@@ -500,7 +510,7 @@ test('a Member\'s Permission switched records which and whether it is on; the sa
 })
 
 test('the Board\'s Default Permissions switched record which and whether it is on; the same setting records nothing', async () => {
-  const teitelbaum = await owner()
+  const teitelbaum = await freshOwner()
   const board = await createBoard(teitelbaum, 'Vorgabe')
   const setDefaults = (body: unknown) => teitelbaum.fetch(`/api/boards/${board.id}/default-permissions`, { method: 'PATCH', ...json(body) })
   expect((await setDefaults({ editDishes: false })).status).toBe(200)
@@ -515,7 +525,7 @@ test('the Board\'s Default Permissions switched record which and whether it is o
 })
 
 test('editing a Dish records which of its fields changed, never their values; an edit that changes nothing records nothing', async () => {
-  const teitelbaum = await owner()
+  const teitelbaum = await freshOwner()
   const board = await createBoard(teitelbaum, 'Bearbeitet')
   const bytes = await sharp({ create: { width: 900, height: 1600, channels: 3, background: '#7a4' } }).jpeg().toBuffer()
   const uploadRes = await teitelbaum.fetch(`/api/boards/${board.id}/photos`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array(bytes) })
