@@ -85,6 +85,12 @@ export const de = {
     current: (version: string) => `Du nutzt malkochen ${version}.`,
     isNew: 'Neu',
     unreleased: 'Gerade neu',
+    eyebrow: 'Versionen',
+    versionPrefix: 'Version ',
+    newest: 'Neueste',
+    copyLink: (v: string) => `Link zu Version ${v} kopieren`,
+    copied: 'Link kopiert',
+    copyFailed: 'Kopieren hat nicht geklappt.',
     version: (version: string) => `Version ${version}`,
     // A Version's day, from YYYY-MM-DD.
     date: dayWithYear,
@@ -140,6 +146,7 @@ export const de = {
     toApp: 'Zu malkochen',
   },
   board: {
+    footer: 'Über malkochen',
     emptyBoardTitle: 'Noch nichts hier.',
     emptyBoardBody: 'Füg deinen ersten Link ein!',
     emptyColumn: 'Noch nichts hier.',

@@ -13,9 +13,7 @@ import { daysLeft } from '~/utils/archive'
 // Board renamed or created meanwhile shows; the Board picked shows its name
 // and Columns from it while it opens (useBoardListings). Each Board's row
 // ends in a cogwheel (#282, decided on #281 as A) that opens that Board's
-// Board Settings without switching to it. On phones its last row has the
-// legal pages (LegalLinks), which the header has no room for there. After
-// "Neues Board", an Owner's Archived Boards (#337) under "Archiv", each
+// Board Settings without switching to it. After "Neues Board", an Owner's Archived Boards (#337) under "Archiv", each
 // with its days left, "Wiederherstellen" (which opens it) and
 // "Endgültig löschen" (which asks first).
 // `dishCount`: how many Dishes this Board holds, shown after its name in the
@@ -318,12 +316,6 @@ async function purge() {
                 </div>
               </li>
             </ul>
-          </li>
-          <li
-            class="row mt-1 border-t border-line pt-1 tablet:hidden"
-            :style="{ '--i': shown.length + (archived.length ? 2 : 1) }"
-          >
-            <LegalLinks @chosen="close({ refocus: true })" />
           </li>
         </ul>
       </nav>
