@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { datenschutz } from '~~/app/legal/datenschutz'
+import { isLanguage, type Language } from '~~/shared/language'
 
-// The Datenschutz (#391): the German text, which alone is binding, then the
-// English and the Italian translations, all three readable signed out.
+// The Datenschutz (#391): one text at a time, the one the reader asks for with
+// ?lang=de|en|it, else in their language (useLanguage). The German text alone
+// is binding; the switcher and the link back to it are how to read the others.
 const t = useStrings()
+const route = useRoute()
+const language = useLanguage()
 
-const NAMES: Record<string, string> = { de: 'Deutsch', en: 'English', it: 'Italiano' }
+const NAMES: Record<Language, string> = { de: 'Deutsch', en: 'English', it: 'Italiano' }
 
-useHead({ title: () => `${datenschutz[0]!.title} · ${t.app.name}` })
+const chosen = computed<Language>(() => isLanguage(route.query.lang) ? route.query.lang : language.value)
+const shown = computed(() => datenschutz.find(text => text.language === chosen.value)!)
+
+useHead({ title: () => `${shown.value.title} · ${t.app.name}` })
 </script>
 
 <template>
@@ -26,37 +33,45 @@ useHead({ title: () => `${datenschutz[0]!.title} · ${t.app.name}` })
           />
         </NuxtLink>
         <h1 class="font-display text-title-l tablet:text-display-m">
-          {{ datenschutz[0]!.title }}
+          {{ shown.title }}
         </h1>
       </header>
 
       <nav
-        aria-label="Sprachen"
+        :aria-label="t.legal.languages"
         class="flex flex-wrap gap-3 text-small"
       >
-        <a
+        <NuxtLink
           v-for="text in datenschutz"
           :key="text.language"
-          :href="`#${text.language}`"
-          class="inline-flex min-h-11 items-center rounded-chip px-2 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-focus"
-        >{{ NAMES[text.language] }}</a>
+          :to="`?lang=${text.language}`"
+          replace
+          :aria-current="text.language === shown.language ? 'page' : undefined"
+          :class="[
+            'inline-flex min-h-11 items-center rounded-chip px-2 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-focus',
+            text.language === shown.language ? 'bg-surface-muted text-text' : 'text-text-muted',
+          ]"
+        >{{ NAMES[text.language] }}</NuxtLink>
       </nav>
 
+      <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
+        <p class="text-body">
+          {{ shown.note }}
+        </p>
+        <NuxtLink
+          v-if="!shown.binding"
+          to="?lang=de"
+          replace
+          class="inline-flex min-h-11 items-center self-start text-body underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-focus"
+        >{{ t.legal.bindingVersion }}</NuxtLink>
+      </div>
+
       <article
-        v-for="text in datenschutz"
-        :id="text.language"
-        :key="text.language"
+        :id="shown.language"
+        :lang="shown.language"
         class="flex scroll-mt-6 flex-col gap-8"
       >
-        <div class="flex flex-col gap-1 rounded-card bg-surface-muted p-4">
-          <p class="text-small text-text-muted">
-            {{ NAMES[text.language] }}<template v-if="text.binding"> · verbindlich</template>
-          </p>
-          <p class="text-body">
-            {{ text.note }}
-          </p>
-        </div>
-        <LegalSections :sections="text.sections" />
+        <LegalSections :sections="shown.sections" />
       </article>
     </div>
   </main>

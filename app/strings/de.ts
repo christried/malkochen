@@ -70,6 +70,8 @@ export const de = {
   legal: {
     impressum: 'Impressum',
     privacy: 'Datenschutz',
+    languages: 'Sprachen',
+    bindingVersion: 'Zur verbindlichen deutschen Fassung',
   },
   // The Changelog (pages/changelog.vue, #354): its title, also the link at
   // the end of Your Settings and under the sign-in screen; `current` says
