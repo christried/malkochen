@@ -285,6 +285,9 @@ export const it: Strings = {
     close: 'Chiudi',
     goneMeanwhile: (title: string) => `“${title}” non è più su questa bacheca.`,
     openOriginal: 'Apri l’originale',
+    // The Caption, folded and unfolded (#393).
+    captionMore: 'altro',
+    captionLess: 'meno',
     playVideo: 'Riproduci il video',
     videoPlayer: (platform: VideoPlatform) => `Video da ${VIDEO_PLATFORMS[platform]}`,
     videoUnavailable: 'Questo video non si può riprodurre qui.',

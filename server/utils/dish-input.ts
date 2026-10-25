@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../shared/placeholders'
-import { guessSource, SOURCE_KINDS } from '../source-lookup'
+import { captionOf, guessSource, SOURCE_KINDS } from '../source-lookup'
 import type { DishSource } from './dishes'
 
 // What adding and editing a Dish accept from the client, shared by both.
@@ -12,6 +12,11 @@ const dishTitle = z.string().trim().min(1).max(200)
 // Who published the Source (CONTEXT.md: Creator), as Source Lookup found it
 // or a Member typed it. Optional; a blank one is none.
 const dishCreator = z.string().trim().max(100).nullish().transform(creator => creator || null)
+
+// The Caption (CONTEXT.md) as Source Lookup found it for the Source sent
+// with it. Optional; blank or cut to a few thousand characters as Source
+// Lookup keeps it.
+const dishCaption = z.string().nullish().transform(caption => captionOf(caption))
 
 // The canonical link and kind from Source Lookup. The kind is read from the
 // link itself; the one sent only tells a blog from any other web page.
@@ -40,6 +45,8 @@ export const addDishBody = z.object({
   placeholder: z.enum(PLACEHOLDERS),
   source: sourceInput.nullish(),
   creator: dishCreator,
+  // The Caption of that Source; none without one.
+  caption: dishCaption,
   // The Source image Source Lookup found (third-party) and the Image Ticket it
   // came with; copied on save, but only with a valid ticket.
   imageUrl: webLinkInput.nullish(),
@@ -61,6 +68,8 @@ export const dishEditBody = z.object({
   source: sourceInput.nullable().optional(),
   // Blank clears it. Changing the Source never changes it.
   creator: dishCreator.optional(),
+  // The Caption of the Source sent with it; without one, the Dish has none.
+  caption: dishCaption.optional(),
   placeholder: z.enum(PLACEHOLDERS).optional(),
   // Null drops the stored image, so the Dish shows its Placeholder. A link is
   // the image "Bild neu laden" found (third-party) and needs the Image Ticket

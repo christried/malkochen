@@ -14,14 +14,16 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   const user = requireUser(event)
   // Anyone's Dish with "edit Dishes", else only one the user added.
   await requireDishPermission(dishId, user.id, 'editDishes')
-  const { source, imageUrl, imageTicket, photo, imageFocus, ...rest } = parsed.data
+  const { source, caption, imageUrl, imageTicket, photo, imageFocus, ...rest } = parsed.data
   // A reloaded image costs what adding a Dish from a link does.
   if (imageUrl) await spendRateLimit(user.id, 'add-dish')
   // Not copied for a non-Member or a missing Dish, which editDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, () => boardOfDish(dishId), { photo, imageUrl, imageTicket })
   const edited = await editDish(dishId, user.id, {
     ...rest,
-    ...source !== undefined && { source: source && sourceOf(source) },
+    // A Source change brings its Caption along, or none (Source Lookup read it
+    // from the new link); a Source is removed with its Caption.
+    ...source !== undefined && { source: source && sourceOf(source), caption: source ? caption ?? null : null },
     // Null (and no photo) drops the image, for the Placeholder; a new image
     // that couldn't be stored leaves it as it was.
     ...((imageUrl === null && !photo) || stored) && { imageUrl: stored },

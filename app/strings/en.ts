@@ -270,6 +270,9 @@ export const en: Strings = {
     close: 'Close',
     goneMeanwhile: (title: string) => `“${title}” isn’t on this board any more.`,
     openOriginal: 'Open original',
+    // The Caption, folded and unfolded (#393).
+    captionMore: 'more',
+    captionLess: 'less',
     playVideo: 'Play video',
     videoPlayer: (platform: VideoPlatform) => `Video from ${VIDEO_PLATFORMS[platform]}`,
     videoUnavailable: 'This video can’t be played here.',

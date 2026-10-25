@@ -23,12 +23,14 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   // gets 403, with or without a link, from the share target too.
   await requirePermission(boardId, user.id, 'addDishes')
   await spendRateLimit(user.id, 'add-dish')
-  const { source, imageUrl, imageTicket, photo, tour, ...rest } = parsed.data
+  const { source, caption, imageUrl, imageTicket, photo, tour, ...rest } = parsed.data
   // Not copied for a non-Member, whom addDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, async () => boardId, { photo, imageUrl, imageTicket })
   const created = await addDish(boardId, user, {
     ...rest,
     source: source ? sourceOf(source) : null,
+    // The Caption belongs to the Source: none without one.
+    caption: source ? caption : null,
     imageUrl: stored,
   }, { tour })
   if (!created) throw boardNotFound()

@@ -21,3 +21,4 @@ Upstream responses for Seam 2. Recorded on 2026-09-30 unless noted.
 | `instagram-embed-watch-on-instagram.html` | Recorded 2026-10-16 like the one above, for `/reel/DFvsVH_OD9h/embed/`: a Reel Instagram's embed only shows with "Auf Instagram ansehen" (a `WatchOnInstagramContainer` block), which opens Instagram (#279). |
 | `instagram-login-page.html` | Hand-made: what a login wall offers (no image). |
 | other `blog-*.html`, `broken-page.html` | Hand-made to cover one metadata shape each. |
+| `youtube-short-page.html` | Recorded 2026-10-25: `youtube.com/shorts/tPEE9ZwTmy0` as served to Source Lookup's user agent, reduced to its description, `og:` and title tags (verbatim, one per line). |

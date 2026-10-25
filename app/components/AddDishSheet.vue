@@ -77,6 +77,9 @@ watch(shownImage, () => imageFocus.value = { ...FOCUS_CENTRE })
 // Who published the Source (CONTEXT.md: Creator), if the lookup found them:
 // shown under the title and saved with the Dish. Editing it is the detail's.
 const creator = computed(() => withoutLink.value ? null : result.value?.creator ?? null)
+// The Caption (CONTEXT.md) of the Source, saved with the Dish, which shows it
+// in its detail. The sheet doesn't show it.
+const caption = computed(() => withoutLink.value ? null : result.value?.caption ?? null)
 // The Source shows no title (a Pin, a post without a caption): ask for one,
 // kindly.
 const titleNeeded = computed(() => result.value !== null && result.value.suggestedTitle === '' && title.value.trim() === '')
@@ -214,6 +217,7 @@ async function save() {
       placeholder: placeholder.value,
       source,
       creator: creator.value,
+      caption: caption.value,
       imageUrl: usingSourceImage.value ? sourceImage.value : null,
       imageTicket: usingSourceImage.value ? result.value?.imageTicket : null,
       photo: photo.value,

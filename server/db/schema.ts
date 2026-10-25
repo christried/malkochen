@@ -295,6 +295,10 @@ export const dish = pgTable('dish', {
   // The Creator (CONTEXT.md): who published the Source, as it names itself.
   // Null when it names none, or a Member cleared it.
   creator: text('creator'),
+  // The Caption (CONTEXT.md): the text the Source shows with its post, read
+  // when the Dish is added or its Source changes; never edited by a Member.
+  // Null when the Source shows none, or there is no Source.
+  caption: text('caption'),
   // The image: a copy in the Image Store if there is one, else the
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),

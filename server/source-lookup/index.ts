@@ -7,6 +7,7 @@ import { youtube } from './youtube'
 import { nothingFound, type SourceGuess, type SourceLookup, type Strategy } from './types'
 
 export { SOURCE_KINDS } from './types'
+export { captionOf } from './caption'
 export type { SourceGuess, SourceKind, SourceLookup, SourceLookupResult } from './types'
 
 // Source Lookup: given a link, return what we know about it (Source kind,

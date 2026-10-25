@@ -1,3 +1,4 @@
+import { captionOf } from './caption'
 import { creatorName } from './creator'
 import { decodeEntities, findTag, metaTags } from './html'
 import type { Http } from './http'
@@ -75,6 +76,7 @@ async function embedPage(http: Http, post: SourceGuess, timeoutMs: number): Prom
     suggestedTitle: shortenTitle(caption(html)),
     creator: creatorName(username(html)),
     imageUrl: httpUrl(findTag(html, 'img', 'EmbeddedMediaImage')?.attrs.src),
+    caption: captionOf(caption(html)),
   }
 }
 

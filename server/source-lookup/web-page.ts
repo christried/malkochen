@@ -1,3 +1,4 @@
+import { captionOf } from './caption'
 import { creatorName } from './creator'
 import { attributes, decodeEntities, metaTags, TAG_BODY } from './html'
 import { httpUrl, withoutTracking } from './link'
@@ -136,6 +137,8 @@ export const webPage: Strategy = {
     const creator = (jsonLd ? authorName(jsonLd.recipe.author, jsonLd.byId) : null) ?? creatorName(siteName)
 
     const suggestedTitle = shortenTitle(withoutSiteName(title, siteName))
-    return { kind: suggestedTitle || imageUrl ? 'blog' : 'other', canonicalLink, suggestedTitle, creator, imageUrl }
+    // The meta description, whatever kind the page is (best effort).
+    const caption = captionOf(meta.get('description'))
+    return { kind: suggestedTitle || imageUrl ? 'blog' : 'other', canonicalLink, suggestedTitle, creator, imageUrl, caption }
   },
 }
