@@ -10,7 +10,9 @@ import { INSTAGRAM_GRACE_MS } from '../../shared/video-embed'
 // shows its image and "Video abspielen" in the Dish detail, and nothing
 // from the platform loads until that is tapped; then the platform's player
 // plays in place. The players are stubbed here: the browser tests never
-// reach real upstreams. Barbara McClintock's Board is used by this file
+// reach real upstreams. A Dish seeded without `playableVideo` is one from before
+// #394 (no stored value until #395), which asks Instagram when its detail opens;
+// one seeded with it goes by that alone. Barbara McClintock's Board is used by this file
 // only.
 test.describe.configure({ mode: 'serial' })
 
@@ -20,6 +22,8 @@ const REEL = 'https://www.instagram.com/reel/C0WUh-tqkxU/'
 const PRIVATE_POST = 'https://www.instagram.com/p/AAAAAAAAAAA/'
 // A Reel Instagram's embed only shows with "Auf Instagram ansehen" (#279).
 const OUTSIDE_REEL = 'https://www.instagram.com/reel/DFvsVH_OD9h/'
+// A photo post: Source Lookup found no video when it was added (#394).
+const PHOTO_POST = 'https://www.instagram.com/p/BBBBBBBBBBB/'
 
 const DISHES = [
   { title: 'Tofu im Video', sourceLink: TIKTOK, sourceKind: 'tiktok' },
@@ -29,6 +33,7 @@ const DISHES = [
   { title: 'Pasta vom Pin', sourceLink: 'https://www.pinterest.com/pin/99360735500167749/', sourceKind: 'pinterest-pin' },
   { title: 'Brownies vom Blog', sourceLink: 'https://www.loveandlemons.com/brownies-recipe/', sourceKind: 'blog' },
   { title: 'Bowl nur auf Instagram', sourceLink: OUTSIDE_REEL, sourceKind: 'instagram-reel' },
+  { title: 'Foto auf Instagram', sourceLink: PHOTO_POST, sourceKind: 'instagram-post', playableVideo: false },
 ]
 
 const PLATFORM_HOST = /(^|\.)(tiktok|tiktokcdn|youtube|youtube-nocookie|ytimg|googlevideo|instagram|cdninstagram|fbcdn)\.(com|net)$/
@@ -196,7 +201,7 @@ test('an Instagram post that can\'t be embedded shows a link to it on Instagram 
   await expect(detail.locator('iframe')).toHaveCount(0)
 })
 
-test('a Reel Instagram won\'t play here links to it on Instagram instead of "Video abspielen"', async ({ page }) => {
+test('a Dish from before #394 with a Reel Instagram will not play here gets no pill at all', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await signIn(page, ALLOWLISTED[50])
   await stubPlayers(page)
@@ -204,14 +209,31 @@ test('a Reel Instagram won\'t play here links to it on Instagram instead of "Vid
   const requests = platformRequests(page)
 
   const detail = await openDetail(page, 'Bowl nur auf Instagram')
-  const link = detail.getByRole('link', { name: 'Auf Instagram ansehen' })
-  await expect(link).toBeVisible()
-  await expect(link).toHaveAttribute('href', OUTSIDE_REEL)
-  await expect(link).toHaveAttribute('target', '_blank')
-  await expect(detail.getByRole('button', { name: 'Video abspielen' })).toHaveCount(0)
   await expect(detail.locator('[data-detail-image] img').first()).toBeVisible()
+  await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveAttribute('href', OUTSIDE_REEL)
+  // Instagram's answer (no) has come once nothing is offered after a moment.
+  await page.waitForTimeout(500)
+  await expect(detail.getByRole('button', { name: 'Video abspielen' })).toHaveCount(0)
+  await expect(detail.getByRole('link', { name: 'Auf Instagram ansehen' })).toHaveCount(0)
   await expect(detail.locator('iframe')).toHaveCount(0)
   expect(requests).toEqual([])
+})
+
+test('an Instagram photo post gets no "Video abspielen" and Instagram is not asked', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page, ALLOWLISTED[50])
+  await stubPlayers(page)
+  const asked: string[] = []
+  page.on('request', request => request.url().includes('/api/instagram-plays') && asked.push(request.url()))
+  await gotoHydrated(page, '/')
+
+  const detail = await openDetail(page, 'Foto auf Instagram')
+  await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveAttribute('href', PHOTO_POST)
+  await page.waitForTimeout(500)
+  await expect(detail.getByRole('button', { name: 'Video abspielen' })).toHaveCount(0)
+  await expect(detail.getByRole('link', { name: 'Auf Instagram ansehen' })).toHaveCount(0)
+  await expect(detail.locator('iframe')).toHaveCount(0)
+  expect(asked).toEqual([])
 })
 
 // Without the fixture's own check: the violation is what this test is after.

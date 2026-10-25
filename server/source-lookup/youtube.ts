@@ -1,3 +1,4 @@
+import { videoEmbed } from '../../shared/video-embed'
 import { captionOf } from './caption'
 import { metaTags } from './html'
 import type { Http } from './http'
@@ -55,6 +56,7 @@ export const youtube: Strategy = {
       creator: creatorName(oembed?.author_name),
       imageUrl: hasVertical ? vertical : httpUrl(oembed?.thumbnail_url),
       caption,
+      playableVideo: videoEmbed({ kind: 'youtube-short', link: canonicalLink }) !== null,
     }
   },
 }

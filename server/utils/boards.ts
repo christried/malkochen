@@ -10,7 +10,7 @@ import { freeSlug, lockSlugs, recordSlug, slugOf } from './addresses'
 import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
 import { newInHistoryDishIds } from './dish-opened'
-import { detailsOf, insertEvents } from './events'
+import { detailsOf, insertEvents, withEvents } from './events'
 import { usernameOf, pictureOf } from './people'
 import { accessOf, accessOn } from './board-access'
 import { effectivePermissions, permits } from './permissions'
@@ -334,11 +334,21 @@ export async function editBoard(boardId: string, userId: string, changes: BoardC
   const renamed = changes.name !== undefined
   await runAtomic(d => [
     ...(renamed ? [lockSlugs(d)] : []),
-    d
-      .update(board)
-      // Setting the id to itself keeps an empty change a valid statement.
-      .set({ id: sql`${board.id}`, ...changes, ...(renamed ? { slug: freeSlug(boardId, changes.name!) } : {}) })
-      .where(and(eq(board.id, boardId), exists(accessOn(boardId, userId)))),
+    withEvents(
+      d,
+      d
+        .update(board)
+        // Setting the id to itself keeps an empty change a valid statement.
+        .set({ id: sql`${board.id}`, ...changes, ...(renamed ? { slug: freeSlug(boardId, changes.name!) } : {}) })
+        .where(and(eq(board.id, boardId), exists(accessOn(boardId, userId))))
+        .returning({ id: board.id, name: board.name, emoji: board.emoji }),
+      [
+        // Recorded only for what changed.
+        { kind: 'board_renamed', board: sql`changed.id`, user: userId, when: sql`changed.name is distinct from earlier.name` },
+        { kind: 'board_emoji_changed', board: sql`changed.id`, user: userId, when: sql`changed.emoji is distinct from earlier.emoji` },
+      ],
+      { earlier: sql`select ${board.id}, ${board.name}, ${board.emoji} from ${board} where ${board.id} = ${boardId}` },
+    ),
     ...(renamed ? [recordSlug(d, boardId)] : []),
   ])
   const [edited] = await db

@@ -37,6 +37,9 @@ export interface DishView {
   // The Caption (CONTEXT.md): the text the Source shows with its post; null if
   // it shows none. Read-only for Members.
   caption: string | null
+  // Whether its Source has a video that plays in malkochen (#394); null when
+  // not known yet.
+  playableVideo: boolean | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -79,6 +82,7 @@ export interface NewDish {
   source: DishSource | null
   creator: string | null
   caption: string | null
+  playableVideo: boolean | null
   // Must already be a stored image (Image Store), never a third-party link.
   imageUrl: string | null
   // Where that image is shifted to; the centre if left out. Without an
@@ -115,6 +119,7 @@ function selectDishes() {
       sourceKind: dish.sourceKind,
       creator: dish.creator,
       caption: dish.caption,
+      playableVideo: dish.playableVideo,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -176,7 +181,7 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // they are. `imageUrl` must already be a stored image, never a third-party
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'playableVideo' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -222,11 +227,47 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
   }
   const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
-    const updated = await db.update(dish).set(values).where(target).returning({ id: dish.id })
-    if (updated.length === 0) return null
+    // Recorded only if a field changed, with which (never their values).
+    const { rows } = await withEvents(
+      db,
+      db
+        .update(dish)
+        .set(values)
+        .where(target)
+        .returning({
+          id: dish.id,
+          boardId: dish.boardId,
+          title: dish.title,
+          imageUrl: dish.imageUrl,
+          placeholder: dish.placeholder,
+          imageFocusX: dish.imageFocusX,
+          imageFocusY: dish.imageFocusY,
+          sourceLink: dish.sourceLink,
+          sourceKind: dish.sourceKind,
+          creator: dish.creator,
+        }),
+      dishEvent('dish_edited', userId, sql`jsonb_build_object('fields', ${changedFields()})`),
+      {
+        earlier: sql`select ${dish.id}, ${dish.title}, ${dish.imageUrl}, ${dish.placeholder}, ${dish.imageFocusX}, ${dish.imageFocusY}, ${dish.sourceLink}, ${dish.sourceKind}, ${dish.creator} from ${dish} where ${target}`,
+        where: sql`${changedFields()} <> '[]'::jsonb`,
+      },
+    )
+    if (rows.length === 0) return null
   }
 
   return findDish(target)
+}
+
+// The fields a Dish edit changed, as the event log names them (DishField),
+// read from the Dish `changed` by its edit and `earlier` before it.
+function changedFields(): SQL {
+  return sql`to_jsonb(array(select f from unnest(array[
+    case when changed.title is distinct from earlier.title then 'title' end,
+    case when changed.image_url is distinct from earlier.image_url or changed.placeholder is distinct from earlier.placeholder then 'image' end,
+    case when changed.source_link is distinct from earlier.source_link or changed.source_kind is distinct from earlier.source_kind then 'source' end,
+    case when changed.creator is distinct from earlier.creator then 'creator' end,
+    case when changed.image_focus_x is distinct from earlier.image_focus_x or changed.image_focus_y is distinct from earlier.image_focus_y then 'focus' end
+  ]::text[]) as f where f is not null))`
 }
 
 // The focus point an image is stored with: the one given, else the centre.
@@ -781,6 +822,7 @@ export async function addDish(
       sourceKind: input.source?.kind ?? null,
       creator: input.creator,
       caption: input.caption,
+      playableVideo: input.playableVideo,
       imageUrl: input.imageUrl,
       imageFocusX: focus.x,
       imageFocusY: focus.y,
@@ -806,6 +848,7 @@ export async function addDish(
     source: input.source,
     creator: input.creator,
     caption: input.caption,
+    playableVideo: input.playableVideo,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,
