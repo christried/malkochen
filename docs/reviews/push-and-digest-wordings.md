@@ -148,3 +148,48 @@ The user's picks, now in `app/strings/de.ts`. They also set a rule for every one
 - **Footer:** C. „Einmal am Abend, nur wenn’s was Neues gibt: So hast du’s in malkochen eingestellt."
 - **Unsubscribe:** B. „Keine Lust mehr? Hier ausschalten." „Hier ausschalten" is the footer's link to Your Settings, where the daily email is switched off.
 - The plain-text part of the email lost its „--" line above the footer.
+
+## Push Notifications: the layout (#404, spec #388)
+
+This replaces the Push Notification picks above (Style A, with its title and body) and the Comment and Vote wordings of #351 for the push. The Email Digest is unchanged. The title says who and on which Board, the same for every kind, and the Board's name goes in without its emoji. Who is named by the same rule as before: up to three names, then "Grace, Linus und 2 andere". The picture is the Dish's image, the newest Dish's when there are several, or the Dish's of a Comment or Vote; none for a Placeholder Image, so the app icon shows. The service worker shows the picture as the icon and the one-colour malkochen mark (public/icons/badge-96.png) as the badge.
+
+| Case | Title | Body (de) |
+|---|---|---|
+| One Dish, with Creator and Source | Von Ada in Kochclub | Linsen-Dal von Mara auf TikTok |
+| One Dish, without Creator or Source | Von Ada in Kochclub | Linsen-Dal |
+| Several Dishes | Von Ada und Linus in Kochclub | 3 neue Gerichte: Linsen-Dal, Cremige Pilzpasta, Ofengemüse mit Tahini |
+| Several Dishes, too long | Von Ada in Kochclub | 40 neue Gerichte: Ein ziemlich langes Gericht Nummer 0, Ein ziemlich langes Gericht Nummer 1 und 38 weitere |
+| A Comment | Von Mara in Kochclub | Kommentar zu Linsen-Dal: „Hab ich gestern nachgekocht …“ |
+| A Vote | Von Mara in Kochclub | Linsen-Dal 👍 (or 👎) |
+| Comments and Votes on one Dish | Von Ada und Linus in Kochclub | Linsen-Dal: 1 Kommentar, 1 Daumen |
+| Comments and Votes on several Dishes | Von Ada und Linus in Kochclub | 3 Kommentare und 1 Daumen zu Cremige Pilzpasta und Linsen-Dal |
+| New Dishes with Comments and Votes | Von Ada und Linus in Kochclub | 2 neue Gerichte: Ramen, Ofengemüse mit Tahini. Dazu 2 Kommentare und 1 Daumen. |
+| One new Dish with a Comment on it | Von Ada und Linus in Kochclub | Linsen-Dal. Dazu 1 Kommentar. |
+
+Platforms: TikTok, Instagram (reels and posts), YouTube (Shorts), Pinterest. A blog or another link names none, so its push reads "Linsen-Dal von Mara" (or just the title).
+
+In English (en):
+
+| Case | Title | Body |
+|---|---|---|
+| One Dish, with Creator and Source | From Ada in Kochclub | Lentil dal by Mara on YouTube |
+| Several Dishes | From Ada and Linus in Kochclub | 2 new dishes: Lentil dal, Ramen and 3 more |
+| A Comment | From Mara in Kochclub | Comment on Lentil dal: “With double ginger!” |
+| A Vote | From Mara in Kochclub | Lentil dal 👍 (or 👎) |
+| Comments and Votes on one Dish | From Ada and Linus in Kochclub | Lentil dal: 1 comment, 3 thumbs |
+| Comments and Votes on several Dishes | From Ada and Linus in Kochclub | 3 comments and 1 thumb on Lentil dal and Ramen |
+| New Dishes with Comments and Votes | From Ada and Linus in Kochclub | 2 new dishes: Lentil dal, Ramen. Plus 2 comments and 1 thumb. |
+
+In Italian (it):
+
+| Case | Title | Body |
+|---|---|---|
+| One Dish, with Creator and Source | Da Ada in Kochclub | Dal di lenticchie di Mara su YouTube |
+| Several Dishes | Da Ada e Linus in Kochclub | 2 nuovi piatti: Dal di lenticchie, Ramen e altri 3 |
+| A Comment | Da Mara in Kochclub | Commento a Dal di lenticchie: “Con doppio zenzero!” |
+| A Vote | Da Mara in Kochclub | Dal di lenticchie 👍 (or 👎) |
+| Comments and Votes on one Dish | Da Ada e Linus in Kochclub | Dal di lenticchie: 1 commento, 3 pollici |
+| Comments and Votes on several Dishes | Da Ada e Linus in Kochclub | 3 commenti e 1 pollice su Dal di lenticchie e Ramen |
+| New Dishes with Comments and Votes | Da Ada e Linus in Kochclub | 2 nuovi piatti: Dal di lenticchie, Ramen. In più 2 commenti e 1 pollice. |
+
+The "Dazu" (de), "Plus" (en) and "In più" (it) lines keep the counting text of the mixed cases under the new title, as the ticket asks. The Board's name in the title is the Board's own name (Kochclub), without the emoji.

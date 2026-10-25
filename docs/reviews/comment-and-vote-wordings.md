@@ -162,3 +162,5 @@ The user took every recommendation. The German, English and Italian are in `app/
 | de | Auf diesem Gerät, wenn jemand auf deinen Boards ein Gericht hinzufügt, kommentiert oder einen Daumen gibt. | Abends an deine E-Mail-Adresse, wenn andere auf deinen Boards Gerichte hinzugefügt, kommentiert oder Daumen gegeben haben. Für alle deine Geräte. |
 | en | On this device, when someone adds, comments on or gives a thumb to a dish on your boards. | In the evening to your email address, when others have added, commented on or given a thumb to dishes on your boards. For all your devices. |
 | it | Su questo dispositivo, quando qualcuno aggiunge, commenta o dà un pollice a un piatto sulle tue bacheche. | La sera al tuo indirizzo email, quando altri hanno aggiunto, commentato o dato un pollice a piatti sulle tue bacheche. Per tutti i tuoi dispositivi. |
+
+**Note (#404, spec #388):** the push's Comment and Vote wordings above are replaced by the layout in `push-and-digest-wordings.md` ("Push Notifications: the layout"). The Email Digest's lines and hints stay as chosen here.

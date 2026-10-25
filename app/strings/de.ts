@@ -58,8 +58,6 @@ function talkCounts(comments: number, votes: number): string[] {
   return [...comments ? [commentCount(comments)] : [], ...votes ? [voteCount(votes)] : []]
 }
 
-const hatOrHaben = (names: string[]) => plural(names.length, { one: 'hat', other: 'haben' })
-
 // A Vote on `dish`, as the Verlauf says it (history.voted).
 const voted = (name: string, dish: string, up: boolean) => up ? `${name} fand ${dish} gut 👍` : `${name} fand ${dish} nicht so gut 👎`
 
@@ -706,31 +704,21 @@ export const de = {
     blocked: 'Dein Browser blockiert Benachrichtigungen von malkochen. Erlaube sie in den Website-Einstellungen, dann kannst du sie hier einschalten.',
     unsupported: 'Dieser Browser kann keine Push-Benachrichtigungen empfangen.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
-    // The notification, one per Board (#325). Its title: who added the
-    // Dishes since you last opened it, the latest adder first, and the
-    // Dish's title if it's just one, else how many.
-    added: (names: string[], count: number, dish: string) => `${someNames(names)} ${plural(names.length, { one: 'hat', other: 'haben' })} ${count === 1 ? dish : dishCount(count)} hinzugefügt`,
-    // Its body: the Board (its emoji and name), then the titles of several
-    // Dishes, as many as fit, and how many more. About one Dish, it's only
-    // the Board.
-    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` und ${number(more)} ${plural(more, { one: 'weiteres', other: 'weitere' })}`}`,
-    // Comments and Votes by others count too (#351). About one Comment:
-    // „Ada hat Linsen-Dal kommentiert" over the Board and the Comment's start.
-    commented: (name: string, dish: string) => `${name} hat ${dish} kommentiert`,
-    comment: (board: string, text: string) => `${board}: ${text}`,
-    // About one Vote, over the Board alone.
-    voted,
-    // About several things on one Dish: „Ada und Linus zu Linsen-Dal" over
-    // „🍪 Kochclub: 1 Kommentar, 1 Daumen".
-    onDish: (names: string[], dish: string) => `${someNames(names)} zu ${dish}`,
-    counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
-    // About several Dishes with no new ones: the Comments' title, else the
-    // Votes', over the Dishes they're on; the rest follows with `also`.
-    wrote: (names: string[], comments: number) => `${someNames(names)} ${hatOrHaben(names)} ${commentCount(comments)} geschrieben`,
-    gave: (names: string[], votes: number) => `${someNames(names)} ${hatOrHaben(names)} ${voteCount(votes)} gegeben`,
-    about: (board: string, titles: string[], more: number) => `${board}: zu ${more === 0 ? nameList(titles) : `${titles.join(', ')} und ${number(more)} weiteren`}`,
-    // What else is new, after a body: with new Dishes, `body` and then all
-    // Comments and Votes; else `about`, then the Votes.
+    // The notification, one per Board (#404). Its title: who, and on which
+    // Board. Its body: the Dish, then its Creator and platform.
+    title: (names: string[], board: string) => `Von ${someNames(names)} in ${board}`,
+    dish: (title: string, creator: string | null, platform: string | null) => `${title}${creator ? ` von ${creator}` : ''}${platform ? ` auf ${platform}` : ''}`,
+    // Several Dishes: how many, then as many whole titles as fit, and how many more.
+    dishes: (count: number, titles: string[], more: number) => `${number(count)} neue Gerichte: ${titles.join(', ')}${more === 0 ? '' : ` und ${number(more)} ${plural(more, { one: 'weiteres', other: 'weitere' })}`}`,
+    // A Comment, with its start in quotes.
+    comment: (dish: string, text: string) => `Kommentar zu ${dish}: „${text}“`,
+    // A Vote: the Dish with its thumb.
+    vote: (dish: string, up: boolean) => `${dish} ${up ? '👍' : '👎'}`,
+    // Several things on one Dish: its title, then the counts.
+    talkOn: (dish: string, comments: number, votes: number) => `${dish}: ${talkCounts(comments, votes).join(', ')}`,
+    // Comments and Votes on several Dishes, over the Dishes they're on.
+    aboutDishes: (comments: number, votes: number, titles: string[], more: number) => `${talkCounts(comments, votes).join(' und ')} zu ${more === 0 ? nameList(titles) : `${titles.join(', ')} und ${number(more)} ${plural(more, { one: 'weiteres', other: 'weitere' })}`}`,
+    // What else is new, after a body: all Comments and Votes.
     also: (before: string, comments: number, votes: number) => `${before}. Dazu ${talkCounts(comments, votes).join(' und ')}.`,
   },
   // The Email Digest (#220): switched on in your settings, for all your
