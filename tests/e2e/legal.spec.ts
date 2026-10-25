@@ -26,7 +26,7 @@ test('?lang=en opens the English Datenschutz, and its link leads back to the Ger
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy policy')
   await expect(page.locator('article')).toHaveAttribute('lang', 'en')
-  await page.getByRole('link', { name: 'Read the binding German version' }).click()
+  await page.getByRole('link', { name: 'Zur verbindlichen deutschen Fassung' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Datenschutzerklärung')
   await expect(page).toHaveURL(/\?lang=de$/)
 })
