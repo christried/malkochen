@@ -222,11 +222,47 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
   }
   const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
-    const updated = await db.update(dish).set(values).where(target).returning({ id: dish.id })
-    if (updated.length === 0) return null
+    // Recorded only if a field changed, with which (never their values).
+    const { rows } = await withEvents(
+      db,
+      db
+        .update(dish)
+        .set(values)
+        .where(target)
+        .returning({
+          id: dish.id,
+          boardId: dish.boardId,
+          title: dish.title,
+          imageUrl: dish.imageUrl,
+          placeholder: dish.placeholder,
+          imageFocusX: dish.imageFocusX,
+          imageFocusY: dish.imageFocusY,
+          sourceLink: dish.sourceLink,
+          sourceKind: dish.sourceKind,
+          creator: dish.creator,
+        }),
+      dishEvent('dish_edited', userId, sql`jsonb_build_object('fields', ${changedFields()})`),
+      {
+        earlier: sql`select ${dish.id}, ${dish.title}, ${dish.imageUrl}, ${dish.placeholder}, ${dish.imageFocusX}, ${dish.imageFocusY}, ${dish.sourceLink}, ${dish.sourceKind}, ${dish.creator} from ${dish} where ${target}`,
+        where: sql`${changedFields()} <> '[]'::jsonb`,
+      },
+    )
+    if (rows.length === 0) return null
   }
 
   return findDish(target)
+}
+
+// The fields a Dish edit changed, as the event log names them (DishField),
+// read from the Dish `changed` by its edit and `earlier` before it.
+function changedFields(): SQL {
+  return sql`to_jsonb(array(select f from unnest(array[
+    case when changed.title is distinct from earlier.title then 'title' end,
+    case when changed.image_url is distinct from earlier.image_url or changed.placeholder is distinct from earlier.placeholder then 'image' end,
+    case when changed.source_link is distinct from earlier.source_link or changed.source_kind is distinct from earlier.source_kind then 'source' end,
+    case when changed.creator is distinct from earlier.creator then 'creator' end,
+    case when changed.image_focus_x is distinct from earlier.image_focus_x or changed.image_focus_y is distinct from earlier.image_focus_y then 'focus' end
+  ]::text[]) as f where f is not null))`
 }
 
 // The focus point an image is stored with: the one given, else the centre.

@@ -7,7 +7,7 @@ import { board, inviteMiss, membership } from '../db/schema'
 import { slugOf } from './addresses'
 import { boardMembers, type BoardMember, type BoardNameAndEmoji } from './boards'
 import { accessOn } from './board-access'
-import { boardEvent, withEvents } from './events'
+import { withEvents } from './events'
 
 // Invite Links (CONTEXT.md): /invite/<Board slug>-<secret> lets a signed-in
 // user on the Allowlist become a Member of the Board (shared/invite.ts).
@@ -99,12 +99,18 @@ export async function resetInvite(boardId: string, userId: string): Promise<{ in
   const [found] = await accessOn(boardId, userId)
   if (!found) return null
   if (!found.isOwner) return 'forbidden'
-  const [updated] = await db
-    .update(board)
-    .set({ inviteToken: sql`default` })
-    .where(eq(board.id, boardId))
-    .returning({ inviteToken: board.inviteToken })
-  return updated ?? null
+  const { rows } = await withEvents(
+    db,
+    db
+      .update(board)
+      .set({ inviteToken: sql`default` })
+      .where(eq(board.id, boardId))
+      .returning({ id: board.id, inviteToken: board.inviteToken }),
+    { kind: 'invite_link_reset', board: sql`changed.id`, user: userId },
+  )
+  // withEvents answers the rows as the database names their columns.
+  const [updated] = rows as { invite_token: string }[]
+  return updated ? { inviteToken: updated.invite_token } : null
 }
 
 // ---------------------------------------------------------------------------
