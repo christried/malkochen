@@ -68,6 +68,8 @@ export const it: Strings = {
   legal: {
     impressum: 'Note legali',
     privacy: 'Privacy',
+    languages: 'Lingue',
+    bindingVersion: 'Leggi la versione tedesca vincolante',
   },
   changelog: {
     title: 'Novità',
