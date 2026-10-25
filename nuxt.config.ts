@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
 import { offlinePagePolicy } from './server/offline-page-policy'
-import { isStaging } from './shared/staging'
+import { isStaging, stagingHeaders } from './shared/staging'
 
 const EVERYWHERE = {
   'X-Content-Type-Options': 'nosniff',
@@ -10,6 +10,9 @@ const EVERYWHERE = {
   // way, X-Frame-Options the one older browsers know.
   'X-Frame-Options': 'DENY',
   'Content-Security-Policy': 'frame-ancestors \'none\'',
+  // Staging only (#414): search engines stay away. Here, not in a Nitro hook,
+  // because Vercel's CDN serves public/ files without passing through Nitro.
+  ...stagingHeaders(process.env.VERCEL_ENV),
 }
 
 // The Offline page's headers: every answer's, with a policy of its own in
@@ -105,8 +108,8 @@ export default defineNuxtConfig({
       // The browser tests' dev server (tests/e2e/run.ts). Only there may a
       // test page shorten the Board's poll (composables/useBoardSync.ts).
       e2e: Boolean(process.env.MALKOCHEN_E2E),
-      // Staging (#414, shared/staging.ts): the page's label. Set at build
-      // time from VERCEL_ENV, as the server reads it at runtime.
+      // Staging (#414, shared/staging.ts): whether the page shows the Staging
+      // label. Set at build time from VERCEL_ENV.
       staging: isStaging(process.env.VERCEL_ENV),
     },
   },

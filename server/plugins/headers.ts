@@ -1,7 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { VIDEO_PLAYER_ORIGINS } from '../../shared/video-embed'
 import { CSP_REPORT_PATH } from '../utils/csp-report'
-import { isStaging } from '../../shared/staging'
 
 // The Content Security Policy of a page, naming the nonce its inline scripts
 // carry. default-src covers what isn't listed: the fonts, the service worker
@@ -44,12 +43,6 @@ const REPORTING_ENDPOINT = 'csp'
 // What a rendered page's answer carries beyond nuxt.config.ts's routeRules
 // (#192).
 export default defineNitroPlugin((nitro) => {
-  // Staging (#414) asks search engines to stay away from every answer: pages,
-  // API answers and files alike. Production's carry no such header.
-  nitro.hooks.hook('beforeResponse', (event) => {
-    if (isStaging(process.env.VERCEL_ENV)) setResponseHeader(event, 'X-Robots-Tag', 'noindex')
-  })
-
   // Enforced since #344, after the report-only policy (#247) had run clean in
   // production; the browser still reports what it blocks ("[csp-report]" in
   // Vercel's logs). public/offline.html is a static file and has its own

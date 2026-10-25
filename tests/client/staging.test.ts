@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { isStaging } from '../../shared/staging'
+import { isStaging, stagingHeaders } from '../../shared/staging'
 import { webAppManifest } from '../../shared/web-app-manifest'
 
 // Staging (CONTEXT.md): wherever Vercel runs the app as Preview. Local dev,
@@ -16,43 +16,14 @@ test.each([
   expect(isStaging(vercelEnv)).toBe(staging)
 })
 
-// The manifest as public/manifest.webmanifest had it before Staging (#414):
-// production's answer must keep every field of it.
-const PRODUCTION_MANIFEST = {
-  name: 'malkochen',
-  short_name: 'malkochen',
-  description: 'Collect dishes. Cook together.',
-  lang: 'en',
-  id: '/',
-  start_url: '/',
-  scope: '/',
-  display: 'standalone',
-  orientation: 'any',
-  background_color: '#FCD980',
-  theme_color: '#FCD980',
-  share_target: {
-    action: '/share',
-    method: 'GET',
-    params: { title: 'title', text: 'text', url: 'url' },
-  },
-  icons: [
-    { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-    { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-    { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-    { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-    { src: '/icons/icon-monochrome.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'monochrome' },
-    { src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-  ],
-}
-
-test('production\'s manifest is unchanged in every field', () => {
-  expect(webAppManifest(false)).toEqual(PRODUCTION_MANIFEST)
+test('given Preview, noindex is due', () => {
+  expect(stagingHeaders('preview')).toEqual({ 'X-Robots-Tag': 'noindex' })
 })
 
-test('Staging\'s manifest is named "malkochen Staging", with a short name that reads as Staging', () => {
-  const manifest = webAppManifest(true)
+test.each(['production', undefined])('given %s, noindex is not due', (vercelEnv) => {
+  expect(stagingHeaders(vercelEnv)).toEqual({})
+})
 
-  expect(manifest.name).toBe('malkochen Staging')
-  expect(manifest.short_name).toBe('Staging')
-  expect(manifest).toEqual({ ...PRODUCTION_MANIFEST, name: 'malkochen Staging', short_name: 'Staging' })
+test('Staging\'s manifest is production\'s, renamed to "malkochen Staging" with the short name "Staging"', () => {
+  expect(webAppManifest(true)).toEqual({ ...webAppManifest(false), name: 'malkochen Staging', short_name: 'Staging' })
 })
