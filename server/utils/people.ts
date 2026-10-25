@@ -39,6 +39,9 @@ export interface Me {
   isOperator: boolean
   version: string
   newVersion: boolean
+  // The last Version they opened the Changelog in or closed its popup on;
+  // null for none. The Changelog Popup lists the Versions after it (#406).
+  versionSeen: string | null
 }
 
 interface Signed {
@@ -83,6 +86,7 @@ export function meOf(signedIn: Signed): Me {
     isOperator: isOperator(email),
     version: APP_VERSION,
     newVersion: newerVersion(APP_VERSION, versionSeen ?? null),
+    versionSeen: versionSeen ?? null,
   }
 }
 

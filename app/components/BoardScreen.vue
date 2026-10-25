@@ -5,6 +5,7 @@ import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
+import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
 import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
@@ -40,6 +41,7 @@ const newInHistoryDishIds = computed(() => new Set(board.value?.newInHistoryDish
 // You, for your photo in the header, which opens the user menu. Phones have
 // no room for it there.
 const { data: me } = await useMe()
+const splashUp = useSplashUp()
 
 useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
 
@@ -392,6 +394,37 @@ const boardTour = useTemplateRef<{
   heldDishId: string | null
   modal: boolean
 }>('boardTour')
+// Nothing open over the Board, no search, no selection, no drag.
+const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish)
+
+// The Changelog Popup (ChangelogPopup, #406), once per visit: the Version is
+// newer than the one the user saw, and no Tour runs in this visit (due, or
+// started since the page loaded, which switching Boards keeps). Like the Tour
+// it waits for the Board to be idle, the splash gone and the cards risen
+// in, and not shown when the Board opened to add something shared. Closing
+// it marks the Version as seen, so it never comes back. In the browser tests
+// it never shows by itself, unless the test page turned that on
+// (window.e2eChangelogPopup). The popup loads lazily, with the Changelog
+// files, and says so with `empty` if it finds nothing to list: then it stays
+// away for this visit.
+const tourThisVisit = useState('tour-this-visit', () => false)
+const popupEmpty = ref(false)
+const popupSettled = ref(false)
+const popupWanted = computed(() => !!me.value?.newVersion && !popupEmpty.value && !tourThisVisit.value
+  && (me.value.tourSeen ?? 0) >= TOUR_VERSION && !openedToAdd.value)
+let popupTimer: ReturnType<typeof setTimeout> | undefined
+onMounted(() => {
+  if (useRuntimeConfig().public.e2e && !(window as { e2eChangelogPopup?: boolean }).e2eChangelogPopup) return
+  watch(() => popupWanted.value && boardIdle.value && !splashUp.value, (ready) => {
+    if (popupSettled.value) return
+    clearTimeout(popupTimer)
+    if (ready) popupTimer = setTimeout(() => (popupSettled.value = true), SETTLE_MS)
+  }, { immediate: true })
+})
+onBeforeUnmount(() => clearTimeout(popupTimer))
+// Settled once, it stays until closed: its own modal makes the Board busy.
+const popupDue = computed(() => popupSettled.value && popupWanted.value)
+
 async function startTour() {
   showingSettings.value = false
   await nextTick()
@@ -1143,11 +1176,16 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       ref="boardTour"
       v-model:adding="adding"
       :board="board"
-      :idle="!anyModalOpen && !searchOpen && !selecting && !dragging && !route.params.dish"
+      :idle="boardIdle"
       :auto-start="!openedToAdd"
       :menu="menuDish && { dishId: menuDish.id, choosing: choosingColumn }"
       @close-menu="menuDish = null"
+      @started="tourThisVisit = true"
       @ended="showNotice(t.tour.ended)"
+    />
+    <LazyChangelogPopup
+      v-if="popupDue"
+      @empty="popupEmpty = true"
     />
 
     <BoardCreatedCelebration
