@@ -2,6 +2,28 @@
 
 How to run, test and deploy malkochen. Domain language lives in [`CONTEXT.md`](../CONTEXT.md); the design handoff in [`docs/design handoff/`](design%20handoff/README.md).
 
+## Where the app runs
+
+malkochen runs in three places. Each has its own database, images, accounts and Push keys, and a change reaches them in this order: local, Staging, production.
+
+- **Local**: `pnpm dev` on your PC, against a local Postgres. The test suites run here before a PR, and again in CI.
+- **Staging**: the Operator's copy at `https://staging.malkochen.christried.me`, deployed from the `staging` branch. Its database is a copy of production's data, so its writes stay in that copy. It is behind the Vercel login: the agent reaches it through the Vercel MCP (`web_fetch_vercel_url`) or a Chrome that is signed in to Vercel, and a phone signs in to Vercel in Chrome first. Staging installs as "malkochen Staging", and every page shows a small "Staging" label.
+- **Production**: deployed from `main`. Users only get what a Release has brought there.
+
+## Working a ticket, a Release and a hotfix
+
+**A ticket.** Branch from `staging`, the default branch, and open a PR into `staging` with `Closes #n`. Merge it with a merge commit once CI is green. No approval is needed, and nobody bypasses the rules. Then check that the Staging deploy is READY with its migration applied (the build log says "Migrations applied."), and try the change in Chrome on Staging, signed in as the Operator. Device checks (`ready-for-human`) happen on Staging, on the phone. A merged ticket is Staged: it is on Staging, not yet in production.
+
+**A Release**, when the Operator says "Release". The Changelog files and `package.json` are changed as `docs/agents/changelog.md` describes.
+
+1. A PR into `staging` dates everything under `## [Unreleased]` as one Version: the newest Version plus one (a minor only after the Operator's yes). Merge it on green CI. Then check that the Staging deploy is READY with its migration applied, and that on Staging the new Version and its Changelog Popup show: the agent sees them in Chrome or through the Vercel MCP `web_fetch_vercel_url`, since Staging is behind the Vercel login. Only after that check:
+2. A PR `staging` → `main` titled "Release x.y.z", merged on green CI with a merge commit.
+3. Tag the merge commit on `main` as `vx.y.z` and push the tag. Check that the production deploy is READY with its migration applied, then smoke-test production.
+
+**A hotfix.** A fix that can't wait is a Release of its own. Branch from `main` and open a PR into `main` with a patch Version: `main`'s newest Version plus one, dated, in all three Changelog files, with the link references and `package.json`. Merge it on green CI, check the production deploy is READY with its migration applied, and tag the merge commit `vx.y.z`. The same day, open a PR `main` → `staging`. Its Changelog files will conflict: keep the lines under `[Unreleased]` above the hotfix's Version, then run `pnpm vitest run tests/client/changelog.test.ts`.
+
+**Staging's daily jobs** don't run: Vercel runs crons in production only. Never start the Email Digest (`/api/cron/email-digest`) on Staging: its copy holds real addresses, so it would mail real users.
+
 ## Local setup
 
 Prerequisites: Node 24, pnpm, and a local PostgreSQL 14+ (tests always run
@@ -22,22 +44,24 @@ variables are validated at startup by `server/env.ts` — add new ones there too
 
 | Variable | Purpose | Where it is set |
 |---|---|---|
-| `DATABASE_URL` | Postgres connection string. Neon in deployed environments (neon-http driver); a `localhost` URL switches to node-postgres (`server/db/index.ts`). | `.env` locally; Vercel **production and development**, each with its own Neon database or branch. |
-| `BETTER_AUTH_SECRET` | Signs session cookies. At least 32 random characters. | `.env` locally; Vercel **production and development**, a different value each. |
-| `BETTER_AUTH_URL` | The app's public origin. Google redirects to `<this>/api/auth/callback/google`, which must be an authorised redirect URI of the Google OAuth client. | `.env` locally (`http://localhost:3000`); Vercel **production and development**, each with its own origin. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client for sign-in. | `.env` locally; Vercel **production and development**. |
-| `ALLOWLIST_EMAILS` | The Allowlist: comma-separated emails allowed to sign in at all. | `.env` locally; Vercel **production and development**. |
-| `OPERATOR_EMAIL` | The Operator (`CONTEXT.md`): the one email address the Admin Page (`/admin`, `GET /api/admin`) is for. Everyone else gets "not found" there and no Admin link in Your Settings. Empty: nobody has it. | Vercel **production** (the Operator's own address). Optional in `.env`. The test runners set their own. |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token: the Image Store copies each Dish's Source image there on save, and keeps Members' own photos ("Eigenes Foto") there. Required in Vercel production and preview (the server refuses to start without it). Empty locally stores images on disk under `.data/images`, served at `/images/…`. | Vercel **production and development**, set by connecting the project's Blob store. Optional in `.env`. Never in CI (tests store on disk). |
+| `DATABASE_URL` | Postgres connection string. Neon in deployed environments (neon-http driver); a `localhost` URL switches to node-postgres (`server/db/index.ts`). | `.env` locally; Vercel **production and development**, each with its own Neon database or branch. Staging: its own Neon database, holding a copy of production's data. |
+| `BETTER_AUTH_SECRET` | Signs session cookies. At least 32 random characters. | `.env` locally; Vercel **production and development**, a different value each. Staging: a value of its own. |
+| `BETTER_AUTH_URL` | The app's public origin. Google redirects to `<this>/api/auth/callback/google`, which must be an authorised redirect URI of the Google OAuth client. | `.env` locally (`http://localhost:3000`); Vercel **production and development**, each with its own origin. Staging: `https://staging.malkochen.christried.me`. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth client for sign-in. | `.env` locally; Vercel **production and development**. Staging: production's OAuth client, with Staging's callback added as a redirect URI. |
+| `ALLOWLIST_EMAILS` | The Allowlist: comma-separated emails allowed to sign in at all. | `.env` locally; Vercel **production and development**. Staging: only the Operator's address; plus-aliases are added when a test needs a second Member. |
+| `OPERATOR_EMAIL` | The Operator (`CONTEXT.md`): the one email address the Admin Page (`/admin`, `GET /api/admin`) is for. Everyone else gets "not found" there and no Admin link in Your Settings. Empty: nobody has it. | Vercel **production** and Staging (the Operator's own address). Optional in `.env`. The test runners set their own. |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token: the Image Store copies each Dish's Source image there on save, and keeps Members' own photos ("Eigenes Foto") there. Required in Vercel production and preview (the server refuses to start without it). Empty locally stores images on disk under `.data/images`, served at `/images/…`. | Vercel **production and development**, set by connecting the project's Blob store. Staging: a store of its own, `malkochen-images-staging`, connected to Preview on `staging`; production's store is on Production only. Optional in `.env`. Never in CI (tests store on disk). |
 | `IMAGE_DIR` | Where images are stored on disk without a Blob token. Defaults to `.data/images`. | Optional in `.env`. The API tests set their own (`tests/api/server-env.ts`), so their cleanup job never touches local dev's images. Never in Vercel. |
-| `CRON_SECRET` | Vercel Cron sends it as a bearer token to the daily jobs (the cleanup, `/api/cron/cleanup`, and the Email Digest, `/api/cron/email-digest`, both scheduled in `vercel.json`), which refuse every request without it. At least 16 random characters. Empty: the jobs never run. | Vercel **production** only. The API tests set their own. |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Push notifications: the VAPID key pair the server signs its pushes with (base64url, as `npx web-push generate-vapid-keys` prints them) and a contact for the push services (`mailto:you@example.com` or an `https:` URL). The public key also reaches the browser, which subscribes with it (`runtimeConfig.public.vapidPublicKey`, read at build time). All three or none: without them the settings offer no push notifications. With `AUTH_DEV_BYPASS=1` a subscription may point at any push service, so the tests can stand one in. | Vercel **production and development**, the same key pair in both or one each; a new key pair makes every device turn push on again. Optional in `.env`. The test runners set test keys themselves. |
-| `RESEND_API_KEY` | The Email Digest: the [Resend](https://resend.com) API key the daily email (`/api/cron/email-digest`, 16:00 UTC in `vercel.json`) is sent with, from `malkochen@christried.me` (christried.me must be a verified sending domain at Resend). Whether it is set also reaches the browser (`runtimeConfig.public.emailDigest`, read at build time); the key itself never does. Also sends the sign-in code for email sign-in (#345; `runtimeConfig.public.emailSignIn`). Empty: the settings offer no digest, the sign-in page offers Google only, and nothing is sent. | Vercel **production and development**. Optional in `.env`. The test runners set a dummy key and send to a stand-in. |
+| `CRON_SECRET` | Vercel Cron sends it as a bearer token to the daily jobs (the cleanup, `/api/cron/cleanup`, and the Email Digest, `/api/cron/email-digest`, both scheduled in `vercel.json`), which refuse every request without it. At least 16 random characters. Empty: the jobs never run. | Vercel **production** and Staging, a value each. Vercel runs crons in production only, so Staging's jobs don't run. The API tests set their own. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Push notifications: the VAPID key pair the server signs its pushes with (base64url, as `npx web-push generate-vapid-keys` prints them) and a contact for the push services (`mailto:you@example.com` or an `https:` URL). The public key also reaches the browser, which subscribes with it (`runtimeConfig.public.vapidPublicKey`, read at build time). All three or none: without them the settings offer no push notifications. With `AUTH_DEV_BYPASS=1` a subscription may point at any push service, so the tests can stand one in. | Vercel **production and development**, the same key pair in both or one each; a new key pair makes every device turn push on again. Staging: a key pair of its own. The copy's subscriptions were made with production's keys, so only subscriptions made on Staging get Staging's pushes. Optional in `.env`. The test runners set test keys themselves. |
+| `RESEND_API_KEY` | The Email Digest: the [Resend](https://resend.com) API key the daily email (`/api/cron/email-digest`, 16:00 UTC in `vercel.json`) is sent with, from `malkochen@christried.me` (christried.me must be a verified sending domain at Resend). Whether it is set also reaches the browser (`runtimeConfig.public.emailDigest`, read at build time); the key itself never does. Also sends the sign-in code for email sign-in (#345; `runtimeConfig.public.emailSignIn`). Empty: the settings offer no digest, the sign-in page offers Google only, and nothing is sent. | Vercel **production and development**. Staging: a key of its own, from the same sending domain. Never run the Email Digest on Staging by hand: its copy holds real addresses. Optional in `.env`. The test runners set a dummy key and send to a stand-in. |
 | `RESEND_BASE_URL` | Where Resend's API is instead of `https://api.resend.com`: the test runners point it at a stand-in (`tests/support/resend-service.ts`) that keeps what is sent. The server refuses to start with it on Vercel production or preview. | Tests only. **Never** in Vercel. |
 | `MALKOCHEN_VERSION` | The Version the server runs as (`server/version.ts`) in place of `package.json`'s, so the tests see the same one whatever the newest Version is. The server refuses to start with it on Vercel production or preview. | Tests only: the test runners set it themselves. **Never** in Vercel. |
 | `AUTH_DEV_BYPASS` | `1` enables `POST /api/auth/dev/sign-in` (below). The server refuses to start with it on Vercel production or preview. | `.env` locally, optional. The test runners set it themselves. **Never** in Vercel. |
 | `VERCEL_ENV` | Set by Vercel itself; `server/env.ts` reads it only to refuse `AUTH_DEV_BYPASS` and require `BLOB_READ_WRITE_TOKEN` in production and preview. | Never set by hand. |
 | `TEST_DATABASE_ADMIN_URL` | Superuser URL of the **local** Postgres. `pnpm test` and `pnpm test:e2e` use it to create and drop a throwaway database per run. | `.env` locally; `env:` of `.github/workflows/ci.yml` (points at the job's Postgres service, no secret). Never in Vercel. |
+
+Staging's variables are set for Preview, on the branch `staging`. Never set there: `AUTH_DEV_BYPASS`, `RESEND_BASE_URL` and `MALKOCHEN_VERSION` (the server refuses to start with them on Preview anyway).
 
 The test runners (`tests/api/global-setup.ts`, `tests/e2e/run.ts`) override
 all auth variables, the VAPID keys and the Resend key with fixed test values
@@ -68,9 +92,7 @@ pnpm typecheck
 pnpm lint
 ```
 
-CI (`.github/workflows/ci.yml`) runs all four on every PR (not on the merge to
-`main`), on GitHub-hosted runners against a Postgres service container: lint,
-typecheck and Vitest in one job, the browser tests in eight shards beside it.
+CI (`.github/workflows/ci.yml`) runs on every PR, into `staging` and into `main`, on GitHub-hosted runners against a Postgres service container. Its check **CI** is the one the rulesets require. A PR that changes only docs and Markdown skips lint, typecheck, Vitest and the browser tests, and CI still reports at once. Otherwise: lint, typecheck and Vitest in one job, the browser tests in eight shards beside it. The merge itself starts no second run.
 A browser test whose first try fails leaves a Playwright trace in
 `test-results/`, even if the retry passes; CI uploads them as the
 `e2e-traces-<shard>` artifact (14 days). Open one with
@@ -93,13 +115,9 @@ pnpm db:migrate    # applies pending migrations to DATABASE_URL
 `db:migrate` uses the same neon-http driver as the app for Neon URLs (not
 `drizzle-kit migrate`, whose WebSocket transport fails in plain Node).
 
-Vercel deploys `main` only: `vercel.json` turns off preview deployments for
-every other branch, and Vercel preview has no `DATABASE_URL`. Test changes
-locally, then on production after the merge.
+Vercel deploys two branches: `main` (production) and `staging` (Staging, the Preview environment scoped to that branch). `vercel.json` turns off deployments for every other branch. Test changes locally, then on Staging after the merge into `staging`, then on production after the Release.
 
-The production database migrates itself: `vercel.json` makes every Vercel
-build run `pnpm db:migrate` before `pnpm build`, against production's
-`DATABASE_URL`. A failing migration fails the build, so the old deployment stays
+Every Vercel build, production's and Staging's, runs `pnpm db:migrate` before `pnpm build`, against that environment's `DATABASE_URL`, so a migration reaches Staging's copy before its build. A failing migration fails the build, so the old deployment stays
 live. Keep migrations additive, since the previous deployment keeps running
 on the migrated schema until the new one is promoted.
 

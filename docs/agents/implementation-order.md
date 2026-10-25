@@ -7,9 +7,9 @@ The order to implement the open tickets in. When `/implement` is called without 
 1. Go down the list below and take the **first ticket that is still open** (`gh issue view <n> --json state`).
 2. Check its blockers (the `## Blocked by` section of the issue). If one is still open, skip to the next ticket on the list and tell the user which ticket you skipped and why.
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
-4. Implement **one** ticket per session, on its own branch, through a PR.
+4. Implement **one** ticket per session: a branch from `staging`, a PR into `staging`.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -364,7 +364,7 @@ From the grilling session on 2026-10-24 (`docs/reviews/review4.md`, `CONTEXT.md`
 | #407 | Notification Prompts | After #406. Migration |
 | #408 | Mail avatar in Gmail | `ready-for-human`: skip, the user does it |
 | #409 | Datenschutz for review 4 | The user OKs the wording before merge |
-| #410 | Changelog entry and Version for this spec | 1.1.0 (agreed). Blocked by every other ticket of #388, #408 too |
+| #410 | Changelog entry for this spec | No Version: the entry goes under `[Unreleased]`, and the Release dates it 1.1.0 (agreed). Blocked by every other ticket of #388, #408 too |
 
 ### Phase 21: Snackbert (#421)
 
