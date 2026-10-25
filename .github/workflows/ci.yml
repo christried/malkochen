@@ -1,11 +1,11 @@
 name: CI
 # Runs on PRs only, on GitHub-hosted runners (free: the repo is public). The PR
 # run already tested the branch merged with main, so the merge starts no second
-# run. Docs and Markdown alone can't break the app, so they start no run. main
-# has no required checks, so a skipped run blocks nothing.
+# run. Every PR gets a run, so the one check every ruleset requires (CI, the
+# last job) always reports. Docs and Markdown alone can't break the app: the
+# `changes` job finds them, and the suites are then skipped, while CI passes.
 on:
   pull_request:
-    paths-ignore: ['docs/**', '**/*.md']
 
 # A new push to a PR makes the run for its previous push pointless.
 concurrency:
@@ -18,7 +18,25 @@ env:
   TEST_DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
 
 jobs:
+  # Whether the PR changes anything outside the docs and Markdown. The suites
+  # below run only when it does.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+
   check:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -45,6 +63,8 @@ jobs:
   # run next to `check`, by measured time (tests/e2e/shards.ts). Spec files
   # run one after another within a shard, each shard on its own database.
   e2e:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -95,3 +115,35 @@ jobs:
           # A re-run job uploads under the same name.
           overwrite: true
           retention-days: 14
+
+  # The one check the rulesets require (#413): green when every suite it waits
+  # for succeeded, or when the PR is docs-only and they were skipped. Red when
+  # change detection failed, or when a suite failed or was cancelled.
+  ci:
+    name: CI
+    needs: [changes, check, e2e]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    env:
+      CHANGES: ${{ needs.changes.result }}
+      CODE: ${{ needs.changes.outputs.code }}
+      CHECK: ${{ needs.check.result }}
+      E2E: ${{ needs.e2e.result }}
+    steps:
+      - name: Verdict
+        run: |
+          if [ "$CHANGES" != "success" ]; then
+            echo "Change detection ended $CHANGES."
+            exit 1
+          fi
+          if [ "$CODE" != "true" ]; then
+            echo "Docs only: the suites were skipped."
+            exit 0
+          fi
+          for result in "$CHECK" "$E2E"; do
+            if [ "$result" != "success" ]; then
+              echo "A suite ended $result."
+              exit 1
+            fi
+          done
+          echo "Every suite passed."
