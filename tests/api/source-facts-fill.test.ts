@@ -48,8 +48,10 @@ async function addDishes(caller: Caller, links: string[], { aged = true } = {}):
     expect(res.status).toBe(201)
     ids.push((await res.json() as { id: string }).id)
   }
-  const ageSql = aged ? `, created_at = now() - interval '10 years'` : ''
-  await query(`update dish set playable_video = null, caption = null${ageSql} where id = any($1)`, [ids])
+  // The cutoff is an hour past the migration (its SQL says why), so "after it"
+  // is a day ahead of now.
+  const createdAt = aged ? `now() - interval '10 years'` : `now() + interval '1 day'`
+  await query(`update dish set playable_video = null, caption = null, created_at = ${createdAt} where id = any($1)`, [ids])
   return ids
 }
 
