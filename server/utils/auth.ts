@@ -202,6 +202,10 @@ export const auth = betterAuth({
       // app's own as seen (#406): the Changelog Popup is for what changed
       // since they joined.
       versionSeen: { type: 'string', required: false, input: false, defaultValue: APP_VERSION || undefined },
+      // When each Notification Prompt was last shown (#407): only
+      // PUT /api/me/prompt sets them.
+      pushPromptedAt: { type: 'date', required: false, input: false },
+      digestPromptedAt: { type: 'date', required: false, input: false },
     },
     // Runs on user creation (the sign-up gate) and, for Google, on every
     // repeat sign-in too (the sign-in gate). Gets what Google says about the

@@ -11,6 +11,9 @@ import { dish, eventLog } from '../db/schema'
 // transaction as its change, so there is an event exactly when the change
 // went through. Never content: only ids, the kind and these details.
 
+export type PromptKind = 'push' | 'digest'
+export type PromptAnswer = 'on' | 'later'
+
 export type EventKind =
   | 'board_created'
   // "Board löschen" (CONTEXT.md: Archived Board).
@@ -87,6 +90,10 @@ export type EventKind =
   | 'push_sent'
   // An Email Digest sent to a Member.
   | 'digest_sent'
+  // A Notification Prompt (CONTEXT.md) shown to a user, and how they answered
+  // it: events of no Board.
+  | 'prompt_shown'
+  | 'prompt_answered'
   // Someone opened a Dish Link page (CONTEXT.md: Dish Link), signed in or not.
   | 'dish_link_opened'
 
@@ -139,6 +146,10 @@ export type EventDetails =
   | { permission: Permission, on: boolean }
   // ownership_handed_over: to whom.
   | { member: string }
+  // prompt_shown: which prompt; prompt_answered: and "Einschalten" ('on') or
+  // "Später" ('later').
+  | { which: PromptKind }
+  | { which: PromptKind, answer: PromptAnswer }
   // dish_link_opened: whether the viewer was signed in. The event's user
   // is null when they weren't, but also once a deleted account is gone, so
   // only this tells the two apart.

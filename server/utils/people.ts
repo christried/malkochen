@@ -6,7 +6,7 @@ import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { APP_VERSION } from '../version'
 import { user } from '../db/schema'
-import { detailsOf, withEvents } from './events'
+import { detailsOf, recordEvents, withEvents, type PromptAnswer, type PromptKind } from './events'
 import { isOperator } from './operator'
 
 // A person's picture wherever the app shows them (the badges of who added or
@@ -43,6 +43,11 @@ export interface Me {
   // The last Version they opened the Changelog in or closed its popup on;
   // null for none. The Changelog Popup lists the Versions after it (#406).
   versionSeen: string | null
+  // When they signed up, and when each Notification Prompt was last shown
+  // to them (ISO; null for never): the Board decides which one is due (#407).
+  signedUpAt: string
+  pushPromptedAt: string | null
+  digestPromptedAt: string | null
 }
 
 interface Signed {
@@ -55,6 +60,10 @@ interface Signed {
   tourSeen?: number | null
   language?: string | null
   versionSeen?: string | null
+  // Dates, or ISO strings if a cached session carries them as text.
+  createdAt: Date | string
+  pushPromptedAt?: Date | string | null
+  digestPromptedAt?: Date | string | null
 }
 
 // The language the server writes to someone in when they aren't there to
@@ -68,13 +77,13 @@ export function recipientLanguage({ language, browserLanguage }: { language: str
 // The signed-in user as others see them on what they just added: the same
 // name and picture as usernameOf and pictureOf select. Adding takes a
 // Username (server/middleware/auth.ts), so there always is one.
-export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt' | 'tourSeen' | 'language' | 'versionSeen'>): { id: string, name: string, image: string | null } {
+export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt' | 'tourSeen' | 'language' | 'versionSeen' | 'createdAt' | 'pushPromptedAt' | 'digestPromptedAt'>): { id: string, name: string, image: string | null } {
   return { id, name: username ?? '', image: ownPicture ?? image ?? null }
 }
 
 // /api/me's answer for the signed-in user, from their session.
 export function meOf(signedIn: Signed): Me {
-  const { id, email, image, ownPicture, username, usernameConfirmedAt, tourSeen, language, versionSeen } = signedIn
+  const { id, email, image, ownPicture, username, usernameConfirmedAt, tourSeen, language, versionSeen, createdAt, pushPromptedAt, digestPromptedAt } = signedIn
   return {
     id,
     name: username ?? '',
@@ -88,10 +97,13 @@ export function meOf(signedIn: Signed): Me {
     version: APP_VERSION,
     newVersion: newerVersion(APP_VERSION, versionSeen ?? null),
     versionSeen: versionSeen ?? null,
+    signedUpAt: new Date(createdAt).toISOString(),
+    pushPromptedAt: pushPromptedAt ? new Date(pushPromptedAt).toISOString() : null,
+    digestPromptedAt: digestPromptedAt ? new Date(digestPromptedAt).toISOString() : null,
   }
 }
 
-const meColumns = { id: user.id, email: user.email, image: user.image, ownPicture: user.ownPicture, username: user.username, usernameConfirmedAt: user.usernameConfirmedAt, tourSeen: user.tourSeen, language: user.language, versionSeen: user.versionSeen }
+const meColumns = { id: user.id, email: user.email, image: user.image, ownPicture: user.ownPicture, username: user.username, usernameConfirmedAt: user.usernameConfirmedAt, tourSeen: user.tourSeen, language: user.language, versionSeen: user.versionSeen, createdAt: user.createdAt, pushPromptedAt: user.pushPromptedAt, digestPromptedAt: user.digestPromptedAt }
 
 // Sets (or, with null, removes) the user's own Profile Picture. The event
 // log records it only when the picture differs from before (#399).
@@ -123,6 +135,30 @@ export async function recordTourSeen(userId: string, version: number): Promise<M
 export async function recordVersionSeen(userId: string): Promise<Me | null> {
   const [updated] = await db.update(user).set({ versionSeen: APP_VERSION || null }).where(eq(user.id, userId)).returning(meColumns)
   return updated ? meOf(updated) : null
+}
+
+// A Notification Prompt (CONTEXT.md, #407) was shown to the user: keeps the
+// time, whatever the answer will be, and records prompt_shown (an event of
+// no Board).
+export async function recordPromptShown(userId: string, which: PromptKind): Promise<Me | null> {
+  const column = which === 'push' ? { pushPromptedAt: sql`now()` } : { digestPromptedAt: sql`now()` }
+  const rows = await withEvents(
+    db,
+    db.update(user).set(column).where(eq(user.id, userId)).returning({ id: user.id }),
+    { kind: 'prompt_shown', board: sql`null`, user: userId, details: detailsOf({ which }) },
+  )
+  if (rows.rows.length === 0) return null
+  return meOfUser(userId)
+}
+
+// How the user answered a Notification Prompt, recorded as prompt_answered.
+export async function recordPromptAnswered(userId: string, which: PromptKind, answer: PromptAnswer): Promise<Me | null> {
+  await recordEvents(
+    db,
+    { kind: 'prompt_answered', board: sql`null`, user: userId, details: detailsOf({ which, answer }) },
+    sql`from ${user} changed where changed.id = ${userId}`,
+  )
+  return meOfUser(userId)
 }
 
 // Remembers the language the user's browser asked for last (shared/language.ts

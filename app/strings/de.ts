@@ -717,6 +717,18 @@ export const de = {
     dark: 'Dunkel',
     system: 'System',
   },
+  // Notification Prompts (#407): Topfbert's card at the bottom of the Board,
+  // offering Push Notifications or the Email Digest.
+  prompt: {
+    pushTitle: 'Benachrichtigungen einschalten?',
+    pushText: 'Dann sagt dir dein Handy Bescheid, wenn jemand auf deinen Boards ein Gericht hinzufügt, kommentiert oder einen Daumen gibt.',
+    digestTitle: 'Die tägliche E-Mail einschalten?',
+    digestText: 'Abends eine Mail mit dem, was auf deinen Boards neu ist, nur wenn es etwas gibt. Abschalten kannst du sie jederzeit in deinen Einstellungen.',
+    turnOn: 'Einschalten',
+    later: 'Später',
+    pushOn: 'Benachrichtigungen sind an.',
+    digestOn: 'Die tägliche E-Mail ist an.',
+  },
   // Push notifications (#219): turned on per device in your settings, sent
   // when someone else adds a Dish to one of your Boards.
   push: {

@@ -621,6 +621,16 @@ export const it: Strings = {
     dark: 'Scuro',
     system: 'Sistema',
   },
+  prompt: {
+    pushTitle: 'Attivare le notifiche?',
+    pushText: 'Il telefono ti avvisa quando qualcuno aggiunge un piatto, commenta o mette un pollice nelle tue bacheche.',
+    digestTitle: 'Attivare l’email giornaliera?',
+    digestText: 'Un’email la sera con le novità delle tue bacheche, solo quando c’è qualcosa. Puoi disattivarla quando vuoi nelle impostazioni.',
+    turnOn: 'Attiva',
+    later: 'Più tardi',
+    pushOn: 'Le notifiche sono attive.',
+    digestOn: 'L’email giornaliera è attiva.',
+  },
   push: {
     heading: 'Notifiche',
     toggle: 'Notifiche push',

@@ -54,6 +54,11 @@ export const user = pgTable('user', {
   // none. Older than the app's, Your Settings marks "Was ist neu" as new.
   // Only PUT /api/me/version-seen sets it; Better Auth just reads it.
   versionSeen: text('version_seen'),
+  // When each Notification Prompt (CONTEXT.md) was last shown to them,
+  // whatever the answer; null for never. Only PUT /api/me/prompt sets them;
+  // Better Auth just reads them.
+  pushPromptedAt: timestamp('push_prompted_at', { withTimezone: true }),
+  digestPromptedAt: timestamp('digest_prompted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, t => [
