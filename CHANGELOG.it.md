@@ -4,6 +4,29 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+### Added
+
+- Condividi un piatto: Condividi il link ti dà un link che chiunque può aprire, senza account. Se il piatto piace, si può copiare su una propria bacheca, e chi è nuovo si iscrive strada facendo.
+- Copia un piatto su un’altra delle tue bacheche, con la foto, il link e tutto quello che malkochen ha trovato.
+- Il testo del post: malkochen tiene la descrizione con cui arriva un post, la mostra nel piatto, e la ricerca trova i piatti anche così. I piatti che hai aggiunto prima ricevono la loro nei prossimi giorni.
+- Le novità vengono da te: dopo un aggiornamento, malkochen ti mostra una volta cosa è cambiato.
+- Una piccola spinta: se le notifiche push o l’email giornaliera sono spente, Topfbert ogni tanto ti chiede se le vuoi, al massimo una volta al mese e mai quando si è appena aperto qualcos’altro.
+- Note legali e privacy ora stanno dentro malkochen, nella tua lingua, in fondo a ogni bacheca.
+
+### Changed
+
+- Le notifiche push dicono chi ha fatto cosa e su quale bacheca, e mostrano la foto del piatto.
+- Riproduci il video compare solo sui piatti il cui video parte davvero in malkochen.
+- Le novità si sono rifatte il look: una scheda per ogni versione, e sul computer una barra per saltare dall’una all’altra.
+- La nostra informativa sulla privacy è nuova. Descrive malkochen com’è oggi, con i link condivisi, le copie e il fatto che chi gestisce malkochen può aprire ogni bacheca per dare una mano. Dai un’occhiata sotto Privacy in fondo a una bacheca.
+- Sul computer la ricerca si apre al centro dell’intestazione, e le impostazioni stanno proprio accanto alla tua foto.
+
+### Fixed
+
+- Finestre e pannelli non si chiudono più quando trascini o selezioni del testo fuori da loro, o quando clicchi accanto dopo aver scritto qualcosa. La X, Esc e Annulla li chiudono come sempre.
+- Le etichette dei campi stanno bene nel bordo del campo, anche quando Chrome lo compila per te.
+- Nel campo dei commenti il pulsante e il testo sono centrati, senza spazio in più sopra.
+
 ## [1.0.0] - 2026-10-22
 
 ### Added
