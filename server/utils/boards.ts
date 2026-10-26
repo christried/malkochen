@@ -12,7 +12,7 @@ import { dishesByColumn, type DishView } from './dishes'
 import { newInHistoryDishIds } from './dish-opened'
 import { detailsOf, insertEvents, withEvents } from './events'
 import { usernameOf, pictureOf } from './people'
-import { accessOf, accessOn } from './board-access'
+import { accessOf, accessOn, memberBoardsOf } from './board-access'
 import { effectivePermissions, permits } from './permissions'
 
 // The Board a user gets on their first sign-in (PRD story 3), named in
@@ -72,6 +72,8 @@ export interface BoardView extends BoardSummary {
   // Its Dishes with something new in their Dish History for the user
   // looking (#335), since they last opened them (dish-opened.ts).
   newInHistoryDishIds: string[]
+  // The Operator visiting a Board they aren't a Member of (ADR 0009).
+  asOperator: boolean
 }
 
 // A Board as the Board switcher lists it: how many Dishes it holds, its
@@ -102,7 +104,7 @@ export interface BoardMemberView extends BoardMember {
 // the switcher doesn't reshuffle whenever they switch. Members without a
 // Username yet in the user's `language`.
 export async function listBoards(userId: string, language: Language): Promise<BoardListing[]> {
-  const access = accessOf(userId)
+  const access = memberBoardsOf(userId)
   const boards = await db
     .select({
       id: board.id,
@@ -177,7 +179,7 @@ export async function landingToAdd(userId: string, language: Language): Promise<
 // The Board the user opened last (or joined last, if they opened none yet),
 // of those they may add Dishes to if `addable`.
 function lastOpenedBoard(userId: string, addable?: Permission) {
-  const access = accessOf(userId)
+  const access = memberBoardsOf(userId)
   return db
     .select({ boardId: access.boardId, slug: slugOf })
     .from(access)
@@ -239,7 +241,7 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoar
 export async function getBoard(boardId: string, userId: string, language: Language): Promise<BoardView | null> {
   const access = accessOf(userId)
   const [found] = await db
-    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: access.isOwner, permissions: access.permissions, version: board.version, inviteToken: board.inviteToken, defaultPermissions: board.defaultPermissions, newSince: access.newSince })
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: access.isOwner, permissions: access.permissions, version: board.version, inviteToken: board.inviteToken, defaultPermissions: board.defaultPermissions, newSince: access.newSince, asOperator: access.asOperator })
     .from(access)
     .innerJoin(board, eq(board.id, access.boardId))
     .where(eq(access.boardId, boardId))
@@ -255,8 +257,8 @@ export async function getBoard(boardId: string, userId: string, language: Langua
   const [dishes, members, newDishIds, newInHistory] = await Promise.all([
     dishesByColumn(columns.map(c => c.id)),
     boardMembers(boardId, language),
-    newSince ? newDishesSince(boardId, userId, newSince) : [],
-    newInHistoryDishIds(boardId, userId),
+    newSince && !view.asOperator ? newDishesSince(boardId, userId, newSince) : [],
+    view.asOperator ? [] : newInHistoryDishIds(boardId, userId),
   ])
   return {
     ...view,

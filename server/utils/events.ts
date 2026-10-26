@@ -1,5 +1,7 @@
 import { and, sql, type SQL, type SQLWrapper } from 'drizzle-orm'
+import type { LanguageChoice } from '../../shared/language'
 import type { Permission } from '../../shared/permissions'
+import type { PushOutcome } from '../push'
 import type { SourceKind } from '../source-lookup'
 import type { Db } from '../db'
 import { dish, eventLog } from '../db/schema'
@@ -67,12 +69,39 @@ export type EventKind =
   | 'board_emoji_changed'
   // The Owner made another Member the Owner.
   | 'ownership_handed_over'
+  // A new user (Better Auth's user creation), and every sign-in: a session
+  // made (a sign-up is followed by its first sign-in).
+  | 'signed_up'
+  | 'signed_in'
+  // The user's Username changed (not kept: "Passt dein Name?").
+  | 'username_changed'
+  // The user's own Profile Picture set, or removed.
+  | 'picture_changed'
+  // The user's language under Sprache changed.
+  | 'language_changed'
+  // Push notifications switched on or off for one of the user's devices.
+  | 'push_switched'
+  // The Email Digest switched on or off.
+  | 'digest_switched'
+  // A Deleted Account: no user (its others' events lose theirs too).
+  | 'account_deleted'
+  // A Push Notification sent to one of a Member's devices, for the Board
+  // and Dish it is about (the Dish is null for none).
+  | 'push_sent'
+  // An Email Digest sent to a Member.
+  | 'digest_sent'
   // Someone opened a Dish Link page (CONTEXT.md: Dish Link), signed in or not.
   | 'dish_link_opened'
+
+// How a Member signed in: Google, the email code, or the dev bypass (local
+// dev and tests). null when no sign-in endpoint says.
+export type SignInMethod = 'google' | 'code' | 'dev'
 
 // What an event says beyond its Board, Dish and user, by kind. `undo`: the
 // write was a "Rückgängig", taking back the one before it.
 export type EventDetails =
+  // signed_up, signed_in: how they signed in.
+  | { method: SignInMethod | null }
   // board_created: the Board a first landing creates (PRD story 3).
   | { starter: true }
   // dish_added: the kind of its Source, null without one; `tour` for the
@@ -93,8 +122,15 @@ export type EventDetails =
   | { up: boolean }
   // member_removed: who the Owner removed.
   | { member: string }
-  // open_sign_up_switched: whether it is on now.
+  // open_sign_up_switched, picture_changed (set or removed), push_switched,
+  // digest_switched: whether it is on now.
   | { on: boolean }
+  // language_changed: the language chosen under Sprache (a setting).
+  | { language: LanguageChoice }
+  // push_sent: what the push service answered for the device.
+  | { outcome: PushOutcome }
+  // digest_sent: how many Boards it listed.
+  | { boards: number }
   // dish_edited: which of its fields changed, never their values.
   | { fields: DishField[] }
   // column_added, column_renamed, column_reordered and column_deleted: which
@@ -118,7 +154,8 @@ export type EventDetails =
 export type DishField = 'title' | 'image' | 'source' | 'creator' | 'focus'
 
 // One event per row of the statement it is recorded with: its kind, and
-// SQL for its Board, Dish and details over that row. `user` did it.
+// SQL for its Board, Dish and details over that row. `user` did it (null
+// for none: a deleted account's own event).
 export interface EventValues {
   kind: EventKind
   board: SQL

@@ -1,3 +1,4 @@
+import { standingOn } from '../../../utils/board-access'
 import { getBoard, markSeen } from '../../../utils/boards'
 
 // POST /api/boards/:id/seen — what an open Board asks every few seconds (PRD
@@ -7,7 +8,8 @@ import { getBoard, markSeen } from '../../../utils/boards'
 export default defineEventHandler(async (event) => {
   const boardId = boardIdParam(event)
   const userId = requireUser(event).id
-  if (!await markSeen(boardId, userId)) throw boardNotFound()
+  // The Operator visiting (ADR 0009) has no Membership to write: a visit.
+  if (!await markSeen(boardId, userId) && !await standingOn(boardId, userId)) throw boardNotFound()
   const found = await getBoard(boardId, userId, callerLanguage(event))
   if (!found) throw boardNotFound()
   return found

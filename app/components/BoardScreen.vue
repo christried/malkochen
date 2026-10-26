@@ -452,6 +452,29 @@ async function closeSearch() {
   searchButton.value?.$el.focus()
 }
 
+// On desktop the search opens in the header's centre when the header has
+// room for it (#390); otherwise, as on phones and tablets, under the header.
+// The room is measured as the search opens, before that changes the header,
+// and again when the window resizes. The search bar itself is left out.
+const header = useTemplateRef<HTMLElement>('header')
+const desktopLayout = useMediaQuery('(min-width: 1200px)')
+const roomForSearch = ref(false)
+const SEARCH_BAR_MIN = 360
+const HEADER_GAP = 12
+function measureSearchRoom() {
+  const el = header.value
+  if (!el) return
+  const items = [...el.querySelectorAll<HTMLElement>(':scope > *:not(.header-group):not([data-header-search]), :scope > .header-group > *')]
+  const used = items.reduce((sum, item) => sum + item.offsetWidth, 0)
+  roomForSearch.value = el.clientWidth - used - items.length * HEADER_GAP >= SEARCH_BAR_MIN
+}
+const searchInHeader = computed(() => searchOpen.value && desktopLayout.value && roomForSearch.value)
+watch(searchOpen, (open) => {
+  if (open) measureSearchRoom()
+}, { flush: 'sync' })
+onMounted(() => window.addEventListener('resize', measureSearchRoom))
+onBeforeUnmount(() => window.removeEventListener('resize', measureSearchRoom))
+
 // The keyboard shortcuts (utils/shortcuts.ts), once the Board is there and
 // not mid-drag: "?" lists them; Esc closes the search (what else is open
 // closes itself); 1–9 open the user's Boards in the Board switcher's order,
@@ -726,8 +749,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     :class="{ following, dragging, 'drop-tinted': dropTint }"
     :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, ...colours }"
   >
-    <header class="flex items-center justify-between gap-3">
-      <div class="flex min-w-0 items-center gap-3">
+    <header
+      ref="header"
+      class="flex items-center justify-between gap-3"
+    >
+      <!-- From the desktop breakpoint this group is no box: its children sit in
+           the header's row, and the cogwheel goes next to the Profile Picture. -->
+      <div class="header-group flex min-w-0 items-center gap-3 desktop:contents">
         <BoardSwitcher
           :board="board"
           :dish-count="boardModule.dishCount.value"
@@ -749,6 +777,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
              The sheet hands focus back here when it closes. -->
         <RoundButton
           raised
+          class="desktop:order-last desktop:ml-auto"
           aria-haspopup="dialog"
           :aria-label="t.userSettings.title"
           :data-tooltip="t.userSettings.title"
@@ -760,15 +789,31 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           />
         </RoundButton>
       </div>
+      <BoardSearchBar
+        v-if="searchInHeader"
+        ref="searchBar"
+        v-model="query"
+        data-header-search
+        class="mx-auto min-w-0 max-w-[560px] flex-1"
+        @close="closeSearch"
+      />
       <UserMenu
         v-if="me"
         :me="me"
-        class="hidden shrink-0 tablet:block"
+        class="hidden shrink-0 tablet:block desktop:order-last"
       />
     </header>
 
+    <p
+      v-if="board?.asOperator"
+      data-testid="operator-note"
+      class="mt-2 text-small text-text-muted"
+    >
+      {{ t.board.asOperator }}
+    </p>
+
     <BoardSearchBar
-      v-if="searchOpen"
+      v-if="searchOpen && !searchInHeader"
       ref="searchBar"
       v-model="query"
       class="mx-auto mt-4 max-w-[560px]"

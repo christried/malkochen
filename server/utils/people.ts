@@ -6,6 +6,7 @@ import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { APP_VERSION } from '../version'
 import { user } from '../db/schema'
+import { detailsOf, withEvents } from './events'
 import { isOperator } from './operator'
 
 // A person's picture wherever the app shows them (the badges of who added or
@@ -92,10 +93,22 @@ export function meOf(signedIn: Signed): Me {
 
 const meColumns = { id: user.id, email: user.email, image: user.image, ownPicture: user.ownPicture, username: user.username, usernameConfirmedAt: user.usernameConfirmedAt, tourSeen: user.tourSeen, language: user.language, versionSeen: user.versionSeen }
 
-// Sets (or, with null, removes) the user's own Profile Picture.
+// Sets (or, with null, removes) the user's own Profile Picture. The event
+// log records it only when the picture differs from before (#399).
 export async function setOwnPicture(userId: string, url: string | null): Promise<Me | null> {
-  const [updated] = await db.update(user).set({ ownPicture: url }).where(eq(user.id, userId)).returning(meColumns)
-  return updated ? meOf(updated) : null
+  await withEvents(
+    db,
+    db.update(user).set({ ownPicture: url }).where(eq(user.id, userId)).returning({ id: user.id, ownPicture: user.ownPicture }),
+    { kind: 'picture_changed', board: sql`null`, user: userId, details: detailsOf({ on: url !== null }) },
+    { earlier: sql`select id, own_picture from ${user} where id = ${userId}`, where: sql`earlier.own_picture is distinct from changed.own_picture` },
+  )
+  return meOfUser(userId)
+}
+
+// The signed-in user as their session has them now, for an answer after a write.
+async function meOfUser(userId: string): Promise<Me | null> {
+  const [found] = await db.select(meColumns).from(user).where(eq(user.id, userId))
+  return found ? meOf(found) : null
 }
 
 // Records that the user finished or skipped Tour `version`: only ever raises
@@ -118,10 +131,16 @@ export async function recordBrowserLanguage(userId: string, language: Language):
   await db.update(user).set({ browserLanguage: language }).where(eq(user.id, userId))
 }
 
-// Sets the user's language under Sprache in Your Settings.
+// Sets the user's language under Sprache in Your Settings. Recorded only when
+// it differs from before (#399).
 export async function setLanguage(userId: string, language: LanguageChoice): Promise<Me | null> {
-  const [updated] = await db.update(user).set({ language }).where(eq(user.id, userId)).returning(meColumns)
-  return updated ? meOf(updated) : null
+  await withEvents(
+    db,
+    db.update(user).set({ language }).where(eq(user.id, userId)).returning({ id: user.id, language: user.language }),
+    { kind: 'language_changed', board: sql`null`, user: userId, details: detailsOf({ language }) },
+    { earlier: sql`select id, language from ${user} where id = ${userId}`, where: sql`earlier.language is distinct from changed.language` },
+  )
+  return meOfUser(userId)
 }
 
 // As the unique index compares them (server/db/schema.ts).
@@ -138,12 +157,18 @@ export async function usernameTaken(userId: string, username: string): Promise<b
 // index decides, not usernameTaken's look before).
 export async function setUsername(userId: string, username: string): Promise<Me | 'taken' | null> {
   try {
-    const [updated] = await db
-      .update(user)
-      .set({ username, usernameConfirmedAt: sql`coalesce(${user.usernameConfirmedAt}, now())` })
-      .where(eq(user.id, userId))
-      .returning(meColumns)
-    return updated ? meOf(updated) : null
+    // recorded only when the name differs from the one they had (#399).
+    await withEvents(
+      db,
+      db
+        .update(user)
+        .set({ username, usernameConfirmedAt: sql`coalesce(${user.usernameConfirmedAt}, now())` })
+        .where(eq(user.id, userId))
+        .returning({ id: user.id, username: user.username }),
+      { kind: 'username_changed', board: sql`null`, user: userId },
+      { earlier: sql`select id, username from ${user} where id = ${userId}`, where: sql`earlier.username is distinct from changed.username` },
+    )
+    return meOfUser(userId)
   }
   catch (err) {
     if (isUniqueViolation(err)) return 'taken'

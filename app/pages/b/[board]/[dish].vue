@@ -98,9 +98,9 @@ function onEscape(event: KeyboardEvent) {
   event.preventDefault()
   editing.value = false
 }
-function onBackdrop() {
-  if (!editing.value) close()
-}
+// A click on the backdrop closes it, unless it is being edited, and only
+// when the press started there too (#390).
+const backdrop = useBackdropClose(dialog, close, () => !editing.value)
 
 // The Dish's actions, through the Board module.
 function actOnDish(operation: (dishId: string) => BoardResult | null, context?: ResultContext) {
@@ -220,8 +220,10 @@ watch(editing, async (isEditing) => {
       :aria-label="located?.dish.title"
       @keydown.esc="onEscape"
       @cancel.prevent="close"
-      @close="close"
-      @click.self="onBackdrop"
+      @pointerdown="backdrop.onPointerdown"
+      @input="backdrop.onInput"
+      @close="close(); backdrop.onClosed()"
+      @click.self="backdrop.onBackdropClick"
     >
       <template v-if="located">
         <DishDetailEditor
