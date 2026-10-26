@@ -20,7 +20,7 @@ const { data: dish, error } = await useFetch<DishLinkView>(`/api/dish-links/${li
 // Too many links that don't exist asked for from here, for now (429): not a
 // link that stopped working, so the error screen says to try again soon.
 if (error.value?.statusCode === 429) {
-  throw createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found', fatal: true })
+  throw createError({ statusCode: 429, statusMessage: 'Too many links not found', fatal: true })
 }
 
 // Signed in or not (#403): "Auf mein Board kopieren" copies the Dish to one of
