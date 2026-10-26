@@ -1,4 +1,6 @@
-import { afterAll, beforeAll, expect, test } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import pg from 'pg'
+import { afterAll, beforeAll, expect, inject, test } from 'vitest'
 import type { AdminFigures, Period } from '../../shared/admin'
 import { OPERATOR } from '../support/test-auth-env'
 import { startResendService, type ResendService } from '../support/resend-service'
@@ -125,6 +127,22 @@ test('active users and Boards count whoever did something on a Board, today, thi
   }
   expect(active.week.users).toBeGreaterThanOrEqual(active.today.users)
   expect(active.month.boards).toBeGreaterThanOrEqual(active.week.boards)
+})
+
+test('a Push Notification sent (#399) makes its recipient no one active, on no Board counted', async () => {
+  const before = (await figures()).active
+  // What the push_sent of a Board whose recipient did nothing else looks
+  // like in the log: a user and a Board the figures hold nowhere else.
+  const client = new pg.Client({ connectionString: inject('databaseUrl') })
+  await client.connect()
+  try {
+    await client.query(`insert into event_log (kind, board_id, dish_id, user_id, details) values ('push_sent', $1, null, 'admin-push-probe', '{"outcome":"sent"}')`, [randomUUID()])
+  }
+  finally {
+    await client.end()
+  }
+
+  expect((await figures()).active).toEqual(before)
 })
 
 test('sign-ups count per day by how the user first signed in, Google or email', async () => {
