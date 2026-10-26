@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { del, list, put } from '@vercel/blob'
+import { copy as copyBlob, del, list, put } from '@vercel/blob'
 import { createHttp } from '../source-lookup/http'
 import { FOUND_IMAGE_KINDS, preparePhoto } from './photo'
 
@@ -41,6 +41,9 @@ interface StoredImage {
 export interface SweptStorage extends Storage {
   list: (folder: ImageFolder) => Promise<StoredImage[]>
   remove: (urls: string[]) => Promise<void>
+  // Saves a second copy of a stored image under a new name in its folder;
+  // returns its public URL. Throws if it can't (a URL not of the store too).
+  copy: (url: string) => Promise<string>
 }
 
 export interface ImageStoreOptions {
@@ -94,8 +97,26 @@ export function createImageStore(options: ImageStoreOptions): ImageStore {
   }
 }
 
+// The name a copy of the stored image at `path` (its place in the store, e.g.
+// dishes/<uuid>.jpg) is saved under: a new name in the same folder, with the
+// original's extension. Throws for anything else, so only Dish images are
+// ever copied and no path outside the folder gets in.
+function copyNameOf(path: string): string {
+  const match = /^dishes\/[A-Za-z0-9-]+\.([a-z]+)$/.exec(path)
+  if (!match || !(Object.values(IMAGE_TYPES) as string[]).includes(match[1]!)) throw new Error('not a stored image')
+  return `dishes/${randomUUID()}.${match[1]}`
+}
+
+// A Blob URL's place in the store: its pathname without the leading slash.
+const blobPathOf = (url: string) => new URL(url).pathname.slice(1)
+
 export function blobStorage(token: string): SweptStorage {
   return {
+    async copy(url) {
+      const name = copyNameOf(blobPathOf(url))
+      const blob = await copyBlob(url, name, { access: 'public', token })
+      return blob.url
+    },
     async save(name, bytes, contentType) {
       const blob = await put(name, Buffer.from(bytes), { access: 'public', contentType, token })
       return blob.url
@@ -125,6 +146,12 @@ const DISK_URL_PREFIX = '/images/'
 // file's modification time stands in for when it was uploaded.
 export function diskStorage(dir: string): SweptStorage {
   return {
+    async copy(url) {
+      const path = url.startsWith(DISK_URL_PREFIX) ? url.slice(DISK_URL_PREFIX.length) : ''
+      const name = copyNameOf(path)
+      await copyFile(join(dir, path), join(dir, name))
+      return `${DISK_URL_PREFIX}${name}`
+    },
     async save(name, bytes) {
       const path = join(dir, name)
       await mkdir(dirname(path), { recursive: true })

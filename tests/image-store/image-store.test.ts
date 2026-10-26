@@ -222,3 +222,29 @@ test('each failure is reported with its reason, so production logs show why', as
     `${COVER}: storage failed: storage is down`,
   ])
 })
+
+test('disk copy saves the same bytes under a new name in the same folder, and leaves the original', async () => {
+  dir = await mkdtemp(join(tmpdir(), 'malkochen-images-'))
+  const storage = diskStorage(dir)
+  const original = await storage.save('dishes/abc.jpg', JPEG, 'image/jpeg')
+
+  const copied = await storage.copy(original)
+
+  expect(copied).toMatch(/^\/images\/dishes\/[0-9a-f-]{36}\.jpg$/)
+  expect(copied).not.toBe(original)
+  expect([...await readFile(join(dir, 'dishes', 'abc.jpg'))]).toEqual([...JPEG])
+  expect([...await readFile(join(dir, copied.slice('/images/'.length)))]).toEqual([...JPEG])
+})
+
+test('disk copy keeps the extension of the original, and refuses what is not a stored image', async () => {
+  dir = await mkdtemp(join(tmpdir(), 'malkochen-images-'))
+  const storage = diskStorage(dir)
+  await storage.save('dishes/abc.png', JPEG, 'image/png')
+  await storage.save('pictures/me.jpg', JPEG, 'image/jpeg')
+
+  expect(await storage.copy('/images/dishes/abc.png')).toMatch(/\.png$/)
+  await expect(storage.copy('/images/pictures/me.jpg')).rejects.toThrow('not a stored image')
+  await expect(storage.copy('/images/dishes/../pictures/me.jpg')).rejects.toThrow('not a stored image')
+  await expect(storage.copy('/images/dishes/abc.exe')).rejects.toThrow('not a stored image')
+  await expect(storage.copy('https://cdn.example/dishes/abc.jpg')).rejects.toThrow('not a stored image')
+})
