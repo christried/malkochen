@@ -63,7 +63,7 @@ const english: LegalText = {
     {
       heading: '8. Profile picture',
       blocks: [
-        'Next to your Username the application shows a round profile picture: to you and to the members of the boards you belong to. It is either a picture you upload yourself in your settings, otherwise your Google profile picture, otherwise your initial.',
+        'Next to your Username the application shows a round profile picture to you and to the members of the boards you belong to. It is either a picture you upload yourself in your settings, otherwise your Google profile picture, otherwise your initial.',
         {
           list: [
             '**Picture you upload:** it is cropped to a square on the server, re-encoded, and stripped of all metadata (e.g. EXIF information such as the place of recording or the camera model) before it is stored (section 14). You can remove it at any time.',
@@ -304,7 +304,7 @@ const italian: LegalText = {
     {
       heading: '8. Immagine del profilo',
       blocks: [
-        'Accanto al vostro nome utente l\'applicazione mostra un\'immagine del profilo rotonda: a voi e ai membri delle board di cui fate parte. È un\'immagine che caricate voi stessi nelle impostazioni, altrimenti la vostra foto profilo Google, altrimenti la vostra iniziale.',
+        'Accanto al vostro nome utente l\'applicazione mostra un\'immagine del profilo rotonda a voi e ai membri delle board di cui fate parte. È un\'immagine che caricate voi stessi nelle impostazioni, altrimenti la vostra foto profilo Google, altrimenti la vostra iniziale.',
         {
           list: [
             '**Immagine caricata da voi:** viene ritagliata quadrata sul server, ricodificata e privata di tutti i metadati (ad es. le informazioni EXIF come il luogo di ripresa o il modello della fotocamera) prima di essere memorizzata (sezione 14). Potete rimuoverla in qualsiasi momento.',
@@ -545,7 +545,7 @@ export const datenschutz: LegalText[] = [
       {
         heading: '8. Profilbild',
         blocks: [
-          'Neben Ihrem Benutzernamen zeigt die Anwendung ein rundes Profilbild: für Sie selbst und für die Mitglieder der Boards, denen Sie angehören. Es ist entweder ein Bild, das Sie selbst in Ihren Einstellungen hochladen, sonst Ihr Google-Profilbild, sonst Ihr Anfangsbuchstabe.',
+          'Neben Ihrem Benutzernamen zeigt die Anwendung ein rundes Profilbild für Sie selbst und für die Mitglieder der Boards, denen Sie angehören. Es ist entweder ein Bild, das Sie selbst in Ihren Einstellungen hochladen, sonst Ihr Google-Profilbild, sonst Ihr Anfangsbuchstabe.',
           {
             list: [
               '**Selbst hochgeladenes Bild:** Es wird serverseitig quadratisch zugeschnitten, neu kodiert und dabei von allen Metadaten (z. B. EXIF-Angaben wie Aufnahmeort oder Kameramodell) befreit, bevor es gespeichert wird (Abschnitt 14). Sie können es jederzeit wieder entfernen.',
