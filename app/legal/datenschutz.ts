@@ -63,11 +63,11 @@ const english: LegalText = {
     {
       heading: '8. Profile picture',
       blocks: [
-        'Next to your Username the application shows a round profile picture – to you and to the members of the boards you belong to. It is either a picture you upload yourself in your settings, otherwise your Google profile picture, otherwise your initial.',
+        'Next to your Username the application shows a round profile picture: to you and to the members of the boards you belong to. It is either a picture you upload yourself in your settings, otherwise your Google profile picture, otherwise your initial.',
         {
           list: [
             '**Picture you upload:** it is cropped to a square on the server, re-encoded, and stripped of all metadata (e.g. EXIF information such as the place of recording or the camera model) before it is stored (section 14). You can remove it at any time.',
-            '**Google profile picture:** it is loaded directly from Google\'s servers. Technically, Google then receives the IP address of the device on which the picture is shown, along with usual browser information – this also applies to other members of your boards who see your picture. If you do not want that, upload your own picture; your Google profile picture is then no longer shown.',
+            '**Google profile picture:** it is loaded directly from Google\'s servers. Technically, Google then receives the IP address of the device on which the picture is shown, along with usual browser information. This also applies to other members of your boards who see your picture. If you do not want that, upload your own picture; your Google profile picture is then no longer shown.',
           ],
         },
         'The legal basis is Art. 6(1)(b) GDPR (members being recognisable in a shared application), or for loading from Google Art. 6(1)(f) GDPR.',
@@ -93,7 +93,7 @@ const english: LegalText = {
     {
       heading: '10. Session and security data',
       blocks: [
-        'For each session we store your IP address and browser identifier (user agent) so that misuse can be detected. The application also counts, to protect against misuse and overload, how often certain actions are called – depending on the action, assigned to your account or to the calling IP address (e.g. sign-in attempts, requests for codes, or calls with invalid invite links). These counters apply only for a short time window and are overwritten afterwards. The legal basis is Art. 6(1)(f) GDPR (legitimate interest in the security of the application and protection against misuse).',
+        'For each session we store your IP address and browser identifier (user agent) so that misuse can be detected. The application also counts, to protect against misuse and overload, how often certain actions are called, depending on the action, assigned to your account or to the calling IP address (e.g. sign-in attempts, requests for codes, or calls with invalid invite links). These counters apply only for a short time window and are overwritten afterwards. The legal basis is Art. 6(1)(f) GDPR (legitimate interest in the security of the application and protection against misuse).',
       ],
     },
     {
@@ -134,7 +134,7 @@ const english: LegalText = {
     {
       heading: '14. Pictures (Vercel Blob)',
       blocks: [
-        'Pictures of dishes – preview pictures taken from the source as well as photos you upload yourself – and profile pictures you upload are stored by the application in the service **Vercel Blob** of Vercel Inc. (section 3). Uploaded photos are reduced in size, re-encoded and stripped of all metadata (e.g. EXIF information such as GPS position) before they are stored. The pictures are stored under randomly generated, unguessable addresses and loaded from there; anyone who knows such an address can view the picture without signing in. Pictures that are no longer assigned to any dish or profile are deleted by a daily clean-up. The legal basis is Art. 6(1)(b) GDPR.',
+        'Pictures of dishes (preview pictures taken from the source as well as photos you upload yourself) and profile pictures you upload are stored by the application in the service **Vercel Blob** of Vercel Inc. (section 3). Uploaded photos are reduced in size, re-encoded and stripped of all metadata (e.g. EXIF information such as GPS position) before they are stored. The pictures are stored under randomly generated, unguessable addresses and loaded from there; anyone who knows such an address can view the picture without signing in. Pictures that are no longer assigned to any dish or profile are deleted by a daily clean-up. The legal basis is Art. 6(1)(b) GDPR.',
       ],
     },
     {
@@ -157,7 +157,7 @@ const english: LegalText = {
       blocks: [
         'Optionally, you can turn on push notifications for a device in your settings (off by default; up to ten devices per account). You then receive a notification when other members add dishes to one of your boards, or comment or vote there. For this we store the push subscription your browser creates: the receiving address of your device at your browser\'s push service, and the associated keys.',
         'The content of the notification includes the name of the board, the Usernames of those involved, the titles of the dishes, and for comments the start of the comment text; for votes only who voted which way is shown.',
-        'The notifications are delivered through the push service of the browser or operating system maker – for Chrome and Android this is Firebase Cloud Messaging of Google LLC (USA), for Firefox the service of Mozilla Corporation (USA), for Edge the Windows Push Notification Service of Microsoft Corporation (USA). The content is transmitted end-to-end encrypted and cannot be read by the push service; the service receives only the technical information needed for delivery.',
+        'The notifications are delivered through the push service of the browser or operating system maker: for Chrome and Android this is Firebase Cloud Messaging of Google LLC (USA), for Firefox the service of Mozilla Corporation (USA), for Edge the Windows Push Notification Service of Microsoft Corporation (USA). The content is transmitted end-to-end encrypted and cannot be read by the push service; the service receives only the technical information needed for delivery.',
         'The legal basis is your consent (Art. 6(1)(a) GDPR and section 25(1) TDDDG). You can withdraw it at any time by turning notifications off in the application\'s settings or your browser; the subscription is then deleted.',
       ],
     },
@@ -190,7 +190,7 @@ const english: LegalText = {
     {
       heading: '22. Transfers to third countries',
       blocks: [
-        'Vercel, Neon, Google, Resend and – when push notifications are on – Mozilla or Microsoft are, or belong to, companies based in the USA. Where personal data is transferred to the USA, this rests on the EU Commission\'s adequacy decision for the EU-US Data Privacy Framework (Art. 45 GDPR), where the provider in question is certified under it, and otherwise on the EU Commission\'s standard contractual clauses (Art. 46(2)(c) GDPR). When preview pictures are loaded directly from platforms and websites (section 15) and when videos are played (section 16), their servers may also be located outside the EU.',
+        'Vercel, Neon, Google, Resend and (when push notifications are on) Mozilla or Microsoft are, or belong to, companies based in the USA. Where personal data is transferred to the USA, this rests on the EU Commission\'s adequacy decision for the EU-US Data Privacy Framework (Art. 45 GDPR), where the provider in question is certified under it, and otherwise on the EU Commission\'s standard contractual clauses (Art. 46(2)(c) GDPR). When preview pictures are loaded directly from platforms and websites (section 15) and when videos are played (section 16), their servers may also be located outside the EU.',
       ],
     },
     {
@@ -304,11 +304,11 @@ const italian: LegalText = {
     {
       heading: '8. Immagine del profilo',
       blocks: [
-        'Accanto al vostro nome utente l\'applicazione mostra un\'immagine del profilo rotonda – a voi e ai membri delle board di cui fate parte. È un\'immagine che caricate voi stessi nelle impostazioni, altrimenti la vostra foto profilo Google, altrimenti la vostra iniziale.',
+        'Accanto al vostro nome utente l\'applicazione mostra un\'immagine del profilo rotonda: a voi e ai membri delle board di cui fate parte. È un\'immagine che caricate voi stessi nelle impostazioni, altrimenti la vostra foto profilo Google, altrimenti la vostra iniziale.',
         {
           list: [
             '**Immagine caricata da voi:** viene ritagliata quadrata sul server, ricodificata e privata di tutti i metadati (ad es. le informazioni EXIF come il luogo di ripresa o il modello della fotocamera) prima di essere memorizzata (sezione 14). Potete rimuoverla in qualsiasi momento.',
-            '**Foto profilo Google:** viene caricata direttamente dai server di Google. Tecnicamente Google riceve quindi l\'indirizzo IP del dispositivo su cui viene mostrata l\'immagine, insieme alle usuali informazioni del browser – questo vale anche per gli altri membri delle vostre board che vedono la vostra immagine. Se non lo desiderate, caricate una vostra immagine; la foto profilo Google non viene più mostrata.',
+            '**Foto profilo Google:** viene caricata direttamente dai server di Google. Tecnicamente Google riceve quindi l\'indirizzo IP del dispositivo su cui viene mostrata l\'immagine, insieme alle usuali informazioni del browser. Questo vale anche per gli altri membri delle vostre board che vedono la vostra immagine. Se non lo desiderate, caricate una vostra immagine; la foto profilo Google non viene più mostrata.',
           ],
         },
         'La base giuridica è l\'art. 6, par. 1, lett. b) GDPR (riconoscibilità dei membri in un\'applicazione condivisa), oppure per il caricamento da Google l\'art. 6, par. 1, lett. f) GDPR.',
@@ -334,7 +334,7 @@ const italian: LegalText = {
     {
       heading: '10. Dati di sessione e di sicurezza',
       blocks: [
-        'Per ogni sessione memorizziamo il vostro indirizzo IP e l\'identificativo del browser (user agent), per poter riconoscere gli abusi. Per proteggersi da abusi e sovraccarichi, l\'applicazione conta inoltre quante volte vengono richieste determinate azioni – a seconda dell\'azione, associate al vostro account o all\'indirizzo IP che effettua la richiesta (ad es. tentativi di accesso, richieste di codici o chiamate con link di invito non validi). Questi contatori valgono solo per una breve finestra temporale e vengono poi sovrascritti. La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo alla sicurezza dell\'applicazione e alla protezione dagli abusi).',
+        'Per ogni sessione memorizziamo il vostro indirizzo IP e l\'identificativo del browser (user agent), per poter riconoscere gli abusi. Per proteggersi da abusi e sovraccarichi, l\'applicazione conta inoltre quante volte vengono richieste determinate azioni, a seconda dell\'azione, associate al vostro account o all\'indirizzo IP che effettua la richiesta (ad es. tentativi di accesso, richieste di codici o chiamate con link di invito non validi). Questi contatori valgono solo per una breve finestra temporale e vengono poi sovrascritti. La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo alla sicurezza dell\'applicazione e alla protezione dagli abusi).',
       ],
     },
     {
@@ -375,7 +375,7 @@ const italian: LegalText = {
     {
       heading: '14. Immagini (Vercel Blob)',
       blocks: [
-        'Le immagini dei piatti – le anteprime prese dalla fonte così come le foto che caricate voi – e le immagini del profilo caricate da voi sono memorizzate dall\'applicazione nel servizio **Vercel Blob** di Vercel Inc. (sezione 3). Le foto caricate vengono ridotte, ricodificate e private di tutti i metadati (ad es. le informazioni EXIF come la posizione GPS) prima di essere memorizzate. Le immagini sono salvate sotto indirizzi generati casualmente e non indovinabili, e da lì vengono caricate; chiunque conosca un tale indirizzo può vedere l\'immagine anche senza accedere. Le immagini non più assegnate a nessun piatto o profilo vengono eliminate da una pulizia quotidiana. La base giuridica è l\'art. 6, par. 1, lett. b) GDPR.',
+        'Le immagini dei piatti (le anteprime prese dalla fonte così come le foto che caricate voi) e le immagini del profilo caricate da voi sono memorizzate dall\'applicazione nel servizio **Vercel Blob** di Vercel Inc. (sezione 3). Le foto caricate vengono ridotte, ricodificate e private di tutti i metadati (ad es. le informazioni EXIF come la posizione GPS) prima di essere memorizzate. Le immagini sono salvate sotto indirizzi generati casualmente e non indovinabili, e da lì vengono caricate; chiunque conosca un tale indirizzo può vedere l\'immagine anche senza accedere. Le immagini non più assegnate a nessun piatto o profilo vengono eliminate da una pulizia quotidiana. La base giuridica è l\'art. 6, par. 1, lett. b) GDPR.',
       ],
     },
     {
@@ -398,7 +398,7 @@ const italian: LegalText = {
       blocks: [
         'Facoltativamente potete attivare le notifiche push per un dispositivo nelle impostazioni (disattivate per impostazione predefinita; fino a dieci dispositivi per account). Riceverete poi una notifica quando altri membri aggiungono piatti a una delle vostre board, o vi commentano o votano. A tal fine memorizziamo l\'abbonamento push creato dal vostro browser: l\'indirizzo di ricezione del vostro dispositivo presso il servizio push del vostro browser, e le relative chiavi.',
         'Il contenuto della notifica comprende il nome della board, i nomi utente delle persone coinvolte, i titoli dei piatti e, per i commenti, l\'inizio del testo del commento; per i voti si indica solo chi ha votato e in che senso.',
-        'Le notifiche vengono consegnate tramite il servizio push del produttore del browser o del sistema operativo – per Chrome e Android è Firebase Cloud Messaging di Google LLC (USA), per Firefox il servizio di Mozilla Corporation (USA), per Edge il Windows Push Notification Service di Microsoft Corporation (USA). Il contenuto viene trasmesso cifrato end-to-end e non può essere letto dal servizio push; il servizio riceve solo le informazioni tecniche necessarie alla consegna.',
+        'Le notifiche vengono consegnate tramite il servizio push del produttore del browser o del sistema operativo: per Chrome e Android è Firebase Cloud Messaging di Google LLC (USA), per Firefox il servizio di Mozilla Corporation (USA), per Edge il Windows Push Notification Service di Microsoft Corporation (USA). Il contenuto viene trasmesso cifrato end-to-end e non può essere letto dal servizio push; il servizio riceve solo le informazioni tecniche necessarie alla consegna.',
         'La base giuridica è il vostro consenso (art. 6, par. 1, lett. a) GDPR e art. 25, par. 1 TDDDG). Potete revocarlo in qualsiasi momento disattivando le notifiche nelle impostazioni dell\'applicazione o del browser; l\'abbonamento viene poi eliminato.',
       ],
     },
@@ -431,7 +431,7 @@ const italian: LegalText = {
     {
       heading: '22. Trasferimenti verso paesi terzi',
       blocks: [
-        'Vercel, Neon, Google, Resend e – con le notifiche push attive – Mozilla o Microsoft sono, o appartengono a, società con sede negli USA. Ove dati personali vengano trasferiti negli USA, ciò si basa sulla decisione di adeguatezza della Commissione UE per il Data Privacy Framework UE-USA (art. 45 GDPR), se il rispettivo fornitore è certificato, e per il resto sulle clausole contrattuali tipo della Commissione UE (art. 46, par. 2, lett. c) GDPR). Quando le anteprime delle immagini vengono caricate direttamente da piattaforme e siti (sezione 15) e quando vengono riprodotti i video (sezione 16), anche i loro server possono trovarsi al di fuori dell\'UE.',
+        'Vercel, Neon, Google, Resend e (con le notifiche push attive) Mozilla o Microsoft sono, o appartengono a, società con sede negli USA. Ove dati personali vengano trasferiti negli USA, ciò si basa sulla decisione di adeguatezza della Commissione UE per il Data Privacy Framework UE-USA (art. 45 GDPR), se il rispettivo fornitore è certificato, e per il resto sulle clausole contrattuali tipo della Commissione UE (art. 46, par. 2, lett. c) GDPR). Quando le anteprime delle immagini vengono caricate direttamente da piattaforme e siti (sezione 15) e quando vengono riprodotti i video (sezione 16), anche i loro server possono trovarsi al di fuori dell\'UE.',
       ],
     },
     {
@@ -545,11 +545,11 @@ export const datenschutz: LegalText[] = [
       {
         heading: '8. Profilbild',
         blocks: [
-          'Neben Ihrem Benutzernamen zeigt die Anwendung ein rundes Profilbild – für Sie selbst und für die Mitglieder der Boards, denen Sie angehören. Es ist entweder ein Bild, das Sie selbst in Ihren Einstellungen hochladen, sonst Ihr Google-Profilbild, sonst Ihr Anfangsbuchstabe.',
+          'Neben Ihrem Benutzernamen zeigt die Anwendung ein rundes Profilbild: für Sie selbst und für die Mitglieder der Boards, denen Sie angehören. Es ist entweder ein Bild, das Sie selbst in Ihren Einstellungen hochladen, sonst Ihr Google-Profilbild, sonst Ihr Anfangsbuchstabe.',
           {
             list: [
               '**Selbst hochgeladenes Bild:** Es wird serverseitig quadratisch zugeschnitten, neu kodiert und dabei von allen Metadaten (z. B. EXIF-Angaben wie Aufnahmeort oder Kameramodell) befreit, bevor es gespeichert wird (Abschnitt 14). Sie können es jederzeit wieder entfernen.',
-              '**Google-Profilbild:** Es wird direkt von den Servern von Google geladen. Dabei erhält Google technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben – das gilt auch für andere Mitglieder Ihrer Boards, die Ihr Bild sehen. Wenn Sie das nicht möchten, laden Sie ein eigenes Bild hoch; dann wird Ihr Google-Profilbild nicht mehr angezeigt.',
+              '**Google-Profilbild:** Es wird direkt von den Servern von Google geladen. Dabei erhält Google technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben. Das gilt auch für andere Mitglieder Ihrer Boards, die Ihr Bild sehen. Wenn Sie das nicht möchten, laden Sie ein eigenes Bild hoch; dann wird Ihr Google-Profilbild nicht mehr angezeigt.',
             ],
           },
           'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erkennbarkeit der Mitglieder in einer gemeinsam genutzten Anwendung) bzw. für das Laden von Google Art. 6 Abs. 1 lit. f DSGVO.',
@@ -575,7 +575,7 @@ export const datenschutz: LegalText[] = [
       {
         heading: '10. Sitzungs- und Sicherheitsdaten',
         blocks: [
-          'Zu jeder Sitzung speichern wir Ihre IP-Adresse und die Browserkennung (User-Agent), um Missbrauch erkennen zu können. Außerdem zählt die Anwendung zum Schutz vor Missbrauch und Überlastung, wie oft bestimmte Aktionen aufgerufen werden – je nach Aktion Ihrem Konto oder der aufrufenden IP-Adresse zugeordnet (z. B. Anmeldeversuche, Anforderungen von Codes oder Aufrufe ungültiger Einladungslinks). Diese Zähler gelten nur für ein kurzes Zeitfenster und werden danach überschrieben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Sicherheit der Anwendung und dem Schutz vor Missbrauch).',
+          'Zu jeder Sitzung speichern wir Ihre IP-Adresse und die Browserkennung (User-Agent), um Missbrauch erkennen zu können. Außerdem zählt die Anwendung zum Schutz vor Missbrauch und Überlastung, wie oft bestimmte Aktionen aufgerufen werden, je nach Aktion Ihrem Konto oder der aufrufenden IP-Adresse zugeordnet (z. B. Anmeldeversuche, Anforderungen von Codes oder Aufrufe ungültiger Einladungslinks). Diese Zähler gelten nur für ein kurzes Zeitfenster und werden danach überschrieben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Sicherheit der Anwendung und dem Schutz vor Missbrauch).',
         ],
       },
       {
@@ -584,7 +584,7 @@ export const datenschutz: LegalText[] = [
           'Innerhalb der Anwendung erstellen und bearbeiten Sie Inhalte: Boards (Name, Emoji), deren Spalten (Name, Untertitel, Reihenfolge) und Gerichte mit Titel, Quell-Link, dem Namen des Kanals bzw. Blogs, der die Quelle veröffentlicht hat, der Beschreibung der Quelle (der Text, den die Plattform zum Beitrag öffentlich zeigt, Abschnitt 15), einem Bild samt gewähltem Bildausschnitt sowie Kochverlauf (wann ein Gericht gekocht wurde). Zu Gerichten, Kochverlauf-Einträgen, Kommentaren und Stimmen wird gespeichert, wer sie angelegt hat und wann.',
           'Ein **Kommentar** ist eine Nachricht eines Mitglieds zu einem Gericht, die auch bearbeitet werden kann. Eine **Stimme** ist ein Daumen hoch oder runter zu einem gekochten Gericht; jedes Mitglied hat je Gericht eine, und wer sie zurücknimmt, löscht sie.',
           'Zu Ihrer Mitgliedschaft in einem Board speichern wir, wann Sie beigetreten sind, wann Sie das Board zuletzt geöffnet und zuletzt gesehen hatten, welche Gerichte Sie zuletzt geöffnet haben (damit neue Gerichte, Kommentare und Stimmen für Sie markiert werden), und welche Rechte Sie darauf haben, sowie ob Sie das Board besitzen. Das dient dazu, Neues zu markieren und Sie beim nächsten Start auf dem zuletzt genutzten Board landen zu lassen.',
-          'Alle Inhalte eines Boards sowie Benutzername und Profilbild seiner Mitglieder sind für **alle Mitglieder dieses Boards** sichtbar; die Mitglieder können sie – je nach ihren Rechten – bearbeiten, kommentieren und abstimmen. Wer einen Einladungslink eines Boards erhält, kann dem Board beitreten; teilen Sie Einladungslinks daher nur mit Personen, die Ihre Inhalte sehen sollen. Die Besitzerin bzw. der Besitzer eines Boards kann den Link jederzeit zurücksetzen.',
+          'Alle Inhalte eines Boards sowie Benutzername und Profilbild seiner Mitglieder sind für **alle Mitglieder dieses Boards** sichtbar; die Mitglieder können sie, je nach ihren Rechten, bearbeiten, kommentieren und abstimmen. Wer einen Einladungslink eines Boards erhält, kann dem Board beitreten; teilen Sie Einladungslinks daher nur mit Personen, die Ihre Inhalte sehen sollen. Die Besitzerin bzw. der Besitzer eines Boards kann den Link jederzeit zurücksetzen.',
           '**Gericht-Links:** Jedes Mitglied kann zu einem Gericht einen Link teilen. Wer diesen Link hat, sieht auch ohne Anmeldung Bild, Titel, den Namen des Kanals bzw. Blogs und den Quell-Link dieses einen Gerichts, aber nichts vom Board, seinen Mitgliedern, Kommentaren, Stimmen oder vom Kochverlauf. Der Link enthält eine zufällige, nicht erratbare Zeichenfolge und funktioniert, solange das Gericht nicht archiviert oder gelöscht ist. Wird er in einem Messenger geteilt, kann dieser eine Vorschau mit Titel und Bild abrufen. Teilen Sie Gericht-Links daher nur mit Personen, die das Gericht sehen sollen.',
           '**Kopien:** Ein Gericht lässt sich auf ein anderes Board kopieren, auf dem die kopierende Person Gerichte hinzufügen darf: von einem Mitglied seines Boards oder, über einen Gericht-Link, von jeder angemeldeten Person, die den Link hat. Die Kopie übernimmt Titel, Bild (als eigene Bilddatei), Quell-Link, Kanal bzw. Blog und Beschreibung, aber keine Kommentare, Stimmen und keinen Kochverlauf. Sie gilt als von der kopierenden Person hinzugefügt und ist für die Mitglieder des Ziel-Boards sichtbar.',
           'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.',
@@ -616,7 +616,7 @@ export const datenschutz: LegalText[] = [
       {
         heading: '14. Bilder (Vercel Blob)',
         blocks: [
-          'Bilder von Gerichten – aus der Quelle übernommene Vorschaubilder ebenso wie selbst hochgeladene Fotos – und selbst hochgeladene Profilbilder speichert die Anwendung im Dienst **Vercel Blob** der Vercel Inc. (Abschnitt 3). Hochgeladene Fotos werden vor dem Speichern verkleinert, neu kodiert und von allen Metadaten (z. B. EXIF-Angaben wie GPS-Position) befreit. Die Bilder werden unter zufällig erzeugten, nicht erratbaren Adressen abgelegt und von dort geladen; wer eine solche Adresse kennt, kann das Bild auch ohne Anmeldung abrufen. Bilder, die keinem Gericht und keinem Profil mehr zugeordnet sind, werden durch einen täglichen Aufräumvorgang gelöscht. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.',
+          'Bilder von Gerichten (aus der Quelle übernommene Vorschaubilder ebenso wie selbst hochgeladene Fotos) und selbst hochgeladene Profilbilder speichert die Anwendung im Dienst **Vercel Blob** der Vercel Inc. (Abschnitt 3). Hochgeladene Fotos werden vor dem Speichern verkleinert, neu kodiert und von allen Metadaten (z. B. EXIF-Angaben wie GPS-Position) befreit. Die Bilder werden unter zufällig erzeugten, nicht erratbaren Adressen abgelegt und von dort geladen; wer eine solche Adresse kennt, kann das Bild auch ohne Anmeldung abrufen. Bilder, die keinem Gericht und keinem Profil mehr zugeordnet sind, werden durch einen täglichen Aufräumvorgang gelöscht. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.',
         ],
       },
       {
@@ -639,7 +639,7 @@ export const datenschutz: LegalText[] = [
         blocks: [
           'Optional können Sie in Ihren Einstellungen für ein Gerät Push-Benachrichtigungen einschalten (standardmäßig aus; bis zu zehn Geräte je Konto). Sie erhalten dann eine Benachrichtigung, wenn andere Mitglieder Gerichte zu einem Ihrer Boards hinzufügen oder dort kommentieren oder abstimmen. Dazu speichern wir das von Ihrem Browser erzeugte Push-Abonnement: die Empfangsadresse Ihres Geräts beim Push-Dienst Ihres Browsers sowie die zugehörigen Schlüssel.',
           'Der Inhalt der Benachrichtigung umfasst den Namen des Boards, die Benutzernamen der Beteiligten, die Titel der Gerichte und bei Kommentaren den Anfang des Kommentartextes; bei Stimmen steht nur, wer wie abgestimmt hat.',
-          'Die Benachrichtigungen werden über den Push-Dienst des Browser- bzw. Betriebssystemherstellers zugestellt – bei Chrome und Android ist das Firebase Cloud Messaging der Google LLC (USA), bei Firefox der Dienst der Mozilla Corporation (USA), bei Edge der Windows Push Notification Service der Microsoft Corporation (USA). Der Inhalt wird Ende-zu-Ende verschlüsselt übertragen und kann vom Push-Dienst nicht gelesen werden; der Dienst erhält nur die für die Zustellung nötigen technischen Angaben.',
+          'Die Benachrichtigungen werden über den Push-Dienst des Browser- bzw. Betriebssystemherstellers zugestellt: bei Chrome und Android ist das Firebase Cloud Messaging der Google LLC (USA), bei Firefox der Dienst der Mozilla Corporation (USA), bei Edge der Windows Push Notification Service der Microsoft Corporation (USA). Der Inhalt wird Ende-zu-Ende verschlüsselt übertragen und kann vom Push-Dienst nicht gelesen werden; der Dienst erhält nur die für die Zustellung nötigen technischen Angaben.',
           'Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO sowie § 25 Abs. 1 TDDDG). Sie können sie jederzeit widerrufen, indem Sie die Benachrichtigungen in den Einstellungen der Anwendung oder Ihres Browsers abschalten; das Abonnement wird dann gelöscht.',
         ],
       },
@@ -672,7 +672,7 @@ export const datenschutz: LegalText[] = [
       {
         heading: '22. Übermittlung in Drittländer',
         blocks: [
-          'Vercel, Neon, Google, Resend sowie – bei aktivierten Push-Benachrichtigungen – Mozilla bzw. Microsoft sind bzw. gehören zu Unternehmen mit Sitz in den USA. Soweit dabei personenbezogene Daten in die USA übermittelt werden, stützt sich dies auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework (Art. 45 DSGVO), soweit der jeweilige Anbieter danach zertifiziert ist, und im Übrigen auf die Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO). Beim Laden von Vorschaubildern direkt von Plattformen und Websites (Abschnitt 15) sowie beim Abspielen von Videos (Abschnitt 16) können deren Server ebenfalls außerhalb der EU stehen.',
+          'Vercel, Neon, Google, Resend sowie (bei aktivierten Push-Benachrichtigungen) Mozilla bzw. Microsoft sind bzw. gehören zu Unternehmen mit Sitz in den USA. Soweit dabei personenbezogene Daten in die USA übermittelt werden, stützt sich dies auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework (Art. 45 DSGVO), soweit der jeweilige Anbieter danach zertifiziert ist, und im Übrigen auf die Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO). Beim Laden von Vorschaubildern direkt von Plattformen und Websites (Abschnitt 15) sowie beim Abspielen von Videos (Abschnitt 16) können deren Server ebenfalls außerhalb der EU stehen.',
         ],
       },
       {
