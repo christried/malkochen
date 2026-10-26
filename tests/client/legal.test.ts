@@ -40,6 +40,23 @@ test.each(datenschutz.map(text => [text.language, text] as const))('the %s Daten
   }
 })
 
+// #409 (review 4): the cookie of a Dish Link and the operator who opens every Board.
+const sectionOf = (text: (typeof datenschutz)[number], prefix: string) => {
+  const section = text.sections.find(section => section.heading.startsWith(prefix))
+  if (!section) throw new Error(`no section ${prefix} in ${text.language}`)
+  return JSON.stringify(section)
+}
+
+test.each(datenschutz.map(text => [text.language, text] as const))('the %s Datenschutz names the dish link cookie in section 9', (_, text) => {
+  expect(sectionOf(text, '9.')).toContain('malkochen.dish-link')
+})
+
+test('the German Datenschutz lets the operator open every Board in section 19', () => {
+  const section = sectionOf(datenschutz[0]!, '19.')
+  expect(section).toContain('jedes Board öffnen')
+  expect(section).not.toContain('nur **Zählwerte**')
+})
+
 test('the German Datenschutz describes 1.0.0: Open Sign-up, the Email Digest, Comments and Votes, the Event Log, deleting the account', () => {
   const german = JSON.stringify(datenschutz[0])
   expect(german).toContain('Open Sign-up')

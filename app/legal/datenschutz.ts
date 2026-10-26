@@ -1,6 +1,6 @@
 import type { LegalText } from './text'
 
-// The Datenschutzerklärung of malkochen (#391), as of 1.0.0. The German text
+// The Datenschutzerklärung of malkochen (#391), as of 1.1.0 (review 4, #409). The German text
 // is the binding one; English and Italian are translations for information.
 // Each section is checked against the app (server/, shared/, app/), and each
 // of the three keeps the same sections in the same order (tests/client/legal.test.ts).
@@ -81,6 +81,7 @@ const english: LegalText = {
           list: [
             '**Session cookies** (Better Auth): keep you signed in and secure the sign-in process. They expire with the session or are deleted when you sign out.',
             '**Invite cookie** (`malkochen.invite`): after you open an invite link, remembers which board you want to join after signing in; at most 30 days, deleted once you have joined.',
+            '**Dish link cookie** (`malkochen.dish-link`): after you tap "Copy to my board" on a dish link (section 11), remembers which dish you want to copy after signing in; at most one hour, and deleted as soon as the app opens after you sign in or the copy is made.',
             '**Design cookie** (`malkochen-theme`): remembers whether you chose light, dark or system design; 1 year.',
             '**Local storage**: whether the start screen has already been shown in this browser window (until the window is closed), and which dishes have already been celebrated as "classics" on this device, so the celebration appears only once.',
             '**Service worker**: keeps the basic parts of the application and an offline page on your device, so that malkochen behaves like an installed app; contents of your boards are not cached there. It also receives push notifications, if you turn them on (section 17).',
@@ -98,10 +99,12 @@ const english: LegalText = {
     {
       heading: '11. Boards and content you create',
       blocks: [
-        'Within the application you create and edit content: boards (name, emoji), their columns (name, subtitle, order) and dishes with title, source link, the name of the channel or blog that published the source, a picture with the chosen crop, and cooking history (when a dish was cooked). For dishes, cooking entries, comments and votes it is stored who created them and when.',
+        'Within the application you create and edit content: boards (name, emoji), their columns (name, subtitle, order) and dishes with title, source link, the name of the channel or blog that published the source, the source\'s caption (the text the platform shows publicly with the post, section 15), a picture with the chosen crop, and cooking history (when a dish was cooked). For dishes, cooking entries, comments and votes it is stored who created them and when.',
         'A **comment** is a message from a member about a dish, which can also be edited. A **vote** is a thumbs up or down for a cooked dish; each member has one per dish, and whoever takes it back deletes it.',
         'For your membership of a board we store when you joined, when you last opened the board and last saw it, which dishes you last opened (so that new dishes, comments and votes are marked for you), what rights you have on it, and whether you own it. This serves to mark what is new and to land you on the board you used last when you start the application again.',
         'All content of a board, and the Username and profile picture of its members, are visible to **all members of that board**; members can edit, comment and vote on it, depending on their rights. Anyone who receives an invite link to a board can join it; therefore share invite links only with people who should see your content. The owner of a board can reset the link at any time.',
+        '**Dish links:** Every member can share a link to a dish. Anyone who has this link sees, even without signing in, the picture, title, the name of the channel or blog, and the source link of this one dish, but nothing of the board, its members, comments, votes or cooking history. The link contains a random, unguessable string and works as long as the dish is not archived or deleted. If it is shared in a messenger, the messenger may fetch a preview with title and picture. Therefore share dish links only with people who should see the dish.',
+        '**Copies:** A dish can be copied to another board the person copying it may add dishes to: by a member of its board or, through a dish link, by anyone signed in who has the link. The copy takes over title, picture (as a picture file of its own), source link, channel or blog, and caption, but no comments, votes or cooking history. It counts as added by the person who copied it and is visible to the members of the target board.',
         'The legal basis is Art. 6(1)(b) GDPR.',
       ],
     },
@@ -137,8 +140,8 @@ const english: LegalText = {
     {
       heading: '15. Fetching links (TikTok, Instagram, YouTube, Pinterest, food blogs)',
       blocks: [
-        'When you paste a link while adding a dish, the application\'s server fetches the linked page or the public interface of the platform (e.g. the oEmbed interfaces of TikTok, YouTube and Pinterest) to find a title suggestion, the name of the publishing channel or blog (or of the person who pinned it), and a preview picture. For Instagram the server reads the public embed page of the post. This fetch happens on the server; your IP address is not passed on to the platform, only the link itself is sent.',
-        'When you open an Instagram dish, the server also checks via the embed page whether the video can be played there; this result is not stored.',
+        'When you paste a link while adding a dish, the application\'s server fetches the linked page or the public interface of the platform (e.g. the oEmbed interfaces of TikTok, YouTube and Pinterest) to find a title suggestion, the name of the publishing channel or blog (or of the person who pinned it), a preview picture and the post\'s caption, and whether its video can be played in malkochen. For Instagram the server reads the public embed page of the post. This fetch happens on the server; your IP address is not passed on to the platform, only the link itself is sent.',
+        'For dishes added before this function existed, the server fetches the source once more in the same way, to fill in the caption and whether the video can be played.',
         'Before you save the dish, the application shows the preview picture found, for checking. This picture is loaded directly from the servers of the respective platform or website; technically, its operator then receives your IP address and usual browser information. After saving, a copy of the picture is used (section 14), so no connection to the platform is made when the dish is shown. Only when you click the source link of a dish do you open the platform\'s page; from then on its privacy terms apply.',
         'The legal basis is Art. 6(1)(b) GDPR, since taking over dishes from links is a core function of the application.',
       ],
@@ -162,13 +165,14 @@ const english: LegalText = {
       heading: '18. E-mail summary',
       blocks: [
         'If you turn on the **e-mail summary** in your settings, we send you one e-mail a day in the evening, covering all your boards together. It lists the dishes others have added to your boards since the last summary, and the comments and votes you gave there. If there is nothing new, no e-mail is sent. The application sends the e-mail through Resend (section 6). For this we store up to when the summaries have already covered things, so that no dish appears twice. You can turn the summary off at any time in your settings; the entry is then deleted. The legal basis is your consent (Art. 6(1)(a) GDPR).',
+        '**Suggestions to turn them on:** On a board, the application may suggest turning on push notifications or the e-mail summary, at the earliest one day after you signed up and at most every 30 days per suggestion. For this we store with your account when each suggestion last appeared. Nothing is turned on until you tap "Turn on". The legal basis is Art. 6(1)(f) GDPR (legitimate interest in pointing out optional functions without disturbing you repeatedly).',
       ],
     },
     {
       heading: '19. Event log and the operator',
       blocks: [
-        'The application keeps an **event log**: one entry per action on boards and per switch of the application, for example that a board was created, a dish added, moved or archived, a comment written or a vote given. An entry contains only the time, the kind of action, identifiers (of the board, the dish, the person involved, the comment) and a few non-content details, such as the kind of source of a dish. It contains no titles, comment texts, names or links. Entries are not deleted; we remove your identifier when you delete your account.',
-        'The operator, who runs the application, sees on the administration page only **counts**: for example sign-ups per day and sign-up method, the number of active people, and the number of events per kind, as well as storage, e-mail and call volumes against the free allowances of the services. The operator sees no content, no names, and no boards on which they are not a member themselves. The legal basis is Art. 6(1)(f) GDPR (legitimate interest in the secure and plannable operation).',
+        'The application keeps an **event log**: one entry per action on boards and around your account. This includes, for example, that a board was created, a dish added, moved, copied or archived, a comment written, a vote given or a dish link opened; also your sign-up and every sign-in with its method, changes of Username, profile picture and language, turning push notifications and the e-mail summary on and off, suggestions to turn them on that were shown and answered, every push notification sent (per device, with the delivery result) and every e-mail summary sent, and the deletion of an account. An entry contains only the time, the kind of action, identifiers (of the board, the dish, the person involved, the comment) and a few non-content details, such as the kind of source of a dish, the sign-in method, or whether a dish link was opened by someone signed in. It does not itself contain titles, comment texts, names, e-mail addresses, IP addresses or links. Entries are not deleted; we remove your identifier when you delete your account.',
+        'The **operator**, who runs the application, can open every board and do everything its owner can there, without appearing as a member; what they add there shows their Username. On the administration page they see the event log with the names of the people, boards and dishes and the comment texts as they are **now**: what was deleted shows as deleted, a deleted account as "Deleted account", and earlier versions are not kept. Besides that they see counts such as sign-ups per day and sign-up method, the number of active people and of events per kind, and storage, e-mail and call volumes against the free allowances of the services. This serves to help people who ask and to detect misuse, all the more as anyone can sign up without an invitation while Open Sign-up is on (section 7). The legal basis is Art. 6(1)(f) GDPR (legitimate interest in secure operation, in helping with problems and in detecting misuse).',
       ],
     },
     {
@@ -180,7 +184,7 @@ const english: LegalText = {
     {
       heading: '21. Recipients',
       blocks: [
-        'Your data is not sold and not passed on for advertising purposes. Recipients are exclusively the service providers named in this policy to the extent described, the members of the boards you belong to (section 11), and the operator to the extent of section 19. Data is passed on to authorities only where there is a legal obligation to do so.',
+        'Your data is not sold and not passed on for advertising purposes. Recipients are exclusively the service providers named in this policy to the extent described, the members of the boards you belong to (section 11), people a member sends a dish link to, to the extent of section 11, and the operator to the extent of section 19. Data is passed on to authorities only where there is a legal obligation to do so.',
       ],
     },
     {
@@ -198,6 +202,8 @@ const english: LegalText = {
             'Event log: indefinitely, without content; without your identifier once you delete your account (section 19).',
             'Session data: until the session expires or you sign out.',
             'Misuse counters: only for short time windows (section 10).',
+            'Dish link cookie: at most one hour (section 9).',
+            'Times of the suggestions to turn on: as long as your account exists (section 18).',
             'Push subscriptions: until you turn notifications off or the push service reports that they are no longer valid.',
             'Server logs of the host: only for as long as needed for error analysis and security, and then deleted automatically.',
           ],
@@ -316,6 +322,7 @@ const italian: LegalText = {
           list: [
             '**Cookie di sessione** (Better Auth): vi mantengono connessi e proteggono il processo di accesso. Scadono con la sessione o vengono eliminati alla disconnessione.',
             '**Cookie di invito** (`malkochen.invite`): dopo l\'apertura di un link di invito, ricorda a quale board volete unirvi dopo l\'accesso; al massimo 30 giorni, eliminato dopo l\'adesione.',
+            '**Cookie del link al piatto** (`malkochen.dish-link`): dopo che avete toccato "Copia nella mia bacheca" su un link a un piatto (sezione 11), ricorda quale piatto volete copiare dopo l\'accesso; al massimo un\'ora, ed eliminato non appena l\'app si apre dopo l\'accesso o la copia viene creata.',
             '**Cookie del tema** (`malkochen-theme`): ricorda se avete scelto il tema chiaro, scuro o quello di sistema; 1 anno.',
             '**Memoria locale**: se la schermata iniziale è già stata mostrata in questa finestra del browser (fino alla chiusura della finestra) e quali piatti su questo dispositivo sono già stati festeggiati come "classici", affinché la festa compaia una sola volta.',
             '**Service worker**: conserva sul vostro dispositivo le parti di base dell\'applicazione e una pagina offline, affinché malkochen si comporti come un\'app installata; i contenuti delle vostre board non vengono memorizzati lì nella cache. Riceve inoltre le notifiche push, se le attivate (sezione 17).',
@@ -333,10 +340,12 @@ const italian: LegalText = {
     {
       heading: '11. Board e contenuti creati da voi',
       blocks: [
-        'All\'interno dell\'applicazione create e modificate contenuti: board (nome, emoji), le relative colonne (nome, sottotitolo, ordine) e i piatti con titolo, link alla fonte, il nome del canale o blog che ha pubblicato la fonte, un\'immagine con il ritaglio scelto e la cronologia delle cotture (quando un piatto è stato cucinato). Per piatti, voci di cottura, commenti e voti si memorizza chi li ha creati e quando.',
+        'All\'interno dell\'applicazione create e modificate contenuti: board (nome, emoji), le relative colonne (nome, sottotitolo, ordine) e i piatti con titolo, link alla fonte, il nome del canale o blog che ha pubblicato la fonte, la descrizione della fonte (il testo che la piattaforma mostra pubblicamente con il post, sezione 15), un\'immagine con il ritaglio scelto e la cronologia delle cotture (quando un piatto è stato cucinato). Per piatti, voci di cottura, commenti e voti si memorizza chi li ha creati e quando.',
         'Un **commento** è un messaggio di un membro su un piatto, che può anche essere modificato. Un **voto** è un pollice in su o in giù per un piatto cucinato; ogni membro ne ha uno per piatto, e chi lo ritira lo elimina.',
         'Per la vostra appartenenza a una board memorizziamo quando vi siete uniti, quando l\'avete aperta e vista per l\'ultima volta, quali piatti avete aperto per ultimi (affinché nuovi piatti, commenti e voti vi siano segnalati), quali diritti avete su di essa e se ne siete proprietari. Questo serve a segnalare le novità e a riportarvi, al nuovo avvio, sulla board usata per ultima.',
         'Tutti i contenuti di una board, nome utente e immagine del profilo dei suoi membri sono visibili a **tutti i membri di quella board**; i membri possono modificarli, commentarli e votarli, a seconda dei loro diritti. Chiunque riceva un link di invito a una board può aderirvi; condividete quindi i link di invito solo con persone che devono vedere i vostri contenuti. Il proprietario di una board può reimpostare il link in qualsiasi momento.',
+        '**Link ai piatti:** ogni membro può condividere un link a un piatto. Chi ha questo link vede, anche senza accedere, l\'immagine, il titolo, il nome del canale o blog e il link alla fonte di quel solo piatto, ma nulla della board, dei suoi membri, dei commenti, dei voti o della cronologia delle cotture. Il link contiene una sequenza casuale e non indovinabile e funziona finché il piatto non è archiviato o eliminato. Se viene condiviso in un servizio di messaggistica, questo può recuperare un\'anteprima con titolo e immagine. Condividete quindi i link ai piatti solo con persone che devono vedere il piatto.',
+        '**Copie:** un piatto può essere copiato su un\'altra board a cui chi lo copia può aggiungere piatti: da un membro della sua board oppure, tramite un link al piatto, da chiunque abbia effettuato l\'accesso e abbia il link. La copia riprende titolo, immagine (come file proprio), link alla fonte, canale o blog e descrizione, ma nessun commento, voto né cronologia delle cotture. Risulta aggiunta dalla persona che l\'ha copiata ed è visibile ai membri della board di destinazione.',
         'La base giuridica è l\'art. 6, par. 1, lett. b) GDPR.',
       ],
     },
@@ -372,8 +381,8 @@ const italian: LegalText = {
     {
       heading: '15. Recupero dei link (TikTok, Instagram, YouTube, Pinterest, blog di cucina)',
       blocks: [
-        'Quando incollate un link aggiungendo un piatto, il server dell\'applicazione recupera la pagina collegata o l\'interfaccia pubblica della piattaforma (ad es. le interfacce oEmbed di TikTok, YouTube e Pinterest) per ricavare un suggerimento di titolo, il nome del canale o blog che ha pubblicato (o della persona che ha pinnato) e un\'anteprima dell\'immagine. Per Instagram il server legge la pagina di incorporamento pubblica del post. Questo recupero avviene sul server; il vostro indirizzo IP non viene trasmesso alla piattaforma, viene inviato solo il link.',
-        'Quando aprite un piatto Instagram, il server verifica inoltre tramite la pagina di incorporamento se il video vi è riproducibile; questo risultato non viene memorizzato.',
+        'Quando incollate un link aggiungendo un piatto, il server dell\'applicazione recupera la pagina collegata o l\'interfaccia pubblica della piattaforma (ad es. le interfacce oEmbed di TikTok, YouTube e Pinterest) per ricavare un suggerimento di titolo, il nome del canale o blog che ha pubblicato (o della persona che ha pinnato), un\'anteprima dell\'immagine e la descrizione del post, e se il suo video si può riprodurre in malkochen. Per Instagram il server legge la pagina di incorporamento pubblica del post. Questo recupero avviene sul server; il vostro indirizzo IP non viene trasmesso alla piattaforma, viene inviato solo il link.',
+        'Per i piatti aggiunti prima di questa funzione, il server recupera la fonte ancora una volta nello stesso modo, per completare la descrizione e la riproducibilità del video.',
         'Prima di salvare il piatto, l\'applicazione mostra l\'anteprima trovata, per il controllo. Questa immagine viene caricata direttamente dai server della rispettiva piattaforma o sito; tecnicamente il loro gestore riceve quindi il vostro indirizzo IP e le usuali informazioni del browser. Dopo il salvataggio viene usata una copia dell\'immagine (sezione 14), così che alla visualizzazione del piatto non si stabilisca più alcuna connessione con la piattaforma. Solo cliccando sul link alla fonte di un piatto aprite la pagina della piattaforma; da quel momento si applicano le sue informative sulla privacy.',
         'La base giuridica è l\'art. 6, par. 1, lett. b) GDPR, poiché riprendere piatti dai link è una funzione centrale dell\'applicazione.',
       ],
@@ -397,13 +406,14 @@ const italian: LegalText = {
       heading: '18. Riepilogo via e-mail',
       blocks: [
         'Se attivate il **riepilogo via e-mail** nelle impostazioni, vi inviamo una e-mail al giorno la sera, per tutte le vostre board insieme. Elenca i piatti che altri hanno aggiunto alle vostre board dall\'ultimo riepilogo, e i commenti e i voti che avete dato lì. Se non c\'è nulla di nuovo, non viene inviata alcuna e-mail. L\'applicazione invia l\'e-mail tramite Resend (sezione 6). A tal fine memorizziamo fino a quando i riepiloghi hanno già coperto le novità, affinché nessun piatto compaia due volte. Potete disattivare il riepilogo in qualsiasi momento nelle impostazioni; la voce viene poi eliminata. La base giuridica è il vostro consenso (art. 6, par. 1, lett. a) GDPR).',
+        '**Suggerimenti per attivarle:** su una board l\'applicazione può suggerirvi di attivare le notifiche push o il riepilogo via e-mail, non prima di un giorno dalla registrazione e al massimo ogni 30 giorni per ciascun suggerimento. A tal fine memorizziamo nel vostro account quando ciascun suggerimento è comparso per l\'ultima volta. Non viene attivato nulla finché non toccate "Attiva". La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo a segnalare funzioni facoltative senza disturbare ripetutamente).',
       ],
     },
     {
       heading: '19. Registro degli eventi e gestore',
       blocks: [
-        'L\'applicazione tiene un **registro degli eventi**: una voce per ogni azione sulle board e per ogni interruttore dell\'applicazione, ad esempio che una board è stata creata, un piatto aggiunto, spostato o archiviato, un commento scritto o un voto espresso. Una voce contiene solo l\'orario, il tipo di azione, gli identificativi (della board, del piatto, della persona coinvolta, del commento) e alcuni dettagli non di contenuto, come il tipo di fonte di un piatto. Non contiene titoli, testi di commenti, nomi o link. Le voci non vengono eliminate; il vostro identificativo lo rimuoviamo quando eliminate il vostro account.',
-        'Il gestore, che amministra l\'applicazione, vede nella pagina di amministrazione solo **conteggi**: ad esempio le registrazioni per giorno e modalità di registrazione, il numero di persone attive e il numero di eventi per tipo, nonché i volumi di archiviazione, e-mail e chiamate rispetto ai piani gratuiti dei servizi. Il gestore non vede contenuti, nomi né board di cui non sia egli stesso membro. La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo a un funzionamento sicuro e pianificabile).',
+        'L\'applicazione tiene un **registro degli eventi**: una voce per ogni azione sulle board e intorno al vostro account. Ne fanno parte, ad esempio, che una board è stata creata, un piatto aggiunto, spostato, copiato o archiviato, un commento scritto, un voto espresso o un link a un piatto aperto; inoltre la vostra registrazione e ogni accesso con la sua modalità, le modifiche di nome utente, immagine del profilo e lingua, l\'attivazione e la disattivazione delle notifiche push e del riepilogo via e-mail, i suggerimenti per attivarle mostrati e le risposte date, ogni notifica push inviata (per dispositivo, con l\'esito della consegna) e ogni riepilogo via e-mail inviato, e l\'eliminazione di un account. Una voce contiene solo l\'orario, il tipo di azione, gli identificativi (della board, del piatto, della persona coinvolta, del commento) e alcuni dettagli non di contenuto, come il tipo di fonte di un piatto, la modalità di accesso o se un link a un piatto è stato aperto da una persona che aveva effettuato l\'accesso. Non contiene di per sé titoli, testi di commenti, nomi, indirizzi e-mail, indirizzi IP o link. Le voci non vengono eliminate; il vostro identificativo lo rimuoviamo quando eliminate il vostro account.',
+        'Il **gestore**, che amministra l\'applicazione, può aprire ogni board e fare lì tutto ciò che può fare il suo proprietario, senza comparire come membro; ciò che vi aggiunge compare con il suo nome utente. Nella pagina di amministrazione vede il registro degli eventi con i nomi delle persone, delle board e dei piatti e i testi dei commenti così come sono **ora**: ciò che è stato eliminato compare come eliminato, un account eliminato come "Account eliminato", e le versioni precedenti non vengono conservate. Vede inoltre conteggi come le registrazioni per giorno e modalità, il numero di persone attive e di eventi per tipo, e i volumi di archiviazione, e-mail e chiamate rispetto ai piani gratuiti dei servizi. Questo serve ad aiutare le persone che lo chiedono e a riconoscere gli abusi, tanto più che con la registrazione aperta attiva (sezione 7) ci si può registrare anche senza invito. La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo a un funzionamento sicuro, all\'aiuto in caso di problemi e al riconoscimento degli abusi).',
       ],
     },
     {
@@ -415,7 +425,7 @@ const italian: LegalText = {
     {
       heading: '21. Destinatari',
       blocks: [
-        'I vostri dati non vengono venduti né trasmessi a fini pubblicitari. Destinatari sono esclusivamente i fornitori di servizi indicati in questa informativa nella misura descritta, i membri delle board di cui fate parte (sezione 11) e il gestore nella misura della sezione 19. I dati vengono trasmessi alle autorità solo quando vi è un obbligo di legge.',
+        'I vostri dati non vengono venduti né trasmessi a fini pubblicitari. Destinatari sono esclusivamente i fornitori di servizi indicati in questa informativa nella misura descritta, i membri delle board di cui fate parte (sezione 11), le persone a cui un membro invia un link a un piatto, nella misura della sezione 11, e il gestore nella misura della sezione 19. I dati vengono trasmessi alle autorità solo quando vi è un obbligo di legge.',
       ],
     },
     {
@@ -433,6 +443,8 @@ const italian: LegalText = {
             'Registro degli eventi: a tempo indeterminato, senza contenuto; senza il vostro identificativo dopo l\'eliminazione del vostro account (sezione 19).',
             'Dati di sessione: fino alla scadenza della sessione o alla disconnessione.',
             'Contatori di abuso: solo per brevi finestre temporali (sezione 10).',
+            'Cookie del link al piatto: al massimo un\'ora (sezione 9).',
+            'Momenti dei suggerimenti per attivarle: finché il vostro account esiste (sezione 18).',
             'Abbonamenti push: finché disattivate le notifiche o il servizio push segnala che non sono più validi.',
             'Log del server dell\'host: solo per il tempo necessario all\'analisi degli errori e alla sicurezza, poi eliminati automaticamente.',
           ],
@@ -551,6 +563,7 @@ export const datenschutz: LegalText[] = [
             list: [
               '**Sitzungs-Cookies** (Better Auth): halten Sie angemeldet und sichern den Anmeldevorgang ab. Sie laufen mit der Sitzung ab bzw. werden beim Abmelden gelöscht.',
               '**Einladungs-Cookie** (`malkochen.invite`): merkt sich nach dem Öffnen eines Einladungslinks, welchem Board Sie nach der Anmeldung beitreten wollen; höchstens 30 Tage, nach dem Beitritt wird es gelöscht.',
+              '**Gericht-Link-Cookie** (`malkochen.dish-link`): merkt sich, nachdem Sie auf einem Gericht-Link (Abschnitt 11) „Auf mein Board kopieren“ angetippt haben, welches Gericht Sie nach der Anmeldung kopieren wollen; höchstens eine Stunde, und gelöscht, sobald die App nach der Anmeldung öffnet oder die Kopie angelegt ist.',
               '**Design-Cookie** (`malkochen-theme`): merkt sich, ob Sie das helle, dunkle oder das Systemdesign gewählt haben; 1 Jahr.',
               '**Lokaler Speicher**: ob der Startbildschirm in diesem Browserfenster schon gezeigt wurde (bis zum Schließen des Fensters) und welche Gerichte auf diesem Gerät schon als „Klassiker“ gefeiert wurden, damit die Feier nur einmal erscheint.',
               '**Service Worker**: hält die Grundbestandteile der App sowie eine Offline-Seite auf Ihrem Gerät vor, damit sich malkochen wie eine installierte App verhält; Inhalte Ihrer Boards werden dort nicht zwischengespeichert. Er empfängt außerdem Push-Benachrichtigungen, sofern Sie diese aktivieren (Abschnitt 17).',
@@ -568,10 +581,12 @@ export const datenschutz: LegalText[] = [
       {
         heading: '11. Boards und von Ihnen erstellte Inhalte',
         blocks: [
-          'Innerhalb der Anwendung erstellen und bearbeiten Sie Inhalte: Boards (Name, Emoji), deren Spalten (Name, Untertitel, Reihenfolge) und Gerichte mit Titel, Quell-Link, dem Namen des Kanals bzw. Blogs, der die Quelle veröffentlicht hat, einem Bild samt gewähltem Bildausschnitt sowie Kochverlauf (wann ein Gericht gekocht wurde). Zu Gerichten, Kochverlauf-Einträgen, Kommentaren und Stimmen wird gespeichert, wer sie angelegt hat und wann.',
+          'Innerhalb der Anwendung erstellen und bearbeiten Sie Inhalte: Boards (Name, Emoji), deren Spalten (Name, Untertitel, Reihenfolge) und Gerichte mit Titel, Quell-Link, dem Namen des Kanals bzw. Blogs, der die Quelle veröffentlicht hat, der Beschreibung der Quelle (der Text, den die Plattform zum Beitrag öffentlich zeigt, Abschnitt 15), einem Bild samt gewähltem Bildausschnitt sowie Kochverlauf (wann ein Gericht gekocht wurde). Zu Gerichten, Kochverlauf-Einträgen, Kommentaren und Stimmen wird gespeichert, wer sie angelegt hat und wann.',
           'Ein **Kommentar** ist eine Nachricht eines Mitglieds zu einem Gericht, die auch bearbeitet werden kann. Eine **Stimme** ist ein Daumen hoch oder runter zu einem gekochten Gericht; jedes Mitglied hat je Gericht eine, und wer sie zurücknimmt, löscht sie.',
           'Zu Ihrer Mitgliedschaft in einem Board speichern wir, wann Sie beigetreten sind, wann Sie das Board zuletzt geöffnet und zuletzt gesehen hatten, welche Gerichte Sie zuletzt geöffnet haben (damit neue Gerichte, Kommentare und Stimmen für Sie markiert werden), und welche Rechte Sie darauf haben, sowie ob Sie das Board besitzen. Das dient dazu, Neues zu markieren und Sie beim nächsten Start auf dem zuletzt genutzten Board landen zu lassen.',
           'Alle Inhalte eines Boards sowie Benutzername und Profilbild seiner Mitglieder sind für **alle Mitglieder dieses Boards** sichtbar; die Mitglieder können sie – je nach ihren Rechten – bearbeiten, kommentieren und abstimmen. Wer einen Einladungslink eines Boards erhält, kann dem Board beitreten; teilen Sie Einladungslinks daher nur mit Personen, die Ihre Inhalte sehen sollen. Die Besitzerin bzw. der Besitzer eines Boards kann den Link jederzeit zurücksetzen.',
+          '**Gericht-Links:** Jedes Mitglied kann zu einem Gericht einen Link teilen. Wer diesen Link hat, sieht auch ohne Anmeldung Bild, Titel, den Namen des Kanals bzw. Blogs und den Quell-Link dieses einen Gerichts, aber nichts vom Board, seinen Mitgliedern, Kommentaren, Stimmen oder vom Kochverlauf. Der Link enthält eine zufällige, nicht erratbare Zeichenfolge und funktioniert, solange das Gericht nicht archiviert oder gelöscht ist. Wird er in einem Messenger geteilt, kann dieser eine Vorschau mit Titel und Bild abrufen. Teilen Sie Gericht-Links daher nur mit Personen, die das Gericht sehen sollen.',
+          '**Kopien:** Ein Gericht lässt sich auf ein anderes Board kopieren, auf dem die kopierende Person Gerichte hinzufügen darf: von einem Mitglied seines Boards oder, über einen Gericht-Link, von jeder angemeldeten Person, die den Link hat. Die Kopie übernimmt Titel, Bild (als eigene Bilddatei), Quell-Link, Kanal bzw. Blog und Beschreibung, aber keine Kommentare, Stimmen und keinen Kochverlauf. Sie gilt als von der kopierenden Person hinzugefügt und ist für die Mitglieder des Ziel-Boards sichtbar.',
           'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.',
         ],
       },
@@ -607,8 +622,8 @@ export const datenschutz: LegalText[] = [
       {
         heading: '15. Abruf von Links (TikTok, Instagram, YouTube, Pinterest, Food-Blogs)',
         blocks: [
-          'Wenn Sie beim Hinzufügen eines Gerichts einen Link einfügen, ruft der Server der Anwendung die verlinkte Seite bzw. die öffentliche Schnittstelle der jeweiligen Plattform (z. B. die oEmbed-Schnittstellen von TikTok, YouTube und Pinterest) ab, um einen Titelvorschlag, den Namen des veröffentlichenden Kanals bzw. Blogs (oder der Person, die gepinnt hat) und ein Vorschaubild zu ermitteln. Bei Instagram liest der Server dafür die öffentliche Einbettungsseite des Beitrags. Dieser Abruf erfolgt serverseitig; Ihre IP-Adresse wird dabei nicht an die Plattform weitergegeben, übermittelt wird nur der Link selbst.',
-          'Beim Öffnen eines Instagram-Gerichts prüft der Server außerdem über die Einbettungsseite, ob das Video dort abspielbar ist; dieses Ergebnis wird nicht gespeichert.',
+          'Wenn Sie beim Hinzufügen eines Gerichts einen Link einfügen, ruft der Server der Anwendung die verlinkte Seite bzw. die öffentliche Schnittstelle der jeweiligen Plattform (z. B. die oEmbed-Schnittstellen von TikTok, YouTube und Pinterest) ab, um einen Titelvorschlag, den Namen des veröffentlichenden Kanals bzw. Blogs (oder der Person, die gepinnt hat), ein Vorschaubild und die Beschreibung des Beitrags zu ermitteln, sowie ob sich sein Video in malkochen abspielen lässt. Bei Instagram liest der Server dafür die öffentliche Einbettungsseite des Beitrags. Dieser Abruf erfolgt serverseitig; Ihre IP-Adresse wird dabei nicht an die Plattform weitergegeben, übermittelt wird nur der Link selbst.',
+          'Für Gerichte, die schon vor dieser Funktion hinzugefügt wurden, ruft der Server die Quelle einmalig auf dieselbe Weise erneut ab, um Beschreibung und Abspielbarkeit nachzutragen.',
           'Bevor Sie das Gericht speichern, zeigt die Anwendung das gefundene Vorschaubild zur Kontrolle an. Dieses Bild wird direkt von den Servern der jeweiligen Plattform bzw. Website geladen; dabei erhält deren Betreiber technisch bedingt Ihre IP-Adresse und übliche Browserangaben. Nach dem Speichern wird eine Kopie des Bildes verwendet (Abschnitt 14), sodass beim Anzeigen des Gerichts keine Verbindung zur Plattform mehr entsteht. Erst wenn Sie den Quell-Link eines Gerichts anklicken, öffnen Sie die Seite der Plattform; ab dann gelten deren Datenschutzbestimmungen.',
           'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, da das Übernehmen von Gerichten aus Links eine Kernfunktion der Anwendung ist.',
         ],
@@ -632,13 +647,14 @@ export const datenschutz: LegalText[] = [
         heading: '18. E-Mail-Zusammenfassung',
         blocks: [
           'Wenn Sie die **E-Mail-Zusammenfassung** in Ihren Einstellungen einschalten, schicken wir Ihnen einmal am Tag am Abend eine E-Mail, für alle Ihre Boards zusammen. Sie listet die Gerichte, die andere seit der letzten Zusammenfassung zu Ihren Boards hinzugefügt haben, sowie die Kommentare und Stimmen, die Sie dort abgegeben haben. Gibt es nichts Neues, bleibt die E-Mail aus. Die E-Mail verschickt die Anwendung über Resend (Abschnitt 6). Dazu speichern wir, bis wann die Zusammenfassungen schon erfasst wurden, damit kein Gericht zweimal erscheint. Ausschalten können Sie die Zusammenfassung jederzeit in Ihren Einstellungen; dann wird die Angabe gelöscht. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO).',
+          '**Hinweise zum Einschalten:** Die Anwendung kann Ihnen auf einem Board vorschlagen, Push-Benachrichtigungen oder die E-Mail-Zusammenfassung einzuschalten, frühestens einen Tag nach der Registrierung und je Hinweis höchstens alle 30 Tage. Dazu speichern wir zu Ihrem Konto, wann der jeweilige Hinweis zuletzt erschienen ist. Eingeschaltet wird erst, wenn Sie „Einschalten“ antippen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, auf freiwillige Funktionen hinzuweisen, ohne wiederholt zu stören).',
         ],
       },
       {
         heading: '19. Ereignisprotokoll und Betreiber',
         blocks: [
-          'Die Anwendung führt ein **Ereignisprotokoll**: einen Eintrag je Vorgang auf Boards und je Schalter der Anwendung, etwa dass ein Board angelegt, ein Gericht hinzugefügt, verschoben oder archiviert, ein Kommentar geschrieben oder eine Stimme abgegeben wurde. Der Eintrag enthält nur Zeitpunkt, Art des Vorgangs, Kennungen (des Boards, des Gerichts, der beteiligten Person, des Kommentars) und einige nicht inhaltliche Angaben, etwa die Art der Quelle eines Gerichts. Er enthält keine Titel, Kommentartexte, Namen oder Links. Die Einträge werden nicht gelöscht; Ihre Kennung entfernen wir, wenn Sie Ihr Konto löschen.',
-          'Der Betreiber, der die Anwendung verwaltet, sieht auf der Verwaltungsseite nur **Zählwerte**: etwa Anmeldungen je Tag und Anmeldeweg, die Zahl aktiver Personen und die Zahl der Ereignisse je Art, sowie Speicher-, E-Mail- und Aufrufmengen gegenüber den kostenlosen Kontingenten der Dienste. Er sieht keine Inhalte, keine Namen und keine Boards, in denen er nicht selbst Mitglied ist. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am sicheren und planbaren Betrieb).',
+          'Die Anwendung führt ein **Ereignisprotokoll**: einen Eintrag je Vorgang auf Boards und rund um Ihr Konto. Dazu gehören etwa, dass ein Board angelegt, ein Gericht hinzugefügt, verschoben, kopiert oder archiviert, ein Kommentar geschrieben, eine Stimme abgegeben oder ein Gericht-Link geöffnet wurde; außerdem Ihre Registrierung und jede Anmeldung mit dem Anmeldeweg, Änderungen von Benutzername, Profilbild und Sprache, das Ein- und Ausschalten von Push-Benachrichtigungen und E-Mail-Zusammenfassung, angezeigte und beantwortete Hinweise zum Einschalten, jede versandte Push-Benachrichtigung (je Gerät, mit dem Ergebnis der Zustellung) und E-Mail-Zusammenfassung sowie die Löschung eines Kontos. Ein Eintrag enthält nur Zeitpunkt, Art des Vorgangs, Kennungen (des Boards, des Gerichts, der beteiligten Person, des Kommentars) und einige nicht inhaltliche Angaben, etwa die Art der Quelle eines Gerichts, den Anmeldeweg oder ob ein Gericht-Link von einer angemeldeten Person geöffnet wurde. Er enthält selbst keine Titel, Kommentartexte, Namen, E-Mail-Adressen, IP-Adressen oder Links. Die Einträge werden nicht gelöscht; Ihre Kennung entfernen wir, wenn Sie Ihr Konto löschen.',
+          'Der **Betreiber**, der die Anwendung verwaltet, kann jedes Board öffnen und dort alles tun, was dessen Besitzerin oder Besitzer kann, ohne als Mitglied aufzutreten; was er dort hinzufügt, erscheint unter seinem Benutzernamen. Auf der Verwaltungsseite sieht er das Ereignisprotokoll mit den Namen der Personen, Boards und Gerichte sowie den Kommentartexten so, wie sie **jetzt** sind: Gelöschtes erscheint als gelöscht, ein gelöschtes Konto als „Gelöschtes Konto“, frühere Fassungen werden nicht aufbewahrt. Daneben sieht er Zählwerte wie Anmeldungen je Tag und Anmeldeweg, die Zahl aktiver Personen und der Ereignisse je Art sowie Speicher-, E-Mail- und Aufrufmengen gegenüber den kostenlosen Kontingenten der Dienste. Das dient dazu, Personen auf Nachfrage zu helfen und Missbrauch zu erkennen, zumal man sich bei eingeschalteter offener Registrierung (Abschnitt 7) auch ohne Einladung registrieren kann. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am sicheren Betrieb, an Hilfe bei Problemen und an der Erkennung von Missbrauch).',
         ],
       },
       {
@@ -650,7 +666,7 @@ export const datenschutz: LegalText[] = [
       {
         heading: '21. Empfänger',
         blocks: [
-          'Ihre Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang sowie die Mitglieder der Boards, denen Sie angehören (Abschnitt 11), und der Betreiber im Umfang von Abschnitt 19. Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht.',
+          'Ihre Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang, die Mitglieder der Boards, denen Sie angehören (Abschnitt 11), Personen, denen ein Mitglied einen Gericht-Link schickt, im Umfang von Abschnitt 11, und der Betreiber im Umfang von Abschnitt 19. Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht.',
         ],
       },
       {
@@ -668,6 +684,8 @@ export const datenschutz: LegalText[] = [
               'Ereignisprotokoll: dauerhaft, ohne Inhalt; ohne Ihre Kennung, wenn Sie Ihr Konto löschen (Abschnitt 19).',
               'Sitzungsdaten: bis zum Ablauf der Sitzung bzw. bis zum Abmelden.',
               'Missbrauchszähler: nur für kurze Zeitfenster (Abschnitt 10).',
+              'Gericht-Link-Cookie: höchstens eine Stunde (Abschnitt 9).',
+              'Zeitpunkte der Hinweise zum Einschalten: solange Ihr Konto besteht (Abschnitt 18).',
               'Push-Abonnements: bis Sie die Benachrichtigungen abschalten oder der Push-Dienst meldet, dass sie nicht mehr gültig sind.',
               'Server-Logs des Hosters: nur so lange, wie es zur Fehleranalyse und Sicherheit erforderlich ist, und danach automatisch gelöscht.',
             ],
