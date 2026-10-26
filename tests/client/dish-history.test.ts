@@ -47,6 +47,7 @@ function setup() {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a')] },
       { id: 'gekocht', name: 'Gekocht', subtitle: 'Schon geschafft!', isGekocht: true, dishes: [dish('b', ['2026-10-02T12:00:00.000Z', '2026-10-04T12:00:00.000Z'])] },
