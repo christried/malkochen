@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { createInstagramPlayCheck, createSourceLookup } from '../../server/source-lookup'
+import { createSourceLookup } from '../../server/source-lookup'
+import { createHttp } from '../../server/source-lookup/http'
+import { playsInPlace } from '../../server/source-lookup/instagram'
 import { fakeUpstream, fixture, html, json, redirect, status, type Route } from './fake-upstream'
 
 function lookupWith(routes: Route[], options: { timeoutMs?: number } = {}) {
@@ -253,12 +255,14 @@ describe('Instagram', () => {
   })
 })
 
-describe('whether Instagram plays a video in place (#279)', () => {
+describe('whether Instagram plays a video in place (#279, #394)', () => {
   const REEL_EMBED = 'https://www.instagram.com/reel/DFvsVH_OD9h/embed/'
 
   function checkWith(routes: Route[], options: { timeoutMs?: number } = {}) {
     const upstream = fakeUpstream(routes)
-    return { check: createInstagramPlayCheck({ fetch: upstream.fetch, ...options }), upstream }
+    const timeoutMs = options.timeoutMs ?? 3000
+    const check = (link: string) => playsInPlace(createHttp(AbortSignal.timeout(timeoutMs), upstream.fetch), link).catch(() => null)
+    return { check, upstream }
   }
 
   test('a Reel Instagram only shows with "Auf Instagram ansehen" doesn\'t play in place', async () => {
