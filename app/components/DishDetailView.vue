@@ -27,6 +27,8 @@ const emit = defineEmits<{
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
   vote: [result: VoteResult]
+  // "Kopieren": the Member picks another Board for a Copy (#402).
+  copy: []
   // Something to tell the Member, as a Toast.
   notice: [text: string]
 }>()
@@ -254,7 +256,8 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
       </div>
 
       <!-- Full width under the Creator and Source, on a phone and in the
-           desktop panel alike (#392 decision 5). #402 adds "Kopieren" under it. -->
+           desktop panel alike (#392 decision 5): "Link teilen" and, under it,
+           "Kopieren" (#402), a Copy on another of the user's Boards. -->
       <div
         class="flex flex-col gap-2"
         data-share-actions
@@ -268,6 +271,14 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         >
           <AppIcon name="link" />
           {{ t.settings.shareLink }}
+        </button>
+        <button
+          type="button"
+          class="flex w-full items-center justify-center gap-2 rounded-pill bg-surface-muted px-5 py-3.5 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          data-copy-dish
+          @click="emit('copy')"
+        >
+          {{ t.detail.copy }}
         </button>
       </div>
 

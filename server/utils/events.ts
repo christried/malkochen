@@ -22,6 +22,9 @@ export type EventKind =
   | 'member_left'
   | 'member_removed'
   | 'dish_added'
+  // A Copy (CONTEXT.md: Copy) made on another Board: `dish_id` the Copy, and
+  // `details.from` the Dish it was copied from. Not a "Dish added".
+  | 'dish_copied'
   | 'dish_moved'
   // "Archivieren" (CONTEXT.md: Archived Dish).
   | 'dish_archived'
@@ -75,6 +78,8 @@ export type EventDetails =
   // dish_added: the kind of its Source, null without one; `tour` for the
   // Dish the Tour has the user add.
   | { source: SourceKind | null, tour?: true }
+  // dish_copied: the Dish copied from, and the kind of its Source.
+  | { from: string, source: SourceKind | null }
   // dish_moved: the Columns it went from and to, and the Board it came
   // from if that isn't the one it went to.
   | { from: string, to: string, fromBoard?: string, undo?: true }

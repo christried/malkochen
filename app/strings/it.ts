@@ -302,6 +302,15 @@ export const it: Strings = {
   detail: {
     close: 'Chiudi',
     shareFailed: 'Non è stato possibile condividere il link.',
+    // "Copia" (#402): una Copia su un'altra delle tue bacheche.
+    copy: 'Copia',
+    copyTo: 'Copia in…',
+    copyNoBoards: 'Non hai altre bacheche a cui puoi aggiungere piatti.',
+    copied: (board: string) => `Copiato in ${board}`,
+    copiedWithoutImage: (board: string) => `Copiato in ${board}, senza immagine`,
+    openCopy: 'Apri',
+    copyForbidden: 'Non puoi aggiungere piatti a quella bacheca.',
+    copyFailed: 'Non è stato possibile copiare il piatto.',
     goneMeanwhile: (title: string) => `“${title}” non è più su questa bacheca.`,
     openOriginal: 'Apri l’originale',
     // The Caption, folded and unfolded (#393).

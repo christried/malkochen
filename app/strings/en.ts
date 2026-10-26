@@ -289,6 +289,15 @@ export const en: Strings = {
   detail: {
     close: 'Close',
     shareFailed: 'Couldn’t share the link.',
+    // "Copy" (#402): a Copy on another of the user's Boards.
+    copy: 'Copy',
+    copyTo: 'Copy to…',
+    copyNoBoards: 'You have no other board you can add dishes to.',
+    copied: (board: string) => `Copied to ${board}`,
+    copiedWithoutImage: (board: string) => `Copied to ${board}, without the image`,
+    openCopy: 'Open',
+    copyForbidden: 'You can’t add dishes to that board.',
+    copyFailed: 'Couldn’t copy the dish.',
     goneMeanwhile: (title: string) => `“${title}” isn’t on this board any more.`,
     openOriginal: 'Open original',
     // The Caption, folded and unfolded (#393).

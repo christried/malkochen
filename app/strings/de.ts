@@ -353,6 +353,15 @@ export const de = {
   detail: {
     close: 'Schließen',
     shareFailed: 'Teilen hat nicht geklappt.',
+    // "Kopieren" (#402): a Copy on another of the user's Boards.
+    copy: 'Kopieren',
+    copyTo: 'Kopieren nach…',
+    copyNoBoards: 'Du hast kein anderes Board, auf dem du Gerichte hinzufügen darfst.',
+    copied: (board: string) => `Auf ${board} kopiert`,
+    copiedWithoutImage: (board: string) => `Auf ${board} kopiert, ohne Bild`,
+    openCopy: 'Öffnen',
+    copyForbidden: 'Auf diesem Board darfst du keine Gerichte hinzufügen.',
+    copyFailed: 'Kopieren hat nicht geklappt.',
     goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',
     // The Caption, folded and unfolded (#393).
