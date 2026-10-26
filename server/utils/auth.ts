@@ -13,7 +13,7 @@ import { APP_VERSION } from '../version'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { openSignUpOn } from './open-sign-up'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
-import { detailsOf, recordEvents, type SignInMethod } from './events'
+import { detailsOf, recordEvents, type SignInMethod, userEvent } from './events'
 import { usernameTaken } from './people'
 import { spendClientLimit } from './rate-limit'
 import { emailSignInOffered, mailSignInCode, SIGN_IN_CODE_MINUTES } from './sign-in-code'
@@ -220,7 +220,7 @@ export const auth = betterAuth({
       create: {
         after: async (user, context) => {
           try {
-            await recordEvents(db, { kind: 'signed_up', board: sql`null`, user: user.id, details: detailsOf({ method: signInMethodOf(context) }) }, sql``)
+            await recordEvents(db, userEvent('signed_up', user.id, detailsOf({ method: signInMethodOf(context) })), sql``)
           }
           catch (error) {
             console.warn('[event-log] sign-up not recorded:', error)
@@ -232,7 +232,7 @@ export const auth = betterAuth({
       create: {
         after: async (session, context) => {
           try {
-            await recordEvents(db, { kind: 'signed_in', board: sql`null`, user: session.userId, details: detailsOf({ method: signInMethodOf(context) }) }, sql``)
+            await recordEvents(db, userEvent('signed_in', session.userId, detailsOf({ method: signInMethodOf(context) })), sql``)
           }
           catch (error) {
             console.warn('[event-log] sign-in not recorded:', error)

@@ -151,6 +151,12 @@ export function boardEvent(kind: EventKind, user: string, details?: SQL): EventV
   return { kind, board: sql`changed.board_id`, user, details }
 }
 
+// An event of no Board: the user's own (their account, settings, prompts) or
+// malkochen's as a whole.
+export function userEvent(kind: EventKind, user: EventValues['user'], details?: SQL): EventValues {
+  return { kind, board: sql`null`, user, details }
+}
+
 // The event of a Dish a write changed (`changed`, its row).
 export function dishEvent(kind: EventKind, user: string, details?: SQL): EventValues {
   return { kind, board: sql`changed.board_id`, dish: sql`changed.id`, user, details }

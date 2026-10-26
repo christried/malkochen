@@ -6,7 +6,7 @@ import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { APP_VERSION } from '../version'
 import { user } from '../db/schema'
-import { detailsOf, recordEvents, withEvents, type PromptAnswer, type PromptKind } from './events'
+import { detailsOf, recordEvents, userEvent, withEvents, type PromptAnswer, type PromptKind } from './events'
 import { isOperator } from './operator'
 
 // A person's picture wherever the app shows them (the badges of who added or
@@ -111,7 +111,7 @@ export async function setOwnPicture(userId: string, url: string | null): Promise
   await withEvents(
     db,
     db.update(user).set({ ownPicture: url }).where(eq(user.id, userId)).returning({ id: user.id, ownPicture: user.ownPicture }),
-    { kind: 'picture_changed', board: sql`null`, user: userId, details: detailsOf({ on: url !== null }) },
+    userEvent('picture_changed', userId, detailsOf({ on: url !== null })),
     { earlier: sql`select id, own_picture from ${user} where id = ${userId}`, where: sql`earlier.own_picture is distinct from changed.own_picture` },
   )
   return meOfUser(userId)
@@ -145,7 +145,7 @@ export async function recordPromptShown(userId: string, which: PromptKind): Prom
   const rows = await withEvents(
     db,
     db.update(user).set(column).where(eq(user.id, userId)).returning({ id: user.id }),
-    { kind: 'prompt_shown', board: sql`null`, user: userId, details: detailsOf({ which }) },
+    userEvent('prompt_shown', userId, detailsOf({ which })),
   )
   if (rows.rows.length === 0) return null
   return meOfUser(userId)
@@ -155,7 +155,7 @@ export async function recordPromptShown(userId: string, which: PromptKind): Prom
 export async function recordPromptAnswered(userId: string, which: PromptKind, answer: PromptAnswer): Promise<Me | null> {
   await recordEvents(
     db,
-    { kind: 'prompt_answered', board: sql`null`, user: userId, details: detailsOf({ which, answer }) },
+    userEvent('prompt_answered', userId, detailsOf({ which, answer })),
     sql`from ${user} changed where changed.id = ${userId}`,
   )
   return meOfUser(userId)
@@ -173,7 +173,7 @@ export async function setLanguage(userId: string, language: LanguageChoice): Pro
   await withEvents(
     db,
     db.update(user).set({ language }).where(eq(user.id, userId)).returning({ id: user.id, language: user.language }),
-    { kind: 'language_changed', board: sql`null`, user: userId, details: detailsOf({ language }) },
+    userEvent('language_changed', userId, detailsOf({ language })),
     { earlier: sql`select id, language from ${user} where id = ${userId}`, where: sql`earlier.language is distinct from changed.language` },
   )
   return meOfUser(userId)
@@ -201,7 +201,7 @@ export async function setUsername(userId: string, username: string): Promise<Me 
         .set({ username, usernameConfirmedAt: sql`coalesce(${user.usernameConfirmedAt}, now())` })
         .where(eq(user.id, userId))
         .returning({ id: user.id, username: user.username }),
-      { kind: 'username_changed', board: sql`null`, user: userId },
+      userEvent('username_changed', userId),
       { earlier: sql`select id, username from ${user} where id = ${userId}`, where: sql`earlier.username is distinct from changed.username` },
     )
     return meOfUser(userId)

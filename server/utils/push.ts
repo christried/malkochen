@@ -45,7 +45,7 @@ export async function turnOnPush(userId: string, target: PushTarget): Promise<vo
       eq(pushSubscription.userId, userId),
       sql`${pushSubscription.endpoint} not in (select ${pushSubscription.endpoint} from ${pushSubscription} where ${pushSubscription.userId} = ${userId} order by ${pushSubscription.createdAt} desc limit ${MAX_DEVICES})`,
     )),
-    ...(wasOn ? [] : [recordEvents(d, { kind: 'push_switched', board: sql`null`, user: userId, details: detailsOf({ on: true }) }, sql`from (select 1) switched`)]),
+    ...(wasOn ? [] : [recordEvents(d, userEvent('push_switched', userId, detailsOf({ on: true })), sql`from (select 1) switched`)]),
   ])
 }
 
@@ -55,7 +55,7 @@ export async function turnOffPush(userId: string, endpoint: string): Promise<voi
   await withEvents(
     db,
     db.delete(pushSubscription).where(and(eq(pushSubscription.userId, userId), eq(pushSubscription.endpoint, endpoint))).returning({ endpoint: pushSubscription.endpoint }),
-    { kind: 'push_switched', board: sql`null`, user: userId, details: detailsOf({ on: false }) },
+    userEvent('push_switched', userId, detailsOf({ on: false })),
     { once: true },
   )
 }
