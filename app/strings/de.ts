@@ -148,6 +148,14 @@ export const de = {
     invalidBody: 'Vielleicht wurde er zurückgesetzt. Frag nach einem neuen Link.',
     toApp: 'Zu malkochen',
   },
+  // The Dish Link page (CONTEXT.md: Dish Link, #401).
+  dishLink: {
+    // The Creator, "von pastaqueen".
+    by: (name: string) => `von ${name}`,
+    toSource: 'Zur Quelle',
+    goneTitle: 'Dieses Gericht gibt es hier nicht mehr',
+    goneBody: 'Vielleicht wurde es archiviert oder gelöscht.',
+  },
   board: {
     asOperator: 'Du siehst dieses Board als Betreiber von malkochen.',
     footer: 'Über malkochen',
@@ -345,6 +353,7 @@ export const de = {
   },
   detail: {
     close: 'Schließen',
+    shareFailed: 'Teilen hat nicht geklappt.',
     goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',
     // The Caption, folded and unfolded (#393).
