@@ -5,7 +5,9 @@
 // paths: the tests read it too, and their typecheck
 // (.nuxt/tsconfig.node.json) has no `~` aliases.
 import type { AchievementLevel } from '../utils/achievement'
-import type { SourceColumn } from '../../shared/admin'
+import type { EventGroup, SourceColumn } from '../../shared/admin'
+import type { EventKind } from '../../shared/event-kinds'
+import type { DishField } from '../../server/utils/events'
 import type { SectionKind } from '../../shared/changelog'
 import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'
@@ -16,7 +18,7 @@ import { intlFor } from './intl'
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dayWithYear, month: monthAndYear, moment, time } = intlFor('de')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -875,6 +877,95 @@ export const de = {
     megabytes: (bytes: number) => `${number(Math.round(bytes / 1_000_000))} MB`,
     percent: (share: number) => `${number(Math.round(share * 100))} %`,
     dashboards: 'Dashboards',
+    events: 'Ereignisse',
+    eventsHint: 'Was auf malkochen passiert, das Neueste zuerst. Namen, Titel und Kommentare stehen so da, wie sie jetzt sind.',
+    eventUser: 'Nutzer:in',
+    eventBoard: 'Board',
+    allBoards: 'Alle Boards',
+    eventGroup: 'Art',
+    allEvents: 'Alles',
+    eventFrom: 'Von',
+    eventTo: 'Bis',
+    loadMore: 'Mehr laden',
+    noEvents: 'Keine Ereignisse',
+    signedOut: 'Nicht angemeldet',
+    deleted: 'gelöscht',
+    commentDeleted: 'Kommentar gelöscht',
+    eventOn: 'an',
+    eventOff: 'aus',
+    movedFromTo: (from: string, to: string) => `von ${from} nach ${to}`,
+    movedFromBoard: (board: string) => `aus ${board}`,
+    // A moment in German time, from an ISO time.
+    dateTime: (at: string) => eventTime(new Date(at)),
+    // The fields a Dish edit changed.
+    dishFields: {
+      title: 'Titel',
+      image: 'Bild',
+      source: 'Link',
+      creator: 'Creator',
+      focus: 'Ausschnitt',
+    } satisfies Record<DishField, string>,
+    // The groups of kinds the Event Log filters by.
+    eventGroups: {
+      dishes: 'Gerichte',
+      cookings: 'Kochen',
+      talk: 'Kommentare und Daumen',
+      columns: 'Spalten',
+      board: 'Boards und Mitglieder',
+      account: 'Konten',
+      notifications: 'Benachrichtigungen',
+      links: 'Links',
+      operator: 'Betrieb',
+    } satisfies Record<EventGroup, string>,
+    // Every kind of event, past tense.
+    eventKinds: {
+      board_created: 'Board erstellt',
+      board_archived: 'Board archiviert',
+      board_restored: 'Board wiederhergestellt',
+      board_deleted: 'Board endgültig gelöscht',
+      member_joined: 'Beigetreten',
+      member_left: 'Board verlassen',
+      member_removed: 'Mitglied entfernt',
+      dish_added: 'Gericht hinzugefügt',
+      dish_moved: 'Gericht verschoben',
+      dish_archived: 'Gericht archiviert',
+      dish_restored: 'Gericht wiederhergestellt',
+      dish_deleted: 'Gericht endgültig gelöscht',
+      cooking_recorded: 'Gekocht',
+      cooking_deleted: 'Kochen gelöscht',
+      cooking_restored: 'Kochen wiederhergestellt',
+      comment_written: 'Kommentar geschrieben',
+      comment_edited: 'Kommentar bearbeitet',
+      comment_deleted: 'Kommentar gelöscht',
+      comment_restored: 'Kommentar wiederhergestellt',
+      vote_set: 'Daumen gegeben',
+      vote_changed: 'Daumen geändert',
+      vote_taken_back: 'Daumen zurückgenommen',
+      open_sign_up_switched: 'Anmeldung offen umgeschaltet',
+      dish_edited: 'Gericht bearbeitet',
+      column_added: 'Spalte hinzugefügt',
+      column_renamed: 'Spalte umbenannt',
+      column_subtitle_changed: 'Spaltenuntertitel geändert',
+      column_reordered: 'Spalten umsortiert',
+      column_deleted: 'Spalte gelöscht',
+      permission_changed: 'Recht geändert',
+      default_permission_changed: 'Recht für neue Mitglieder geändert',
+      invite_link_reset: 'Einladungslink zurückgesetzt',
+      board_renamed: 'Board umbenannt',
+      board_emoji_changed: 'Emoji geändert',
+      ownership_handed_over: 'Besitz übertragen',
+      signed_up: 'Neu angemeldet',
+      signed_in: 'Angemeldet',
+      username_changed: 'Username geändert',
+      picture_changed: 'Profilbild geändert',
+      language_changed: 'Sprache geändert',
+      push_switched: 'Push umgeschaltet',
+      digest_switched: 'Tägliche E-Mail umgeschaltet',
+      account_deleted: 'Konto gelöscht',
+      push_sent: 'Push gesendet',
+      digest_sent: 'Tägliche E-Mail gesendet',
+      dish_link_opened: 'Gericht-Link geöffnet',
+    } satisfies Record<EventKind, string>,
   },
   // The email confirming it (#346), in the language of whoever deleted it.
   accountDeletedEmail: {

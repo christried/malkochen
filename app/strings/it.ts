@@ -5,13 +5,16 @@
 // ("Il tuo account non è ancora abilitato", "Niente paura"). A Board is a
 // "bacheca", as on Pinterest. malkochen and Topfbert keep their names.
 // Relative imports, as in de.ts.
+import type { EventGroup } from '../../shared/admin'
+import type { EventKind } from '../../shared/event-kinds'
+import type { DishField } from '../../server/utils/events'
 import type { Strings } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dayWithYear, month: monthAndYear, moment, time } = intlFor('it-IT')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -751,6 +754,95 @@ export const it: Strings = {
     megabytes: (bytes: number) => `${number(Math.round(bytes / 1_000_000))} MB`,
     percent: (share: number) => `${number(Math.round(share * 100))}%`,
     dashboards: 'Dashboard',
+    events: 'Eventi',
+    eventsHint: 'Cosa succede su malkochen, dal più recente. Nomi, titoli e commenti sono quelli di adesso.',
+    eventUser: 'Utente',
+    eventBoard: 'Bacheca',
+    allBoards: 'Tutte le bacheche',
+    eventGroup: 'Tipo',
+    allEvents: 'Tutto',
+    eventFrom: 'Dal',
+    eventTo: 'Al',
+    loadMore: 'Carica altri',
+    noEvents: 'Nessun evento',
+    signedOut: 'Non registrato',
+    deleted: 'eliminato',
+    commentDeleted: 'Commento eliminato',
+    eventOn: 'attivo',
+    eventOff: 'disattivo',
+    movedFromTo: (from: string, to: string) => `da ${from} a ${to}`,
+    movedFromBoard: (board: string) => `da ${board}`,
+    // A moment in German time, from an ISO time.
+    dateTime: (at: string) => eventTime(new Date(at)),
+    // The fields a Dish edit changed.
+    dishFields: {
+      title: 'Titolo',
+      image: 'Immagine',
+      source: 'Link',
+      creator: 'Creator',
+      focus: 'Ritaglio',
+    } satisfies Record<DishField, string>,
+    // The groups of kinds the Event Log filters by.
+    eventGroups: {
+      dishes: 'Piatti',
+      cookings: 'Cucinato',
+      talk: 'Commenti e pollici',
+      columns: 'Colonne',
+      board: 'Bacheche e membri',
+      account: 'Account',
+      notifications: 'Notifiche',
+      links: 'Link',
+      operator: 'Gestione',
+    } satisfies Record<EventGroup, string>,
+    // Every kind of event, past tense.
+    eventKinds: {
+      board_created: 'Bacheca creata',
+      board_archived: 'Bacheca archiviata',
+      board_restored: 'Bacheca ripristinata',
+      board_deleted: 'Bacheca eliminata per sempre',
+      member_joined: 'Entrato',
+      member_left: 'Uscito dalla bacheca',
+      member_removed: 'Membro rimosso',
+      dish_added: 'Piatto aggiunto',
+      dish_moved: 'Piatto spostato',
+      dish_archived: 'Piatto archiviato',
+      dish_restored: 'Piatto ripristinato',
+      dish_deleted: 'Piatto eliminato per sempre',
+      cooking_recorded: 'Cucinato',
+      cooking_deleted: 'Cottura eliminata',
+      cooking_restored: 'Cottura ripristinata',
+      comment_written: 'Commento scritto',
+      comment_edited: 'Commento modificato',
+      comment_deleted: 'Commento eliminato',
+      comment_restored: 'Commento ripristinato',
+      vote_set: 'Pollice dato',
+      vote_changed: 'Pollice cambiato',
+      vote_taken_back: 'Pollice ritirato',
+      open_sign_up_switched: 'Registrazione aperta cambiata',
+      dish_edited: 'Piatto modificato',
+      column_added: 'Colonna aggiunta',
+      column_renamed: 'Colonna rinominata',
+      column_subtitle_changed: 'Sottotitolo della colonna cambiato',
+      column_reordered: 'Colonne riordinate',
+      column_deleted: 'Colonna eliminata',
+      permission_changed: 'Permesso cambiato',
+      default_permission_changed: 'Permesso per i nuovi membri cambiato',
+      invite_link_reset: 'Link d’invito reimpostato',
+      board_renamed: 'Bacheca rinominata',
+      board_emoji_changed: 'Emoji cambiata',
+      ownership_handed_over: 'Proprietà passata',
+      signed_up: 'Registrato',
+      signed_in: 'Accesso',
+      username_changed: 'Nome utente cambiato',
+      picture_changed: 'Foto profilo cambiata',
+      language_changed: 'Lingua cambiata',
+      push_switched: 'Push cambiato',
+      digest_switched: 'Email giornaliera cambiata',
+      account_deleted: 'Account eliminato',
+      push_sent: 'Push inviato',
+      digest_sent: 'Email giornaliera inviata',
+      dish_link_opened: 'Link del piatto aperto',
+    } satisfies Record<EventKind, string>,
   },
   accountDeletedEmail: {
     subject: 'Il tuo account malkochen è stato eliminato',

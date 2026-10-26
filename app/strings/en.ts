@@ -2,13 +2,16 @@
 // says what each is for), so a missing one fails the type check. Casual
 // "you", warm and short, like the German "du"; British spelling. malkochen
 // and Topfbert keep their names. Relative imports, as in de.ts.
+import type { EventGroup } from '../../shared/admin'
+import type { EventKind } from '../../shared/event-kinds'
+import type { DishField } from '../../server/utils/events'
 import type { Strings } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dayWithYear, month: monthAndYear, moment, time } = intlFor('en-GB')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -735,6 +738,95 @@ export const en: Strings = {
     megabytes: (bytes: number) => `${number(Math.round(bytes / 1_000_000))} MB`,
     percent: (share: number) => `${number(Math.round(share * 100))}%`,
     dashboards: 'Dashboards',
+    events: 'Events',
+    eventsHint: 'What happens on malkochen, newest first. Names, titles and comments are shown as they are now.',
+    eventUser: 'User',
+    eventBoard: 'Board',
+    allBoards: 'All boards',
+    eventGroup: 'Type',
+    allEvents: 'Everything',
+    eventFrom: 'From',
+    eventTo: 'To',
+    loadMore: 'Load more',
+    noEvents: 'No events',
+    signedOut: 'Not signed in',
+    deleted: 'deleted',
+    commentDeleted: 'Comment deleted',
+    eventOn: 'on',
+    eventOff: 'off',
+    movedFromTo: (from: string, to: string) => `from ${from} to ${to}`,
+    movedFromBoard: (board: string) => `from ${board}`,
+    // A moment in German time, from an ISO time.
+    dateTime: (at: string) => eventTime(new Date(at)),
+    // The fields a Dish edit changed.
+    dishFields: {
+      title: 'Title',
+      image: 'Image',
+      source: 'Link',
+      creator: 'Creator',
+      focus: 'Crop',
+    } satisfies Record<DishField, string>,
+    // The groups of kinds the Event Log filters by.
+    eventGroups: {
+      dishes: 'Dishes',
+      cookings: 'Cooking',
+      talk: 'Comments and thumbs',
+      columns: 'Columns',
+      board: 'Boards and members',
+      account: 'Accounts',
+      notifications: 'Notifications',
+      links: 'Links',
+      operator: 'Operation',
+    } satisfies Record<EventGroup, string>,
+    // Every kind of event, past tense.
+    eventKinds: {
+      board_created: 'Board created',
+      board_archived: 'Board archived',
+      board_restored: 'Board restored',
+      board_deleted: 'Board deleted for good',
+      member_joined: 'Joined',
+      member_left: 'Left the board',
+      member_removed: 'Member removed',
+      dish_added: 'Dish added',
+      dish_moved: 'Dish moved',
+      dish_archived: 'Dish archived',
+      dish_restored: 'Dish restored',
+      dish_deleted: 'Dish deleted for good',
+      cooking_recorded: 'Cooked',
+      cooking_deleted: 'Cooking deleted',
+      cooking_restored: 'Cooking restored',
+      comment_written: 'Comment written',
+      comment_edited: 'Comment edited',
+      comment_deleted: 'Comment deleted',
+      comment_restored: 'Comment restored',
+      vote_set: 'Thumb given',
+      vote_changed: 'Thumb changed',
+      vote_taken_back: 'Thumb taken back',
+      open_sign_up_switched: 'Open sign-up switched',
+      dish_edited: 'Dish edited',
+      column_added: 'Column added',
+      column_renamed: 'Column renamed',
+      column_subtitle_changed: 'Column subtitle changed',
+      column_reordered: 'Columns reordered',
+      column_deleted: 'Column deleted',
+      permission_changed: 'Permission changed',
+      default_permission_changed: 'Permission for new members changed',
+      invite_link_reset: 'Invite link reset',
+      board_renamed: 'Board renamed',
+      board_emoji_changed: 'Emoji changed',
+      ownership_handed_over: 'Ownership handed over',
+      signed_up: 'Signed up',
+      signed_in: 'Signed in',
+      username_changed: 'Username changed',
+      picture_changed: 'Profile picture changed',
+      language_changed: 'Language changed',
+      push_switched: 'Push switched',
+      digest_switched: 'Daily email switched',
+      account_deleted: 'Account deleted',
+      push_sent: 'Push sent',
+      digest_sent: 'Daily email sent',
+      dish_link_opened: 'Dish link opened',
+    } satisfies Record<EventKind, string>,
   },
   accountDeletedEmail: {
     subject: 'Your malkochen account is deleted',
