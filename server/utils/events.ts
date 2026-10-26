@@ -87,6 +87,8 @@ export type EventKind =
   | 'push_sent'
   // An Email Digest sent to a Member.
   | 'digest_sent'
+  // Someone opened a Dish Link page (CONTEXT.md: Dish Link), signed in or not.
+  | 'dish_link_opened'
 
 // How a Member signed in: Google, the email code, or the dev bypass (local
 // dev and tests). null when no sign-in endpoint says.
@@ -137,6 +139,10 @@ export type EventDetails =
   | { permission: Permission, on: boolean }
   // ownership_handed_over: to whom.
   | { member: string }
+  // dish_link_opened: whether the viewer was signed in. The event's user
+  // is null when they weren't, but also once a deleted account is gone, so
+  // only this tells the two apart.
+  | { signedIn: boolean }
 
 // The fields of a Dish an edit can change (dish_edited): the title, the
 // image (or its Placeholder), the Source, the Creator and the Focus Point.
@@ -149,6 +155,7 @@ export interface EventValues {
   kind: EventKind
   board: SQL
   dish?: SQL
+  // Null for someone signed out (dish_link_opened).
   user: string | null
   details?: SQL
   // Only for the rows this holds for (over the write's `changed` row, and

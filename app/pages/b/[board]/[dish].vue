@@ -214,6 +214,7 @@ watch(editing, async (isEditing) => {
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
           @comment="showComment"
           @vote="showVote"
+          @notice="text => toast = { text, duration: NOTICE_MS }"
         />
       </template>
       <AppSheet
