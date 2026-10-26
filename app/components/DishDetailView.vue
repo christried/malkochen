@@ -79,24 +79,12 @@ const playing = ref(false)
 const player = computed(() => playing.value ? video.value : null)
 watch(() => video.value?.src, () => playing.value = false)
 
-// "Video abspielen" shows only for a video that plays in malkochen (#394): the
-// Dish says so, found when its Source was added. A Dish from before that
-// (no stored value until #395 fills it in) asks Instagram as the detail
-// opens, as #279 did: until it answers there is no button; when it can't
-// tell, "Video abspielen" as before.
-const instagramLink = computed(() => props.dish.playableVideo === null && video.value?.platform === 'instagram' ? video.value.link : null)
-const playsInPlace = ref<boolean | null | undefined>()
-watch(instagramLink, async (link, _, onCleanup) => {
-  playsInPlace.value = undefined
-  if (!link || import.meta.server) return
-  let stale = false
-  onCleanup(() => stale = true)
-  const answer = await $fetch<{ playsInPlace: boolean | null }>('/api/instagram-plays', { query: { link } })
-    .then(({ playsInPlace }) => playsInPlace, () => null)
-  if (!stale) playsInPlace.value = answer
-}, { immediate: true })
+// "Video abspielen" shows only for a video that plays in malkochen (#394, #395):
+// the Dish says so, found when its Source was added or backfilled. Nothing is
+// asked of Instagram when the detail opens (#279's per-open check is gone), so
+// a Dish whose value is not known yet shows no button.
 // What the pill on the image offers: the player, or nothing.
-const videoAction = computed(() => playing.value ? null : videoPill(props.dish, playsInPlace.value))
+const videoAction = computed(() => playing.value ? null : videoPill(props.dish))
 const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
 </script>
 

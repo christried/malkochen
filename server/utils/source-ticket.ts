@@ -38,11 +38,29 @@ export function checkedSourceFacts(userId: string, sent: { link: string, caption
   return vouched ? { caption: sent.caption, playableVideo } : null
 }
 
+// Whether a Source's video plays in malkochen's player (#394), the one rule
+// for a Dish added or edited and for the backfill of older Dishes (#395).
+// `lookedUp` is what Source Lookup said, if it said anything. TikTok and
+// YouTube Shorts: from the link alone. Instagram: what Source Lookup said,
+// null when it said nothing. Any other Source: false. No Source: null.
+export function playableFor(source: DishSource | null, lookedUp: boolean | null | undefined): boolean | null {
+  if (!source) return null
+  switch (source.kind) {
+    case 'tiktok':
+    case 'youtube-short':
+      return videoEmbed(source) !== null
+    case 'instagram-reel':
+    case 'instagram-post':
+      return lookedUp ?? null
+    default:
+      return false
+  }
+}
+
 // What a Dish keeps of its Source's facts (#393, #394), from what the client
-// sent with the Source. The Caption only with a valid ticket. Whether a video
-// plays: for TikTok and YouTube Shorts read from the link alone (no ticket
-// needed); for Instagram only with a valid ticket, else null (not known); false
-// for any other Source. No Source: nothing known.
+// sent with the Source. The Caption only with a valid ticket; whether a video
+// plays as playableFor says, with Source Lookup's answer only from a valid
+// ticket.
 export function storedSourceFacts(
   userId: string,
   source: DishSource | null,
@@ -50,15 +68,5 @@ export function storedSourceFacts(
 ): { caption: string | null, playableVideo: boolean | null } {
   if (!source) return { caption: null, playableVideo: null }
   const checked = checkedSourceFacts(userId, { link: source.link, ...sent })
-  const caption = checked?.caption ?? null
-  switch (source.kind) {
-    case 'tiktok':
-    case 'youtube-short':
-      return { caption, playableVideo: videoEmbed(source) !== null }
-    case 'instagram-reel':
-    case 'instagram-post':
-      return { caption, playableVideo: checked?.playableVideo ?? null }
-    default:
-      return { caption, playableVideo: false }
-  }
+  return { caption: checked?.caption ?? null, playableVideo: playableFor(source, checked?.playableVideo) }
 }

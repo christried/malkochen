@@ -441,9 +441,12 @@ export const usageCount = pgTable('usage_count', {
 // ---------------------------------------------------------------------------
 // malkochen's own settings, which the Operator changes on the Admin Page
 // without a redeploy: one row. `openSignUp`: Open Sign-up (CONTEXT.md, #350),
-// off until the Operator switches it on.
+// off until the Operator switches it on. `sourceFactsFilledAt`: when the
+// backfill of Captions and playable videos for Dishes added before #393 and
+// #394 finished (server/utils/source-facts-fill.ts); null until then.
 
 export const setting = pgTable('setting', {
   id: boolean('id').primaryKey().default(true),
   openSignUp: boolean('open_sign_up').notNull().default(false),
+  sourceFactsFilledAt: timestamp('source_facts_filled_at', { withTimezone: true }),
 }, t => [check('setting_one_row', sql`${t.id}`)])
