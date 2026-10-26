@@ -127,7 +127,6 @@ export const en: Strings = {
     toSource: 'View source',
     goneTitle: 'This dish isn’t here any more',
     goneBody: 'It may have been archived or deleted.',
-    toApp: 'Go to malkochen',
   },
   board: {
     footer: 'About malkochen',
@@ -289,9 +288,6 @@ export const en: Strings = {
   },
   detail: {
     close: 'Close',
-    // "Link teilen" (Dish Link, #401).
-    shareLink: 'Share link',
-    linkCopied: 'Link copied',
     shareFailed: 'Couldn’t share the link.',
     goneMeanwhile: (title: string) => `“${title}” isn’t on this board any more.`,
     openOriginal: 'Open original',

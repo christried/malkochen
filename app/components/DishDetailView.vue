@@ -56,7 +56,7 @@ async function shareLink() {
     else {
       await navigator.clipboard.writeText(url)
       hapticConfirm()
-      emit('notice', t.detail.linkCopied)
+      emit('notice', t.settings.copied)
     }
   }
   catch {
@@ -267,7 +267,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           @click="shareLink"
         >
           <AppIcon name="link" />
-          {{ t.detail.shareLink }}
+          {{ t.settings.shareLink }}
         </button>
       </div>
 

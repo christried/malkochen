@@ -138,7 +138,6 @@ export const it: Strings = {
     toSource: 'Vai alla fonte',
     goneTitle: 'Questo piatto non c’è più',
     goneBody: 'Forse è stato archiviato o eliminato.',
-    toApp: 'Vai a malkochen',
   },
   board: {
     footer: 'Su malkochen',
@@ -302,9 +301,6 @@ export const it: Strings = {
   },
   detail: {
     close: 'Chiudi',
-    // "Link teilen" (Dish Link, #401).
-    shareLink: 'Condividi link',
-    linkCopied: 'Link copiato',
     shareFailed: 'Non è stato possibile condividere il link.',
     goneMeanwhile: (title: string) => `“${title}” non è più su questa bacheca.`,
     openOriginal: 'Apri l’originale',

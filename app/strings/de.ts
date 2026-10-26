@@ -155,7 +155,6 @@ export const de = {
     toSource: 'Zur Quelle',
     goneTitle: 'Dieses Gericht gibt es hier nicht mehr',
     goneBody: 'Vielleicht wurde es archiviert oder gelöscht.',
-    toApp: 'Zu malkochen',
   },
   board: {
     footer: 'Über malkochen',
@@ -353,9 +352,6 @@ export const de = {
   },
   detail: {
     close: 'Schließen',
-    // "Link teilen" (Dish Link, #401).
-    shareLink: 'Link teilen',
-    linkCopied: 'Link kopiert',
     shareFailed: 'Teilen hat nicht geklappt.',
     goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',

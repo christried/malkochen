@@ -90,7 +90,7 @@ useSeoMeta({
         to="/"
         class="mt-8 rounded-pill bg-surface-muted px-6 py-4 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
       >
-        {{ t.dishLink.toApp }}
+        {{ t.invite.toApp }}
       </NuxtLink>
     </div>
   </main>
