@@ -407,8 +407,9 @@ const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !se
 // it marks the Version as seen, so it never comes back. In the browser tests
 // it never shows by itself, unless the test page turned that on
 // (window.e2eChangelogPopup). The popup loads lazily, with the Changelog
-// files, and says so with `empty` if it finds nothing to list: then it stays
-// away for this visit.
+// files, and says so with `empty` if it finds nothing to list (it marks the
+// Version as seen all the same, so no prompt waits on it): then it stays away
+// for this visit.
 const visit = useVisit()
 const popupEmpty = ref(false)
 const popupSettled = ref(false)
