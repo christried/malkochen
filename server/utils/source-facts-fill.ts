@@ -1,14 +1,16 @@
-import { and, asc, count, eq, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, asc, count, eq, isNotNull, isNull, type SQL, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { dish, setting } from '../db/schema'
 import type { SourceLookup, SourceLookupResult } from '../source-lookup'
 import { lookupSource } from './source-lookup'
 import { playableFor } from './playable-video'
 
-// The backfill of Captions and playable videos (#395): Dishes added before
-// #393 and #394 have no Caption and no known playable video. Source Lookup
-// reads each one's Source again, a few per batch, oldest first, until the
-// time budget is spent. Run daily from the cleanup route
+// The backfill of Captions and playable videos (#395): Dishes added before the
+// deploy that brought it (setting.source_facts_before, set by its migration)
+// have no Caption and no known playable video. Dishes added since get theirs
+// when they are added, so only those created before the cutoff wait. Source
+// Lookup reads each one's Source again, a few per batch, oldest first, until
+// the time budget is spent. Run daily from the cleanup route
 // (server/api/cron/cleanup.get.ts), and by hand from /api/cron/source-facts.
 // It writes no Event Log rows and sends no Push. Each Dish it fills still moves
 // its Board's Version (the dish trigger, migration 0032), which is accepted:
@@ -31,9 +33,17 @@ export interface FillOptions {
   budgetMs?: number
   concurrency?: number
   now?: () => number
+  // Limits a run to some Dishes, for the tests: a scoped run never reads or
+  // marks the job done. Production calls pass nothing.
+  scope?: SQL
 }
 
-const waiting = and(isNotNull(dish.sourceLink), isNull(dish.playableVideo))
+// Only Dishes created before the cutoff: none wait while it is not set.
+const waitingDish = and(
+  isNotNull(dish.sourceLink),
+  isNull(dish.playableVideo),
+  sql`${dish.createdAt} < (select ${setting.sourceFactsBefore} from ${setting})`,
+)
 
 // True for the answer Source Lookup gives when it found nothing but the
 // link's own guess (server/source-lookup/types.ts nothingFound).
@@ -46,9 +56,14 @@ export async function fillSourceFacts({
   budgetMs = 30_000,
   concurrency = 3,
   now = Date.now,
+  scope,
 }: FillOptions = {}): Promise<SourceFactsReport> {
-  const [marked] = await db.select({ at: setting.sourceFactsFilledAt }).from(setting)
-  if (marked?.at) return { done: true, filled: 0, unreachable: 0, left: 0 }
+  // A scoped run ignores the job's done flag and never sets it.
+  if (!scope) {
+    const [marked] = await db.select({ at: setting.sourceFactsFilledAt }).from(setting)
+    if (marked?.at) return { done: true, filled: 0, unreachable: 0, left: 0 }
+  }
+  const waiting = and(waitingDish, scope)
 
   let filled = 0
   let unreachable = 0
@@ -83,7 +98,7 @@ export async function fillSourceFacts({
   const [counted] = await db.select({ left: count() }).from(dish).where(waiting)
   const left = counted?.left ?? 0
   const done = left === 0
-  if (done) {
+  if (done && !scope) {
     await db.update(setting).set({ sourceFactsFilledAt: sql`now()` }).where(isNull(setting.sourceFactsFilledAt))
     console.info('[source-facts] done')
   }

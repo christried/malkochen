@@ -1,5 +1,5 @@
 {
-  "id": "2813f528-a9f4-4d56-9b4e-b09a8d197816",
+  "id": "dea4afe4-ac75-4359-b194-ed34e9115b23",
   "prevId": "0e03c60d-1c52-4343-8612-b2a1cd231a1f",
   "version": "7",
   "dialect": "postgresql",
@@ -1618,6 +1618,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "source_facts_before": {
+          "name": "source_facts_before",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "source_facts_filled_at": {
           "name": "source_facts_filled_at",

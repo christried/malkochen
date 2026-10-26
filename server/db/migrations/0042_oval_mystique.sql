@@ -1,1 +1,0 @@
-ALTER TABLE "setting" ADD COLUMN "source_facts_filled_at" timestamp with time zone;
