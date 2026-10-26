@@ -3,7 +3,7 @@ import { alias } from 'drizzle-orm/pg-core'
 import type { Language } from '../../shared/language'
 import { db } from '../db'
 import { board, dish, membership, user } from '../db/schema'
-import { isMember } from './boards'
+import { accessOn, memberBoardsOf } from './board-access'
 import { pictureOf, usernameOf } from './people'
 
 // What the user popover (#213) shows about someone, seen from one of the
@@ -28,18 +28,21 @@ export interface PersonCard {
 // people outside their Boards. Someone who left this Board but still shares
 // another one is shown, as the Dishes they added here still show them.
 export async function personCard(boardId: string, viewerId: string, personId: string, language: Language): Promise<PersonCard | 'not-member' | null> {
-  if (!await isMember(boardId, viewerId)) return 'not-member'
+  const [access] = await accessOn(boardId, viewerId)
+  if (!access) return 'not-member'
 
   const theirs = alias(membership, 'theirs')
+  // Belonging, so the viewer's Memberships: the Operator visiting (ADR 0009)
+  // belongs to no Board they visit.
+  const mine = memberBoardsOf(viewerId)
   const sharedBoards = await db
     .select({ id: board.id, name: board.name, emoji: board.emoji })
-    .from(membership)
-    .innerJoin(theirs, and(eq(theirs.boardId, membership.boardId), eq(theirs.userId, personId)))
-    .innerJoin(board, eq(board.id, membership.boardId))
+    .from(mine)
+    .innerJoin(theirs, and(eq(theirs.boardId, mine.boardId), eq(theirs.userId, personId)))
+    .innerJoin(board, eq(board.id, mine.boardId))
     // In the viewer's order of their Boards (the switcher's).
-    .where(eq(membership.userId, viewerId))
-    .orderBy(asc(membership.joinedAt), asc(board.createdAt), asc(board.id))
-  if (sharedBoards.length === 0) return null
+    .orderBy(asc(mine.joinedAt), asc(board.createdAt), asc(board.id))
+  if (sharedBoards.length === 0 && !(access.asOperator && await isMemberOf(boardId, personId))) return null
 
   const [[person], [added]] = await Promise.all([
     db
@@ -54,4 +57,10 @@ export async function personCard(boardId: string, viewerId: string, personId: st
   if (!person) return null
   const { createdAt, ...shown } = person
   return { ...shown, accountCreatedAt: createdAt.toISOString(), dishesAdded: added?.count ?? 0, sharedBoards, isYou: person.id === viewerId }
+}
+
+// Whether the user is a Member of the Board (a Membership, not the Operator's visit).
+async function isMemberOf(boardId: string, userId: string): Promise<boolean> {
+  const [found] = await db.select({ one: membership.userId }).from(membership).where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+  return found !== undefined
 }

@@ -15,7 +15,7 @@ afterEach(() => {
 })
 
 function answer(link: string): LookupAnswer {
-  return { kind: 'blog', canonicalLink: `${link}/kanonisch`, suggestedTitle: 'Linsen-Dal', creator: 'Kochblog', imageUrl: 'https://bilder.example/dal.jpg', imageTicket: 'ticket' }
+  return { kind: 'blog', canonicalLink: `${link}/kanonisch`, suggestedTitle: 'Linsen-Dal', creator: 'Kochblog', caption: null, playableVideo: false, imageUrl: 'https://bilder.example/dal.jpg', imageTicket: 'ticket', sourceTicket: 'quelle' }
 }
 
 function setup(start = '') {

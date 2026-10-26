@@ -7,6 +7,7 @@ import { parseServerEnv } from '../env'
 import { mailSender } from './mail'
 import { slugOf } from './addresses'
 import { signInRefusal } from './auth'
+import { detailsOf, userEvent, withEvents } from './events'
 import { recipientLanguage } from './people'
 
 const env = parseServerEnv(process.env)
@@ -20,13 +21,25 @@ export const digestOffered = sendEmails !== null
 // Now, in whole milliseconds (emailDigest.coveredUntil).
 const nowInMs = sql<Date>`date_trunc('milliseconds', now())`
 
-// Switched on, the first digest lists what is added from now on.
+// Switched on, the first digest lists what is added from now on. A switch in
+// the event log (#399) only when it was off: a row inserted.
 export async function switchDigestOn(userId: string): Promise<void> {
-  await db.insert(emailDigest).values({ userId, coveredUntil: nowInMs }).onConflictDoNothing()
+  await withEvents(
+    db,
+    db.insert(emailDigest).values({ userId, coveredUntil: nowInMs }).onConflictDoNothing().returning({ userId: emailDigest.userId }),
+    userEvent('digest_switched', userId, detailsOf({ on: true })),
+    { once: true },
+  )
 }
 
+// A switch in the event log (#399) only when it was on: a row deleted.
 export async function switchDigestOff(userId: string): Promise<void> {
-  await db.delete(emailDigest).where(eq(emailDigest.userId, userId))
+  await withEvents(
+    db,
+    db.delete(emailDigest).where(eq(emailDigest.userId, userId)).returning({ userId: emailDigest.userId }),
+    userEvent('digest_switched', userId, detailsOf({ on: false })),
+    { once: true },
+  )
 }
 
 export async function isDigestOn(userId: string): Promise<boolean> {
@@ -52,9 +65,9 @@ export async function sendDigests(): Promise<DigestReport> {
   const covered = await claimCoverage()
   if (covered.length === 0) return { covered: 0, sent: 0, failed: 0 }
 
-  let emails: Map<string, Email>
+  let digests: Map<string, Digest>
   try {
-    emails = await digestEmails(covered)
+    digests = await digestEmails(covered)
   }
   catch (err) {
     // Nothing went out: the next run covers it all again.
@@ -62,15 +75,22 @@ export async function sendDigests(): Promise<DigestReport> {
     throw err
   }
 
-  const { failed } = await sendEmails([...emails.values()])
+  const { failed } = await sendEmails([...digests.values()].map(d => d.email))
   const notSent = new Set(failed)
-  await uncover(covered.filter(c => notSent.has(emails.get(c.userId)?.to ?? '')))
-  return { covered: covered.length, sent: emails.size - notSent.size, failed: notSent.size }
+  await recordDigestsSent([...digests].filter(([, d]) => !notSent.has(d.email.to)))
+  await uncover(covered.filter(c => notSent.has(digests.get(c.userId)?.email.to ?? '')))
+  return { covered: covered.length, sent: digests.size - notSent.size, failed: notSent.size }
+}
+
+// One digest to send: its email, and how many Boards it lists.
+interface Digest {
+  email: Email
+  boards: number
 }
 
 // Each digest to send, by user id: everyone with news who may still sign
 // in.
-async function digestEmails(covered: Coverage[]): Promise<Map<string, Email>> {
+async function digestEmails(covered: Coverage[]): Promise<Map<string, Digest>> {
   const news = await newsFor(covered)
   if (news.size === 0) return new Map()
   const recipients = await db
@@ -80,7 +100,19 @@ async function digestEmails(covered: Coverage[]): Promise<Map<string, Email>> {
   const origin = env.BETTER_AUTH_URL.replace(/\/+$/, '')
   return new Map(recipients
     .filter(r => !signInRefusal(r))
-    .map(r => [r.id, digestEmail({ ...r, language: recipientLanguage(r) }, news.get(r.id)!, origin)]))
+    .map((r): [string, Digest] => [r.id, { email: digestEmail({ ...r, language: recipientLanguage(r) }, news.get(r.id)!, origin), boards: news.get(r.id)!.length }]))
+}
+
+// One digest_sent event per digest that went out (#399), in one insert. A
+// failure to record is logged and never thrown: the emails went out.
+async function recordDigestsSent(sent: [string, Digest][]): Promise<void> {
+  if (sent.length === 0) return
+  try {
+    await db.insert(eventLog).values(sent.map(([userId, { boards }]) => ({ kind: 'digest_sent' as const, boardId: null, dishId: null, userId, details: { boards } })))
+  }
+  catch (err) {
+    console.warn('[event-log] digest_sent not recorded:', err)
+  }
 }
 
 // What one run covers for a Member: what was added in (since, until].

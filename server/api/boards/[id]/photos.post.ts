@@ -1,4 +1,4 @@
-import { isMember } from '../../../utils/boards'
+import { isMember } from '../../../utils/board-access'
 import { photoTickets, storePhoto } from '../../../utils/image-store'
 import { storeUploadedPhoto } from '../../../utils/photo-upload'
 

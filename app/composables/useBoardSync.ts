@@ -14,6 +14,7 @@ const REOPEN_AFTER_MS = 30 * 60_000
 // answers, or drops it while `paused` (a Dish is being dragged) or if one of
 // its writes was under way meanwhile; the next check brings it.
 export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean) {
+  const visit = useVisit()
   let hiddenSince: number | null = null
   // The user came back after long enough away to reopen the Board, and it
   // hasn't been reopened yet: the next sync does that before it loads. Kept
@@ -43,7 +44,11 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
   // a load before the reopen would record the Board as seen up to now, and
   // the reopen would then take every Dish added while away off what is "Neu".
   function comeBack() {
-    if (hiddenSince !== null && Date.now() - hiddenSince >= REOPEN_AFTER_MS) reopenDue = true
+    if (hiddenSince !== null && Date.now() - hiddenSince >= REOPEN_AFTER_MS) {
+      reopenDue = true
+      // A new visit (useVisit): what was shown in the last may show again.
+      visit.nextVisit()
+    }
     hiddenSince = null
     void poll?.syncNow()
   }

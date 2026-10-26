@@ -5,8 +5,9 @@ import type { Language } from '../../shared/language'
 import { db } from '../db'
 import { board, inviteMiss, membership } from '../db/schema'
 import { slugOf } from './addresses'
-import { boardMembers, membershipOf, type BoardMember, type BoardNameAndEmoji } from './boards'
-import { boardEvent, withEvents } from './events'
+import { boardMembers, type BoardMember, type BoardNameAndEmoji } from './boards'
+import { accessOn } from './board-access'
+import { withEvents } from './events'
 
 // Invite Links (CONTEXT.md): /invite/<Board slug>-<secret> lets a signed-in
 // user on the Allowlist become a Member of the Board (shared/invite.ts).
@@ -95,15 +96,21 @@ export async function joinByInvite(secret: string, userId: string): Promise<{ bo
 // with its old slug or any other.
 // 'forbidden' for a Member who isn't the Owner, null for a non-Member.
 export async function resetInvite(boardId: string, userId: string): Promise<{ inviteToken: string } | 'forbidden' | null> {
-  const [found] = await membershipOf(boardId, userId)
+  const [found] = await accessOn(boardId, userId)
   if (!found) return null
   if (!found.isOwner) return 'forbidden'
-  const [updated] = await db
-    .update(board)
-    .set({ inviteToken: sql`default` })
-    .where(eq(board.id, boardId))
-    .returning({ inviteToken: board.inviteToken })
-  return updated ?? null
+  const { rows } = await withEvents(
+    db,
+    db
+      .update(board)
+      .set({ inviteToken: sql`default` })
+      .where(eq(board.id, boardId))
+      .returning({ id: board.id, inviteToken: board.inviteToken }),
+    { kind: 'invite_link_reset', board: sql`changed.id`, user: userId },
+  )
+  // withEvents answers the rows as the database names their columns.
+  const [updated] = rows as { invite_token: string }[]
+  return updated ? { inviteToken: updated.invite_token } : null
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +126,7 @@ const MISSES_ALLOWED = 30
 const MISS_WINDOW = sql`now() - interval '15 minutes'`
 
 function tooManyMisses() {
-  return createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found' })
+  return createError({ statusCode: 429, statusMessage: 'Too many links not found' })
 }
 
 // Who asks: their IP address. On Vercel, x-forwarded-for is the visitor's,
@@ -159,15 +166,20 @@ async function refundMiss(client: string) {
     .where(eq(inviteMiss.client, client))
 }
 
-// What `find` finds for this client's Invite Link: 429 while the client has
-// missed too often, 404 (a miss) if it finds nothing.
-export async function lookUpInvite<T>(event: H3Event, find: () => Promise<T | null>): Promise<T> {
+// What `find` finds for this client's secret link (an Invite Link, or a Dish
+// Link, server/utils/dish-links.ts: one counter for both, which is what a
+// guesser hits): 429 while the client has missed too often, `notFound` (a miss) if it finds nothing.
+export async function lookUpSecret<T>(event: H3Event, find: () => Promise<T | null>, notFound: () => Error): Promise<T> {
   const client = clientOf(event)
   if (await reserveMiss(client)) throw tooManyMisses()
   const found = await find()
-  if (found === null) throw inviteNotFound()
+  if (found === null) throw notFound()
   await refundMiss(client)
   return found
+}
+
+export function lookUpInvite<T>(event: H3Event, find: () => Promise<T | null>): Promise<T> {
+  return lookUpSecret(event, find, inviteNotFound)
 }
 
 // ---------------------------------------------------------------------------

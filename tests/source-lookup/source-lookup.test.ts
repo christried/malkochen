@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { createInstagramPlayCheck, createSourceLookup } from '../../server/source-lookup'
+import { createSourceLookup } from '../../server/source-lookup'
+import { createHttp } from '../../server/source-lookup/http'
+import { playsInPlace } from '../../server/source-lookup/instagram'
 import { fakeUpstream, fixture, html, json, redirect, status, type Route } from './fake-upstream'
 
 function lookupWith(routes: Route[], options: { timeoutMs?: number } = {}) {
@@ -21,6 +23,8 @@ describe('TikTok', () => {
       suggestedTitle: 'Scramble up ur name & I’ll try to guess it',
       creator: 'Scout, Suki & Stella',
       imageUrl: expect.stringMatching(/^https:\/\/p16-common-sign\.tiktokcdn-eu\.com\/tos-maliva-p-0068\/2367c7d45cf54a1397abd/),
+      caption: expect.stringMatching(/^Scramble up ur name & I’ll try to guess it/),
+      playableVideo: true,
     })
   })
 
@@ -89,6 +93,8 @@ describe('TikTok', () => {
       suggestedTitle: '',
       creator: null,
       imageUrl: null,
+      caption: null,
+      playableVideo: true,
     })
   })
 })
@@ -111,9 +117,12 @@ describe('Instagram', () => {
       suggestedTitle: 'Easy Overnight Bread Rolls',
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(EMBED_IMAGE),
+      caption: expect.stringMatching(/^Easy Overnight Bread Rolls/),
+      playableVideo: false,
     })
-    // Everything came from the embed page: the post page isn't asked.
-    expect(upstream.requested).toEqual([INSTAGRAM_REEL_EMBED])
+    // Everything came from the embed pages: the post page isn't asked (the
+    // plain embed page only says whether the video plays).
+    expect(upstream.requested).toEqual([INSTAGRAM_REEL_EMBED, 'https://www.instagram.com/reel/C0WUh-tqkxU/embed/'])
   })
 
   test('a post is its own kind of Source, read from its own embed page', async () => {
@@ -125,6 +134,8 @@ describe('Instagram', () => {
       suggestedTitle: 'Easy Overnight Bread Rolls',
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(EMBED_IMAGE),
+      caption: expect.stringMatching(/^Easy Overnight Bread Rolls/),
+      playableVideo: false,
     })
   })
 
@@ -150,6 +161,8 @@ describe('Instagram', () => {
       suggestedTitle: '',
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(EMBED_IMAGE),
+      caption: null,
+      playableVideo: false,
     })
   })
 
@@ -166,6 +179,8 @@ describe('Instagram', () => {
       suggestedTitle: '',
       creator: null,
       imageUrl: expect.stringMatching(POST_PAGE_IMAGE),
+      caption: null,
+      playableVideo: false,
     })
   })
 
@@ -191,6 +206,8 @@ describe('Instagram', () => {
       suggestedTitle: 'Easy Overnight Bread Rolls',
       creator: 'vegan_govegan',
       imageUrl: expect.stringMatching(POST_PAGE_IMAGE),
+      caption: expect.stringMatching(/^Easy Overnight Bread Rolls/),
+      playableVideo: false,
     })
   })
 
@@ -232,16 +249,20 @@ describe('Instagram', () => {
       suggestedTitle: '',
       creator: null,
       imageUrl: null,
+      caption: null,
+      playableVideo: false,
     })
   })
 })
 
-describe('whether Instagram plays a video in place (#279)', () => {
+describe('whether Instagram plays a video in place (#279, #394)', () => {
   const REEL_EMBED = 'https://www.instagram.com/reel/DFvsVH_OD9h/embed/'
 
   function checkWith(routes: Route[], options: { timeoutMs?: number } = {}) {
     const upstream = fakeUpstream(routes)
-    return { check: createInstagramPlayCheck({ fetch: upstream.fetch, ...options }), upstream }
+    const timeoutMs = options.timeoutMs ?? 3000
+    const check = (link: string) => playsInPlace(createHttp(AbortSignal.timeout(timeoutMs), upstream.fetch), link).catch(() => null)
+    return { check, upstream }
   }
 
   test('a Reel Instagram only shows with "Auf Instagram ansehen" doesn\'t play in place', async () => {
@@ -298,6 +319,8 @@ describe('YouTube Shorts', () => {
       suggestedTitle: 'Shortest Video on Youtube',
       creator: 'Mylo the Cat',
       imageUrl: VERTICAL_THUMBNAIL,
+      caption: null,
+      playableVideo: true,
     })
   })
 
@@ -336,6 +359,8 @@ describe('Pinterest', () => {
       suggestedTitle: 'Goodbye Live Tweeting, Hello Live Pinning',
       creator: 'Kent Brewster',
       imageUrl: 'https://i.pinimg.com/736x/a7/66/56/a76656e966b1958f568d63c3f1c05aec.jpg',
+      caption: 'Have you heard of Pinterest? Yes right? What about ? I just read the first report of live pinning on Mashable and I must say it is quite intriguing. Looks',
+      playableVideo: false,
     })
   })
 
@@ -376,6 +401,8 @@ describe('Pinterest', () => {
       suggestedTitle: '',
       creator: 'Kent Brewster',
       imageUrl: PIN_IMAGE_736,
+      caption: null,
+      playableVideo: false,
     })
   })
 
@@ -482,6 +509,8 @@ describe('blogs and other links', () => {
       // The Recipe's first author, not the site (og:site_name "Love and Lemons").
       creator: 'Jeanine Donofrio',
       imageUrl: 'https://cdn.loveandlemons.com/wp-content/uploads/2020/01/brownie-recipe-500x500.jpg',
+      caption: 'The best brownie recipe! Made with cocoa powder and chocolate chips, these homemade brownies are fudgy, gooey, super chocolaty, and easy to make!',
+      playableVideo: false,
     })
   })
 
@@ -492,6 +521,8 @@ describe('blogs and other links', () => {
       suggestedTitle: 'Knuspriger Tofu mit Erdnusssoße & Reis',
       creator: 'Lena Müller',
       imageUrl: 'https://veggie-kueche.example/wp-content/uploads/2025/03/knuspriger-tofu.jpg',
+      caption: null,
+      playableVideo: false,
     })
   })
 
@@ -521,6 +552,8 @@ describe('blogs and other links', () => {
       suggestedTitle: 'Weekend Shakshuka',
       creator: 'Salt & Pan',
       imageUrl: 'https://cdn.salt-and-pan.example/shakshuka.jpg',
+      caption: null,
+      playableVideo: false,
     })
   })
 
@@ -549,6 +582,8 @@ describe('blogs and other links', () => {
       suggestedTitle: '',
       creator: null,
       imageUrl: null,
+      caption: null,
+      playableVideo: false,
     })
   })
 
@@ -566,7 +601,7 @@ describe('blogs and other links', () => {
 })
 
 describe('never fails', () => {
-  const nothing = { suggestedTitle: '', creator: null, imageUrl: null }
+  const nothing = { suggestedTitle: '', creator: null, imageUrl: null, caption: null, playableVideo: false }
 
   test('an upstream that errors gives an empty result', async () => {
     const { lookup } = lookupWith([['https://down.example/', () => status(500)]])
@@ -581,6 +616,8 @@ describe('never fails', () => {
       kind: 'tiktok',
       canonicalLink: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
       ...nothing,
+      // The link names a video whatever the oEmbed answers.
+      playableVideo: true,
     })
   })
 
@@ -594,6 +631,7 @@ describe('never fails', () => {
       kind: 'youtube-short',
       canonicalLink: 'https://www.youtube.com/shorts/tPEE9ZwTmy0',
       ...nothing,
+      playableVideo: true,
     })
   })
 
@@ -740,5 +778,175 @@ describe('Suggested Title shortening', () => {
     const { lookup } = lookupWith([[link, () => html('<html><head><title>VEGANE LASAGNE</title></head><body></body></html>')]])
 
     expect((await lookup(link)).suggestedTitle).toBe('Vegane Lasagne')
+  })
+})
+
+// The Caption (CONTEXT.md, #393): the text the Source shows with its post.
+describe('Caption', () => {
+  test('a TikTok video\'s Caption is its whole oEmbed title, where the Suggested Title is shortened', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-eatthis.json'))]])
+
+    const result = await lookup('https://www.tiktok.com/@eatthisorg/video/7688042287548370208')
+
+    expect(result.caption).toBe(JSON.parse(fixture('tiktok-oembed-eatthis.json')).title)
+    expect(result.suggestedTitle.length).toBeLessThan(result.caption!.length)
+  })
+
+  test('an Instagram Reel\'s Caption is the caption text from its embed page, without the account\'s name', async () => {
+    const { lookup } = lookupWith([[INSTAGRAM_REEL_EMBED, () => html(fixture('instagram-embed-captioned.html'))]])
+
+    const { caption } = await lookup('https://www.instagram.com/reel/C0WUh-tqkxU/')
+
+    expect(caption).toMatch(/^Easy Overnight Bread Rolls/)
+    expect(caption).toContain('\n')
+    expect(caption).not.toContain('vegan_govegan')
+    expect(caption).not.toMatch(/[<>]/)
+  })
+
+  test('an Instagram post without a caption has none', async () => {
+    const { lookup } = lookupWith([[INSTAGRAM_POST_EMBED, () => html(fixture('instagram-embed-no-caption.html'))]])
+
+    expect((await lookup('https://www.instagram.com/p/C0WUh-tqkxU/')).caption).toBeNull()
+  })
+
+  test('a YouTube Short\'s Caption is the description its page gives', async () => {
+    const { lookup } = lookupWith([
+      [YOUTUBE_OEMBED, () => json(fixture('youtube-oembed.json'))],
+      [VERTICAL_THUMBNAIL, () => status(404)],
+      ['https://www.youtube.com/shorts/tPEE9ZwTmy0', () => html(fixture('youtube-short-page.html'))],
+    ])
+
+    expect((await lookup('https://www.youtube.com/shorts/tPEE9ZwTmy0')).caption).toBe(
+      'The original "Shortest Video on Youtube" video, starring Internet sensation, Mylo the Cat. Believe it or not, due to the popularity of this one second video,...',
+    )
+  })
+
+  test('a YouTube Short whose page stalls keeps its title and has no Caption', async () => {
+    const { lookup } = lookupWith([
+      [YOUTUBE_OEMBED, () => json(fixture('youtube-oembed.json'))],
+      [VERTICAL_THUMBNAIL, () => status(404)],
+      ['https://www.youtube.com/shorts/tPEE9ZwTmy0', () => 'hang'],
+    ], { timeoutMs: 400 })
+
+    expect(await lookup('https://www.youtube.com/shorts/tPEE9ZwTmy0')).toMatchObject({
+      suggestedTitle: 'Shortest Video on Youtube',
+      caption: null,
+    })
+  })
+
+  test('a Pin\'s Caption is its description, without the board keywords after " | "', async () => {
+    const { lookup } = lookupWith([
+      ['https://www.pinterest.com/oembed.json?', () => json(fixture('pinterest-oembed.json'))],
+      ['https://www.pinterest.com/pin/99360735500167749/', () => html(fixture('pinterest-pin-page.html'))],
+    ])
+
+    expect((await lookup('https://www.pinterest.com/pin/99360735500167749/')).caption).toBe(
+      'Have you heard of Pinterest? Yes right? What about ? I just read the first report of live pinning on Mashable and I must say it is quite intriguing. Looks',
+    )
+  })
+
+  test('a blog\'s Caption is its meta description, entities decoded', async () => {
+    const link = 'https://blog.example/vegane-lasagne'
+    const { lookup } = lookupWith([[link, () => html('<html><head><title>Vegane Lasagne</title><meta name="description" content="Schichten &amp; Sauce, ohne Ei."></head><body></body></html>')]])
+
+    expect((await lookup(link)).caption).toBe('Schichten & Sauce, ohne Ei.')
+  })
+
+  test('a page without a meta description has no Caption', async () => {
+    const link = 'https://salt-and-pan.example/shakshuka'
+    const { lookup } = lookupWith([[link, () => html(fixture('blog-og-only.html'))]])
+
+    expect((await lookup(link)).caption).toBeNull()
+  })
+
+  test('a long Caption is kept to a few thousand characters, with an ellipsis', async () => {
+    const link = 'https://blog.example/lang'
+    const description = `${'Kichererbsen und Tomaten. '.repeat(300)}`
+    const { lookup } = lookupWith([[link, () => html(`<html><head><meta name="description" content="${description}"></head><body></body></html>`)]])
+
+    const { caption } = await lookup(link)
+
+    expect(caption!.length).toBeLessThanOrEqual(4000)
+    expect(caption!.length).toBeGreaterThan(3000)
+    expect(caption!.endsWith('…')).toBe(true)
+  })
+
+  test('a link that gives nothing has no Caption', async () => {
+    const { lookup } = lookupWith([])
+
+    expect((await lookup('https://nothing.example/')).caption).toBeNull()
+  })
+})
+
+describe('Playable video (#394)', () => {
+  const REEL_EMBED = 'https://www.instagram.com/reel/DFvsVH_OD9h/embed/'
+  const REEL_CAPTIONED = 'https://www.instagram.com/reel/DFvsVH_OD9h/embed/captioned/'
+  const POST_EMBED = 'https://www.instagram.com/p/DFvsVH_OD9h/embed/'
+  const POST_CAPTIONED = 'https://www.instagram.com/p/DFvsVH_OD9h/embed/captioned/'
+
+  test('a TikTok video plays', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed.json'))]])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')).playableVideo).toBe(true)
+  })
+
+  test('a TikTok photo post does not', async () => {
+    const { lookup } = lookupWith([[TIKTOK_OEMBED, () => json(fixture('tiktok-oembed.json'))]])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/photo/6718335390845095173')).playableVideo).toBe(false)
+  })
+
+  test('a YouTube Short plays', async () => {
+    const { lookup } = lookupWith([[YOUTUBE_OEMBED, () => json(fixture('youtube-oembed.json'))], [VERTICAL_THUMBNAIL, () => status(200)]])
+
+    expect((await lookup('https://youtube.com/shorts/tPEE9ZwTmy0')).playableVideo).toBe(true)
+  })
+
+  test('an Instagram Reel whose embed plays it, plays', async () => {
+    const { lookup, upstream } = lookupWith([
+      [REEL_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))],
+      [REEL_EMBED, () => html(fixture('instagram-embed-video.html'))],
+    ])
+
+    expect((await lookup('https://www.instagram.com/reel/DFvsVH_OD9h/')).playableVideo).toBe(true)
+    expect(upstream.requested).toContain(REEL_EMBED)
+  })
+
+  test('an Instagram Reel whose embed only says "Auf Instagram ansehen" does not', async () => {
+    const { lookup } = lookupWith([
+      [REEL_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))],
+      [REEL_EMBED, () => html(fixture('instagram-embed-watch-on-instagram.html'))],
+    ])
+
+    expect((await lookup('https://www.instagram.com/reel/DFvsVH_OD9h/')).playableVideo).toBe(false)
+  })
+
+  test('an Instagram photo post does not', async () => {
+    const { lookup } = lookupWith([
+      [POST_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))],
+      [POST_EMBED, () => html(fixture('instagram-embed-photo.html'))],
+    ])
+
+    expect((await lookup('https://www.instagram.com/p/DFvsVH_OD9h/')).playableVideo).toBe(false)
+  })
+
+  test('an Instagram post whose embed can\'t be read is not known to play', async () => {
+    const { lookup } = lookupWith([[POST_CAPTIONED, () => html(fixture('instagram-embed-captioned.html'))]])
+
+    expect((await lookup('https://www.instagram.com/p/DFvsVH_OD9h/')).playableVideo).toBe(false)
+  })
+
+  test('a blog page and a Pin do not', async () => {
+    const blog = lookupWith([['https://example.com/', () => html(fixture('blog-og-only.html'))]])
+    const pin = lookupWith([[PINTEREST_OEMBED, () => json(fixture('pinterest-oembed.json'))], [PIN_IMAGE_736, () => status(200)]])
+
+    expect((await blog.lookup('https://example.com/rezept')).playableVideo).toBe(false)
+    expect((await pin.lookup('https://www.pinterest.com/pin/3166662040284/')).playableVideo).toBe(false)
+  })
+
+  test('nothing found does not play', async () => {
+    const { lookup } = lookupWith([])
+
+    expect((await lookup('kein Link')).playableVideo).toBe(false)
   })
 })

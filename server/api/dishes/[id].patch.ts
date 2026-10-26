@@ -1,6 +1,7 @@
 import { dishEditBody, sourceOf } from '../../utils/dish-input'
-import { boardOfDish, editDish, type SavedDish } from '../../utils/dishes'
+import { boardOfDish, editDish, membersDish, type SavedDish } from '../../utils/dishes'
 import { storeDishImage } from '../../utils/image-store'
+import { storedSourceFacts } from '../../utils/source-ticket'
 
 // PATCH /api/dishes/:id — edits a Dish from its detail. Only the fields sent
 // change. A reloaded image is copied into the Image Store; if that fails, the
@@ -14,14 +15,25 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
   const user = requireUser(event)
   // Anyone's Dish with "edit Dishes", else only one the user added.
   await requireDishPermission(dishId, user.id, 'editDishes')
-  const { source, imageUrl, imageTicket, photo, imageFocus, ...rest } = parsed.data
+  const { source, caption, playableVideo, sourceTicket, imageUrl, imageTicket, photo, imageFocus, ...rest } = parsed.data
   // A reloaded image costs what adding a Dish from a link does.
   if (imageUrl) await spendRateLimit(user.id, 'add-dish')
   // Not copied for a non-Member or a missing Dish, which editDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, () => boardOfDish(dishId), { photo, imageUrl, imageTicket })
+  // The Caption and whether a video plays are read from the Source's link: they
+  // change only when the link does. The same link keeps what the Dish has,
+  // whatever is sent with it.
+  const newSource = source ? sourceOf(source) : null
+  const current = source ? await membersDish(dishId, user.id) : null
+  // A removed Source (null) has no link to match: its Caption goes.
+  const linkChanged = source !== undefined && (!newSource || newSource.link !== current?.source?.link)
   const edited = await editDish(dishId, user.id, {
     ...rest,
-    ...source !== undefined && { source: source && sourceOf(source) },
+    ...source !== undefined && { source: newSource },
+    // A new link keeps the Caption only with the Source Ticket Source Lookup
+    // signed for it (see the add route for the video); a removed Source takes
+    // its Caption and what it knew with it.
+    ...linkChanged && storedSourceFacts(user.id, newSource, { caption: caption ?? null, playableVideo, ticket: sourceTicket }),
     // Null (and no photo) drops the image, for the Placeholder; a new image
     // that couldn't be stored leaves it as it was.
     ...((imageUrl === null && !photo) || stored) && { imageUrl: stored },

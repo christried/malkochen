@@ -2,13 +2,15 @@
 // says what each is for), so a missing one fails the type check. Casual
 // "you", warm and short, like the German "du"; British spelling. malkochen
 // and Topfbert keep their names. Relative imports, as in de.ts.
+import type { EventGroup } from '../../shared/admin'
+import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dayWithYear, month: monthAndYear, moment, time } = intlFor('en-GB')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -55,6 +57,8 @@ export const en: Strings = {
   legal: {
     impressum: 'Imprint',
     privacy: 'Privacy',
+    languages: 'Languages',
+    bindingVersion: 'Read the binding German version',
   },
   changelog: {
     title: 'What\'s new',
@@ -62,8 +66,17 @@ export const en: Strings = {
     current: (version: string) => `You're on malkochen ${version}.`,
     isNew: 'New',
     unreleased: 'Just landed',
+    eyebrow: 'Versions',
+    versionPrefix: 'Version ',
+    newest: 'Latest',
+    copyLink: (v: string) => `Copy link to version ${v}`,
+    copied: 'Link copied',
+    copyFailed: 'Couldn’t copy the link.',
     version: (version: string) => `Version ${version}`,
     date: dayWithYear,
+    // The Changelog Popup (#406): closes it / opens the whole Changelog.
+    popupDone: 'Got it',
+    popupAll: 'All changes',
     empty: 'This is where you\'ll soon see what changes in malkochen.',
     sections: {
       added: 'Added',
@@ -109,7 +122,21 @@ export const en: Strings = {
     invalidBody: 'Maybe it was reset. Ask for a new one.',
     toApp: 'Go to malkochen',
   },
+  // The Dish Link page (CONTEXT.md: Dish Link, #401).
+  dishLink: {
+    // The Creator, "by pastaqueen".
+    by: (name: string) => `by ${name}`,
+    toSource: 'View source',
+    // "Kopieren" from the link (#403): a Copy on one of the user's Boards.
+    copy: 'Copy to my board',
+    startBoard: 'Start a new board and copy it there',
+    noBoards: 'You have no board to copy it to.',
+    goneTitle: 'This dish isn’t here any more',
+    goneBody: 'It may have been archived or deleted.',
+  },
   board: {
+    asOperator: "You're seeing this board as malkochen's operator.",
+    footer: 'About malkochen',
     emptyBoardTitle: 'Nothing here yet.',
     emptyBoardBody: 'Paste your first link!',
     emptyColumn: 'Nothing here yet.',
@@ -268,13 +295,25 @@ export const en: Strings = {
   },
   detail: {
     close: 'Close',
+    shareFailed: 'Couldn’t share the link.',
+    // "Copy" (#402): a Copy on another of the user's Boards.
+    copy: 'Copy',
+    copyTo: 'Copy to…',
+    copyNoBoards: 'You have no other board you can add dishes to.',
+    copied: (board: string) => `Copied to ${board}`,
+    copiedWithoutImage: (board: string) => `Copied to ${board}, without the image`,
+    openCopy: 'Open',
+    copyForbidden: 'You can’t add dishes to that board.',
+    copyFailed: 'Couldn’t copy the dish.',
     goneMeanwhile: (title: string) => `“${title}” isn’t on this board any more.`,
     openOriginal: 'Open original',
+    // The Caption, folded and unfolded (#393).
+    captionMore: 'more',
+    captionLess: 'less',
     playVideo: 'Play video',
     videoPlayer: (platform: VideoPlatform) => `Video from ${VIDEO_PLATFORMS[platform]}`,
     videoUnavailable: 'This video can’t be played here.',
     openOnInstagram: 'Open on Instagram',
-    watchOnInstagram: 'Watch on Instagram',
     noSource: 'No link',
     // After the Board's emoji, as in German.
     placement: (board: string, column: string) => `${board} · ${column}`,
@@ -582,6 +621,16 @@ export const en: Strings = {
     dark: 'Dark',
     system: 'System',
   },
+  prompt: {
+    pushTitle: 'Turn on notifications?',
+    pushText: 'Your phone lets you know when someone adds a dish, comments or gives a thumb on your boards.',
+    digestTitle: 'Turn on the daily email?',
+    digestText: 'An email in the evening with what’s new on your boards, only when there’s something. You can turn it off any time in your settings.',
+    turnOn: 'Turn on',
+    later: 'Later',
+    pushOn: 'Notifications are on.',
+    digestOn: 'The daily email is on.',
+  },
   push: {
     heading: 'Notifications',
     toggle: 'Push notifications',
@@ -589,16 +638,13 @@ export const en: Strings = {
     blocked: 'Your browser is blocking notifications from malkochen. Allow them in the site settings, then you can turn them on here.',
     unsupported: 'This browser can’t receive push notifications.',
     failed,
-    added: (names: string[], count: number, dish: string) => `${someNames(names)} added ${count === 1 ? dish : dishCount(count)}`,
-    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` and ${number(more)} more`}`,
-    commented: (name: string, dish: string) => `${name} commented on ${dish}`,
-    comment: (board: string, text: string) => `${board}: ${text}`,
-    voted,
-    onDish: (names: string[], dish: string) => `${someNames(names)} on ${dish}`,
-    counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
-    wrote: (names: string[], comments: number) => `${someNames(names)} wrote ${commentCount(comments)}`,
-    gave: (names: string[], votes: number) => `${someNames(names)} gave ${voteCount(votes)}`,
-    about: (board: string, titles: string[], more: number) => `${board}: on ${more === 0 ? nameList(titles) : `${titles.join(', ')} and ${number(more)} more`}`,
+    title: (names: string[], board: string) => `From ${someNames(names)} in ${board}`,
+    dish: (title: string, creator: string | null, platform: string | null) => `${title}${creator ? ` by ${creator}` : ''}${platform ? ` on ${platform}` : ''}`,
+    dishes: (count: number, titles: string[], more: number) => `${number(count)} new dishes: ${titles.join(', ')}${more === 0 ? '' : ` and ${number(more)} more`}`,
+    comment: (dish: string, text: string) => `Comment on ${dish}: “${text}”`,
+    vote: (dish: string, up: boolean) => `${dish} ${up ? '👍' : '👎'}`,
+    talkOn: (dish: string, comments: number, votes: number) => `${dish}: ${talkCounts(comments, votes).join(', ')}`,
+    aboutDishes: (comments: number, votes: number, titles: string[], more: number) => `${talkCounts(comments, votes).join(' and ')} on ${more === 0 ? nameList(titles) : `${titles.join(', ')} and ${number(more)} more`}`,
     also: (before: string, comments: number, votes: number) => `${before}. Plus ${talkCounts(comments, votes).join(' and ')}.`,
   },
   emailDigest: {
@@ -680,6 +726,15 @@ export const en: Strings = {
     activeHint: 'Who did something on a board, and on which boards.',
     people: 'People',
     boards: 'Boards',
+    boardSearch: 'Search boards or owners',
+    boardOwner: 'Owner',
+    boardMembers: 'Members',
+    boardDishes: 'Dishes',
+    boardLastActive: 'Last active',
+    boardArchived: 'Archived',
+    noBoards: 'No boards found.',
+    // A Board's last activity, from an ISO time.
+    lastActive: (at: string) => addedDate(new Date(at)),
     today: 'Today',
     week: 'Last 7 days',
     month: 'Last 30 days',
@@ -693,6 +748,7 @@ export const en: Strings = {
     openSignUp: 'Sign-up open',
     openSignUpHint: 'Anyone can sign up, not only the addresses on the Allowlist. Everyone who already has an account always gets in.',
     openSignUpFailed: failed,
+    eventsFailed: failed,
     figure: 'What',
     used: 'Used',
     free: 'Free',
@@ -705,6 +761,102 @@ export const en: Strings = {
     megabytes: (bytes: number) => `${number(Math.round(bytes / 1_000_000))} MB`,
     percent: (share: number) => `${number(Math.round(share * 100))}%`,
     dashboards: 'Dashboards',
+    events: 'Events',
+    eventsHint: 'What happens on malkochen, newest first. Names, titles and comments are shown as they are now.',
+    eventUser: 'User',
+    eventBoard: 'Board',
+    allBoards: 'All boards',
+    eventGroup: 'Type',
+    allEvents: 'Everything',
+    eventFrom: 'From',
+    eventTo: 'To',
+    loadMore: 'Load more',
+    noEvents: 'No events',
+    signedOut: 'Not signed in',
+    deleted: 'deleted',
+    commentDeleted: 'Comment deleted',
+    eventOn: 'on',
+    eventOff: 'off',
+    movedFromTo: (from: string, to: string) => `from ${from} to ${to}`,
+    movedFromBoard: (board: string) => `from ${board}`,
+    // After "Dish copied": the Dish it was copied from.
+    copiedFrom: 'from',
+    dishArchived: 'Archived',
+    promptWhich: { push: 'Push notifications', digest: 'Daily email' },
+    // A moment in German time, from an ISO time.
+    dateTime: (at: string) => eventTime(new Date(at)),
+    // The fields a Dish edit changed.
+    dishFields: {
+      title: 'Title',
+      image: 'Image',
+      source: 'Link',
+      creator: 'Creator',
+      focus: 'Crop',
+    } satisfies Record<DishField, string>,
+    // The groups of kinds the Event Log filters by.
+    eventGroups: {
+      dishes: 'Dishes',
+      cookings: 'Cooking',
+      talk: 'Comments and thumbs',
+      columns: 'Columns',
+      board: 'Boards and members',
+      account: 'Accounts',
+      notifications: 'Notifications',
+      links: 'Links and copies',
+      operator: 'Operation',
+    } satisfies Record<EventGroup, string>,
+    // Every kind of event, past tense.
+    eventKinds: {
+      board_created: 'Board created',
+      board_archived: 'Board archived',
+      board_restored: 'Board restored',
+      board_deleted: 'Board deleted for good',
+      member_joined: 'Joined',
+      member_left: 'Left the board',
+      member_removed: 'Member removed',
+      dish_added: 'Dish added',
+      dish_copied: 'Dish copied',
+      dish_moved: 'Dish moved',
+      dish_archived: 'Dish archived',
+      dish_restored: 'Dish restored',
+      dish_deleted: 'Dish deleted for good',
+      cooking_recorded: 'Cooked',
+      cooking_deleted: 'Cooking deleted',
+      cooking_restored: 'Cooking restored',
+      comment_written: 'Comment written',
+      comment_edited: 'Comment edited',
+      comment_deleted: 'Comment deleted',
+      comment_restored: 'Comment restored',
+      vote_set: 'Thumb given',
+      vote_changed: 'Thumb changed',
+      vote_taken_back: 'Thumb taken back',
+      open_sign_up_switched: 'Open sign-up switched',
+      dish_edited: 'Dish edited',
+      column_added: 'Column added',
+      column_renamed: 'Column renamed',
+      column_subtitle_changed: 'Column subtitle changed',
+      column_reordered: 'Columns reordered',
+      column_deleted: 'Column deleted',
+      permission_changed: 'Permission changed',
+      default_permission_changed: 'Permission for new members changed',
+      invite_link_reset: 'Invite link reset',
+      board_renamed: 'Board renamed',
+      board_emoji_changed: 'Emoji changed',
+      ownership_handed_over: 'Ownership handed over',
+      signed_up: 'Signed up',
+      signed_in: 'Signed in',
+      username_changed: 'Username changed',
+      picture_changed: 'Profile picture changed',
+      language_changed: 'Language changed',
+      push_switched: 'Push switched',
+      digest_switched: 'Daily email switched',
+      account_deleted: 'Account deleted',
+      push_sent: 'Push sent',
+      digest_sent: 'Daily email sent',
+      prompt_shown: 'Prompt shown',
+      prompt_answered: 'Prompt answered',
+      dish_link_opened: 'Dish link opened',
+    } satisfies Record<EventKind, string>,
   },
   accountDeletedEmail: {
     subject: 'Your malkochen account is deleted',

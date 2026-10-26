@@ -5,13 +5,15 @@
 // ("Il tuo account non è ancora abilitato", "Niente paura"). A Board is a
 // "bacheca", as on Pinterest. malkochen and Topfbert keep their names.
 // Relative imports, as in de.ts.
+import type { EventGroup } from '../../shared/admin'
+import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dayWithYear, month: monthAndYear, moment, time } = intlFor('it-IT')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -56,8 +58,6 @@ function talkCounts(comments: number, votes: number): string[] {
 // would have to agree with the Dish's gender, which isn't known.
 const voted = (name: string, dish: string, up: boolean) => `${name} ha dato un pollice ${up ? 'in su' : 'in giù'} a ${dish} ${up ? '👍' : '👎'}`
 
-const haOrHanno = (names: string[]) => plural(names.length, { one: 'ha', other: 'hanno' })
-
 const tryAgain = 'Riprova tra un attimo.'
 const failed = `Non ha funzionato. ${tryAgain}`
 
@@ -68,6 +68,8 @@ export const it: Strings = {
   legal: {
     impressum: 'Note legali',
     privacy: 'Privacy',
+    languages: 'Lingue',
+    bindingVersion: 'Leggi la versione tedesca vincolante',
   },
   changelog: {
     title: 'Novità',
@@ -75,8 +77,17 @@ export const it: Strings = {
     current: (version: string) => `Stai usando malkochen ${version}.`,
     isNew: 'Nuovo',
     unreleased: 'Appena arrivato',
+    eyebrow: 'Versioni',
+    versionPrefix: 'Versione ',
+    newest: 'Più recente',
+    copyLink: (v: string) => `Copia il link alla versione ${v}`,
+    copied: 'Link copiato',
+    copyFailed: 'Non è stato possibile copiare il link.',
     version: (version: string) => `Versione ${version}`,
     date: dayWithYear,
+    // The Changelog Popup (#406): closes it / opens the whole Changelog.
+    popupDone: 'Ho capito',
+    popupAll: 'Tutte le novità',
     empty: 'Qui vedrai presto cosa cambia in malkochen.',
     sections: {
       added: 'Aggiunto',
@@ -122,7 +133,21 @@ export const it: Strings = {
     invalidBody: 'Forse è stato reimpostato. Chiedine uno nuovo.',
     toApp: 'Vai a malkochen',
   },
+  // The Dish Link page (CONTEXT.md: Dish Link, #401).
+  dishLink: {
+    // The Creator, "di pastaqueen".
+    by: (name: string) => `di ${name}`,
+    toSource: 'Vai alla fonte',
+    // "Kopieren" from the link (#403): a Copy on one of the user's Boards.
+    copy: 'Copia nella mia bacheca',
+    startBoard: 'Crea una nuova bacheca e copialo lì',
+    noBoards: 'Non hai nessuna bacheca su cui copiarlo.',
+    goneTitle: 'Questo piatto non c’è più',
+    goneBody: 'Forse è stato archiviato o eliminato.',
+  },
   board: {
+    asOperator: 'Stai vedendo questa bacheca come gestore di malkochen.',
+    footer: 'Su malkochen',
     emptyBoardTitle: 'Ancora niente qui.',
     emptyBoardBody: 'Incolla il tuo primo link!',
     emptyColumn: 'Ancora niente qui.',
@@ -283,13 +308,25 @@ export const it: Strings = {
   },
   detail: {
     close: 'Chiudi',
+    shareFailed: 'Non è stato possibile condividere il link.',
+    // "Copia" (#402): una Copia su un'altra delle tue bacheche.
+    copy: 'Copia',
+    copyTo: 'Copia in…',
+    copyNoBoards: 'Non hai altre bacheche a cui puoi aggiungere piatti.',
+    copied: (board: string) => `Copiato in ${board}`,
+    copiedWithoutImage: (board: string) => `Copiato in ${board}, senza immagine`,
+    openCopy: 'Apri',
+    copyForbidden: 'Non puoi aggiungere piatti a quella bacheca.',
+    copyFailed: 'Non è stato possibile copiare il piatto.',
     goneMeanwhile: (title: string) => `“${title}” non è più su questa bacheca.`,
     openOriginal: 'Apri l’originale',
+    // The Caption, folded and unfolded (#393).
+    captionMore: 'altro',
+    captionLess: 'meno',
     playVideo: 'Riproduci il video',
     videoPlayer: (platform: VideoPlatform) => `Video da ${VIDEO_PLATFORMS[platform]}`,
     videoUnavailable: 'Questo video non si può riprodurre qui.',
     openOnInstagram: 'Apri su Instagram',
-    watchOnInstagram: 'Guarda su Instagram',
     noSource: 'Senza link',
     // After the Board's emoji, as in German.
     placement: (board: string, column: string) => `${board} · ${column}`,
@@ -599,6 +636,16 @@ export const it: Strings = {
     dark: 'Scuro',
     system: 'Sistema',
   },
+  prompt: {
+    pushTitle: 'Attivare le notifiche?',
+    pushText: 'Il telefono ti avvisa quando qualcuno aggiunge un piatto, commenta o mette un pollice nelle tue bacheche.',
+    digestTitle: 'Attivare l’email giornaliera?',
+    digestText: 'Un’email la sera con le novità delle tue bacheche, solo quando c’è qualcosa. Puoi disattivarla quando vuoi nelle impostazioni.',
+    turnOn: 'Attiva',
+    later: 'Più tardi',
+    pushOn: 'Le notifiche sono attive.',
+    digestOn: 'L’email giornaliera è attiva.',
+  },
   push: {
     heading: 'Notifiche',
     toggle: 'Notifiche push',
@@ -606,16 +653,13 @@ export const it: Strings = {
     blocked: 'Il tuo browser blocca le notifiche di malkochen. Consentile nelle impostazioni del sito, poi potrai attivarle qui.',
     unsupported: 'Questo browser non può ricevere notifiche push.',
     failed,
-    added: (names: string[], count: number, dish: string) => `${someNames(names)} ${plural(names.length, { one: 'ha', other: 'hanno' })} aggiunto ${count === 1 ? dish : dishCount(count)}`,
-    body: (board: string, titles: string[], more: number) => `${board}: ${titles.join(', ')}${more === 0 ? '' : ` e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
-    commented: (name: string, dish: string) => `${name} ha commentato ${dish}`,
-    comment: (board: string, text: string) => `${board}: ${text}`,
-    voted,
-    onDish: (names: string[], dish: string) => `${someNames(names)} su ${dish}`,
-    counts: (board: string, comments: number, votes: number) => `${board}: ${talkCounts(comments, votes).join(', ')}`,
-    wrote: (names: string[], comments: number) => `${someNames(names)} ${haOrHanno(names)} scritto ${commentCount(comments)}`,
-    gave: (names: string[], votes: number) => `${someNames(names)} ${haOrHanno(names)} dato ${voteCount(votes)}`,
-    about: (board: string, titles: string[], more: number) => `${board}: su ${more === 0 ? nameList(titles) : `${titles.join(', ')} e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
+    title: (names: string[], board: string) => `Da ${someNames(names)} in ${board}`,
+    dish: (title: string, creator: string | null, platform: string | null) => `${title}${creator ? ` di ${creator}` : ''}${platform ? ` su ${platform}` : ''}`,
+    dishes: (count: number, titles: string[], more: number) => `${number(count)} nuovi piatti: ${titles.join(', ')}${more === 0 ? '' : ` e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
+    comment: (dish: string, text: string) => `Commento a ${dish}: “${text}”`,
+    vote: (dish: string, up: boolean) => `${dish} ${up ? '👍' : '👎'}`,
+    talkOn: (dish: string, comments: number, votes: number) => `${dish}: ${talkCounts(comments, votes).join(', ')}`,
+    aboutDishes: (comments: number, votes: number, titles: string[], more: number) => `${talkCounts(comments, votes).join(' e ')} su ${more === 0 ? nameList(titles) : `${titles.join(', ')} e ${plural(more, { one: 'un altro', other: `altri ${number(more)}` })}`}`,
     also: (before: string, comments: number, votes: number) => `${before}. In più ${talkCounts(comments, votes).join(' e ')}.`,
   },
   emailDigest: {
@@ -698,6 +742,15 @@ export const it: Strings = {
     activeHint: 'Chi ha fatto qualcosa su una bacheca, e su quali bacheche.',
     people: 'Persone',
     boards: 'Bacheche',
+    boardSearch: 'Cerca bacheche o proprietari',
+    boardOwner: 'Proprietario',
+    boardMembers: 'Membri',
+    boardDishes: 'Piatti',
+    boardLastActive: 'Ultima attività',
+    boardArchived: 'Archiviata',
+    noBoards: 'Nessuna bacheca trovata.',
+    // A Board's last activity, from an ISO time.
+    lastActive: (at: string) => addedDate(new Date(at)),
     today: 'Oggi',
     week: 'Ultimi 7 giorni',
     month: 'Ultimi 30 giorni',
@@ -711,6 +764,7 @@ export const it: Strings = {
     openSignUp: 'Registrazione aperta',
     openSignUpHint: 'Chiunque può registrarsi, non solo gli indirizzi nella Allowlist. Chi ha già un account entra sempre.',
     openSignUpFailed: failed,
+    eventsFailed: failed,
     figure: 'Cosa',
     used: 'Usato',
     free: 'Gratis',
@@ -723,6 +777,102 @@ export const it: Strings = {
     megabytes: (bytes: number) => `${number(Math.round(bytes / 1_000_000))} MB`,
     percent: (share: number) => `${number(Math.round(share * 100))}%`,
     dashboards: 'Dashboard',
+    events: 'Eventi',
+    eventsHint: 'Cosa succede su malkochen, dal più recente. Nomi, titoli e commenti sono quelli di adesso.',
+    eventUser: 'Utente',
+    eventBoard: 'Bacheca',
+    allBoards: 'Tutte le bacheche',
+    eventGroup: 'Tipo',
+    allEvents: 'Tutto',
+    eventFrom: 'Dal',
+    eventTo: 'Al',
+    loadMore: 'Carica altri',
+    noEvents: 'Nessun evento',
+    signedOut: 'Non registrato',
+    deleted: 'eliminato',
+    commentDeleted: 'Commento eliminato',
+    eventOn: 'attivo',
+    eventOff: 'disattivo',
+    movedFromTo: (from: string, to: string) => `da ${from} a ${to}`,
+    movedFromBoard: (board: string) => `da ${board}`,
+    // After "Piatto copiato": the Dish it was copied from.
+    copiedFrom: 'da',
+    dishArchived: 'Archiviato',
+    promptWhich: { push: 'Notifiche push', digest: 'Email giornaliera' },
+    // A moment in German time, from an ISO time.
+    dateTime: (at: string) => eventTime(new Date(at)),
+    // The fields a Dish edit changed.
+    dishFields: {
+      title: 'Titolo',
+      image: 'Immagine',
+      source: 'Link',
+      creator: 'Creator',
+      focus: 'Ritaglio',
+    } satisfies Record<DishField, string>,
+    // The groups of kinds the Event Log filters by.
+    eventGroups: {
+      dishes: 'Piatti',
+      cookings: 'Cucinato',
+      talk: 'Commenti e pollici',
+      columns: 'Colonne',
+      board: 'Bacheche e membri',
+      account: 'Account',
+      notifications: 'Notifiche',
+      links: 'Link e copie',
+      operator: 'Gestione',
+    } satisfies Record<EventGroup, string>,
+    // Every kind of event, past tense.
+    eventKinds: {
+      board_created: 'Bacheca creata',
+      board_archived: 'Bacheca archiviata',
+      board_restored: 'Bacheca ripristinata',
+      board_deleted: 'Bacheca eliminata per sempre',
+      member_joined: 'Entrato',
+      member_left: 'Uscito dalla bacheca',
+      member_removed: 'Membro rimosso',
+      dish_added: 'Piatto aggiunto',
+      dish_copied: 'Piatto copiato',
+      dish_moved: 'Piatto spostato',
+      dish_archived: 'Piatto archiviato',
+      dish_restored: 'Piatto ripristinato',
+      dish_deleted: 'Piatto eliminato per sempre',
+      cooking_recorded: 'Cucinato',
+      cooking_deleted: 'Cottura eliminata',
+      cooking_restored: 'Cottura ripristinata',
+      comment_written: 'Commento scritto',
+      comment_edited: 'Commento modificato',
+      comment_deleted: 'Commento eliminato',
+      comment_restored: 'Commento ripristinato',
+      vote_set: 'Pollice dato',
+      vote_changed: 'Pollice cambiato',
+      vote_taken_back: 'Pollice ritirato',
+      open_sign_up_switched: 'Registrazione aperta cambiata',
+      dish_edited: 'Piatto modificato',
+      column_added: 'Colonna aggiunta',
+      column_renamed: 'Colonna rinominata',
+      column_subtitle_changed: 'Sottotitolo della colonna cambiato',
+      column_reordered: 'Colonne riordinate',
+      column_deleted: 'Colonna eliminata',
+      permission_changed: 'Permesso cambiato',
+      default_permission_changed: 'Permesso per i nuovi membri cambiato',
+      invite_link_reset: 'Link d’invito reimpostato',
+      board_renamed: 'Bacheca rinominata',
+      board_emoji_changed: 'Emoji cambiata',
+      ownership_handed_over: 'Proprietà passata',
+      signed_up: 'Registrato',
+      signed_in: 'Accesso',
+      username_changed: 'Nome utente cambiato',
+      picture_changed: 'Foto profilo cambiata',
+      language_changed: 'Lingua cambiata',
+      push_switched: 'Push cambiato',
+      digest_switched: 'Email giornaliera cambiata',
+      account_deleted: 'Account eliminato',
+      push_sent: 'Push inviato',
+      digest_sent: 'Email giornaliera inviata',
+      prompt_shown: 'Invito mostrato',
+      prompt_answered: 'Invito risposto',
+      dish_link_opened: 'Link del piatto aperto',
+    } satisfies Record<EventKind, string>,
   },
   accountDeletedEmail: {
     subject: 'Il tuo account malkochen è stato eliminato',

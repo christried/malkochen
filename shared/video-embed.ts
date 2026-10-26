@@ -81,3 +81,13 @@ export function instagramPostShown(data: unknown): { height: number | null } | n
   const height = details?.height
   return { height: typeof height === 'number' && height > 0 ? height : null }
 }
+
+// What the pill on a Dish's image offers (#394): "Video abspielen" ('play') or
+// nothing. A Dish says whether its Source has a video that plays in malkochen
+// (`playableVideo`, found when the Source was added, or backfilled for older
+// Dishes by #395). Null, not known yet, offers nothing: the per-open Instagram
+// check (#279) is gone (#395).
+export function videoPill(dish: { source: DishSource | null, playableVideo: boolean | null }): 'play' | null {
+  if (!videoEmbed(dish.source)) return null
+  return dish.playableVideo ? 'play' : null
+}

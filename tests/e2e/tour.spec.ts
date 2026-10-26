@@ -58,7 +58,9 @@ async function onScreen(page: Page, locator: Locator) {
 // (the card of the Dish `dishId`; the one of the Column `columnId`), with
 // 6px to spare (to the window's edge, where it is cut off there).
 async function holeRound(page: Page, target: string, dishId?: string, columnId?: string) {
-  const hole = (await page.locator('[data-tour-spot]:visible').boundingBox())!
+  // Between two steps the spot can be gone for a frame: not there yet.
+  const hole = await page.locator('[data-tour-spot]:visible').boundingBox()
+  if (!hole) return false
   const { width } = page.viewportSize()!
   const within = dishId ? `[data-dish-id="${dishId}"] ` : ''
   const ofColumn = columnId ? `[data-tour-column-id="${columnId}"]` : ''

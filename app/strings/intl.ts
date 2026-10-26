@@ -18,6 +18,7 @@ export function intlFor(locale: string) {
   // The calendar day in German time, to tell today from other days.
   const calendarDay = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: ZONE })
   const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone: ZONE })
+  const dateAndTime = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: ZONE })
   // "3. Sept." / "3 Sept", with the year only when it isn't this year.
   const dayOf = (at: Date) => (year.format(at) === year.format(new Date()) ? dayThisYear : day).format(at)
   return {
@@ -29,6 +30,8 @@ export function intlFor(locale: string) {
     dayWithYear: (date: string) => day.format(new Date(`${date}T12:00:00Z`)),
     // "März 2026" / "March 2026".
     month: (date: Date) => month.format(date),
+    // "26. Okt., 14:35": a day and its time, for a list of events.
+    dateTime: (at: Date) => dateAndTime.format(at),
     // "14:35": a time of day, such as when a limit frees up again.
     time: (at: Date) => time.format(at),
     // A moment as the Dish History tells it: `today` with its time ("20:55")

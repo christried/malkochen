@@ -5,7 +5,9 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 // ticket. So the Image Store only ever copies what Source Lookup found, never
 // an arbitrary URL a client sends. Uploading an own photo ("Eigenes Foto")
 // signs the stored photo the same way, with tickets of their own purpose, and
-// so does uploading a Profile Picture.
+// so does uploading a Profile Picture. Source Lookup also signs what it read
+// from the Source (its canonical link and Caption) as a Source Ticket, so a
+// Dish stores only what Source Lookup found.
 
 export interface ImageTickets {
   issue: (userId: string, imageUrl: string) => string
@@ -18,15 +20,16 @@ export interface ImageTicketOptions {
   now?: () => number
   // What the ticket is for: by default a found image (Source Lookup's),
   // 'photo', a Member's own photo the upload stored, or 'picture', a Profile
-  // Picture the upload stored. A ticket is only ever valid for its own purpose.
-  purpose?: 'found' | 'photo' | 'picture'
+  // Picture the upload stored, or 'source', what Source Lookup read from a
+  // Source. A ticket is only ever valid for its own purpose.
+  purpose?: 'found' | 'photo' | 'picture' | 'source'
 }
 
 export function createImageTickets(secret: string, options: ImageTicketOptions = {}): ImageTickets {
   const ttlMs = options.ttlMs ?? 60 * 60 * 1000
   const now = options.now ?? Date.now
   // Its own key, so a ticket is never valid as anything else signed with the secret.
-  const purpose = { found: 'malkochen image ticket', photo: 'malkochen photo ticket', picture: 'malkochen picture ticket' }[options.purpose ?? 'found']
+  const purpose = { found: 'malkochen image ticket', photo: 'malkochen photo ticket', picture: 'malkochen picture ticket', source: 'malkochen source ticket' }[options.purpose ?? 'found']
   const key = createHmac('sha256', secret).update(purpose).digest()
   const sign = (userId: string, imageUrl: string, expiresAt: string) =>
     createHmac('sha256', key).update(`${userId}\n${imageUrl}\n${expiresAt}`).digest()

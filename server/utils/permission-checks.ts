@@ -1,8 +1,9 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import type { Permission } from '../../shared/permissions'
 import { db } from '../db'
-import { boardColumn, comment, cooking, dish, membership } from '../db/schema'
-import { allows, standingOn, type Standing } from './permissions'
+import { boardColumn, comment, cooking, dish } from '../db/schema'
+import { accessOf, standingOn } from './board-access'
+import { allows, type Standing } from './permissions'
 import { boardNotFound } from './session'
 
 // The checks every write a Permission covers makes before writing
@@ -40,10 +41,11 @@ export async function requireDishPermission(dishIds: string | string[], userId: 
 // Board of the Column `columnId`. One the user can't see is left to the
 // write, which answers "not found" for it.
 export async function requireColumnPermission(columnId: string, userId: string, permission: Permission): Promise<void> {
+  const access = accessOf(userId)
   const found = await db
-    .select({ isOwner: membership.isOwner, permissions: membership.permissions })
+    .select({ isOwner: access.isOwner, permissions: access.permissions })
     .from(boardColumn)
-    .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
+    .innerJoin(access, eq(access.boardId, boardColumn.boardId))
     .where(eq(boardColumn.id, columnId))
   requireEach(found, userId, permission)
 }
@@ -96,10 +98,11 @@ interface DishSeen extends Standing {
 // the user isn't a Member of, aren't there: the write itself answers "not
 // found" for them.
 function dishesSeenBy(userId: string) {
+  const access = accessOf(userId)
   return db
-    .select({ boardId: dish.boardId, addedBy: dish.addedBy, isOwner: membership.isOwner, permissions: membership.permissions })
+    .select({ boardId: dish.boardId, addedBy: dish.addedBy, isOwner: access.isOwner, permissions: access.permissions })
     .from(dish)
-    .innerJoin(membership, and(eq(membership.boardId, dish.boardId), eq(membership.userId, userId)))
+    .innerJoin(access, eq(access.boardId, dish.boardId))
 }
 
 // The Boards of the Columns `columnIds`, of those that exist.

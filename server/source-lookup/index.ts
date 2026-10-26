@@ -1,5 +1,5 @@
 import { createHttp } from './http'
-import { instagram, playsInPlace } from './instagram'
+import { instagram } from './instagram'
 import { pinterest } from './pinterest'
 import { tiktok } from './tiktok'
 import { webPage } from './web-page'
@@ -7,6 +7,7 @@ import { youtube } from './youtube'
 import { nothingFound, type SourceGuess, type SourceLookup, type Strategy } from './types'
 
 export { SOURCE_KINDS } from './types'
+export { captionOf } from './caption'
 export type { SourceGuess, SourceKind, SourceLookup, SourceLookupResult } from './types'
 
 // Source Lookup: given a link, return what we know about it (Source kind,
@@ -59,25 +60,6 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
     }
     catch {
       return nothingFound(guess)
-    }
-  }
-}
-
-// Whether Instagram's embed plays an Instagram post's video in place (#279):
-// false for one it only shows with "Auf Instagram ansehen"; null when that
-// isn't known. Asked when a Dish detail opens, not when a Dish is added:
-// Instagram can change its mind about a post.
-export type InstagramPlayCheck = (link: string) => Promise<boolean | null>
-
-export function createInstagramPlayCheck(options: SourceLookupOptions = {}): InstagramPlayCheck {
-  const timeoutMs = options.timeoutMs ?? 3000
-
-  return async (link) => {
-    try {
-      return await playsInPlace(createHttp(AbortSignal.timeout(timeoutMs), options.fetch), link)
-    }
-    catch {
-      return null
     }
   }
 }

@@ -2,6 +2,7 @@ import { addDishBody, sourceOf } from '../../../utils/dish-input'
 import { addDish, type AddedDish } from '../../../utils/dishes'
 import { storeDishImage } from '../../../utils/image-store'
 import { notifyNewDish } from '../../../utils/push'
+import { storedSourceFacts } from '../../../utils/source-ticket'
 
 // POST /api/boards/:id/dishes — adds a Dish at the top of the Board's first
 // Column: from a link (Source and Source image), or without one ("Ohne Link
@@ -23,12 +24,18 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   // gets 403, with or without a link, from the share target too.
   await requirePermission(boardId, user.id, 'addDishes')
   await spendRateLimit(user.id, 'add-dish')
-  const { source, imageUrl, imageTicket, photo, tour, ...rest } = parsed.data
+  const { source, caption, playableVideo, sourceTicket, imageUrl, imageTicket, photo, tour, ...rest } = parsed.data
   // Not copied for a non-Member, whom addDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, async () => boardId, { photo, imageUrl, imageTicket })
+  const storedSource = source ? sourceOf(source) : null
   const created = await addDish(boardId, user, {
     ...rest,
-    source: source ? sourceOf(source) : null,
+    source: storedSource,
+    // The Caption belongs to the Source, and is kept only with the Source
+    // Ticket Source Lookup signed for it: none without one. So is whether an
+    // Instagram post has a video that plays; TikTok and YouTube Shorts tell
+    // from their link alone.
+    ...storedSourceFacts(user.id, storedSource, { caption: caption ?? null, playableVideo, ticket: sourceTicket }),
     imageUrl: stored,
   }, { tour })
   if (!created) throw boardNotFound()

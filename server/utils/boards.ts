@@ -3,15 +3,16 @@ import { and, asc, desc, eq, exists, gt, inArray, isNull, sql, type SQL } from '
 import { stringsFor } from '../../app/strings'
 import { BOARDS_PER_USER } from '../../shared/board'
 import type { Language } from '../../shared/language'
-import { ALL_PERMISSIONS, type Permissions } from '../../shared/permissions'
+import { ALL_PERMISSIONS, type Permission, type Permissions } from '../../shared/permissions'
 import { db, runAtomic, type Db } from '../db'
 import { board, boardColumn, boardSlug, dish, membership, user } from '../db/schema'
 import { freeSlug, lockSlugs, recordSlug, slugOf } from './addresses'
 import { columnView, type ColumnView } from './columns'
 import { dishesByColumn, type DishView } from './dishes'
 import { newInHistoryDishIds } from './dish-opened'
-import { detailsOf, insertEvents } from './events'
+import { detailsOf, insertEvents, withEvents } from './events'
 import { usernameOf, pictureOf } from './people'
+import { accessOf, accessOn, memberBoardsOf } from './board-access'
 import { effectivePermissions, permits } from './permissions'
 
 // The Board a user gets on their first sign-in (PRD story 3), named in
@@ -71,6 +72,8 @@ export interface BoardView extends BoardSummary {
   // Its Dishes with something new in their Dish History for the user
   // looking (#335), since they last opened them (dish-opened.ts).
   newInHistoryDishIds: string[]
+  // The Operator visiting a Board they aren't a Member of (ADR 0009).
+  asOperator: boolean
 }
 
 // A Board as the Board switcher lists it: how many Dishes it holds, its
@@ -101,20 +104,20 @@ export interface BoardMemberView extends BoardMember {
 // the switcher doesn't reshuffle whenever they switch. Members without a
 // Username yet in the user's `language`.
 export async function listBoards(userId: string, language: Language): Promise<BoardListing[]> {
+  const access = memberBoardsOf(userId)
   const boards = await db
     .select({
       id: board.id,
       slug: slugOf,
       name: board.name,
       emoji: board.emoji,
-      isOwner: membership.isOwner,
-      storedPermissions: membership.permissions,
+      isOwner: access.isOwner,
+      storedPermissions: access.permissions,
       dishCount: sql<number>`(select count(*) from ${dish} where ${dish.boardId} = ${board.id} and ${dish.deletedAt} is null)::int`,
     })
-    .from(membership)
-    .innerJoin(board, eq(board.id, membership.boardId))
-    .where(eq(membership.userId, userId))
-    .orderBy(asc(membership.joinedAt), asc(board.createdAt), asc(board.id))
+    .from(access)
+    .innerJoin(board, eq(board.id, access.boardId))
+    .orderBy(asc(access.joinedAt), asc(board.createdAt), asc(board.id))
   if (boards.length === 0) return []
 
   const ids = boards.map(b => b.id)
@@ -165,23 +168,24 @@ export async function landingBoard(userId: string, language: Language): Promise<
 // the user opened last of those they may add Dishes to, with Add Dish open
 // (`canAdd`). If they may add to none, the usual landing, without it.
 export async function landingToAdd(userId: string, language: Language): Promise<{ boardId: string, slug: string, canAdd: boolean }> {
-  const [addable] = await lastOpenedBoard(userId, permits('addDishes'))
+  const [addable] = await lastOpenedBoard(userId, 'addDishes')
   if (addable) return { ...addable, canAdd: true }
   const landing = await landingBoard(userId, language)
   // A first landing has just created their own Board, theirs to add to.
-  const [created] = await lastOpenedBoard(userId, permits('addDishes'))
+  const [created] = await lastOpenedBoard(userId, 'addDishes')
   return created ? { ...created, canAdd: true } : { ...landing, canAdd: false }
 }
 
 // The Board the user opened last (or joined last, if they opened none yet),
-// of those whose membership `where` holds for.
-function lastOpenedBoard(userId: string, where?: SQL) {
+// of those they may add Dishes to if `addable`.
+function lastOpenedBoard(userId: string, addable?: Permission) {
+  const access = memberBoardsOf(userId)
   return db
-    .select({ boardId: membership.boardId, slug: slugOf })
-    .from(membership)
-    .innerJoin(board, eq(board.id, membership.boardId))
-    .where(and(eq(membership.userId, userId), where))
-    .orderBy(sql`${membership.lastOpenedAt} desc nulls last`, desc(membership.joinedAt))
+    .select({ boardId: access.boardId, slug: slugOf })
+    .from(access)
+    .innerJoin(board, eq(board.id, access.boardId))
+    .where(addable ? permits(addable, access) : undefined)
+    .orderBy(sql`${access.lastOpenedAt} desc nulls last`, desc(access.joinedAt))
     .limit(1)
 }
 
@@ -235,11 +239,12 @@ function insertBoard(d: Db, id: string, userId: string, { name, emoji }: NewBoar
 // The Board with its Columns and their Dishes, or null unless the user is
 // one of its Members. Members without a Username yet in the user's `language`.
 export async function getBoard(boardId: string, userId: string, language: Language): Promise<BoardView | null> {
+  const access = accessOf(userId)
   const [found] = await db
-    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: membership.isOwner, permissions: membership.permissions, version: board.version, inviteToken: board.inviteToken, defaultPermissions: board.defaultPermissions, newSince: membership.newSince })
-    .from(membership)
-    .innerJoin(board, eq(board.id, membership.boardId))
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+    .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji, isOwner: access.isOwner, permissions: access.permissions, version: board.version, inviteToken: board.inviteToken, defaultPermissions: board.defaultPermissions, newSince: access.newSince, asOperator: access.asOperator })
+    .from(access)
+    .innerJoin(board, eq(board.id, access.boardId))
+    .where(eq(access.boardId, boardId))
   if (!found) return null
   const { newSince, defaultPermissions, ...view } = found
   const permissions = effectivePermissions(view)
@@ -252,8 +257,8 @@ export async function getBoard(boardId: string, userId: string, language: Langua
   const [dishes, members, newDishIds, newInHistory] = await Promise.all([
     dishesByColumn(columns.map(c => c.id)),
     boardMembers(boardId, language),
-    newSince ? newDishesSince(boardId, userId, newSince) : [],
-    newInHistoryDishIds(boardId, userId),
+    newSince && !view.asOperator ? newDishesSince(boardId, userId, newSince) : [],
+    view.asOperator ? [] : newInHistoryDishIds(boardId, userId),
   ])
   return {
     ...view,
@@ -274,11 +279,12 @@ export async function getBoard(boardId: string, userId: string, language: Langua
 // Members. One read by the membership's and the Board's primary keys, and
 // no write: it is what an open Board asks every few seconds.
 export async function boardVersion(boardId: string, userId: string): Promise<number | null> {
+  const access = accessOf(userId)
   const [found] = await db
     .select({ version: board.version })
-    .from(membership)
-    .innerJoin(board, eq(board.id, membership.boardId))
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
+    .from(access)
+    .innerJoin(board, eq(board.id, access.boardId))
+    .where(eq(access.boardId, boardId))
   return found?.version ?? null
 }
 
@@ -330,17 +336,27 @@ export async function editBoard(boardId: string, userId: string, changes: BoardC
   const renamed = changes.name !== undefined
   await runAtomic(d => [
     ...(renamed ? [lockSlugs(d)] : []),
-    d
-      .update(board)
-      // Setting the id to itself keeps an empty change a valid statement.
-      .set({ id: sql`${board.id}`, ...changes, ...(renamed ? { slug: freeSlug(boardId, changes.name!) } : {}) })
-      .where(and(eq(board.id, boardId), exists(membershipOf(boardId, userId)))),
+    withEvents(
+      d,
+      d
+        .update(board)
+        // Setting the id to itself keeps an empty change a valid statement.
+        .set({ id: sql`${board.id}`, ...changes, ...(renamed ? { slug: freeSlug(boardId, changes.name!) } : {}) })
+        .where(and(eq(board.id, boardId), exists(accessOn(boardId, userId))))
+        .returning({ id: board.id, name: board.name, emoji: board.emoji }),
+      [
+        // Recorded only for what changed.
+        { kind: 'board_renamed', board: sql`changed.id`, user: userId, when: sql`changed.name is distinct from earlier.name` },
+        { kind: 'board_emoji_changed', board: sql`changed.id`, user: userId, when: sql`changed.emoji is distinct from earlier.emoji` },
+      ],
+      { earlier: sql`select ${board.id}, ${board.name}, ${board.emoji} from ${board} where ${board.id} = ${boardId}` },
+    ),
     ...(renamed ? [recordSlug(d, boardId)] : []),
   ])
   const [edited] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
     .from(board)
-    .where(and(eq(board.id, boardId), exists(membershipOf(boardId, userId))))
+    .where(and(eq(board.id, boardId), exists(accessOn(boardId, userId))))
   return edited ?? null
 }
 
@@ -354,27 +370,4 @@ export function boardMembers(boardId: string, language: Language) {
     .innerJoin(user, eq(user.id, membership.userId))
     .where(eq(membership.boardId, boardId))
     .orderBy(desc(membership.isOwner), asc(membership.joinedAt))
-}
-
-// The user's membership of the Board, if any, and whether they are its Owner.
-export function membershipOf(boardId: string, userId: string) {
-  return db
-    .select({ boardId: membership.boardId, isOwner: membership.isOwner })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
-}
-
-// The user's membership of the Board if they are its Owner; built on `d`,
-// the transaction it is part of, if any.
-export function ownerOf(boardId: string, userId: string, d: Db = db) {
-  return d
-    .select({ userId: membership.userId })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId), membership.isOwner))
-}
-
-// Whether the user is a Member of the Board.
-export async function isMember(boardId: string, userId: string): Promise<boolean> {
-  const [found] = await membershipOf(boardId, userId)
-  return found !== undefined
 }

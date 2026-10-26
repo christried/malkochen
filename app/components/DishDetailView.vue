@@ -2,7 +2,7 @@
 import type { BoardSummary } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
-import { videoEmbed } from '~~/shared/video-embed'
+import { videoEmbed, videoPill } from '~~/shared/video-embed'
 import type { CommentResult } from '~/board/dish-histories'
 import type { VoteResult } from '~/board/dish-votes'
 
@@ -16,8 +16,9 @@ import type { VoteResult } from '~/board/dish-votes'
 // (their Permissions): "Bearbeiten" with "edit Dishes", "Verschieben
 // nach…" and "Gekocht ✓" with "move Dishes", "Löschen" with "archive
 // Dishes"; the last and the first also for a Dish they added themselves.
+// "Link teilen" (Dish Link, #401) is for every Member who sees the Dish.
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
-defineEmits<{
+const emit = defineEmits<{
   close: []
   edit: []
   move: []
@@ -26,10 +27,47 @@ defineEmits<{
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
   vote: [result: VoteResult]
+  // "Kopieren": the Member picks another Board for a Copy (#402).
+  copy: []
+  // Something to tell the Member, as a Toast.
+  notice: [text: string]
 }>()
 const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
+
+// "Link teilen": the Dish's Dish Link (made on the first share), then the
+// phone's share sheet, or on a computer the link on the clipboard.
+const origin = useRequestURL().origin
+const sharing = ref(false)
+async function shareLink() {
+  if (sharing.value) return
+  sharing.value = true
+  try {
+    const { path } = await $fetch<{ path: string }>(`/api/dishes/${props.dish.id}/link`, { method: 'POST' })
+    const url = `${origin}${path}`
+    if (typeof navigator.share === 'function' && matchMedia('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ title: props.dish.title, url })
+      }
+      catch (err) {
+        // Closing the share sheet without sharing is no failure.
+        if (!(err instanceof DOMException && err.name === 'AbortError')) throw err
+      }
+    }
+    else {
+      await navigator.clipboard.writeText(url)
+      hapticConfirm()
+      emit('notice', t.settings.copied)
+    }
+  }
+  catch {
+    emit('notice', t.detail.shareFailed)
+  }
+  finally {
+    sharing.value = false
+  }
+}
 
 const { barShown, scrollDriven } = useDetailScroll(useTemplateRef('frame'), useTemplateRef('bar'))
 
@@ -43,32 +81,13 @@ const playing = ref(false)
 const player = computed(() => playing.value ? video.value : null)
 watch(() => video.value?.src, () => playing.value = false)
 
-// Some Reels Instagram's embed only shows with "Auf Instagram ansehen"
-// (#279): for those the detail links to the post instead of offering a
-// player that would only send the Member to Instagram. The server asks
-// Instagram as the detail opens, so a post Instagram changes its mind about
-// is never stuck either way. Until it answers there is no button; when it
-// can't tell, "Video abspielen" as before.
-const instagramLink = computed(() => video.value?.platform === 'instagram' ? video.value.link : null)
-const playsInPlace = ref<boolean | null | undefined>()
-watch(instagramLink, async (link, _, onCleanup) => {
-  playsInPlace.value = undefined
-  if (!link || import.meta.server) return
-  let stale = false
-  onCleanup(() => stale = true)
-  const answer = await $fetch<{ playsInPlace: boolean | null }>('/api/instagram-plays', { query: { link } })
-    .then(({ playsInPlace }) => playsInPlace, () => null)
-  if (!stale) playsInPlace.value = answer
-}, { immediate: true })
-// What the pill on the image offers: the player, the post on Instagram, or
-// nothing yet.
-const videoAction = computed<'play' | 'instagram' | null>(() => {
-  if (!video.value || playing.value) return null
-  if (!instagramLink.value) return 'play'
-  if (playsInPlace.value === undefined) return null
-  return playsInPlace.value === false ? 'instagram' : 'play'
-})
-const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
+// "Video abspielen" shows only for a video that plays in malkochen (#394, #395):
+// the Dish says so, found when its Source was added or backfilled. Nothing is
+// asked of Instagram when the detail opens (#279's per-open check is gone), so
+// a Dish whose value is not known yet shows no button.
+// What the pill on the image offers: the player, or nothing.
+const videoAction = computed(() => playing.value ? null : videoPill(props.dish))
+const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill bg-glass py-2.5 pl-3.5 pr-4 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
 </script>
 
 <template>
@@ -165,24 +184,13 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
       <button
         v-if="videoAction === 'play'"
         type="button"
-        :class="videoPill"
+        :class="pillClass"
         data-play-video
         @click="playing = true"
       >
         <AppIcon name="play" />
         {{ t.detail.playVideo }}
       </button>
-      <a
-        v-else-if="videoAction === 'instagram' && video"
-        :href="video.link"
-        target="_blank"
-        rel="noopener noreferrer"
-        :class="videoPill"
-        data-play-video
-      >
-        <AppIcon name="play" />
-        {{ t.detail.watchOnInstagram }}
-      </a>
     </div>
 
     <div
@@ -213,6 +221,12 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         <span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}
       </p>
 
+      <!-- Nothing in its place without a Caption (#393). -->
+      <DishCaption
+        v-if="dish.caption"
+        :caption="dish.caption"
+      />
+
       <div
         v-if="dish.source"
         class="flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-muted p-3 pl-4"
@@ -227,6 +241,33 @@ const videoPill = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         >
           {{ t.detail.openOriginal }}
         </a>
+      </div>
+
+      <!-- Full width under the Creator and Source, on a phone and in the
+           desktop panel alike (#392 decision 5): "Link teilen" and, under it,
+           "Kopieren" (#402), a Copy on another of the user's Boards. -->
+      <div
+        class="flex flex-col gap-2"
+        data-share-actions
+      >
+        <button
+          type="button"
+          class="flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+          :disabled="sharing"
+          data-share-link
+          @click="shareLink"
+        >
+          <AppIcon name="link" />
+          {{ t.settings.shareLink }}
+        </button>
+        <button
+          type="button"
+          class="flex w-full items-center justify-center gap-2 rounded-pill bg-surface-muted px-5 py-3.5 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+          data-copy-dish
+          @click="emit('copy')"
+        >
+          {{ t.detail.copy }}
+        </button>
       </div>
 
       <DishHistory

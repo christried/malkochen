@@ -2,7 +2,8 @@ import { and, asc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-o
 import { z } from 'zod'
 import { COMMENT_MAX } from '../../app/utils/comment-text'
 import { db } from '../db'
-import { comment, dish, membership, user } from '../db/schema'
+import { comment, dish, user } from '../db/schema'
+import { accessibleBoardIds, ownedBoardIds } from './board-access'
 import type { DishAdder } from './dishes'
 import { commentEvent, withEvents } from './events'
 import { pictureOf } from './people'
@@ -84,12 +85,7 @@ function membersDishes(userId: string, { owning = false } = {}) {
   return db
     .select({ id: dish.id })
     .from(dish)
-    .innerJoin(membership, and(
-      eq(membership.boardId, dish.boardId),
-      eq(membership.userId, userId),
-      owning ? membership.isOwner : undefined,
-    ))
-    .where(isNull(dish.deletedAt))
+    .where(and(isNull(dish.deletedAt), inArray(dish.boardId, owning ? ownedBoardIds(userId) : accessibleBoardIds(userId))))
 }
 
 // The Comment, if the user may see it: on a Dish of a Board they are a

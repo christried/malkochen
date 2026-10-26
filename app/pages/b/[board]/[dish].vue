@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
-import type { BoardResult } from '~/board/board-module'
+import { isRefused, type BoardResult } from '~/board/board-module'
 import type { CommentResult } from '~/board/dish-histories'
 import type { VoteResult } from '~/board/dish-votes'
-import { boardPath as pathOfBoard, dishAt } from '~~/shared/address'
+import type { CopiedDish } from '~~/server/utils/copies'
+import { boardPath as pathOfBoard, dishAt, dishPath } from '~~/shared/address'
+import { boardLabel } from '~~/shared/board'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
 // on phones, a side panel over the Board from 768px (440px; 480px from
@@ -126,6 +128,34 @@ watch(moving, async (isMoving) => {
   dialog.value?.querySelector<HTMLElement>('[data-move]')?.focus()
 })
 
+// "Kopieren" (#402): a sheet over the detail with the Boards to copy the Dish
+// to. The Copy is made there; this Board doesn't change. The toast offers
+// "Öffnen", which goes to the Copy on that Board.
+const copying = ref(false)
+async function onCopy(toBoard: BoardListing) {
+  copying.value = false
+  const dishId = located.value?.dish.id
+  if (!dishId) return
+  const label = boardLabel(toBoard)
+  try {
+    const { dish, board: target, imageCopied } = await $fetch<CopiedDish>(`/api/dishes/${dishId}/copy`, { method: 'POST', body: { boardId: toBoard.id } })
+    const copyPath = dishPath(target, dish)
+    toast.value = {
+      text: imageCopied ? t.detail.copied(label) : t.detail.copiedWithoutImage(label),
+      duration: NOTICE_MS,
+      actions: [{ label: t.detail.openCopy, run: () => void navigateTo(copyPath) }],
+    }
+  }
+  catch (error) {
+    toast.value = { text: isRefused(error) ? t.detail.copyForbidden : t.detail.copyFailed, duration: NOTICE_MS }
+  }
+}
+watch(copying, async (isCopying) => {
+  if (isCopying) return
+  await nextTick()
+  dialog.value?.querySelector<HTMLElement>('[data-copy-dish]')?.focus()
+})
+
 // Gone from the Board while shown, as another Member deleted it or moved
 // it to another Board (PRD story 38): the detail closes and says so. Its
 // own "Löschen" and moves close it first.
@@ -216,6 +246,8 @@ watch(editing, async (isEditing) => {
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
           @comment="showComment"
           @vote="showVote"
+          @notice="text => toast = { text, duration: NOTICE_MS }"
+          @copy="copying = true"
         />
       </template>
       <AppSheet
@@ -229,6 +261,18 @@ watch(editing, async (isEditing) => {
           :board="board"
           :from-column-id="located.column.id"
           @move="onMove"
+        />
+      </AppSheet>
+      <AppSheet
+        v-model:open="copying"
+        :title="t.detail.copyTo"
+        :close-label="t.dish.closeMenu"
+      >
+        <CopyTargetPicker
+          v-if="copying"
+          class="mt-5"
+          :board-id="board.id"
+          @copy="onCopy"
         />
       </AppSheet>
       <VeggieConfetti />

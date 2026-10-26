@@ -14,8 +14,13 @@ export interface LookupFixture {
   suggestedTitle: string
   // Left out: none, like `null`.
   creator?: string | null
+  // Left out: none, like `null`.
+  caption?: string | null
   imageUrl: string | null
   imageTicket: string | null
+  // Left out: a ticket the server only checks for a Caption, which these
+  // stubs don't have.
+  sourceTicket?: string
 }
 
 // A lookup that answers with `fixture`, or fails like a broken server.
@@ -24,7 +29,7 @@ export async function stubSourceLookup(page: Page, fixture: LookupFixture | 'fai
   await page.route('**/api/source-lookup?*', async (route: Route) => {
     await hold
     if (fixture === 'fail') await route.fulfill({ status: 502, body: 'Bad Gateway' })
-    else await route.fulfill({ json: { creator: null, ...fixture } })
+    else await route.fulfill({ json: { creator: null, caption: null, sourceTicket: 'stub-source-ticket', ...fixture } })
   })
 }
 
