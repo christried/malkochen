@@ -4,6 +4,7 @@ import { db } from '../db'
 import { IMAGE_FOLDERS } from '../image-store'
 import { storage } from './image-store'
 import { openSignUpOn } from './open-sign-up'
+import { escapeLike } from './like'
 
 // The free amounts of what malkochen counts itself (docs/research/free-tiers.md).
 const FREE = {
@@ -138,7 +139,7 @@ export async function adminFigures(): Promise<AdminFigures> {
 // activity first, 200 at most. `query` (trimmed; empty means all) matches
 // the Board's name or its Owner's Username, whatever the case.
 export async function adminBoards(query: string): Promise<AdminBoard[]> {
-  const needle = `%${query.trim().replace(/[\\%_]/g, String.raw`\$&`)}%`
+  const needle = `%${escapeLike(query.trim())}%`
   const { rows } = await db.execute<{ id: string, slug: string, emoji: string, name: string, owner: string | null, members: number, dishes: number, lastActivity: Date | null, archived: boolean }>(sql`
     with people as (
       select board_id, user_id, is_owner from membership

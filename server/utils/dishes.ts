@@ -12,6 +12,7 @@ import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
 import { cookingEvent, detailsOf, dishEvent, recordEvents, withEvents } from './events'
 import { pictureOf, shownAs } from './people'
 import { votesByDish, type VoteView } from './votes'
+import { escapeLike } from './like'
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -784,11 +785,6 @@ export async function searchDishes(boardId: string, query: string): Promise<Dish
     ))
     .orderBy(asc(boardColumn.position), asc(dish.position), desc(dish.createdAt), desc(dish.id))
   return toViews(rows)
-}
-
-// So %, _ and \ in a query match themselves (\ is Postgres's LIKE escape).
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, c => `\\${c}`)
 }
 
 // Adds a Dish at the top of the Column that takes new Dishes (PRD story 13;
