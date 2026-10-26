@@ -1,11 +1,12 @@
 import { and, desc, eq, exists, gt, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Language } from '../../shared/language'
-import { db } from '../db'
+import { db, runAtomic } from '../db'
 import { board, comment, dish, eventLog, membership, pushSubscription, user, vote } from '../db/schema'
 import { parseServerEnv } from '../env'
-import { createPushSender, isPushEndpoint, pushMessage, type BoardNews, type PushTarget } from '../push'
+import { createPushSender, isPushEndpoint, pushMessage, type BoardNews, type PushOutcome, type PushTarget } from '../push'
 import { slugOf } from './addresses'
+import { detailsOf, recordEvents, withEvents } from './events'
 import { recipientLanguage } from './people'
 
 const env = parseServerEnv(process.env)
@@ -29,22 +30,34 @@ export const isAcceptedPushEndpoint = (endpoint: string) => isPushEndpoint(endpo
 const MAX_DEVICES = 10
 
 // Turns push notifications on for the user's device. A device someone else
-// turned it on for before is theirs from now on.
+// turned it on for before is theirs from now on. A switch in the event log
+// (#399) unless the device was on for them already: turning it on again isn't
+// one. Pruning the most devices (MAX_DEVICES) isn't a switch either.
 export async function turnOnPush(userId: string, target: PushTarget): Promise<void> {
+  const wasOn = await isPushOn(userId, target.endpoint)
   const subscription = { userId, p256dh: target.p256dh, auth: target.auth, createdAt: new Date() }
-  await db
-    .insert(pushSubscription)
-    .values({ endpoint: target.endpoint, ...subscription })
-    .onConflictDoUpdate({ target: pushSubscription.endpoint, set: subscription })
-  await db.delete(pushSubscription).where(and(
-    eq(pushSubscription.userId, userId),
-    sql`${pushSubscription.endpoint} not in (select ${pushSubscription.endpoint} from ${pushSubscription} where ${pushSubscription.userId} = ${userId} order by ${pushSubscription.createdAt} desc limit ${MAX_DEVICES})`,
-  ))
+  await runAtomic(d => [
+    d
+      .insert(pushSubscription)
+      .values({ endpoint: target.endpoint, ...subscription })
+      .onConflictDoUpdate({ target: pushSubscription.endpoint, set: subscription }),
+    d.delete(pushSubscription).where(and(
+      eq(pushSubscription.userId, userId),
+      sql`${pushSubscription.endpoint} not in (select ${pushSubscription.endpoint} from ${pushSubscription} where ${pushSubscription.userId} = ${userId} order by ${pushSubscription.createdAt} desc limit ${MAX_DEVICES})`,
+    )),
+    ...(wasOn ? [] : [recordEvents(d, { kind: 'push_switched', board: sql`null`, user: userId, details: detailsOf({ on: true }) }, sql`from (select 1) switched`)]),
+  ])
 }
 
 // Turns them off for the user's device; a device of someone else's stays as it is.
+// A switch in the event log (#399) only when a device was turned off.
 export async function turnOffPush(userId: string, endpoint: string): Promise<void> {
-  await db.delete(pushSubscription).where(and(eq(pushSubscription.userId, userId), eq(pushSubscription.endpoint, endpoint)))
+  await withEvents(
+    db,
+    db.delete(pushSubscription).where(and(eq(pushSubscription.userId, userId), eq(pushSubscription.endpoint, endpoint))).returning({ endpoint: pushSubscription.endpoint }),
+    { kind: 'push_switched', board: sql`null`, user: userId, details: detailsOf({ on: false }) },
+    { once: true },
+  )
 }
 
 // Whether the user turned them on for the device.
@@ -63,20 +76,20 @@ type Latest = { dishId: string } | { commentId: string } | { voteOn: string }
 // After `adderId` added Dish `dishId` to the Board: every other Member who
 // turned push notifications on gets the Board's notification (`notify`).
 export function notifyNewDish(boardId: string, dishId: string, adderId: string): Promise<void> {
-  return notify(boardId, adderId, { dishId })
+  return notify(boardId, dishId, adderId, { dishId })
 }
 
 // After `authorId` wrote Comment `commentId` on Dish `dishId` (#352).
 export async function notifyComment(dishId: string, commentId: string, authorId: string): Promise<void> {
   const boardId = await boardOf(dishId)
-  if (boardId) await notify(boardId, authorId, { commentId })
+  if (boardId) await notify(boardId, dishId, authorId, { commentId })
 }
 
 // After `voterId` gave a new Vote on Dish `dishId`; changing one sends
 // nothing (#352).
 export async function notifyVote(dishId: string, voterId: string): Promise<void> {
   const boardId = await boardOf(dishId)
-  if (boardId) await notify(boardId, voterId, { voteOn: dishId })
+  if (boardId) await notify(boardId, dishId, voterId, { voteOn: dishId })
 }
 
 async function boardOf(dishId: string): Promise<string | null> {
@@ -89,9 +102,9 @@ async function boardOf(dishId: string): Promise<string | null> {
 // gets the Board's notification on each of their devices, counting the
 // Dishes, Comments and Votes others added since they last had the Board
 // open, in their language. A subscription the push service says is gone is
-// deleted.
+// deleted. Each device tried is a push_sent event (#399) about `dishId`.
 // Never rejects: what it is sent for has worked whatever happens here.
-async function notify(boardId: string, actorId: string, latest: Latest): Promise<void> {
+async function notify(boardId: string, dishId: string, actorId: string, latest: Latest): Promise<void> {
   if (!sendPush) return
   try {
     const news = await boardNews(boardId, actorId, latest)
@@ -102,13 +115,25 @@ async function notify(boardId: string, actorId: string, latest: Latest): Promise
       .where(inArray(pushSubscription.userId, [...news.keys()]))
     const outcomes = await Promise.all(targets.map(async (target) => {
       const { language, news: theirs } = news.get(target.userId)!
-      return { endpoint: target.endpoint, outcome: await sendPush(target, pushMessage(language, theirs)) }
+      return { userId: target.userId, endpoint: target.endpoint, outcome: await sendPush(target, pushMessage(language, theirs)) }
     }))
+    await recordPushesSent(boardId, dishId, outcomes)
     const gone = outcomes.filter(o => o.outcome === 'gone').map(o => o.endpoint)
     if (gone.length > 0) await db.delete(pushSubscription).where(inArray(pushSubscription.endpoint, gone))
   }
   catch (err) {
     console.warn(`[push] Board ${boardId} not notified:`, err)
+  }
+}
+
+// One push_sent event per device a push was tried on, in one insert (#399).
+// A failure to record is logged and never thrown: the pushes went out.
+async function recordPushesSent(boardId: string, dishId: string, sent: { userId: string, outcome: PushOutcome }[]): Promise<void> {
+  try {
+    await db.insert(eventLog).values(sent.map(({ userId, outcome }) => ({ kind: 'push_sent' as const, boardId, dishId, userId, details: { outcome } })))
+  }
+  catch (err) {
+    console.warn('[event-log] push_sent not recorded:', err)
   }
 }
 

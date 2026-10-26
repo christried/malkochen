@@ -4,7 +4,7 @@ import { db, runAtomic, type Db } from '../db'
 import { archivedMembership, board, dish, eventLog, membership, user } from '../db/schema'
 import { accountDeletedEmail } from '../email'
 import { removeImageIfUnreferenced } from './cleanup'
-import { boardEvent, withEvents } from './events'
+import { boardEvent, recordEvents, withEvents } from './events'
 import { mailSender } from './mail'
 
 // The confirmation email, when the Resend API key is set, like the Email
@@ -78,6 +78,9 @@ export async function deleteAccount(deleted: { id: string, email: string, userna
     // them, without whom.
     d.update(eventLog).set({ userId: null }).where(eq(eventLog.userId, userId)),
     d.execute(sql`update ${eventLog} set details = details - 'member' where details->>'member' = ${userId}`),
+    // The deletion itself, by nobody (#399): after the line above, so that
+    // it isn't emptied out with the rest.
+    recordEvents(d, { kind: 'account_deleted', board: sql`null`, user: null }, sql``),
     d.delete(user).where(eq(user.id, userId)),
   ])
 
