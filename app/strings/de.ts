@@ -6,8 +6,7 @@
 // (.nuxt/tsconfig.node.json) has no `~` aliases.
 import type { AchievementLevel } from '../utils/achievement'
 import type { EventGroup, SourceColumn } from '../../shared/admin'
-import type { EventKind } from '../../shared/event-kinds'
-import type { DishField } from '../../server/utils/events'
+import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { SectionKind } from '../../shared/changelog'
 import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'

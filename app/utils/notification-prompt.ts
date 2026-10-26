@@ -1,4 +1,5 @@
 import type { PushState } from './push-switch'
+import type { PromptKind } from '../../shared/event-kinds'
 
 // Notification Prompts (CONTEXT.md, #407): Topfbert's card on the Board that
 // offers Push Notifications or the Email Digest. This is the rule for which
@@ -7,8 +8,6 @@ import type { PushState } from './push-switch'
 export const PROMPT_EVERY_MS = 30 * 24 * 3_600_000
 export const PROMPT_APART_MS = 48 * 3_600_000
 export const PROMPT_AFTER_SIGN_UP_MS = 24 * 3_600_000
-
-export type PromptKind = 'push' | 'digest'
 
 export interface PromptSituation {
   now: number

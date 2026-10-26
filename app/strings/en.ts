@@ -3,8 +3,7 @@
 // "you", warm and short, like the German "du"; British spelling. malkochen
 // and Topfbert keep their names. Relative imports, as in de.ts.
 import type { EventGroup } from '../../shared/admin'
-import type { EventKind } from '../../shared/event-kinds'
-import type { DishField } from '../../server/utils/events'
+import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'

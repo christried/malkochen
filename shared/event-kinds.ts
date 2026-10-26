@@ -90,3 +90,14 @@ export const EVENT_KINDS = [
 ] as const
 
 export type EventKind = typeof EVENT_KINDS[number]
+
+// The Notification Prompts (CONTEXT.md, #407): which one, and how the user
+// answered it ("Einschalten" 'on', "Später" 'later').
+export const PROMPT_KINDS = ['push', 'digest'] as const
+export type PromptKind = typeof PROMPT_KINDS[number]
+export const PROMPT_ANSWERS = ['on', 'later'] as const
+export type PromptAnswer = typeof PROMPT_ANSWERS[number]
+
+// The fields of a Dish an edit can change (dish_edited): the title, the
+// image (or its Placeholder), the Source, the Creator and the Focus Point.
+export type DishField = 'title' | 'image' | 'source' | 'creator' | 'focus'

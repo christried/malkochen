@@ -1,9 +1,10 @@
 import { z } from 'zod'
+import { PROMPT_ANSWERS, PROMPT_KINDS } from '../../../shared/event-kinds'
 import { recordPromptAnswered, recordPromptShown, type Me } from '../../utils/people'
 
 const body = z.object({
-  which: z.enum(['push', 'digest']),
-  answer: z.enum(['on', 'later']).optional(),
+  which: z.enum(PROMPT_KINDS),
+  answer: z.enum(PROMPT_ANSWERS).optional(),
 })
 
 // PUT /api/me/prompt { which, answer? } — a Notification Prompt (CONTEXT.md,
