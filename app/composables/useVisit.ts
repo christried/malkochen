@@ -7,12 +7,10 @@
 export function useVisit() {
   const visit = useState('visit', () => 0)
   const shownIn = useState<number | null>('visit-shown-in', () => null)
-  const shownKind = useState<string | null>('visit-shown-kind', () => null)
   return {
     visit,
     // The Tour, the Changelog Popup or a prompt showed in this visit.
-    shown: (kind: 'tour' | 'changelog' | 'prompt') => {
-      shownKind.value = kind
+    shown: () => {
       shownIn.value = visit.value
     },
     shownThisVisit: computed(() => shownIn.value === visit.value),

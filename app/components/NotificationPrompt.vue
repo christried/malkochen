@@ -57,7 +57,7 @@ const text = computed(() => props.which === 'push' ? t.prompt.pushText : t.promp
         <div class="flex flex-wrap gap-2 pt-1">
           <button
             type="button"
-            class="rounded-pill bg-butter px-4 py-2 text-button text-on-accent disabled:opacity-60"
+            class="rounded-pill bg-butter px-4 py-2 text-button text-on-accent transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
             :disabled="busy"
             :aria-busy="busy"
             @click="$emit('turnOn')"
@@ -66,7 +66,7 @@ const text = computed(() => props.which === 'push' ? t.prompt.pushText : t.promp
           </button>
           <button
             type="button"
-            class="rounded-pill bg-surface-muted px-4 py-2 text-button text-text disabled:opacity-60"
+            class="rounded-pill bg-surface-muted px-4 py-2 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
             :disabled="busy"
             @click="$emit('later')"
           >

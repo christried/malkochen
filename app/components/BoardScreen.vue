@@ -427,7 +427,7 @@ onBeforeUnmount(() => clearTimeout(popupTimer))
 // Settled once, it stays until closed: its own modal makes the Board busy.
 const popupDue = computed(() => popupSettled.value && popupWanted.value)
 watch(popupDue, (due) => {
-  if (due) visit.shown('changelog')
+  if (due) visit.shown()
 })
 
 // A Notification Prompt (NotificationPrompt, #407, decided on #392: A): the
@@ -485,7 +485,7 @@ function showPrompt() {
   promptShowing.value = which
   promptAnswered = false
   promptError.value = null
-  visit.shown('prompt')
+  visit.shown()
   const now = new Date().toISOString()
   me.value = { ...me.value, ...(which === 'push' ? { pushPromptedAt: now } : { digestPromptedAt: now }) }
   void tellPrompt(which)
@@ -495,7 +495,7 @@ function answerPrompt(which: PromptKind, answer: 'on' | 'later') {
   promptAnswered = true
   void tellPrompt(which, answer)
 }
-async function promptLater() {
+function promptLater() {
   const which = promptShowing.value
   promptShowing.value = null
   if (which) answerPrompt(which, 'later')
@@ -1275,7 +1275,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :auto-start="!openedToAdd"
       :menu="menuDish && { dishId: menuDish.id, choosing: choosingColumn }"
       @close-menu="menuDish = null"
-      @started="visit.shown('tour')"
+      @started="visit.shown()"
       @ended="showNotice(t.tour.ended)"
     />
     <LazyChangelogPopup
