@@ -64,6 +64,8 @@ export type EventKind =
   | 'board_emoji_changed'
   // The Owner made another Member the Owner.
   | 'ownership_handed_over'
+  // Someone opened a Dish Link page (CONTEXT.md: Dish Link), signed in or not.
+  | 'dish_link_opened'
 
 // What an event says beyond its Board, Dish and user, by kind. `undo`: the
 // write was a "Rückgängig", taking back the one before it.
@@ -101,6 +103,10 @@ export type EventDetails =
   | { permission: Permission, on: boolean }
   // ownership_handed_over: to whom.
   | { member: string }
+  // dish_link_opened: whether the viewer was signed in. The event's user
+  // is null when they weren't, but also once a deleted account is gone, so
+  // only this tells the two apart.
+  | { signedIn: boolean }
 
 // The fields of a Dish an edit can change (dish_edited): the title, the
 // image (or its Placeholder), the Source, the Creator and the Focus Point.
@@ -112,7 +118,8 @@ export interface EventValues {
   kind: EventKind
   board: SQL
   dish?: SQL
-  user: string
+  // Null for someone signed out (dish_link_opened).
+  user: string | null
   details?: SQL
   // Only for the rows this holds for (over the write's `changed` row, and
   // its `earlier` one if given).
