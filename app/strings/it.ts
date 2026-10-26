@@ -764,6 +764,7 @@ export const it: Strings = {
     openSignUp: 'Registrazione aperta',
     openSignUpHint: 'Chiunque può registrarsi, non solo gli indirizzi nella Allowlist. Chi ha già un account entra sempre.',
     openSignUpFailed: failed,
+    eventsFailed: failed,
     figure: 'Cosa',
     used: 'Usato',
     free: 'Gratis',

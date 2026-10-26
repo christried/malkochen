@@ -97,7 +97,7 @@ export async function shareDish(dishId: string, userId: string): Promise<string 
 
 // The Dish a secret opens, or null if none has it (any more): an Archived
 // Dish and a Dish on an Archived Board open nothing until restored.
-export async function dishOf(secret: string) {
+export async function liveDishBySecret(secret: string) {
   const [found] = await db
     .select({
       id: dish.id,
@@ -129,7 +129,7 @@ async function optionalUser(event: H3Event): Promise<SessionUser | null> {
 // secret or that no live Dish has; limited per client with Invite Links.
 export async function openDishLink(event: H3Event, link: string): Promise<DishLinkView> {
   const secret = dishLinkSecret(link)
-  const found = await lookUpSecret(event, async () => (secret ? dishOf(secret) : null), dishLinkNotFound)
+  const found = await lookUpSecret(event, async () => (secret ? liveDishBySecret(secret) : null), dishLinkNotFound)
   const user = await optionalUser(event)
   const [member] = user ? await accessOn(found.boardId, user.id) : []
   await recordEvents(

@@ -889,6 +889,7 @@ export const de = {
     openSignUp: 'Anmeldung offen',
     openSignUpHint: 'Alle können sich neu anmelden, nicht nur die Adressen auf der Allowlist. Wer schon ein Konto hat, kommt immer rein.',
     openSignUpFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    eventsFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     figure: 'Was',
     used: 'Genutzt',
     free: 'Kostenlos',

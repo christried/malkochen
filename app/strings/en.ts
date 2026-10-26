@@ -748,6 +748,7 @@ export const en: Strings = {
     openSignUp: 'Sign-up open',
     openSignUpHint: 'Anyone can sign up, not only the addresses on the Allowlist. Everyone who already has an account always gets in.',
     openSignUpFailed: failed,
+    eventsFailed: failed,
     figure: 'What',
     used: 'Used',
     free: 'Free',
