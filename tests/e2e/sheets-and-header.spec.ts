@@ -7,9 +7,10 @@ import { resetBoard, seedDish } from './seed'
 
 // Sheets and dialogs close on a click on the backdrop only when the press
 // started there too, and never while something is typed into them (#390).
-// ✕ and Escape always close. Cecilia's Board is used by this file only.
+// ✕ and Escape always close. Lovelace's Board is used by this file only.
 test.describe.configure({ mode: 'serial' })
 
+const DESKTOP = { width: 1280, height: 900 }
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
 // A press from inside the sheet's title area that ends on the backdrop.
@@ -20,6 +21,17 @@ async function dragOut(page: Page, sheet: ReturnType<Page['getByRole']>) {
   await page.mouse.down()
   await page.mouse.move(4, 4, { steps: 8 })
   await page.mouse.up()
+}
+
+// Opens the Dish detail and waits until it has settled: while its View
+// Transition runs, presses land on the page instead of the backdrop.
+async function openOfengemuese(page: Page) {
+  await page.getByRole('link', { name: 'Ofengemüse' }).click()
+  const detail = page.getByRole('dialog', { name: 'Ofengemüse' })
+  await expect(detail).toBeVisible()
+  await detail.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+  await page.waitForFunction(() => !document.documentElement.matches(':active-view-transition'))
+  return detail
 }
 
 test.beforeEach(async ({ page }) => {
@@ -71,13 +83,22 @@ test('✕ and Escape still close a sheet with typed input', async ({ page }) => 
 })
 
 test('the Dish detail closes on a click on its backdrop, not on a press that ends there from inside', async ({ page }) => {
-  await page.getByRole('link', { name: 'Ofengemüse' }).click()
-  const detail = page.getByRole('dialog', { name: 'Ofengemüse' })
-  await expect(detail).toBeVisible()
-  // It moves in (morphing from the card) before it takes presses.
-  await detail.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+  const detail = await openOfengemuese(page)
   await dragOut(page, detail)
   await expect(detail).toBeVisible()
+  await page.mouse.click(100, 450)
+  await expect(detail).toBeHidden()
+})
+
+test('a Comment typed into the Dish detail holds it open; once emptied, the backdrop closes it again', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  const detail = await openOfengemuese(page)
+  const field = detail.getByRole('textbox', { name: 'Kommentar' })
+  await field.fill('Freitag mit Feta')
+  await page.mouse.click(100, 450)
+  await expect(detail).toBeVisible()
+  await expect(field).toHaveValue('Freitag mit Feta')
+  await field.fill('')
   await page.mouse.click(100, 450)
   await expect(detail).toBeHidden()
 })
@@ -85,7 +106,6 @@ test('the Dish detail closes on a click on its backdrop, not on a press that end
 // The Board's header (#390): from the desktop breakpoint the cogwheel sits
 // next to your Profile Picture, and the search opens in the header's centre
 // when there is room; on phones and tablets both are as they were.
-const DESKTOP = { width: 1280, height: 900 }
 const TABLET = { width: 820, height: 1000 }
 const PHONE = { width: 390, height: 844 }
 
@@ -122,7 +142,11 @@ test.describe('the header', () => {
     await page.setViewportSize(PHONE)
     await expect(picture).toBeHidden()
     const phone = await cogwheel.boundingBox()
-    expect(phone!.x).toBeLessThan(PHONE.width / 2)
+    // Phones are as before: the cogwheel follows the search button in the
+    // Board switcher's group, on the switcher's row.
+    const pill = await page.locator('.board-pill').boundingBox()
+    expect(Math.abs(centreY(phone!) - centreY(pill!))).toBeLessThanOrEqual(2)
+    expect(phone!.x).toBeGreaterThan(pill!.x)
   })
 
   test('on desktop the search opens in the header\'s centre when there is room', async ({ page }) => {
@@ -137,6 +161,21 @@ test.describe('the header', () => {
     expect(box!.y + box!.height).toBeLessThanOrEqual(header!.y + header!.height)
     const midX = box!.x + box!.width / 2
     expect(Math.abs(midX - (header!.x + header!.width / 2))).toBeLessThan(header!.width / 6)
+  })
+
+  test('on desktop with no room in the header, the search opens under it, as before', async ({ page }) => {
+    await page.setViewportSize({ width: 1200, height: 900 })
+    await gotoHydrated(page, '/')
+    // A long Board name takes the header's room.
+    await page.locator('header button[aria-haspopup]').first().evaluate((el) => {
+      el.style.minWidth = '760px'
+    })
+    await page.getByRole('button', { name: 'Gerichte suchen' }).click()
+    const bar = page.getByRole('search')
+    await expect(bar).toBeVisible()
+    const header = await page.locator('header').boundingBox()
+    const box = await bar.boundingBox()
+    expect(box!.y).toBeGreaterThanOrEqual(header!.y + header!.height)
   })
 
   test('on tablet the search opens under the header, as before', async ({ page }) => {

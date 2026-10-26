@@ -744,7 +744,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
              The sheet hands focus back here when it closes. -->
         <RoundButton
           raised
-          class="desktop:order-last"
+          class="desktop:order-last desktop:ml-auto"
           aria-haspopup="dialog"
           :aria-label="t.userSettings.title"
           :data-tooltip="t.userSettings.title"

@@ -16,11 +16,13 @@ export function closesOnBackdrop({ startedOnBackdrop, typed }: BackdropPress): b
 }
 
 // Whether a text field inside `root` holds something. Checkboxes, switches,
-// buttons and the like don't count.
+// buttons and the like don't count, nor do fields that are not rendered
+// (display: none, such as inside a nested dialog that is closed).
 const TEXT_INPUT_TYPES = new Set(['text', 'search', 'url', 'email', 'tel', 'number', 'password', 'date', 'time'])
 export function hasTypedText(root: ParentNode | null): boolean {
   if (!root) return false
   return [...root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')].some((field) => {
+    if (!field.checkVisibility()) return false
     if (field instanceof HTMLTextAreaElement) return field.value.trim() !== ''
     return TEXT_INPUT_TYPES.has(field.type) && field.value.trim() !== ''
   })
