@@ -51,7 +51,7 @@ afterAll(async () => {
 })
 
 test('a first sign-in records the sign-up and the sign-in, a later one only the sign-in, both by the dev sign-in', async () => {
-  all = await watchEvents()
+  all = await watchEvents({ signIns: true })
   const maxwell = await signIn(MAXWELL)
   const id = await idOf(maxwell)
 
@@ -60,7 +60,7 @@ test('a first sign-in records the sign-up and the sign-in, a later one only the 
     { kind: 'signed_in', boardId: null, dishId: null, userId: id, details: { method: 'dev' } },
   ])
 
-  const again = await watchEvents()
+  const again = await watchEvents({ signIns: true })
   await signIn(MAXWELL)
   expect(await again.recorded()).toEqual([
     { kind: 'signed_in', boardId: null, dishId: null, userId: id, details: { method: 'dev' } },
@@ -70,7 +70,7 @@ test('a first sign-in records the sign-up and the sign-in, a later one only the 
 test('a Username changed is recorded, and keeping the one they have records nothing', async () => {
   const maxwell = await signIn(MAXWELL)
   const id = await idOf(maxwell)
-  const log = await watchEvents()
+  const log = await watchEvents({ signIns: true })
 
   const keep = await maxwell.fetch('/api/me/username', json('PUT', { username: await usernameOf(maxwell) }))
   expect(keep.status).toBe(200)
@@ -86,7 +86,7 @@ test('a Username changed is recorded, and keeping the one they have records noth
 test('a Profile Picture set and removed is recorded, and setting the same thing again records nothing', async () => {
   const maxwell = await signIn(MAXWELL)
   const id = await idOf(maxwell)
-  const log = await watchEvents()
+  const log = await watchEvents({ signIns: true })
   const bytes = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#4a7' } }).jpeg().toBuffer()
   const uploaded = await maxwell.fetch('/api/me/pictures', { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array(bytes) })
   expect(uploaded.status).toBe(201)
@@ -106,7 +106,7 @@ test('a Profile Picture set and removed is recorded, and setting the same thing 
 test('the language changed is recorded, and setting the same language again records nothing', async () => {
   const maxwell = await signIn(MAXWELL)
   const id = await idOf(maxwell)
-  const log = await watchEvents()
+  const log = await watchEvents({ signIns: true })
 
   expect((await maxwell.fetch('/api/me/language', json('PUT', { language: 'en' }))).status).toBe(200)
   expect((await maxwell.fetch('/api/me/language', json('PUT', { language: 'en' }))).status).toBe(200)
@@ -120,7 +120,7 @@ test('push notifications switched on and off for a device are recorded, and a re
   const euler = await signIn(EULER)
   const id = await idOf(euler)
   const device = pushService.device('euler-phone')
-  const log = await watchEvents()
+  const log = await watchEvents({ signIns: true })
 
   expect((await euler.fetch('/api/me/push', json('PUT', device.subscription))).status).toBe(204)
   // The same device again: a re-subscription, not a switch.
@@ -137,7 +137,7 @@ test('push notifications switched on and off for a device are recorded, and a re
 test('the Email Digest switched on and off is recorded, and a repeat of either records nothing', async () => {
   const euler = await signIn(EULER)
   const id = await idOf(euler)
-  const log = await watchEvents()
+  const log = await watchEvents({ signIns: true })
 
   expect((await euler.fetch('/api/me/email-digest', { method: 'PUT' })).status).toBe(204)
   expect((await euler.fetch('/api/me/email-digest', { method: 'PUT' })).status).toBe(204)
@@ -164,7 +164,7 @@ test('a push notification sent is recorded per device, with its Board and Dish; 
   const { id: boardId } = await res.json() as { id: string }
   const { inviteToken } = await (await gauss.fetch(`/api/boards/${boardId}`)).json() as { inviteToken: string }
   expect((await riemann.fetch(`/api/invites/${inviteToken}/join`, { method: 'POST' })).status).toBe(200)
-  const log = await watchEvents()
+  const log = await watchEvents({ signIns: true })
 
   const dishRes = await postDish(gauss, boardId, { title: 'Brokkoli-Auflauf', placeholder: 'bowl' })
   expect(dishRes.status).toBe(201)
@@ -188,7 +188,7 @@ test('an Email Digest sent is recorded with the number of Boards it listed', asy
   expect((await riemann.fetch(`/api/invites/${inviteToken}/join`, { method: 'POST' })).status).toBe(200)
   const dishRes = await postDish(gauss, boardId, { title: 'Linsen', placeholder: 'bowl' })
   expect(dishRes.status).toBe(201)
-  const log = await watchEvents()
+  const log = await watchEvents({ signIns: true })
 
   const run = await anonymous().fetch('/api/cron/email-digest', { headers: { authorization: `Bearer ${CRON_SECRET}` } })
   expect(run.status).toBe(200)
