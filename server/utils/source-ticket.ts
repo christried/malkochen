@@ -1,6 +1,6 @@
-import { videoEmbed } from '../../shared/video-embed'
 import type { DishSource } from './dishes'
 import { sourceTickets } from './image-store'
+import { playableFor } from './playable-video'
 
 // Source Tickets (server/image-store/tickets.ts): what Source Lookup read from a
 // Source, signed for the Member who asked, so a Dish keeps a Caption only if
@@ -39,10 +39,9 @@ export function checkedSourceFacts(userId: string, sent: { link: string, caption
 }
 
 // What a Dish keeps of its Source's facts (#393, #394), from what the client
-// sent with the Source. The Caption only with a valid ticket. Whether a video
-// plays: for TikTok and YouTube Shorts read from the link alone (no ticket
-// needed); for Instagram only with a valid ticket, else null (not known); false
-// for any other Source. No Source: nothing known.
+// sent with the Source. The Caption only with a valid ticket; whether a video
+// plays as playableFor says, with Source Lookup's answer only from a valid
+// ticket.
 export function storedSourceFacts(
   userId: string,
   source: DishSource | null,
@@ -50,15 +49,5 @@ export function storedSourceFacts(
 ): { caption: string | null, playableVideo: boolean | null } {
   if (!source) return { caption: null, playableVideo: null }
   const checked = checkedSourceFacts(userId, { link: source.link, ...sent })
-  const caption = checked?.caption ?? null
-  switch (source.kind) {
-    case 'tiktok':
-    case 'youtube-short':
-      return { caption, playableVideo: videoEmbed(source) !== null }
-    case 'instagram-reel':
-    case 'instagram-post':
-      return { caption, playableVideo: checked?.playableVideo ?? null }
-    default:
-      return { caption, playableVideo: false }
-  }
+  return { caption: checked?.caption ?? null, playableVideo: playableFor(source, checked?.playableVideo) }
 }
