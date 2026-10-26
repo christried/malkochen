@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { DishLinkView } from '~~/server/utils/dish-links'
+import type { BoardListing } from '~~/server/utils/boards'
+import type { CopiedDish } from '~~/server/utils/copies'
+import { dishPath } from '~~/shared/address'
 
 // The Dish Link page (CONTEXT.md: Dish Link; #392 decision 4, variant A): one
 // Dish for anyone with the link, signed in or not: its image (with its Focus
@@ -19,6 +22,85 @@ const { data: dish, error } = await useFetch<DishLinkView>(`/api/dish-links/${li
 if (error.value?.statusCode === 429) {
   throw createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found', fatal: true })
 }
+
+// Signed in or not (#403): "Auf mein Board kopieren" copies the Dish to one of
+// the user's Boards when signed in; signed out, it remembers the link through
+// sign-in. The same request the page guard made (a 401 is signed out).
+const { data: me } = await useFetch<{ id: string }>('/api/me', { key: `me:${route.fullPath}` })
+
+// "Auf mein Board kopieren" (#403): the Board picker sheet (#402's
+// CopyTargetPicker) and the Copy made from it.
+const copyPicker = ref(false)
+const copying = ref(false)
+const toast = ref<Toast | null>(null)
+const statusOf = (failure: unknown) => (failure as { statusCode?: number } | null)?.statusCode
+
+async function copyFromLink() {
+  if (copying.value) return
+  if (!me.value) {
+    copying.value = true
+    try {
+      await $fetch(`/api/dish-links/${link}/remember`, { method: 'POST' })
+    }
+    catch (failure) {
+      copying.value = false
+      if (statusOf(failure) === 404) dish.value = undefined
+      else toast.value = { text: t.detail.copyFailed, duration: NOTICE_MS }
+      return
+    }
+    // The sign-in lands on "/", which opens the Dish here again, with the picker.
+    await navigateTo('/login')
+    return
+  }
+  copyPicker.value = true
+}
+
+// Makes the Copy on `boardId` and opens it there. The Copy's notice about an
+// image that couldn't be copied doesn't come along: the page changes.
+async function copyInto(boardId: string) {
+  copying.value = true
+  try {
+    const copied = await $fetch<CopiedDish>(`/api/dish-links/${link}/copy`, { method: 'POST', body: { boardId } })
+    copyPicker.value = false
+    await navigateTo(dishPath(copied.board, copied.dish))
+  }
+  catch (failure) {
+    copying.value = false
+    copyPicker.value = false
+    if (statusOf(failure) === 404) dish.value = undefined
+    else toast.value = { text: statusOf(failure) === 403 ? t.detail.copyForbidden : t.detail.copyFailed, duration: NOTICE_MS }
+  }
+}
+
+function copyTo(toBoard: BoardListing) {
+  return copyInto(toBoard.id)
+}
+
+// Signed in with no Board to copy to: a new one, starter name, then the Copy.
+async function startBoard() {
+  if (copying.value) return
+  copying.value = true
+  let created: { id: string }
+  try {
+    created = await $fetch<{ id: string }>('/api/boards', { method: 'POST', body: { name: t.boardStart.starter, emoji: '🍲' } })
+  }
+  catch {
+    copying.value = false
+    toast.value = { text: t.detail.copyFailed, duration: NOTICE_MS }
+    return
+  }
+  await copyInto(created.id)
+}
+
+// Back from the sign-in with a remembered link (the landing sends us here
+// with `?kopieren`): the picker opens once, and the query goes, so a reload
+// doesn't open it again.
+onMounted(() => {
+  if (me.value && route.query.kopieren !== undefined) {
+    copyPicker.value = true
+    void navigateTo({ path: route.path, query: {} }, { replace: true })
+  }
+})
 
 // The Dish's image for a preview when it is a link a messenger can fetch,
 // else the app's icon.
@@ -61,7 +143,15 @@ useSeoMeta({
             :kind="dish.source.kind"
           />
         </p>
-        <!-- #403 puts "Auf mein Board kopieren" here, above "Zur Quelle". -->
+        <button
+          type="button"
+          class="flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+          :disabled="copying"
+          data-copy-from-link
+          @click="copyFromLink"
+        >
+          {{ t.dishLink.copy }}
+        </button>
         <a
           v-if="dish.source"
           :href="dish.source.link"
@@ -93,5 +183,33 @@ useSeoMeta({
         {{ t.invite.toApp }}
       </NuxtLink>
     </div>
+
+    <AppSheet
+      v-model:open="copyPicker"
+      :title="t.detail.copyTo"
+      :close-label="t.dish.closeMenu"
+    >
+      <CopyTargetPicker
+        v-if="copyPicker"
+        class="mt-5"
+        @copy="copyTo"
+      >
+        <template #empty>
+          <p class="px-1 text-small text-text-muted">
+            {{ t.detail.copyNoBoards }}
+          </p>
+          <button
+            type="button"
+            class="mt-3 flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+            :disabled="copying"
+            data-start-board
+            @click="startBoard"
+          >
+            {{ t.dishLink.startBoard }}
+          </button>
+        </template>
+      </CopyTargetPicker>
+    </AppSheet>
+    <AppToast v-model="toast" />
   </main>
 </template>

@@ -801,7 +801,7 @@ export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
-  { tour = false, copiedFrom }: { tour?: boolean, copiedFrom?: string } = {},
+  { tour = false, copiedFrom, viaLink = false }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
@@ -838,7 +838,7 @@ export async function addDish(
           board: sql`${boardId}`,
           dish: sql`${id}`,
           user: adder.id,
-          details: detailsOf({ from: copiedFrom, source: input.source?.kind ?? null }),
+          details: detailsOf({ from: copiedFrom, source: input.source?.kind ?? null, ...viaLink && { viaLink: true as const } }),
         }
       : {
           kind: 'dish_added',

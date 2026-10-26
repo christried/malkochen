@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, type SQL } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { ImageFocus } from '../../shared/image-focus'
 import { db } from '../db'
@@ -30,10 +30,9 @@ export interface CopySource {
   placeholder: Placeholder
 }
 
-// The live Dish `dishId`, if the user may see it: not archived, on a Board
-// that isn't archived, and on a Board they are a Member of (accessOn decides
-// that). Null otherwise, which the route answers "not found".
-export async function copySourceById(dishId: string, userId: string): Promise<CopySource | null> {
+// The live Dish matching `where`: not archived, on a Board that isn't
+// archived. Null if none.
+async function liveSourceWhere(where: SQL): Promise<CopySource | null> {
   const [found] = await db
     .select({
       id: dish.id,
@@ -51,16 +50,30 @@ export async function copySourceById(dishId: string, userId: string): Promise<Co
     })
     .from(dish)
     .innerJoin(board, eq(board.id, dish.boardId))
-    .where(and(eq(dish.id, dishId), isNull(dish.deletedAt), isNull(board.deletedAt)))
+    .where(and(where, isNull(dish.deletedAt), isNull(board.deletedAt)))
   if (!found) return null
-  const [access] = await accessOn(found.boardId, userId)
-  if (!access) return null
   const { sourceLink, sourceKind, imageFocusX, imageFocusY, ...rest } = found
   return {
     ...rest,
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     imageFocus: { x: imageFocusX, y: imageFocusY },
   }
+}
+
+// The live Dish `dishId`, if the user may see it: its Board is one they are a
+// Member of (accessOn decides that). Null otherwise, which the route answers
+// "not found".
+export async function copySourceById(dishId: string, userId: string): Promise<CopySource | null> {
+  const source = await liveSourceWhere(eq(dish.id, dishId))
+  if (!source) return null
+  const [access] = await accessOn(source.boardId, userId)
+  return access ? source : null
+}
+
+// The live Dish whose Dish Link secret is `secret` (#403). No access check:
+// having the link is the permission to copy it.
+export function copySourceBySecret(secret: string): Promise<CopySource | null> {
+  return liveSourceWhere(eq(dish.linkSecret, secret))
 }
 
 // The image a Copy gets: a copy of the stored one, under a new name, so
@@ -92,6 +105,13 @@ export interface CopiedDish {
 export async function copyDish(sourceDishId: string, copier: Copier, toBoardId: string): Promise<CopiedDish | 'same-board' | null> {
   const source = await copySourceById(sourceDishId, copier.id)
   if (!source) return null
+  return copyFrom(source, copier, toBoardId)
+}
+
+// The Copy of `source` on `toBoardId`, added by `copier`; the same answers as
+// copyDish. `viaLink`: the source was found by its Dish Link (#403), which
+// the event then says.
+export async function copyFrom(source: CopySource, copier: Copier, toBoardId: string, { viaLink = false }: { viaLink?: boolean } = {}): Promise<CopiedDish | 'same-board' | null> {
   if (source.boardId === toBoardId) return 'same-board'
 
   const { imageUrl, imageCopied } = await copyImageOf(source.imageUrl)
@@ -104,7 +124,7 @@ export async function copyDish(sourceDishId: string, copier: Copier, toBoardId: 
     imageUrl,
     imageFocus: source.imageFocus,
     placeholder: source.placeholder,
-  }, { copiedFrom: source.id })
+  }, { copiedFrom: source.id, viaLink })
   if (!added) return null
 
   const [target] = await db.select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji }).from(board).where(eq(board.id, toBoardId))

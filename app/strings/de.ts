@@ -153,6 +153,9 @@ export const de = {
     // The Creator, "von pastaqueen".
     by: (name: string) => `von ${name}`,
     toSource: 'Zur Quelle',
+    // "Kopieren" from the link (#403): a Copy on one of the user's Boards.
+    copy: 'Auf mein Board kopieren',
+    startBoard: 'Neues Board anlegen und kopieren',
     goneTitle: 'Dieses Gericht gibt es hier nicht mehr',
     goneBody: 'Vielleicht wurde es archiviert oder gelöscht.',
   },

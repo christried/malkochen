@@ -125,6 +125,9 @@ export const en: Strings = {
     // The Creator, "by pastaqueen".
     by: (name: string) => `by ${name}`,
     toSource: 'View source',
+    // "Kopieren" from the link (#403): a Copy on one of the user's Boards.
+    copy: 'Copy to my board',
+    startBoard: 'Start a new board and copy it there',
     goneTitle: 'This dish isn’t here any more',
     goneBody: 'It may have been archived or deleted.',
   },

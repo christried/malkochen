@@ -4,9 +4,11 @@ import { boardLabel } from '~~/shared/board'
 
 // "Kopieren nach…" (#402): the user's other Boards where they may add Dishes,
 // one row each, as MoveTargetPicker lists them. Picking one emits `copy` with
-// that Board. Fetched when it shows; with none, a line says so. The sheet
-// around it gives the heading.
-const props = defineProps<{ boardId: string }>()
+// that Board. Fetched when it shows; with none, a line says so (the `empty`
+// slot replaces that line, #403). The sheet around it gives the heading.
+// Without a `boardId` every Board where they may add Dishes is listed (the
+// Dish Link page, #403).
+const props = defineProps<{ boardId?: string }>()
 const emit = defineEmits<{ copy: [toBoard: BoardListing] }>()
 const t = useStrings()
 
@@ -31,11 +33,13 @@ onMounted(async () => {
     >
       {{ boardLabel(board) }}
     </button>
-    <p
+    <slot
       v-if="boards && boards.length === 0"
-      class="px-1 text-small text-text-muted"
+      name="empty"
     >
-      {{ t.detail.copyNoBoards }}
-    </p>
+      <p class="px-1 text-small text-text-muted">
+        {{ t.detail.copyNoBoards }}
+      </p>
+    </slot>
   </div>
 </template>

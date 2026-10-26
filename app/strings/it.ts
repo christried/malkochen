@@ -136,6 +136,9 @@ export const it: Strings = {
     // The Creator, "di pastaqueen".
     by: (name: string) => `di ${name}`,
     toSource: 'Vai alla fonte',
+    // "Kopieren" from the link (#403): a Copy on one of the user's Boards.
+    copy: 'Copia nella mia bacheca',
+    startBoard: 'Crea una nuova bacheca e copialo lì',
     goneTitle: 'Questo piatto non c’è più',
     goneBody: 'Forse è stato archiviato o eliminato.',
   },
