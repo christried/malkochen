@@ -129,6 +129,7 @@ async function notify(boardId: string, dishId: string, actorId: string, latest: 
 // One push_sent event per device a push was tried on, in one insert (#399).
 // A failure to record is logged and never thrown: the pushes went out.
 async function recordPushesSent(boardId: string, dishId: string, sent: { userId: string, outcome: PushOutcome }[]): Promise<void> {
+  if (sent.length === 0) return
   try {
     await db.insert(eventLog).values(sent.map(({ userId, outcome }) => ({ kind: 'push_sent' as const, boardId, dishId, userId, details: { outcome } })))
   }

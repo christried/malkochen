@@ -198,6 +198,26 @@ test('an Email Digest sent is recorded with the number of Boards it listed', asy
   ])
 })
 
+test('a Dish added where the other Member has push off records no push_sent, and the Dish is still added', async () => {
+  const gauss = await signIn(GAUSS)
+  const riemann = await signIn(RIEMANN)
+  // Turned off on both of Riemann's devices, from the test before.
+  for (const name of ['riemann-phone', 'riemann-tablet']) {
+    const { subscription } = pushService.device(name)
+    expect((await riemann.fetch('/api/me/push', json('DELETE', { endpoint: subscription.endpoint }))).status).toBe(204)
+  }
+  const res = await gauss.fetch('/api/boards', json('POST', { name: 'Stillprobe', emoji: '🥘' }))
+  const { id: boardId } = await res.json() as { id: string }
+  const { inviteToken } = await (await gauss.fetch(`/api/boards/${boardId}`)).json() as { inviteToken: string }
+  expect((await riemann.fetch(`/api/invites/${inviteToken}/join`, { method: 'POST' })).status).toBe(200)
+  const log = await watchEvents({ signIns: true })
+
+  const dishRes = await postDish(gauss, boardId, { title: 'Reis', placeholder: 'bowl' })
+
+  expect(dishRes.status).toBe(201)
+  expect((await log.recorded()).filter(e => e.kind === 'push_sent')).toEqual([])
+})
+
 test('deleting the account records one account_deleted with no user, and the user\'s earlier events lose their user', async () => {
   const euler = await signIn(EULER)
   const id = await idOf(euler)
