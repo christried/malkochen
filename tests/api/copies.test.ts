@@ -230,7 +230,8 @@ test('the event log records a Dish copied with both Dishes, and no Dish added', 
 
   const { dish } = await (await copy(grace, original.id, target.id)).json() as { dish: Dish }
 
-  const recorded = await events.recorded()
+  // Push notifications are logged too (push_sent); only the Dish events here.
+  const recorded = (await events.recorded()).filter(e => e.kind === 'dish_copied' || e.kind === 'dish_added')
   expect(recorded).toEqual([{
     kind: 'dish_copied',
     boardId: target.id,
