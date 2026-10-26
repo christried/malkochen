@@ -4,6 +4,32 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-26
+
+### Added
+
+- Gerichte teilen: Link teilen gibt dir einen Link, den jede und jeder öffnen kann, ganz ohne Konto. Gefällt das Gericht, lässt es sich auf ein eigenes Board kopieren, und wer neu ist, meldet sich unterwegs einfach an.
+- Kopier ein Gericht auf ein anderes deiner Boards, mit Bild, Link und allem, was malkochen dazu gefunden hat.
+- Der Text zum Post: malkochen merkt sich die Beschreibung, mit der ein Post kommt, zeigt sie im Gericht, und die Suche findet Gerichte auch darüber. Gerichte, die du schon vorher angelegt hast, bekommen ihre in den nächsten Tagen.
+- Was ist neu kommt zu dir: Nach einem Update zeigt dir malkochen einmal, was sich geändert hat.
+- Ein kleiner Schubs: Sind Push-Benachrichtigungen oder die tägliche E-Mail aus, fragt Topfbert ab und zu, ob du sie haben magst, höchstens einmal im Monat und nie, wenn gerade schon etwas anderes aufgegangen ist.
+- Impressum und Datenschutz wohnen jetzt in malkochen, in deiner Sprache, verlinkt ganz unten auf jedem Board.
+- Unsere E-Mails zeigen in Gmail das Logo von malkochen.
+
+### Changed
+
+- Push-Benachrichtigungen sagen, wer auf welchem Board was gemacht hat, und zeigen das Bild des Gerichts.
+- Video abspielen gibt es nur noch bei Gerichten, deren Video in malkochen auch wirklich läuft.
+- Was ist neu hat sich hübsch gemacht: eine Karte für jede Version, und am Computer eine Leiste, um zwischen ihnen zu springen.
+- Unsere Datenschutzerklärung ist neu. Sie beschreibt malkochen, wie es heute ist, mit geteilten Links, Kopien und damit, dass der Betreiber von malkochen jedes Board öffnen kann, um zu helfen. Schau mal unter Datenschutz ganz unten auf einem Board.
+- Am Computer öffnet sich die Suche in der Mitte der Kopfleiste, und die Einstellungen sitzen gleich neben deinem Bild.
+
+### Fixed
+
+- Fenster und Sheets gehen nicht mehr zu, wenn du Text aus ihnen heraus ziehst oder markierst, oder wenn du nach dem Tippen daneben klickst. Das X, Escape und Abbrechen schließen sie weiterhin.
+- Feldbeschriftungen sitzen sauber im Rahmen des Feldes, auch wenn Chrome es für dich ausfüllt.
+- Im Kommentarfeld sitzen Knopf und Text mittig, ohne zusätzlichen Abstand darüber.
+
 ## [1.0.0] - 2026-10-22
 
 ### Added
@@ -20,5 +46,6 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0

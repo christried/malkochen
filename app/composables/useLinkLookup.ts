@@ -12,7 +12,7 @@ import { webLink } from '../utils/web-link'
 
 // GET /api/source-lookup: what Source Lookup found, and the Image Ticket
 // saving needs to copy the image.
-export type LookupAnswer = SourceLookupResult & { imageTicket: string | null }
+export type LookupAnswer = SourceLookupResult & { imageTicket: string | null, sourceTicket: string }
 
 // Asks Source Lookup about a web link; rejects if it couldn't be asked, with
 // the HTTP status code ($fetch's statusCode) if it was refused.

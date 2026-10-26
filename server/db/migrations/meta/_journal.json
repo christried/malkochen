@@ -274,6 +274,41 @@
       "when": 1792653125313,
       "tag": "0038_version_seen",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792936791319,
+      "tag": "0039_dish_caption",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792955296271,
+      "tag": "0040_dish_playable_video",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792959163960,
+      "tag": "0041_dish_link_secret",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793023776357,
+      "tag": "0042_massive_chamber",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1793026252745,
+      "tag": "0043_lowly_doctor_doom",
+      "breakpoints": true
     }
   ]
 }

@@ -16,13 +16,15 @@ export interface LoggedEvent {
 
 // Starts watching the log: `recorded()` answers every event recorded since,
 // oldest first. The API test files run one at a time, and their tests one
-// after the other, so these are the test's own.
-export async function watchEvents(): Promise<{ recorded: () => Promise<LoggedEvent[]> }> {
+// after the other, so these are the test's own. Sign-ins (#399) are left out
+// unless `signIns` is set: most tests sign in inside their watch and only
+// check what their write recorded.
+export async function watchEvents({ signIns = false }: { signIns?: boolean } = {}): Promise<{ recorded: () => Promise<LoggedEvent[]> }> {
   const [{ last } = { last: '0' }] = await query<{ last: string }>('select coalesce(max(id), 0)::text as last from event_log')
   return {
     recorded: () => query<LoggedEvent>(
       `select kind, board_id as "boardId", dish_id as "dishId", user_id as "userId", details
-       from event_log where id > $1 order by id`,
+       from event_log where id > $1 ${signIns ? '' : `and kind not in ('signed_up', 'signed_in')`} order by id`,
       [last],
     ),
   }

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isMember } from '../../../utils/boards'
+import { isMember } from '../../../utils/board-access'
 import { searchDishes, type DishView } from '../../../utils/dishes'
 
 const query = z.object({ q: z.string().trim().min(1).max(200) })

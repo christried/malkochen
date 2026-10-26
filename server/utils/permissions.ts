@@ -1,9 +1,10 @@
-import { and, eq, exists, not, sql } from 'drizzle-orm'
+import { and, eq, exists, not, sql, type SQLWrapper } from 'drizzle-orm'
 import { z } from 'zod'
 import { ALL_PERMISSIONS, PERMISSIONS, permitsOn, type Permission, type Permissions } from '../../shared/permissions'
 import { db } from '../db'
 import { board, membership } from '../db/schema'
-import { ownerOf } from './boards'
+import { ownerOf, standingOn } from './board-access'
+import { insertEvents } from './events'
 
 // The one check of Permissions (CONTEXT.md): may this user do this on this
 // Board, and on this Dish? Every write a Permission covers asks it before
@@ -37,19 +38,11 @@ export function allows(standing: Standing, permission: Permission, userId: strin
   return permitsOn(effectivePermissions(standing), permission, userId, dish)
 }
 
-// The same in SQL, for a query over memberships: whether the Member may
-// take an action `permission` covers that isn't about one Dish.
-export function permits(permission: Permission) {
-  return sql<boolean>`(${membership.isOwner} or coalesce((${membership.permissions} ->> ${permission})::boolean, false))`
-}
-
-// The user's standing on the Board, or null unless they are a Member.
-export async function standingOn(boardId: string, userId: string): Promise<Standing | null> {
-  const [found] = await db
-    .select({ isOwner: membership.isOwner, permissions: membership.permissions })
-    .from(membership)
-    .where(and(eq(membership.boardId, boardId), eq(membership.userId, userId)))
-  return found ?? null
+// The same in SQL, for a query over the user's access (board-access.ts,
+// `access` by default: the Membership's row): whether the Member may take
+// an action `permission` covers that isn't about one Dish.
+export function permits(permission: Permission, { isOwner, permissions }: { isOwner: SQLWrapper, permissions: SQLWrapper } = membership) {
+  return sql<boolean>`(${isOwner} or coalesce((${permissions} ->> ${permission})::boolean, false))`
 }
 
 // Why a Member's Permissions couldn't be switched: the user isn't the
@@ -67,7 +60,7 @@ export async function setPermissions(boardId: string, userId: string, memberId: 
   // Merged into what is stored, only while the user is still the Owner.
   // Setting flags to what they are already moves no Board Version: its
   // trigger (migration 0033) only counts Permissions that differ.
-  const [updated] = await db
+  const update = db
     .update(membership)
     .set({ permissions: sql`${membership.permissions} || ${JSON.stringify(changes)}::jsonb` })
     .where(and(
@@ -77,6 +70,28 @@ export async function setPermissions(boardId: string, userId: string, memberId: 
       exists(ownerOf(boardId, userId)),
     ))
     .returning({ permissions: membership.permissions })
+  // One event per Permission that actually switched, read from the Member's
+  // Permissions before (earlier, in the same snapshot).
+  const { rows } = await db.execute(sql`
+    with earlier as (
+      select ${membership.permissions} as permissions from ${membership}
+      where ${and(eq(membership.boardId, boardId), eq(membership.userId, memberId))}
+    ),
+    changed as (${update.getSQL()}),
+    recorded as (
+      ${insertEvents(
+        {
+          kind: 'permission_changed',
+          board: sql`${boardId}::uuid`,
+          user: userId,
+          details: sql`jsonb_build_object('member', ${memberId}::text, 'permission', p.key, 'on', p.value::boolean)`,
+        },
+        sql`from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
+          where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean`,
+      )})
+    select permissions from changed
+  `)
+  const [updated] = rows as { permissions: Permissions }[]
   if (updated) return updated.permissions
   // Nothing changed: the Member is gone, or the user handed over meanwhile.
   return (await standingOn(boardId, userId))?.isOwner ? 'not-member' : 'forbidden'
@@ -90,11 +105,29 @@ export async function setDefaultPermissions(boardId: string, userId: string, cha
   const standing = await standingOn(boardId, userId)
   if (!standing) return null
   if (!standing.isOwner) return 'forbidden'
-  // Only while the user is still the Owner.
-  const [updated] = await db
+  // Only while the user is still the Owner. One event per Permission that
+  // actually switched, read from the Board's Default Permissions before.
+  const update = db
     .update(board)
     .set({ defaultPermissions: sql`${board.defaultPermissions} || ${JSON.stringify(changes)}::jsonb` })
     .where(and(eq(board.id, boardId), exists(ownerOf(boardId, userId))))
-    .returning({ defaultPermissions: board.defaultPermissions })
-  return updated?.defaultPermissions ?? 'forbidden'
+    .returning({ permissions: board.defaultPermissions })
+  const { rows } = await db.execute(sql`
+    with earlier as (select ${board.defaultPermissions} as permissions from ${board} where ${eq(board.id, boardId)}),
+    changed as (${update.getSQL()}),
+    recorded as (
+      ${insertEvents(
+        {
+          kind: 'default_permission_changed',
+          board: sql`${boardId}::uuid`,
+          user: userId,
+          details: sql`jsonb_build_object('permission', p.key, 'on', p.value::boolean)`,
+        },
+        sql`from changed, earlier, jsonb_each(${JSON.stringify(changes)}::jsonb) as p
+          where coalesce((earlier.permissions ->> p.key)::boolean, false) <> p.value::boolean`,
+      )})
+    select default_permissions as permissions from changed
+  `)
+  const [updated] = rows as { permissions: Permissions }[]
+  return updated?.permissions ?? 'forbidden'
 }

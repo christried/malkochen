@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../shared/placeholders'
-import { guessSource, SOURCE_KINDS } from '../source-lookup'
+import { captionOf, guessSource, SOURCE_KINDS } from '../source-lookup'
 import type { DishSource } from './dishes'
 
 // What adding and editing a Dish accept from the client, shared by both.
@@ -12,6 +12,18 @@ const dishTitle = z.string().trim().min(1).max(200)
 // Who published the Source (CONTEXT.md: Creator), as Source Lookup found it
 // or a Member typed it. Optional; a blank one is none.
 const dishCreator = z.string().trim().max(100).nullish().transform(creator => creator || null)
+
+// The Caption (CONTEXT.md) as Source Lookup found it for the Source sent
+// with it. Optional; blank or cut to a few thousand characters as Source
+// Lookup keeps it.
+const dishCaption = z.string().nullish().transform(caption => captionOf(caption))
+
+// Whether that Source has a video that plays in malkochen, as Source Lookup
+// found it. Only read together with a valid Source Ticket.
+const dishPlayableVideo = z.boolean().nullish()
+
+// The Source Ticket that came with a Caption (server/utils/source-ticket.ts).
+const sourceTicketInput = z.string().max(500).nullish()
 
 // The canonical link and kind from Source Lookup. The kind is read from the
 // link itself; the one sent only tells a blog from any other web page.
@@ -40,6 +52,11 @@ export const addDishBody = z.object({
   placeholder: z.enum(PLACEHOLDERS),
   source: sourceInput.nullish(),
   creator: dishCreator,
+  // The Caption of that Source, and the Source Ticket Source Lookup signed for
+  // it: a Caption without a valid ticket is not kept (server/utils/source-ticket.ts).
+  caption: dishCaption,
+  playableVideo: dishPlayableVideo,
+  sourceTicket: sourceTicketInput,
   // The Source image Source Lookup found (third-party) and the Image Ticket it
   // came with; copied on save, but only with a valid ticket.
   imageUrl: webLinkInput.nullish(),
@@ -61,6 +78,11 @@ export const dishEditBody = z.object({
   source: sourceInput.nullable().optional(),
   // Blank clears it. Changing the Source never changes it.
   creator: dishCreator.optional(),
+  // The Caption of the Source sent with it, and its Source Ticket; read only
+  // when the Source's link changes (server/api/dishes/[id].patch.ts).
+  caption: dishCaption.optional(),
+  playableVideo: dishPlayableVideo.optional(),
+  sourceTicket: sourceTicketInput.optional(),
   placeholder: z.enum(PLACEHOLDERS).optional(),
   // Null drops the stored image, so the Dish shows its Placeholder. A link is
   // the image "Bild neu laden" found (third-party) and needs the Image Ticket

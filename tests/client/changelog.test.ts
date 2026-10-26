@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import { de } from '../../app/strings/de'
 import { en } from '../../app/strings/en'
 import { it as italian } from '../../app/strings/it'
-import { newerVersion, parseChangelog } from '../../shared/changelog'
+import { newerVersion, parseChangelog, unseenReleases } from '../../shared/changelog'
 
 // The Changelog (CONTEXT.md, #354): three files in the Keep a Changelog
 // format, which the page is built from. The section names stay English in
@@ -80,7 +80,10 @@ test.each([
   ['1.1.0', '1.0.37', true],
   ['1.0.0', '1.0.0', false],
   ['1.0.0', '1.0.1', false],
-  ['1.0.0', null, true],
+  ['1.0.0', null, false],
+  ['1.0.0', '', false],
+  ['1.0.1', null, true],
+  ['1.0.1', '', true],
   ['', null, false],
 ])('%s is newer than %s: %s', (current, seen, newer) => {
   expect(newerVersion(current, seen)).toBe(newer)
@@ -106,4 +109,47 @@ test('a Version\'s day carries its year, in each language', () => {
   expect(de.changelog.date('2026-10-30')).toBe('30. Okt. 2026')
   expect(en.changelog.date('2026-10-30')).toBe('30 Oct 2026')
   expect(italian.changelog.date('2026-10-30')).toBe('30 ott 2026')
+})
+
+// The Versions the Changelog Popup lists (#406): every one newer than the
+// last the user saw, newest first; none seen counts as 1.0.0.
+const POPUP = parseChangelog(`## [Unreleased]
+
+### Added
+
+- Soon.
+
+## [1.2.0] - 2026-11-03
+
+### Added
+
+- C.
+
+## [1.1.0] - 2026-11-02
+
+### Fixed
+
+- B.
+
+## [1.0.0] - 2026-11-01
+
+### Added
+
+- A.
+`)
+const shown = (seen: string | null) => unseenReleases(POPUP, seen).map(r => r.version)
+
+test.each([
+  ['older than all', '0.9.0', ['1.2.0', '1.1.0', '1.0.0']],
+  ['never seen, which counts as 1.0.0', null, ['1.2.0', '1.1.0']],
+  ['empty, which counts as 1.0.0', '', ['1.2.0', '1.1.0']],
+  ['one in the middle', '1.1.0', ['1.2.0']],
+  ['the newest', '1.2.0', []],
+  ['newer than the newest', '1.3.0', []],
+])('the popup lists, for a seen Version %s: %j', (_, seen, versions) => {
+  expect(shown(seen)).toEqual(versions)
+})
+
+test('the popup never lists what is live but in no Version yet', () => {
+  expect(unseenReleases(POPUP, '0.9.0').flatMap(r => r.sections.flatMap(s => s.entries))).not.toContain('Soon.')
 })

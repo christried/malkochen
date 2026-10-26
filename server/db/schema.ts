@@ -54,6 +54,11 @@ export const user = pgTable('user', {
   // none. Older than the app's, Your Settings marks "Was ist neu" as new.
   // Only PUT /api/me/version-seen sets it; Better Auth just reads it.
   versionSeen: text('version_seen'),
+  // When each Notification Prompt (CONTEXT.md) was last shown to them,
+  // whatever the answer; null for never. Only PUT /api/me/prompt sets them;
+  // Better Auth just reads them.
+  pushPromptedAt: timestamp('push_prompted_at', { withTimezone: true }),
+  digestPromptedAt: timestamp('digest_prompted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, t => [
@@ -179,7 +184,8 @@ export const boardSlug = pgTable('board_slug', {
   boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
 }, t => [index('board_slug_board_id_idx').on(t.boardId)])
 
-// Invite Link lookups of a secret no Board has, per client (its IP address),
+// Lookups of a secret no Board has (an Invite Link) or no Dish has (a Dish
+// Link), counted together, per client (its IP address),
 // since the window started: too many, and the client gets no answer about
 // any link for the rest of the window (server/utils/invites.ts).
 export const inviteMiss = pgTable('invite_miss', {
@@ -295,6 +301,16 @@ export const dish = pgTable('dish', {
   // The Creator (CONTEXT.md): who published the Source, as it names itself.
   // Null when it names none, or a Member cleared it.
   creator: text('creator'),
+  // The Caption (CONTEXT.md): the text the Source shows with its post, read
+  // when the Dish is added or its Source changes; never edited by a Member.
+  // Null when the Source shows none, or there is no Source.
+  caption: text('caption'),
+  // Whether the Source has a video malkochen's player plays in place (#394),
+  // read when the Dish is added or its Source changes: a TikTok video, a
+  // YouTube Short, an Instagram post whose embed plays it. False for anything
+  // else. Null when not known yet (every Dish from before #394 until #395
+  // fills it in), or there is no Source.
+  playableVideo: boolean('playable_video'),
   // The image: a copy in the Image Store if there is one, else the
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),
@@ -304,6 +320,11 @@ export const dish = pgTable('dish', {
   // unless a Member shifted it; a Placeholder Image doesn't use it.
   imageFocusX: smallint('image_focus_x').notNull().default(50),
   imageFocusY: smallint('image_focus_y').notNull().default(50),
+  // The Dish Link's secret (CONTEXT.md: Dish Link), made the first time a
+  // Member shares the Dish (random_invite_secret(), migration 0014: the same
+  // alphabet and length as an Invite Link's), kept through archive and
+  // restore, gone with the Dish.
+  linkSecret: text('link_secret').unique(),
   // Who added it; kept (as unknown) if their account is ever deleted.
   addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
@@ -425,9 +446,15 @@ export const usageCount = pgTable('usage_count', {
 // ---------------------------------------------------------------------------
 // malkochen's own settings, which the Operator changes on the Admin Page
 // without a redeploy: one row. `openSignUp`: Open Sign-up (CONTEXT.md, #350),
-// off until the Operator switches it on.
+// off until the Operator switches it on. `sourceFactsBefore`: Dishes created
+// before this (the deploy that brought #395's migration) are the ones the
+// backfill fills; null means none wait. `sourceFactsFilledAt`: when the
+// backfill of Captions and playable videos finished
+// (server/utils/source-facts-fill.ts); null until then.
 
 export const setting = pgTable('setting', {
   id: boolean('id').primaryKey().default(true),
   openSignUp: boolean('open_sign_up').notNull().default(false),
+  sourceFactsBefore: timestamp('source_facts_before', { withTimezone: true }),
+  sourceFactsFilledAt: timestamp('source_facts_filled_at', { withTimezone: true }),
 }, t => [check('setting_one_row', sql`${t.id}`)])

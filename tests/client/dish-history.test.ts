@@ -19,6 +19,8 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     title: `Titel ${id}`,
     source: null,
     creator: null,
+    caption: null,
+    playableVideo: null,
     imageUrl: null,
     imageFocus: { x: 50, y: 50 },
     placeholder: 'bowl',
@@ -45,6 +47,7 @@ function setup() {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a')] },
       { id: 'gekocht', name: 'Gekocht', subtitle: 'Schon geschafft!', isGekocht: true, dishes: [dish('b', ['2026-10-02T12:00:00.000Z', '2026-10-04T12:00:00.000Z'])] },

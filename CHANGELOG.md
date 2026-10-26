@@ -4,6 +4,32 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-26
+
+### Added
+
+- Share a dish: Share link gives you a link anyone can open, no account needed. If they like the dish, they can copy it onto a board of their own, signing up on the way if they’re new.
+- Copy a dish onto another of your boards, with its picture, its link and everything malkochen found about it.
+- The post’s text: malkochen keeps the caption a post comes with and shows it in the dish, and search finds dishes by it too. Dishes you added before get theirs over the next few days.
+- What’s new pops up: after an update, malkochen shows you once what changed.
+- A friendly nudge: if push notifications or the daily email are off, Topfbert asks now and then whether you’d like them, at most once a month and never when something else just popped up.
+- Imprint and privacy policy now live inside malkochen, in your language, linked at the bottom of every board.
+- Our emails show malkochen’s logo in Gmail.
+
+### Changed
+
+- Push notifications say who did what on which board, and show the dish’s picture.
+- Play video only shows on dishes whose video really plays in malkochen.
+- What’s new got a makeover: a card for every version, and on desktop a rail to jump between them.
+- Our privacy policy is new. It describes malkochen as it is today, including dish links, copies, and that whoever runs malkochen can open every board to help out. Have a look under Privacy at the bottom of any board.
+- On desktop, the search opens in the middle of the header, and the settings sit right next to your picture.
+
+### Fixed
+
+- Sheets and windows no longer close when you drag or select text out of them, or when you click beside them after typing something. The close button, Escape and Cancel still close them.
+- Field labels sit neatly in the field’s outline, also when Chrome fills the field in for you.
+- The comment field’s button and text are centred, with no extra space above.
+
 ## [1.0.0] - 2026-10-22
 
 ### Added
@@ -20,5 +46,6 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - Open to everyone: anyone can sign up, with Google or a code we email you, and delete your account yourself whenever you like.
 - What’s new: this page, linked at the end of your settings and marked New after every update.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0

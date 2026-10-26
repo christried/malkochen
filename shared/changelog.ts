@@ -79,16 +79,26 @@ export function parseChangelog(text: string): Changelog {
   }
 }
 
+// What a user who never opened the Changelog counts as having seen.
+const FIRST_VERSION = '1.0.0'
+
 // Whether Version `current` (the app's, empty for none yet) is newer than
-// `seen` (the last one a user saw, null for none).
+// `seen` (the last one a user saw; none, null or empty, counts as 1.0.0,
+// so the first Version is never new to anyone).
 export function newerVersion(current: string, seen: string | null): boolean {
   if (!current) return false
-  if (!seen) return true
   const a = current.split('.').map(Number)
-  const b = seen.split('.').map(Number)
+  const b = (seen || FIRST_VERSION).split('.').map(Number)
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     const diff = (a[i] ?? 0) - (b[i] ?? 0)
     if (diff) return diff > 0
   }
   return false
+}
+
+// The Versions the Changelog Popup lists (#406): every one newer than the
+// `seen` one, in the file's order (newest first). What is live but in no
+// Version yet ("Gerade neu") is not among them.
+export function unseenReleases(changelog: Changelog, seen: string | null): Release[] {
+  return changelog.versions.filter(({ version }) => newerVersion(version, seen))
 }

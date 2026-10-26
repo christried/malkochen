@@ -3,8 +3,12 @@ import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
+import type { Me } from '~~/server/utils/people'
 import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
+import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
+import { duePrompt } from '~/utils/notification-prompt'
+import type { PromptAnswer, PromptKind } from '~~/shared/event-kinds'
 import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
@@ -40,6 +44,7 @@ const newInHistoryDishIds = computed(() => new Set(board.value?.newInHistoryDish
 // You, for your photo in the header, which opens the user menu. Phones have
 // no room for it there.
 const { data: me } = await useMe()
+const splashUp = useSplashUp()
 
 useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
 
@@ -392,6 +397,131 @@ const boardTour = useTemplateRef<{
   heldDishId: string | null
   modal: boolean
 }>('boardTour')
+// Nothing open over the Board, no search, no selection, no drag.
+const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish)
+
+// The Changelog Popup (ChangelogPopup, #406), once per visit: the Version is
+// newer than the one the user saw, and no Tour runs in this visit (due, or
+// started since the page loaded, which switching Boards keeps). Like the Tour
+// it waits for the Board to be idle, the splash gone and the cards risen
+// in, and not shown when the Board opened to add something shared. Closing
+// it marks the Version as seen, so it never comes back. In the browser tests
+// it never shows by itself, unless the test page turned that on
+// (window.e2eChangelogPopup). The popup loads lazily, with the Changelog
+// files, and says so with `empty` if it finds nothing to list (it marks the
+// Version as seen all the same, so no prompt waits on it): then it stays away
+// for this visit.
+const visit = useVisit()
+const popupEmpty = ref(false)
+const popupSettled = ref(false)
+const popupWanted = computed(() => !!me.value?.newVersion && !popupEmpty.value && (!visit.shownThisVisit.value || popupSettled.value)
+  && (me.value.tourSeen ?? 0) >= TOUR_VERSION && !openedToAdd.value)
+let popupTimer: ReturnType<typeof setTimeout> | undefined
+onMounted(() => {
+  if (useRuntimeConfig().public.e2e && !(window as { e2eChangelogPopup?: boolean }).e2eChangelogPopup) return
+  watch(() => popupWanted.value && boardIdle.value && !splashUp.value, (ready) => {
+    if (popupSettled.value) return
+    clearTimeout(popupTimer)
+    if (ready) popupTimer = setTimeout(() => (popupSettled.value = true), SETTLE_MS)
+  }, { immediate: true })
+})
+onBeforeUnmount(() => clearTimeout(popupTimer))
+// Settled once, it stays until closed: its own modal makes the Board busy.
+const popupDue = computed(() => popupSettled.value && popupWanted.value)
+watch(popupDue, (due) => {
+  if (due) visit.shown()
+})
+
+// A Notification Prompt (NotificationPrompt, #407, decided on #392: A): the
+// rule (utils/notification-prompt.ts) says which one is due, if any. It waits
+// as the popup does (idle Board, splash gone, nothing shared to add, settled)
+// and comes after the Tour and the Changelog Popup, which take the visit. In
+// the browser tests it never shows by itself, unless the test page turned that
+// on (window.e2eNotificationPrompt). Shown, it is kept on the user at once
+// (whatever the answer, it stays away for 30 days), and stays until answered.
+const pushSwitch = usePushNotifications()
+const digestSwitch = useEmailDigest()
+const installed = ref(false)
+const promptShowing = ref<PromptKind | null>(null)
+const promptBusy = ref(false)
+const promptError = ref<string | null>(null)
+let promptAnswered = false
+const promptsOn = ref(false)
+const promptDue = computed<PromptKind | null>(() => {
+  const mine = me.value
+  if (!promptsOn.value || !mine || mine.newVersion || openedToAdd.value || (mine.tourSeen ?? 0) < TOUR_VERSION) return null
+  const at = (iso: string | null) => iso ? Date.parse(iso) : null
+  return duePrompt({
+    now: Date.now(),
+    signedUpAt: Date.parse(mine.signedUpAt),
+    pushPromptedAt: at(mine.pushPromptedAt),
+    digestPromptedAt: at(mine.digestPromptedAt),
+    push: { offered: pushSwitch.offered, installed: installed.value, state: pushSwitch.state.value, permission: pushSwitch.permission.value },
+    digest: { offered: digestSwitch.offered, on: digestSwitch.on.value },
+    shownThisVisit: visit.shownThisVisit.value,
+  })
+})
+let promptTimer: ReturnType<typeof setTimeout> | undefined
+onMounted(() => {
+  if (useRuntimeConfig().public.e2e && !(window as { e2eNotificationPrompt?: boolean }).e2eNotificationPrompt) return
+  promptsOn.value = true
+  installed.value = matchMedia('(display-mode: standalone)').matches
+  void pushSwitch.refresh()
+  void digestSwitch.refresh()
+  watch(() => promptDue.value !== null && !promptShowing.value && boardIdle.value && !splashUp.value, (ready) => {
+    clearTimeout(promptTimer)
+    if (ready) promptTimer = setTimeout(showPrompt, SETTLE_MS)
+  }, { immediate: true })
+})
+onBeforeUnmount(() => clearTimeout(promptTimer))
+
+// Typed as a plain string: Nitro's route typing runs too deep here.
+const PROMPT: string = '/api/me/prompt'
+async function tellPrompt(which: PromptKind, answer?: PromptAnswer) {
+  const answered = await $fetch<Me>(PROMPT, { method: 'PUT', body: { which, answer } }).catch(() => null)
+  if (answered && me.value) me.value = answered
+}
+function showPrompt() {
+  const which = promptDue.value
+  if (!which || !me.value) return
+  promptShowing.value = which
+  promptAnswered = false
+  promptError.value = null
+  visit.shown()
+  const now = new Date().toISOString()
+  me.value = { ...me.value, ...(which === 'push' ? { pushPromptedAt: now } : { digestPromptedAt: now }) }
+  void tellPrompt(which)
+}
+function answerPrompt(which: PromptKind, answer: PromptAnswer) {
+  if (promptAnswered && answer === 'on') return
+  promptAnswered = true
+  void tellPrompt(which, answer)
+}
+function promptLater() {
+  const which = promptShowing.value
+  promptShowing.value = null
+  if (which) answerPrompt(which, 'later')
+}
+// The same flow as the switch in Your Settings. Done, the card goes and a
+// notice says so; failed, the card stays with the switch's own words.
+async function promptTurnOn() {
+  const which = promptShowing.value
+  if (!which || promptBusy.value) return
+  promptBusy.value = true
+  promptError.value = null
+  answerPrompt(which, 'on')
+  if (which === 'push') await pushSwitch.turn(true)
+  else await digestSwitch.turn(true)
+  promptBusy.value = false
+  const worked = which === 'push' ? pushSwitch.state.value === 'on' : digestSwitch.on.value === true
+  if (!worked) {
+    promptError.value = which === 'digest' ? t.emailDigest.failed : pushSwitch.state.value === 'blocked' ? t.push.blocked : t.push.failed
+    return
+  }
+  promptShowing.value = null
+  showNotice(which === 'push' ? t.prompt.pushOn : t.prompt.digestOn)
+}
+
 async function startTour() {
   showingSettings.value = false
   await nextTick()
@@ -418,6 +548,29 @@ async function closeSearch() {
   await nextTick()
   searchButton.value?.$el.focus()
 }
+
+// On desktop the search opens in the header's centre when the header has
+// room for it (#390); otherwise, as on phones and tablets, under the header.
+// The room is measured as the search opens, before that changes the header,
+// and again when the window resizes. The search bar itself is left out.
+const header = useTemplateRef<HTMLElement>('header')
+const desktopLayout = useMediaQuery('(min-width: 1200px)')
+const roomForSearch = ref(false)
+const SEARCH_BAR_MIN = 360
+const HEADER_GAP = 12
+function measureSearchRoom() {
+  const el = header.value
+  if (!el) return
+  const items = [...el.querySelectorAll<HTMLElement>(':scope > *:not(.header-group):not([data-header-search]), :scope > .header-group > *')]
+  const used = items.reduce((sum, item) => sum + item.offsetWidth, 0)
+  roomForSearch.value = el.clientWidth - used - items.length * HEADER_GAP >= SEARCH_BAR_MIN
+}
+const searchInHeader = computed(() => searchOpen.value && desktopLayout.value && roomForSearch.value)
+watch(searchOpen, (open) => {
+  if (open) measureSearchRoom()
+}, { flush: 'sync' })
+onMounted(() => window.addEventListener('resize', measureSearchRoom))
+onBeforeUnmount(() => window.removeEventListener('resize', measureSearchRoom))
 
 // The keyboard shortcuts (utils/shortcuts.ts), once the Board is there and
 // not mid-drag: "?" lists them; Esc closes the search (what else is open
@@ -693,8 +846,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     :class="{ following, dragging, 'drop-tinted': dropTint }"
     :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, ...colours }"
   >
-    <header class="flex items-center justify-between gap-3">
-      <div class="flex min-w-0 items-center gap-3">
+    <header
+      ref="header"
+      class="flex items-center justify-between gap-3"
+    >
+      <!-- From the desktop breakpoint this group is no box: its children sit in
+           the header's row, and the cogwheel goes next to the Profile Picture. -->
+      <div class="header-group flex min-w-0 items-center gap-3 desktop:contents">
         <BoardSwitcher
           :board="board"
           :dish-count="boardModule.dishCount.value"
@@ -716,6 +874,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
              The sheet hands focus back here when it closes. -->
         <RoundButton
           raised
+          class="desktop:order-last desktop:ml-auto"
           aria-haspopup="dialog"
           :aria-label="t.userSettings.title"
           :data-tooltip="t.userSettings.title"
@@ -727,15 +886,31 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           />
         </RoundButton>
       </div>
+      <BoardSearchBar
+        v-if="searchInHeader"
+        ref="searchBar"
+        v-model="query"
+        data-header-search
+        class="mx-auto min-w-0 max-w-[560px] flex-1"
+        @close="closeSearch"
+      />
       <UserMenu
         v-if="me"
         :me="me"
-        class="hidden shrink-0 tablet:block"
+        class="hidden shrink-0 tablet:block desktop:order-last"
       />
     </header>
 
+    <p
+      v-if="board?.asOperator"
+      data-testid="operator-note"
+      class="mt-2 text-small text-text-muted"
+    >
+      {{ t.board.asOperator }}
+    </p>
+
     <BoardSearchBar
-      v-if="searchOpen"
+      v-if="searchOpen && !searchInHeader"
       ref="searchBar"
       v-model="query"
       class="mx-auto mt-4 max-w-[560px]"
@@ -973,6 +1148,17 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       />
     </div>
 
+    <!-- What malkochen is and the legal pages, after the last Dish (#405):
+         not fixed, so the FAB's room below (main's pb-32) keeps it clear. -->
+    <footer
+      data-testid="board-footer"
+      class="mt-10 flex justify-center"
+    >
+      <nav :aria-label="t.board.footer">
+        <AppFooterLinks />
+      </nav>
+    </footer>
+
     <!-- The dragged card, following the pointer above everything. -->
     <DragCard
       v-if="drag"
@@ -1132,11 +1318,24 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       ref="boardTour"
       v-model:adding="adding"
       :board="board"
-      :idle="!anyModalOpen && !searchOpen && !selecting && !dragging && !route.params.dish"
+      :idle="boardIdle"
       :auto-start="!openedToAdd"
       :menu="menuDish && { dishId: menuDish.id, choosing: choosingColumn }"
       @close-menu="menuDish = null"
+      @started="visit.shown()"
       @ended="showNotice(t.tour.ended)"
+    />
+    <LazyChangelogPopup
+      v-if="popupDue"
+      @empty="popupEmpty = true"
+    />
+    <NotificationPrompt
+      v-if="promptShowing"
+      :which="promptShowing"
+      :busy="promptBusy"
+      :error="promptError"
+      @turn-on="promptTurnOn"
+      @later="promptLater"
     />
 
     <BoardCreatedCelebration

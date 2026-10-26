@@ -17,17 +17,17 @@ export async function landingBoardId(page: Page): Promise<string> {
 // the fixture hosts). tests/e2e/run.ts points DATABASE_URL at the throwaway
 // database the dev server uses. `addedBy` is the email of whoever added it,
 // signed in before; without it, nobody did.
-export async function seedDish(page: Page, dish: { title: string, imageUrl?: string, sourceLink: string, sourceKind: string, column?: number, placeholder?: Placeholder, addedBy?: string, creator?: string }) {
+export async function seedDish(page: Page, dish: { title: string, imageUrl?: string, sourceLink: string, sourceKind: string, column?: number, placeholder?: Placeholder, addedBy?: string, creator?: string, caption?: string, playableVideo?: boolean }) {
   const boardId = await landingBoardId(page)
   const board = await (await page.request.get(`/api/boards/${boardId}`)).json() as { columns: { id: string }[] }
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
   await client.connect()
   try {
     const { rows: [seeded] } = await client.query<{ added_by: string | null }>(
-      `insert into dish (board_id, column_id, position, title, placeholder, image_url, source_link, source_kind, added_by, creator)
-       values ($1, $2, (select coalesce(min(position), 0) - 1 from dish where column_id = $2), $3, $4, $5, $6, $7, (select id from "user" where email = $8), $9)
+      `insert into dish (board_id, column_id, position, title, placeholder, image_url, source_link, source_kind, added_by, creator, caption, playable_video)
+       values ($1, $2, (select coalesce(min(position), 0) - 1 from dish where column_id = $2), $3, $4, $5, $6, $7, (select id from "user" where email = $8), $9, $10, $11)
        returning added_by`,
-      [boardId, board.columns[dish.column ?? 0]!.id, dish.title, dish.placeholder ?? 'bowl', dish.imageUrl ?? null, dish.sourceLink, dish.sourceKind, dish.addedBy ?? null, dish.creator ?? null],
+      [boardId, board.columns[dish.column ?? 0]!.id, dish.title, dish.placeholder ?? 'bowl', dish.imageUrl ?? null, dish.sourceLink, dish.sourceKind, dish.addedBy ?? null, dish.creator ?? null, dish.caption ?? null, dish.playableVideo ?? null],
     )
     if (dish.addedBy && !seeded?.added_by) throw new Error(`seedDish: ${dish.addedBy} hasn't signed in yet`)
   }
@@ -174,4 +174,47 @@ export async function storedImage(width: number, height: number): Promise<string
 
 export async function removeStoredImages() {
   await Promise.all(written.splice(0).map(path => rm(path, { force: true })))
+}
+
+// What a user has seen, for users signed in before. A new account starts
+// with the app's Version as the last it opened the Changelog in (`version`
+// sets another, null none) and the Tour not seen (`tourSeen` sets its
+// version). What isn't given stays.
+export async function setSeen(email: string, seen: { version?: string | null, tourSeen?: number }) {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    const { rowCount } = await client.query(
+      'update "user" set version_seen = case when $2::boolean then $3 else version_seen end, tour_seen = coalesce($4::int, tour_seen) where email = $1',
+      [email, seen.version !== undefined, seen.version ?? null, seen.tourSeen ?? null],
+    )
+    if (!rowCount) throw new Error(`setSeen: ${email} hasn't signed in yet`)
+  }
+  finally {
+    await client.end()
+  }
+}
+
+// When a user signed up, for users signed in before: `createdDaysAgo` moves
+// their sign-up back (a new account is too new for a Notification Prompt,
+// #407), `digestPromptedDaysAgo` and `pushPromptedDaysAgo` say when a prompt
+// was last shown. What isn't given stays.
+export async function setPromptTimes(email: string, times: { createdDaysAgo?: number, pushPromptedDaysAgo?: number, digestPromptedDaysAgo?: number }) {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    const ago = (days: number | undefined) => days === undefined ? null : `${days} days`
+    const { rowCount } = await client.query(
+      `update "user" set
+         created_at = coalesce(now() - $2::interval, created_at),
+         push_prompted_at = coalesce(now() - $3::interval, push_prompted_at),
+         digest_prompted_at = coalesce(now() - $4::interval, digest_prompted_at)
+       where email = $1`,
+      [email, ago(times.createdDaysAgo), ago(times.pushPromptedDaysAgo), ago(times.digestPromptedDaysAgo)],
+    )
+    if (!rowCount) throw new Error(`setPromptTimes: ${email} hasn't signed in yet`)
+  }
+  finally {
+    await client.end()
+  }
 }

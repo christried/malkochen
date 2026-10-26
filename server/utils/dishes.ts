@@ -5,12 +5,14 @@ import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
-import { boardColumn, cooking, dish, membership, user } from '../db/schema'
+import { boardColumn, cooking, dish, user } from '../db/schema'
+import { accessibleBoardIds, accessOn, ownedBoardIds } from './board-access'
 import { commentCountsByDish } from './comments'
 import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
 import { cookingEvent, detailsOf, dishEvent, recordEvents, withEvents } from './events'
 import { pictureOf, shownAs } from './people'
 import { votesByDish, type VoteView } from './votes'
+import { escapeLike } from './like'
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -33,6 +35,12 @@ export interface DishView {
   source: DishSource | null
   // Who published the Source (CONTEXT.md: Creator); null if nobody is named.
   creator: string | null
+  // The Caption (CONTEXT.md): the text the Source shows with its post; null if
+  // it shows none. Read-only for Members.
+  caption: string | null
+  // Whether its Source has a video that plays in malkochen (#394); null when
+  // not known yet.
+  playableVideo: boolean | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -74,6 +82,8 @@ export interface NewDish {
   title: string
   source: DishSource | null
   creator: string | null
+  caption: string | null
+  playableVideo: boolean | null
   // Must already be a stored image (Image Store), never a third-party link.
   imageUrl: string | null
   // Where that image is shifted to; the centre if left out. Without an
@@ -109,6 +119,8 @@ function selectDishes() {
       sourceLink: dish.sourceLink,
       sourceKind: dish.sourceKind,
       creator: dish.creator,
+      caption: dish.caption,
+      playableVideo: dish.playableVideo,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -170,13 +182,13 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // they are. `imageUrl` must already be a stored image, never a third-party
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'playableVideo' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
   return and(
     eq(dish.id, dishId),
-    inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+    inArray(dish.boardId, accessibleBoardIds(userId)),
   )
 }
 
@@ -216,11 +228,47 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
   }
   const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
-    const updated = await db.update(dish).set(values).where(target).returning({ id: dish.id })
-    if (updated.length === 0) return null
+    // Recorded only if a field changed, with which (never their values).
+    const { rows } = await withEvents(
+      db,
+      db
+        .update(dish)
+        .set(values)
+        .where(target)
+        .returning({
+          id: dish.id,
+          boardId: dish.boardId,
+          title: dish.title,
+          imageUrl: dish.imageUrl,
+          placeholder: dish.placeholder,
+          imageFocusX: dish.imageFocusX,
+          imageFocusY: dish.imageFocusY,
+          sourceLink: dish.sourceLink,
+          sourceKind: dish.sourceKind,
+          creator: dish.creator,
+        }),
+      dishEvent('dish_edited', userId, sql`jsonb_build_object('fields', ${changedFields()})`),
+      {
+        earlier: sql`select ${dish.id}, ${dish.title}, ${dish.imageUrl}, ${dish.placeholder}, ${dish.imageFocusX}, ${dish.imageFocusY}, ${dish.sourceLink}, ${dish.sourceKind}, ${dish.creator} from ${dish} where ${target}`,
+        where: sql`${changedFields()} <> '[]'::jsonb`,
+      },
+    )
+    if (rows.length === 0) return null
   }
 
   return findDish(target)
+}
+
+// The fields a Dish edit changed, as the event log names them (DishField),
+// read from the Dish `changed` by its edit and `earlier` before it.
+function changedFields(): SQL {
+  return sql`to_jsonb(array(select f from unnest(array[
+    case when changed.title is distinct from earlier.title then 'title' end,
+    case when changed.image_url is distinct from earlier.image_url or changed.placeholder is distinct from earlier.placeholder then 'image' end,
+    case when changed.source_link is distinct from earlier.source_link or changed.source_kind is distinct from earlier.source_kind then 'source' end,
+    case when changed.creator is distinct from earlier.creator then 'creator' end,
+    case when changed.image_focus_x is distinct from earlier.image_focus_x or changed.image_focus_y is distinct from earlier.image_focus_y then 'focus' end
+  ]::text[]) as f where f is not null))`
 }
 
 // The focus point an image is stored with: the one given, else the centre.
@@ -390,8 +438,7 @@ function movableTo(target: SQL | undefined, userId: string, columnId: string) {
     exists(db
       .select({ id: boardColumn.id })
       .from(boardColumn)
-      .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
-      .where(eq(boardColumn.id, columnId))),
+      .where(and(eq(boardColumn.id, columnId), inArray(boardColumn.boardId, accessibleBoardIds(userId))))),
   )
 }
 
@@ -485,7 +532,7 @@ function allOnMembersBoards(ids: string[], userId: string, { deleted = false } =
     .from(dish)
     .where(and(
       inArray(dish.id, ids),
-      inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+      inArray(dish.boardId, accessibleBoardIds(userId)),
       deleted ? undefined : isNull(dish.deletedAt),
     ))
   return sql`(${counted}) = ${ids.length}`
@@ -497,8 +544,7 @@ function allColumnsOfMember(ids: string[], userId: string, { noGekocht = false }
   const counted = db
     .select({ count: sql<number>`count(*)` })
     .from(boardColumn)
-    .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, userId)))
-    .where(and(inArray(boardColumn.id, ids), noGekocht ? eq(boardColumn.isGekocht, false) : undefined))
+    .where(and(inArray(boardColumn.id, ids), inArray(boardColumn.boardId, accessibleBoardIds(userId)), noGekocht ? eq(boardColumn.isGekocht, false) : undefined))
   return sql`(${counted}) = ${ids.length}`
 }
 
@@ -688,7 +734,7 @@ export async function archivedDishes(boardId: string): Promise<ArchivedDishView[
 // the user is a Member of.
 export async function purgeDish(dishId: string, userId: string): Promise<{ imageUrl: string | null } | 'forbidden' | null> {
   const archived = and(onMembersBoardIncludingDeleted(dishId, userId), isNotNull(dish.deletedAt))
-  const ownersBoard = inArray(dish.boardId, db.select({ id: membership.boardId }).from(membership).where(and(eq(membership.userId, userId), membership.isOwner)))
+  const ownersBoard = inArray(dish.boardId, ownedBoardIds(userId))
   const [found] = await db.select({ isOwner: sql<boolean>`${ownersBoard}` }).from(dish).where(archived)
   if (!found) return null
   if (!found.isOwner) return 'forbidden'
@@ -725,37 +771,38 @@ export async function dishWithSource(boardId: string, canonicalLink: string): Pr
   return found ?? null
 }
 
-// The Board's Dishes whose title contains the query, ignoring case (PRD
-// story 36), in Board order: Column by Column, each in its own order.
-// Deleted Dishes don't count.
+// The Board's Dishes whose title, Creator or Caption contains the query,
+// ignoring case (PRD story 36), in Board order: Column by Column, each in its
+// own order. Deleted Dishes don't count.
 export async function searchDishes(boardId: string, query: string): Promise<DishView[]> {
+  const pattern = `%${escapeLike(query)}%`
   const rows = await selectDishes()
     .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
-    .where(and(eq(dish.boardId, boardId), isNull(dish.deletedAt), ilike(dish.title, `%${escapeLike(query)}%`)))
+    .where(and(
+      eq(dish.boardId, boardId),
+      isNull(dish.deletedAt),
+      or(ilike(dish.title, pattern), ilike(dish.creator, pattern), ilike(dish.caption, pattern)),
+    ))
     .orderBy(asc(boardColumn.position), asc(dish.position), desc(dish.createdAt), desc(dish.id))
   return toViews(rows)
-}
-
-// So %, _ and \ in a query match themselves (\ is Postgres's LIKE escape).
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, c => `\\${c}`)
 }
 
 // Adds a Dish at the top of the Column that takes new Dishes (PRD story 13;
 // shared/placement.ts). Answers it placed; null unless the user is a Member
 // of the Board, or if another Member deleted it already. `tour`: the Tour
-// has the user add it (ADR 0006), which its event says.
+// has the user add it (ADR 0006), which its event says. `copiedFrom`: the
+// Dish it is a Copy of (copies.ts), made on another Board; its event is then
+// "Dish copied" instead of "Dish added".
 export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
-  { tour = false }: { tour?: boolean } = {},
+  { tour = false, copiedFrom, viaLink = false }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
     .from(boardColumn)
-    .innerJoin(membership, and(eq(membership.boardId, boardColumn.boardId), eq(membership.userId, adder.id)))
-    .where(eq(boardColumn.boardId, boardId))
+    .where(and(eq(boardColumn.boardId, boardId), exists(accessOn(boardId, adder.id))))
     .orderBy(asc(boardColumn.position))
   const firstColumn = columnForNewDishes(columns)
   if (!firstColumn) return null
@@ -772,6 +819,8 @@ export async function addDish(
       sourceLink: input.source?.link ?? null,
       sourceKind: input.source?.kind ?? null,
       creator: input.creator,
+      caption: input.caption,
+      playableVideo: input.playableVideo,
       imageUrl: input.imageUrl,
       imageFocusX: focus.x,
       imageFocusY: focus.y,
@@ -779,13 +828,21 @@ export async function addDish(
       addedBy: adder.id,
     }),
     // Recorded whatever happens: a Dish not added fails the whole step.
-    recordEvents(d, {
-      kind: 'dish_added',
-      board: sql`${boardId}`,
-      dish: sql`${id}`,
-      user: adder.id,
-      details: detailsOf({ source: input.source?.kind ?? null, ...tour && { tour: true as const } }),
-    }, sql``),
+    recordEvents(d, copiedFrom
+      ? {
+          kind: 'dish_copied',
+          board: sql`${boardId}`,
+          dish: sql`${id}`,
+          user: adder.id,
+          details: detailsOf({ from: copiedFrom, source: input.source?.kind ?? null, ...viaLink && { viaLink: true as const } }),
+        }
+      : {
+          kind: 'dish_added',
+          board: sql`${boardId}`,
+          dish: sql`${id}`,
+          user: adder.id,
+          details: detailsOf({ source: input.source?.kind ?? null, ...tour && { tour: true as const } }),
+        }, sql``),
   ])
   const [created] = await db.select({ code: dish.code, createdAt: dish.createdAt }).from(dish).where(eq(dish.id, id))
   if (!created) throw new Error(`Dish was not added to Board ${boardId}`)
@@ -796,6 +853,8 @@ export async function addDish(
     title: input.title,
     source: input.source,
     creator: input.creator,
+    caption: input.caption,
+    playableVideo: input.playableVideo,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

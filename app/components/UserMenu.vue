@@ -3,10 +3,9 @@ import type { Me } from '~~/server/utils/people'
 
 // The user menu (#131, decided on #105 as variant A): your Profile Picture at
 // the top right of the Board opens a list like the Board switcher's panel,
-// popping from its corner: who is signed in, then "Abmelden", and last the
-// legal pages (LegalLinks, #205). Your settings are the header's cogwheel
-// (#282). Phones don't show it; there the legal pages are the Board
-// switcher's last row, and signing out is in your settings.
+// popping from its corner: who is signed in, then "Abmelden". Your settings
+// are the header's cogwheel (#282). Phones don't show it; there signing out
+// is in your settings. The legal pages are at the end of the Board.
 //
 // A menu button (WAI-ARIA APG): opening puts focus on a row (the last with
 // ArrowUp), the arrows go round the rows, Home and End jump, Enter or Space
@@ -154,19 +153,6 @@ watch(() => route.fullPath, () => close())
               />
               {{ t.userSettings.signOut }}
             </button>
-          </li>
-          <li
-            role="none"
-            class="border-t border-line pt-1"
-          >
-            <!-- The page opens in a new tab, so focus stays here: back on
-                 your picture, as after Escape. -->
-            <LegalLinks
-              menu
-              role="none"
-              class="px-1"
-              @chosen="close({ refocus: true })"
-            />
           </li>
         </ul>
       </div>

@@ -11,7 +11,7 @@ import { memoryTransport, type MemoryTransport } from './memory-transport'
 // the tests look at the Board and at what each operation answers.
 
 function dish(id: string): DishView {
-  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 }
+  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 }
 }
 
 // A Board with Ideen (a, b, c), Diese Woche (d) and Gekocht (empty).
@@ -28,6 +28,7 @@ function boardFixture(): BoardView {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: 'Worauf hast du Lust?', isGekocht: false, dishes: [dish('a'), dish('b'), dish('c')] },
       { id: 'woche', name: 'Diese Woche', subtitle: 'Das steht an.', isGekocht: false, dishes: [dish('d')] },

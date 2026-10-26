@@ -6,6 +6,7 @@ import type { UsernamePrompt } from '../../shared/username'
 import { db } from '../db'
 import { APP_VERSION } from '../version'
 import { user } from '../db/schema'
+import { detailsOf, recordEvents, userEvent, withEvents, type PromptAnswer, type PromptKind } from './events'
 import { isOperator } from './operator'
 
 // A person's picture wherever the app shows them (the badges of who added or
@@ -39,6 +40,14 @@ export interface Me {
   isOperator: boolean
   version: string
   newVersion: boolean
+  // The last Version they opened the Changelog in or closed its popup on;
+  // null for none. The Changelog Popup lists the Versions after it (#406).
+  versionSeen: string | null
+  // When they signed up, and when each Notification Prompt was last shown
+  // to them (ISO; null for never): the Board decides which one is due (#407).
+  signedUpAt: string
+  pushPromptedAt: string | null
+  digestPromptedAt: string | null
 }
 
 interface Signed {
@@ -51,6 +60,10 @@ interface Signed {
   tourSeen?: number | null
   language?: string | null
   versionSeen?: string | null
+  // Dates, or ISO strings if a cached session carries them as text.
+  createdAt: Date | string
+  pushPromptedAt?: Date | string | null
+  digestPromptedAt?: Date | string | null
 }
 
 // The language the server writes to someone in when they aren't there to
@@ -64,13 +77,13 @@ export function recipientLanguage({ language, browserLanguage }: { language: str
 // The signed-in user as others see them on what they just added: the same
 // name and picture as usernameOf and pictureOf select. Adding takes a
 // Username (server/middleware/auth.ts), so there always is one.
-export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt' | 'tourSeen' | 'language' | 'versionSeen'>): { id: string, name: string, image: string | null } {
+export function shownAs({ id, image, ownPicture, username }: Omit<Signed, 'email' | 'usernameConfirmedAt' | 'tourSeen' | 'language' | 'versionSeen' | 'createdAt' | 'pushPromptedAt' | 'digestPromptedAt'>): { id: string, name: string, image: string | null } {
   return { id, name: username ?? '', image: ownPicture ?? image ?? null }
 }
 
 // /api/me's answer for the signed-in user, from their session.
 export function meOf(signedIn: Signed): Me {
-  const { id, email, image, ownPicture, username, usernameConfirmedAt, tourSeen, language, versionSeen } = signedIn
+  const { id, email, image, ownPicture, username, usernameConfirmedAt, tourSeen, language, versionSeen, createdAt, pushPromptedAt, digestPromptedAt } = signedIn
   return {
     id,
     name: username ?? '',
@@ -83,15 +96,31 @@ export function meOf(signedIn: Signed): Me {
     isOperator: isOperator(email),
     version: APP_VERSION,
     newVersion: newerVersion(APP_VERSION, versionSeen ?? null),
+    versionSeen: versionSeen ?? null,
+    signedUpAt: new Date(createdAt).toISOString(),
+    pushPromptedAt: pushPromptedAt ? new Date(pushPromptedAt).toISOString() : null,
+    digestPromptedAt: digestPromptedAt ? new Date(digestPromptedAt).toISOString() : null,
   }
 }
 
-const meColumns = { id: user.id, email: user.email, image: user.image, ownPicture: user.ownPicture, username: user.username, usernameConfirmedAt: user.usernameConfirmedAt, tourSeen: user.tourSeen, language: user.language, versionSeen: user.versionSeen }
+const meColumns = { id: user.id, email: user.email, image: user.image, ownPicture: user.ownPicture, username: user.username, usernameConfirmedAt: user.usernameConfirmedAt, tourSeen: user.tourSeen, language: user.language, versionSeen: user.versionSeen, createdAt: user.createdAt, pushPromptedAt: user.pushPromptedAt, digestPromptedAt: user.digestPromptedAt }
 
-// Sets (or, with null, removes) the user's own Profile Picture.
+// Sets (or, with null, removes) the user's own Profile Picture. The event
+// log records it only when the picture differs from before (#399).
 export async function setOwnPicture(userId: string, url: string | null): Promise<Me | null> {
-  const [updated] = await db.update(user).set({ ownPicture: url }).where(eq(user.id, userId)).returning(meColumns)
-  return updated ? meOf(updated) : null
+  await withEvents(
+    db,
+    db.update(user).set({ ownPicture: url }).where(eq(user.id, userId)).returning({ id: user.id, ownPicture: user.ownPicture }),
+    userEvent('picture_changed', userId, detailsOf({ on: url !== null })),
+    { earlier: sql`select id, own_picture from ${user} where id = ${userId}`, where: sql`earlier.own_picture is distinct from changed.own_picture` },
+  )
+  return meOfUser(userId)
+}
+
+// The signed-in user as their session has them now, for an answer after a write.
+async function meOfUser(userId: string): Promise<Me | null> {
+  const [found] = await db.select(meColumns).from(user).where(eq(user.id, userId))
+  return found ? meOf(found) : null
 }
 
 // Records that the user finished or skipped Tour `version`: only ever raises
@@ -108,16 +137,46 @@ export async function recordVersionSeen(userId: string): Promise<Me | null> {
   return updated ? meOf(updated) : null
 }
 
+// A Notification Prompt (CONTEXT.md, #407) was shown to the user: keeps the
+// time, whatever the answer will be, and records prompt_shown (an event of
+// no Board).
+export async function recordPromptShown(userId: string, which: PromptKind): Promise<Me | null> {
+  const column = which === 'push' ? { pushPromptedAt: sql`now()` } : { digestPromptedAt: sql`now()` }
+  const rows = await withEvents(
+    db,
+    db.update(user).set(column).where(eq(user.id, userId)).returning({ id: user.id }),
+    userEvent('prompt_shown', userId, detailsOf({ which })),
+  )
+  if (rows.rows.length === 0) return null
+  return meOfUser(userId)
+}
+
+// How the user answered a Notification Prompt, recorded as prompt_answered.
+export async function recordPromptAnswered(userId: string, which: PromptKind, answer: PromptAnswer): Promise<Me | null> {
+  await recordEvents(
+    db,
+    userEvent('prompt_answered', userId, detailsOf({ which, answer })),
+    sql`from ${user} changed where changed.id = ${userId}`,
+  )
+  return meOfUser(userId)
+}
+
 // Remembers the language the user's browser asked for last (shared/language.ts
 // chooseLanguage of its Accept-Language), for when they aren't there to ask.
 export async function recordBrowserLanguage(userId: string, language: Language): Promise<void> {
   await db.update(user).set({ browserLanguage: language }).where(eq(user.id, userId))
 }
 
-// Sets the user's language under Sprache in Your Settings.
+// Sets the user's language under Sprache in Your Settings. Recorded only when
+// it differs from before (#399).
 export async function setLanguage(userId: string, language: LanguageChoice): Promise<Me | null> {
-  const [updated] = await db.update(user).set({ language }).where(eq(user.id, userId)).returning(meColumns)
-  return updated ? meOf(updated) : null
+  await withEvents(
+    db,
+    db.update(user).set({ language }).where(eq(user.id, userId)).returning({ id: user.id, language: user.language }),
+    userEvent('language_changed', userId, detailsOf({ language })),
+    { earlier: sql`select id, language from ${user} where id = ${userId}`, where: sql`earlier.language is distinct from changed.language` },
+  )
+  return meOfUser(userId)
 }
 
 // As the unique index compares them (server/db/schema.ts).
@@ -134,12 +193,18 @@ export async function usernameTaken(userId: string, username: string): Promise<b
 // index decides, not usernameTaken's look before).
 export async function setUsername(userId: string, username: string): Promise<Me | 'taken' | null> {
   try {
-    const [updated] = await db
-      .update(user)
-      .set({ username, usernameConfirmedAt: sql`coalesce(${user.usernameConfirmedAt}, now())` })
-      .where(eq(user.id, userId))
-      .returning(meColumns)
-    return updated ? meOf(updated) : null
+    // recorded only when the name differs from the one they had (#399).
+    await withEvents(
+      db,
+      db
+        .update(user)
+        .set({ username, usernameConfirmedAt: sql`coalesce(${user.usernameConfirmedAt}, now())` })
+        .where(eq(user.id, userId))
+        .returning({ id: user.id, username: user.username }),
+      userEvent('username_changed', userId),
+      { earlier: sql`select id, username from ${user} where id = ${userId}`, where: sql`earlier.username is distinct from changed.username` },
+    )
+    return meOfUser(userId)
   }
   catch (err) {
     if (isUniqueViolation(err)) return 'taken'

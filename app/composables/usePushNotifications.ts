@@ -66,12 +66,20 @@ export function usePushNotifications() {
   const state = ref<PushState | null>(null)
   const busy = ref(false)
   const failed = ref(false)
+  // The browser's notification permission as of the last refresh or turn (null
+  // until known, or without notifications): the Notification Prompt (#407)
+  // doesn't ask after a "denied".
+  const permission = ref<NotificationPermission | null>(null)
+  const readPermission = () => {
+    permission.value = import.meta.client && 'Notification' in window ? Notification.permission : null
+  }
 
   async function refresh() {
     const device = pushSwitch(key)
     if (!device) return
     failed.value = false
     state.value = await device.state().catch(() => 'off' as const)
+    readPermission()
   }
 
   async function turn(on: boolean) {
@@ -87,10 +95,11 @@ export function usePushNotifications() {
     }
     finally {
       busy.value = false
+      readPermission()
     }
   }
 
-  return { offered, state, busy, failed, refresh, turn }
+  return { offered, state, permission, busy, failed, refresh, turn }
 }
 
 // Signing out turns them off for this device, so it gets nothing of the

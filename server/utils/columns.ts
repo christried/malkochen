@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, eq, exists, inArray, isNotNull, isNull, not, sql } from 'drizzle-orm'
 import { columnDeletion, type ColumnRefusal } from '../../shared/placement'
 import { db, runAtomic, type Db } from '../db'
-import { boardColumn, dish, membership } from '../db/schema'
-import { membershipOf } from './boards'
+import { boardColumn, dish } from '../db/schema'
+import { accessibleBoardIds, accessOn } from './board-access'
+import { boardEvent, columnEvent, withEvents } from './events'
 
 // Columns (CONTEXT.md: Column, Gekocht Column), as Board settings manages
 // them (PRD stories 57–60). Every Board keeps exactly one Gekocht Column and
@@ -34,7 +35,7 @@ export interface ColumnChanges {
 function onMembersBoard(columnId: string, userId: string) {
   return and(
     eq(boardColumn.id, columnId),
-    inArray(boardColumn.boardId, db.select({ id: membership.boardId }).from(membership).where(eq(membership.userId, userId))),
+    inArray(boardColumn.boardId, accessibleBoardIds(userId)),
   )
 }
 
@@ -52,12 +53,17 @@ export async function addColumn(boardId: string, userId: string, name: string): 
   const id = randomUUID()
   await runAtomic(d => [
     lockColumns(d, boardId),
-    d.execute(sql`
-      insert into ${boardColumn} (id, board_id, name, position)
-      select ${id}, ${boardId}, ${name},
-        (select coalesce(max(position), -1) + 1 from ${boardColumn} where board_id = ${boardId})
-      where ${exists(membershipOf(boardId, userId))}
-    `),
+    withEvents(
+      d,
+      sql`
+        insert into ${boardColumn} (id, board_id, name, position)
+        select ${id}, ${boardId}, ${name},
+          (select coalesce(max(position), -1) + 1 from ${boardColumn} where board_id = ${boardId})
+        where ${exists(accessOn(boardId, userId))}
+        returning id, board_id
+      `,
+      columnEvent('column_added', userId),
+    ),
   ])
   const [added] = await db.select(columnView).from(boardColumn).where(eq(boardColumn.id, id))
   return added ?? null
@@ -67,12 +73,28 @@ export async function addColumn(boardId: string, userId: string, name: string): 
 // Subtitle, except the Gekocht Column's ('gekocht'). Fields left out stay as
 // they are.
 export async function editColumn(columnId: string, userId: string, changes: ColumnChanges): Promise<ColumnView | 'gekocht' | null> {
-  const [edited] = await db
-    .update(boardColumn)
-    .set(changes)
-    .where(and(onMembersBoard(columnId, userId), changes.subtitle === undefined ? undefined : not(boardColumn.isGekocht)))
-    .returning(columnView)
-  if (edited) return edited
+  const target = onMembersBoard(columnId, userId)
+  const { rows } = await withEvents(
+    db,
+    db
+      .update(boardColumn)
+      .set(changes)
+      .where(and(target, changes.subtitle === undefined ? undefined : not(boardColumn.isGekocht)))
+      .returning({ id: boardColumn.id, boardId: boardColumn.boardId, name: boardColumn.name, subtitle: boardColumn.subtitle }),
+    [
+      // Recorded only for what changed.
+      { ...columnEvent('column_renamed', userId), when: sql`changed.name is distinct from earlier.name` },
+      {
+        ...columnEvent('column_subtitle_changed', userId, sql`jsonb_build_object('column', changed.id, 'on', changed.subtitle is not null)`),
+        when: sql`changed.subtitle is distinct from earlier.subtitle`,
+      },
+    ],
+    { earlier: sql`select ${boardColumn.id}, ${boardColumn.name}, ${boardColumn.subtitle} from ${boardColumn} where ${target}` },
+  )
+  if (rows.length > 0) {
+    const [edited] = await db.select(columnView).from(boardColumn).where(eq(boardColumn.id, columnId))
+    return edited ?? null
+  }
   const [found] = await db.select({ id: boardColumn.id }).from(boardColumn).where(onMembersBoard(columnId, userId))
   return found ? 'gekocht' : null
 }
@@ -90,16 +112,23 @@ export async function reorderColumns(boardId: string, userId: string, columnIds:
   const ids = sql`array[${sql.join(columnIds.map(id => sql`${id}::uuid`), sql`, `)}]`
   await runAtomic(d => [
     lockColumns(d, boardId),
-    d
-      .update(boardColumn)
-      .set({ position: sql`array_position(${ids}, ${boardColumn.id}) - 1` })
-      .where(and(
-        eq(boardColumn.boardId, boardId),
-        exists(membershipOf(boardId, userId)),
-        sql`cardinality(${ids}) = (select count(distinct x) from unnest(${ids}) as x)`,
-        sql`${ids} <@ array(select ${boardColumn.id} from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
-        sql`cardinality(${ids}) = (select count(*) from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
-      )),
+    // One event for the order, however many Columns moved.
+    withEvents(
+      d,
+      d
+        .update(boardColumn)
+        .set({ position: sql`array_position(${ids}, ${boardColumn.id}) - 1` })
+        .where(and(
+          eq(boardColumn.boardId, boardId),
+          exists(accessOn(boardId, userId)),
+          sql`cardinality(${ids}) = (select count(distinct x) from unnest(${ids}) as x)`,
+          sql`${ids} <@ array(select ${boardColumn.id} from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
+          sql`cardinality(${ids}) = (select count(*) from ${boardColumn} where ${boardColumn.boardId} = ${boardId})`,
+        ))
+        .returning({ boardId: boardColumn.boardId }),
+      boardEvent('column_reordered', userId),
+      { once: true },
+    ),
   ])
   const columns = await boardColumns(boardId)
   const applied = columns.length === columnIds.length && columns.every((c, i) => c.id === columnIds[i])
@@ -174,11 +203,15 @@ export async function deleteColumn(columnId: string, userId: string, moveTo?: st
       sql`exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${columnId} and ${deletable})`,
       sql`not exists (select 1 from ${dish} as live where live.column_id = ${columnId} and live.deleted_at is null)`,
     )),
-    d.delete(boardColumn).where(and(
-      eq(boardColumn.id, columnId),
-      deletable,
-      sql`not exists (select 1 from ${dish} where ${dish.columnId} = ${columnId})`,
-    )),
+    withEvents(
+      d,
+      d.delete(boardColumn).where(and(
+        eq(boardColumn.id, columnId),
+        deletable,
+        sql`not exists (select 1 from ${dish} where ${dish.columnId} = ${columnId})`,
+      )).returning({ id: boardColumn.id, boardId: boardColumn.boardId }),
+      columnEvent('column_deleted', userId),
+    ),
   ])
 
   const [left] = await db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.id, columnId))

@@ -124,7 +124,6 @@ async function main() {
     serviceWorkers: 'block',
   })
   await context.addInitScript(key => sessionStorage.setItem(key, '1'), SPLASH_SEEN_KEY)
-  await context.route('**/api/instagram-plays?*', route => route.fulfill({ json: { playsInPlace: null } }))
   await context.route('**/api/source-lookup?*', route => route.fulfill({ json: SHARED }))
   // Saving the shared Dish: its image, which the server can't copy (its
   // Image Ticket is made up), goes onto the Dish here instead, and the page

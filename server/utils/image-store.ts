@@ -4,7 +4,7 @@ import { createFoundImageStore } from '../image-store/found-image'
 import { createPhotoStore, PICTURE_SIDE } from '../image-store/photo'
 import { createImageTickets } from '../image-store/tickets'
 import { parseServerEnv } from '../env'
-import { isMember } from './boards'
+import { isMember } from './board-access'
 
 const { BLOB_READ_WRITE_TOKEN, BETTER_AUTH_SECRET, IMAGE_DIR: imageDir } = parseServerEnv(process.env)
 
@@ -36,6 +36,10 @@ export const photoTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'p
 // user who uploaded it, so they only ever take their own.
 export const storePicture = createPhotoStore({ storage, folder: 'pictures', square: PICTURE_SIDE, onFailure: reason => console.warn(`[image-store] picture not stored: ${reason}`) })
 export const pictureTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'picture' })
+
+// What Source Lookup read from a Source (its canonical link and Caption), signed
+// for the Member who asked; see server/utils/source-ticket.ts.
+export const sourceTickets = createImageTickets(BETTER_AUTH_SECRET, { purpose: 'source' })
 
 export interface DishImageRequest {
   photo?: { url: string, ticket: string } | null

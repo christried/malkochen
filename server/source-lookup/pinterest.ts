@@ -1,3 +1,4 @@
+import { captionOf } from './caption'
 import { creatorName } from './creator'
 import { metaTags } from './html'
 import type { Http } from './http'
@@ -47,14 +48,20 @@ async function fromOembed(http: Http, found: SourceGuess): Promise<{ creator: st
 // in German, "Pin on <board>" in English (the languages Source Lookup asks for).
 const UNTITLED = /^Pin (?:auf|on) /
 
-// The Pin page runs alongside oEmbed and gets half the lookup's time, so a
-// stalled one holds the image back by that much at most. Only a page that
-// says it is a Pin is believed: anything else (a missing Pin, a login wall)
-// would only offer "Pinterest".
-async function pinPageTitle(http: Http, found: SourceGuess, timeoutMs: number): Promise<string> {
+// The Pin's title and description from the Pin page. The Pin page runs
+// alongside oEmbed and gets half the lookup's time, so a stalled one holds the
+// image back by that much at most. Only a page that says it is a Pin is
+// believed: anything else (a missing Pin, a login wall) would only offer
+// "Pinterest". The description comes with the board keywords after " | ",
+// as the title does, and loses them the same way.
+async function pinPage(http: Http, found: SourceGuess, timeoutMs: number): Promise<{ suggestedTitle: string, caption: string | null }> {
   const meta = metaTags((await http.page(found.canonicalLink, { timeoutMs: timeoutMs / 2 })).html ?? '')
-  const title = meta.get('og:type') === 'pinterestapp:pin' ? beforeFirstBar(meta.get('og:title')) : undefined
-  return title && !UNTITLED.test(title) ? shortenTitle(title) : ''
+  if (meta.get('og:type') !== 'pinterestapp:pin') return { suggestedTitle: '', caption: null }
+  const title = beforeFirstBar(meta.get('og:title'))
+  return {
+    suggestedTitle: title && !UNTITLED.test(title) ? shortenTitle(title) : '',
+    caption: captionOf(beforeFirstBar(meta.get('og:description'))),
+  }
 }
 
 export const pinterest: Strategy = {
@@ -66,7 +73,7 @@ export const pinterest: Strategy = {
   async lookup(url, { http, timeoutMs }) {
     const found = pin(SHORT_HOST.test(url.hostname) ? await http.resolve(url.href, hop => pin(hop) !== null) : url)
     if (!found) return nothingFound({ kind: 'pinterest-pin', canonicalLink: withoutTracking(url) })
-    const [suggestedTitle, oembed] = await Promise.all([pinPageTitle(http, found, timeoutMs), fromOembed(http, found)])
-    return { ...found, suggestedTitle, ...oembed }
+    const [page, oembed] = await Promise.all([pinPage(http, found, timeoutMs), fromOembed(http, found)])
+    return { ...found, ...page, ...oembed, playableVideo: false }
   },
 }

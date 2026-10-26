@@ -6,7 +6,7 @@
 
 // A secret: 17 characters from an alphabet without look-alikes (0/o,
 // 1/l/i), about 84 bits (random_invite_secret(), migration 0014).
-const SECRET = /^[23456789abcdefghjkmnpqrstuvwxyz]{17}$/
+export const SECRET = /^[23456789abcdefghjkmnpqrstuvwxyz]{17}$/
 // The token a Board had before: 32 hex characters.
 const OLD_TOKEN = /^[0-9a-f]{32}$/
 
