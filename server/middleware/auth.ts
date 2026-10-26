@@ -11,7 +11,7 @@ import { recordBrowserLanguage } from '../utils/people'
 // has one too), and a Dish Link's page data (anyone with the link, signed in
 // or not, sees the one Dish; the route reads the session itself).
 // Page navigation is guarded separately by app/middleware/auth.global.ts.
-const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//, /^\/api\/csp-report$/, /^\/api\/dish-links\/[^/]+$/]
+const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//, /^\/api\/csp-report$/, /^\/api\/dish-links\/[^/]+$/, /^\/api\/dish-links\/[^/]+\/remember$/]
 const BEFORE_USERNAME = [/^\/api\/me(\/username)?$/, /^\/api\/invites\//]
 const ADMIN_API = /^\/api\/admin(\/|$)/
 

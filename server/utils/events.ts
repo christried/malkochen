@@ -30,8 +30,9 @@ export type EventDetails =
   // dish_added: the kind of its Source, null without one; `tour` for the
   // Dish the Tour has the user add.
   | { source: SourceKind | null, tour?: true }
-  // dish_copied: the Dish copied from, and the kind of its Source.
-  | { from: string, source: SourceKind | null }
+  // dish_copied: the Dish copied from, and the kind of its Source; `viaLink`
+  // when it was copied from a Dish Link (#403).
+  | { from: string, source: SourceKind | null, viaLink?: true }
   // dish_moved: the Columns it went from and to, and the Board it came
   // from if that isn't the one it went to.
   | { from: string, to: string, fromBoard?: string, undo?: true }
