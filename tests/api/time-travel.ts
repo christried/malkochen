@@ -88,3 +88,9 @@ export async function expireSignInCode(email: string): Promise<void> {
 export async function setVersionSeen(email: string, version: string): Promise<void> {
   await query(`update "user" set version_seen = $2 where email = $1`, [email, version])
 }
+
+// Moves the events of a Board `days` into the past, as if they had happened
+// that long before: for the Admin Page's time range.
+export async function backdateBoardEvents(boardId: string, days: number): Promise<void> {
+  await query(`update event_log set at = at - make_interval(days => $2) where board_id = $1`, [boardId, days])
+}
