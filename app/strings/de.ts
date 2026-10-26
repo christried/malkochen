@@ -916,7 +916,9 @@ export const de = {
     eventOff: 'aus',
     movedFromTo: (from: string, to: string) => `von ${from} nach ${to}`,
     movedFromBoard: (board: string) => `aus ${board}`,
-    copiedFrom: 'kopiert von',
+    // After "Gericht kopiert": the Dish it was copied from.
+    copiedFrom: 'von',
+    dishArchived: 'Archiviert',
     promptWhich: { push: 'Push-Benachrichtigungen', digest: 'Tägliche E-Mail' },
     // A moment in German time, from an ISO time.
     dateTime: (at: string) => eventTime(new Date(at)),

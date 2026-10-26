@@ -721,6 +721,22 @@ const DASHBOARDS = [
               <template v-if="eventDetails(e)">
                 {{ ' ' }}{{ eventDetails(e) }}
               </template>
+              <template v-if="e.copiedFrom">
+                {{ ' ' }}{{ t.admin.copiedFrom }}{{ ' ' }}
+                <span
+                  v-if="e.copiedFrom === 'deleted'"
+                  class="text-text-muted"
+                >{{ t.admin.deleted }}</span>
+                <NuxtLink
+                  v-else-if="liveBoard(e.copiedFrom.board) && !e.copiedFrom.dish.archived"
+                  :to="dishPath(liveBoard(e.copiedFrom.board)!, e.copiedFrom.dish)"
+                  class="underline underline-offset-2"
+                >{{ e.copiedFrom.dish.title }}</NuxtLink>
+                <span v-else>
+                  {{ e.copiedFrom.dish.title }}
+                  <span class="text-text-muted">{{ e.copiedFrom.dish.archived ? t.admin.dishArchived : t.admin.boardArchived }}</span>
+                </span>
+              </template>
               <span
                 v-if="e.comment"
                 class="admin-event-comment"
@@ -743,25 +759,6 @@ const DASHBOARDS = [
                   <span class="text-text-muted">{{ t.admin.boardArchived }}</span>
                 </span>
               </template>
-              <span
-                v-if="e.copiedFrom"
-                class="admin-event-copy"
-              >
-                <span class="text-text-muted">{{ t.admin.copiedFrom }}</span>
-                <span
-                  v-if="e.copiedFrom === 'deleted'"
-                  class="text-text-muted"
-                >{{ t.admin.deleted }}</span>
-                <NuxtLink
-                  v-else-if="liveBoard(e.copiedFrom.board) && !e.copiedFrom.dish.archived"
-                  :to="dishPath(liveBoard(e.copiedFrom.board)!, e.copiedFrom.dish)"
-                  class="underline underline-offset-2"
-                >{{ e.copiedFrom.dish.title }}</NuxtLink>
-                <span v-else>
-                  {{ e.copiedFrom.dish.title }}
-                  <span class="text-text-muted">{{ t.admin.boardArchived }}</span>
-                </span>
-              </span>
               <template v-if="e.dish">
                 <span
                   v-if="e.dish === 'deleted'"
@@ -777,7 +774,7 @@ const DASHBOARDS = [
                   <span
                     v-if="e.dish.archived"
                     class="text-text-muted"
-                  >{{ t.admin.boardArchived }}</span>
+                  >{{ t.admin.dishArchived }}</span>
                 </span>
               </template>
             </span>
@@ -871,12 +868,6 @@ const DASHBOARDS = [
 .admin-event-where {
   display: flex;
   flex-direction: column;
-  min-width: 0;
-}
-.admin-event-copy {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 0.375rem;
   min-width: 0;
 }
 .admin-event-comment {
