@@ -6,8 +6,7 @@
 // (.nuxt/tsconfig.node.json) has no `~` aliases.
 import type { AchievementLevel } from '../utils/achievement'
 import type { EventGroup, SourceColumn } from '../../shared/admin'
-import type { EventKind } from '../../shared/event-kinds'
-import type { DishField } from '../../server/utils/events'
+import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { SectionKind } from '../../shared/changelog'
 import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'
@@ -890,6 +889,7 @@ export const de = {
     openSignUp: 'Anmeldung offen',
     openSignUpHint: 'Alle können sich neu anmelden, nicht nur die Adressen auf der Allowlist. Wer schon ein Konto hat, kommt immer rein.',
     openSignUpFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    eventsFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     figure: 'Was',
     used: 'Genutzt',
     free: 'Kostenlos',

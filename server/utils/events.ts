@@ -1,5 +1,5 @@
 import { and, sql, type SQL, type SQLWrapper } from 'drizzle-orm'
-import type { EventKind } from '../../shared/event-kinds'
+import type { DishField, EventKind, PromptAnswer, PromptKind } from '../../shared/event-kinds'
 import type { LanguageChoice } from '../../shared/language'
 import type { Permission } from '../../shared/permissions'
 import type { PushOutcome } from '../push'
@@ -12,9 +12,7 @@ import { dish, eventLog } from '../db/schema'
 // transaction as its change, so there is an event exactly when the change
 // went through. Never content: only ids, the kind and these details.
 
-export type { EventKind }
-export type PromptKind = 'push' | 'digest'
-export type PromptAnswer = 'on' | 'later'
+export type { DishField, EventKind, PromptAnswer, PromptKind } from '../../shared/event-kinds'
 
 // How a Member signed in: Google, the email code, or the dev bypass (local
 // dev and tests). null when no sign-in endpoint says.
@@ -76,10 +74,6 @@ export type EventDetails =
   // is null when they weren't, but also once a deleted account is gone, so
   // only this tells the two apart.
   | { signedIn: boolean }
-
-// The fields of a Dish an edit can change (dish_edited): the title, the
-// image (or its Placeholder), the Source, the Creator and the Focus Point.
-export type DishField = 'title' | 'image' | 'source' | 'creator' | 'focus'
 
 // One event per row of the statement it is recorded with: its kind, and
 // SQL for its Board, Dish and details over that row. `user` did it (null
@@ -155,6 +149,12 @@ function eventRows(event: EventValues, { earlier, where, once }: { earlier?: SQL
 // (`changed`, its row, with its `board_id`).
 export function boardEvent(kind: EventKind, user: string, details?: SQL): EventValues {
   return { kind, board: sql`changed.board_id`, user, details }
+}
+
+// An event of no Board: the user's own (their account, settings, prompts) or
+// malkochen's as a whole.
+export function userEvent(kind: EventKind, user: EventValues['user'], details?: SQL): EventValues {
+  return { kind, board: sql`null`, user, details }
 }
 
 // The event of a Dish a write changed (`changed`, its row).

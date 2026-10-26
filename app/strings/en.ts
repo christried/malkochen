@@ -3,8 +3,7 @@
 // "you", warm and short, like the German "du"; British spelling. malkochen
 // and Topfbert keep their names. Relative imports, as in de.ts.
 import type { EventGroup } from '../../shared/admin'
-import type { EventKind } from '../../shared/event-kinds'
-import type { DishField } from '../../server/utils/events'
+import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
@@ -749,6 +748,7 @@ export const en: Strings = {
     openSignUp: 'Sign-up open',
     openSignUpHint: 'Anyone can sign up, not only the addresses on the Allowlist. Everyone who already has an account always gets in.',
     openSignUpFailed: failed,
+    eventsFailed: failed,
     figure: 'What',
     used: 'Used',
     free: 'Free',

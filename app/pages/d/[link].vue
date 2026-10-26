@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { DishLinkView } from '~~/server/utils/dish-links'
-import type { BoardListing } from '~~/server/utils/boards'
 import type { CopiedDish } from '~~/server/utils/copies'
 import { dishPath } from '~~/shared/address'
 
@@ -20,7 +19,7 @@ const { data: dish, error } = await useFetch<DishLinkView>(`/api/dish-links/${li
 // Too many links that don't exist asked for from here, for now (429): not a
 // link that stopped working, so the error screen says to try again soon.
 if (error.value?.statusCode === 429) {
-  throw createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found', fatal: true })
+  throw createError({ statusCode: 429, statusMessage: 'Too many links not found', fatal: true })
 }
 
 // Signed in or not (#403): "Auf mein Board kopieren" copies the Dish to one of
@@ -70,10 +69,6 @@ async function copyInto(boardId: string) {
     if (statusOf(failure) === 404) dish.value = undefined
     else toast.value = { text: statusOf(failure) === 403 ? t.detail.copyForbidden : t.detail.copyFailed, duration: NOTICE_MS }
   }
-}
-
-function copyTo(toBoard: BoardListing) {
-  return copyInto(toBoard.id)
 }
 
 // Signed in with no Board to copy to: a new one, starter name, then the Copy.
@@ -193,7 +188,7 @@ useSeoMeta({
         v-if="copyPicker"
         class="mt-5"
         :board-id="dish?.ownBoard"
-        @copy="copyTo"
+        @copy="toBoard => copyInto(toBoard.id)"
       >
         <template #empty>
           <p class="px-1 text-small text-text-muted">

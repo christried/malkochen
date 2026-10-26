@@ -1,6 +1,6 @@
 import { landingBoard, landingToAdd } from '../../utils/boards'
 import { dishLinkPath } from '../../../shared/dish-link'
-import { dishOf, forgetDishLink, rememberedDishLink } from '../../utils/dish-links'
+import { forgetDishLink, liveDishBySecret, rememberedDishLink } from '../../utils/dish-links'
 
 // Where the app opens: the last-used Board, creating "Meine Küche" on a
 // first sign-in. Answers its id and the slug of its Address. With
@@ -20,6 +20,6 @@ export default defineEventHandler(async (event): Promise<{ boardId: string, slug
   const secret = rememberedDishLink(event)
   if (!secret) return landing
   forgetDishLink(event)
-  const found = await dishOf(secret)
+  const found = await liveDishBySecret(secret)
   return found ? { ...landing, dishLink: dishLinkPath({ title: found.title, linkSecret: secret }) } : landing
 })

@@ -1,7 +1,7 @@
-import { ne, sql } from 'drizzle-orm'
+import { ne } from 'drizzle-orm'
 import { db } from '../db'
 import { setting } from '../db/schema'
-import { detailsOf, withEvents } from './events'
+import { detailsOf, userEvent, withEvents } from './events'
 
 // Open Sign-up (CONTEXT.md, #350): the Operator's switch that lets anyone
 // sign up. Off, only the Allowlist signs up. Either way, everyone who has
@@ -18,6 +18,6 @@ export async function switchOpenSignUp(on: boolean, userId: string): Promise<voi
   await withEvents(
     db,
     db.update(setting).set({ openSignUp: on }).where(ne(setting.openSignUp, on)).returning({ id: setting.id }),
-    { kind: 'open_sign_up_switched', board: sql`null`, user: userId, details: detailsOf({ on }) },
+    userEvent('open_sign_up_switched', userId, detailsOf({ on })),
   )
 }

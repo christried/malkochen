@@ -786,7 +786,7 @@ const DASHBOARDS = [
           role="alert"
           class="px-1 text-small text-danger"
         >
-          {{ t.admin.openSignUpFailed }}
+          {{ t.admin.eventsFailed }}
         </p>
         <button
           v-if="nextEvents !== null"

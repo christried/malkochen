@@ -1,7 +1,6 @@
-import type { EventKind } from './event-kinds'
+import type { EventKind, PromptAnswer, PromptKind } from './event-kinds'
 import type { Permission } from './permissions'
 import { SOURCE_KINDS } from '../server/source-lookup/types'
-import type { PromptAnswer, PromptKind } from '../server/utils/events'
 
 // The Admin Page (#348, CONTEXT.md): what GET /api/admin answers the
 // Operator, and the page shows as plain tables. Counts only, never content:

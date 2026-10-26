@@ -2,6 +2,7 @@ import { sql, type SQL } from 'drizzle-orm'
 import { EVENTS_PER_PAGE, type AdminEvent, type AdminEventDetails, type AdminEventPage, type NamedBoard, type NamedColumn, type NamedDish, type NamedUser } from '../../shared/admin'
 import type { EventKind } from '../../shared/event-kinds'
 import { db } from '../db'
+import { escapeLike } from './like'
 
 // The Event Log for the Admin Page (#400, ADR 0009). The event log keeps ids
 // only; everything the Operator reads here (Usernames, Board names, Dish
@@ -24,8 +25,6 @@ export interface EventFilter {
 // one never fails the query.
 const UUID = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 const detailId = (key: string) => sql`(case when e.details->>${key} ~ ${UUID} then (e.details->>${key})::uuid end)`
-
-const escapeLike = (text: string) => text.replace(/[\\%_]/g, c => `\\${c}`)
 
 // Their Username, else the name Google gave: the Operator's own account may
 // have none.

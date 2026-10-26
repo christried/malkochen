@@ -10,7 +10,8 @@ import { unseenReleases } from '~~/shared/changelog'
 // so Your Settings' "Neu" goes too. "Alle Änderungen" opens the whole
 // Changelog. BoardScreen decides when it is due and loads it lazily, so the
 // Changelog files come with the popup, not with every Board. If there turns
-// out to be nothing to list, it says so (`empty`) and shows nothing.
+// out to be nothing to list, it says so (`empty`), marks the Version as seen
+// all the same, and shows nothing.
 const emit = defineEmits<{ empty: [] }>()
 const t = useStrings()
 const language = useLanguage()
@@ -26,6 +27,7 @@ useModalStack(open)
 
 onMounted(() => {
   if (!releases.length) {
+    void close()
     emit('empty')
     return
   }

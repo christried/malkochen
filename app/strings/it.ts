@@ -6,8 +6,7 @@
 // "bacheca", as on Pinterest. malkochen and Topfbert keep their names.
 // Relative imports, as in de.ts.
 import type { EventGroup } from '../../shared/admin'
-import type { EventKind } from '../../shared/event-kinds'
-import type { DishField } from '../../server/utils/events'
+import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
@@ -765,6 +764,7 @@ export const it: Strings = {
     openSignUp: 'Registrazione aperta',
     openSignUpHint: 'Chiunque può registrarsi, non solo gli indirizzi nella Allowlist. Chi ha già un account entra sempre.',
     openSignUpFailed: failed,
+    eventsFailed: failed,
     figure: 'Cosa',
     used: 'Usato',
     free: 'Gratis',

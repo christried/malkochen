@@ -7,7 +7,8 @@ import type { Me } from '~~/server/utils/people'
 import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
 import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
-import { duePrompt, type PromptKind } from '~/utils/notification-prompt'
+import { duePrompt } from '~/utils/notification-prompt'
+import type { PromptAnswer, PromptKind } from '~~/shared/event-kinds'
 import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
@@ -407,8 +408,9 @@ const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !se
 // it marks the Version as seen, so it never comes back. In the browser tests
 // it never shows by itself, unless the test page turned that on
 // (window.e2eChangelogPopup). The popup loads lazily, with the Changelog
-// files, and says so with `empty` if it finds nothing to list: then it stays
-// away for this visit.
+// files, and says so with `empty` if it finds nothing to list (it marks the
+// Version as seen all the same, so no prompt waits on it): then it stays away
+// for this visit.
 const visit = useVisit()
 const popupEmpty = ref(false)
 const popupSettled = ref(false)
@@ -475,7 +477,7 @@ onBeforeUnmount(() => clearTimeout(promptTimer))
 
 // Typed as a plain string: Nitro's route typing runs too deep here.
 const PROMPT: string = '/api/me/prompt'
-async function tellPrompt(which: PromptKind, answer?: 'on' | 'later') {
+async function tellPrompt(which: PromptKind, answer?: PromptAnswer) {
   const answered = await $fetch<Me>(PROMPT, { method: 'PUT', body: { which, answer } }).catch(() => null)
   if (answered && me.value) me.value = answered
 }
@@ -490,7 +492,7 @@ function showPrompt() {
   me.value = { ...me.value, ...(which === 'push' ? { pushPromptedAt: now } : { digestPromptedAt: now }) }
   void tellPrompt(which)
 }
-function answerPrompt(which: PromptKind, answer: 'on' | 'later') {
+function answerPrompt(which: PromptKind, answer: PromptAnswer) {
   if (promptAnswered && answer === 'on') return
   promptAnswered = true
   void tellPrompt(which, answer)

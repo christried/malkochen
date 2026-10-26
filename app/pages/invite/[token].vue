@@ -17,7 +17,7 @@ const fetchPassingCookies = useFetchPassingCookies()
 // server/utils/invites.ts): not a link that stopped working, so the error
 // screen says to try again soon.
 const tooMany = (status: number | undefined) => status === 429
-  ? createError({ statusCode: 429, statusMessage: 'Too many Invite Links not found', fatal: true })
+  ? createError({ statusCode: 429, statusMessage: 'Too many links not found', fatal: true })
   : null
 
 const { data: invite, error: lookupFailed } = await useFetch<InviteView>(`/api/invites/${token}`)

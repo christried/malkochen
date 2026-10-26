@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PromptKind } from '~/utils/notification-prompt'
+import type { PromptKind } from '~~/shared/event-kinds'
 
 // A Notification Prompt (CONTEXT.md, #407, decided on #392: A): Topfbert's
 // card at the bottom of the Board, offering Push Notifications or the Email

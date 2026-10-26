@@ -7,7 +7,7 @@ import { parseServerEnv } from '../env'
 import { mailSender } from './mail'
 import { slugOf } from './addresses'
 import { signInRefusal } from './auth'
-import { detailsOf, withEvents } from './events'
+import { detailsOf, userEvent, withEvents } from './events'
 import { recipientLanguage } from './people'
 
 const env = parseServerEnv(process.env)
@@ -27,7 +27,7 @@ export async function switchDigestOn(userId: string): Promise<void> {
   await withEvents(
     db,
     db.insert(emailDigest).values({ userId, coveredUntil: nowInMs }).onConflictDoNothing().returning({ userId: emailDigest.userId }),
-    { kind: 'digest_switched', board: sql`null`, user: userId, details: detailsOf({ on: true }) },
+    userEvent('digest_switched', userId, detailsOf({ on: true })),
     { once: true },
   )
 }
@@ -37,7 +37,7 @@ export async function switchDigestOff(userId: string): Promise<void> {
   await withEvents(
     db,
     db.delete(emailDigest).where(eq(emailDigest.userId, userId)).returning({ userId: emailDigest.userId }),
-    { kind: 'digest_switched', board: sql`null`, user: userId, details: detailsOf({ on: false }) },
+    userEvent('digest_switched', userId, detailsOf({ on: false })),
     { once: true },
   )
 }
