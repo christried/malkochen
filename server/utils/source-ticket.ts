@@ -1,6 +1,6 @@
-import { videoEmbed } from '../../shared/video-embed'
 import type { DishSource } from './dishes'
 import { sourceTickets } from './image-store'
+import { playableFor } from './playable-video'
 
 // Source Tickets (server/image-store/tickets.ts): what Source Lookup read from a
 // Source, signed for the Member who asked, so a Dish keeps a Caption only if
@@ -36,25 +36,6 @@ export function checkedSourceFacts(userId: string, sent: { link: string, caption
   const playableVideo = sent.playableVideo ?? false
   const vouched = sourceTickets.check(userId, sourceFacts({ canonicalLink: sent.link, caption: sent.caption, playableVideo }), sent.ticket)
   return vouched ? { caption: sent.caption, playableVideo } : null
-}
-
-// Whether a Source's video plays in malkochen's player (#394), the one rule
-// for a Dish added or edited and for the backfill of older Dishes (#395).
-// `lookedUp` is what Source Lookup said, if it said anything. TikTok and
-// YouTube Shorts: from the link alone. Instagram: what Source Lookup said,
-// null when it said nothing. Any other Source: false. No Source: null.
-export function playableFor(source: DishSource | null, lookedUp: boolean | null | undefined): boolean | null {
-  if (!source) return null
-  switch (source.kind) {
-    case 'tiktok':
-    case 'youtube-short':
-      return videoEmbed(source) !== null
-    case 'instagram-reel':
-    case 'instagram-post':
-      return lookedUp ?? null
-    default:
-      return false
-  }
 }
 
 // What a Dish keeps of its Source's facts (#393, #394), from what the client

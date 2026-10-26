@@ -3,7 +3,7 @@ import { db } from '../db'
 import { dish, setting } from '../db/schema'
 import type { SourceLookup, SourceLookupResult } from '../source-lookup'
 import { lookupSource } from './source-lookup'
-import { playableFor } from './source-ticket'
+import { playableFor } from './playable-video'
 
 // The backfill of Captions and playable videos (#395): Dishes added before
 // #393 and #394 have no Caption and no known playable video. Source Lookup
