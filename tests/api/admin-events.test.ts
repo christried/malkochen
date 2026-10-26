@@ -228,3 +228,36 @@ test('a Dish Link opened signed out shows nobody was signed in', async () => {
   expect(opened[0]!.user).toBe('signed-out')
   expect(opened[0]!.details).toEqual({ signedIn: false })
 })
+
+test('a Copy names the Dish it was copied from as it is now, and shows deleted once that Dish is gone', async () => {
+  const ada = await owner()
+  const from = await boardWith('Kopie Quelle')
+  const to = await boardWith('Kopie Ziel')
+  const source = await addDish(ada, from.id, 'Originalgericht')
+  const res = await post(ada, `/api/dishes/${source.id}/copy`, { boardId: to.id })
+  expect(res.status).toBe(201)
+  expect((await patch(ada, `/api/dishes/${source.id}`, { title: 'Jetzt anders' })).status).toBe(200)
+
+  const copied = ofKind(await events({ board: to.id }), 'dish_copied')
+  expect(copied).toHaveLength(1)
+  expect(copied[0]!.from).toBeNull()
+  expect(copied[0]!.board).toMatchObject({ id: to.id, name: 'Kopie Ziel' })
+  expect(copied[0]!.copiedFrom).toMatchObject({ dish: { id: source.id, title: 'Jetzt anders', archived: false }, board: { id: from.id, name: 'Kopie Quelle' } })
+
+  expect((await ada.fetch(`/api/dishes/${source.id}`, { method: 'DELETE' })).status).toBe(204)
+  expect((await post(ada, `/api/dishes/${source.id}/purge`)).status).toBe(204)
+  expect(ofKind(await events({ board: to.id }), 'dish_copied')[0]!.copiedFrom).toBe('deleted')
+})
+
+test('an answered Notification Prompt shows which prompt and the answer, in the notifications group', async () => {
+  const grace = await member()
+  const put = (body: unknown) => grace.fetch('/api/me/prompt', { method: 'PUT', ...json(body) })
+  expect((await put({ which: 'push' })).status).toBe(200)
+  expect((await put({ which: 'push', answer: 'on' })).status).toBe(200)
+
+  const page = await events({ kinds: EVENT_GROUPS.notifications.join(','), user: await nameOf(grace) })
+  const answered = ofKind(page, 'prompt_answered')
+  expect(answered.length).toBeGreaterThan(0)
+  expect(answered[0]).toMatchObject({ board: null, dish: null, details: { which: 'push', answer: 'on' } })
+  expect(ofKind(page, 'prompt_shown').length).toBeGreaterThan(0)
+})

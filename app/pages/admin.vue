@@ -136,6 +136,8 @@ function eventDetails(e: AdminEvent): string {
   if (details.fields) parts.push(details.fields.map(field => t.admin.dishFields[field as keyof typeof t.admin.dishFields] ?? field).join(', '))
   if (e.column) parts.push(columnName(e.column))
   if (e.from && e.to) parts.push(t.admin.movedFromTo(columnName(e.from), columnName(e.to)))
+  if (details.which) parts.push(t.admin.promptWhich[details.which])
+  if (details.answer) parts.push(details.answer === 'on' ? t.prompt.turnOn : t.prompt.later)
   if (e.fromBoard) parts.push(t.admin.movedFromBoard(e.fromBoard === 'deleted' ? t.admin.deleted : `${e.fromBoard.emoji} ${e.fromBoard.name}`))
   return parts.join(', ')
 }
@@ -741,6 +743,25 @@ const DASHBOARDS = [
                   <span class="text-text-muted">{{ t.admin.boardArchived }}</span>
                 </span>
               </template>
+              <span
+                v-if="e.copiedFrom"
+                class="admin-event-copy"
+              >
+                <span class="text-text-muted">{{ t.admin.copiedFrom }}</span>
+                <span
+                  v-if="e.copiedFrom === 'deleted'"
+                  class="text-text-muted"
+                >{{ t.admin.deleted }}</span>
+                <NuxtLink
+                  v-else-if="liveBoard(e.copiedFrom.board) && !e.copiedFrom.dish.archived"
+                  :to="dishPath(liveBoard(e.copiedFrom.board)!, e.copiedFrom.dish)"
+                  class="underline underline-offset-2"
+                >{{ e.copiedFrom.dish.title }}</NuxtLink>
+                <span v-else>
+                  {{ e.copiedFrom.dish.title }}
+                  <span class="text-text-muted">{{ t.admin.boardArchived }}</span>
+                </span>
+              </span>
               <template v-if="e.dish">
                 <span
                   v-if="e.dish === 'deleted'"
@@ -851,6 +872,9 @@ const DASHBOARDS = [
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+.admin-event-copy {
+  display: block;
 }
 .admin-event-comment {
   display: block;

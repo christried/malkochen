@@ -794,12 +794,14 @@ function escapeLike(text: string): string {
 // Adds a Dish at the top of the Column that takes new Dishes (PRD story 13;
 // shared/placement.ts). Answers it placed; null unless the user is a Member
 // of the Board, or if another Member deleted it already. `tour`: the Tour
-// has the user add it (ADR 0006), which its event says.
+// has the user add it (ADR 0006), which its event says. `copiedFrom`: the
+// Dish it is a Copy of (copies.ts), made on another Board; its event is then
+// "Dish copied" instead of "Dish added".
 export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
-  { tour = false }: { tour?: boolean } = {},
+  { tour = false, copiedFrom }: { tour?: boolean, copiedFrom?: string } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
@@ -830,13 +832,21 @@ export async function addDish(
       addedBy: adder.id,
     }),
     // Recorded whatever happens: a Dish not added fails the whole step.
-    recordEvents(d, {
-      kind: 'dish_added',
-      board: sql`${boardId}`,
-      dish: sql`${id}`,
-      user: adder.id,
-      details: detailsOf({ source: input.source?.kind ?? null, ...tour && { tour: true as const } }),
-    }, sql``),
+    recordEvents(d, copiedFrom
+      ? {
+          kind: 'dish_copied',
+          board: sql`${boardId}`,
+          dish: sql`${id}`,
+          user: adder.id,
+          details: detailsOf({ from: copiedFrom, source: input.source?.kind ?? null }),
+        }
+      : {
+          kind: 'dish_added',
+          board: sql`${boardId}`,
+          dish: sql`${id}`,
+          user: adder.id,
+          details: detailsOf({ source: input.source?.kind ?? null, ...tour && { tour: true as const } }),
+        }, sql``),
   ])
   const [created] = await db.select({ code: dish.code, createdAt: dish.createdAt }).from(dish).where(eq(dish.id, id))
   if (!created) throw new Error(`Dish was not added to Board ${boardId}`)

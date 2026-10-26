@@ -194,3 +194,27 @@ export async function setSeen(email: string, seen: { version?: string | null, to
     await client.end()
   }
 }
+
+// When a user signed up, for users signed in before: `createdDaysAgo` moves
+// their sign-up back (a new account is too new for a Notification Prompt,
+// #407), `digestPromptedDaysAgo` and `pushPromptedDaysAgo` say when a prompt
+// was last shown. What isn't given stays.
+export async function setPromptTimes(email: string, times: { createdDaysAgo?: number, pushPromptedDaysAgo?: number, digestPromptedDaysAgo?: number }) {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    const ago = (days: number | undefined) => days === undefined ? null : `${days} days`
+    const { rowCount } = await client.query(
+      `update "user" set
+         created_at = coalesce(now() - $2::interval, created_at),
+         push_prompted_at = coalesce(now() - $3::interval, push_prompted_at),
+         digest_prompted_at = coalesce(now() - $4::interval, digest_prompted_at)
+       where email = $1`,
+      [email, ago(times.createdDaysAgo), ago(times.pushPromptedDaysAgo), ago(times.digestPromptedDaysAgo)],
+    )
+    if (!rowCount) throw new Error(`setPromptTimes: ${email} hasn't signed in yet`)
+  }
+  finally {
+    await client.end()
+  }
+}

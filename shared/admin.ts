@@ -1,6 +1,7 @@
 import type { EventKind } from './event-kinds'
 import type { Permission } from './permissions'
 import { SOURCE_KINDS } from '../server/source-lookup/types'
+import type { PromptAnswer, PromptKind } from '../server/utils/events'
 
 // The Admin Page (#348, CONTEXT.md): what GET /api/admin answers the
 // Operator, and the page shows as plain tables. Counts only, never content:
@@ -116,8 +117,8 @@ export const EVENT_GROUPS = {
     'default_permission_changed',
   ],
   account: ['signed_up', 'signed_in', 'username_changed', 'picture_changed', 'language_changed', 'account_deleted'],
-  notifications: ['push_switched', 'digest_switched', 'push_sent', 'digest_sent'],
-  links: ['dish_link_opened'],
+  notifications: ['push_switched', 'digest_switched', 'push_sent', 'digest_sent', 'prompt_shown', 'prompt_answered'],
+  links: ['dish_link_opened', 'dish_copied'],
   operator: ['open_sign_up_switched'],
 } as const satisfies Record<string, readonly EventKind[]>
 
@@ -165,6 +166,9 @@ export interface AdminEventDetails {
   boards?: number
   // Whether a Dish Link's viewer was signed in.
   signedIn?: boolean
+  // A Notification Prompt: which one, and the answer (prompt_answered).
+  which?: PromptKind
+  answer?: PromptAnswer
   // A "Rückgängig" took back the event before it.
   undo?: boolean
 }
@@ -189,6 +193,10 @@ export interface AdminEvent {
   from: NamedColumn | null
   to: NamedColumn | null
   fromBoard: NamedBoard | null
+  // A Copy (dish_copied): the Dish it was copied from, and the Board it is on,
+  // as they are now; 'deleted' once that Dish is gone for good. null for every
+  // other kind. `from` is null for a Copy: its details name a Dish, not a Column.
+  copiedFrom: { dish: Exclude<NamedDish, 'deleted'>, board: NamedBoard } | 'deleted' | null
   details: AdminEventDetails
 }
 

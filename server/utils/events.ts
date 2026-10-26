@@ -13,6 +13,8 @@ import { dish, eventLog } from '../db/schema'
 // went through. Never content: only ids, the kind and these details.
 
 export type { EventKind }
+export type PromptKind = 'push' | 'digest'
+export type PromptAnswer = 'on' | 'later'
 
 // How a Member signed in: Google, the email code, or the dev bypass (local
 // dev and tests). null when no sign-in endpoint says.
@@ -28,6 +30,8 @@ export type EventDetails =
   // dish_added: the kind of its Source, null without one; `tour` for the
   // Dish the Tour has the user add.
   | { source: SourceKind | null, tour?: true }
+  // dish_copied: the Dish copied from, and the kind of its Source.
+  | { from: string, source: SourceKind | null }
   // dish_moved: the Columns it went from and to, and the Board it came
   // from if that isn't the one it went to.
   | { from: string, to: string, fromBoard?: string, undo?: true }
@@ -63,6 +67,10 @@ export type EventDetails =
   | { permission: Permission, on: boolean }
   // ownership_handed_over: to whom.
   | { member: string }
+  // prompt_shown: which prompt; prompt_answered: and "Einschalten" ('on') or
+  // "Später" ('later').
+  | { which: PromptKind }
+  | { which: PromptKind, answer: PromptAnswer }
   // dish_link_opened: whether the viewer was signed in. The event's user
   // is null when they weren't, but also once a deleted account is gone, so
   // only this tells the two apart.

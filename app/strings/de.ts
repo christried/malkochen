@@ -356,6 +356,15 @@ export const de = {
   detail: {
     close: 'Schließen',
     shareFailed: 'Teilen hat nicht geklappt.',
+    // "Kopieren" (#402): a Copy on another of the user's Boards.
+    copy: 'Kopieren',
+    copyTo: 'Kopieren nach…',
+    copyNoBoards: 'Du hast kein anderes Board, auf dem du Gerichte hinzufügen darfst.',
+    copied: (board: string) => `Auf ${board} kopiert`,
+    copiedWithoutImage: (board: string) => `Auf ${board} kopiert, ohne Bild`,
+    openCopy: 'Öffnen',
+    copyForbidden: 'Auf diesem Board darfst du keine Gerichte hinzufügen.',
+    copyFailed: 'Kopieren hat nicht geklappt.',
     goneMeanwhile: (title: string) => `„${title}“ ist nicht mehr auf diesem Board.`,
     openOriginal: 'Original öffnen',
     // The Caption, folded and unfolded (#393).
@@ -719,6 +728,18 @@ export const de = {
     dark: 'Dunkel',
     system: 'System',
   },
+  // Notification Prompts (#407): Topfbert's card at the bottom of the Board,
+  // offering Push Notifications or the Email Digest.
+  prompt: {
+    pushTitle: 'Benachrichtigungen einschalten?',
+    pushText: 'Dann sagt dir dein Handy Bescheid, wenn jemand auf deinen Boards ein Gericht hinzufügt, kommentiert oder einen Daumen gibt.',
+    digestTitle: 'Die tägliche E-Mail einschalten?',
+    digestText: 'Abends eine Mail mit dem, was auf deinen Boards neu ist, nur wenn es etwas gibt. Abschalten kannst du sie jederzeit in deinen Einstellungen.',
+    turnOn: 'Einschalten',
+    later: 'Später',
+    pushOn: 'Benachrichtigungen sind an.',
+    digestOn: 'Die tägliche E-Mail ist an.',
+  },
   // Push notifications (#219): turned on per device in your settings, sent
   // when someone else adds a Dish to one of your Boards.
   push: {
@@ -895,6 +916,8 @@ export const de = {
     eventOff: 'aus',
     movedFromTo: (from: string, to: string) => `von ${from} nach ${to}`,
     movedFromBoard: (board: string) => `aus ${board}`,
+    copiedFrom: 'kopiert von',
+    promptWhich: { push: 'Push-Benachrichtigungen', digest: 'Tägliche E-Mail' },
     // A moment in German time, from an ISO time.
     dateTime: (at: string) => eventTime(new Date(at)),
     // The fields a Dish edit changed.
@@ -914,7 +937,7 @@ export const de = {
       board: 'Boards und Mitglieder',
       account: 'Konten',
       notifications: 'Benachrichtigungen',
-      links: 'Links',
+      links: 'Links und Kopien',
       operator: 'Betrieb',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -927,6 +950,7 @@ export const de = {
       member_left: 'Board verlassen',
       member_removed: 'Mitglied entfernt',
       dish_added: 'Gericht hinzugefügt',
+      dish_copied: 'Gericht kopiert',
       dish_moved: 'Gericht verschoben',
       dish_archived: 'Gericht archiviert',
       dish_restored: 'Gericht wiederhergestellt',
@@ -964,6 +988,8 @@ export const de = {
       account_deleted: 'Konto gelöscht',
       push_sent: 'Push gesendet',
       digest_sent: 'Tägliche E-Mail gesendet',
+      prompt_shown: 'Hinweis gezeigt',
+      prompt_answered: 'Hinweis beantwortet',
       dish_link_opened: 'Gericht-Link geöffnet',
     } satisfies Record<EventKind, string>,
   },

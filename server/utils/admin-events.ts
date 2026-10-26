@@ -65,6 +65,15 @@ type Row = {
   from_board_name: string | null
   from_board_emoji: string | null
   from_board_archived: boolean | null
+  copy_dish_id: string | null
+  copy_dish_code: string | null
+  copy_dish_title: string | null
+  copy_dish_archived: boolean | null
+  copy_board_id: string | null
+  copy_board_slug: string | null
+  copy_board_name: string | null
+  copy_board_emoji: string | null
+  copy_board_archived: boolean | null
 }
 
 // A page of events, newest first: `EVENTS_PER_PAGE` of those with an id below
@@ -89,7 +98,9 @@ export async function adminEvents(filter: EventFilter): Promise<AdminEventPage> 
       col.name as column_name, col.id is not null as column_found,
       cf.name as from_name, cf.id is not null as from_found,
       ct.name as to_name, ct.id is not null as to_found,
-      fb.id as from_board_id, fb.slug as from_board_slug, fb.name as from_board_name, fb.emoji as from_board_emoji, fb.deleted_at is not null as from_board_archived
+      fb.id as from_board_id, fb.slug as from_board_slug, fb.name as from_board_name, fb.emoji as from_board_emoji, fb.deleted_at is not null as from_board_archived,
+      df.id as copy_dish_id, df.code as copy_dish_code, df.title as copy_dish_title, df.deleted_at is not null as copy_dish_archived,
+      dfb.id as copy_board_id, dfb.slug as copy_board_slug, dfb.name as copy_board_name, dfb.emoji as copy_board_emoji, dfb.deleted_at is not null as copy_board_archived
     from event_log e
     left join "user" u on u.id = e.user_id
     left join board b on b.id = e.board_id
@@ -97,9 +108,11 @@ export async function adminEvents(filter: EventFilter): Promise<AdminEventPage> 
     left join comment c on c.id = ${detailId('comment')}
     left join "user" m on m.id = e.details->>'member'
     left join board_column col on col.id = ${detailId('column')}
-    left join board_column cf on cf.id = ${detailId('from')}
+    left join board_column cf on cf.id = ${detailId('from')} and e.kind <> 'dish_copied'
     left join board_column ct on ct.id = ${detailId('to')}
     left join board fb on fb.id = ${detailId('fromBoard')}
+    left join dish df on df.id = ${detailId('from')} and e.kind = 'dish_copied'
+    left join board dfb on dfb.id = df.board_id
     ${where.length > 0 ? sql`where ${sql.join(where, sql` and `)}` : sql``}
     order by e.id desc
     limit ${EVENTS_PER_PAGE + 1}
@@ -122,9 +135,10 @@ function toEvent(row: Row): AdminEvent {
     comment: !has('comment') ? null : row.comment_id === null || row.comment_deleted ? 'deleted' : { text: row.comment_text ?? '' },
     member: !has('member') ? null : row.member_id === null ? 'deleted' : { id: row.member_id, name: row.member_name ?? '' },
     column: !has('column') ? null : columnOf(row.column_found, row.column_name),
-    from: !has('from') ? null : columnOf(row.from_found, row.from_name),
+    from: !has('from') || row.kind === 'dish_copied' ? null : columnOf(row.from_found, row.from_name),
     to: !has('to') ? null : columnOf(row.to_found, row.to_name),
     fromBoard: !has('fromBoard') ? null : boardOf(row.from_board_id, row.from_board_slug, row.from_board_name, row.from_board_emoji, row.from_board_archived),
+    copiedFrom: row.kind !== 'dish_copied' ? null : copiedFromOf(row),
     details: plainDetails(details),
   }
 }
@@ -145,6 +159,15 @@ function boardOf(id: string | null, slug: string | null, name: string | null, em
 function dishOf(row: Row): NamedDish {
   if (row.dish_id === null) return 'deleted'
   return { id: row.dish_id, code: row.dish_code ?? '', title: row.dish_title ?? '', archived: row.dish_archived === true }
+}
+
+// The Dish a Copy was copied from, as it is now; `deleted` once its row is gone.
+function copiedFromOf(row: Row): AdminEvent['copiedFrom'] {
+  if (row.copy_dish_id === null) return 'deleted'
+  return {
+    dish: { id: row.copy_dish_id, code: row.copy_dish_code ?? '', title: row.copy_dish_title ?? '', archived: row.copy_dish_archived === true },
+    board: boardOf(row.copy_board_id, row.copy_board_slug, row.copy_board_name, row.copy_board_emoji, row.copy_board_archived),
+  }
 }
 
 const columnOf = (found: boolean, name: string | null): NamedColumn => found ? { name: name ?? '' } : 'deleted'

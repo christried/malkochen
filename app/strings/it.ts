@@ -306,6 +306,15 @@ export const it: Strings = {
   detail: {
     close: 'Chiudi',
     shareFailed: 'Non è stato possibile condividere il link.',
+    // "Copia" (#402): una Copia su un'altra delle tue bacheche.
+    copy: 'Copia',
+    copyTo: 'Copia in…',
+    copyNoBoards: 'Non hai altre bacheche a cui puoi aggiungere piatti.',
+    copied: (board: string) => `Copiato in ${board}`,
+    copiedWithoutImage: (board: string) => `Copiato in ${board}, senza immagine`,
+    openCopy: 'Apri',
+    copyForbidden: 'Non puoi aggiungere piatti a quella bacheca.',
+    copyFailed: 'Non è stato possibile copiare il piatto.',
     goneMeanwhile: (title: string) => `“${title}” non è più su questa bacheca.`,
     openOriginal: 'Apri l’originale',
     // The Caption, folded and unfolded (#393).
@@ -624,6 +633,16 @@ export const it: Strings = {
     dark: 'Scuro',
     system: 'Sistema',
   },
+  prompt: {
+    pushTitle: 'Attivare le notifiche?',
+    pushText: 'Il telefono ti avvisa quando qualcuno aggiunge un piatto, commenta o mette un pollice nelle tue bacheche.',
+    digestTitle: 'Attivare l’email giornaliera?',
+    digestText: 'Un’email la sera con le novità delle tue bacheche, solo quando c’è qualcosa. Puoi disattivarla quando vuoi nelle impostazioni.',
+    turnOn: 'Attiva',
+    later: 'Più tardi',
+    pushOn: 'Le notifiche sono attive.',
+    digestOn: 'L’email giornaliera è attiva.',
+  },
   push: {
     heading: 'Notifiche',
     toggle: 'Notifiche push',
@@ -772,6 +791,8 @@ export const it: Strings = {
     eventOff: 'disattivo',
     movedFromTo: (from: string, to: string) => `da ${from} a ${to}`,
     movedFromBoard: (board: string) => `da ${board}`,
+    copiedFrom: 'copiato da',
+    promptWhich: { push: 'Notifiche push', digest: 'Email giornaliera' },
     // A moment in German time, from an ISO time.
     dateTime: (at: string) => eventTime(new Date(at)),
     // The fields a Dish edit changed.
@@ -791,7 +812,7 @@ export const it: Strings = {
       board: 'Bacheche e membri',
       account: 'Account',
       notifications: 'Notifiche',
-      links: 'Link',
+      links: 'Link e copie',
       operator: 'Gestione',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -804,6 +825,7 @@ export const it: Strings = {
       member_left: 'Uscito dalla bacheca',
       member_removed: 'Membro rimosso',
       dish_added: 'Piatto aggiunto',
+      dish_copied: 'Piatto copiato',
       dish_moved: 'Piatto spostato',
       dish_archived: 'Piatto archiviato',
       dish_restored: 'Piatto ripristinato',
@@ -841,6 +863,8 @@ export const it: Strings = {
       account_deleted: 'Account eliminato',
       push_sent: 'Push inviato',
       digest_sent: 'Email giornaliera inviata',
+      prompt_shown: 'Invito mostrato',
+      prompt_answered: 'Invito risposto',
       dish_link_opened: 'Link del piatto aperto',
     } satisfies Record<EventKind, string>,
   },

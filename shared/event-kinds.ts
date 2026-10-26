@@ -15,6 +15,9 @@ export const EVENT_KINDS = [
   'member_left',
   'member_removed',
   'dish_added',
+  // A Copy (CONTEXT.md: Copy) made on another Board: `dish_id` the Copy, and
+  // `details.from` the Dish it was copied from. Not a "Dish added".
+  'dish_copied',
   'dish_moved',
   // "Archivieren" (CONTEXT.md: Archived Dish).
   'dish_archived',
@@ -78,6 +81,10 @@ export const EVENT_KINDS = [
   'push_sent',
   // An Email Digest sent to a Member.
   'digest_sent',
+  // A Notification Prompt (CONTEXT.md) shown to a user, and how they answered
+  // it: events of no Board.
+  'prompt_shown',
+  'prompt_answered',
   // Someone opened a Dish Link page (CONTEXT.md: Dish Link), signed in or not.
   'dish_link_opened',
 ] as const

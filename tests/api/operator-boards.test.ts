@@ -178,7 +178,7 @@ test('nothing from a Board the Operator is not on reaches them as a Push Notific
 })
 
 test('someone who is not the Operator and not a Member still gets "not found", and so does the Operator on an Archived Board', async () => {
-  const board = await adaBoard('Nur für Mitglieder')
+  const board = await adaBoard('Fremde draußen')
   const outsider = await linus()
 
   expect((await outsider.fetch(`/api/boards/${board.id}`)).status).toBe(404)

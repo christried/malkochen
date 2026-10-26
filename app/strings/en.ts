@@ -293,6 +293,15 @@ export const en: Strings = {
   detail: {
     close: 'Close',
     shareFailed: 'Couldn’t share the link.',
+    // "Copy" (#402): a Copy on another of the user's Boards.
+    copy: 'Copy',
+    copyTo: 'Copy to…',
+    copyNoBoards: 'You have no other board you can add dishes to.',
+    copied: (board: string) => `Copied to ${board}`,
+    copiedWithoutImage: (board: string) => `Copied to ${board}, without the image`,
+    openCopy: 'Open',
+    copyForbidden: 'You can’t add dishes to that board.',
+    copyFailed: 'Couldn’t copy the dish.',
     goneMeanwhile: (title: string) => `“${title}” isn’t on this board any more.`,
     openOriginal: 'Open original',
     // The Caption, folded and unfolded (#393).
@@ -609,6 +618,16 @@ export const en: Strings = {
     dark: 'Dark',
     system: 'System',
   },
+  prompt: {
+    pushTitle: 'Turn on notifications?',
+    pushText: 'Your phone lets you know when someone adds a dish, comments or gives a thumb on your boards.',
+    digestTitle: 'Turn on the daily email?',
+    digestText: 'An email in the evening with what’s new on your boards, only when there’s something. You can turn it off any time in your settings.',
+    turnOn: 'Turn on',
+    later: 'Later',
+    pushOn: 'Notifications are on.',
+    digestOn: 'The daily email is on.',
+  },
   push: {
     heading: 'Notifications',
     toggle: 'Push notifications',
@@ -756,6 +775,8 @@ export const en: Strings = {
     eventOff: 'off',
     movedFromTo: (from: string, to: string) => `from ${from} to ${to}`,
     movedFromBoard: (board: string) => `from ${board}`,
+    copiedFrom: 'copied from',
+    promptWhich: { push: 'Push notifications', digest: 'Daily email' },
     // A moment in German time, from an ISO time.
     dateTime: (at: string) => eventTime(new Date(at)),
     // The fields a Dish edit changed.
@@ -775,7 +796,7 @@ export const en: Strings = {
       board: 'Boards and members',
       account: 'Accounts',
       notifications: 'Notifications',
-      links: 'Links',
+      links: 'Links and copies',
       operator: 'Operation',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -788,6 +809,7 @@ export const en: Strings = {
       member_left: 'Left the board',
       member_removed: 'Member removed',
       dish_added: 'Dish added',
+      dish_copied: 'Dish copied',
       dish_moved: 'Dish moved',
       dish_archived: 'Dish archived',
       dish_restored: 'Dish restored',
@@ -825,6 +847,8 @@ export const en: Strings = {
       account_deleted: 'Account deleted',
       push_sent: 'Push sent',
       digest_sent: 'Daily email sent',
+      prompt_shown: 'Prompt shown',
+      prompt_answered: 'Prompt answered',
       dish_link_opened: 'Dish link opened',
     } satisfies Record<EventKind, string>,
   },
