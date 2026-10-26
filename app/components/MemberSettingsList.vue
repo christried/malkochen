@@ -2,8 +2,9 @@
 import type { BoardMemberView } from '~~/server/utils/boards'
 
 // Board settings' Members (PRD story 62), the Owner first and marked. The
-// Owner gets a button on everyone else's row, to hand over ownership or
-// remove them (stories 67, 68); `manage` says which Member it was.
+// Owner, or the Operator with an Owner's rights, gets a button on everyone
+// else's row, to hand over ownership or remove them (stories 67, 68);
+// `manage` says which Member it was.
 defineProps<{ members: BoardMemberView[], isOwner: boolean }>()
 defineEmits<{ manage: [member: BoardMemberView] }>()
 const t = useStrings()
@@ -35,7 +36,7 @@ const t = useStrings()
         class="shrink-0 rounded-chip bg-butter px-2.5 py-1 text-caption text-on-accent"
       ><span aria-hidden="true">👑 </span>{{ t.settings.owner }}</span>
       <button
-        v-else-if="isOwner"
+        v-else-if="isOwner && !member.isYou"
         type="button"
         class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.settings.manageMember(member.name)"

@@ -3,7 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthEndpoint, createAuthMiddleware } from 'better-auth/api'
 import { setSessionCookie } from 'better-auth/cookies'
 import { emailOTP } from 'better-auth/plugins/email-otp'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { USERNAME_MAX, usernameProblem } from '../../shared/username'
 import { db } from '../db'
@@ -13,6 +13,7 @@ import { APP_VERSION } from '../version'
 import { isAllowlisted, NOT_ALLOWLISTED, UNVERIFIED_EMAIL } from './allowlist'
 import { openSignUpOn } from './open-sign-up'
 import { FORGOTTEN_INVITE_COOKIE, joinByInvite, REMEMBERED_INVITE_COOKIE } from './invites'
+import { detailsOf, recordEvents, type SignInMethod } from './events'
 import { usernameTaken } from './people'
 import { spendClientLimit } from './rate-limit'
 import { emailSignInOffered, mailSignInCode, SIGN_IN_CODE_MINUTES } from './sign-in-code'
@@ -32,6 +33,17 @@ export function signInRefusal(user: { emailVerified?: unknown }) {
 export async function signUpRefusal(user: { email?: unknown, emailVerified?: unknown }) {
   return signInRefusal(user)
     ?? (isAllowlisted(String(user.email), env.ALLOWLIST_EMAILS) || await openSignUpOn() ? undefined : NOT_ALLOWLISTED)
+}
+
+// How a sign-in went, from the endpoint it went through (Better Auth's
+// context, which can be null outside an endpoint), read as Better Auth's own
+// last-login-method plugin reads it.
+export function signInMethodOf(context: { path?: string, params?: Record<string, unknown> } | null): SignInMethod | null {
+  const path = context?.path ?? ''
+  if (path.startsWith('/callback/')) return (context?.params?.id ?? path.split('/').pop()) === 'google' ? 'google' : null
+  if (path === '/sign-in/email-otp') return 'code'
+  if (path === '/dev/sign-in') return 'dev'
+  return null
 }
 
 // The only Better Auth endpoints malkochen uses: Google sign-in and its
@@ -195,6 +207,35 @@ export const auth = betterAuth({
     // repeat sign-in too (the sign-in gate). Gets what Google says about the
     // user, emailVerified included.
     validateUserInfo: ({ user, source }) => source.action === 'create-user' ? signUpRefusal(user) : signInRefusal(user),
+  },
+  // The event log (#399): a sign-up and every sign-in (a session made). They
+  // run outside the auth write's transaction; a failure to record is logged
+  // and never fails the sign-in.
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user, context) => {
+          try {
+            await recordEvents(db, { kind: 'signed_up', board: sql`null`, user: user.id, details: detailsOf({ method: signInMethodOf(context) }) }, sql``)
+          }
+          catch (error) {
+            console.warn('[event-log] sign-up not recorded:', error)
+          }
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (session, context) => {
+          try {
+            await recordEvents(db, { kind: 'signed_in', board: sql`null`, user: session.userId, details: detailsOf({ method: signInMethodOf(context) }) }, sql``)
+          }
+          catch (error) {
+            console.warn('[event-log] sign-in not recorded:', error)
+          }
+        },
+      },
+    },
   },
   hooks: {
     before: beforeSendingCode,

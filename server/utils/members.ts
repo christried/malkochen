@@ -1,8 +1,9 @@
-import { and, eq, exists, not, sql, type SQL } from 'drizzle-orm'
+import { and, eq, exists, not, or, sql, type SQL } from 'drizzle-orm'
 import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { db, runAtomic } from '../db'
 import { membership } from '../db/schema'
 import { accessOn, ownerOf } from './board-access'
+import { isOperatorUser } from './operator'
 import { boardEvent, detailsOf, recordEvents, withEvents, type EventValues } from './events'
 
 // Members and the Owner (CONTEXT.md): any Member but the Owner can leave; the
@@ -23,7 +24,11 @@ export async function removeMember(boardId: string, userId: string, memberId: st
   const [found] = await accessOn(boardId, userId)
   if (!found) return null
   if (memberId === userId) {
-    if (found.isOwner) return 'owner'
+    // The Operator visiting never joined, so can't leave.
+    if (found.asOperator) return 'not-member'
+    // The real role: the Operator who is a Member keeps an Owner's standing
+    // there without being the Owner.
+    if (found.ownsBoard) return 'owner'
     return await deleteMembership(boardId, memberId, boardEvent('member_left', userId)) ? 'removed' : 'not-member'
   }
   if (!found.isOwner) return 'forbidden'
@@ -53,6 +58,9 @@ export async function handOver(boardId: string, userId: string, memberId: string
   // Member steps up, only if the Board has no Owner -- so of two hand-overs
   // at once, the second changes nothing. Stepping down before up, since the
   // one-Owner index is checked row by row. The Board never has none, or two.
+  // The Owner now, who steps down: the caller, or for the Operator (ADR 0009,
+  // no Membership) whoever it is.
+  const [previous] = await db.select({ userId: membership.userId }).from(membership).where(and(eq(membership.boardId, boardId), membership.isOwner))
   const ownerFree = sql`not exists (select 1 from ${membership} m where m.board_id = ${boardId} and m.is_owner)`
   await runAtomic(d => [
     d.update(membership)
@@ -62,15 +70,15 @@ export async function handOver(boardId: string, userId: string, memberId: string
       .set({ isOwner: false, permissions: ALL_PERMISSIONS })
       .where(and(
         eq(membership.boardId, boardId),
-        eq(membership.userId, userId),
         membership.isOwner,
+        or(eq(membership.userId, userId), isOperatorUser(userId)),
         exists(d.select({ userId: membership.userId }).from(membership).where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId)))),
       )),
     d.update(membership)
       .set({ isOwner: true })
       .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), ownerFree)),
-    // Recorded only if this hand-over made the Member the Owner, from the
-    // one who was.
+    // Recorded only if this hand-over made the Member the Owner and the
+    // Owner before is none any more.
     recordEvents(d, {
       kind: 'ownership_handed_over',
       board: sql`${boardId}::uuid`,
@@ -78,9 +86,9 @@ export async function handOver(boardId: string, userId: string, memberId: string
       details: detailsOf({ member: memberId }),
     }, sql`from (select 1) as changed
       where exists (select 1 from ${membership} as m where m.board_id = ${boardId} and m.user_id = ${memberId} and m.is_owner)
-      and not exists (select 1 from ${membership} as m where m.board_id = ${boardId} and m.user_id = ${userId} and m.is_owner)`),
+      and not exists (select 1 from ${membership} as m where m.board_id = ${boardId} and m.user_id = ${previous?.userId ?? ''} and m.is_owner)`),
   ])
-  const [owner] = await ownerOf(boardId, memberId)
+  const [owner] = await db.select({ userId: membership.userId }).from(membership).where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), membership.isOwner))
   if (owner) return 'handed-over'
   // Nothing changed: someone else handed over first, or the Member is gone.
   const [stillOwner] = await ownerOf(boardId, userId)

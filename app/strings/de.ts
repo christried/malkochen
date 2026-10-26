@@ -157,6 +157,7 @@ export const de = {
     goneBody: 'Vielleicht wurde es archiviert oder gelöscht.',
   },
   board: {
+    asOperator: 'Du siehst dieses Board als Betreiber von malkochen.',
     footer: 'Über malkochen',
     emptyBoardTitle: 'Noch nichts hier.',
     emptyBoardBody: 'Füg deinen ersten Link ein!',
@@ -840,6 +841,15 @@ export const de = {
     activeHint: 'Wer auf einem Board etwas getan hat, und auf welchen Boards.',
     people: 'Leute',
     boards: 'Boards',
+    boardSearch: 'Board oder Besitzer:in suchen',
+    boardOwner: 'Besitzer:in',
+    boardMembers: 'Mitglieder',
+    boardDishes: 'Gerichte',
+    boardLastActive: 'Zuletzt aktiv',
+    boardArchived: 'Archiviert',
+    noBoards: 'Keine Boards gefunden.',
+    // A Board's last activity, from an ISO time.
+    lastActive: (at: string) => addedDate(new Date(at)),
     today: 'Heute',
     week: 'Letzte 7 Tage',
     month: 'Letzte 30 Tage',

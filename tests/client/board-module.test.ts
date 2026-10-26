@@ -28,6 +28,7 @@ function boardFixture(): BoardView {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: 'Worauf hast du Lust?', isGekocht: false, dishes: [dish('a'), dish('b'), dish('c')] },
       { id: 'woche', name: 'Diese Woche', subtitle: 'Das steht an.', isGekocht: false, dishes: [dish('d')] },

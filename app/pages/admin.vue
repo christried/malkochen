@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { SOURCE_COLUMNS, type AdminFigures, type Period, type Usage } from '~~/shared/admin'
+import { boardPath } from '~~/shared/address'
+import { SOURCE_COLUMNS, type AdminBoard, type AdminFigures, type Period, type Usage } from '~~/shared/admin'
 
 // The Admin Page (#348, PRD #321 stories 26–36, 39): the Operator's figures
 // on how malkochen is used, as plain tables, linked at the end of their
@@ -10,6 +11,17 @@ const t = useStrings()
 
 const { data: figures, error } = await useFetch<AdminFigures>('/api/admin')
 if (error.value) throw createError({ statusCode: error.value.statusCode ?? 500, statusMessage: error.value.statusMessage, fatal: true })
+
+// Every Board (#397, ADR 0009): searched by Board name or Owner, refetched
+// 250ms after the last key.
+const boardQuery = ref('')
+const { data: boardList, refresh: refreshBoards } = await useFetch<AdminBoard[]>('/api/admin/boards', { query: { q: boardQuery }, watch: false })
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+watch(boardQuery, () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(refreshBoards, 250)
+})
+onBeforeUnmount(() => clearTimeout(searchTimer))
 
 useHead({ title: () => `${t.admin.title} · ${t.app.name}` })
 
@@ -377,6 +389,87 @@ const DASHBOARDS = [
                 </th>
                 <td>{{ t.admin.count(day.google) }}</td>
                 <td>{{ t.admin.count(day.email) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        class="flex flex-col gap-3"
+        aria-labelledby="admin-boards"
+      >
+        <h2
+          id="admin-boards"
+          class="section-heading px-1"
+        >
+          {{ t.admin.boards }}
+        </h2>
+        <input
+          v-model="boardQuery"
+          type="search"
+          data-testid="admin-board-search"
+          :placeholder="t.admin.boardSearch"
+          :aria-label="t.admin.boardSearch"
+          maxlength="100"
+          class="h-11 rounded-card bg-surface-muted px-4 focus-visible:outline-2 focus-visible:outline-focus"
+        >
+        <p
+          v-if="boardList && boardList.length === 0"
+          class="px-1 text-small text-text-muted"
+        >
+          {{ t.admin.noBoards }}
+        </p>
+        <div
+          v-else
+          class="admin-table"
+        >
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">
+                  {{ t.admin.boards }}
+                </th>
+                <th scope="col">
+                  {{ t.admin.boardOwner }}
+                </th>
+                <th scope="col">
+                  {{ t.admin.boardMembers }}
+                </th>
+                <th scope="col">
+                  {{ t.admin.boardDishes }}
+                </th>
+                <th scope="col">
+                  {{ t.admin.boardLastActive }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="b in boardList"
+                :key="b.id"
+                data-testid="admin-board"
+              >
+                <th scope="row">
+                  <NuxtLink
+                    v-if="!b.archived"
+                    :to="boardPath({ slug: b.slug })"
+                    class="underline underline-offset-2"
+                  >
+                    {{ b.emoji }} {{ b.name }}
+                  </NuxtLink>
+                  <template v-else>
+                    {{ b.emoji }} {{ b.name }}
+                  </template>
+                  <span
+                    v-if="b.archived"
+                    class="ml-2 text-small text-text-muted"
+                  >{{ t.admin.boardArchived }}</span>
+                </th>
+                <td>{{ b.owner ?? '' }}</td>
+                <td>{{ t.admin.count(b.members) }}</td>
+                <td>{{ t.admin.count(b.dishes) }}</td>
+                <td>{{ b.lastActivity ? t.admin.lastActive(b.lastActivity) : '' }}</td>
               </tr>
             </tbody>
           </table>

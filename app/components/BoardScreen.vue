@@ -804,6 +804,14 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       />
     </header>
 
+    <p
+      v-if="board?.asOperator"
+      data-testid="operator-note"
+      class="mt-2 text-small text-text-muted"
+    >
+      {{ t.board.asOperator }}
+    </p>
+
     <BoardSearchBar
       v-if="searchOpen && !searchInHeader"
       ref="searchBar"

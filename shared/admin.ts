@@ -66,3 +66,20 @@ export interface AdminFigures {
 
 export const DAYS = 14
 export const WEEKS = 8
+
+// One Board as the Admin Page lists it (#397): live and Archived Boards
+// alike. Counts and the Owner's Username only, never content.
+export interface AdminBoard {
+  id: string
+  slug: string
+  emoji: string
+  name: string
+  // The Owner's Username; null for a Deleted Account's Board or none yet.
+  owner: string | null
+  members: number
+  // Not deleted.
+  dishes: number
+  // The newest event of the Board in the event log, as an ISO time.
+  lastActivity: string | null
+  archived: boolean
+}
