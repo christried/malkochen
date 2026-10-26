@@ -1,5 +1,5 @@
 {
-  "id": "dea4afe4-ac75-4359-b194-ed34e9115b23",
+  "id": "23ff58f4-f3a9-4ccf-8ebb-b7b917190a73",
   "prevId": "0e03c60d-1c52-4343-8612-b2a1cd231a1f",
   "version": "7",
   "dialect": "postgresql",
@@ -1618,18 +1618,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "source_facts_before": {
-          "name": "source_facts_before",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "source_facts_filled_at": {
-          "name": "source_facts_filled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -1759,6 +1747,18 @@
         "version_seen": {
           "name": "version_seen",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "push_prompted_at": {
+          "name": "push_prompted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "digest_prompted_at": {
+          "name": "digest_prompted_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
