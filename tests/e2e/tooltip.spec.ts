@@ -159,6 +159,9 @@ test('a Dish dragged over a control shows no Tooltip', async ({ page }) => {
   await expect(page.getByTestId('drag-card')).toBeVisible()
   await page.waitForTimeout(DELAY_MS + 200)
   await expect(tooltip(page)).toBeHidden()
+  // Put back where it came from: on desktop the cogwheel sits above the
+  // Gekocht Column (#390), and a drop there would record a Cooking.
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2, { steps: 12 })
   await page.mouse.up()
   await expect(page.getByTestId('drag-card')).toHaveCount(0)
   expect((await watched(page)).opened).toEqual([])

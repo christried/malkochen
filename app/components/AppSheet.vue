@@ -14,6 +14,9 @@ const covered = useModalStack(open)
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const titleId = useId()
+// A click on the backdrop closes it only when the press started there too,
+// and not while something is typed into it (#390).
+const backdrop = useBackdropClose(dialog, () => open.value = false)
 
 // Moving out, it keeps the title it had (callers often clear theirs on
 // closing).
@@ -75,8 +78,10 @@ function onHandleUp(event: PointerEvent) {
     :aria-hidden="!open || undefined"
     :inert="!open"
     @cancel.prevent="open = false"
-    @close="open = false"
-    @click.self="open = false"
+    @pointerdown="backdrop.onPointerdown"
+    @input="backdrop.onInput"
+    @close="open = false; backdrop.onClosed()"
+    @click.self="backdrop.onBackdropClick"
   >
     <div
       class="px-5 pb-6 tablet:px-7 tablet:pt-6"
