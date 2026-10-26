@@ -4,6 +4,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-26
+
 ### Added
 
 - Gerichte teilen: Link teilen gibt dir einen Link, den jede und jeder öffnen kann, ganz ohne Konto. Gefällt das Gericht, lässt es sich auf ein eigenes Board kopieren, und wer neu ist, meldet sich unterwegs einfach an.
@@ -44,5 +46,6 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0

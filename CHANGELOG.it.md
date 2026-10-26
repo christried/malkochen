@@ -4,6 +4,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-26
+
 ### Added
 
 - Condividi un piatto: Condividi il link ti dà un link che chiunque può aprire, senza account. Se il piatto piace, si può copiare su una propria bacheca, e chi è nuovo si iscrive strada facendo.
@@ -44,5 +46,6 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Aperto a tutti: chiunque può iscriversi, con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
 - Novità: questa pagina, in fondo alle tue impostazioni e segnata come Nuovo dopo ogni aggiornamento.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0
