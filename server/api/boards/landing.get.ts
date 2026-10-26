@@ -5,15 +5,18 @@ import { dishOf, forgetDishLink, rememberedDishLink } from '../../utils/dish-lin
 // Where the app opens: the last-used Board, creating "Meine Küche" on a
 // first sign-in. Answers its id and the slug of its Address. With
 // `?adding`, for something shared to malkochen: the last-used Board the
-// user may add Dishes to, and whether there is one (`canAdd`). A Dish Link
-// remembered on the way in (#403, the Copy from it) is answered as
-// `dishLink`, its path, while the Dish is still there; the cookie is cleared
-// either way.
+// user may add Dishes to, and whether there is one (`canAdd`). With
+// `?dishLink` (#403, asked only by the app's opening, index.vue), a Dish
+// Link remembered on the way in is answered as `dishLink`, its path, while
+// the Dish is still there, and the cookie is cleared either way. Without it
+// the cookie is left alone, so other callers (the settings page, tests)
+// don't use it up.
 export default defineEventHandler(async (event): Promise<{ boardId: string, slug: string, dishLink?: string, canAdd?: boolean }> => {
   const user = requireUser(event)
   if (getQuery(event).adding !== undefined) return landingToAdd(user.id, callerLanguage(event))
 
   const landing = await landingBoard(user.id, callerLanguage(event))
+  if (getQuery(event).dishLink === undefined) return landing
   const secret = rememberedDishLink(event)
   if (!secret) return landing
   forgetDishLink(event)

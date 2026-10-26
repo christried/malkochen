@@ -8,7 +8,7 @@ import { boardPath } from '~~/shared/address'
 // page opens the Copy picker by itself. The landing clears that cookie, so
 // its Set-Cookie must reach the browser: hence the cookie-passing fetch.
 const fetchPassingCookies = useFetchPassingCookies()
-const landing = await fetchPassingCookies<{ boardId: string, slug: string, dishLink?: string }>('/api/boards/landing').catch((error: { statusCode?: number }) => {
+const landing = await fetchPassingCookies<{ boardId: string, slug: string, dishLink?: string }>('/api/boards/landing?dishLink').catch((error: { statusCode?: number }) => {
   throw createError({ statusCode: error.statusCode ?? 500, fatal: true })
 })
 await navigateTo(landing.dishLink ? `${landing.dishLink}?kopieren` : boardPath(landing), { replace: true })

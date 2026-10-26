@@ -16,7 +16,8 @@ import { FORGOTTEN_INVITE_COOKIE, lookUpSecret } from './invites'
 // archive and restore. Only the secret counts.
 
 // What the Dish Link page shows: the Dish's own fields, and nothing of its
-// Board (no id, name, Members, history, who added it, Caption or Cookings).
+// Board (no name, Members, history, who added it, Caption or Cookings), but
+// for the Board's id where the viewer is on that Board (`ownBoard`).
 export interface DishLinkView {
   title: string
   imageUrl: string | null
@@ -27,6 +28,11 @@ export interface DishLinkView {
   // The link as it reads now (with the Dish's current title), for the page's
   // Open Graph address.
   path: string
+  // The Dish's Board's id, only for a viewer who is on that Board (a Member
+  // of it, whatever their Permissions): the Dish Link page's Copy picker
+  // leaves it out, since a Copy onto the same Board is refused. The key is
+  // absent for anyone else, signed out included.
+  ownBoard?: string
 }
 
 // The remembered Dish Link (#403): a cookie holding the secret, set when a
@@ -125,6 +131,7 @@ export async function openDishLink(event: H3Event, link: string): Promise<DishLi
   const secret = dishLinkSecret(link)
   const found = await lookUpSecret(event, async () => (secret ? dishOf(secret) : null), dishLinkNotFound)
   const user = await optionalUser(event)
+  const [member] = user ? await accessOn(found.boardId, user.id) : []
   await recordEvents(
     db,
     {
@@ -144,5 +151,6 @@ export async function openDishLink(event: H3Event, link: string): Promise<DishLi
     creator: found.creator,
     source: found.sourceLink && found.sourceKind ? { kind: found.sourceKind, link: found.sourceLink } : null,
     path: dishLinkPath({ title: found.title, linkSecret: secret! }),
+    ...member && { ownBoard: found.boardId },
   }
 }

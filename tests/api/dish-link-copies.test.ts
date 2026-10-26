@@ -87,7 +87,8 @@ async function linkOf(ada: Caller, dishId: string): Promise<string> {
 
 const copyFromLink = (caller: Caller, link: string, boardId: string) => post(caller, `/api/dish-links/${link}/copy`, { boardId })
 const remember = (caller: Caller, link: string) => post(caller, `/api/dish-links/${link}/remember`)
-const landing = async (caller: Caller) => await (await caller.fetch('/api/boards/landing')).json() as Record<string, unknown>
+// The app's opening asks for the remembered link (`?dishLink`); other callers don't.
+const landing = async (caller: Caller, query = '?dishLink') => await (await caller.fetch(`/api/boards/landing${query}`)).json() as Record<string, unknown>
 
 test('a Copy from a Dish Link by someone not on the source Board: first non-Gekocht Column, added by the copier, a viaLink event', async () => {
   const { source, target, ada, grace } = await boards('Link')
@@ -171,6 +172,10 @@ test('remembered through sign-in: the landing answers the Dish Link once, then n
   expect(visitor.cookie(REMEMBERED)).toBe(link.slice(link.lastIndexOf('-') + 1))
 
   expect((await visitor.signIn(ALLOWLISTED[165])).status).toBe(200)
+  // A landing that doesn't ask (the settings page's) answers nothing and leaves the link be.
+  expect(await landing(visitor, '')).not.toHaveProperty('dishLink')
+  expect(visitor.cookie(REMEMBERED)).toBe(link.slice(link.lastIndexOf('-') + 1))
+
   const answer = await landing(visitor)
   expect(answer.dishLink).toMatch(/^\/d\/gemerkt-[23456789abcdefghjkmnpqrstuvwxyz]{17}$/)
   expect(visitor.cookie(REMEMBERED)).toBeUndefined()
@@ -206,4 +211,17 @@ test('a brand-new user: the first landing after sign-up creates "Meine Küche" a
   expect(answer.dishLink).toMatch(/^\/d\/neu-/)
   const names = (await (await newcomer.fetch('/api/boards')).json() as { name: string }[]).map(b => b.name)
   expect(names).toContain('Meine Küche')
+})
+
+// The picker leaves out the Dish's own Board for a Member of it: the page gets
+// its id as `ownBoard` only then, and the key is absent for anyone else.
+test('a Member of the Dish’s Board gets its id as ownBoard; a non-Member and a signed-out visitor get no such key', async () => {
+  const { source, ada, grace } = await boards('Eigen')
+  const original = await addDish(ada, source.id, { title: 'Eigen' })
+  const link = await linkOf(ada, original.id)
+  const view = async (caller: Caller) => await (await caller.fetch(`/api/dish-links/${link}`)).json() as Record<string, unknown>
+
+  expect(await view(ada)).toMatchObject({ ownBoard: source.id })
+  expect(await view(grace)).not.toHaveProperty('ownBoard')
+  expect(await view(anonymous())).not.toHaveProperty('ownBoard')
 })

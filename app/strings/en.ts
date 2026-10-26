@@ -131,6 +131,7 @@ export const en: Strings = {
     // "Kopieren" from the link (#403): a Copy on one of the user's Boards.
     copy: 'Copy to my board',
     startBoard: 'Start a new board and copy it there',
+    noBoards: 'You have no board to copy it to.',
     goneTitle: 'This dish isn’t here any more',
     goneBody: 'It may have been archived or deleted.',
   },

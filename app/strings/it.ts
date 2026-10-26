@@ -142,6 +142,7 @@ export const it: Strings = {
     // "Kopieren" from the link (#403): a Copy on one of the user's Boards.
     copy: 'Copia nella mia bacheca',
     startBoard: 'Crea una nuova bacheca e copialo lì',
+    noBoards: 'Non hai nessuna bacheca su cui copiarlo.',
     goneTitle: 'Questo piatto non c’è più',
     goneBody: 'Forse è stato archiviato o eliminato.',
   },

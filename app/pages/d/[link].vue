@@ -192,11 +192,12 @@ useSeoMeta({
       <CopyTargetPicker
         v-if="copyPicker"
         class="mt-5"
+        :board-id="dish?.ownBoard"
         @copy="copyTo"
       >
         <template #empty>
           <p class="px-1 text-small text-text-muted">
-            {{ t.detail.copyNoBoards }}
+            {{ t.dishLink.noBoards }}
           </p>
           <button
             type="button"
