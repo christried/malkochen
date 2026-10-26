@@ -8,9 +8,10 @@ import { recordBrowserLanguage } from '../utils/people'
 // unlocked" need before sign-in (seeing an invite, remembering it, the one
 // remembered), the cron jobs, which check CRON_SECRET themselves, and a
 // browser's report of what broke a page's Content Security Policy (/login
-// has one too).
+// has one too), and a Dish Link's page data (anyone with the link, signed in
+// or not, sees the one Dish; the route reads the session itself).
 // Page navigation is guarded separately by app/middleware/auth.global.ts.
-const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//, /^\/api\/csp-report$/]
+const PUBLIC_API = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/invites\/pending$/, /^\/api\/invites\/[^/]+(\/remember)?$/, /^\/api\/cron\//, /^\/api\/csp-report$/, /^\/api\/dish-links\/[^/]+$/]
 const BEFORE_USERNAME = [/^\/api\/me(\/username)?$/, /^\/api\/invites\//]
 const ADMIN_API = /^\/api\/admin(\/|$)/
 

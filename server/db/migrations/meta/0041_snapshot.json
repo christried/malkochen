@@ -1,5 +1,5 @@
 {
-  "id": "cc6beb3b-f56c-45a9-89aa-1dd7db581c8f",
+  "id": "0e03c60d-1c52-4343-8612-b2a1cd231a1f",
   "prevId": "0f02a45c-ed7d-4746-a023-30e96437b0dc",
   "version": "7",
   "dialect": "postgresql",
@@ -817,6 +817,12 @@
           "notNull": true,
           "default": 50
         },
+        "link_secret": {
+          "name": "link_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "added_by": {
           "name": "added_by",
           "type": "text",
@@ -942,6 +948,13 @@
           "nullsNotDistinct": false,
           "columns": [
             "code"
+          ]
+        },
+        "dish_link_secret_unique": {
+          "name": "dish_link_secret_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "link_secret"
           ]
         }
       },
@@ -1734,18 +1747,6 @@
         "version_seen": {
           "name": "version_seen",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "push_prompted_at": {
-          "name": "push_prompted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "digest_prompted_at": {
-          "name": "digest_prompted_at",
-          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

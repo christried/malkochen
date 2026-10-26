@@ -131,6 +131,14 @@ export const it: Strings = {
     invalidBody: 'Forse è stato reimpostato. Chiedine uno nuovo.',
     toApp: 'Vai a malkochen',
   },
+  // The Dish Link page (CONTEXT.md: Dish Link, #401).
+  dishLink: {
+    // The Creator, "di pastaqueen".
+    by: (name: string) => `di ${name}`,
+    toSource: 'Vai alla fonte',
+    goneTitle: 'Questo piatto non c’è più',
+    goneBody: 'Forse è stato archiviato o eliminato.',
+  },
   board: {
     footer: 'Su malkochen',
     emptyBoardTitle: 'Ancora niente qui.',
@@ -293,6 +301,7 @@ export const it: Strings = {
   },
   detail: {
     close: 'Chiudi',
+    shareFailed: 'Non è stato possibile condividere il link.',
     goneMeanwhile: (title: string) => `“${title}” non è più su questa bacheca.`,
     openOriginal: 'Apri l’originale',
     // The Caption, folded and unfolded (#393).
