@@ -874,7 +874,10 @@ const DASHBOARDS = [
   min-width: 0;
 }
 .admin-event-copy {
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.375rem;
+  min-width: 0;
 }
 .admin-event-comment {
   display: block;
