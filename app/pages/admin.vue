@@ -609,7 +609,7 @@ const DASHBOARDS = [
           {{ t.admin.eventsHint }}
         </p>
         <form
-          class="grid grid-cols-2 gap-3 tablet:grid-cols-[2fr_2fr_2fr_1fr_1fr]"
+          class="grid grid-cols-2 gap-3 tablet:grid-cols-[2fr_2fr_2fr_1.4fr_1.4fr]"
           @submit.prevent
         >
           <AppField
@@ -835,10 +835,14 @@ const DASHBOARDS = [
 }
 .admin-event {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px 16px;
   padding: 12px 16px;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.admin-event > * {
+  min-width: 0;
 }
 .admin-event + .admin-event {
   border-top: 1px solid var(--color-line);
