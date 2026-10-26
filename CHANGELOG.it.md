@@ -12,6 +12,7 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Le novità vengono da te: dopo un aggiornamento, malkochen ti mostra una volta cosa è cambiato.
 - Una piccola spinta: se le notifiche push o l’email giornaliera sono spente, Topfbert ogni tanto ti chiede se le vuoi, al massimo una volta al mese e mai quando si è appena aperto qualcos’altro.
 - Note legali e privacy ora stanno dentro malkochen, nella tua lingua, in fondo a ogni bacheca.
+- Le nostre email mostrano il logo di malkochen in Gmail.
 
 ### Changed
 

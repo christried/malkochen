@@ -12,6 +12,7 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - What’s new pops up: after an update, malkochen shows you once what changed.
 - A friendly nudge: if push notifications or the daily email are off, Topfbert asks now and then whether you’d like them, at most once a month and never when something else just popped up.
 - Imprint and privacy policy now live inside malkochen, in your language, linked at the bottom of every board.
+- Our emails show malkochen’s logo in Gmail.
 
 ### Changed
 

@@ -12,6 +12,7 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Was ist neu kommt zu dir: Nach einem Update zeigt dir malkochen einmal, was sich geändert hat.
 - Ein kleiner Schubs: Sind Push-Benachrichtigungen oder die tägliche E-Mail aus, fragt Topfbert ab und zu, ob du sie haben magst, höchstens einmal im Monat und nie, wenn gerade schon etwas anderes aufgegangen ist.
 - Impressum und Datenschutz wohnen jetzt in malkochen, in deiner Sprache, verlinkt ganz unten auf jedem Board.
+- Unsere E-Mails zeigen in Gmail das Logo von malkochen.
 
 ### Changed
 
