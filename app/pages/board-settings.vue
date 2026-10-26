@@ -263,6 +263,11 @@ async function resetLink() {
 // or remove, then confirms; the list is fetched afresh either way, so it
 // also shows what other Members changed meanwhile.
 const members = computed(() => board.value?.members ?? [])
+// The Operator as a Member of a Board they did not create has an Owner's rights
+// there (ADR 0009), so they see the Owner's buttons; `ownsBoard` is whether
+// their own Membership is the Owner's, the one that can't leave.
+const ownsBoard = computed(() => members.value.some(m => m.isYou && m.isOwner))
+const mayLeave = computed(() => members.value.some(m => m.isYou) && !ownsBoard.value)
 const selectedMember = ref<BoardMemberView | null>(null)
 const memberAction = ref<'hand-over' | 'remove' | null>(null)
 const memberSheetOpen = computed({
@@ -711,7 +716,10 @@ function confirmDelete() {
 
       <div class="flex flex-col items-start gap-3 border-t border-line pt-6">
         <template v-if="board.isOwner">
-          <p class="px-1 text-small text-text-muted">
+          <p
+            v-if="ownsBoard"
+            class="px-1 text-small text-text-muted"
+          >
             {{ members.length > 1 ? t.settings.ownerLeaveHint : t.settings.aloneHint }}
           </p>
           <DangerButton @click="confirmingDeleteBoard = true">
@@ -719,7 +727,7 @@ function confirmDelete() {
           </DangerButton>
         </template>
         <DangerButton
-          v-else
+          v-if="mayLeave"
           @click="confirmingLeave = true"
         >
           {{ t.settings.leave }}

@@ -27,6 +27,7 @@ interface Board {
   name: string
   inviteToken: string | null
   asOperator: boolean
+  permissions: Record<string, boolean>
   members: Member[]
   newDishIds: string[]
   columns: { id: string, dishes: { id: string, title: string, addedBy: { name: string } | null }[] }[]
@@ -236,4 +237,29 @@ test('the Operator visiting opens a Member\'s popover, which lists only Boards t
   expect(card.id).toBe(graceId)
   expect(card.sharedBoards.map(b => b.id)).not.toContain(board.id)
   expect(card.sharedBoards).toEqual([])
+})
+
+test('on a Board the Operator joined as a Member, they have an Owner\'s rights and can still leave it', async () => {
+  const op = await operator()
+  const member = await grace()
+  const board = await adaBoard('Operator als Mitglied', op, member)
+  const opId = (await me(op)).id
+  const graceId = board.members.find(m => m.name === 'Grace')!.id
+
+  const visited = await getBoard(op, board.id)
+  expect(visited).toMatchObject({ isOwner: true, asOperator: false })
+  expect(visited.permissions).toEqual(ALL_PERMISSIONS)
+  expect(visited.members.find(m => m.id === opId)).toMatchObject({ isOwner: false })
+  expect(visited.members.find(m => m.name === 'Ada')).toMatchObject({ isOwner: true })
+
+  expect((await op.fetch(`/api/boards/${board.id}/members/${graceId}/permissions`, json('PATCH', { addDishes: false }))).status).toBe(200)
+  expect((await op.fetch(`/api/boards/${board.id}/invite/reset`, { method: 'POST' })).status).toBe(200)
+  expect((await op.fetch(`/api/boards/${board.id}/members/${graceId}`, { method: 'DELETE' })).status).toBe(204)
+  expect((await getBoard(await ada(), board.id)).members.map(m => m.id)).not.toContain(graceId)
+
+  expect((await op.fetch(`/api/boards/${board.id}/members/${opId}`, { method: 'DELETE' })).status).toBe(204)
+  expect((await getBoard(await ada(), board.id)).members.map(m => m.id)).not.toContain(opId)
+  expect((await getBoard(op, board.id)).asOperator).toBe(true)
+
+  expect((await (await ada()).fetch(`/api/boards/${board.id}/members/${(await me(await ada())).id}`, { method: 'DELETE' })).status).toBe(409)
 })

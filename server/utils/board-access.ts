@@ -12,38 +12,45 @@ import type { Standing } from './permissions'
 // functions, Addresses, the person card and the image store all build on
 // these.
 //
-// A user's access to a Board comes from their Membership. The Operator (ADR
-// 0009) has a second source: an Owner's standing on every live Board they
-// are not a Member of, flagged `asOperator`. An Archived Board stays closed
-// to them. `memberBoardsOf` is the way to ask only for the user's own
-// Boards (their Board Switcher, their landing), never for a decision.
+// The Operator has an Owner's standing on every live Board (ADR 0009), and
+// an Archived Board stays closed to them. On a Board they are a Member of,
+// their Membership carries that standing (`isOwner` true, `ownsBoard` their
+// real role); on the others, a visit flagged `asOperator`. `memberBoardsOf`
+// is the way to ask only for the user's own Boards (their Board Switcher,
+// their landing), never for a decision.
 
-// The one rule of the Operator's visits (ADR 0009): the user is the Operator,
-// the Board is live, and they have no Membership on it. `boardIdColumn` is
-// the Board's id in the query this goes into.
+// The Operator on a live Board: an Owner's standing there (ADR 0009).
+function operatorOn(userId: string): SQL {
+  return and(isNull(board.deletedAt), isOperatorUser(userId))!
+}
+
+// The one rule of the Operator's visits (ADR 0009): the Operator on a live
+// Board they have no Membership on. `boardIdColumn` is the Board's id in the
+// query this goes into.
 function operatorMayVisit(userId: string, boardIdColumn: AnyColumn, d: Db = db): SQL {
   return and(
-    isNull(board.deletedAt),
-    isOperatorUser(userId),
+    operatorOn(userId),
     not(exists(d.select({ one: sql`1` }).from(membership).where(and(eq(membership.boardId, boardIdColumn), eq(membership.userId, userId))))),
   )!
 }
 
-// The columns of the user's Memberships, and the same columns of the
-// Operator's visits, in the same order and types.
-const accessColumns = {
-  boardId: membership.boardId,
-  isOwner: membership.isOwner,
-  permissions: membership.permissions,
-  joinedAt: membership.joinedAt,
-  lastOpenedAt: membership.lastOpenedAt,
-  seenAt: membership.seenAt,
-  newSince: membership.newSince,
-}
-
+// The user's Memberships: an Owner's standing for the Operator, and the
+// Membership's own flag as `ownsBoard`, whether the Membership is the Board's
+// Owner, the one Member who can't leave. The same columns, in the same order
+// and types, as the Operator's visits.
 function memberRows(userId: string, boardId?: string, d: Db = db) {
   return d
-    .select({ ...accessColumns, asOperator: sql<boolean>`false`.as('as_operator') })
+    .select({
+      boardId: membership.boardId,
+      isOwner: sql<boolean>`(${membership.isOwner} or ${isOperatorUser(userId)})`.as('is_owner'),
+      ownsBoard: sql<boolean>`${membership.isOwner}`.as('owns_board'),
+      permissions: membership.permissions,
+      joinedAt: membership.joinedAt,
+      lastOpenedAt: membership.lastOpenedAt,
+      seenAt: membership.seenAt,
+      newSince: membership.newSince,
+      asOperator: sql<boolean>`false`.as('as_operator'),
+    })
     .from(membership)
     .where(and(eq(membership.userId, userId), boardId === undefined ? undefined : eq(membership.boardId, boardId)))
 }
@@ -53,7 +60,8 @@ function operatorVisits(userId: string, boardId?: string, d: Db = db) {
   return d
     .select({
       boardId: board.id,
-      isOwner: sql<boolean>`true`,
+      isOwner: sql<boolean>`true`.as('is_owner'),
+      ownsBoard: sql<boolean>`false`.as('owns_board'),
       permissions: sql<typeof membership.$inferSelect.permissions>`${JSON.stringify(ALL_PERMISSIONS)}::jsonb`,
       joinedAt: sql<Date>`${board.createdAt}`,
       lastOpenedAt: sql<Date | null>`null::timestamptz`,
@@ -100,11 +108,12 @@ export function accessibleBoardIds(userId: string) {
   )
 }
 
-// The ids of the Boards the user is the Owner of, for `inArray`.
+// The ids of the Boards the user is the Owner of, for `inArray`: their own
+// Owned Boards, and for the Operator every live Board.
 export function ownedBoardIds(userId: string) {
   return unionAll(
     db.select({ id: membership.boardId }).from(membership).where(and(eq(membership.userId, userId), membership.isOwner)),
-    operatorIds(userId),
+    db.select({ id: board.id }).from(board).where(operatorOn(userId)),
   )
 }
 
@@ -142,7 +151,7 @@ export function ownerOf(boardId: string, userId: string, d: Db = db) {
       .from(board)
       .where(and(
         eq(board.id, boardId),
-        operatorMayVisit(userId, board.id, d),
+        operatorOn(userId),
       )),
   )
 }

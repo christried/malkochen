@@ -26,7 +26,9 @@ export async function removeMember(boardId: string, userId: string, memberId: st
   if (memberId === userId) {
     // The Operator visiting never joined, so can't leave.
     if (found.asOperator) return 'not-member'
-    if (found.isOwner) return 'owner'
+    // The real role: the Operator who is a Member keeps an Owner's standing
+    // there without being the Owner.
+    if (found.ownsBoard) return 'owner'
     return await deleteMembership(boardId, memberId, boardEvent('member_left', userId)) ? 'removed' : 'not-member'
   }
   if (!found.isOwner) return 'forbidden'
