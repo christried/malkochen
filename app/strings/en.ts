@@ -596,6 +596,16 @@ export const en: Strings = {
     dark: 'Dark',
     system: 'System',
   },
+  prompt: {
+    pushTitle: 'Turn on notifications?',
+    pushText: 'Your phone lets you know when someone adds a dish, comments or gives a thumb on your boards.',
+    digestTitle: 'Turn on the daily email?',
+    digestText: 'An email in the evening with what’s new on your boards, only when there’s something. You can turn it off any time in your settings.',
+    turnOn: 'Turn on',
+    later: 'Later',
+    pushOn: 'Notifications are on.',
+    digestOn: 'The daily email is on.',
+  },
   push: {
     heading: 'Notifications',
     toggle: 'Push notifications',

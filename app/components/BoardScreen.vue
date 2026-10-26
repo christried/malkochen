@@ -3,9 +3,11 @@ import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
+import type { Me } from '~~/server/utils/people'
 import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
 import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
+import { duePrompt, type PromptKind } from '~/utils/notification-prompt'
 import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
 
@@ -407,10 +409,10 @@ const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !se
 // (window.e2eChangelogPopup). The popup loads lazily, with the Changelog
 // files, and says so with `empty` if it finds nothing to list: then it stays
 // away for this visit.
-const tourThisVisit = useState('tour-this-visit', () => false)
+const visit = useVisit()
 const popupEmpty = ref(false)
 const popupSettled = ref(false)
-const popupWanted = computed(() => !!me.value?.newVersion && !popupEmpty.value && !tourThisVisit.value
+const popupWanted = computed(() => !!me.value?.newVersion && !popupEmpty.value && (!visit.shownThisVisit.value || popupSettled.value)
   && (me.value.tourSeen ?? 0) >= TOUR_VERSION && !openedToAdd.value)
 let popupTimer: ReturnType<typeof setTimeout> | undefined
 onMounted(() => {
@@ -424,6 +426,99 @@ onMounted(() => {
 onBeforeUnmount(() => clearTimeout(popupTimer))
 // Settled once, it stays until closed: its own modal makes the Board busy.
 const popupDue = computed(() => popupSettled.value && popupWanted.value)
+watch(popupDue, (due) => {
+  if (due) visit.shown('changelog')
+})
+
+// A Notification Prompt (NotificationPrompt, #407, decided on #392: A): the
+// rule (utils/notification-prompt.ts) says which one is due, if any. It waits
+// as the popup does (idle Board, splash gone, nothing shared to add, settled)
+// and comes after the Tour and the Changelog Popup, which take the visit. In
+// the browser tests it never shows by itself, unless the test page turned that
+// on (window.e2eNotificationPrompt). Shown, it is kept on the user at once
+// (whatever the answer, it stays away for 30 days), and stays until answered.
+const pushSwitch = usePushNotifications()
+const digestSwitch = useEmailDigest()
+const installed = ref(false)
+const promptShowing = ref<PromptKind | null>(null)
+const promptBusy = ref(false)
+const promptError = ref<string | null>(null)
+let promptAnswered = false
+const promptsOn = ref(false)
+const promptDue = computed<PromptKind | null>(() => {
+  const mine = me.value
+  if (!promptsOn.value || !mine || mine.newVersion || openedToAdd.value || (mine.tourSeen ?? 0) < TOUR_VERSION) return null
+  const at = (iso: string | null) => iso ? Date.parse(iso) : null
+  return duePrompt({
+    now: Date.now(),
+    signedUpAt: Date.parse(mine.signedUpAt),
+    pushPromptedAt: at(mine.pushPromptedAt),
+    digestPromptedAt: at(mine.digestPromptedAt),
+    push: { offered: pushSwitch.offered, installed: installed.value, state: pushSwitch.state.value, permission: pushSwitch.permission.value },
+    digest: { offered: digestSwitch.offered, on: digestSwitch.on.value },
+    shownThisVisit: visit.shownThisVisit.value,
+  })
+})
+let promptTimer: ReturnType<typeof setTimeout> | undefined
+onMounted(() => {
+  if (useRuntimeConfig().public.e2e && !(window as { e2eNotificationPrompt?: boolean }).e2eNotificationPrompt) return
+  promptsOn.value = true
+  installed.value = matchMedia('(display-mode: standalone)').matches
+  void pushSwitch.refresh()
+  void digestSwitch.refresh()
+  watch(() => promptDue.value !== null && !promptShowing.value && boardIdle.value && !splashUp.value, (ready) => {
+    clearTimeout(promptTimer)
+    if (ready) promptTimer = setTimeout(showPrompt, SETTLE_MS)
+  }, { immediate: true })
+})
+onBeforeUnmount(() => clearTimeout(promptTimer))
+
+// Typed as a plain string: Nitro's route typing runs too deep here.
+const PROMPT: string = '/api/me/prompt'
+async function tellPrompt(which: PromptKind, answer?: 'on' | 'later') {
+  const answered = await $fetch<Me>(PROMPT, { method: 'PUT', body: { which, answer } }).catch(() => null)
+  if (answered && me.value) me.value = answered
+}
+function showPrompt() {
+  const which = promptDue.value
+  if (!which || !me.value) return
+  promptShowing.value = which
+  promptAnswered = false
+  promptError.value = null
+  visit.shown('prompt')
+  const now = new Date().toISOString()
+  me.value = { ...me.value, ...(which === 'push' ? { pushPromptedAt: now } : { digestPromptedAt: now }) }
+  void tellPrompt(which)
+}
+function answerPrompt(which: PromptKind, answer: 'on' | 'later') {
+  if (promptAnswered && answer === 'on') return
+  promptAnswered = true
+  void tellPrompt(which, answer)
+}
+async function promptLater() {
+  const which = promptShowing.value
+  promptShowing.value = null
+  if (which) answerPrompt(which, 'later')
+}
+// The same flow as the switch in Your Settings. Done, the card goes and a
+// notice says so; failed, the card stays with the switch's own words.
+async function promptTurnOn() {
+  const which = promptShowing.value
+  if (!which || promptBusy.value) return
+  promptBusy.value = true
+  promptError.value = null
+  answerPrompt(which, 'on')
+  if (which === 'push') await pushSwitch.turn(true)
+  else await digestSwitch.turn(true)
+  promptBusy.value = false
+  const worked = which === 'push' ? pushSwitch.state.value === 'on' : digestSwitch.on.value === true
+  if (!worked) {
+    promptError.value = which === 'digest' ? t.emailDigest.failed : pushSwitch.state.value === 'blocked' ? t.push.blocked : t.push.failed
+    return
+  }
+  promptShowing.value = null
+  showNotice(which === 'push' ? t.prompt.pushOn : t.prompt.digestOn)
+}
 
 async function startTour() {
   showingSettings.value = false
@@ -1180,12 +1275,20 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :auto-start="!openedToAdd"
       :menu="menuDish && { dishId: menuDish.id, choosing: choosingColumn }"
       @close-menu="menuDish = null"
-      @started="tourThisVisit = true"
+      @started="visit.shown('tour')"
       @ended="showNotice(t.tour.ended)"
     />
     <LazyChangelogPopup
       v-if="popupDue"
       @empty="popupEmpty = true"
+    />
+    <NotificationPrompt
+      v-if="promptShowing"
+      :which="promptShowing"
+      :busy="promptBusy"
+      :error="promptError"
+      @turn-on="promptTurnOn"
+      @later="promptLater"
     />
 
     <BoardCreatedCelebration
