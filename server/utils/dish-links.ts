@@ -46,11 +46,18 @@ export async function shareDish(dishId: string, userId: string): Promise<string 
   const [access] = await accessOn(found.boardId, userId)
   if (!access) return null
 
-  const [shared] = await db
+  // Only the first share writes the Dish: a write to a Dish moves its Board Version (migration 0032).
+  const [made] = await db
     .update(dish)
-    .set({ linkSecret: sql`coalesce(${dish.linkSecret}, random_invite_secret())` })
-    .where(and(eq(dish.id, dishId), isNull(dish.deletedAt)))
+    .set({ linkSecret: sql`random_invite_secret()` })
+    .where(and(eq(dish.id, dishId), isNull(dish.deletedAt), isNull(dish.linkSecret)))
     .returning({ title: dish.title, linkSecret: dish.linkSecret })
+  const [shared] = made
+    ? [made]
+    : await db
+      .select({ title: dish.title, linkSecret: dish.linkSecret })
+      .from(dish)
+      .where(and(eq(dish.id, dishId), isNull(dish.deletedAt)))
   return shared?.linkSecret ? dishLinkPath({ title: shared.title, linkSecret: shared.linkSecret }) : null
 }
 

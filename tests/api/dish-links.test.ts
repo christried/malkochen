@@ -62,6 +62,22 @@ test('sharing makes the Dish secret the first time and answers the same path aft
   expect(await pathOf(ines, dishId)).toBe(first)
 })
 
+// The Board Version moves on any write to a Dish (a trigger), so only the
+// first share, which makes the secret, may move it: an open Board reloads
+// for nothing else.
+test('the second share leaves the Board Version and the path where they are', async () => {
+  const { boardId, dishId, hedwig } = await setup('Stille Version')
+  const versionOf = async () => {
+    const res = await hedwig.fetch(`/api/boards/${boardId}/version`)
+    return (await res.json() as { version: number }).version
+  }
+
+  const first = await pathOf(hedwig, dishId)
+  const afterFirst = await versionOf()
+  expect(await pathOf(hedwig, dishId)).toBe(first)
+  expect(await versionOf()).toBe(afterFirst)
+})
+
 test('a non-Member, someone signed out and a Dish that does not exist get no link; an Archived Dish too', async () => {
   const { dishId, hedwig } = await setup('Nicht teilen')
 

@@ -122,7 +122,7 @@ export const en: Strings = {
   },
   // The Dish Link page (CONTEXT.md: Dish Link, #401).
   dishLink: {
-    // The Creator, "von pastaqueen".
+    // The Creator, "by pastaqueen".
     by: (name: string) => `by ${name}`,
     toSource: 'View source',
     goneTitle: 'This dish isn’t here any more',
