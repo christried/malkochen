@@ -222,3 +222,18 @@ test('the Admin Page lists every Board with its Owner and counts, filtered by na
   expect((await (await linus()).fetch('/api/admin/boards')).status).toBe(404)
   expect((await (await ada()).fetch('/api/admin/boards')).status).toBe(404)
 })
+
+test('the Operator visiting opens a Member\'s popover, which lists only Boards the Operator really belongs to', async () => {
+  const member = await grace()
+  const board = await adaBoard('Operator am Popover', member)
+  const op = await operator()
+  const graceId = board.members.find(m => m.name === 'Grace')!.id
+
+  const res = await op.fetch(`/api/boards/${board.id}/people/${graceId}`)
+
+  expect(res.status).toBe(200)
+  const card = await res.json() as { id: string, sharedBoards: { id: string }[] }
+  expect(card.id).toBe(graceId)
+  expect(card.sharedBoards.map(b => b.id)).not.toContain(board.id)
+  expect(card.sharedBoards).toEqual([])
+})

@@ -1,4 +1,4 @@
-import { and, eq, isNull, not, exists, sql } from 'drizzle-orm'
+import { and, eq, isNull, not, exists, sql, type AnyColumn, type SQL } from 'drizzle-orm'
 import { unionAll } from 'drizzle-orm/pg-core'
 import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { db, type Db } from '../db'
@@ -17,6 +17,17 @@ import type { Standing } from './permissions'
 // are not a Member of, flagged `asOperator`. An Archived Board stays closed
 // to them. `memberBoardsOf` is the way to ask only for the user's own
 // Boards (their Board Switcher, their landing), never for a decision.
+
+// The one rule of the Operator's visits (ADR 0009): the user is the Operator,
+// the Board is live, and they have no Membership on it. `boardIdColumn` is
+// the Board's id in the query this goes into.
+function operatorMayVisit(userId: string, boardIdColumn: AnyColumn, d: Db = db): SQL {
+  return and(
+    isNull(board.deletedAt),
+    isOperatorUser(userId),
+    not(exists(d.select({ one: sql`1` }).from(membership).where(and(eq(membership.boardId, boardIdColumn), eq(membership.userId, userId))))),
+  )!
+}
 
 // The columns of the user's Memberships, and the same columns of the
 // Operator's visits, in the same order and types.
@@ -52,9 +63,7 @@ function operatorVisits(userId: string, boardId?: string, d: Db = db) {
     })
     .from(board)
     .where(and(
-      isNull(board.deletedAt),
-      isOperatorUser(userId),
-      not(exists(db.select({ one: sql`1` }).from(membership).where(and(eq(membership.boardId, board.id), eq(membership.userId, userId))))),
+      operatorMayVisit(userId, board.id, d),
       boardId === undefined ? undefined : eq(board.id, boardId),
     ))
 }
@@ -104,9 +113,7 @@ function operatorIds(userId: string) {
     .select({ id: board.id })
     .from(board)
     .where(and(
-      isNull(board.deletedAt),
-      isOperatorUser(userId),
-      not(exists(db.select({ one: sql`1` }).from(membership).where(and(eq(membership.boardId, board.id), eq(membership.userId, userId))))),
+      operatorMayVisit(userId, board.id),
     ))
 }
 
@@ -135,9 +142,7 @@ export function ownerOf(boardId: string, userId: string, d: Db = db) {
       .from(board)
       .where(and(
         eq(board.id, boardId),
-        isNull(board.deletedAt),
-        isOperatorUser(userId),
-        not(exists(d.select({ one: sql`1` }).from(membership).where(and(eq(membership.boardId, board.id), eq(membership.userId, userId))))),
+        operatorMayVisit(userId, board.id, d),
       )),
   )
 }
