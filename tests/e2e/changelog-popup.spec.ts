@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { TOUR_VERSION } from '../../app/tour/tour'
+import { parseChangelog } from '../../shared/changelog'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { removeUsers, setSeen } from './seed'
@@ -10,10 +12,12 @@ import { removeUsers, setSeen } from './seed'
 // newer than the one the user saw, once; closing it marks them seen. Not for
 // a new user (a new account starts with the app's Version as seen), and not
 // in a visit with the Tour. In every other spec it never shows by itself;
-// here the pages turn that on. The files list only 1.0.0, so the user who
-// "saw 0.9.0" has exactly one Version to see. Hopper is used by this file
+// here the pages turn that on. The user who "saw 0.9.0" has every Version in
+// the files to see, newest first, read from the German file here so a
+// Release doesn't change what the tests expect. Hopper is used by this file
 // only, and starts each test new.
 const HOPPER = ALLOWLISTED[141]
+const VERSIONS = parseChangelog(readFileSync('CHANGELOG.de.md', 'utf8')).versions.map(release => release.version)
 
 // More than the Board waits before it shows the popup (or the Tour).
 const SETTLE_MS = 2500
@@ -32,13 +36,12 @@ async function newVersion(page: Page): Promise<boolean> {
   return (await (await page.request.get('/api/me')).json() as { newVersion: boolean }).newVersion
 }
 
-test('shown once: it lists the Version, "Alles klar" closes it and marks it seen for good', async ({ page }) => {
+test('shown once: it lists the Versions, "Alles klar" closes it and marks it seen for good', async ({ page }) => {
   await setSeen(HOPPER, { version: '0.9.0', tourSeen: TOUR_VERSION })
   await gotoHydrated(page, '/')
 
   await expect(popup(page)).toBeVisible()
-  await expect(popup(page).getByRole('heading', { name: /^Version \d/ })).toHaveCount(1)
-  await expect(popup(page).getByRole('heading', { name: 'Version 1.0.0' })).toBeVisible()
+  await expect(popup(page).getByRole('heading', { name: /^Version \d/ })).toHaveText(VERSIONS.map(version => `Version ${version}`))
   await expect(popup(page).getByRole('heading', { name: 'Hinzugefügt' }).first()).toBeVisible()
   await expect(popup(page).getByRole('button', { name: 'Alles klar' })).toBeFocused()
 
