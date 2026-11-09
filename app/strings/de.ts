@@ -30,7 +30,7 @@ function unsentChange(kind: UnsentKindName, label: string): string {
   }
 }
 
-const { number, plural,day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {

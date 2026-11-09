@@ -94,12 +94,13 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
     poll.start()
   })
 
-  // Loads the Board now, whatever its version (Unsent Changes just went out).
-  return { syncNow: () => poll?.syncNow() }
   onBeforeUnmount(() => {
     poll?.stop()
     document.removeEventListener('visibilitychange', onVisibilityChange)
     window.removeEventListener('focus', onFocus)
     for (const type of activity) window.removeEventListener(type, onActivity, { capture: true })
   })
+
+  // Loads the Board now, whatever its version (Unsent Changes just went out).
+  return { syncNow: () => poll?.syncNow() }
 }
