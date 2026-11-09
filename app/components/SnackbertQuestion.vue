@@ -19,11 +19,11 @@ const region = useTemplateRef<HTMLElement>('region')
 useTopLayerInModal(region)
 
 function yes() {
-  const asked = provided?.question.answer(true)
+  const asked = provided?.question.accept()
   if (asked) provided?.report(asked)
 }
 function no() {
-  provided?.question.answer(false)
+  provided?.question.decline()
 }
 </script>
 
@@ -32,7 +32,7 @@ function no() {
     ref="region"
     popover="manual"
     class="pointer-events-none fixed inset-0 top-auto z-[8] m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:justify-end tablet:pr-[120px]"
-    role="status"
+    aria-live="polite"
   >
     <Transition name="question">
       <section

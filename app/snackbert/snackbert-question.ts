@@ -123,17 +123,19 @@ export function createSnackbertQuestion(screen: QuestionScreen) {
     asking.value = null
   }
 
-  // "Ja": he goes, and the Cooking to report is answered. "Nein": his last
-  // word, then he goes.
-  function answer(yes: true): SnackbertAsking | null
-  function answer(yes: false): void
-  function answer(yes: boolean): SnackbertAsking | null | void {
+  // "Ja": he goes, and answers the Cooking to report (null if he wasn't
+  // asking).
+  function accept(): SnackbertAsking | null {
     const now = asking.value
-    if (!now || now.said !== 'ask') return yes ? null : undefined
-    if (yes) {
-      goAway()
-      return now
-    }
+    if (!now || now.said !== 'ask') return null
+    goAway()
+    return now
+  }
+
+  // "Nein": his last word, then he goes.
+  function decline() {
+    const now = asking.value
+    if (!now || now.said !== 'ask') return
     asking.value = { ...now, said: 'bye' }
     byeTimer = setTimeout(goAway, BYE_MS)
   }
@@ -144,5 +146,5 @@ export function createSnackbertQuestion(screen: QuestionScreen) {
     scope.stop()
   }
 
-  return { asking: computed(() => asking.value), cooked, answer, stop }
+  return { asking: computed(() => asking.value), cooked, accept, decline, stop }
 }

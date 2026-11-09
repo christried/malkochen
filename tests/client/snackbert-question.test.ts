@@ -232,9 +232,9 @@ test('"Ja" sends him away and answers the Cooking to report', async () => {
   await cook('Pilzpasta').record()
   await toastGoes()
 
-  expect(question.answer(true)).toMatchObject({ dishId: 'dish-Pilzpasta', dish: 'Pilzpasta', cookingId: 'cooking-Pilzpasta' })
+  expect(question.accept()).toMatchObject({ dishId: 'dish-Pilzpasta', dish: 'Pilzpasta', cookingId: 'cooking-Pilzpasta' })
   expect(question.asking.value).toBeNull()
-  expect(question.answer(true)).toBeNull()
+  expect(question.accept()).toBeNull()
 })
 
 test('"Nein": his last word, then he goes, and doesn\'t come back for that Cooking', async () => {
@@ -242,10 +242,10 @@ test('"Nein": his last word, then he goes, and doesn\'t come back for that Cooki
   await cook('Pilzpasta').record()
   await toastGoes()
 
-  question.answer(false)
+  question.decline()
   expect(question.asking.value).toMatchObject({ dish: 'Pilzpasta', said: 'bye' })
   // "Ja" can't be pressed any more.
-  expect(question.answer(true)).toBeNull()
+  expect(question.accept()).toBeNull()
   await vi.advanceTimersByTimeAsync(BYE_MS)
   expect(question.asking.value).toBeNull()
 

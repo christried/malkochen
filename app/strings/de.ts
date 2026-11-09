@@ -810,8 +810,6 @@ export const de = {
     unreachable: 'Snackbert ist gerade nicht erreichbar. Versuch es später noch mal.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
   },
-  // The email with the sign-in code (#345, server/email/index.ts): the code
-  // to type where sign-in started, and a link that signs in where it opens.
   // The Snackbert Question after a Cooking (#425; the wording decided on
   // #422, never judgemental): the Question naming the Dish, "Ja" and
   // "Nein", and his last word after "Nein". `label`: his bubble's name for
@@ -859,6 +857,8 @@ export const de = {
     noAccount: 'Snackbert findet kein Konto mehr zu deiner E-Mail-Adresse. Wir haben ihn für dich ausgeschaltet.',
     tooLarge: 'Das Foto oder die Aufnahme ist zu groß. Versuch es mit einer kürzeren Aufnahme.',
   },
+  // The email with the sign-in code (#345, server/email/index.ts): the code
+  // to type where sign-in started, and a link that signs in where it opens.
   signInEmail: {
     subject: (code: string) => `${code} ist dein Code für malkochen`,
     headline: 'Dein Code zum Anmelden',
