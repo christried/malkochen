@@ -16,7 +16,7 @@ const t = useStrings()
   <div
     role="toolbar"
     :aria-label="t.selection.label"
-    class="selection-bar fixed inset-x-2 bottom-6 z-fab mx-auto flex max-w-md items-center gap-0.5 rounded-pill bg-inverse p-1.5 text-on-inverse shadow-fab tablet:inset-x-3 tablet:bottom-8 tablet:max-w-lg tablet:gap-1 tablet:p-2"
+    class="selection-bar fixed inset-x-2 bottom-[calc(1.5rem+var(--offline-bar,0px))] z-fab mx-auto flex max-w-md items-center gap-0.5 rounded-pill bg-inverse p-1.5 text-on-inverse shadow-fab tablet:inset-x-3 tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:max-w-lg tablet:gap-1 tablet:p-2"
     :class="{ lifted }"
     data-selection-bar
   >
@@ -43,32 +43,35 @@ const t = useStrings()
       >{{ count }}</span>
       <span class="sr-only tablet:not-sr-only tablet:whitespace-nowrap">{{ t.selection.count(count) }}</span>
     </p>
-    <button
-      v-if="canMove"
-      type="button"
-      class="shrink-0 rounded-pill px-1.5 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-      :aria-label="t.selection.cookLabel(count)"
-      @click="$emit('cook', centreOf(($event.currentTarget as HTMLElement).getBoundingClientRect()))"
-    >
-      {{ t.selection.cook }}
-    </button>
-    <button
-      v-if="canMove"
-      type="button"
-      class="shrink-0 rounded-pill px-1.5 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-      aria-haspopup="dialog"
-      @click="$emit('move')"
-    >
-      {{ t.selection.move }}
-    </button>
-    <button
-      v-if="canDelete"
-      type="button"
-      class="danger-fill shrink-0 rounded-pill px-2 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-      @click="$emit('delete')"
-    >
-      {{ t.selection.delete }}
-    </button>
+    <!-- Greyed out while malkochen can't be reached (#458). -->
+    <NeedsNet :note="false">
+      <button
+        v-if="canMove"
+        type="button"
+        class="shrink-0 rounded-pill px-1.5 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        :aria-label="t.selection.cookLabel(count)"
+        @click="$emit('cook', centreOf(($event.currentTarget as HTMLElement).getBoundingClientRect()))"
+      >
+        {{ t.selection.cook }}
+      </button>
+      <button
+        v-if="canMove"
+        type="button"
+        class="shrink-0 rounded-pill px-1.5 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        aria-haspopup="dialog"
+        @click="$emit('move')"
+      >
+        {{ t.selection.move }}
+      </button>
+      <button
+        v-if="canDelete"
+        type="button"
+        class="danger-fill shrink-0 rounded-pill px-2 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+        @click="$emit('delete')"
+      >
+        {{ t.selection.delete }}
+      </button>
+    </NeedsNet>
   </div>
 </template>
 

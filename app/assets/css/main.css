@@ -24,6 +24,13 @@ html {
   }
 }
 
+/* A change that needs a connection, while malkochen can't be reached
+   (useConnection's `needsNet`): greyed out, its tooltip saying why. */
+[data-needs-net] {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 /* Dragging a Dish: timings from the handoff's interactions.json that have
    no token in tokens.css. Script reads them too (motionMs), so the two can't
    drift apart. Reduced motion collapses them, like the handoff's own. */

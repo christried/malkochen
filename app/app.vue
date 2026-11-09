@@ -6,9 +6,8 @@ const staging = useRuntimeConfig().public.staging
 </script>
 
 <template>
-  <OfflineScreen>
-    <NuxtPage />
-  </OfflineScreen>
+  <NuxtPage />
+  <OfflineBar />
   <SplashScreen />
   <AppTooltip />
   <StagingLabel v-if="staging" />

@@ -43,6 +43,9 @@ const columns = ref(rows(board.value))
 // What the user may change here (their Permissions as the page loaded).
 const mayEditBoard = computed(() => board.value?.permissions.editBoard ?? false)
 const mayEditColumns = computed(() => board.value?.permissions.editColumns ?? false)
+// Nothing here can be changed while malkochen can't be reached (#458): the
+// page is there to read, its controls greyed out, the Columns not draggable.
+const { mayChange } = useConnection()
 
 const toast = ref<Toast | null>(null)
 // A change refused for the user's Permissions (the Owner just switched one
@@ -472,267 +475,269 @@ function confirmDelete() {
         </h1>
       </header>
 
-      <section
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-board"
-      >
-        <h2
-          id="settings-board"
-          class="section-heading px-1"
+      <NeedsNet>
+        <section
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-board"
         >
-          {{ t.settings.board }}
-        </h2>
-        <div class="flex items-end gap-3">
-          <button
-            v-if="mayEditBoard"
-            ref="emojiButton"
-            type="button"
-            class="emoji-pebble hover-grow flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px] transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-            :aria-label="t.settings.emoji"
-            :data-tooltip="t.settings.emoji"
-            aria-haspopup="dialog"
-            @click="choosingEmoji = true"
+          <h2
+            id="settings-board"
+            class="section-heading px-1"
           >
-            {{ emoji }}
-          </button>
-          <span
-            v-else
-            role="img"
-            class="emoji-pebble flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px]"
-            :aria-label="`${t.settings.emoji}: ${emoji}`"
-          >{{ emoji }}</span>
-          <AppField
-            class="flex-1"
-            :label="t.settings.name"
-            control-id="settings-name"
-          >
-            <input
-              id="settings-name"
-              v-model="name"
-              type="text"
-              required
-              maxlength="60"
-              autocomplete="off"
-              :readonly="!mayEditBoard"
-              class="font-display text-title-s"
-              @change="saveName"
-              @keydown.enter="($event.target as HTMLInputElement).blur()"
+            {{ t.settings.board }}
+          </h2>
+          <div class="flex items-end gap-3">
+            <button
+              v-if="mayEditBoard"
+              ref="emojiButton"
+              type="button"
+              class="emoji-pebble hover-grow flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px] transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              :aria-label="t.settings.emoji"
+              :data-tooltip="t.settings.emoji"
+              aria-haspopup="dialog"
+              @click="choosingEmoji = true"
             >
-          </AppField>
-        </div>
-      </section>
-
-      <section
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-columns"
-      >
-        <h2
-          id="settings-columns"
-          class="section-heading px-1"
-        >
-          {{ t.settings.columns }}
-        </h2>
-        <ColumnSettingsList
-          v-model="columns"
-          :readonly="!mayEditColumns"
-          @rename="renameColumn"
-          @subtitle="setColumnSubtitle"
-          @reordered="saveOrder"
-          @delete="askDelete"
-        />
-        <!-- The label is in the field's border, so the button centres on the
-             field (handoff Input "withButton"): both sit on the bottom, the
-             44px button 4px up in the 52px field. -->
-        <form
-          v-if="mayEditColumns"
-          class="mt-2 flex items-end gap-2.5"
-          @submit.prevent="addColumn"
-        >
-          <AppField
-            class="flex-1"
-            :label="t.settings.newColumn"
-            control-id="settings-new-column"
-          >
-            <input
-              id="settings-new-column"
-              v-model="newColumn"
-              type="text"
-              maxlength="40"
-              autocomplete="off"
-              :placeholder="newColumnExample.prompt.value"
+              {{ emoji }}
+            </button>
+            <span
+              v-else
+              role="img"
+              class="emoji-pebble flex h-[52px] w-[52px] shrink-0 items-center justify-center bg-surface-muted text-[28px]"
+              :aria-label="`${t.settings.emoji}: ${emoji}`"
+            >{{ emoji }}</span>
+            <AppField
+              class="flex-1"
+              :label="t.settings.name"
+              control-id="settings-name"
             >
-          </AppField>
-          <button
-            type="submit"
-            class="mb-1 h-11 shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            :disabled="!canAddColumn"
+              <input
+                id="settings-name"
+                v-model="name"
+                type="text"
+                required
+                maxlength="60"
+                autocomplete="off"
+                :readonly="!mayEditBoard"
+                class="font-display text-title-s"
+                @change="saveName"
+                @keydown.enter="($event.target as HTMLInputElement).blur()"
+              >
+            </AppField>
+          </div>
+        </section>
+
+        <section
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-columns"
+        >
+          <h2
+            id="settings-columns"
+            class="section-heading px-1"
           >
-            {{ t.settings.add }}
-          </button>
-        </form>
-      </section>
-
-      <section
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-members"
-      >
-        <h2
-          id="settings-members"
-          class="section-heading px-1"
-        >
-          {{ t.settings.members }}
-        </h2>
-        <MemberSettingsList
-          :members="members"
-          :is-owner="board.isOwner"
-          @manage="manage"
-        />
-        <PermissionSwitches
-          v-if="!board.isOwner"
-          :title="t.settings.yourPermissions"
-          :permissions="board.permissions"
-          :busy="null"
-          readonly
-          :hint="t.settings.yourPermissionsHint"
-        />
-      </section>
-
-      <section
-        v-if="board.defaultPermissions"
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-for-new-members"
-      >
-        <h2
-          id="settings-for-new-members"
-          class="section-heading px-1"
-        >
-          {{ t.settings.forNewMembers }}
-        </h2>
-        <p class="px-1 text-small text-text-muted">
-          {{ t.settings.forNewMembersHint }}
-        </p>
-        <PermissionSwitches
-          :title="t.settings.permissions"
-          :permissions="board.defaultPermissions"
-          :busy="switchingDefault"
-          @switched="switchDefaults"
-        />
-      </section>
-
-      <section
-        v-if="board.inviteToken"
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-invite"
-      >
-        <h2
-          id="settings-invite"
-          class="section-heading px-1"
-        >
-          {{ t.settings.invite }}
-        </h2>
-        <div class="flex flex-col">
-          <AppField
-            :label="t.settings.inviteLink"
-            control-id="settings-invite-link"
+            {{ t.settings.columns }}
+          </h2>
+          <ColumnSettingsList
+            v-model="columns"
+            :readonly="!mayEditColumns || !mayChange"
+            @rename="renameColumn"
+            @subtitle="setColumnSubtitle"
+            @reordered="saveOrder"
+            @delete="askDelete"
+          />
+          <!-- The label is in the field's border, so the button centres on the
+               field (handoff Input "withButton"): both sit on the bottom, the
+               44px button 4px up in the 52px field. -->
+          <form
+            v-if="mayEditColumns"
+            class="mt-2 flex items-end gap-2.5"
+            @submit.prevent="addColumn"
           >
-            <input
-              id="settings-invite-link"
-              :value="inviteLink"
-              type="text"
-              readonly
-              aria-describedby="settings-invite-hint"
-              class="truncate"
-              @focus="($event.target as HTMLInputElement).select()"
+            <AppField
+              class="flex-1"
+              :label="t.settings.newColumn"
+              control-id="settings-new-column"
             >
-          </AppField>
-          <p
-            id="settings-invite-hint"
-            class="field-helper"
+              <input
+                id="settings-new-column"
+                v-model="newColumn"
+                type="text"
+                maxlength="40"
+                autocomplete="off"
+                :placeholder="newColumnExample.prompt.value"
+              >
+            </AppField>
+            <button
+              type="submit"
+              class="mb-1 h-11 shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              :disabled="!canAddColumn"
+            >
+              {{ t.settings.add }}
+            </button>
+          </form>
+        </section>
+
+        <section
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-members"
+        >
+          <h2
+            id="settings-members"
+            class="section-heading px-1"
           >
-            {{ t.settings.inviteHint }}
+            {{ t.settings.members }}
+          </h2>
+          <MemberSettingsList
+            :members="members"
+            :is-owner="board.isOwner"
+            @manage="manage"
+          />
+          <PermissionSwitches
+            v-if="!board.isOwner"
+            :title="t.settings.yourPermissions"
+            :permissions="board.permissions"
+            :busy="null"
+            readonly
+            :hint="t.settings.yourPermissionsHint"
+          />
+        </section>
+
+        <section
+          v-if="board.defaultPermissions"
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-for-new-members"
+        >
+          <h2
+            id="settings-for-new-members"
+            class="section-heading px-1"
+          >
+            {{ t.settings.forNewMembers }}
+          </h2>
+          <p class="px-1 text-small text-text-muted">
+            {{ t.settings.forNewMembersHint }}
           </p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <button
-            v-if="canShare"
-            type="button"
-            class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            @click="shareLink"
+          <PermissionSwitches
+            :title="t.settings.permissions"
+            :permissions="board.defaultPermissions"
+            :busy="switchingDefault"
+            @switched="switchDefaults"
+          />
+        </section>
+
+        <section
+          v-if="board.inviteToken"
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-invite"
+        >
+          <h2
+            id="settings-invite"
+            class="section-heading px-1"
           >
-            {{ t.settings.shareLink }}
-          </button>
-          <button
-            type="button"
-            class="relative rounded-pill px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            :class="canShare ? 'bg-surface-muted text-text' : 'bg-inverse text-on-inverse'"
-            :aria-label="t.settings.copyLink"
-            @click="copyLink"
+            {{ t.settings.invite }}
+          </h2>
+          <div class="flex flex-col">
+            <AppField
+              :label="t.settings.inviteLink"
+              control-id="settings-invite-link"
+            >
+              <input
+                id="settings-invite-link"
+                :value="inviteLink"
+                type="text"
+                readonly
+                aria-describedby="settings-invite-hint"
+                class="truncate"
+                @focus="($event.target as HTMLInputElement).select()"
+              >
+            </AppField>
+            <p
+              id="settings-invite-hint"
+              class="field-helper"
+            >
+              {{ t.settings.inviteHint }}
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button
+              v-if="canShare"
+              type="button"
+              class="rounded-pill bg-inverse px-5 py-3.5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              @click="shareLink"
+            >
+              {{ t.settings.shareLink }}
+            </button>
+            <button
+              type="button"
+              class="relative rounded-pill px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              :class="canShare ? 'bg-surface-muted text-text' : 'bg-inverse text-on-inverse'"
+              :aria-label="t.settings.copyLink"
+              @click="copyLink"
+            >
+              <span class="relative inline-grid overflow-hidden">
+                <Transition name="flip">
+                  <span
+                    :key="copied ? 'copied' : 'copy'"
+                    class="[grid-area:1/1]"
+                  >{{ copied ? t.settings.copiedShort : t.settings.copyLink }}</span>
+                </Transition>
+              </span>
+              <PebbleBurst
+                v-if="copied"
+                :key="copied.key"
+                color="var(--color-sage)"
+              />
+            </button>
+            <DangerButton
+              v-if="board.isOwner"
+              @click="confirmingReset = true"
+            >
+              {{ t.settings.resetLink }}
+            </DangerButton>
+          </div>
+        </section>
+
+        <section
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-archive"
+        >
+          <h2
+            id="settings-archive"
+            class="section-heading px-1"
           >
-            <span class="relative inline-grid overflow-hidden">
-              <Transition name="flip">
-                <span
-                  :key="copied ? 'copied' : 'copy'"
-                  class="[grid-area:1/1]"
-                >{{ copied ? t.settings.copiedShort : t.settings.copyLink }}</span>
-              </Transition>
-            </span>
-            <PebbleBurst
-              v-if="copied"
-              :key="copied.key"
-              color="var(--color-sage)"
-            />
-          </button>
+            {{ t.settings.archive }}
+          </h2>
+          <p class="px-1 text-small text-text-muted">
+            {{ t.settings.archiveHint }}
+          </p>
+          <ArchivedDishList
+            v-if="archive"
+            :dishes="archive.dishes"
+            :is-owner="board.isOwner"
+            :may-restore="mayRestore"
+            @restore="restoreArchived"
+            @purge="dish => purging = dish"
+          />
+        </section>
+
+        <div class="flex flex-col items-start gap-3 border-t border-line pt-6">
+          <template v-if="board.isOwner">
+            <p
+              v-if="ownsBoard"
+              class="px-1 text-small text-text-muted"
+            >
+              {{ members.length > 1 ? t.settings.ownerLeaveHint : t.settings.aloneHint }}
+            </p>
+            <DangerButton @click="confirmingDeleteBoard = true">
+              {{ t.settings.deleteBoard }}
+            </DangerButton>
+          </template>
           <DangerButton
-            v-if="board.isOwner"
-            @click="confirmingReset = true"
+            v-if="mayLeave"
+            @click="confirmingLeave = true"
           >
-            {{ t.settings.resetLink }}
+            {{ t.settings.leave }}
           </DangerButton>
         </div>
-      </section>
-
-      <section
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-archive"
-      >
-        <h2
-          id="settings-archive"
-          class="section-heading px-1"
-        >
-          {{ t.settings.archive }}
-        </h2>
-        <p class="px-1 text-small text-text-muted">
-          {{ t.settings.archiveHint }}
-        </p>
-        <ArchivedDishList
-          v-if="archive"
-          :dishes="archive.dishes"
-          :is-owner="board.isOwner"
-          :may-restore="mayRestore"
-          @restore="restoreArchived"
-          @purge="dish => purging = dish"
-        />
-      </section>
-
-      <div class="flex flex-col items-start gap-3 border-t border-line pt-6">
-        <template v-if="board.isOwner">
-          <p
-            v-if="ownsBoard"
-            class="px-1 text-small text-text-muted"
-          >
-            {{ members.length > 1 ? t.settings.ownerLeaveHint : t.settings.aloneHint }}
-          </p>
-          <DangerButton @click="confirmingDeleteBoard = true">
-            {{ t.settings.deleteBoard }}
-          </DangerButton>
-        </template>
-        <DangerButton
-          v-if="mayLeave"
-          @click="confirmingLeave = true"
-        >
-          {{ t.settings.leave }}
-        </DangerButton>
-      </div>
+      </NeedsNet>
     </div>
 
     <AppSheet
