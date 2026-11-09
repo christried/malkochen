@@ -392,6 +392,21 @@ From the grilling session on 2026-11-09 (`CONTEXT.md` → Cooking, Snackbert Que
 | #452 | The batch celebration, and Klassiker after a batch | After #451 |
 | #453 | Changelog entry for this spec | Blocked by #451 and #452. Under `[Unreleased]`, no Version |
 
+### Phase 23: Offline editing (#456)
+
+From the offline editing grilling session on 2026-11-09 (`CONTEXT.md` → Unsent Change, New Dish, Dish History, Suggested Title; ADR 0012). Each ticket is a sub-issue of #456, with GitHub blocking links as well as its `## Blocked by` section. After Phase 22; the Operator intends to Release both together as 1.2.0.
+
+| # | Ticket | Note |
+|---|---|---|
+| #457 | Server: changes that can arrive late | Device-made ids, made-at times, a move into a deleted Column. API only |
+| #458 | The offline bar instead of the full-screen cover | Every change greyed out offline for now |
+| #459 | Unsent Changes: moves and Gekocht ✓ offline | After #457, #458 and #451. The first end-to-end path; the device store starts here |
+| #460 | Comments, Votes and title edits offline | After #459 |
+| #461 | Opening malkochen offline | After #459. Service worker; keep the Board page's single top-level await |
+| #462 | Adding a Dish offline | After #459 and #461 |
+| #463 | Signing out or switching account with Unsent Changes | After #459 |
+| #464 | Changelog entry for this spec | Blocked by every other ticket of #456. Under `[Unreleased]`, no Version |
+
 ## Keeping this file current
 
 When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.
