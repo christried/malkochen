@@ -31,6 +31,9 @@ export interface ToastAction {
   // Only goes somewhere in the app ("Öffnen"), so it works while malkochen
   // can't be reached; any other action is a change, greyed out then (#458).
   navigates?: boolean
+  // A change that works offline too (it becomes an Unsent Change, #459):
+  // "Rückgängig" on a move or Gekocht ✓ on this Board.
+  offline?: boolean
 }
 
 // How long "Rückgängig" is offered (handoff: Toast, 5s undo window).

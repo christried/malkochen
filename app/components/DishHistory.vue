@@ -79,7 +79,7 @@ const reportOpen = ref(false)
 // The Cooking the sheet is for; kept while the sheet moves out.
 const reporting = ref<{ id: string, cookedAt: string } | null>(null)
 function report(cooking: CookingView) {
-  if (!cooking.id) return
+  if (boardModule.isRecording(cooking.id)) return
   reporting.value = { id: cooking.id, cookedAt: cooking.cookedAt }
   reportOpen.value = true
 }
@@ -100,7 +100,7 @@ function keyOf(entry: DishHistoryEntry): string {
 const when = (at: string) => t.history.when(new Date(at))
 const nameOf = (person: { name: string } | null) => person?.name ?? t.history.deletedAccount
 // One still being recorded was recorded by whoever is looking.
-const recorderOf = (cooking: CookingView) => cooking.id ? nameOf(cooking.recordedBy) : me.value?.name ?? ''
+const recorderOf = (cooking: CookingView) => boardModule.isRecording(cooking.id) ? me.value?.name ?? '' : nameOf(cooking.recordedBy)
 
 // The Member's own Vote: thumbs up (true), down (false), or none.
 const myVote = computed(() => voteOf(props.dish, me.value?.id))
@@ -249,7 +249,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
         </p>
       </div>
       <CookButton
-        v-if="boardModule.may('moveDishes') && mayChange"
+        v-if="boardModule.may('moveDishes')"
         class="shrink-0 px-4 py-2.5"
         :cooked="dish.cookings.length > 0"
         @cook="origin => emit('cook', origin)"
@@ -363,7 +363,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               :class="iconButton"
               :aria-label="t.cooking.deleteLabel(new Date(entry.cooking.cookedAt))"
               :data-tooltip="t.cooking.deleteTip"
-              :disabled="!entry.cooking.id"
+              :disabled="boardModule.isRecording(entry.cooking.id)"
               @click="emit('deleteCooking', entry.cooking)"
             >
               <svg
@@ -416,7 +416,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             {{ entry.comment.text }}
           </p>
           <SnackbertReportButton
-            v-if="entry.kind === 'cooking' && entry.cooking.id && snackbert.on.value"
+            v-if="entry.kind === 'cooking' && !boardModule.isRecording(entry.cooking.id) && snackbert.on.value"
             :reported="snackbert.isReported(entry.cooking.id)"
             @click="report(entry.cooking)"
           />

@@ -4,6 +4,7 @@ import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { TOUR_VERSION } from '../../app/tour/tour'
 import { signIn } from './auth'
 import { moving } from './clips'
+import { titles } from './board'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
 import { fastPolls } from './polls'
@@ -126,15 +127,16 @@ test('losing the connection on a Board shows the offline bar over it, every chan
   await expect(page.locator('[data-offline-bar]')).toHaveAttribute('aria-live', 'polite')
   await expect(page.getByRole('alertdialog')).toHaveCount(0)
   expect(await page.locator('main').evaluate(el => el.closest('[inert]') === null)).toBe(true)
-  // Adding is greyed out and says why; cooking and the card's menu are gone.
+  // Adding is greyed out and says why; cooking and the card's menu stay,
+  // as moving and cooking work offline (#459).
   await expect(add).toHaveAttribute('aria-disabled', 'true')
   await expect(add).toHaveAttribute('data-tooltip', NEEDS_NET)
   // Playwright never clicks a button that says it is disabled; a finger can.
   await add.dispatchEvent('click')
   await expect(page.getByRole('status').filter({ hasText: NEEDS_NET })).toBeVisible()
   await expect(page.getByRole('dialog', { name: 'Gericht hinzufügen' })).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' })).toBeVisible()
 
   // The Dish's detail opens to read; its changes are greyed out.
   await page.getByRole('link', { name: 'Linsensuppe' }).click()
@@ -244,7 +246,62 @@ test('no Changelog Popup while offline: it waits until the connection is back', 
   await expect(popup).toBeVisible()
 })
 
-test('with reduced motion the Offline page shows its clip still', async ({ page, context }) => {
+// Unsent Changes (#459): offline, a Dish can be moved and cooked. Each shows
+// at once, the bar counts them, and once the connection is back they go out
+// in order, the bar says "Alles gesendet", and another Member sees both.
+// Hroswitha owns the Board, Trotula joins it; both used by this file only.
+const HROSWITHA = ALLOWLISTED[202]
+const TROTULA = ALLOWLISTED[203]
+
+test('a move and a Gekocht ✓ made offline are counted, sent once back, and reach another Member', async ({ page, browser, context }) => {
+  test.slow()
+  await removeUsers(HROSWITHA, TROTULA)
+  await fastPolls(page)
+  await signIn(page, HROSWITHA)
+  const res = await page.request.post('/api/boards', { data: { name: 'Offline-Küche', emoji: '🥘' } })
+  expect(res.status()).toBe(201)
+  const { id: boardId } = await res.json() as { id: string }
+  for (const title of ['Linsensuppe', 'Pasta']) {
+    expect((await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl' } })).status()).toBe(201)
+  }
+  const token = await inviteToken(page, boardId)
+
+  const other = await newTab(browser)
+  await fastPolls(other)
+  await signIn(other, TROTULA)
+  expect((await other.request.post(`/api/invites/${token}/join`, { headers: { origin: E2E_ORIGIN } })).status()).toBe(200)
+  await gotoHydrated(other, `/b/${boardId}`)
+  await gotoHydrated(page, `/b/${boardId}`)
+  await expect(titles(other, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+
+  // Moved with "Verschieben nach…" and cooked with "Gekocht ✓": both show at
+  // once, and offline they are not greyed out.
+  await page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' }).click()
+  const menu = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await menu.getByRole('button', { name: 'Verschieben nach…' }).click()
+  await menu.getByRole('button', { name: 'Diese Woche' }).click()
+  await expect(titles(page, 'Diese Woche')).toHaveText(['Linsensuppe'])
+  await page.getByRole('button', { name: 'Gekocht ✓: „Pasta“' }).click()
+  await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'])
+
+  await expect(bar(page, '2 noch nicht gesendet')).toBeVisible()
+  await expect(titles(other, 'Gekocht')).toHaveCount(0)
+
+  await context.setOffline(false)
+
+  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
+  await expect(titles(other, 'Diese Woche')).toHaveText(['Linsensuppe'], { timeout: 15_000 })
+  await expect(titles(other, 'Gekocht')).toHaveText(['Pasta'], { timeout: 15_000 })
+  await expect(bar(page, 'Alles gesendet')).toBeHidden({ timeout: 10_000 })
+  // Still there for the one who made them.
+  await expect(titles(page, 'Diese Woche')).toHaveText(['Linsensuppe'])
+  await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'])
+})
+
+test('with reduced motion the Offline page shows its clip still',async ({ page, context }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await signIn(page)
   await gotoHydrated(page, '/')

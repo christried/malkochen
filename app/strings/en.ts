@@ -4,11 +4,23 @@
 // and Topfbert keep their names. Relative imports, as in de.ts.
 import type { EventGroup } from '../../shared/admin'
 import type { DishField, EventKind } from '../../shared/event-kinds'
-import type { Strings } from './de'
+import type { Strings, UnsentKindName } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
+
+// What an Unsent Change did, for the toast naming those that didn't arrive.
+function unsentChange(kind: UnsentKindName, label: string): string {
+  const named = `“${label}”`
+  switch (kind) {
+    case 'move': return `${named} moved`
+    case 'cook':
+    case 'cookMany': return `${named} cooked`
+    case 'uncook':
+    case 'uncookMany': return `${named} uncooked`
+  }
+}
 
 const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
 
@@ -565,6 +577,14 @@ export const en: Strings = {
     bar: 'Offline. Your changes will arrive as soon as you’re back online.',
     unreachable: 'malkochen can’t be reached right now.',
     needsNet: 'Only works online',
+  },
+  unsent: {
+    count: (count: number) => `${number(count)} not sent yet`,
+    allSent: 'All sent',
+    didntArrive: (changes: { kind: UnsentKindName, label: string }[]) => {
+      const named = changes.map(({ kind, label }) => unsentChange(kind, label)).join(', ')
+      return `${number(changes.length)} ${plural(changes.length, { one: 'change', other: 'changes' })} didn’t arrive: ${named}`
+    },
   },
   error: {
     headline: 'Something got burnt.',

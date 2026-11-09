@@ -10,16 +10,19 @@ export function useConnectionState() {
   return useState<Connection>('connection', () => 'online')
 }
 
-// `answering`: malkochen answers. `mayChange`: the one place every change
-// asks whether it may act; offline, it is greyed out (`needsNet`:
-// aria-disabled, with "Geht nur mit Netz" as its tooltip) or hidden, or sits
-// in a NeedsNet group. For now every change needs a connection; later ones
-// work offline too, so what isn't a change asks `answering`.
+// `answering`: malkochen answers. `mayChange`: the one place a change that
+// needs a connection asks whether it may act; offline, it is greyed out
+// (`needsNet`: aria-disabled, with "Geht nur mit Netz" as its tooltip) or
+// hidden, or sits in a NeedsNet group. `mayChangeOffline`: the same for a
+// change that works offline too (it becomes an Unsent Change, #459): moving
+// within the Board and "Gekocht ✓" with their "Rückgängig"; always yes. What
+// isn't a change asks `answering`.
 export function useConnection() {
   const state = useConnectionState()
   const t = useStrings()
   const answering = computed(() => state.value === 'online')
   const mayChange = answering
+  const mayChangeOffline = computed(() => true)
   const needsNet = computed(() => mayChange.value ? {} : { 'aria-disabled': 'true' as const, 'data-tooltip': t.offline.needsNet, 'data-needs-net': '' })
-  return { state: readonly(state), answering, mayChange, needsNet }
+  return { state: readonly(state), answering, mayChange, mayChangeOffline, needsNet }
 }

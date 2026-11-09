@@ -88,7 +88,11 @@ function commentOn(dish: DishView, toBoard?: BoardListing | null) {
 // Dish, and deleting a Cooking, go through it, and the page turns
 // what it answers into Toasts, the Gekocht celebration, haptics and focus
 // (showResult). The forms under the page get it injected (useBoardModule).
-const boardModule = createBoardModule(board, httpTransport())
+// The user's Unsent Changes (#459) are shared by every Board's module: a
+// move or "Gekocht ✓" that gets no answer stays on screen and is sent once
+// malkochen answers (none on the server, which renders without them).
+const unsent = me.value ? useUnsentChanges().open(me.value.id) : null
+const boardModule = createBoardModule(board, httpTransport(), unsent ? { unsent } : {})
 provide(boardModuleKey, boardModule)
 const confetti = useConfetti()
 const gekochtPill = useGekochtPill()
@@ -212,7 +216,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   press: dishId => selection.toggle(dishId),
   paused: () => selecting.value,
   // Without "move Dishes" no card lifts; a long-press still selects one.
-  pinned: () => !mayMove.value || !mayChange.value,
+  pinned: () => !mayMove.value || !mayChangeOffline.value,
 })
 // What plays on the Board: the lifted card's Placeholder, the hovered
 // card's, or one where the Board comes to rest; and beside it an empty
@@ -222,7 +226,35 @@ const boardLoop = useBoardLoop(columnsEl, {
   covered: () => !!route.params.dish || adding.value || menuOpen.value || choosingTarget.value || showingShortcuts.value || showingSettings.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
-useBoardSync(() => id, boardModule, () => dragging.value)
+const { syncNow } = useBoardSync(() => id, boardModule, () => dragging.value, unsent)
+
+// Unsent Changes (#459): once the app is up, those left from last time show
+// on the Board and go out; they go again whenever malkochen answers after
+// not having (the connection turns `online`). When a send has taken the
+// Board's own through, it asks for a fresh Board, so others' changes show.
+// Those malkochen couldn't apply are named, once, in one Toast.
+const connection = useConnectionState()
+if (unsent) {
+  watch(() => connection.value === 'online', (online) => {
+    if (online && unsent.count.value > 0) void unsent.send()
+  })
+  watch(unsent.lastRun, (run) => {
+    if (!run) return
+    if (unsent.forBoard(id).length === 0) void syncNow()
+    tellDropped()
+  })
+}
+onMounted(async () => {
+  if (!unsent) return
+  await boardModule.layOverUnsent()
+  if (unsent.count.value > 0) void unsent.send()
+  tellDropped()
+})
+function tellDropped() {
+  const dropped = unsent?.takeDropped() ?? []
+  if (dropped.length === 0) return
+  showToast({ text: t.unsent.didntArrive(dropped), duration: NOTICE_MS })
+}
 // Each Column's cards as they show, with the slot while a Dish is dragged.
 const lists = computed(() => new Map(board.value?.columns.map(c => [c.id, entries(c)])))
 const listOf = (column: { id: string }) => lists.value.get(column.id) ?? []
@@ -359,7 +391,7 @@ const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
 // While malkochen can't be reached (#458), no change can be made: adding is
 // greyed out and says why, a card has no "Gekocht ✓" or menu, none lifts,
 // and the add lane is gone (useConnection).
-const { answering, mayChange, needsNet } = useConnection()
+const { answering, mayChange, mayChangeOffline, needsNet } = useConnection()
 function addDish() {
   if (mayChange.value) adding.value = true
   else showNotice(t.offline.needsNet)
@@ -793,7 +825,7 @@ async function showBulkResult(result: BulkResult, where?: { board?: string, colu
   if (notice) {
     const text = bulkNoticeText(notice, result.dishes.length, where)
     showToast(undo
-      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(r => showBulkResult(r)) }] }
+      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, offline: notice === 'cookedMany', run: () => void undo().then(r => showBulkResult(r)) }] }
       : { text, duration: NOTICE_MS })
   }
   void settled?.then(r => showBulkResult(r))
@@ -916,7 +948,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     ...toBoard && { unseen: t.dish.cookedOn(boardLabel(toBoard)) },
     duration: UNDO_WINDOW_MS,
     actions: undo
-      ? [{ label: t.dish.undo, run: () => {
+      ? [{ label: t.dish.undo, offline: !toBoard, run: () => {
           vote?.takeBack()
           void undo().then(r => showResult(r))
         } }]
@@ -1165,7 +1197,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       :board-id="board.id"
                     />
                     <button
-                      v-if="mayChange && (mayMove || mayArchive(dish))"
+                      v-if="mayMove || (mayChange && mayArchive(dish))"
                       type="button"
                       class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
                       :aria-label="t.dish.menu(dish.title)"
@@ -1195,7 +1227,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       /></svg>
                     </button>
                     <CookButton
-                      v-if="mayMove && mayChange"
+                      v-if="mayMove"
                       class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
                       :cooked="dish.cookings.length > 0"
                       :label="t.dish.cookLabel(dish.title)"
@@ -1339,6 +1371,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-model:open="reportOpen"
       :dish="reportingCooking?.dish ?? ''"
       :cooking-id="reportingCooking?.cookingId ?? null"
+      :waiting="!!reportingCooking && !!unsent?.hasCooking(reportingCooking.cookingId)"
       :cooked-at="reportingCooking?.cookedAt ?? null"
     />
 
@@ -1359,7 +1392,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         ref="menuSteps"
         class="mt-5 flex flex-col gap-2"
       >
-        <NeedsNet>
           <template v-if="!choosingColumn">
             <button
               v-if="mayMove"
@@ -1370,13 +1402,14 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             >
               {{ t.dish.moveTo }}
             </button>
-            <DangerButton
-              v-if="menuDish && mayArchive(menuDish)"
-              data-tour="menu-delete"
-              @click="deleteFromMenu"
-            >
-              {{ t.dish.delete }}
-            </DangerButton>
+            <NeedsNet v-if="menuDish && mayArchive(menuDish)">
+              <DangerButton
+                data-tour="menu-delete"
+                @click="deleteFromMenu"
+              >
+                {{ t.dish.delete }}
+              </DangerButton>
+            </NeedsNet>
           </template>
           <template v-else>
             <button
@@ -1407,7 +1440,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
               @move="moveFromMenu"
             />
           </template>
-        </NeedsNet>
       </div>
     </AppSheet>
 
