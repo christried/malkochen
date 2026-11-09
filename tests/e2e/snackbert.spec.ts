@@ -155,3 +155,80 @@ test('without Snackbert switched on, a Cooking has no "Snackbert melden"', async
   await expect(history.locator('[data-cooking]')).toHaveCount(1)
   await expect(history.locator('[data-snackbert-report]')).toHaveCount(0)
 })
+
+// The Snackbert Question (#425): after a Cooking recorded here, once the
+// Gekocht toast has gone, Snackbert asks. When exactly (and when not) is
+// covered by tests/client/snackbert-question.test.ts. He never asks in the
+// browser tests unless the page turns him on, as here.
+const ASKED = ALLOWLISTED[196]
+const ASKED_IN_DETAIL = ALLOWLISTED[197]
+
+async function letSnackbertAsk(page: Page) {
+  await page.addInitScript(() => {
+    (window as { e2eSnackbertQuestion?: boolean }).e2eSnackbertQuestion = true
+  })
+}
+
+const question = (page: Page) => page.locator('[data-snackbert-question]')
+
+test('cooking a Dish, Snackbert asks once the toast has gone; "Heute nicht" sends him away, "Ja, gern" reports it', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await removeUsers(ASKED)
+  await letSnackbertAsk(page)
+  await signIn(page, ASKED)
+  await gotoHydrated(page, '/')
+  await seedDish(page, { title: 'Pilzpasta', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedDish(page, { title: 'Linsensuppe', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await switchSnackbertOn(page, ASKED)
+  await gotoHydrated(page, '/')
+
+  // "Heute nicht": his last word, then he goes.
+  await page.getByRole('button', { name: 'Gekocht ✓: „Pilzpasta“' }).click()
+  const toast = page.locator('[data-toast]')
+  await expect(toast).toContainText('Gekocht')
+  await expect(question(page)).toHaveCount(0)
+  await expect(toast).toBeHidden({ timeout: 10_000 })
+  await expect(question(page)).toContainText('Mmh, Pilzpasta! Magst du mir erzählen, wie viel du davon hattest?')
+  await question(page).getByRole('button', { name: 'Heute nicht' }).click()
+  await expect(question(page)).toContainText('Alles klar, lass es dir schmecken!')
+  await expect(question(page)).toHaveCount(0)
+
+  // "Ja, gern": the report sheet for that Cooking.
+  await page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' }).click()
+  await expect(question(page)).toContainText('Mmh, Linsensuppe!', { timeout: 10_000 })
+  await question(page).getByRole('button', { name: 'Ja, gern' }).click()
+  await expect(question(page)).toHaveCount(0)
+  const sheet = page.getByRole('dialog', { name: 'Snackbert melden' })
+  await expect(sheet.getByText('Linsensuppe, heute gekocht')).toBeVisible()
+  await sheet.getByRole('button', { name: 'Text', exact: true }).click()
+  await sheet.getByRole('textbox', { name: 'Ein paar Worte' }).fill('Ein großer Teller')
+  await sheet.getByRole('button', { name: 'Senden', exact: true }).click()
+  await expect(sheet.getByText('Danke dir! Ich rechne nach.')).toBeVisible()
+  await sheet.getByRole('button', { name: 'Fertig' }).click()
+  await expect(sheet).toBeHidden()
+  expect(reportsSent().map(request => (request.body as SnackbertSentReport).report.text)).toEqual(['Ein großer Teller'])
+
+  // The Dish History shows it as reported.
+  await page.getByRole('link', { name: 'Linsensuppe' }).click()
+  const history = page.getByRole('dialog', { name: 'Linsensuppe' }).locator('[data-dish-history]')
+  await expect(history.getByRole('button', { name: 'Noch einmal an Snackbert melden' })).toContainText('An Snackbert gemeldet ✓')
+})
+
+test('"Gekocht" in the Dish detail: Snackbert asks there too', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await removeUsers(ASKED_IN_DETAIL)
+  await letSnackbertAsk(page)
+  await signIn(page, ASKED_IN_DETAIL)
+  await gotoHydrated(page, '/')
+  await seedDish(page, { title: 'Gemüsecurry', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await switchSnackbertOn(page, ASKED_IN_DETAIL)
+  await gotoHydrated(page, '/')
+
+  await page.getByRole('link', { name: 'Gemüsecurry' }).click()
+  const detail = page.getByRole('dialog', { name: 'Gemüsecurry' })
+  await detail.getByRole('button', { name: 'Gekocht' }).click()
+  const asking = detail.locator('[data-snackbert-question]')
+  await expect(asking).toContainText('Mmh, Gemüsecurry!', { timeout: 10_000 })
+  await asking.getByRole('button', { name: 'Ja, gern' }).click()
+  await expect(page.getByRole('dialog', { name: 'Snackbert melden' }).getByText('Gemüsecurry, heute gekocht')).toBeVisible()
+})

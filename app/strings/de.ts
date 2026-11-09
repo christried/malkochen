@@ -812,6 +812,17 @@ export const de = {
   },
   // The email with the sign-in code (#345, server/email/index.ts): the code
   // to type where sign-in started, and a link that signs in where it opens.
+  // The Snackbert Question after a Cooking (#425; the wording decided on
+  // #422, never judgemental): the Question naming the Dish, "Ja" and
+  // "Nein", and his last word after "Nein". `label`: his bubble's name for
+  // screen readers.
+  snackbertQuestion: {
+    label: 'Snackbert',
+    ask: (dish: string) => `Mmh, ${dish}! Magst du mir erzählen, wie viel du davon hattest?`,
+    yes: 'Ja, gern',
+    no: 'Heute nicht',
+    bye: 'Alles klar, lass es dir schmecken!',
+  },
   // Reporting a Cooking to Snackbert from the Dish History (#424, decisions in #422): the pill, the report sheet, its confirmation and what it says when sending didn't work. Snackbert is never judgemental: curious, warm, cheeky.
   snackbertReport: {
     report: 'Snackbert melden',

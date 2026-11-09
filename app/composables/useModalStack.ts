@@ -33,3 +33,9 @@ export function useAnyModalOpen(): Readonly<Ref<boolean>> {
   const stack = useState<string[]>('modal-stack', () => [])
   return computed(() => stack.value.length > 0)
 }
+
+// How many modals are open (the Dish detail counts as one).
+export function useOpenModalCount(): Readonly<Ref<number>> {
+  const stack = useState<string[]>('modal-stack', () => [])
+  return computed(() => stack.value.length)
+}
