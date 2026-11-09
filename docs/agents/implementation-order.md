@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session: a branch from `staging`, a PR into `staging`.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -381,6 +381,16 @@ Tickets written `christried/snackbert#n` live in the Snackbert repo: read them w
 | #424 | Sending a Snackbert Report from the Dish History | The first end-to-end path |
 | #425 | The Snackbert Question after a Cooking | |
 | #426 | Device check: real Snackbert Reports from Staging | `ready-for-human`: skip, the user does it |
+
+### Phase 22: Gekocht on several Dishes at once (#449)
+
+From the grilling session on 2026-11-09 (`CONTEXT.md` → Cooking, Snackbert Question; ADR 0003 per Dish). Each ticket is a sub-issue of #449, with GitHub blocking links as well as its `## Blocked by` section. Offline editing is the next spec; the Operator intends to Release both together as 1.2.0.
+
+| # | Ticket | Note |
+|---|---|---|
+| #451 | Gekocht ✓ for several selected Dishes, with one undo | Server, Board module, bar, toast. No batch celebration yet |
+| #452 | The batch celebration, and Klassiker after a batch | After #451 |
+| #453 | Changelog entry for this spec | Blocked by #451 and #452. Under `[Unreleased]`, no Version |
 
 ## Keeping this file current
 
