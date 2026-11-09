@@ -231,6 +231,7 @@ export const en: Strings = {
     cook: 'Cooked ✓',
     cookLabel: (count: number) => `Cooked ✓: ${dishCount(count)}`,
     cooked: (count: number) => `${dishCount(count)} cooked`,
+    cookedPill: (count: number) => `${dishCount(count)} cooked ✓`,
     cookFailed: (count: number) => `${dishCount(count)} couldn’t be marked as cooked. ${tryAgain}`,
   },
   cooking: {

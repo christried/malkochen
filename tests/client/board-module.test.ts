@@ -1206,7 +1206,8 @@ test('a cook of several answers the Dishes it made a Klassiker', async () => {
 
   const ended = await module.cookDishes(['a', 'd'])!.settled
 
-  expect(ended!.klassiker!.map(d => d.id)).toEqual(['a'])
+  expect(ended!.klassiker!.map(k => [k.dish.id, k.cooking.id])).toEqual([['a', ended!.dishes[0]!.cookings[0]!.id]])
+  expect(ended!.klassiker![0]!.cooking.id).not.toBe('')
 })
 
 test('without "move Dishes" a cook of several is refused at once', () => {

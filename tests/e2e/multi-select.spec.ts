@@ -3,6 +3,7 @@ import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { tab, titles } from './board'
+import { ANY_CHEER, cheer, confettiOrigin, gekochtPill } from './celebration'
 import { contrast, rgb } from './colour'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
@@ -230,9 +231,27 @@ test('desktop: "Gekocht ✓" in the bar cooks several Dishes together, with one 
   await ctrlClick(card(page, 'Linsensuppe'))
   await checkbox(page, 'Shakshuka').click()
   await expect(bar(page)).toContainText('2 ausgewählt')
-  await bar(page).getByRole('button', { name: /^Gekocht ✓/ }).click()
+  // The button's middle as it is clicked: the bar may still be rising in.
+  const cook = bar(page).getByRole('button', { name: /^Gekocht ✓/ })
+  type Pressed = { pressedAt?: { x: number, y: number } }
+  await cook.evaluate((el) => {
+    el.addEventListener('click', () => {
+      const box = el.getBoundingClientRect()
+      ;(window as unknown as Pressed).pressedAt = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }, { once: true, capture: true })
+  })
+  await cook.click()
 
   await expect(bar(page)).toBeHidden()
+  // One celebration for both (#452): confetti from the bar's button, the
+  // pill with the count and Topfbert's cheer.
+  const origin = await confettiOrigin(page)
+  const button = await page.evaluate(() => (window as unknown as Pressed).pressedAt)
+  expect(button, 'the click reached the button').toBeDefined()
+  expect(Math.abs(origin.x - button!.x)).toBeLessThan(2)
+  expect(Math.abs(origin.y - button!.y)).toBeLessThan(2)
+  await expect(gekochtPill(page).locator('p')).toHaveText('2 Gerichte gekocht ✓')
+  await expect(cheer(gekochtPill(page))).toHaveText(ANY_CHEER)
   const toast = page.getByRole('status').filter({ hasText: '2 Gerichte gekocht' })
   await expect(toast).toBeVisible()
   await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
@@ -262,6 +281,8 @@ test('desktop: "Gekocht ✓" in the bar on one Dish cooks it as its card does', 
 
   await expect(bar(page)).toBeHidden()
   await expect(titles(page, 'Gekocht')).toHaveText(['Linsensuppe'])
+  // The card's own celebration: "Gekocht ✓" in the pill, no count (#452).
+  await expect(gekochtPill(page).locator('p')).toHaveText('Gekocht ✓')
   const toast = page.getByRole('status').filter({ has: page.getByRole('button', { name: 'Kommentieren' }) })
   await expect(toast).toBeVisible()
   await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()

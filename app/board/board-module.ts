@@ -74,8 +74,8 @@ export interface BulkResult {
   focus?: FocusTarget
   settled?: Promise<BulkResult>
   // For `cookDishes`, once settled: the Dishes whose new Cooking made them a
-  // Klassiker, in Board order (#452 celebrates them).
-  klassiker?: DishView[]
+  // Klassiker, each with that Cooking, in Board order (#452 celebrates them).
+  klassiker?: { dish: DishView, cooking: CookingView }[]
 }
 
 // A write the server refused or never answered; `status` is its HTTP status
@@ -803,7 +803,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         }
         for (const id of ids) rolledBackTo.delete(id)
         // The Dishes this Cooking made a Klassiker (#452 celebrates them).
-        const klassiker = dishes.filter(d => answers.find(a => a.id === d.id)?.cookings.length === MILESTONE_COOKINGS)
+        const klassiker = dishes
+          .filter(d => answers.find(a => a.id === d.id)?.cookings.length === MILESTONE_COOKINGS)
+          .map(dish => ({ dish, cooking: recorded.get(dish.id)! }))
         return { dishes, klassiker }
       }
       catch (error) {
