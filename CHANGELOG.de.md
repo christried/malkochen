@@ -4,6 +4,14 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+### Changed
+
+- Die Datenschutzerklärung sagt jetzt, dass malkochen bei TikTok-Links, wie bei Instagram, die öffentliche Einbettungsseite des Posts liest.
+
+### Fixed
+
+- Ein eingefügter TikTok-Link bringt wieder Titel, Bild, Creator und die Beschreibung mit. TikTok hatte sie still und leise nicht mehr rausgegeben.
+
 ## [1.1.0] - 2026-10-26
 
 ### Added
