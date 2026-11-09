@@ -350,8 +350,8 @@ const adding = ref(false)
 // something shared. Once the Owner switches it off, the next check of the
 // Board takes the button away (useBoardSync).
 const mayAdd = computed(() => board.value?.permissions.addDishes ?? false)
-// The same for moving Dishes: no drag, no "Gekocht ✓", no "Verschieben
-// nach…". Archiving goes by each Dish, as one's own may always be.
+// The same for moving Dishes: no drag, no "Gekocht ✓" (also the selection's),
+// no "Verschieben nach…". Archiving goes by each Dish, as one's own may always be.
 const mayMove = computed(() => boardModule.may('moveDishes'))
 const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
 // Your settings (UserSettingsSheet), from the header's cogwheel (#282).
@@ -711,8 +711,8 @@ function deleteFromMenu() {
 
 // The selection's "Verschieben": "Verschieben nach…" for all of them, with
 // this Board's Columns (not the one they're all in, if they are) and the
-// user's other Boards; no Gekocht Column, as cooking stays one Dish at a
-// time. Picking one moves them all and ends the selection.
+// user's other Boards; no Gekocht Column, as the bar's "Gekocht ✓" cooks
+// them. Picking one moves them all and ends the selection.
 const choosingTarget = ref(false)
 const selectionColumnId = computed(() => {
   const columns = new Set(selection.selectedIds.value.map(id => board.value && dishOnBoard(board.value, id)?.column.id))
@@ -729,6 +729,22 @@ function moveSelected(columnId: string, toBoard: BoardListing | null) {
     : boardModule.moveDishes(ids, { columnId })
   const where = toBoard ? { board: boardLabel(toBoard), column: column.name } : { column: column.name }
   if (result) void showBulkResult(result, where)
+}
+// The selection's "Gekocht ✓" (#451). One Dish cooks as its card does, with
+// the celebration, the comment shortcut and the Snackbert Question; several
+// are cooked at once, with "Rückgängig" and no celebration. He starts no
+// Question for them, and a pending one is dropped.
+function cookSelected(origin: Point) {
+  const ids = [...selection.selectedIds.value]
+  selection.clear()
+  if (ids.length === 1) {
+    cookFromCard(ids[0]!, origin)
+    return
+  }
+  const result = boardModule.cookDishes(ids)
+  if (!result) return
+  if (snackbertAsks) snackbertQuestion.cookedMany()
+  void showBulkResult(result)
 }
 // The selection's "Löschen": all of them at once, with "Rückgängig".
 function deleteSelected() {
@@ -761,6 +777,9 @@ function bulkNoticeText(notice: BulkNotice, count: number, where?: { board?: str
     case 'deletedMany': return t.selection.deleted(count)
     case 'moveManyFailed': return t.selection.moveFailed(count)
     case 'deleteManyFailed': return t.selection.deleteFailed(count)
+    case 'cookedMany': return t.selection.cooked(count)
+    case 'cookManyFailed': return t.selection.cookFailed(count)
+    case 'uncookManyFailed':
     case 'restoreManyFailed':
     case 'returnManyFailed': return t.selection.backFailed(count)
     case 'notAllowedMany': return t.selection.notAllowed
@@ -1251,6 +1270,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :can-move="mayMove"
       :can-delete="selection.selectedIds.value.every(dishId => boardModule.may('archiveDishes', dishId))"
       :lifted="!!toast"
+      @cook="cookSelected"
       @move="choosingTarget = true"
       @delete="deleteSelected"
       @close="selection.clear()"

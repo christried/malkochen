@@ -6,7 +6,7 @@ import type { CommentView } from '../../server/utils/comments'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { DishHistory } from '../../server/utils/dish-history'
-import type { AddedDish, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
@@ -263,6 +263,50 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return placedOnServer(places.map(p => p.dishId))
   }
 
+  // "Gekocht ✓" on several (#451): all located on this Board (404 if one
+  // isn't), else 400 for one on another Board. Those not in the Gekocht
+  // Column go to its top in the order sent; each records a Cooking.
+  function cookManyOnServer(ids: string[]): CookedDish[] | null {
+    const found = allLocated(ids)
+    if (!found) return null
+    if (found.some(f => !server.columns.includes(f.column))) throw new WriteFailed(400)
+    const gekocht = server.columns.find(c => c.isGekocht)!
+    const moving = found.filter(f => f.column !== gekocht)
+    for (const { dish, column } of moving) column.dishes.splice(column.dishes.indexOf(dish), 1)
+    gekocht.dishes.unshift(...moving.map(f => f.dish))
+    const made = new Map<string, CookingView>()
+    for (const { dish } of found) {
+      const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), recordedBy: null }
+      dish.cookings.unshift(cooking)
+      made.set(dish.id, cooking)
+    }
+    return placedOnServer(ids).map(placed => ({ ...placed, cooking: structuredClone(made.get(placed.id)!) }))
+  }
+
+  // "Rückgängig" after that: each Cooking goes (404 for one the server
+  // doesn't have); a Dish with `back` must be in a Gekocht Column (400
+  // otherwise) and goes there.
+  function uncookManyOnServer(undos: CookingUndo[]): PlacedDish[] | null {
+    const found = undos.map(u => located(d => d.cookings.some(c => c.id === u.cookingId)))
+    if (found.some(f => !f)) return null
+    if (found.some((f, i) => undos[i]!.back && !f!.column.isGekocht)) throw new WriteFailed(400)
+    undos.forEach((u, i) => {
+      const dish = found[i]!.dish
+      dish.cookings = dish.cookings.filter(c => c.id !== u.cookingId)
+    })
+    const ordered = undos.map((u, i) => ({ back: u.back, ...found[i]! }))
+      .filter(o => o.back)
+      .sort((a, b) => a.back!.columnId.localeCompare(b.back!.columnId) || a.back!.index - b.back!.index)
+    for (const { back, dish } of ordered) {
+      const now = located(d => d.id === dish.id)!
+      now.column.dishes.splice(now.column.dishes.indexOf(dish), 1)
+      const into = columnOnServer(back!.columnId)
+      if (!into) throw new WriteFailed(400)
+      into.column.dishes.splice(Math.min(back!.index, into.column.dishes.length), 0, dish)
+    }
+    return placedOnServer(found.map(f => f!.dish.id))
+  }
+
   // Each keeps the index it had before any of them went, so restoring them
   // from the top puts each back at its own.
   function deleteManyOnServer(ids: string[]): true | null {
@@ -425,6 +469,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     restoreCooking: cookingId => answer('restoreCooking', cookingId, () => restoreCookingOnServer(cookingId)),
     moveDishes: (ids, columnId) => answer('moveDishes', `${ids.join()} ${columnId}`, () => moveManyOnServer(ids, columnId)),
     placeDishes: places => answer('placeDishes', places.map(p => `${p.dishId}:${p.columnId}:${p.index}`).join(), () => placeManyOnServer(places)),
+    cookDishes: ids => answer('cookDishes', ids.join(), () => cookManyOnServer(ids)),
+    uncookDishes: cookings => answer('uncookDishes', cookings.map(c => c.back ? `${c.cookingId}:${c.back.columnId}:${c.back.index}` : c.cookingId).join(), () => uncookManyOnServer(cookings)),
     deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),
     restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),

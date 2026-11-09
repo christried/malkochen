@@ -283,6 +283,10 @@ export const de = {
     deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht archivieren. Versuch es gleich noch mal.`,
     notAllowed: 'Das darfst du mit diesen Gerichten auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
     backFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht zurückholen.`,
+    cook: 'Gekocht ✓',
+    cookLabel: (count: number) => `Gekocht ✓: ${dishCount(count)}`,
+    cooked: (count: number) => `${dishCount(count)} gekocht`,
+    cookFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,
   },
   cooking: {
     summary: (count: number, last: Date) => `${number(count)}× gekocht · zuletzt ${addedDate(last)}`,

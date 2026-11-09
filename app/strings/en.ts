@@ -228,6 +228,10 @@ export const en: Strings = {
     deleteFailed: (count: number) => `${dishCount(count)} couldn’t be archived. ${tryAgain}`,
     notAllowed: 'You can’t do that with these dishes on this board any more. The owner decides that.',
     backFailed: (count: number) => `${dishCount(count)} couldn’t be brought back.`,
+    cook: 'Cooked ✓',
+    cookLabel: (count: number) => `Cooked ✓: ${dishCount(count)}`,
+    cooked: (count: number) => `${dishCount(count)} cooked`,
+    cookFailed: (count: number) => `${dishCount(count)} couldn’t be marked as cooked. ${tryAgain}`,
   },
   cooking: {
     summary: (count: number, last: Date) => `cooked ${number(count)}×, last on ${addedDate(last)}`,

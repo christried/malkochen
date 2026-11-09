@@ -1,12 +1,12 @@
 <script setup lang="ts">
 // The bar at the bottom while Dishes are selected (#218): how many, and
-// what can be done with all of them at once, "Verschieben" and "Löschen".
-// No "Gekocht": cooking stays one Dish at a time. Its × ends the
+// what can be done with all of them at once, "Gekocht ✓" and "Verschieben"
+// (both for whoever may move Dishes) and "Archivieren". Its × ends the
 // selection. Shaped like the Toast (handoff Toast colours), which it takes
 // the place of; a Toast still showing pushes it up. Each action only if the
 // user may take it on all of them (their Permissions).
 defineProps<{ count: number, lifted?: boolean, canMove: boolean, canDelete: boolean }>()
-defineEmits<{ move: [], delete: [], close: [] }>()
+defineEmits<{ cook: [origin: Point], move: [], delete: [], close: [] }>()
 const t = useStrings()
 </script>
 
@@ -40,7 +40,16 @@ const t = useStrings()
     <button
       v-if="canMove"
       type="button"
-      class="shrink-0 rounded-pill px-3.5 py-2 text-button transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+      class="shrink-0 rounded-pill px-2 py-2 text-button transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+      :aria-label="t.selection.cookLabel(count)"
+      @click="$emit('cook', centreOf(($event.currentTarget as HTMLElement).getBoundingClientRect()))"
+    >
+      {{ t.selection.cook }}
+    </button>
+    <button
+      v-if="canMove"
+      type="button"
+      class="shrink-0 rounded-pill px-2 py-2 text-button transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
       aria-haspopup="dialog"
       @click="$emit('move')"
     >
@@ -49,7 +58,7 @@ const t = useStrings()
     <button
       v-if="canDelete"
       type="button"
-      class="danger-fill shrink-0 rounded-pill px-3.5 py-2 text-button transition-[scale,background-color] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+      class="danger-fill shrink-0 rounded-pill px-2 py-2 text-button transition-[scale,background-color] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
       @click="$emit('delete')"
     >
       {{ t.selection.delete }}

@@ -6,6 +6,7 @@ import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
 import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import { MILESTONE_COOKINGS } from '../utils/achievement'
 import { dishOnBoard } from '../../shared/board'
 import { viewerMay, type Permission } from '../../shared/permissions'
 import { landingIndex, recordsCooking } from '../../shared/placement'
@@ -61,10 +62,10 @@ export interface BoardResult {
 // What an operation on several Dishes at once (#218) answers, as
 // BoardResult does for one: the Dishes it was about, in Board order, a
 // notice, an undo, where focus goes, and what its write ended in. Its
-// notices are about the Dishes together: `movedMany` and `deletedMany` come
-// with an undo; the others say a write failed (`notAllowedMany`: as the
+// notices are about the Dishes together: `movedMany`, `deletedMany` and
+// `cookedMany` come with an undo; the others say a write failed (`notAllowedMany`: as the
 // user's Permissions no longer allow it).
-export type BulkNotice = 'movedMany' | 'deletedMany' | 'moveManyFailed' | 'deleteManyFailed' | 'restoreManyFailed' | 'returnManyFailed' | 'notAllowedMany'
+export type BulkNotice = 'movedMany' | 'deletedMany' | 'moveManyFailed' | 'deleteManyFailed' | 'restoreManyFailed' | 'returnManyFailed' | 'cookedMany' | 'cookManyFailed' | 'uncookManyFailed' | 'notAllowedMany'
 
 export interface BulkResult {
   dishes: DishView[]
@@ -72,6 +73,9 @@ export interface BulkResult {
   undo?: () => Promise<BulkResult>
   focus?: FocusTarget
   settled?: Promise<BulkResult>
+  // For `cookDishes`, once settled: the Dishes whose new Cooking made them a
+  // Klassiker, in Board order (#452 celebrates them).
+  klassiker?: DishView[]
 }
 
 // A write the server refused or never answered; `status` is its HTTP status
@@ -698,8 +702,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Moving several selected Dishes (#218) to the top of a Column, of this
   // Board or of another of the Member's Boards (`boardId`), in Board order;
   // one already in that Column stays where it is. They go there at once,
-  // then where the server put them. Never into a Gekocht Column: cooking
-  // stays one Dish at a time. If the move fails, every Dish goes back
+  // then where the server put them. Never into a Gekocht Column: that is
+  // cookDishes. If the move fails, every Dish goes back
   // exactly where it was, with a notice. Null if none would move, or
   // without "move Dishes".
   function moveDishes(dishIds: string[], to: Destination | BoardDestination): BulkResult | null {
@@ -755,6 +759,91 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     }
 
     return { dishes, notice: 'movedMany', undo, focus: here ? { column: here.id } : focus, settled }
+  }
+
+  // "Gekocht ✓" on several selected Dishes (#451): each records a Cooking, as
+  // the card's own does for one. Those not in the Gekocht Column yet go to
+  // the top of it at once, in Board order; one already there stays put. Each
+  // Dish shows a pending Cooking at once, filled in once the server has
+  // recorded it. If the write fails, every Dish goes back exactly where it
+  // was, without its Cooking, with a notice. Null without "move Dishes",
+  // without a Gekocht Column, or if none of them is on the Board.
+  function cookDishes(dishIds: string[]): BulkResult | null {
+    const gekocht = board.value?.columns.find(c => c.isGekocht)
+    if (!may('moveDishes') || !gekocht) return null
+    const found = inBoardOrder(dishIds)
+    if (found.length === 0) return null
+    const dishes = found.map(f => f.dish)
+    const ids = dishes.map(d => d.id)
+    const moving = found.filter(f => f.column !== gekocht)
+    const movers = moving.map(f => f.dish)
+    const moverIds = movers.map(d => d.id)
+    const left = moving.length > 0 ? leaveAll(moving) : null
+    const origins = left?.origins ?? []
+    // Where the cook puts the moving ones, as this Board shows it: at the
+    // top of the Gekocht Column, in Board order.
+    function moveOn() {
+      for (const id of moverIds) takeOut(id)
+      movers.forEach((dish, i) => insert(gekocht!, i, dish))
+    }
+    moveOn()
+    const pendings = dishes.map(recordPending)
+    // The Cookings the server recorded, for "Rückgängig".
+    const recorded = new Map<string, CookingView>()
+
+    const settled = queued(ids, async (latest): Promise<BulkResult> => {
+      try {
+        const answers = await transport.cookDishes(ids)
+        for (const answer of answers) {
+          const i = ids.indexOf(answer.id)
+          const dish = dishes[i]
+          if (!dish) continue
+          recorded.set(dish.id, answer.cooking)
+          if (latest(dish.id)) settle(dish, answer)
+          else settlePending(dish, pendings[i], answer.cooking)
+        }
+        for (const id of ids) rolledBackTo.delete(id)
+        // The Dishes this Cooking made a Klassiker (#452 celebrates them).
+        const klassiker = dishes.filter(d => answers.find(a => a.id === d.id)?.cookings.length === MILESTONE_COOKINGS)
+        return { dishes, klassiker }
+      }
+      catch (error) {
+        // Back where the server still has them, without the Cookings.
+        dishes.forEach((dish, i) => removeFrom(dish.cookings, pendings[i]))
+        putAllBack(movers, movers.map((dish, i) => rollBackTo(dish.id, origins[i]!)), latest)
+        return { dishes, notice: failedManyAs(error, 'cookManyFailed') }
+      }
+    })
+
+    // "Rückgängig": once the cook has settled, every moved Dish is back
+    // where it was at once, the batch's Cookings are off their Dishes, and
+    // focus is on the first; then the write takes them off the server. If
+    // that fails, they are cooked again as the server still has them, with a
+    // notice.
+    async function undo(): Promise<BulkResult> {
+      if ((await settled).notice) return { dishes } // Never cooked, and back already.
+      putAllBack(movers, origins)
+      const cookings = dishes.map(dish => recorded.get(dish.id)!)
+      dishes.forEach((dish, i) => removeFrom(dish.cookings, dish.cookings.find(c => c.id === cookings[i]!.id)))
+      const undos = dishes.map((dish, i) => {
+        const origin = origins[moverIds.indexOf(dish.id)]
+        return { cookingId: cookings[i]!.id, ...origin && { back: { columnId: origin.columnId, index: origin.index } } }
+      })
+      const uncooked = queued(ids, async (latest): Promise<BulkResult> => {
+        try {
+          settleAll(dishes, await transport.uncookDishes(undos), latest)
+          return { dishes }
+        }
+        catch (error) {
+          moveOn()
+          if (!isGone(error)) dishes.forEach((dish, i) => putBackCooking(dish.id, cookings[i]!))
+          return { dishes, notice: failedManyAs(error, 'uncookManyFailed') }
+        }
+      })
+      return { dishes, focus: { dish: ids[0]! }, settled: uncooked }
+    }
+
+    return { dishes, notice: 'cookedMany', undo, focus: left?.focus ?? { dish: ids[0]! }, settled }
   }
 
   // Deleting several selected Dishes (#218): their cards go at once. If the
@@ -836,7 +925,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, deleteDishes, sync, version, focusAfterDetail, dishCount, may, ...histories, ...votes }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, version, focusAfterDetail, dishCount, may, ...histories, ...votes }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

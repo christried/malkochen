@@ -3,9 +3,9 @@ import { computed, effectScope, shallowRef, watch, type Ref } from 'vue'
 // The Snackbert Question (CONTEXT.md, #425): after a Member records a
 // Cooking on this device, Snackbert's head comes up and asks whether
 // they'd like to tell him about it. This module decides when: the Board
-// tells it of each Cooking recorded singly (`cooked`; never a move of
-// several Dishes, which can't cook), and it asks the screen what is going
-// on. Plain Vue reactivity and timers, so it runs in Node (the "client"
+// tells it of each Cooking recorded singly (`cooked`; "Gekocht ✓" on
+// several Dishes at once starts none, `cookedMany`), and it asks the screen
+// what is going on. Plain Vue reactivity and timers, so it runs in Node (the "client"
 // Vitest project); SnackbertQuestion draws what it says.
 //
 // A Cooking starts a pending Question, unless a Tour runs or it is the
@@ -14,7 +14,8 @@ import { computed, effectScope, shallowRef, watch, type Ref } from 'vue'
 // so he waits for it too) and nothing he waits for is open (a Klassiker
 // celebration, the Changelog Popup, a Notification Prompt, a sheet), and
 // no Tour runs; then a beat later, so the toast is out of the way. A newer
-// Cooking replaces the pending one (and sends away one he is asking about);
+// Cooking replaces the pending one (and sends away one he is asking about),
+// several at once too;
 // a Cooking undone, failed or deleted drops its own. He doesn't take the
 // visit's one prompt (useVisit): the Tour, the Changelog Popup and the
 // Notification Prompts go by their own rules.
@@ -87,6 +88,13 @@ export function createSnackbertQuestion(screen: QuestionScreen) {
     })
   }
 
+  // Several Dishes cooked at once (#451) start no Question, but as a newer
+  // Cooking they drop a pending one and send away one he is asking about.
+  function cookedMany() {
+    goAway()
+    pending.value = null
+  }
+
   scope.run(() => {
     // Dropped: Snackbert is off, or the Cooking is gone from its Dish's
     // history (undone, or deleted).
@@ -146,5 +154,5 @@ export function createSnackbertQuestion(screen: QuestionScreen) {
     scope.stop()
   }
 
-  return { asking: computed(() => asking.value), cooked, accept, decline, stop }
+  return { asking: computed(() => asking.value), cooked, cookedMany, accept, decline, stop }
 }
