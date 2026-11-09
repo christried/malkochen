@@ -676,6 +676,13 @@ export const en: Strings = {
     unreachable: 'Snackbert can’t be reached right now. Try again later.',
     failed,
   },
+  snackbertQuestion: {
+    label: 'Snackbert',
+    ask: (dish: string) => `Mmm, ${dish}! Want to tell me how much you had?`,
+    yes: 'Sure',
+    no: 'Not today',
+    bye: 'All right, enjoy your meal!',
+  },
   snackbertReport: {
     report: 'Tell Snackbert',
     reported: 'Sent to Snackbert ✓',

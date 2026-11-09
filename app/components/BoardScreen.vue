@@ -8,6 +8,7 @@ import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, t
 import { httpTransport } from '~/board/http-transport'
 import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
 import { duePrompt } from '~/utils/notification-prompt'
+import { createSnackbertQuestion, type SnackbertAsking } from '~/snackbert/snackbert-question'
 import type { PromptAnswer, PromptKind } from '~~/shared/event-kinds'
 import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
@@ -396,9 +397,48 @@ const boardTour = useTemplateRef<{
   addingTourDish: boolean
   heldDishId: string | null
   modal: boolean
+  running: boolean
+  tourDishId: string | null
 }>('boardTour')
-// Nothing open over the Board, no search, no selection, no drag.
-const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish)
+// Nothing open over the Board, no search, no selection, no drag, and
+// Snackbert not asking.
+const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish && !snackbertQuestion.asking.value)
+
+// The Snackbert Question (SnackbertQuestion, #425): after a Cooking recorded
+// here, on the Board or in the Dish detail, Snackbert asks whether the user
+// would like to tell him about it, if they switched him on. The module
+// (snackbert/snackbert-question.ts) decides when; it waits for the Gekocht
+// toast to go and for any sheet, celebration, the Changelog Popup or a
+// Notification Prompt (the Dish detail itself doesn't count), and never
+// asks during the Tour. While he asks, the Tour, the popup and the prompts
+// wait. "Ja" opens the report sheet for that Cooking. In the browser tests
+// he never asks by himself, unless the test page turned that on
+// (window.e2eSnackbertQuestion).
+const openModals = useOpenModalCount()
+const snackbertQuestion = createSnackbertQuestion({
+  snackbertOn: (dishId) => {
+    // Typed as a plain string: Nitro's route typing runs too deep here.
+    const path: string = `/api/dishes/${dishId}/snackbert`
+    return $fetch<{ on: boolean }>(path).then(state => state.on)
+  },
+  toastShowing: () => !!toast.value,
+  waiting: () => openModals.value > (route.params.dish ? 1 : 0) || !!promptShowing.value,
+  touring: () => boardTour.value?.running ?? false,
+})
+onBeforeUnmount(() => snackbertQuestion.stop())
+let snackbertAsks = false
+onMounted(() => {
+  snackbertAsks = !useRuntimeConfig().public.e2e || !!(window as { e2eSnackbertQuestion?: boolean }).e2eSnackbertQuestion
+})
+const reportingCooking = ref<SnackbertAsking | null>(null)
+const reportOpen = ref(false)
+provide(snackbertQuestionKey, {
+  question: snackbertQuestion,
+  report: (asked) => {
+    reportingCooking.value = asked
+    reportOpen.value = true
+  },
+})
 
 // The Changelog Popup (ChangelogPopup, #406), once per visit: the Version is
 // newer than the one the user saw, and no Tour runs in this visit (due, or
@@ -836,6 +876,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     ...mayCommentAndVote && { howWasIt: { comment: { label: t.dish.comment, run: () => commentOn(dish, toBoard) }, ...vote && { vote } } },
   })
   if (dish.cookings.length === MILESTONE_COOKINGS) void celebrateMilestone(dish, recorded)
+  if (snackbertAsks) snackbertQuestion.cooked({ dish, recorded, tourDish: boardTour.value?.tourDishId === dish.id })
 }
 </script>
 
@@ -1240,7 +1281,14 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       >
         <AppToast v-model="toast" />
       </Teleport>
+      <SnackbertQuestion />
     </template>
+    <SnackbertReportSheet
+      v-model:open="reportOpen"
+      :dish="reportingCooking?.dish ?? ''"
+      :cooking-id="reportingCooking?.cookingId ?? null"
+      :cooked-at="reportingCooking?.cookedAt ?? null"
+    />
 
     <AddDishSheet
       v-model:open="adding"
