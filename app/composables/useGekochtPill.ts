@@ -1,12 +1,14 @@
 // The Gekocht celebration's pill at the top of the screen (#105, variant B):
-// Topfbert in it with one of his cheers, "Gekocht ✓" and, for a Dish moved
-// into another Board's Gekocht Column, that Board (`board`). The actions
+// Topfbert in it with one of his cheers, "Gekocht ✓" (for several Dishes
+// cooked at once, how many: `count`, #452) and, for a Dish moved into
+// another Board's Gekocht Column, that Board (`board`). The actions
 // stay at the bottom, in the Gekocht toast. Shared, like the confetti, as it
 // shows wherever GekochtPill is: over the Board, in the Dish detail, over a
 // celebration. It goes by itself (--dur-gekocht-pill), whichever of those
 // shows it then, or none.
 export interface ShownGekochtPill {
   cheer: string
+  count?: number
   board?: string
   // A new one each time it is shown, so Topfbert pops up again.
   key: number

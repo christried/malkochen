@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import type { BoardListing, BoardView } from '~~/server/utils/boards'
-import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import type { Me } from '~~/server/utils/people'
 import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
+import { createKlassikerQueue } from '~/board/klassiker-queue'
 import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
 import { duePrompt } from '~/utils/notification-prompt'
 import { createSnackbertQuestion, type SnackbertAsking } from '~/snackbert/snackbert-question'
@@ -104,37 +104,34 @@ onMounted(() => {
 
 // A Dish's 10th Cooking (milestone-10x): once it is recorded, a moment
 // after the Gekocht pill is in, over the Board or the Dish detail; once per
-// Dish on this device. The pill and the toast show over it, and undoing that
+// Dish on this device. Several from one batch (#452) one after the other
+// (klassiker-queue). The pill and the toast show over it, and undoing that
 // Cooking there ends it.
-const milestone = ref<{ dish: DishView, cooking: CookingView } | null>(null)
+const klassiker = createKlassikerQueue<DishView>({
+  moment: () => wait(motionMs('milestone-delay')),
+  claim: claimMilestone,
+})
+onBeforeUnmount(() => klassiker.stop())
+const milestone = klassiker.current
 const milestoneOpen = computed({
   get: () => !!milestone.value,
   set: (open) => {
-    if (!open) milestone.value = null
+    if (!open) void klassiker.close()
   },
 })
-async function celebrateMilestone(dish: DishView, recorded: Promise<CookingView | null>) {
-  const [cooking] = await Promise.all([recorded, wait(motionMs('milestone-delay'))])
-  if (!cooking || !hasCooking(dish, cooking) || !claimMilestone(dish.id)) return
-  milestone.value = { dish, cooking }
-  hapticMilestone()
-}
-watch(() => milestone.value && !hasCooking(milestone.value.dish, milestone.value.cooking), (undone) => {
-  if (undone) milestone.value = null
+watch(milestone, (shown) => {
+  if (shown) hapticMilestone()
 })
-// While it shows, the toast's countdown waits, and runs on once it closes:
-// a slow server can't use up "Rückgängig" behind it (#229).
+// While one shows or another waits its turn, the toast's countdown waits,
+// and runs on once they are over: a slow server can't use up "Rückgängig"
+// behind them (#229).
 const toastPaused = useToastPaused()
-watch(milestoneOpen, (open) => {
-  toastPaused.value = open
+watch(klassiker.toastPaused, (paused) => {
+  toastPaused.value = paused
 })
 onBeforeUnmount(() => {
   toastPaused.value = false
 })
-// By id: settling to the server's answer brings the Cookings afresh.
-function hasCooking(dish: DishView, cooking: CookingView) {
-  return dish.cookings.some(c => c.id === cooking.id)
-}
 
 // A Column's tab, or its name beside the others, reacting to a Dish coming
 // in (ColumnCue): dropped on the tab, cooked, the Gekocht pebble landing.
@@ -733,8 +730,8 @@ function moveSelected(columnId: string, toBoard: BoardListing | null) {
 }
 // The selection's "Gekocht ✓" (#451). One Dish cooks as its card does, with
 // the celebration, the comment shortcut and the Snackbert Question; several
-// are cooked at once, with "Rückgängig" and no celebration. He starts no
-// Question for them, and a pending one is dropped.
+// are cooked at once, with their own celebration (#452) and "Rückgängig".
+// He starts no Question for them, and a pending one is dropped.
 function cookSelected(origin: Point) {
   const ids = [...selection.selectedIds.value]
   selection.clear()
@@ -745,7 +742,22 @@ function cookSelected(origin: Point) {
   const result = boardModule.cookDishes(ids)
   if (!result) return
   if (snackbertAsks) snackbertQuestion.cookedMany()
+  celebrateBatch(result, origin)
   void showBulkResult(result)
+}
+// Several Dishes cooked at once (#452): one Gekocht celebration for them
+// all, its confetti from the bar's "Gekocht ✓" (the cards are on their way
+// already), the Gekocht Column's count bumping, and the pill saying how
+// many, with Topfbert's usual cheer. The toast says it to screen readers
+// (showBulkResult). Then each Dish the batch made a Klassiker celebrates
+// that, one after the other.
+function celebrateBatch({ dishes, settled }: BulkResult, origin: Point) {
+  hapticCelebrate()
+  gekochtPill.show({ cheer: nextCheer(t.dish.cheers), count: dishes.length })
+  confetti.fire(origin)
+  const gekocht = board.value?.columns.find(c => c.isGekocht)
+  if (gekocht) cueColumn({ columnId: gekocht.id, kind: 'bump' })
+  void klassiker.celebrate(settled?.then(r => r.klassiker ?? []) ?? Promise.resolve([]))
 }
 // The selection's "Löschen": all of them at once, with "Rückgängig".
 function deleteSelected() {
@@ -895,7 +907,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       : [],
     ...mayCommentAndVote && { howWasIt: { comment: { label: t.dish.comment, run: () => commentOn(dish, toBoard) }, ...vote && { vote } } },
   })
-  if (dish.cookings.length === MILESTONE_COOKINGS) void celebrateMilestone(dish, recorded)
+  if (dish.cookings.length === MILESTONE_COOKINGS) void klassiker.celebrate(recorded.then(cooking => cooking ? [{ dish, cooking }] : []))
   if (snackbertAsks) snackbertQuestion.cooked({ dish, recorded, tourDish: boardTour.value?.tourDishId === dish.id })
 }
 </script>

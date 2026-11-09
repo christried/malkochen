@@ -243,6 +243,7 @@ export const it: Strings = {
     cook: 'Cucinato ✓',
     cookLabel: (count: number) => `Cucinato ✓: ${dishCount(count)}`,
     cooked: (count: number) => dishesDone(count, 'cucinat'),
+    cookedPill: (count: number) => `${dishesDone(count, 'cucinat')} ✓`,
     cookFailed: (count: number) => `Non è stato possibile segnare ${dishCount(count)} come ${plural(count, { one: 'cucinato', other: 'cucinati' })}. ${tryAgain}`,
   },
   // A cooking (CONTEXT.md) is "una preparazione".

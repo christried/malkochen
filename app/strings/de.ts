@@ -286,6 +286,8 @@ export const de = {
     cook: 'Gekocht ✓',
     cookLabel: (count: number) => `Gekocht ✓: ${dishCount(count)}`,
     cooked: (count: number) => `${dishCount(count)} gekocht`,
+    // The batch celebration's pill (#452).
+    cookedPill: (count: number) => `${dishCount(count)} gekocht ✓`,
     cookFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,
   },
   cooking: {
