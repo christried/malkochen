@@ -5,6 +5,7 @@ import { cooking, dish, user } from '../db/schema'
 import { accessibleBoardIds } from './board-access'
 import type { DishAdder } from './dishes'
 import { cookingEvent, withEvents } from './events'
+import type { DeviceIdStanding } from './late-changes'
 import { pictureOf } from './people'
 
 // One occasion a Dish was cooked (CONTEXT.md: Cooking), as its Cooking
@@ -88,26 +89,48 @@ export async function cookingDishIds(cookingIds: string[], userId: string): Prom
 // each Dish's writes), which a slow connection can hold back for minutes.
 const UNDO_COOKING_MINUTES = 10
 
-// The Cooking, if "Rückgängig" may take it back (#197): the newest in its
-// Dish's Cooking History, recorded by the user, within UNDO_COOKING_MINUTES.
-// Anything older, or another Member's, only the soft delete may remove.
+// The Cooking, if "Rückgängig" may take it back (#197): the last to arrive
+// for its Dish, recorded by the user, within UNDO_COOKING_MINUTES of its
+// arrival. Anything older, or another Member's, only the soft delete may
+// remove. By arrival, not by when it was cooked: one recorded offline is
+// dated when the Member tapped it (ADR 0012), and its "Rückgängig", sent
+// after it, must still find it.
 export function undoableCooking(cookingId: string, userId: string) {
   const newer = alias(cooking, 'newer')
   return and(
     eq(cooking.id, cookingId),
     isNull(cooking.deletedAt),
     eq(cooking.recordedBy, userId),
-    gt(cooking.cookedAt, sql`now() - make_interval(mins => ${UNDO_COOKING_MINUTES})`),
-    // Newest as the Cooking History orders it (cookingsByDish).
+    gt(cooking.arrivedAt, sql`now() - make_interval(mins => ${UNDO_COOKING_MINUTES})`),
     notExists(db
       .select({ id: newer.id })
       .from(newer)
       .where(and(
         eq(newer.dishId, cooking.dishId),
         isNull(newer.deletedAt),
-        sql`(${newer.cookedAt}, ${newer.id}) > (${cooking.cookedAt}, ${cooking.id})`,
+        sql`(${newer.arrivedAt}, ${newer.id}) > (${cooking.arrivedAt}, ${cooking.id})`,
       ))),
   )
+}
+
+// How the device-made ids of Cookings to record stand (late-changes.ts),
+// the Cooking `cookingIds[i]` for the Dish `dishIds[i]`: all free, or all a
+// repeat (each the user's, for that Dish, deleted or not), else taken.
+export async function cookingIdsStanding(cookingIds: string[], dishIds: string[], userId: string): Promise<DeviceIdStanding> {
+  const found = await db
+    .select({ id: cooking.id, dishId: cooking.dishId, recordedBy: cooking.recordedBy })
+    .from(cooking)
+    .where(inArray(cooking.id, cookingIds))
+  if (found.length === 0) return 'free'
+  const byId = new Map(found.map(f => [f.id, f]))
+  const repeated = cookingIds.every((id, i) => byId.get(id)?.dishId === dishIds[i] && byId.get(id)?.recordedBy === userId)
+  return repeated ? 'repeat' : 'taken'
+}
+
+// The Cookings, deleted or not, by id: what a repeat answers with.
+export async function cookingsById(cookingIds: string[]): Promise<Map<string, CookingView>> {
+  const rows = await selectCookings().where(inArray(cooking.id, cookingIds))
+  return new Map(rows.map(row => [row.id, toView(row)]))
 }
 
 // Whether "Rückgängig" may take the Cooking back (above).

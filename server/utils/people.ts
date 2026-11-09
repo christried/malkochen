@@ -7,6 +7,7 @@ import { db } from '../db'
 import { APP_VERSION } from '../version'
 import { user } from '../db/schema'
 import { detailsOf, recordEvents, userEvent, withEvents, type PromptAnswer, type PromptKind } from './events'
+import { isUniqueViolation } from './late-changes'
 import { isOperator } from './operator'
 
 // A person's picture wherever the app shows them (the badges of who added or
@@ -210,11 +211,4 @@ export async function setUsername(userId: string, username: string): Promise<Me 
     if (isUniqueViolation(err)) return 'taken'
     throw err
   }
-}
-
-// Postgres' unique_violation, from either driver (node-postgres puts it on
-// the error, Drizzle may wrap that as its cause).
-function isUniqueViolation(err: unknown): boolean {
-  const code = (e: unknown) => (e as { code?: unknown } | null)?.code
-  return code(err) === '23505' || code((err as { cause?: unknown } | null)?.cause) === '23505'
 }

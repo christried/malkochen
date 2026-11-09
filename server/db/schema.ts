@@ -365,7 +365,13 @@ export const dish = pgTable('dish', {
 export const cooking = pgTable('cooking', {
   id: uuid('id').primaryKey().defaultRandom(),
   dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
+  // When it was cooked: when it was recorded, or, recorded offline, when
+  // the Member did (never later than it arrived).
   cookedAt: timestamp('cooked_at', { withTimezone: true }).notNull().defaultNow(),
+  // When it reached malkochen (ADR 0012): the same as cookedAt, unless it was
+  // made offline and arrived later. What goes by arrival reads this ("Neues
+  // im Verlauf", Push Notifications, the Email Digest).
+  arrivedAt: timestamp('arrived_at', { withTimezone: true }).notNull().defaultNow(),
   // Who recorded it; kept (as unknown) if their account is ever deleted.
   recordedBy: text('recorded_by').references(() => user.id, { onDelete: 'set null' }),
   // Set when a Member deletes it from the Cooking History, so "Rückgängig"
@@ -400,7 +406,12 @@ export const comment = pgTable('comment', {
   authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
   // Trimmed, never empty, at most COMMENT_MAX characters (app/utils/comment-text.ts).
   text: text('text').notNull(),
+  // When it was written, offline too (never later than it arrived).
   createdAt: createdAt(),
+  // When it reached malkochen (ADR 0012): the same as createdAt, unless it was
+  // made offline and arrived later. What goes by arrival reads this ("Neues
+  // im Verlauf", Push Notifications, the Email Digest).
+  arrivedAt: timestamp('arrived_at', { withTimezone: true }).notNull().defaultNow(),
   // When its author last changed its text ("bearbeitet"); null if never.
   editedAt: timestamp('edited_at', { withTimezone: true }),
   // Set when its author or the Board's Owner deletes it, so "Rückgängig"
@@ -422,8 +433,13 @@ export const vote = pgTable('vote', {
   userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
   // Thumbs up; false is thumbs down.
   up: boolean('up').notNull(),
-  // When it was last set: the Dish History shows it then.
+  // When it was last set: the Dish History shows it then. Set offline, when
+  // the Member did (never later than it arrived).
   votedAt: timestamp('voted_at', { withTimezone: true }).notNull().defaultNow(),
+  // When it last reached malkochen (ADR 0012): the same as votedAt, unless it was
+  // made offline and arrived later. What goes by arrival reads this ("Neues
+  // im Verlauf", Push Notifications, the Email Digest).
+  arrivedAt: timestamp('arrived_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => [
   // One per Dish and Member; nulls are distinct, so not for Votes by nobody.
   uniqueIndex('vote_dish_id_user_id_idx').on(t.dishId, t.userId),

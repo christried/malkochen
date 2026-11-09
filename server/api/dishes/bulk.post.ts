@@ -1,12 +1,14 @@
 import { cookingDishIds, isUndoableCooking } from '../../utils/cookings'
 import { bulkBody } from '../../utils/dish-input'
-import { areDishesOfMember, cookDishes, deleteDishes, moveDishes, placeDishes, restoreDishes, uncookDishes, type CookedDish, type PlacedDish } from '../../utils/dishes'
+import { areDishesOfMember, columnOrFirst, cookDishes, deleteDishes, moveDishes, placeDishes, restoreDishes, uncookDishes, type CookedDish, type PlacedDish } from '../../utils/dishes'
 
 // POST /api/dishes/bulk — several Dishes selected on a Board (#218), in one
 // step, all or nothing:
 // - `move`: to the top of a Column, on this Board or another of the user's
 //   Boards, in the order sent; never a Gekocht Column (400), as cooking
-//   several goes through `cook`.
+//   several goes through `cook`. Sent late (with `madeAt`), a Column deleted
+//   meanwhile (the move waited on the device, ADR 0012) puts them at the
+//   top of their Board's first Column.
 // - `place`: "Rückgängig" after a move: each back to its Column (any of the
 //   user's) at its index; a Gekocht Column only for a Dish that is Cooked
 //   (400), as putting back records no Cooking.
@@ -15,6 +17,7 @@ import { areDishesOfMember, cookDishes, deleteDishes, moveDishes, placeDishes, r
 //   a Cooking for each, and those outside the Gekocht Column to the top of
 //   it, in the order sent; one already there stays. Answers each Dish placed
 //   with the Cooking recorded for it (CookedDish), needing "move Dishes".
+//   Device-made Cooking ids and when it was tapped, as for one Dish's cook.
 // - `uncook`: "Rückgängig" after it: each Cooking removed for good, as
 //   one Cooking's undo removes it (only the user's own, the Dish's newest,
 //   just recorded; else 409), and each Dish with a `back` put back at that
@@ -32,9 +35,11 @@ export default defineEventHandler(async (event): Promise<PlacedDish[] | CookedDi
   const userId = requireUser(event).id
   const request = parsed.data
   switch (request.action) {
-    case 'move':
-      await requireMovePermission(request.dishIds, userId, [request.columnId])
-      return await moveDishes(request.dishIds, userId, request.columnId) ?? refused(request.dishIds, userId)
+    case 'move': {
+      const { columnId } = await columnOrFirst(request.columnId, request.dishIds, { late: request.madeAt !== undefined })
+      await requireMovePermission(request.dishIds, userId, [columnId])
+      return await moveDishes(request.dishIds, userId, columnId) ?? refused(request.dishIds, userId)
+    }
     case 'place':
       await requireMovePermission(request.places.map(p => p.dishId), userId, request.places.map(p => p.columnId), { back: true })
       return await placeDishes(request.places, userId) ?? refused(request.places.map(p => p.dishId), userId)
@@ -51,7 +56,8 @@ export default defineEventHandler(async (event): Promise<PlacedDish[] | CookedDi
     }
     case 'cook': {
       await requireDishPermission(request.dishIds, userId, 'moveDishes')
-      const cooked = await cookDishes(request.dishIds, userId)
+      const cooked = await cookDishes(request.dishIds, userId, request)
+      if (cooked === 'taken') throw idTaken()
       if (cooked) return cooked
       if (!await areDishesOfMember(request.dishIds, userId)) throw dishNotFound()
       throw createError({ statusCode: 400, statusMessage: 'Dishes not all on one Board' })

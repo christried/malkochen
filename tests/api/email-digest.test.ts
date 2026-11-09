@@ -385,6 +385,19 @@ describe('Comments and Votes', () => {
     expect(emailsTo(WU)).toEqual([])
   })
 
+  // ADR 0012: what was made offline is sent once malkochen answers again,
+  // dated when it was made; the digest goes by when it arrived.
+  test('a Comment written offline before the last run is in the next one, as it arrived after it', async () => {
+    const { conway, dal, con } = await talkingBoard('Funkloch')
+    const madeAt = new Date(Date.now() - 3600_000).toISOString()
+    expect((await conway.fetch(`/api/dishes/${dal.id}/comments`, json('POST', { text: 'Von gestern Abend', madeAt }))).status).toBe(201)
+
+    await run()
+
+    const [email] = emailsTo(WU)
+    expect(email!.text).toContain(`${con} zu Linsen-Dal: „Von gestern Abend“`)
+  })
+
   test('in the recipient\'s language', async () => {
     const { wu, conway, dal, con } = await talkingBoard('Sprachen')
     expect((await wu.fetch('/api/me/language', json('PUT', { language: 'en' }))).status).toBe(200)

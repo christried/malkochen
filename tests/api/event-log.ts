@@ -37,6 +37,13 @@ export async function everyEventAsText(): Promise<string> {
   return rows.map(r => r.row).join('\n')
 }
 
+// When each event of `kind` about the Dish was recorded, oldest first: a
+// change made offline is logged when it arrived (ADR 0012).
+export async function loggedAt(kind: string, dishId: string): Promise<Date[]> {
+  const rows = await query<{ at: Date }>('select at from event_log where kind = $1 and dish_id = $2 order by id', [kind, dishId])
+  return rows.map(r => r.at)
+}
+
 async function query<Row>(text: string, values: unknown[] = []): Promise<Row[]> {
   const client = new pg.Client({ connectionString: inject('databaseUrl') })
   await client.connect()

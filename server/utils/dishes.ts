@@ -8,8 +8,9 @@ import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, user } from '../db/schema'
 import { accessibleBoardIds, accessOn, ownedBoardIds } from './board-access'
 import { commentCountsByDish } from './comments'
-import { cookingsByDish, undoableCooking, type CookingView } from './cookings'
+import { cookingIdsStanding, cookingsByDish, cookingsById, undoableCooking, type CookingView } from './cookings'
 import { cookingEvent, detailsOf, dishEvent, recordEvents, withEvents } from './events'
+import { madeAtOrNow, writeOnce, type DeviceIdStanding } from './late-changes'
 import { pictureOf, shownAs } from './people'
 import { votesByDish, type VoteView } from './votes'
 import { escapeLike } from './like'
@@ -207,6 +208,44 @@ export async function isDishMember(dishId: string, userId: string): Promise<bool
   return found !== undefined
 }
 
+// The Dish placed (PlacedDish), if it is on a Board the user is a Member of
+// and not archived: what a repeat of adding it answers.
+export async function placedDish(dishId: string, userId: string): Promise<PlacedDish | null> {
+  return withPlacement(await findDish(onMembersBoard(dishId, userId)))
+}
+
+// How the id a device made for a new Dish stands (late-changes.ts): a
+// repeat if it is a Dish the user added to that Board (archived since or
+// not), taken if it is any other.
+export async function dishIdStanding(dishId: string, boardId: string, userId: string): Promise<DeviceIdStanding> {
+  const [found] = await db.select({ boardId: dish.boardId, addedBy: dish.addedBy }).from(dish).where(eq(dish.id, dishId))
+  if (!found) return 'free'
+  return found.boardId === boardId && found.addedBy === userId ? 'repeat' : 'taken'
+}
+
+// The Column a move of the Dishes `dishIds` goes to (ADR 0012): `columnId`,
+// or, for a move sent `late` (it waited on the device) whose Column no
+// longer exists, the Column that takes new Dishes (shared/placement.ts) on
+// the Board the Dishes are on; `deleted` then, and they go to its top. That
+// is their own Board, also for a move that was to another Board: which one
+// can't be told any more. If they aren't all on one Board, or the move
+// isn't late, still `columnId`, which the move refuses if it is missing.
+export async function columnOrFirst(columnId: string, dishIds: string[], { late }: { late: boolean }): Promise<{ columnId: string, deleted: boolean }> {
+  if (!late) return { columnId, deleted: false }
+  const [found] = await db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.id, columnId))
+  if (found) return { columnId, deleted: false }
+  const boards = await db.selectDistinct({ boardId: dish.boardId }).from(dish).where(inArray(dish.id, dishIds))
+  const [only] = boards
+  if (!only || boards.length > 1) return { columnId, deleted: false }
+  const columns = await db
+    .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
+    .from(boardColumn)
+    .where(eq(boardColumn.boardId, only.boardId))
+    .orderBy(asc(boardColumn.position))
+  const first = columnForNewDishes(columns)
+  return first ? { columnId: first.id, deleted: true } : { columnId, deleted: false }
+}
+
 // The Dish, if it is on a Board the user is a Member of and not archived.
 export function membersDish(dishId: string, userId: string): Promise<DishView | null> {
   return findDish(onMembersBoard(dishId, userId))
@@ -356,20 +395,24 @@ export type MovedDish = PlacedDish & { cooking?: CookingView }
 // 49); with `cook`, so does a move within it (story 55). Null unless the
 // Dish and the Column are both on Boards the user is a Member of, and the
 // Dish isn't deleted.
+// A Cooking it records keeps `cookingId` if the device made one, and is
+// dated `madeAt` if it was made offline (late-changes.ts). A repeat of that
+// Cooking's id records and moves nothing again, and answers the Dish where
+// it is now, with that Cooking; 'taken' if the id is another's.
 export async function moveDish(
   dishId: string,
   userId: string,
   columnId: string,
-  { index, cook = false }: { index?: number, cook?: boolean } = {},
-): Promise<MovedDish | null> {
+  { index, cook = false, cookingId: deviceCookingId, madeAt }: { index?: number, cook?: boolean, cookingId?: string, madeAt?: string } = {},
+): Promise<MovedDish | 'taken' | null> {
   const target = onMembersBoard(dishId, userId)
   const movable = movableTo(target, userId, columnId)
-  const cookingId = randomUUID()
-  await runAtomic(d => [
+  const cookingId = deviceCookingId ?? randomUUID()
+  const write = () => runAtomic(d => [
     // First, so it still sees the Column the Dish comes from.
     d.execute(sql`
-      insert into ${cooking} (id, dish_id, recorded_by)
-      select ${cookingId}, ${dish.id}, ${userId} from ${dish}
+      insert into ${cooking} (id, dish_id, recorded_by, cooked_at)
+      select ${cookingId}, ${dish.id}, ${userId}, ${madeAtOrNow(madeAt)} from ${dish}
       where ${and(movable, cook ? undefined : ne(dish.columnId, columnId))}
         and exists (select 1 from ${boardColumn} where ${boardColumn.id} = ${columnId} and ${boardColumn.isGekocht})
     `),
@@ -383,7 +426,14 @@ export async function moveDish(
     ),
     recordEvents(d, cookingEvent('cooking_recorded', userId), sql`from ${cooking} changed where changed.id = ${cookingId}`),
   ])
+  const standing = await writeOnce(deviceCookingId ? () => cookingIdsStanding([cookingId], [dishId], userId) : undefined, write)
+  if (standing === 'taken') return 'taken'
 
+  if (standing === 'repeat') {
+    const again = await withPlacement(await findDish(target))
+    const recorded = (await cookingsById([cookingId])).get(cookingId)
+    return again && recorded ? { ...again, cooking: recorded } : again
+  }
   const moved = await withPlacement(await findDish(and(target, eq(dish.columnId, columnId))))
   const recorded = moved?.cookings.find(c => c.id === cookingId)
   return moved && recorded ? { ...moved, cooking: recorded } : moved
@@ -392,13 +442,14 @@ export async function moveDish(
 // "Gekocht ✓" (PRD story 35): records a Cooking and moves the Dish to the
 // top of its Board's Gekocht Column; one already there stays where it is.
 // Null unless the Dish is on a Board the user is a Member of and not deleted.
-export async function cookDish(dishId: string, userId: string): Promise<MovedDish | null> {
+// A device-made `cookingId` and `madeAt` as for moveDish.
+export async function cookDish(dishId: string, userId: string, offline: { cookingId?: string, madeAt?: string } = {}): Promise<MovedDish | 'taken' | null> {
   const [gekocht] = await db
     .select({ id: boardColumn.id })
     .from(dish)
     .innerJoin(boardColumn, and(eq(boardColumn.boardId, dish.boardId), eq(boardColumn.isGekocht, true)))
     .where(onMembersBoard(dishId, userId))
-  return gekocht ? moveDish(dishId, userId, gekocht.id, { cook: true }) : null
+  return gekocht ? moveDish(dishId, userId, gekocht.id, { ...offline, cook: true }) : null
 }
 
 // "Rückgängig" after cooking (PRD story 51): removes the Cooking for good
@@ -633,8 +684,10 @@ export interface CookingUndo {
 // it stays where it is and gets another Cooking. Answers them placed, in the
 // order of `ids`, each with the Cooking this recorded for it; null, changing
 // nothing, unless every Dish is on a Board the user is a Member of, not
-// deleted, and all are on one Board.
-export async function cookDishes(ids: string[], userId: string): Promise<CookedDish[] | null> {
+// deleted, and all are on one Board. Device-made `cookingIds` (one per Dish,
+// in that order) and `madeAt` as for moveDish: a repeat of all of them
+// answers the Dishes where they are now, with those Cookings.
+export async function cookDishes(ids: string[], userId: string, { cookingIds: deviceCookingIds, madeAt }: { cookingIds?: string[], madeAt?: string } = {}): Promise<CookedDish[] | 'taken' | null> {
   const gekochts = await db
     .selectDistinct({ id: boardColumn.id, boardId: boardColumn.boardId })
     .from(dish)
@@ -646,16 +699,16 @@ export async function cookDishes(ids: string[], userId: string): Promise<CookedD
   const allowed = and(allOnMembersBoards(ids, userId), sql`(${onItsBoard}) = ${ids.length}`)
   if (!await holds(allowed, userId)) return null
 
-  const cookingIds = ids.map(() => randomUUID())
+  const cookingIds = deviceCookingIds ?? ids.map(() => randomUUID())
   const recorded = sql.join(ids.map((id, i) => sql`(${cookingIds[i]}::uuid, ${id}::uuid)`), sql`, `)
   const rank = sql.join(ids.map((id, i) => sql`when ${id}::uuid then ${i}::integer`), sql` `)
-  await runAtomic(d => [
+  const write = () => runAtomic(d => [
     // Held until the end, so no other write changes them meanwhile and the
     // check stays true for every step.
     d.execute(sql`select ${dish.id} from ${dish} where ${inArray(dish.id, ids)} for update`),
     d.execute(sql`
-      insert into ${cooking} (id, dish_id, recorded_by)
-      select recorded.id, recorded.dish_id, ${userId} from (values ${recorded}) as recorded(id, dish_id)
+      insert into ${cooking} (id, dish_id, recorded_by, cooked_at)
+      select recorded.id, recorded.dish_id, ${userId}, ${madeAtOrNow(madeAt)} from (values ${recorded}) as recorded(id, dish_id)
       where ${allowed}
     `),
     moveRecorded(
@@ -673,12 +726,16 @@ export async function cookDishes(ids: string[], userId: string): Promise<CookedD
     ),
     recordEvents(d, cookingEvent('cooking_recorded', userId), sql`from ${cooking} changed where changed.id in (${sql.join(cookingIds.map(id => sql`${id}::uuid`), sql`, `)})`),
   ])
+  const standing = await writeOnce(deviceCookingIds ? () => cookingIdsStanding(cookingIds, ids, userId) : undefined, write)
+  if (standing === 'taken') return 'taken'
 
   const placed = await placedDishes(ids)
   if (!placed) return null
+  // A repeat: each Cooking as it is, also one deleted since.
+  const repeated = standing === 'repeat' ? await cookingsById(cookingIds) : null
   const cooked: CookedDish[] = []
   for (const [i, view] of placed.entries()) {
-    const recordedNow = view.cookings.find(c => c.id === cookingIds[i])
+    const recordedNow = repeated ? repeated.get(cookingIds[i]!) : view.cookings.find(c => c.id === cookingIds[i])
     // Not written: the check failed meanwhile.
     if (!recordedNow) return null
     cooked.push({ ...view, cooking: recordedNow })
@@ -909,12 +966,15 @@ export async function searchDishes(boardId: string, query: string): Promise<Dish
 // of the Board, or if another Member deleted it already. `tour`: the Tour
 // has the user add it (ADR 0006), which its event says. `copiedFrom`: the
 // Dish it is a Copy of (copies.ts), made on another Board; its event is then
-// "Dish copied" instead of "Dish added".
+// "Dish copied" instead of "Dish added". `id`: the one the device made for
+// it (late-changes.ts); a repeat of it is the caller's to check first
+// (dishIdStanding), as two arriving at once fail here with a unique
+// violation.
 export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
-  { tour = false, copiedFrom, viaLink = false }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean } = {},
+  { tour = false, copiedFrom, viaLink = false, id: deviceId }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean, id?: string } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
@@ -925,7 +985,7 @@ export async function addDish(
   if (!firstColumn) return null
 
   const focus = focusOf(input.imageUrl, input.imageFocus)
-  const id = randomUUID()
+  const id = deviceId ?? randomUUID()
   await runAtomic(d => [
     d.insert(dish).values({
       id,
