@@ -24,9 +24,15 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
 
   const isPlatformError = (response: Response) => response.status >= 500 && response.headers.has('x-vercel-error')
+  // An address fetch can't read is left to fetch, to fail as it would.
   const toMalkochen = (input: RequestInfo | URL) => {
-    const url = new URL(input instanceof Request ? input.url : input, location.href)
-    return url.origin === location.origin && url.pathname.startsWith('/api/')
+    try {
+      const url = new URL(input instanceof Request ? input.url : input, location.href)
+      return url.origin === location.origin && url.pathname.startsWith('/api/')
+    }
+    catch {
+      return false
+    }
   }
 
   const fetch = window.fetch.bind(window)

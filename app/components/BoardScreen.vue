@@ -359,7 +359,7 @@ const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
 // While malkochen can't be reached (#458), no change can be made: adding is
 // greyed out and says why, a card has no "Gekocht ✓" or menu, none lifts,
 // and the add lane is gone (useConnection).
-const { mayChange, needsNet } = useConnection()
+const { answering, mayChange, needsNet } = useConnection()
 function addDish() {
   if (mayChange.value) adding.value = true
   else showNotice(t.offline.needsNet)
@@ -413,7 +413,7 @@ const boardTour = useTemplateRef<{
 // Nothing open over the Board, no search, no selection, no drag,
 // Snackbert not asking, and malkochen answering: nothing of these starts
 // offline (#458).
-const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish && !snackbertQuestion.asking.value && mayChange.value)
+const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish && !snackbertQuestion.asking.value && answering.value)
 
 // The Snackbert Question (SnackbertQuestion, #425): after a Cooking recorded
 // here, on the Board or in the Dish detail, Snackbert asks whether the user

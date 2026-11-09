@@ -55,20 +55,20 @@ const summary = computed(() => {
 // History): no request, and what's new in it stays marked; it loads once
 // malkochen answers, if the detail is still open. Meanwhile its changes
 // are greyed out or hidden.
-const { mayChange } = useConnection()
+const { answering, mayChange } = useConnection()
 const loadFailed = ref(false)
 // The Dish whose history has loaded (or failed to).
 const loaded = ref<string | null>(null)
 async function load() {
   const dishId = props.dish.id
-  if (!mayChange.value) return
+  if (!answering.value) return
   loadFailed.value = !await boardModule.openDish(dishId)
   loaded.value = dishId
 }
 onMounted(load)
 watch(() => props.dish.id, load)
-watch(mayChange, (may) => {
-  if (may && loaded.value !== props.dish.id) void load()
+watch(answering, (back) => {
+  if (back && loaded.value !== props.dish.id) void load()
 })
 
 // Snackbert: whether the viewer has him on, and which Cookings they reported.

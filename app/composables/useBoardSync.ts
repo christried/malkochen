@@ -15,7 +15,7 @@ const REOPEN_AFTER_MS = 30 * 60_000
 // its writes was under way meanwhile; the next check brings it.
 export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean) {
   const visit = useVisit()
-  const { mayChange: answering } = useConnection()
+  const { answering } = useConnection()
   let hiddenSince: number | null = null
   // The user came back after long enough away to reopen the Board, and it
   // hasn't been reopened yet: the next sync does that before it loads. Kept

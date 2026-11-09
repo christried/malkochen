@@ -32,12 +32,12 @@ onBeforeUnmount(() => {
 })
 
 const openModals = useOpenModalCount()
-watch([openModals, text], async ([modals]) => {
+watch([openModals, () => !!text.value], async ([modals, shown]) => {
   await nextTick()
   const el = region.value
   if (!el) return
   if (el.matches(':popover-open')) el.hidePopover()
-  if (modals > 0 && text.value) el.showPopover()
+  if (modals > 0 && shown) el.showPopover()
 }, { flush: 'post' })
 </script>
 
