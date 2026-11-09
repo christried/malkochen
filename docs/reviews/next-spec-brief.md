@@ -123,14 +123,6 @@ The user's wishes for the spec after the Tour (#296), as of 2026-10-18, with wha
 - Privacy: does the operator see Dish titles from other people's Boards, or only counts? This matters once sign-up is open, and the privacy policy has to say so.
 - Any actions (e.g. delete a user, manage the Allowlist), or read-only?
 
-## 11. Google Play Store: explore (end of the spec)
-
-**Wish:** look again at shipping to the Play Store, Android only. How easy is it from where we stand?
-
-**Today:** an installable PWA with a share target (#201). `docs/research/android-nav-bar-and-share-sheet.md` already looked at a Bubblewrap TWA, which it rated "High (native project, Play release)", but only as a fix for the navigation bar and the share sheet.
-
-**To settle (after research):** a TWA via Bubblewrap or PWABuilder, Digital Asset Links on the domain, signing keys, the Play developer account (one-time fee, identity check, the closed-test rule for new personal accounts), the store listing, the privacy policy, and how updates work (web deploys need no new release). Also whether a TWA lets us publish sharing shortcuts after all, so malkochen gets into the share sheet's top row (#278 dropped this).
-
 ## Stays out
 
 Unchanged and not part of this spec: copying a Dish to another Board, editing while offline, iOS/Safari, content checking, real Pinterest titles via the API, illustrated avatars, notification settings per Board, Pinterest and blog video embeds, cooking stats per person, marking several Dishes Gekocht at once, Tours for other screens, Tour analytics.
@@ -144,6 +136,6 @@ This is larger than any spec so far. Grilling may well split it into several spe
 - **Languages:** English and Italian (1)
 - **Opening up:** account deletion, email sign-in, CSP, open sign-up (5, 8, 9)
 - **Operator:** admin panel (10)
-- **Explorations:** live updates, Play Store (4, 11), as `/research` reports
+- **Explorations:** live updates (4), as a `/research` report
 
 Comments, permissions and new languages all add UI text, so English and Italian are best done either first (so new text is written in three languages from the start) or last (so the translation is done once).
