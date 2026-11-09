@@ -4,6 +4,12 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-09
+
+### Changed
+
+- L’informativa sulla privacy ora ha una sezione su Snackbert, un’app per l’alimentazione a cui puoi raccontare i piatti che cucini, se hai un account lì.
+
 ## [1.1.1] - 2026-11-09
 
 ### Changed
@@ -56,7 +62,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Aperto a tutti: chiunque può iscriversi, con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
 - Novità: questa pagina, in fondo alle tue impostazioni e segnata come Nuovo dopo ogni aggiornamento.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0

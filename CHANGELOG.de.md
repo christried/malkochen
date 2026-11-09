@@ -4,6 +4,12 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-09
+
+### Changed
+
+- Die Datenschutzerklärung hat jetzt einen Abschnitt zu Snackbert, einer Ernährungs-App, der du von deinen gekochten Gerichten erzählen kannst, wenn du dort ein Konto hast.
+
 ## [1.1.1] - 2026-11-09
 
 ### Changed
@@ -56,7 +62,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0
