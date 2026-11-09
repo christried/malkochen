@@ -4,6 +4,8 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-09
+
 ### Changed
 
 - The privacy policy now says that for TikTok links, as for Instagram, malkochen reads the post’s public embed page.
@@ -54,6 +56,7 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - Open to everyone: anyone can sign up, with Google or a code we email you, and delete your account yourself whenever you like.
 - What’s new: this page, linked at the end of your settings and marked New after every update.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0
