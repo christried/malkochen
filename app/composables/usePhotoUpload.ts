@@ -48,11 +48,13 @@ function sendPhoto(to: string, body: Blob): Promise<UploadedPhoto> {
 }
 
 // Drawn onto a canvas, which keeps none of the file's metadata. The
-// browser turns it upright on the way (EXIF orientation).
-async function shrinkPhoto(photo: Blob): Promise<Blob | null> {
+// browser turns it upright on the way (EXIF orientation). Always a JPEG of
+// at most `side` on its longer side (a Snackbert Report's photo, #424, is
+// shrunk with a smaller side and quality).
+export async function shrinkPhoto(photo: Blob, side = SHRINK_SIDE, quality = 0.9): Promise<Blob | null> {
   try {
     const bitmap = await createImageBitmap(photo)
-    const scale = Math.min(1, SHRINK_SIDE / Math.max(bitmap.width, bitmap.height))
+    const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height))
     const canvas = document.createElement('canvas')
     canvas.width = Math.round(bitmap.width * scale)
     canvas.height = Math.round(bitmap.height * scale)
@@ -62,7 +64,7 @@ async function shrinkPhoto(photo: Blob): Promise<Blob | null> {
     context.fillRect(0, 0, canvas.width, canvas.height)
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     bitmap.close()
-    return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality))
   }
   catch {
     return null

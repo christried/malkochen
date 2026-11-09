@@ -27,6 +27,11 @@ import { neverCookedScene } from '~/utils/never-cooked'
 // being written, shows but can't be changed yet. "Kommentieren" in the
 // Gekocht toast opens the detail with focus in the comment field
 // (useCommentRequest).
+//
+// For a user with Snackbert on (#424), every Cooking has a pill under its line,
+// "Snackbert melden", which opens the report sheet for that Cooking; once
+// reported it reads "An Snackbert gemeldet ✓" for that user alone, and still
+// opens the sheet. The state is asked for with the history.
 const props = defineProps<{ dish: DishView, boardId: string, isOwner: boolean }>()
 const emit = defineEmits<{
   cook: [origin: Point]
@@ -56,6 +61,19 @@ async function load() {
 }
 onMounted(load)
 watch(() => props.dish.id, load)
+
+// Snackbert: whether the viewer has him on, and which Cookings they reported.
+const snackbert = useSnackbertReports()
+onMounted(() => void snackbert.load(props.dish.id))
+watch(() => props.dish.id, id => void snackbert.load(id))
+const reportOpen = ref(false)
+// The Cooking the sheet is for; kept while the sheet moves out.
+const reporting = ref<{ id: string, cookedAt: string } | null>(null)
+function report(cooking: CookingView) {
+  if (!cooking.id) return
+  reporting.value = { id: cooking.id, cookedAt: cooking.cookedAt }
+  reportOpen.value = true
+}
 
 const entries = computed(() => boardModule.historyOf(props.dish.id))
 
@@ -386,6 +404,11 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
           >
             {{ entry.comment.text }}
           </p>
+          <SnackbertReportButton
+            v-if="entry.kind === 'cooking' && entry.cooking.id && snackbert.on.value"
+            :reported="snackbert.isReported(entry.cooking.id)"
+            @click="report(entry.cooking)"
+          />
           <span
             v-if="entry.kind === 'comment' && menuFor === entry.comment.id"
             class="flex gap-1.5"
@@ -483,6 +506,13 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
         </button>
       </div>
     </form>
+
+    <SnackbertReportSheet
+      v-model:open="reportOpen"
+      :dish="dish.title"
+      :cooking-id="reporting?.id ?? null"
+      :cooked-at="reporting?.cookedAt ?? null"
+    />
   </section>
 </template>
 

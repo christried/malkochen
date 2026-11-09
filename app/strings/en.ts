@@ -10,7 +10,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('en-GB')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -675,6 +675,40 @@ export const en: Strings = {
     noAccount: 'Snackbert can’t find an account for your email address.',
     unreachable: 'Snackbert can’t be reached right now. Try again later.',
     failed,
+  },
+  snackbertReport: {
+    report: 'Tell Snackbert',
+    reported: 'Sent to Snackbert ✓',
+    reportAgain: 'Tell Snackbert again',
+    title: 'Tell Snackbert',
+    cooked: (dish: string, at: Date) => isToday(at) ? `${dish}, cooked today` : `${dish}, cooked on ${addedDate(at)}`,
+    optional: 'Everything here is optional. Send nothing and Snackbert assumes a normal portion.',
+    tiles: { photo: 'Photo', voice: 'Recording', text: 'Text' },
+    camera: 'Camera',
+    gallery: 'Gallery',
+    removePhoto: 'Remove photo',
+    photoUnreadable: 'Your browser can’t open this photo. Best pick another one.',
+    record: 'Record',
+    stop: 'Stop',
+    play: 'Listen',
+    rerecord: 'Record again',
+    limit: '2 minutes at most',
+    micDenied: 'No microphone, no recording. You can allow it in your browser’s settings.',
+    micUnavailable: 'Your browser can’t record here.',
+    textLabel: 'A few words',
+    textPrompt: 'For example: half a portion, with a glass of juice',
+    send: 'Send',
+    sendBare: 'Send without anything',
+    sending: 'Sending',
+    offline: 'You’re offline. Sending works again once you’re back online.',
+    thanks: 'Thanks! I’ll do the maths.',
+    thanksSub: 'What he makes of it, you’ll see in Snackbert.',
+    done: 'Done',
+    failed: 'Snackbert couldn’t be reached just now. Everything you added is still here.',
+    retry: 'Try again',
+    full: 'Snackbert is full for today. He’ll be hungry again tomorrow.',
+    noAccount: 'Snackbert can’t find an account for your email address any more. We’ve switched him off for you.',
+    tooLarge: 'The photo or recording is too large. Try a shorter recording.',
   },
   signInEmail: {
     subject: (code: string) => `${code} is your malkochen code`,
