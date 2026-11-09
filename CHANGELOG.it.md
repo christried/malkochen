@@ -4,6 +4,14 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+### Changed
+
+- L’informativa sulla privacy ora dice che per i link di TikTok, come per Instagram, malkochen legge la pagina di incorporamento pubblica del post.
+
+### Fixed
+
+- Incollando un link di TikTok tornano il titolo, la foto, chi l’ha pubblicato e la descrizione. TikTok aveva smesso di darli senza dire niente.
+
 ## [1.1.0] - 2026-10-26
 
 ### Added
