@@ -37,6 +37,7 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
     // from their link alone.
     ...storedSourceFacts(user.id, storedSource, { caption: caption ?? null, playableVideo, ticket: sourceTicket }),
     imageUrl: stored,
+    imageIsOwnPhoto: Boolean(photo) && stored !== null,
   }, { tour })
   if (!created) throw boardNotFound()
   if (!tour) await notifyNewDish(boardId, created.id, user.id)
