@@ -334,7 +334,7 @@ test('"Rückgängig" before the cook has reached the server puts the Dish back a
   cooking.succeed()
   expect(await cooked.settled).not.toHaveProperty('notice')
   expect(await undone.settled).not.toHaveProperty('notice')
-  expect(fake.sent).toEqual(['cookDish b', 'undoCooking cooking-1 ideen 1'])
+  expect(fake.sent).toEqual(['cookDish b', expect.stringMatching(/^undoCooking [0-9a-f-]{36} ideen 1$/)])
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], gekocht: [] })
   expect(cooked.dish.cookings).toEqual([])
   expect(fake.server.columns[0]!.dishes.map(d => d.id)).toEqual(['a', 'b', 'c'])
@@ -737,11 +737,12 @@ test('a Dish moved into another Board’s Gekocht Column records a Cooking at on
   expect(shown().woche).toEqual([])
   expect(result).toMatchObject({ notice: 'cook', cooking: { recordedBy: null }, placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 }, focus: { column: 'woche' } })
   expect(result.undo).toBeTypeOf('function')
-  expect(result.dish.cookings.map(c => c.id)).toEqual(['', 'sept-20', 'sept-1'])
+  expect(result.dish.cookings.map(c => c.id)).toEqual([result.cooking!.id, 'sept-20', 'sept-1'])
+  expect(result.cooking!.id).toMatch(/^[0-9a-f-]{36}$/)
   const settled = (await result.settled)!
-  expect(settled).toMatchObject({ placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 }, cooking: { id: 'cooking-1' } })
+  expect(settled).toMatchObject({ placement: { boardId: 'feierabend', columnId: 'f-gekocht', index: 0 }, cooking: { id: result.cooking!.id } })
   expect(settled).not.toHaveProperty('notice')
-  expect(result.dish.cookings.map(c => c.id)).toEqual(['cooking-1', 'sept-20', 'sept-1'])
+  expect(result.dish.cookings.map(c => c.id)).toEqual([result.cooking!.id, 'sept-20', 'sept-1'])
   expect(shown().woche).toEqual([])
 })
 
@@ -757,7 +758,7 @@ test('"Rückgängig" after a move into another Board’s Gekocht Column brings t
   expect(history('b')).toEqual([])
   expect(await undone.settled).toMatchObject({ placement: { boardId: 'board', columnId: 'ideen', index: 1 } })
   expect(await undone.settled).not.toHaveProperty('notice')
-  expect(fake.sent).toEqual(['moveDish b f-gekocht', 'undoCooking cooking-1 ideen 1'])
+  expect(fake.sent).toEqual(['moveDish b f-gekocht', expect.stringMatching(/^undoCooking [0-9a-f-]{36} ideen 1$/)])
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
   expect(fake.server.columns[0]!.dishes.map(d => d.id)).toEqual(['a', 'b', 'c'])
   expect(fake.server.columns[0]!.dishes[1]!.cookings).toEqual([])
@@ -775,7 +776,7 @@ test('"Rückgängig" before the move into another Board’s Gekocht Column has r
   moving.succeed()
   expect(await moved.settled).not.toHaveProperty('notice')
   expect(await undone.settled).not.toHaveProperty('notice')
-  expect(fake.sent).toEqual(['moveDish b f-gekocht', 'undoCooking cooking-1 ideen 1'])
+  expect(fake.sent).toEqual(['moveDish b f-gekocht', expect.stringMatching(/^undoCooking [0-9a-f-]{36} ideen 1$/)])
   expect(shown().ideen).toEqual(['a', 'b', 'c'])
   expect(history('b')).toEqual([])
 })
@@ -1108,17 +1109,14 @@ test('Dishes cooked together go to the top of Gekocht in Board order, each with 
   const result = module.cookDishes(['g', 'd', 'a'])!
 
   expect(shown()).toMatchObject({ ideen: ['b', 'c'], woche: [], gekocht: ['a', 'd', 'g'] })
-  expect(history('a')).toEqual([''])
-  expect(history('d')).toEqual([''])
-  expect(history('g')).toEqual([''])
+  const device = [history('a'), history('d'), history('g')]
+  for (const ids of device) expect(ids).toEqual([expect.stringMatching(/^[0-9a-f-]{36}$/)])
   expect(result).toMatchObject({ notice: 'cookedMany', dishes: [{ id: 'a' }, { id: 'd' }, { id: 'g' }], focus: { dish: 'b' } })
 
   const ended = await result.settled
   expect(ended).not.toHaveProperty('notice')
   expect(shown()).toMatchObject({ ideen: ['b', 'c'], woche: [], gekocht: ['a', 'd', 'g'] })
-  expect(history('a')).toEqual(['cooking-1'])
-  expect(history('d')).toEqual(['cooking-2'])
-  expect(history('g')).toEqual(['cooking-3'])
+  expect([history('a'), history('d'), history('g')]).toEqual(device)
   expect(fake.sent).toEqual(['cookDishes a,d,g'])
 })
 
@@ -1143,6 +1141,7 @@ test('"Rückgängig" after a cook of several puts the moved Dishes back at once 
   const result = module.cookDishes(['a', 'd', 'g'])!
   await result.settled
 
+  const cookingIds = ['a', 'd', 'g'].map(id => history(id)[0])
   const undone = await result.undo!()
 
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: ['g'] })
@@ -1152,7 +1151,7 @@ test('"Rückgängig" after a cook of several puts the moved Dishes back at once 
   expect(undone.focus).toEqual({ dish: 'a' })
   expect(await undone.settled).not.toHaveProperty('notice')
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: ['g'] })
-  expect(fake.sent).toEqual(['cookDishes a,d,g', 'uncookDishes cooking-1:ideen:0,cooking-2:woche:0,cooking-3'])
+  expect(fake.sent).toEqual(['cookDishes a,d,g', `uncookDishes ${cookingIds[0]}:ideen:0,${cookingIds[1]}:woche:0,${cookingIds[2]}`])
   expect(Object.fromEntries(fake.server.columns.map(c => [c.id, c.dishes.map(d => d.id)]))).toEqual({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: ['g'] })
   expect(fake.server.columns.flatMap(c => c.dishes).flatMap(d => d.cookings)).toEqual([])
 })
@@ -1161,6 +1160,7 @@ test('an undo of a cook of several that fails cooks them again, with a notice', 
   const { fake, module, shown, history } = setup(withCookedG)
   const result = module.cookDishes(['a', 'd', 'g'])!
   await result.settled
+  const cookingIds = ['a', 'd', 'g'].map(id => history(id)[0])
   fake.failNext('uncookDishes', 500)
 
   const undone = await result.undo!()
@@ -1168,9 +1168,7 @@ test('an undo of a cook of several that fails cooks them again, with a notice', 
 
   expect(await undone.settled).toMatchObject({ notice: 'uncookManyFailed' })
   expect(shown()).toMatchObject({ ideen: ['b', 'c'], woche: [], gekocht: ['a', 'd', 'g'] })
-  expect(history('a')).toEqual(['cooking-1'])
-  expect(history('d')).toEqual(['cooking-2'])
-  expect(history('g')).toEqual(['cooking-3'])
+  expect([history('a')[0], history('d')[0], history('g')[0]]).toEqual(cookingIds)
 })
 
 test('a cook of several waits for a write of one of them still under way, and a move after it waits for the cook', async () => {

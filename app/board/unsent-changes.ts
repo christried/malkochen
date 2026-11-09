@@ -1,0 +1,310 @@
+import { computed, ref, shallowRef } from 'vue'
+// Relative imports, not `~~`: runs in plain Node under test, like the Board
+// module.
+import type { BoardView } from '../../server/utils/boards'
+import type { CookingUndo, DishView } from '../../server/utils/dishes'
+import { dishOnBoard } from '../../shared/board'
+import { landingIndex } from '../../shared/placement'
+import type { BoardTransport } from './board-module'
+import type { DeviceStore } from './device-store'
+import { WriteFailed } from './write-failed'
+
+// Unsent Changes (CONTEXT.md; ADR 0012; spec #456): what the user did while
+// malkochen didn't answer. Each shows on screen at once, is kept on the
+// device in the order it was made, and goes out once malkochen answers, as
+// the same request it would have been online, with its device-made ids and
+// the time it was tapped. One list per signed-in user for the whole app,
+// shared by every Board's module: a change made on one Board is sent while
+// another is open. Plain Vue reactivity, no Nuxt and no DOM, so it runs in
+// Node under test.
+
+// Plain serialisable data, nothing that points at a live object: all it
+// takes to send it, and to show it again on a Board that loads without it.
+export type UnsentChange = {
+  // The change's own id (not a Dish's or Cooking's).
+  id: string
+  boardId: string
+  // When it was tapped, as ISO; it dates the Cooking it records.
+  madeAt: string
+  // The Dish title(s) it names in the "didn't arrive" toast.
+  label: string
+} & UnsentKind
+
+export type UnsentKind =
+  // A Dish moved or dragged within its Board; `cookingId` when it went into
+  // the Gekocht Column and recorded a Cooking.
+  | { kind: 'move', dishId: string, columnId: string, index?: number, cookingId?: string }
+  // "Gekocht ✓" on one Dish.
+  | { kind: 'cook', dishId: string, cookingId: string }
+  // "Gekocht ✓" on several: one Cooking id per Dish, in the same order.
+  | { kind: 'cookMany', dishIds: string[], cookingIds: string[] }
+  // "Rückgängig" on a Cooking that had been recorded: the Cooking goes and
+  // the Dish goes back to `back`.
+  | { kind: 'uncook', dishId: string, cookingId: string, back: { columnId: string, index: number } }
+  | { kind: 'uncookMany', dishIds: string[], cookings: CookingUndo[] }
+
+// The writes the Unsent Changes are sent with.
+export type UnsentTransport = Pick<BoardTransport, 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes'>
+
+// How a run of `send` ended: how many went out, and those dropped because
+// malkochen answered that it can't apply them; `emptied` when nothing is
+// left. `at` counts the runs, for a page that watches for the next.
+export interface SendRun {
+  at: number
+  sent: number
+  dropped: UnsentChange[]
+  emptied: boolean
+}
+
+// What `send` answers: the run, or why it stopped with changes left: no
+// answer from malkochen, or the sign-in expired (401; they wait for the same
+// user to sign in again).
+export type SendOutcome = SendRun | 'unanswered' | 'signedOut'
+
+export interface UnsentDeps {
+  store: DeviceStore
+  transport: UnsentTransport
+  userId: string
+}
+
+export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
+  const changes = ref<UnsentChange[]>([])
+  const count = computed(() => changes.value.length)
+
+  // Saves go one after the other, each writing the list as it is by then,
+  // and none before what the device had has been loaded.
+  const loaded = store.unsent.load(userId).catch((): UnsentChange[] => []).then((kept) => {
+    // Anything added meanwhile comes after what was kept.
+    if (kept.length) changes.value = [...kept, ...changes.value]
+  })
+  let saving: Promise<void> = Promise.resolve()
+  function persist() {
+    saving = saving.then(() => loaded).then(() => store.unsent.save(userId, JSON.parse(JSON.stringify(changes.value)) as UnsentChange[])).catch(() => {})
+  }
+
+  const has = (changeId: string) => changes.value.some(c => c.id === changeId)
+
+  function add(change: UnsentChange) {
+    changes.value.push(change)
+    persist()
+  }
+
+  function remove(changeId: string): boolean {
+    const at = changes.value.findIndex(c => c.id === changeId)
+    if (at === -1) return false
+    changes.value.splice(at, 1)
+    persist()
+    return true
+  }
+
+  // The one being sent now: asking to take a change back waits for it.
+  let inFlight: { id: string, done: Promise<void> } | null = null
+
+  // Takes a change back (the user undid it) so it is never sent. Waits for
+  // it first if it is on its way: answers whether it was still unsent, and
+  // so taken out; false if it had gone out by then.
+  async function cancel(changeId: string): Promise<boolean> {
+    if (inFlight?.id === changeId) await inFlight.done
+    return remove(changeId)
+  }
+
+  // Sends count for a Board's sync: it must not merge what the server said
+  // before a send, or while one is under way.
+  let underWay = 0
+  let started = 0
+  const mark = (): number | null => underWay > 0 ? null : started
+  const sentSince = (at: number | null) => at === null || started !== at
+
+  const lastRun = shallowRef<SendRun | null>(null)
+  let runs = 0
+  // Changes dropped and not yet told to the user.
+  let untold: UnsentChange[] = []
+  function takeDropped(): UnsentChange[] {
+    const dropped = untold
+    untold = []
+    return dropped
+  }
+
+  // Whether malkochen gave no answer to the error's write: nothing to say
+  // about the change yet, so it stays and the rest wait. A 5xx counts too,
+  // as the server failing is not it saying it can't apply the change.
+  const unanswered = (error: unknown) => error instanceof WriteFailed && (error.status === undefined || error.status >= 500)
+  // A 401: the sign-in expired. The change is not refused, it waits for the
+  // same user to sign in again (#463).
+  const signedOut = (error: unknown) => error instanceof WriteFailed && error.status === 401
+
+  function deliver(change: UnsentChange): Promise<unknown> {
+    const { madeAt } = change
+    switch (change.kind) {
+      case 'move':
+        return transport.moveDish(change.dishId, { columnId: change.columnId, ...change.index !== undefined && { index: change.index } }, { ...change.cookingId && { cookingId: change.cookingId }, madeAt })
+      case 'cook':
+        return transport.cookDish(change.dishId, { cookingId: change.cookingId, madeAt })
+      case 'cookMany':
+        return transport.cookDishes(change.dishIds, { cookingIds: change.cookingIds, madeAt })
+      case 'uncook':
+        return transport.undoCooking(change.cookingId, change.back)
+      case 'uncookMany':
+        return transport.uncookDishes(change.cookings)
+    }
+  }
+
+  let running: Promise<SendOutcome> | null = null
+
+  // Sends them in order, each as the request it would have been online. One
+  // run at a time: a call while one runs joins it, and a change added
+  // meanwhile goes out in the same run. Each is taken off the list (and the
+  // device) as soon as it is answered. No answer stops the run and keeps the
+  // rest. A refusal or "can't apply" (a 4xx) drops that change, remembers it
+  // for the user, and goes on.
+  function send(): Promise<SendOutcome> {
+    running ??= run()
+    return running
+  }
+
+  async function run(): Promise<SendOutcome> {
+    // Always an await before anything else, so `running` is set first.
+    await loaded
+    let sent = 0
+    let stopped: false | 'unanswered' | 'signedOut' = false
+    const dropped: UnsentChange[] = []
+    while (!stopped && changes.value.length > 0) {
+      const change = changes.value[0]!
+      underWay++
+      started++
+      // A transport that throws rather than rejecting fails like one that rejects.
+      const step = new Promise(resolve => resolve(deliver(change)))
+      inFlight = { id: change.id, done: step.then(() => {}, () => {}) }
+      try {
+        await step
+        sent++
+      }
+      catch (error) {
+        if (signedOut(error)) stopped = 'signedOut'
+        else if (unanswered(error)) stopped = 'unanswered'
+        else dropped.push(change)
+      }
+      underWay--
+      inFlight = null
+      if (!stopped) remove(change.id)
+    }
+    // In the same breath as the loop's last check of the list, so a change
+    // added after it starts a run of its own.
+    running = null
+    const ended: SendRun = { at: ++runs, sent, dropped, emptied: changes.value.length === 0 }
+    if (sent + dropped.length > 0) {
+      untold.push(...dropped)
+      lastRun.value = ended
+    }
+    return stopped || ended
+  }
+
+  return {
+    changes: computed(() => changes.value as readonly UnsentChange[]),
+    count,
+    // Loaded from the device.
+    ready: loaded,
+    // Resolves once everything added or removed so far is written.
+    saved: () => saving,
+    add,
+    remove,
+    cancel,
+    has,
+    send,
+    mark,
+    sentSince,
+    lastRun,
+    takeDropped,
+    forBoard: (boardId: string) => changes.value.filter(c => c.boardId === boardId),
+    // Whether a Cooking with this id is still waiting to be sent.
+    hasCooking: (cookingId: string) => changes.value.some(c =>
+      ('cookingId' in c && c.cookingId === cookingId && c.kind !== 'uncook')
+      || (c.kind === 'cookMany' && c.cookingIds.includes(cookingId))),
+  }
+}
+
+export type UnsentChanges = ReturnType<typeof createUnsentChanges>
+
+// Puts the Cooking on the Dish, newest first, unless it is there already (it
+// may have arrived, its answer lost).
+function addCooking(dish: DishView, id: string, cookedAt: string) {
+  if (!dish.cookings.some(c => c.id === id)) dish.cookings.unshift({ id, cookedAt, recordedBy: null })
+}
+
+function removeCooking(dish: DishView, id: string) {
+  const at = dish.cookings.findIndex(c => c.id === id)
+  if (at !== -1) dish.cookings.splice(at, 1)
+}
+
+// Puts a Dish at `index` among a Column's other Dishes.
+function place(dish: DishView, column: BoardView['columns'][number], index: number) {
+  column.dishes.splice(Math.min(index, column.dishes.length), 0, dish)
+}
+
+// Applies the Unsent Changes of `view`'s Board to it, in order, in place, and
+// answers it: what the server says, with what the user did since laid over
+// it, so nothing flickers back. Applying a change twice changes nothing more
+// (a Board that already shows it). A Dish that isn't on the Board (archived
+// or deleted meanwhile) or a Column that isn't is skipped silently: sending
+// the change will drop it and name it.
+export function layOver(view: BoardView, changes: readonly UnsentChange[]): BoardView {
+  for (const change of changes) {
+    if (change.boardId === view.id) apply(view, change)
+  }
+  return view
+}
+
+function apply(view: BoardView, change: UnsentChange) {
+  switch (change.kind) {
+    case 'move': {
+      const found = dishOnBoard(view, change.dishId)
+      const target = view.columns.find(c => c.id === change.columnId)
+      if (!found || !target) return
+      const landing = landingIndex(target, found.dish.id, change.index)
+      found.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
+      place(found.dish, target, landing)
+      if (change.cookingId) addCooking(found.dish, change.cookingId, change.madeAt)
+      return
+    }
+    case 'cook': {
+      const found = dishOnBoard(view, change.dishId)
+      const gekocht = view.columns.find(c => c.isGekocht)
+      if (!found || !gekocht) return
+      if (found.column !== gekocht) {
+        found.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
+        place(found.dish, gekocht, 0)
+      }
+      addCooking(found.dish, change.cookingId, change.madeAt)
+      return
+    }
+    case 'cookMany': {
+      const gekocht = view.columns.find(c => c.isGekocht)
+      if (!gekocht) return
+      const found = change.dishIds.map(id => dishOnBoard(view, id))
+      // Those not in the Gekocht Column go to its top, in the order sent.
+      const movers = found.filter(f => f && f.column !== gekocht)
+      for (const f of movers) f!.column.dishes.splice(f!.column.dishes.indexOf(f!.dish), 1)
+      movers.forEach((f, i) => place(f!.dish, gekocht, i))
+      found.forEach((f, i) => f && addCooking(f.dish, change.cookingIds[i]!, change.madeAt))
+      return
+    }
+    case 'uncook': {
+      uncook(view, change.dishId, change.cookingId, change.back)
+      return
+    }
+    case 'uncookMany': {
+      change.cookings.forEach((undo, i) => uncook(view, change.dishIds[i]!, undo.cookingId, undo.back))
+    }
+  }
+}
+
+// Takes the Cooking off its Dish and, with `back`, puts the Dish there.
+function uncook(view: BoardView, dishId: string, cookingId: string, back?: { columnId: string, index: number }) {
+  const found = dishOnBoard(view, dishId)
+  if (!found) return
+  removeCooking(found.dish, cookingId)
+  const target = back && view.columns.find(c => c.id === back.columnId)
+  if (!target) return
+  found.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
+  place(found.dish, target, back.index)
+}

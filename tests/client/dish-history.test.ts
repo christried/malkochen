@@ -277,10 +277,11 @@ test('Cookings recorded and deleted on the Board show in the Dish History at onc
   await module.openDish('b')
 
   const cooked = module.cookDish('b')!
-  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', 'cooking '])
+  const id = cooked.cooking!.id
+  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', `cooking ${id}`])
   await cooked.settled
-  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', 'cooking cooking-1'])
+  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', `cooking ${id}`])
 
   module.deleteCooking('b', 'b-cooking-0')
-  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-1', 'cooking cooking-1'])
+  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-1', `cooking ${id}`])
 })
