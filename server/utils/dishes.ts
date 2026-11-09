@@ -224,11 +224,14 @@ export async function dishIdStanding(dishId: string, boardId: string, userId: st
 }
 
 // The Column a move of the Dishes `dishIds` goes to (ADR 0012): `columnId`,
-// or, if no such Column exists (deleted while the move waited on the
-// device), the Column that takes new Dishes (shared/placement.ts) on the
-// Board the Dishes are on; `deleted` then, and they go to its top. If they
-// aren't all on one Board, still `columnId`, which the move refuses.
-export async function columnOrFirst(columnId: string, dishIds: string[]): Promise<{ columnId: string, deleted: boolean }> {
+// or, for a move sent `late` (it waited on the device) whose Column no
+// longer exists, the Column that takes new Dishes (shared/placement.ts) on
+// the Board the Dishes are on; `deleted` then, and they go to its top. That
+// is their own Board, also for a move that was to another Board: which one
+// can't be told any more. If they aren't all on one Board, or the move
+// isn't late, still `columnId`, which the move refuses if it is missing.
+export async function columnOrFirst(columnId: string, dishIds: string[], { late }: { late: boolean }): Promise<{ columnId: string, deleted: boolean }> {
+  if (!late) return { columnId, deleted: false }
   const [found] = await db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.id, columnId))
   if (found) return { columnId, deleted: false }
   const boards = await db.selectDistinct({ boardId: dish.boardId }).from(dish).where(inArray(dish.id, dishIds))

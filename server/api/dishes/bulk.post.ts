@@ -36,7 +36,7 @@ export default defineEventHandler(async (event): Promise<PlacedDish[] | CookedDi
   const request = parsed.data
   switch (request.action) {
     case 'move': {
-      const { columnId } = request.madeAt ? await columnOrFirst(request.columnId, request.dishIds) : request
+      const { columnId } = await columnOrFirst(request.columnId, request.dishIds, { late: request.madeAt !== undefined })
       await requireMovePermission(request.dishIds, userId, [columnId])
       return await moveDishes(request.dishIds, userId, columnId) ?? refused(request.dishIds, userId)
     }

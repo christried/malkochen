@@ -126,6 +126,7 @@ test('a Dish added twice with the same device-made id is added once, and both an
   expect(added.placement).toEqual({ boardId: board.id, columnId: ideen.id, index: 0 })
   expect(await again.json()).toEqual(added)
   expect(await dishesTitled(cerf, board.id, 'Linsensuppe')).toHaveLength(1)
+  expect(await loggedAt('dish_added', id)).toHaveLength(1)
 })
 
 test('two repeats of adding a Dish arriving at once add it once', async () => {
@@ -166,6 +167,7 @@ test('"Gekocht ✓" sent twice with the same Cooking id records one Cooking, and
   expect(cooked.placement.columnId).toBe(gekocht.id)
   expect(await again.json()).toEqual(cooked)
   expect((await located(cerf, board.id, dish.id)).dish.cookings.map(c => c.id)).toEqual([cookingId])
+  expect(await loggedAt('cooking_recorded', dish.id)).toHaveLength(1)
 })
 
 test('a move into Gekocht sent twice with the same Cooking id records one Cooking', async () => {
@@ -207,8 +209,10 @@ test('Cooking ids that don\'t match are refused: another user\'s, another Dish\'
   const cookingId = randomUUID()
   expect((await cook(cerf, dal.id, { cookingId })).status).toBe(200)
 
-  // Kahn sends Cerf's Cooking's id; Cerf sends it for another Dish.
+  // Kahn sends Cerf's Cooking's id, by "Gekocht ✓" and by a move; Cerf
+  // sends it for another Dish.
   expect((await cook(kahn, dal.id, { cookingId })).status).toBe(409)
+  expect((await move(kahn, dal.id, { columnId: board.columns.find(c => c.isGekocht)!.id, cookingId })).status).toBe(409)
   expect((await cook(cerf, reis.id, { cookingId })).status).toBe(409)
   expect((await bulk(cerf, { action: 'cook', dishIds: [reis.id, dal.id], cookingIds: [randomUUID(), cookingId] })).status).toBe(409)
   expect((await bulk(cerf, { action: 'cook', dishIds: [reis.id, dal.id], cookingIds: [randomUUID()] })).status).toBe(400)
@@ -231,6 +235,21 @@ test('a Comment sent twice with the same id is written once, and both answers ar
   expect(written.id).toBe(sent.id)
   expect(await again.json()).toEqual(written)
   expect((await commentsOf(cerf, dish.id)).map(c => c.text)).toEqual(['Mit mehr Kimchi!'])
+  expect(await loggedAt('comment_written', dish.id)).toHaveLength(1)
+})
+
+test('repeats of a Cooking or a Comment arriving at once record it once', async () => {
+  const { kahn, cerf, board } = await sharedBoard()
+  const dish = await addDish(cerf, board.id, 'Gleichzeitig gekocht')
+  const cookingId = randomUUID()
+  const cooks = await Promise.all([1, 2, 3].map(() => cook(kahn, dish.id, { cookingId })))
+  expect(cooks.map(c => c.status)).toEqual([200, 200, 200])
+  expect((await located(cerf, board.id, dish.id)).dish.cookings.map(c => c.id)).toEqual([cookingId])
+
+  const sent = { id: randomUUID(), text: 'Dreimal gesendet' }
+  const comments = await Promise.all([1, 2, 3].map(() => comment(kahn, dish.id, sent)))
+  expect(comments.map(c => c.status)).toEqual([201, 201, 201])
+  expect((await commentsOf(cerf, dish.id)).map(c => c.id)).toEqual([sent.id])
 })
 
 test('a Comment\'s id that is another user\'s Comment, or on another Dish, is refused', async () => {

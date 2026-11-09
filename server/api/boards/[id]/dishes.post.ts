@@ -29,11 +29,9 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   // gets 403, with or without a link, from the share target too.
   await requirePermission(boardId, user.id, 'addDishes')
   const { source, caption, playableVideo, sourceTicket, imageUrl, imageTicket, photo, tour, id, ...rest } = parsed.data
-  const repeat = await repeated(id, boardId, user.id)
-  if (repeat) {
-    setResponseStatus(event, 201)
-    return repeat
-  }
+  setResponseStatus(event, 201)
+  const repeat = await alreadyAdded(id, boardId, user.id)
+  if (repeat) return repeat
   await spendRateLimit(user.id, 'add-dish')
   // Not copied for a non-Member, whom addDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, async () => boardId, { photo, imageUrl, imageTicket })
@@ -54,14 +52,12 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   }
   catch (err) {
     // A repeat that arrived at the same moment added it first.
-    const first = isUniqueViolation(err) ? await repeated(id, boardId, user.id) : null
+    const first = isUniqueViolation(err) ? await alreadyAdded(id, boardId, user.id) : null
     if (!first) throw err
-    setResponseStatus(event, 201)
     return first
   }
   if (!created) throw boardNotFound()
   if (!tour) await notifyNewDish(boardId, created.id, user.id)
-  setResponseStatus(event, 201)
   return refused ? { ...created, imageNotStored: true } : created
 })
 
@@ -69,7 +65,7 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
 // answers with: placed where it is now. Null for a Dish not added yet (or
 // none without an id). Throws 409 for an id another user's or another
 // Board's Dish has, and 404 for one archived since.
-async function repeated(id: string | undefined, boardId: string, userId: string): Promise<AddedDish | null> {
+async function alreadyAdded(id: string | undefined, boardId: string, userId: string): Promise<AddedDish | null> {
   if (!id) return null
   const standing = await dishIdStanding(id, boardId, userId)
   if (standing === 'taken') throw idTaken()

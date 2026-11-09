@@ -25,7 +25,7 @@ export default defineEventHandler(async (event): Promise<MovedDish> => {
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid Column' })
   const user = requireUser(event)
   const { cookingId, madeAt } = parsed.data
-  const { columnId, deleted } = madeAt ? await columnOrFirst(parsed.data.columnId, [dishId]) : { columnId: parsed.data.columnId, deleted: false }
+  const { columnId, deleted } = await columnOrFirst(parsed.data.columnId, [dishId], { late: madeAt !== undefined })
   await requireMovePermission([dishId], user.id, [columnId])
   const moved = await moveDish(dishId, user.id, columnId, { index: deleted ? undefined : parsed.data.index, cookingId, madeAt })
   if (moved === 'taken') throw idTaken()
