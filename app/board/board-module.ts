@@ -781,11 +781,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const origins = left?.origins ?? []
     // Where the cook puts the moving ones, as this Board shows it: at the
     // top of the Gekocht Column, in Board order.
-    function moveOn() {
+    function intoGekocht() {
       for (const id of moverIds) takeOut(id)
       movers.forEach((dish, i) => insert(gekocht!, i, dish))
     }
-    moveOn()
+    intoGekocht()
     const pendings = dishes.map(recordPending)
     // The Cookings the server recorded, for "Rückgängig".
     const recorded = new Map<string, CookingView>()
@@ -834,7 +834,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
           return { dishes }
         }
         catch (error) {
-          moveOn()
+          intoGekocht()
           if (!isGone(error)) dishes.forEach((dish, i) => putBackCooking(dish.id, cookings[i]!))
           return { dishes, notice: failedManyAs(error, 'uncookManyFailed') }
         }

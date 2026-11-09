@@ -614,8 +614,8 @@ export async function moveDishes(ids: string[], userId: string, columnId: string
   return rows.length === ids.length ? placedDishes(ids) : null
 }
 
-// A Dish "Gekocht ✓" on several Dishes (#451) recorded a Cooking for:
-// placed, with that Cooking (its Cooking History, `cookings`, has it too).
+// A Dish placed after "Gekocht ✓" on several Dishes (#451), with the
+// Cooking recorded for it (its Cooking History, `cookings`, has it too).
 export type CookedDish = PlacedDish & { cooking: CookingView }
 
 // "Rückgängig" after "Gekocht ✓" on several, for one of them: the Cooking
