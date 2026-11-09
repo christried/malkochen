@@ -118,6 +118,7 @@ export const EVENT_GROUPS = {
   account: ['signed_up', 'signed_in', 'username_changed', 'picture_changed', 'language_changed', 'account_deleted'],
   notifications: ['push_switched', 'digest_switched', 'push_sent', 'digest_sent', 'prompt_shown', 'prompt_answered'],
   links: ['dish_link_opened', 'dish_copied'],
+  snackbert: ['snackbert_switched'],
   operator: ['open_sign_up_switched'],
 } as const satisfies Record<string, readonly EventKind[]>
 

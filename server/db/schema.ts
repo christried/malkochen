@@ -139,6 +139,18 @@ export const emailDigest = pgTable('email_digest', {
   coveredUntil: timestamp('covered_until', { withTimezone: true }).notNull(),
 })
 
+// Snackbert (CONTEXT.md, #423): one row per user once Snackbert was asked
+// about them (server/utils/snackbert.ts). Nothing of a portion is ever
+// stored here.
+export const snackbert = pgTable('snackbert', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  // Their switch in Your Settings: off until they switch it on.
+  switchedOn: boolean('switched_on').notNull().default(false),
+  // Snackbert's last answer to whether their email address has an account, and when it was asked.
+  hasAccount: boolean('has_account').notNull(),
+  checkedAt: timestamp('checked_at', { withTimezone: true }).notNull(),
+})
+
 // ---------------------------------------------------------------------------
 // Boards (CONTEXT.md: Board, Member, Owner, Column, Gekocht Column).
 

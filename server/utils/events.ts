@@ -45,7 +45,7 @@ export type EventDetails =
   // member_removed: who the Owner removed.
   | { member: string }
   // open_sign_up_switched, picture_changed (set or removed), push_switched,
-  // digest_switched: whether it is on now.
+  // digest_switched, snackbert_switched: whether it is on now.
   | { on: boolean }
   // language_changed: the language chosen under Sprache (a setting).
   | { language: LanguageChoice }

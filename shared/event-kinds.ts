@@ -74,6 +74,8 @@ export const EVENT_KINDS = [
   'push_switched',
   // The Email Digest switched on or off.
   'digest_switched',
+  // Snackbert (CONTEXT.md) switched on or off in Your Settings.
+  'snackbert_switched',
   // A Deleted Account: no user (its others' events lose theirs too).
   'account_deleted',
   // A Push Notification sent to one of a Member's devices, for the Board

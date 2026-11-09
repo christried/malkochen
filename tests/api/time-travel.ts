@@ -17,6 +17,13 @@ export async function backdateDeletion(table: 'dish' | 'cooking' | 'board' | 'co
   await query(`update ${table} set deleted_at = deleted_at - make_interval(days => $2) where id = $1`, [id, days])
 }
 
+// Makes Snackbert's last answer about a user's email address `hours` older,
+// as if it had been asked that long before: a day at most is remembered
+// (server/utils/snackbert.ts).
+export async function ageSnackbertCheck(email: string, hours: number): Promise<void> {
+  await query(`update snackbert set checked_at = checked_at - make_interval(hours => $2) where user_id = (select id from "user" where email = $1)`, [email, hours])
+}
+
 // Uses up `calls` of a user's limit (server/rate-limits.ts) in a window that
 // starts now, as if they had made that many calls just now.
 export async function useUpLimit(email: string, limited: string, calls: number): Promise<void> {
