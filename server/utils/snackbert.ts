@@ -60,20 +60,15 @@ async function switchOn(userId: string): Promise<void> {
   )
 }
 
-// A switch in the event log (#399) only when it was on: a row switched off.
-async function switchOff(userId: string): Promise<void> {
+// Switches Snackbert off for a user, whatever Snackbert says. A switch in
+// the event log (#399) only when it was on: off already, nothing changes.
+export async function switchSnackbertOff(userId: string): Promise<void> {
   await withEvents(
     db,
     db.update(snackbert).set({ switchedOn: false }).where(and(eq(snackbert.userId, userId), eq(snackbert.switchedOn, true))).returning({ userId: snackbert.userId }),
     userEvent('snackbert_switched', userId, detailsOf({ on: false })),
     { once: true },
   )
-}
-
-// Switches Snackbert off for a user, whatever Snackbert says. Off already:
-// nothing changes.
-export async function switchSnackbertOff(userId: string): Promise<void> {
-  await switchOff(userId)
 }
 
 // Whether the user has a Snackbert account (`available`) and has Snackbert
@@ -92,7 +87,7 @@ export async function snackbertFor(userId: string, email: string): Promise<{ ava
   if (hasAccount === null) return stored
   await rememberAnswer(userId, hasAccount)
   // No account any more: Snackbert is switched off with it, and that is logged.
-  if (!hasAccount && row?.switchedOn) await switchOff(userId)
+  if (!hasAccount && row?.switchedOn) await switchSnackbertOff(userId)
   return { available: hasAccount, on: hasAccount && (row?.switchedOn ?? false) }
 }
 
@@ -106,7 +101,7 @@ export async function switchSnackbertOn(userId: string, email: string): Promise<
   if (hasAccount === null) return 'unreachable'
   await rememberAnswer(userId, hasAccount)
   if (!hasAccount) {
-    await switchOff(userId)
+    await switchSnackbertOff(userId)
     return 'no-account'
   }
   await switchOn(userId)
