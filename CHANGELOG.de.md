@@ -4,6 +4,16 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-09
+
+### Changed
+
+- Die Datenschutzerklärung sagt jetzt, dass malkochen bei TikTok-Links, wie bei Instagram, die öffentliche Einbettungsseite des Posts liest.
+
+### Fixed
+
+- Ein eingefügter TikTok-Link bringt wieder Titel, Bild, Creator und die Beschreibung mit. TikTok hatte sie still und leise nicht mehr rausgegeben.
+
 ## [1.1.0] - 2026-10-26
 
 ### Added
@@ -46,6 +56,7 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0
