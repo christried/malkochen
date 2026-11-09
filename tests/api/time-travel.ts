@@ -101,3 +101,16 @@ export async function setVersionSeen(email: string, version: string): Promise<vo
 export async function backdateBoardEvents(boardId: string, days: number): Promise<void> {
   await query(`update event_log set at = at - make_interval(days => $2) where board_id = $1`, [boardId, days])
 }
+
+// Rows read from the server's database, for what no endpoint shows: the
+// tests read them here only (#424's Snackbert Reports, what is never kept).
+export async function databaseRows<Row = Record<string, unknown>>(text: string, values: unknown[] = []): Promise<Row[]> {
+  const client = new pg.Client({ connectionString: inject('databaseUrl') })
+  await client.connect()
+  try {
+    return (await client.query(text, values)).rows as Row[]
+  }
+  finally {
+    await client.end()
+  }
+}
