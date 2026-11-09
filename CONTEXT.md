@@ -153,7 +153,7 @@ A Dish is Cooked once it has been moved into the Gekocht Column at least once.
 _Avoid_: Done, finished, completed
 
 **Cooking**:
-One occasion a Dish was cooked, with a date and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. A Dish's Cookings appear in its Dish History and are kept when it moves out again.
+One occasion a Dish was cooked, with a date and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. "Gekocht ✓" on several selected Dishes at once records one Cooking for each, all dated now, by the same rules. A Dish's Cookings appear in its Dish History and are kept when it moves out again.
 _Avoid_: Done entry, log entry
 
 **Achievement Level**:
@@ -191,7 +191,7 @@ A separate Android app for keeping track of what one eats, with a mascot of the 
 _Avoid_: Snackbert integration, nutrition app, the tracker
 
 **Snackbert Question**:
-Snackbert's head popping up after a Cooking to ask the Member who recorded it whether they'd like to tell him about it. It comes once the Cooking can no longer be undone, after a Klassiker celebration and never during the Tour, and only for Members who switched Snackbert on in Your Settings. "Nein" sends him away for that Cooking.
+Snackbert's head popping up after a Cooking to ask the Member who recorded it whether they'd like to tell him about it. It comes once the Cooking can no longer be undone, after a Klassiker celebration and never during the Tour or after several Dishes were cooked at once, and only for Members who switched Snackbert on in Your Settings. "Nein" sends him away for that Cooking.
 _Avoid_: Prompt (that's a Notification Prompt), popup, nag
 
 **Snackbert Report**:
