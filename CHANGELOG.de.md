@@ -4,6 +4,10 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+### Added
+
+- Mehrere Gerichte gekocht? Wähl sie aus (lang auf eins drücken, am Desktop mit Strg-Klick), tipp auf Gekocht ✓, und jedes zählt. Eine Feier für alle zusammen, ein Klassiker bekommt trotzdem seine eigene, und ein Tipp auf Rückgängig nimmt alles zurück.
+
 ## [1.1.2] - 2026-11-09
 
 ### Changed
