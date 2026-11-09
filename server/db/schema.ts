@@ -327,6 +327,10 @@ export const dish = pgTable('dish', {
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),
   placeholder: text('placeholder').$type<Placeholder>().notNull(),
+  // Whether imageUrl is a Member's own photo ("Eigenes Foto") rather than the
+  // Source image: Snackbert is told which (#424). False for every Dish from
+  // before #424, and for a Dish with no image.
+  imageIsOwnPhoto: boolean('image_is_own_photo').notNull().default(false),
   // The image's focus point (shared/image-focus.ts), in whole percent of its
   // width and height: the part every frame that crops it shows. The centre
   // unless a Member shifted it; a Placeholder Image doesn't use it.
@@ -369,6 +373,21 @@ export const cooking = pgTable('cooking', {
   // recorded it removes it for good instead.
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, t => [index('cooking_dish_id_idx').on(t.dishId, t.cookedAt)])
+
+// ---------------------------------------------------------------------------
+// Snackbert Reports (CONTEXT.md: Snackbert Report, #424): one row per Report a
+// Member sent Snackbert about a Cooking. Several per Cooking are allowed (a
+// second helping). Nothing of the portion is ever stored here: the text,
+// photo and recording go to Snackbert only (server/utils/snackbert-reports.ts).
+
+export const snackbertReport = pgTable('snackbert_report', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // Gone with its Cooking, so "Rückgängig" or a purge takes its Reports too.
+  cookingId: uuid('cooking_id').notNull().references(() => cooking.id, { onDelete: 'cascade' }),
+  // Who reported it; gone with their account. Only they see it as reported.
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  reportedAt: timestamp('reported_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [index('snackbert_report_cooking_id_user_id_idx').on(t.cookingId, t.userId)])
 
 // ---------------------------------------------------------------------------
 // Comments (CONTEXT.md: Comment): a Member's message on a Dish, in its Dish

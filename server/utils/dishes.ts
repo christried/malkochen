@@ -86,6 +86,9 @@ export interface NewDish {
   playableVideo: boolean | null
   // Must already be a stored image (Image Store), never a third-party link.
   imageUrl: string | null
+  // Whether that image is the Member's own photo rather than the Source's
+  // (#424): Snackbert is told which.
+  imageIsOwnPhoto: boolean
   // Where that image is shifted to; the centre if left out. Without an
   // image, always the centre.
   imageFocus?: ImageFocus
@@ -182,7 +185,8 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // they are. `imageUrl` must already be a stored image, never a third-party
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
-export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'playableVideo' | 'imageUrl' | 'imageFocus' | 'placeholder'>>
+// `imageIsOwnPhoto` comes with `imageUrl` whenever that is changed.
+export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'playableVideo' | 'imageUrl' | 'imageIsOwnPhoto' | 'imageFocus' | 'placeholder'>>
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -822,6 +826,7 @@ export async function addDish(
       caption: input.caption,
       playableVideo: input.playableVideo,
       imageUrl: input.imageUrl,
+      imageIsOwnPhoto: input.imageIsOwnPhoto,
       imageFocusX: focus.x,
       imageFocusY: focus.y,
       placeholder: input.placeholder,

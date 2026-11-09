@@ -18,6 +18,9 @@ export const RATE_LIMITS = {
   // Changing your Username (#209). Not costly: so a name others know
   // someone by doesn't keep changing, and names can't be tried out in bulk.
   'username': { calls: 10, window: '1 day' },
+  // Each Snackbert Report is a Gemini analysis on the Operator's bill. Snackbert
+  // itself takes 20 a day per account, so this only stops a client stuck in a loop.
+  'snackbert-report': { calls: 30, window: '1 day' },
 } as const
 
 export type RateLimited = keyof typeof RATE_LIMITS

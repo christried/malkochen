@@ -17,7 +17,7 @@ import { intlFor } from './intl'
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('de')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -812,6 +812,42 @@ export const de = {
   },
   // The email with the sign-in code (#345, server/email/index.ts): the code
   // to type where sign-in started, and a link that signs in where it opens.
+  // Reporting a Cooking to Snackbert from the Dish History (#424, decisions in #422): the pill, the report sheet, its confirmation and what it says when sending didn't work. Snackbert is never judgemental: curious, warm, cheeky.
+  snackbertReport: {
+    report: 'Snackbert melden',
+    reported: 'An Snackbert gemeldet ✓',
+    reportAgain: 'Noch einmal an Snackbert melden',
+    title: 'Snackbert melden',
+    // "Pasta, heute gekocht" / "Pasta, gekocht am 3. Sept.".
+    cooked: (dish: string, at: Date) => isToday(at) ? `${dish}, heute gekocht` : `${dish}, gekocht am ${addedDate(at)}`,
+    optional: 'Alles hier ist freiwillig. Schickst du nichts mit, nimmt Snackbert eine normale Portion an.',
+    tiles: { photo: 'Foto', voice: 'Aufnahme', text: 'Text' },
+    camera: 'Kamera',
+    gallery: 'Galerie',
+    removePhoto: 'Foto entfernen',
+    photoUnreadable: 'Dieses Foto kann dein Browser nicht öffnen. Nimm am besten ein anderes.',
+    record: 'Aufnehmen',
+    stop: 'Stopp',
+    play: 'Anhören',
+    rerecord: 'Neu aufnehmen',
+    limit: 'Höchstens 2 Minuten',
+    micDenied: 'Ohne Mikrofon keine Aufnahme. Du kannst es in den Einstellungen deines Browsers erlauben.',
+    micUnavailable: 'Dein Browser kann hier nicht aufnehmen.',
+    textLabel: 'Ein paar Worte',
+    textPrompt: 'Zum Beispiel: eine halbe Portion, dazu ein Glas Saft',
+    send: 'Senden',
+    sendBare: 'Ohne alles senden',
+    sending: 'Wird gesendet',
+    offline: 'Du bist offline. Senden geht wieder, sobald du Netz hast.',
+    thanks: 'Danke dir! Ich rechne nach.',
+    thanksSub: 'Was er draus macht, siehst du in Snackbert.',
+    done: 'Fertig',
+    failed: 'Snackbert war gerade nicht zu erreichen. Alles, was du dazugegeben hast, ist noch da.',
+    retry: 'Nochmal versuchen',
+    full: 'Snackbert ist für heute satt. Morgen hat er wieder Hunger.',
+    noAccount: 'Snackbert findet kein Konto mehr zu deiner E-Mail-Adresse. Wir haben ihn für dich ausgeschaltet.',
+    tooLarge: 'Das Foto oder die Aufnahme ist zu groß. Versuch es mit einer kürzeren Aufnahme.',
+  },
   signInEmail: {
     subject: (code: string) => `${code} ist dein Code für malkochen`,
     headline: 'Dein Code zum Anmelden',
@@ -1004,6 +1040,7 @@ export const de = {
       push_switched: 'Push umgeschaltet',
       digest_switched: 'Tägliche E-Mail umgeschaltet',
       snackbert_switched: 'Snackbert umgeschaltet',
+      snackbert_report_sent: 'Snackbert Report gesendet',
       account_deleted: 'Konto gelöscht',
       push_sent: 'Push gesendet',
       digest_sent: 'Tägliche E-Mail gesendet',

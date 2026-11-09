@@ -76,6 +76,9 @@ export const EVENT_KINDS = [
   'digest_switched',
   // Snackbert (CONTEXT.md) switched on or off in Your Settings.
   'snackbert_switched',
+  // A Snackbert Report (#424) sent for a Cooking: its Board, Dish and user,
+  // never what it said or what it showed.
+  'snackbert_report_sent',
   // A Deleted Account: no user (its others' events lose theirs too).
   'account_deleted',
   // A Push Notification sent to one of a Member's devices, for the Board

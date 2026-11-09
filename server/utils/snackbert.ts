@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '../db'
 import { snackbert } from '../db/schema'
 import { parseServerEnv } from '../env'
-import { snackbertClientFrom, type SnackbertClient } from '../snackbert'
+import { snackbertClientFrom, type SnackbertClient, type SnackbertReportAnswer, type SnackbertReportRequest } from '../snackbert'
 import { detailsOf, userEvent, withEvents } from './events'
 
 // Snackbert in Your Settings (CONTEXT.md, #423): only for people with a
@@ -106,4 +106,26 @@ export async function switchSnackbertOn(userId: string, email: string): Promise<
   }
   await switchOn(userId)
   return 'on'
+}
+
+// Whether Snackbert is on for the user, as the switch remembers it: switched
+// on, with an account as last answered. Never asks Snackbert, so no request
+// waits on it. Off whenever Snackbert isn't set up.
+export async function snackbertOn(userId: string): Promise<boolean> {
+  if (!client) return false
+  const row = await rememberedFor(userId)
+  return row !== null && row.hasAccount && row.switchedOn
+}
+
+// Snackbert answered that the user has no account (on a Snackbert Report):
+// the answer is remembered, and Snackbert switched off, which is logged.
+export async function forgetSnackbertAccount(userId: string): Promise<void> {
+  await rememberAnswer(userId, false)
+  await switchSnackbertOff(userId)
+}
+
+// Sends a Snackbert Report (snackbert-reports.ts). 'failed' when Snackbert
+// isn't set up, the same as when it can't be reached.
+export function sendSnackbertReport(request: SnackbertReportRequest): Promise<SnackbertReportAnswer> {
+  return client ? client.report(request) : Promise.resolve('failed')
 }
