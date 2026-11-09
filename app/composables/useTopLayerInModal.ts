@@ -7,9 +7,9 @@ import type { ShallowRef } from 'vue'
 // into the side panel. Popovers stack in the order they're shown, so it's
 // lifted a tick after mounting, once the modal it's in has opened: then
 // it's above that modal, and sheets opened later stay above it. Outside a
-// modal it stays an ordinary fixed element, so the offline screen and the
-// splash still cover it. Its element needs `popover="manual"`, and its own
-// `display`, so it shows while it isn't lifted.
+// modal it stays an ordinary fixed element, so the splash still covers it.
+// Its element needs `popover="manual"`, and its own `display`, so it shows
+// while it isn't lifted.
 export function useTopLayerInModal(element: Readonly<ShallowRef<HTMLElement | null>>) {
   onMounted(async () => {
     await nextTick()

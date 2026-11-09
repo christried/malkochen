@@ -16,6 +16,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // browser's languages alone. A failed check (offline) changes nothing.
   if (me.value) useLanguageChoice().value = me.value.language
   else if (status === 401) useLanguageChoice().value = 'auto'
+  // Without an answer (offline, or malkochen not answering, #458) nothing
+  // is known about the user: the page opens as it would, a Dish's detail
+  // over its Board, say, instead of sending them to sign in.
+  if (error.value && import.meta.client && useConnectionState().value !== 'online') return
 
   if (to.path.startsWith('/invite/')) return
   // A Dish Link (#401) is for anyone who has it, signed in or not.

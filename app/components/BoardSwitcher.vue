@@ -73,7 +73,11 @@ const shown = computed(() => boards.value.length
   ? boards.value.map(b => b.id === props.board.id && count.value !== null ? { ...b, dishCount: count.value } : b)
   : [{ ...props.board, isOwner: false, dishCount: count.value, members: [], columns: [] }])
 
+// A new Board, and restoring or deleting an archived one, need malkochen
+// to answer: greyed out while it can't be reached (#458).
+const { mayChange, needsNet } = useConnection()
 function newBoard() {
+  if (!mayChange.value) return
   close()
   creating.value = true
 }
@@ -256,6 +260,7 @@ async function purge() {
               type="button"
               class="flex w-full items-center gap-3 rounded-field px-2 py-2 text-left text-button transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-[.98] focus-visible:outline-2 focus-visible:outline-focus"
               aria-haspopup="dialog"
+              v-bind="needsNet"
               @click="newBoard"
             >
               <span
@@ -297,23 +302,25 @@ async function purge() {
                   </span>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    class="rounded-pill bg-inverse px-4 py-2.5 text-label text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                    :aria-label="t.boards.restoreBoard(boardLabel(archivedBoard))"
-                    @click="restore(archivedBoard)"
-                  >
-                    {{ t.settings.restore }}
-                  </button>
-                  <button
-                    type="button"
-                    class="rounded-pill bg-danger/10 px-4 py-2.5 text-label text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-                    :aria-label="t.boards.purgeBoard(boardLabel(archivedBoard))"
-                    aria-haspopup="dialog"
-                    @click="askPurge(archivedBoard)"
-                  >
-                    {{ t.settings.deleteForGood }}
-                  </button>
+                  <NeedsNet :note="false">
+                    <button
+                      type="button"
+                      class="rounded-pill bg-inverse px-4 py-2.5 text-label text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                      :aria-label="t.boards.restoreBoard(boardLabel(archivedBoard))"
+                      @click="restore(archivedBoard)"
+                    >
+                      {{ t.settings.restore }}
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-pill bg-danger/10 px-4 py-2.5 text-label text-danger transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                      :aria-label="t.boards.purgeBoard(boardLabel(archivedBoard))"
+                      aria-haspopup="dialog"
+                      @click="askPurge(archivedBoard)"
+                    >
+                      {{ t.settings.deleteForGood }}
+                    </button>
+                  </NeedsNet>
                 </div>
               </li>
             </ul>

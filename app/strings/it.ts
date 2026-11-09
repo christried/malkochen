@@ -577,6 +577,9 @@ export const it: Strings = {
     headline: 'Sei offline.',
     body: 'Appena torni online, puoi continuare da qui.',
     retry: 'Riprova',
+    bar: 'Offline. Le tue modifiche arrivano appena torni in rete.',
+    unreachable: 'malkochen al momento non è raggiungibile.',
+    needsNet: 'Funziona solo in rete',
   },
   error: {
     headline: 'Qualcosa si è bruciato.',

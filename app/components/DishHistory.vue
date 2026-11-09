@@ -50,17 +50,26 @@ const summary = computed(() => {
   return last ? t.cooking.summary(props.dish.cookings.length, new Date(last.cookedAt)) : t.detail.cookingHistoryEmpty
 })
 
-// Loaded as the detail opens, and again for another Dish.
+// Loaded as the detail opens, and again for another Dish. Opening a Dish
+// while malkochen can't be reached isn't opening it (#458, CONTEXT.md Dish
+// History): no request, and what's new in it stays marked; it loads once
+// malkochen answers, if the detail is still open. Meanwhile its changes
+// are greyed out or hidden.
+const { answering, mayChange } = useConnection()
 const loadFailed = ref(false)
 // The Dish whose history has loaded (or failed to).
 const loaded = ref<string | null>(null)
 async function load() {
   const dishId = props.dish.id
+  if (!answering.value) return
   loadFailed.value = !await boardModule.openDish(dishId)
   loaded.value = dishId
 }
 onMounted(load)
 watch(() => props.dish.id, load)
+watch(answering, (back) => {
+  if (back && loaded.value !== props.dish.id) void load()
+})
 
 // Snackbert: whether the viewer has him on, and which Cookings they reported.
 const snackbert = useSnackbertReports()
@@ -240,7 +249,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
         </p>
       </div>
       <CookButton
-        v-if="boardModule.may('moveDishes')"
+        v-if="boardModule.may('moveDishes') && mayChange"
         class="shrink-0 px-4 py-2.5"
         :cooked="dish.cookings.length > 0"
         @cook="origin => emit('cook', origin)"
@@ -253,10 +262,12 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       data-how-was-it
     >
       <span class="text-small text-text-muted">{{ t.history.howWasIt }}</span>
-      <VoteButtons
-        :mine="myVote"
-        @vote="vote"
-      />
+      <NeedsNet :note="false">
+        <VoteButtons
+          :mine="myVote"
+          @vote="vote"
+        />
+      </NeedsNet>
     </div>
     <div
       v-else-if="!dish.cookings.length"
@@ -346,7 +357,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               {{ when(entry.at) }}<template v-if="entry.kind === 'comment' && entry.comment.editedAt">, {{ t.history.edited }}</template>
             </span>
             <button
-              v-if="entry.kind === 'cooking' && boardModule.may('moveDishes')"
+              v-if="entry.kind === 'cooking' && boardModule.may('moveDishes') && mayChange"
               type="button"
               class="-my-1.5"
               :class="iconButton"
@@ -368,7 +379,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
             </button>
             <button
-              v-else-if="entry.kind === 'comment' && entry.comment.id && canDelete(entry.comment)"
+              v-else-if="entry.kind === 'comment' && entry.comment.id && canDelete(entry.comment) && mayChange"
               type="button"
               class="-my-1.5"
               :class="iconButton"
@@ -410,7 +421,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             @click="report(entry.cooking)"
           />
           <span
-            v-if="entry.kind === 'comment' && menuFor === entry.comment.id"
+            v-if="entry.kind === 'comment' && menuFor === entry.comment.id && mayChange"
             class="flex gap-1.5"
           >
             <button
@@ -455,56 +466,58 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       data-comment-form
       @submit.prevent="submit"
     >
-      <p
-        v-if="editing"
-        class="flex items-center justify-between gap-3 px-1 text-caption text-text-muted"
-      >
-        {{ t.history.editPrompt }}
-        <button
-          type="button"
-          class="rounded-pill px-2.5 py-1 text-label text-text transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          @click="cancelEdit"
+      <NeedsNet>
+        <p
+          v-if="editing"
+          class="flex items-center justify-between gap-3 px-1 text-caption text-text-muted"
         >
-          {{ t.history.cancelEdit }}
-        </button>
-      </p>
-      <div class="flex min-w-0 items-end rounded-[24px] bg-surface-muted focus-within:outline-2 focus-within:outline-focus">
-        <textarea
-          ref="field"
-          v-model="text"
-          rows="1"
-          :maxlength="COMMENT_MAX"
-          class="block max-h-[136px] min-h-[52px] w-full resize-none bg-transparent py-[15px] pl-4 pr-1 text-body leading-[22px] outline-none placeholder:text-text-muted"
-          :placeholder="editing ? t.history.editPrompt : t.history.fieldPrompt"
-          :aria-label="t.history.field"
-          @keydown.enter.exact="onEnter"
-          @keydown.esc="onFieldEscape"
-        />
-        <button
-          type="submit"
-          class="m-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-inverse text-on-inverse transition duration-tap ease-tap enabled:active:scale-90 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
-          :disabled="!sendable"
-          :aria-label="editing ? t.history.saveEdit : t.history.send"
-          :data-tooltip="editing ? t.history.saveEdit : t.history.send"
-        >
-          <AppIcon
-            v-if="editing"
-            name="check"
+          {{ t.history.editPrompt }}
+          <button
+            type="button"
+            class="rounded-pill px-2.5 py-1 text-label text-text transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            @click="cancelEdit"
+          >
+            {{ t.history.cancelEdit }}
+          </button>
+        </p>
+        <div class="flex min-w-0 items-end rounded-[24px] bg-surface-muted focus-within:outline-2 focus-within:outline-focus">
+          <textarea
+            ref="field"
+            v-model="text"
+            rows="1"
+            :maxlength="COMMENT_MAX"
+            class="block max-h-[136px] min-h-[52px] w-full resize-none bg-transparent py-[15px] pl-4 pr-1 text-body leading-[22px] outline-none placeholder:text-text-muted"
+            :placeholder="editing ? t.history.editPrompt : t.history.fieldPrompt"
+            :aria-label="t.history.field"
+            @keydown.enter.exact="onEnter"
+            @keydown.esc="onFieldEscape"
           />
-          <svg
-            v-else
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          ><path d="M12 19V5" /><path d="M6 11l6-6 6 6" /></svg>
-        </button>
-      </div>
+          <button
+            type="submit"
+            class="m-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-inverse text-on-inverse transition duration-tap ease-tap enabled:active:scale-90 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
+            :disabled="!sendable"
+            :aria-label="editing ? t.history.saveEdit : t.history.send"
+            :data-tooltip="editing ? t.history.saveEdit : t.history.send"
+          >
+            <AppIcon
+              v-if="editing"
+              name="check"
+            />
+            <svg
+              v-else
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            ><path d="M12 19V5" /><path d="M6 11l6-6 6 6" /></svg>
+          </button>
+        </div>
+      </NeedsNet>
     </form>
 
     <SnackbertReportSheet

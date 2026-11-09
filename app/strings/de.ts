@@ -654,13 +654,18 @@ export const de = {
     // A change refused as the Owner just switched the Permission off.
     notAllowed: 'Das darfst du auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
   },
-  // public/offline.html repeats these, for the service worker. It also has
-  // the only copy of "malkochen ist gerade nicht erreichbar", which only it
-  // shows.
+  // public/offline.html repeats the first three, for the service worker,
+  // and has its own copy of "malkochen ist gerade nicht erreichbar". The
+  // offline bar (OfflineBar) says `bar` without a connection, `unreachable`
+  // when malkochen doesn't answer; a change that needs a connection says
+  // `needsNet` meanwhile (useConnection).
   offline: {
     headline: 'Du bist offline.',
     body: 'Sobald du wieder Netz hast, geht’s hier weiter.',
     retry: 'Nochmal versuchen',
+    bar: 'Offline. Deine Änderungen kommen an, sobald du Netz hast.',
+    unreachable: 'malkochen ist gerade nicht erreichbar.',
+    needsNet: 'Geht nur mit Netz',
   },
   // The error screen: a page that isn't there, or anything unexpected --
   // which is on malkochen's side, and it says so.

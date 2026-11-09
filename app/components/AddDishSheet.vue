@@ -550,19 +550,21 @@ async function save() {
             </span>
             {{ t.addDish.duplicateHint }}
           </p>
-          <button
-            type="submit"
-            class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            :disabled="!canSave && !saving"
-            :aria-busy="saving"
-            :aria-describedby="warnDuplicate ? duplicateHintId : undefined"
-          >
-            <BusyLabel
-              :label="t.addDish.save"
-              :busy-label="t.addDish.saving"
-              :busy="saving"
-            />
-          </button>
+          <NeedsNet>
+            <button
+              type="submit"
+              class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              :disabled="!canSave && !saving"
+              :aria-busy="saving"
+              :aria-describedby="warnDuplicate ? duplicateHintId : undefined"
+            >
+              <BusyLabel
+                :label="t.addDish.save"
+                :busy-label="t.addDish.saving"
+                :busy="saving"
+              />
+            </button>
+          </NeedsNet>
         </div>
       </template>
     </form>

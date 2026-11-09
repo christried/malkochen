@@ -15,6 +15,7 @@ const REOPEN_AFTER_MS = 30 * 60_000
 // its writes was under way meanwhile; the next check brings it.
 export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean) {
   const visit = useVisit()
+  const { answering } = useConnection()
   let hiddenSince: number | null = null
   // The user came back after long enough away to reopen the Board, and it
   // hasn't been reopened yet: the next sync does that before it loads. Kept
@@ -28,8 +29,12 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
   // Only from the client: the poll starts on mount.
   let poll: BoardPoll | undefined
 
+  // Nothing is marked seen while malkochen can't be reached (#458): the
+  // reopen and the load (which records what was seen) wait until a request
+  // gets through, the version check, which also tells the app it's back.
   async function sync() {
     const id = boardId()
+    if (!answering.value) await $fetch(`/api/boards/${id}/version`)
     if (reopenDue) {
       await $fetch(`/api/boards/${id}/open`, { method: 'POST' })
       reopenDue = false

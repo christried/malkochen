@@ -212,7 +212,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   press: dishId => selection.toggle(dishId),
   paused: () => selecting.value,
   // Without "move Dishes" no card lifts; a long-press still selects one.
-  pinned: () => !mayMove.value,
+  pinned: () => !mayMove.value || !mayChange.value,
 })
 // What plays on the Board: the lifted card's Placeholder, the hovered
 // card's, or one where the Board comes to rest; and beside it an empty
@@ -341,6 +341,10 @@ watch(() => route.params.dish, (dish) => {
   if (focus) void focusOn(focus)
 }, { immediate: true })
 
+// The Dish detail's code loads with the Board, so a Dish opens to read
+// without a connection too (#458).
+onMounted(() => void preloadRouteComponents({ name: 'b-board-dish', params: { board: address.value.slug, dish: '-' } }))
+
 const adding = ref(false)
 // Whether the user may add Dishes here (their Permissions, as the Board last
 // loaded): without it there is no add button, no "N" and no Add Dish for
@@ -352,6 +356,14 @@ const mayAdd = computed(() => board.value?.permissions.addDishes ?? false)
 // own may always be.
 const mayMove = computed(() => boardModule.may('moveDishes'))
 const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
+// While malkochen can't be reached (#458), no change can be made: adding is
+// greyed out and says why, a card has no "Gekocht ✓" or menu, none lifts,
+// and the add lane is gone (useConnection).
+const { answering, mayChange, needsNet } = useConnection()
+function addDish() {
+  if (mayChange.value) adding.value = true
+  else showNotice(t.offline.needsNet)
+}
 // Your settings (UserSettingsSheet), from the header's cogwheel (#282).
 const showingSettings = ref(false)
 
@@ -398,9 +410,10 @@ const boardTour = useTemplateRef<{
   running: boolean
   tourDishId: string | null
 }>('boardTour')
-// Nothing open over the Board, no search, no selection, no drag, and
-// Snackbert not asking.
-const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish && !snackbertQuestion.asking.value)
+// Nothing open over the Board, no search, no selection, no drag,
+// Snackbert not asking, and malkochen answering: nothing of these starts
+// offline (#458).
+const boardIdle = computed(() => !anyModalOpen.value && !searchOpen.value && !selecting.value && !dragging.value && !route.params.dish && !snackbertQuestion.asking.value && answering.value)
 
 // The Snackbert Question (SnackbertQuestion, #425): after a Cooking recorded
 // here, on the Board or in the Dish detail, Snackbert asks whether the user
@@ -621,7 +634,7 @@ useBoardShortcuts((shortcut) => {
   switch (shortcut.action) {
     case 'addDish':
       if (!mayAdd.value) return false
-      adding.value = true
+      addDish()
       return true
     case 'search':
       if (searchOpen.value) searchBar.value?.focus()
@@ -1152,7 +1165,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       :board-id="board.id"
                     />
                     <button
-                      v-if="mayMove || mayArchive(dish)"
+                      v-if="mayChange && (mayMove || mayArchive(dish))"
                       type="button"
                       class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
                       :aria-label="t.dish.menu(dish.title)"
@@ -1182,7 +1195,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                       /></svg>
                     </button>
                     <CookButton
-                      v-if="mayMove"
+                      v-if="mayMove && mayChange"
                       class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
                       :cooked="dish.cookings.length > 0"
                       :label="t.dish.cookLabel(dish.title)"
@@ -1211,7 +1224,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
           <!-- Desktop: a new Column is added here, after the last one, with
                "edit Columns". -->
           <AddColumnLane
-            v-if="boardModule.may('editColumns')"
+            v-if="mayChange && boardModule.may('editColumns')"
             class="hidden desktop:block"
             @failed="showNotice(t.settings.failed)"
           />
@@ -1257,12 +1270,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-if="mayAdd"
       v-show="!selecting"
       type="button"
-      class="fab fixed bottom-6 right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-8 tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
+      class="fab fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt }"
       :aria-label="t.addDish.open"
       :data-tooltip="t.addDish.open"
+      v-bind="needsNet"
       data-tour="add-button"
-      @click="adding = true"
+      @click="addDish"
     >
       <svg
         viewBox="0 0 24 24"
@@ -1296,13 +1310,15 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :title="t.dish.moveTo"
       :close-label="t.dish.closeMenu"
     >
-      <MoveTargetPicker
-        class="mt-5"
-        :board="board"
-        :from-column-id="selectionColumnId"
-        no-gekocht
-        @move="moveSelected"
-      />
+      <NeedsNet>
+        <MoveTargetPicker
+          class="mt-5"
+          :board="board"
+          :from-column-id="selectionColumnId"
+          no-gekocht
+          @move="moveSelected"
+        />
+      </NeedsNet>
     </AppSheet>
 
     <template v-if="!route.params.dish">
@@ -1343,53 +1359,55 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         ref="menuSteps"
         class="mt-5 flex flex-col gap-2"
       >
-        <template v-if="!choosingColumn">
-          <button
-            v-if="mayMove"
-            type="button"
-            class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-            data-tour="menu-move"
-            @click="chooseColumn(true)"
-          >
-            {{ t.dish.moveTo }}
-          </button>
-          <DangerButton
-            v-if="menuDish && mayArchive(menuDish)"
-            data-tour="menu-delete"
-            @click="deleteFromMenu"
-          >
-            {{ t.dish.delete }}
-          </DangerButton>
-        </template>
-        <template v-else>
-          <button
-            type="button"
-            class="flex items-center gap-2 self-start rounded-pill px-3 py-2 text-label text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
-            @click="chooseColumn(false)"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            ><path d="M15 6l-6 6 6 6" /></svg>
-            {{ t.dish.back }}
-          </button>
-          <p class="section-heading px-1">
-            {{ t.dish.moveTo }}
-          </p>
-          <MoveTargetPicker
-            v-if="menuColumnId"
-            :board="board"
-            :from-column-id="menuColumnId"
-            @move="moveFromMenu"
-          />
-        </template>
+        <NeedsNet>
+          <template v-if="!choosingColumn">
+            <button
+              v-if="mayMove"
+              type="button"
+              class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              data-tour="menu-move"
+              @click="chooseColumn(true)"
+            >
+              {{ t.dish.moveTo }}
+            </button>
+            <DangerButton
+              v-if="menuDish && mayArchive(menuDish)"
+              data-tour="menu-delete"
+              @click="deleteFromMenu"
+            >
+              {{ t.dish.delete }}
+            </DangerButton>
+          </template>
+          <template v-else>
+            <button
+              type="button"
+              class="flex items-center gap-2 self-start rounded-pill px-3 py-2 text-label text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+              @click="chooseColumn(false)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              ><path d="M15 6l-6 6 6 6" /></svg>
+              {{ t.dish.back }}
+            </button>
+            <p class="section-heading px-1">
+              {{ t.dish.moveTo }}
+            </p>
+            <MoveTargetPicker
+              v-if="menuColumnId"
+              :board="board"
+              :from-column-id="menuColumnId"
+              @move="moveFromMenu"
+            />
+          </template>
+        </NeedsNet>
       </div>
     </AppSheet>
 

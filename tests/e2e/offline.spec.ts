@@ -1,12 +1,17 @@
 import type { Page, Route } from '@playwright/test'
-import { expect, test } from './fixtures'
+import { expect, newTab, test } from './fixtures'
+import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
+import { TOUR_VERSION } from '../../app/tour/tour'
 import { signIn } from './auth'
-import { countClips, loopStill, moving, playing } from './clips'
-import { gotoHydrated } from './hydration'
+import { moving } from './clips'
+import { gotoHydrated, reloadHydrated } from './hydration'
+import { inviteToken } from './invite'
+import { fastPolls } from './polls'
+import { landingBoardId, removeUsers, seedDish, setSeen } from './seed'
 
-// The Offline screen (PRD story 8). Opening malkochen without a connection
-// gets the service worker's Offline page; losing the connection with the app
-// open shows the Offline screen over it until the connection is back.
+// The Offline page (PRD story 8): opening malkochen without a connection
+// gets the service worker's Offline page. Losing the connection with the app
+// open shows the offline bar instead (#458), further down.
 
 // The service worker is what serves the Offline page (blocked elsewhere,
 // playwright.config.ts).
@@ -88,41 +93,164 @@ for (const [what, outage] of [
   })
 }
 
-test('losing the connection with the app open shows the Offline screen until it is back', async ({ page, context }) => {
-  await signIn(page)
+// The offline bar (#458): losing the connection with a Board open no longer
+// covers it. The Board and a Dish's detail stay there to read, a small bar
+// says what's going on, and every change is greyed out or hidden with "Geht
+// nur mit Netz" until a request gets an answer again. Hildegard, Sibylla,
+// Agnodice and Theano are used by this file only.
+const HILDEGARD = ALLOWLISTED[198]
+const SIBYLLA = ALLOWLISTED[199]
+const AGNODICE = ALLOWLISTED[200]
+const THEANO = ALLOWLISTED[201]
+const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
+const NEEDS_NET = 'Geht nur mit Netz'
+
+const bar = (page: Page, text: string) => page.locator('[data-offline-bar]').filter({ hasText: text })
+const offlineBar = (page: Page) => bar(page, 'Offline. Deine Änderungen kommen an, sobald du Netz hast.')
+const unreachableBar = (page: Page) => bar(page, 'malkochen ist gerade nicht erreichbar.')
+
+test('losing the connection on a Board shows the offline bar over it, every change greyed out, until it is back', async ({ page, context }) => {
+  await removeUsers(HILDEGARD)
+  await signIn(page, HILDEGARD)
   await gotoHydrated(page, '/')
-  await serviceWorkerInControl(page)
-  const offline = page.getByRole('alertdialog', { name: 'Du bist offline.' })
-  await expect(offline).toHaveCount(0)
+  await seedDish(page, { title: 'Linsensuppe', sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: HILDEGARD })
+  await reloadHydrated(page)
+  const add = page.getByRole('button', { name: 'Gericht hinzufügen' })
+  await expect(add).not.toHaveAttribute('aria-disabled')
+  await expect(offlineBar(page)).toBeHidden()
 
   await context.setOffline(true)
-  await expect(offline).toBeVisible()
-  // The service worker keeps the offline clip's drawings, so it plays with no
-  // connection.
-  await expect.poll(() => playing(offline)).toEqual(['/clips/offline-light.svg'])
-  // The app underneath is out of reach until the connection is back.
-  await expect(offline.getByRole('button', { name: 'Nochmal versuchen' })).toBeFocused()
-  await page.keyboard.press('Tab')
-  expect(await page.evaluate(() => document.activeElement?.closest('main') ?? null)).toBeNull()
+
+  // Said politely, and nothing covers the Board.
+  await expect(offlineBar(page)).toBeVisible()
+  await expect(page.locator('[data-offline-bar]')).toHaveAttribute('aria-live', 'polite')
+  await expect(page.getByRole('alertdialog')).toHaveCount(0)
+  expect(await page.locator('main').evaluate(el => el.closest('[inert]') === null)).toBe(true)
+  // Adding is greyed out and says why; cooking and the card's menu are gone.
+  await expect(add).toHaveAttribute('aria-disabled', 'true')
+  await expect(add).toHaveAttribute('data-tooltip', NEEDS_NET)
+  // Playwright never clicks a button that says it is disabled; a finger can.
+  await add.dispatchEvent('click')
+  await expect(page.getByRole('status').filter({ hasText: NEEDS_NET })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Gericht hinzufügen' })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' })).toHaveCount(0)
+
+  // The Dish's detail opens to read; its changes are greyed out.
+  await page.getByRole('link', { name: 'Linsensuppe' }).click()
+  const detail = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(detail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible()
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' }).first()).toHaveAttribute('aria-disabled', 'true')
+  await expect(detail.getByRole('button', { name: 'Verschieben nach…' })).toBeDisabled()
+  await expect(detail.getByRole('textbox', { name: 'Kommentar' })).toBeDisabled()
+  await expect(detail.locator('[data-dish-history]').getByText(NEEDS_NET)).toBeVisible()
+  // The bar shows over the detail too.
+  await expect(offlineBar(page)).toBeVisible()
 
   await context.setOffline(false)
-  await expect(offline).toHaveCount(0)
-  await expect(page.getByRole('region', { name: 'Ideen' })).toBeVisible()
+
+  await expect(offlineBar(page)).toBeHidden()
+  await expect(detail.getByRole('textbox', { name: 'Kommentar' })).toBeEnabled()
+  await expect(detail.getByRole('button', { name: 'Verschieben nach…' })).toBeEnabled()
+  await detail.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(add).not.toHaveAttribute('aria-disabled')
+  await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toBeVisible()
 })
 
-test('with reduced motion the Offline screen shows its clip\'s still, and no clip plays', async ({ page, context }) => {
+// The device has a connection, but malkochen doesn't answer: the bar says
+// it's malkochen, and goes once the Board's next check gets an answer.
+for (const [what, outage] of [
+  ['no answer at all', (route: Route) => route.abort('connectionrefused')],
+  ['a Vercel platform error', (route: Route) => route.fulfill({ status: 502, headers: { 'x-vercel-error': 'NO_RESPONSE_FROM_FUNCTION' }, body: 'An error occurred' })],
+] as const) {
+  test(`when malkochen doesn't answer on a Board (${what}), the bar says it isn't reachable until it answers again`, async ({ page }) => {
+    await fastPolls(page)
+    await signIn(page, HILDEGARD)
+    await gotoHydrated(page, '/')
+    const add = page.getByRole('button', { name: 'Gericht hinzufügen' })
+
+    const check = (url: URL) => /^\/api\/boards\/[^/]+\/version$/.test(url.pathname)
+    await page.route(check, outage)
+
+    await expect(unreachableBar(page)).toBeVisible()
+    await expect(offlineBar(page)).toBeHidden()
+    await expect(add).toHaveAttribute('aria-disabled', 'true')
+
+    await page.unroute(check)
+    await expect(unreachableBar(page)).toBeHidden()
+    await expect(add).not.toHaveAttribute('aria-disabled')
+  })
+}
+
+// Opening a Dish without a connection isn't opening it (CONTEXT.md, Dish
+// History): what's new in it stays marked until it's opened online.
+test('a Dish opened offline keeps "Neues im Verlauf" until it is opened online', async ({ page, browser, context }) => {
+  await removeUsers(SIBYLLA, AGNODICE)
+  await fastPolls(page)
+  await signIn(page, SIBYLLA)
+  await gotoHydrated(page, '/')
+  await seedDish(page, { title: 'Ofengemüse', sourceLink: TIKTOK, sourceKind: 'tiktok', addedBy: SIBYLLA })
+  await reloadHydrated(page)
+
+  const boardId = await landingBoardId(page)
+  const token = await inviteToken(page, boardId)
+  const other = await newTab(browser)
+  await signIn(other, AGNODICE)
+  const headers = { origin: E2E_ORIGIN }
+  expect((await other.request.post(`/api/invites/${token}/join`, { headers })).ok()).toBe(true)
+  const board = await (await other.request.get(`/api/boards/${boardId}`)).json() as { columns: { dishes: { id: string, title: string }[] }[] }
+  const dish = board.columns.flatMap(c => c.dishes).find(d => d.title === 'Ofengemüse')!
+  expect((await other.request.post(`/api/dishes/${dish.id}/comments`, { headers, data: { text: 'Mit Feta!' } })).ok()).toBe(true)
+  await other.context().close()
+  const chip = page.getByRole('link', { name: 'Ofengemüse' }).locator('[data-history-chip]')
+  await expect(chip).toHaveAttribute('data-new', 'true')
+
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+  await page.getByRole('link', { name: 'Ofengemüse' }).click()
+  const detail = page.getByRole('dialog', { name: 'Ofengemüse' })
+  await expect(detail.getByRole('heading', { name: 'Ofengemüse', level: 1 })).toBeVisible()
+  await detail.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(detail).toBeHidden()
+  await expect(chip).toHaveAttribute('data-new', 'true')
+
+  await context.setOffline(false)
+  await expect(offlineBar(page)).toBeHidden()
+  await reloadHydrated(page)
+  await expect(chip).toHaveAttribute('data-new', 'true')
+})
+
+// No Tour, Changelog Popup or Notification Prompt starts while offline: the
+// Changelog Popup due waits until the connection is back.
+test('no Changelog Popup while offline: it waits until the connection is back', async ({ page, context }) => {
+  await removeUsers(THEANO)
+  await page.addInitScript(() => {
+    (window as { e2eChangelogPopup?: boolean }).e2eChangelogPopup = true
+  })
+  await signIn(page, THEANO)
+  await setSeen(THEANO, { version: '0.9.0', tourSeen: TOUR_VERSION })
+  await page.clock.install()
+  await gotoHydrated(page, '/')
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+
+  const popup = page.getByRole('dialog', { name: 'Was ist neu' })
+  await page.clock.runFor(5_000)
+  await expect(popup).toBeHidden()
+
+  await context.setOffline(false)
+  await expect(offlineBar(page)).toBeHidden()
+  await page.clock.runFor(5_000)
+  await expect(popup).toBeVisible()
+})
+
+test('with reduced motion the Offline page shows its clip still', async ({ page, context }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  const clips = await countClips(page)
   await signIn(page)
   await gotoHydrated(page, '/')
   await serviceWorkerInControl(page)
 
   await context.setOffline(true)
-  const offline = page.getByRole('alertdialog', { name: 'Du bist offline.' })
-  await expect(loopStill(offline, '/clips/offline')).toBeVisible()
-  // Its drawing never comes in.
-  expect(await clips()).toBe(0)
-  // And the Offline page the service worker serves.
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
   const drawing = page.locator('svg[data-clip="offline"]')

@@ -35,6 +35,13 @@ const emit = defineEmits<{
 const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
+// While malkochen can't be reached (#458), the Dish is there to read: its
+// changes are greyed out, "Bearbeiten" saying why.
+const { mayChange, needsNet } = useConnection()
+function edit() {
+  if (mayChange.value) emit('edit')
+  else emit('notice', t.offline.needsNet)
+}
 
 // "Link teilen": the Dish's Dish Link (made on the first share), then the
 // phone's share sheet, or on a computer the link on the clipboard.
@@ -119,7 +126,8 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           v-if="mayEdit"
           type="button"
           class="shrink-0 rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          @click="$emit('edit')"
+          v-bind="needsNet"
+          @click="edit"
         >
           {{ t.detail.edit }}
         </button>
@@ -176,7 +184,8 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           type="button"
           class="rounded-pill bg-glass px-4 py-2.5 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           data-edit
-          @click="$emit('edit')"
+          v-bind="needsNet"
+          @click="edit"
         >
           {{ t.detail.edit }}
         </button>
@@ -250,24 +259,26 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         class="flex flex-col gap-2"
         data-share-actions
       >
-        <button
-          type="button"
-          class="flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
-          :disabled="sharing"
-          data-share-link
-          @click="shareLink"
-        >
-          <AppIcon name="link" />
-          {{ t.settings.shareLink }}
-        </button>
-        <button
-          type="button"
-          class="flex w-full items-center justify-center gap-2 rounded-pill bg-surface-muted px-5 py-3.5 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          data-copy-dish
-          @click="emit('copy')"
-        >
-          {{ t.detail.copy }}
-        </button>
+        <NeedsNet :note="false">
+          <button
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+            :disabled="sharing"
+            data-share-link
+            @click="shareLink"
+          >
+            <AppIcon name="link" />
+            {{ t.settings.shareLink }}
+          </button>
+          <button
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-pill bg-surface-muted px-5 py-3.5 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            data-copy-dish
+            @click="emit('copy')"
+          >
+            {{ t.detail.copy }}
+          </button>
+        </NeedsNet>
       </div>
 
       <DishHistory
@@ -285,22 +296,24 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         class="mt-auto flex flex-wrap gap-3"
         data-morph-field="buttons"
       >
-        <button
-          v-if="boardModule.may('moveDishes')"
-          type="button"
-          class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          aria-haspopup="dialog"
-          data-move
-          @click="$emit('move')"
-        >
-          {{ t.dish.moveTo }}
-        </button>
-        <DangerButton
-          v-if="boardModule.may('archiveDishes', dish.id)"
-          @click="$emit('delete')"
-        >
-          {{ t.dish.delete }}
-        </DangerButton>
+        <NeedsNet :note="false">
+          <button
+            v-if="boardModule.may('moveDishes')"
+            type="button"
+            class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            aria-haspopup="dialog"
+            data-move
+            @click="$emit('move')"
+          >
+            {{ t.dish.moveTo }}
+          </button>
+          <DangerButton
+            v-if="boardModule.may('archiveDishes', dish.id)"
+            @click="$emit('delete')"
+          >
+            {{ t.dish.delete }}
+          </DangerButton>
+        </NeedsNet>
       </div>
     </div>
   </div>

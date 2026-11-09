@@ -28,6 +28,9 @@ export interface ToastHowWasIt {
 export interface ToastAction {
   label: string
   run: () => void
+  // Only goes somewhere in the app ("Öffnen"), so it works while malkochen
+  // can't be reached; any other action is a change, greyed out then (#458).
+  navigates?: boolean
 }
 
 // How long "Rückgängig" is offered (handoff: Toast, 5s undo window).

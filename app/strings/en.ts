@@ -562,6 +562,9 @@ export const en: Strings = {
     headline: 'You’re offline.',
     body: 'As soon as you’re back online, you can carry on here.',
     retry: 'Try again',
+    bar: 'Offline. Your changes will arrive as soon as you’re back online.',
+    unreachable: 'malkochen can’t be reached right now.',
+    needsNet: 'Only works online',
   },
   error: {
     headline: 'Something got burnt.',

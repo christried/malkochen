@@ -143,7 +143,7 @@ async function onCopy(toBoard: BoardListing) {
     toast.value = {
       text: imageCopied ? t.detail.copied(label) : t.detail.copiedWithoutImage(label),
       duration: NOTICE_MS,
-      actions: [{ label: t.detail.openCopy, run: () => void navigateTo(copyPath) }],
+      actions: [{ label: t.detail.openCopy, run: () => void navigateTo(copyPath), navigates: true }],
     }
   }
   catch (error) {
@@ -255,25 +255,29 @@ watch(editing, async (isEditing) => {
         :title="t.dish.moveTo"
         :close-label="t.dish.closeMenu"
       >
-        <MoveTargetPicker
-          v-if="moving && located"
-          class="mt-5"
-          :board="board"
-          :from-column-id="located.column.id"
-          @move="onMove"
-        />
+        <NeedsNet>
+          <MoveTargetPicker
+            v-if="moving && located"
+            class="mt-5"
+            :board="board"
+            :from-column-id="located.column.id"
+            @move="onMove"
+          />
+        </NeedsNet>
       </AppSheet>
       <AppSheet
         v-model:open="copying"
         :title="t.detail.copyTo"
         :close-label="t.dish.closeMenu"
       >
-        <CopyTargetPicker
-          v-if="copying"
-          class="mt-5"
-          :board-id="board.id"
-          @copy="onCopy"
-        />
+        <NeedsNet>
+          <CopyTargetPicker
+            v-if="copying"
+            class="mt-5"
+            :board-id="board.id"
+            @copy="onCopy"
+          />
+        </NeedsNet>
       </AppSheet>
       <VeggieConfetti />
       <GekochtPill />
@@ -295,6 +299,8 @@ watch(editing, async (isEditing) => {
   max-height: 100dvh;
   border: 0;
   overscroll-behavior: contain;
+  /* Clear of the offline bar (OfflineBar), lifted over it. */
+  padding-bottom: var(--offline-bar, 0px);
 }
 .detail[open] {
   animation: detail-rise var(--dur-settle) var(--ease-settle);
