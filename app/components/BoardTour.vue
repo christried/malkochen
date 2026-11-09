@@ -71,7 +71,10 @@ const addingTourDish = computed(() => step.value?.id === 'addDishLink')
 const heldDishId = computed(() => step.value?.id === 'moveDish' || step.value?.id === 'deleteDish' ? tour.value?.dishId ?? null : null)
 const layer = useTemplateRef<{ modal: boolean }>('layer')
 const modal = computed(() => layer.value?.modal ?? false)
-defineExpose({ start, dishAdded, addingTourDish, heldDishId, modal })
+// Whether a Tour runs now, and its Dish (the one it had the user add).
+const running = computed(() => tour.value !== null)
+const tourDishId = computed(() => tour.value?.dishId ?? null)
+defineExpose({ start, dishAdded, addingTourDish, heldDishId, modal, running, tourDishId })
 
 watch(adding, isOpen => happened({ type: isOpen ? 'addDishOpened' : 'addDishClosed' }))
 // Where the Tour's Dish is: the Column, or null once it's gone.

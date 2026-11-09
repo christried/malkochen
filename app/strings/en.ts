@@ -10,7 +10,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('en-GB')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -665,6 +665,58 @@ export const en: Strings = {
     noMore: 'Had enough?',
     turnOff: 'Turn it off here',
   },
+  // Snackbert in Your Settings (#423): only for people with a Snackbert account. The consent text says what goes, to whom, and that switching off withdraws.
+  snackbert: {
+    heading: 'Snackbert',
+    consent: 'Switch Snackbert on and you can tell him what you ate after cooking. Your email address, the dish’s details and whatever you add yourself then go to Snackbert: the app run by the same person as malkochen, on Google Firebase and Gemini in the EU. Switching off stops it straight away.',
+    privacyLink: 'More in the privacy policy',
+    toggle: 'Report to Snackbert',
+    hint: 'After you cook, Snackbert asks how much you had. On all your devices.',
+    noAccount: 'Snackbert can’t find an account for your email address.',
+    unreachable: 'Snackbert can’t be reached right now. Try again later.',
+    failed,
+  },
+  snackbertQuestion: {
+    label: 'Snackbert',
+    ask: (dish: string) => `Mmm, ${dish}! Want to tell me how much you had?`,
+    yes: 'Sure',
+    no: 'Not today',
+    bye: 'All right, enjoy your meal!',
+  },
+  snackbertReport: {
+    report: 'Tell Snackbert',
+    reported: 'Sent to Snackbert ✓',
+    reportAgain: 'Tell Snackbert again',
+    title: 'Tell Snackbert',
+    cooked: (dish: string, at: Date) => isToday(at) ? `${dish}, cooked today` : `${dish}, cooked on ${addedDate(at)}`,
+    optional: 'Everything here is optional. Send nothing and Snackbert assumes a normal portion.',
+    tiles: { photo: 'Photo', voice: 'Recording', text: 'Text' },
+    camera: 'Camera',
+    gallery: 'Gallery',
+    removePhoto: 'Remove photo',
+    photoUnreadable: 'Your browser can’t open this photo. Best pick another one.',
+    record: 'Record',
+    stop: 'Stop',
+    play: 'Listen',
+    rerecord: 'Record again',
+    limit: '2 minutes at most',
+    micDenied: 'No microphone, no recording. You can allow it in your browser’s settings.',
+    micUnavailable: 'Your browser can’t record here.',
+    textLabel: 'A few words',
+    textPrompt: 'For example: half a portion, with a glass of juice',
+    send: 'Send',
+    sendBare: 'Send without anything',
+    sending: 'Sending',
+    offline: 'You’re offline. Sending works again once you’re back online.',
+    thanks: 'Thanks! I’ll do the maths.',
+    thanksSub: 'What he makes of it, you’ll see in Snackbert.',
+    done: 'Done',
+    failed: 'Snackbert couldn’t be reached just now. Everything you added is still here.',
+    retry: 'Try again',
+    full: 'Snackbert is full for today. He’ll be hungry again tomorrow.',
+    noAccount: 'Snackbert can’t find an account for your email address any more. We’ve switched him off for you.',
+    tooLarge: 'The photo or recording is too large. Try a shorter recording.',
+  },
   signInEmail: {
     subject: (code: string) => `${code} is your malkochen code`,
     headline: 'Your sign-in code',
@@ -803,6 +855,7 @@ export const en: Strings = {
       account: 'Accounts',
       notifications: 'Notifications',
       links: 'Links and copies',
+      snackbert: 'Snackbert',
       operator: 'Operation',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -850,6 +903,8 @@ export const en: Strings = {
       language_changed: 'Language changed',
       push_switched: 'Push switched',
       digest_switched: 'Daily email switched',
+      snackbert_switched: 'Snackbert switched',
+      snackbert_report_sent: 'Snackbert Report sent',
       account_deleted: 'Account deleted',
       push_sent: 'Push sent',
       digest_sent: 'Daily email sent',

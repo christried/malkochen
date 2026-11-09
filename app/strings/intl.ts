@@ -34,6 +34,8 @@ export function intlFor(locale: string) {
     dateTime: (at: Date) => dateAndTime.format(at),
     // "14:35": a time of day, such as when a limit frees up again.
     time: (at: Date) => time.format(at),
+    // Whether `at` is today, in German time.
+    isToday: (at: Date) => calendarDay.format(at) === calendarDay.format(new Date()),
     // A moment as the Dish History tells it: `today` with its time ("20:55")
     // if it was today, else its day as `day` writes it.
     moment: (at: Date, today: (time: string) => string) =>

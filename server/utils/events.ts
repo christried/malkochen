@@ -5,7 +5,7 @@ import type { Permission } from '../../shared/permissions'
 import type { PushOutcome } from '../push'
 import type { SourceKind } from '../source-lookup'
 import type { Db } from '../db'
-import { dish, eventLog } from '../db/schema'
+import { cooking, dish, eventLog } from '../db/schema'
 
 // The event log (#331; server/db/schema.ts): what happens on Boards, for the
 // Operator's Admin Page to count. Each write records its events in the same
@@ -34,7 +34,8 @@ export type EventDetails =
   // dish_moved: the Columns it went from and to, and the Board it came
   // from if that isn't the one it went to.
   | { from: string, to: string, fromBoard?: string, undo?: true }
-  // cooking_recorded, cooking_deleted, cooking_restored.
+  // cooking_recorded, cooking_deleted, cooking_restored, and
+  // snackbert_report_sent (#424, which Cooking was reported).
   | { cooking: string, undo?: true }
   // comment_written, comment_edited, comment_deleted, comment_restored:
   // which Comment, never its text.
@@ -45,7 +46,7 @@ export type EventDetails =
   // member_removed: who the Owner removed.
   | { member: string }
   // open_sign_up_switched, picture_changed (set or removed), push_switched,
-  // digest_switched: whether it is on now.
+  // digest_switched, snackbert_switched: whether it is on now.
   | { on: boolean }
   // language_changed: the language chosen under Sprache (a setting).
   | { language: LanguageChoice }
@@ -171,6 +172,18 @@ export function cookingEvent(kind: EventKind, user: string, { undo = false } = {
     dish: sql`changed.dish_id`,
     user,
     details: sql`jsonb_build_object('cooking', changed.id${undo ? sql`, 'undo', true` : sql``})`,
+  }
+}
+
+// The event of a Snackbert Report a write recorded (`changed`, its
+// snackbert_report row), on the Board its Cooking's Dish is on.
+export function snackbertReportEvent(kind: EventKind, user: string): EventValues {
+  return {
+    kind,
+    board: sql`(select ${dish.boardId} from ${dish} join ${cooking} on ${cooking.dishId} = ${dish.id} where ${cooking.id} = changed.cooking_id)`,
+    dish: sql`(select ${cooking.dishId} from ${cooking} where ${cooking.id} = changed.cooking_id)`,
+    user,
+    details: sql`jsonb_build_object('cooking', changed.cooking_id)`,
   }
 }
 

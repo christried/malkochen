@@ -13,7 +13,7 @@ import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time } = intlFor('it-IT')
+const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -681,6 +681,58 @@ export const it: Strings = {
     noMore: 'Non ti serve più?',
     turnOff: 'Disattivala qui',
   },
+  // Snackbert in Your Settings (#423): only for people with a Snackbert account. The consent text says what goes, to whom, and that switching off withdraws.
+  snackbert: {
+    heading: 'Snackbert',
+    consent: 'Se attivi Snackbert, dopo aver cucinato puoi raccontargli cosa hai mangiato. Il tuo indirizzo email, i dati del piatto e quello che aggiungi tu vanno allora a Snackbert: l’app dello stesso gestore, su Google Firebase e Gemini nell’UE. Disattivandolo, si ferma tutto subito.',
+    privacyLink: 'Di più nell’informativa sulla privacy',
+    toggle: 'Segnala a Snackbert',
+    hint: 'Dopo che hai cucinato, Snackbert ti chiede quanto ne hai mangiato. Su tutti i tuoi dispositivi.',
+    noAccount: 'Snackbert non trova un account per il tuo indirizzo email.',
+    unreachable: 'Snackbert al momento non è raggiungibile. Riprova più tardi.',
+    failed,
+  },
+  snackbertQuestion: {
+    label: 'Snackbert',
+    ask: (dish: string) => `Mmh, ${dish}! Mi racconti quanto ne hai mangiato?`,
+    yes: 'Volentieri',
+    no: 'Oggi no',
+    bye: 'Va bene, buon appetito!',
+  },
+  snackbertReport: {
+    report: 'Dillo a Snackbert',
+    reported: 'Inviato a Snackbert ✓',
+    reportAgain: 'Dillo ancora a Snackbert',
+    title: 'Dillo a Snackbert',
+    cooked: (dish: string, at: Date) => isToday(at) ? `${dish}, cucinato oggi` : `${dish}, cucinato il ${addedDate(at)}`,
+    optional: 'Qui è tutto facoltativo. Se non mandi niente, Snackbert conta una porzione normale.',
+    tiles: { photo: 'Foto', voice: 'Registrazione', text: 'Testo' },
+    camera: 'Fotocamera',
+    gallery: 'Galleria',
+    removePhoto: 'Togli la foto',
+    photoUnreadable: 'Il tuo browser non riesce ad aprire questa foto. Meglio sceglierne un’altra.',
+    record: 'Registra',
+    stop: 'Stop',
+    play: 'Ascolta',
+    rerecord: 'Registra di nuovo',
+    limit: 'Al massimo 2 minuti',
+    micDenied: 'Senza microfono niente registrazione. Puoi consentirlo nelle impostazioni del browser.',
+    micUnavailable: 'Il tuo browser qui non può registrare.',
+    textLabel: 'Due parole',
+    textPrompt: 'Per esempio: mezza porzione, con un bicchiere di succo',
+    send: 'Invia',
+    sendBare: 'Invia senza niente',
+    sending: 'Invio in corso',
+    offline: 'Sei offline. Puoi inviare di nuovo appena torni in rete.',
+    thanks: 'Grazie! Faccio due conti.',
+    thanksSub: 'Cosa ne ricava, lo vedi in Snackbert.',
+    done: 'Fatto',
+    failed: 'Snackbert non era raggiungibile. Tutto quello che hai aggiunto è ancora qui.',
+    retry: 'Riprova',
+    full: 'Snackbert per oggi è sazio. Domani avrà di nuovo fame.',
+    noAccount: 'Snackbert non trova più un account per il tuo indirizzo email. L’abbiamo spento per te.',
+    tooLarge: 'La foto o la registrazione è troppo grande. Prova con una registrazione più corta.',
+  },
   signInEmail: {
     subject: (code: string) => `${code} è il tuo codice per malkochen`,
     headline: 'Il tuo codice di accesso',
@@ -819,6 +871,7 @@ export const it: Strings = {
       account: 'Account',
       notifications: 'Notifiche',
       links: 'Link e copie',
+      snackbert: 'Snackbert',
       operator: 'Gestione',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -866,6 +919,8 @@ export const it: Strings = {
       language_changed: 'Lingua cambiata',
       push_switched: 'Push cambiato',
       digest_switched: 'Email giornaliera cambiata',
+      snackbert_switched: 'Snackbert cambiato',
+      snackbert_report_sent: 'Snackbert Report inviato',
       account_deleted: 'Account eliminato',
       push_sent: 'Push inviato',
       digest_sent: 'Email giornaliera inviata',

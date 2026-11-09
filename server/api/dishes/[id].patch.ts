@@ -36,7 +36,8 @@ export default defineEventHandler(async (event): Promise<SavedDish> => {
     ...linkChanged && storedSourceFacts(user.id, newSource, { caption: caption ?? null, playableVideo, ticket: sourceTicket }),
     // Null (and no photo) drops the image, for the Placeholder; a new image
     // that couldn't be stored leaves it as it was.
-    ...((imageUrl === null && !photo) || stored) && { imageUrl: stored },
+    // The flag comes with the image: true for a Member's own photo just stored.
+    ...((imageUrl === null && !photo) || stored) && { imageUrl: stored, imageIsOwnPhoto: Boolean(photo) && stored !== null },
     // Where the image is shifted to, unless it is for a new image that
     // couldn't be stored: the one the Dish keeps stays as it was.
     ...!refused && imageFocus && { imageFocus },

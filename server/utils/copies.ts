@@ -26,6 +26,7 @@ export interface CopySource {
   caption: string | null
   playableVideo: boolean | null
   imageUrl: string | null
+  imageIsOwnPhoto: boolean
   imageFocus: ImageFocus
   placeholder: Placeholder
 }
@@ -44,6 +45,7 @@ async function liveSourceWhere(where: SQL): Promise<CopySource | null> {
       caption: dish.caption,
       playableVideo: dish.playableVideo,
       imageUrl: dish.imageUrl,
+      imageIsOwnPhoto: dish.imageIsOwnPhoto,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
       placeholder: dish.placeholder,
@@ -122,6 +124,8 @@ export async function copyFrom(source: CopySource, copier: Copier, toBoardId: st
     caption: source.caption,
     playableVideo: source.playableVideo,
     imageUrl,
+    // Only a Copy that got the image has the photo flag; a failed copy has its Placeholder.
+    imageIsOwnPhoto: imageUrl !== null && source.imageIsOwnPhoto,
     imageFocus: source.imageFocus,
     placeholder: source.placeholder,
   }, { copiedFrom: source.id, viaLink })

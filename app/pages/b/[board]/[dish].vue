@@ -278,6 +278,7 @@ watch(editing, async (isEditing) => {
       <VeggieConfetti />
       <GekochtPill />
       <AppToast v-model="toast" />
+      <SnackbertQuestion />
     </dialog>
   </div>
 </template>

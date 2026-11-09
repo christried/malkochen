@@ -14,9 +14,10 @@ function contentSecurityPolicy(nonce: string): string {
     'style-src \'self\' \'unsafe-inline\'',
     // Any https: Add Dish shows the Source image straight from the platform
     // before saving; stored images are on the Blob store, Google's Profile
-    // Pictures on Google's.
-    'img-src \'self\' https:',
-    'media-src \'self\'',
+    // Pictures on Google's. blob: too (#424): the report sheet previews the
+    // photo and plays back the recording before sending, both from blob: URLs.
+    'img-src \'self\' https: blob:',
+    'media-src \'self\' blob:',
     'connect-src \'self\'',
     // Click-to-play video in the Dish detail (#221, shared/
     // video-embed.ts): the embedded players of TikTok, YouTube (its no-cookie

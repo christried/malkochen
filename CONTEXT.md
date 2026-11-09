@@ -191,7 +191,7 @@ A separate Android app for keeping track of what one eats, with a mascot of the 
 _Avoid_: Snackbert integration, nutrition app, the tracker
 
 **Snackbert Question**:
-Snackbert's head popping up after a Cooking to ask the Member who recorded it whether they dare tell him about it. It comes once the Cooking can no longer be undone, after a Klassiker celebration and never during the Tour, and only for Members who switched Snackbert on in Your Settings. "Nein" sends him away for that Cooking.
+Snackbert's head popping up after a Cooking to ask the Member who recorded it whether they'd like to tell him about it. It comes once the Cooking can no longer be undone, after a Klassiker celebration and never during the Tour, and only for Members who switched Snackbert on in Your Settings. "Nein" sends him away for that Cooking.
 _Avoid_: Prompt (that's a Notification Prompt), popup, nag
 
 **Snackbert Report**:

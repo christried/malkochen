@@ -13,7 +13,10 @@ import { CRON_SECRET } from './server-env'
 // check they have an Owner's rights on every live Board without being a
 // Member of it, and the Admin Page lists every Board. Everyone else's access
 // is unchanged. Ada owns the Boards made here; Grace and Margaret join them;
-// Linus is no Member of any. All four are used by this file only.
+// Linus is no Member of any. All four are used by this file only, under
+// names no other file gives anyone: a Username goes to whoever signs in
+// with that first name first, so ada@ or grace@ signing in earlier in the
+// run would otherwise leave these four "Ada2" or "Grace2".
 
 const ADA = ALLOWLISTED[144]
 const GRACE = ALLOWLISTED[145]
@@ -54,9 +57,9 @@ beforeEach(() => {
 const json = (method: string, body: unknown): RequestInit => ({ method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
 const operator = () => signIn(OPERATOR)
-const ada = () => signIn(ADA, { name: 'Ada' })
-const grace = () => signIn(GRACE, { name: 'Grace' })
-const linus = () => signIn(LINUS, { name: 'Linus' })
+const ada = () => signIn(ADA, { name: 'Adelgunde' })
+const grace = () => signIn(GRACE, { name: 'Griselda' })
+const linus = () => signIn(LINUS, { name: 'Leopold' })
 
 const getBoard = (caller: Caller, id: string): Promise<Board> => caller.fetch(`/api/boards/${id}`).then(res => res.json())
 const me = async (caller: Caller) => (await caller.fetch('/api/me')).json() as Promise<{ id: string, name: string }>
@@ -92,7 +95,7 @@ test('the Operator writes on it like its Owner: Dishes, name, Invite Link, Permi
   const member = await grace()
   const board = await adaBoard('Operator schreibt', member)
   const op = await operator()
-  const graceId = board.members.find(m => m.name === 'Grace')!.id
+  const graceId = board.members.find(m => m.name === 'Griselda')!.id
 
   const added = await postDish(op, board.id, { title: 'Betreiber-Suppe', placeholder: 'bowl' })
   expect(added.status).toBe(201)
@@ -117,14 +120,14 @@ test('the Operator hands the Board over from its Owner to another Member, record
   const member = await grace()
   const board = await adaBoard('Operator übergibt', member)
   const op = await operator()
-  const graceId = board.members.find(m => m.name === 'Grace')!.id
+  const graceId = board.members.find(m => m.name === 'Griselda')!.id
   const events = await watchEvents()
 
   const res = await op.fetch(`/api/boards/${board.id}/owner`, json('POST', { userId: graceId }))
 
   expect(res.status).toBe(204)
   const after = await getBoard(member, board.id)
-  expect(after.members.filter(m => m.isOwner).map(m => m.name)).toEqual(['Grace'])
+  expect(after.members.filter(m => m.isOwner).map(m => m.name)).toEqual(['Griselda'])
   const handed = (await events.recorded()).filter(e => e.kind === 'ownership_handed_over')
   expect(handed).toEqual([expect.objectContaining({ boardId: board.id, userId: (await me(op)).id, details: { member: graceId } })])
 })
@@ -192,7 +195,7 @@ test('someone who is not the Operator and not a Member still gets "not found", a
 })
 
 test('the Admin Page lists every Board with its Owner and counts, filtered by name or Owner, for the Operator only', async () => {
-  const member = await signIn(MARGARET, { name: 'Margaret' })
+  const member = await signIn(MARGARET, { name: 'Mechthild' })
   const board = await adaBoard('Spaghetti-Zentrale', member)
   await postDish(await ada(), board.id, { title: 'Carbonara', placeholder: 'bowl' })
   const archived = await adaBoard('Zombie-Zentrale')
@@ -209,14 +212,14 @@ test('the Admin Page lists every Board with its Owner and counts, filtered by na
     slug: board.slug,
     emoji: '🥘',
     name: 'Spaghetti-Zentrale',
-    owner: 'Ada',
+    owner: 'Adelgunde',
     members: 2,
     dishes: 1,
     lastActivity: expect.any(String),
     archived: false,
   }])
-  expect((await listing('zombie'))[0]).toMatchObject({ id: archived.id, archived: true, owner: 'Ada' })
-  expect((await listing('  ADA ')).map(b => b.id)).toEqual(expect.arrayContaining([board.id, archived.id]))
+  expect((await listing('zombie'))[0]).toMatchObject({ id: archived.id, archived: true, owner: 'Adelgunde' })
+  expect((await listing('  ADELGUNDE ')).map(b => b.id)).toEqual(expect.arrayContaining([board.id, archived.id]))
   expect(await listing('gibt-es-nicht')).toEqual([])
   expect((await listing()).length).toBeGreaterThanOrEqual(2)
 
@@ -228,7 +231,7 @@ test('the Operator visiting opens a Member\'s popover, which lists only Boards t
   const member = await grace()
   const board = await adaBoard('Operator am Popover', member)
   const op = await operator()
-  const graceId = board.members.find(m => m.name === 'Grace')!.id
+  const graceId = board.members.find(m => m.name === 'Griselda')!.id
 
   const res = await op.fetch(`/api/boards/${board.id}/people/${graceId}`)
 
@@ -244,13 +247,13 @@ test('on a Board the Operator joined as a Member, they have an Owner\'s rights a
   const member = await grace()
   const board = await adaBoard('Operator als Mitglied', op, member)
   const opId = (await me(op)).id
-  const graceId = board.members.find(m => m.name === 'Grace')!.id
+  const graceId = board.members.find(m => m.name === 'Griselda')!.id
 
   const visited = await getBoard(op, board.id)
   expect(visited).toMatchObject({ isOwner: true, asOperator: false })
   expect(visited.permissions).toEqual(ALL_PERMISSIONS)
   expect(visited.members.find(m => m.id === opId)).toMatchObject({ isOwner: false })
-  expect(visited.members.find(m => m.name === 'Ada')).toMatchObject({ isOwner: true })
+  expect(visited.members.find(m => m.name === 'Adelgunde')).toMatchObject({ isOwner: true })
 
   expect((await op.fetch(`/api/boards/${board.id}/members/${graceId}/permissions`, json('PATCH', { addDishes: false }))).status).toBe(200)
   expect((await op.fetch(`/api/boards/${board.id}/invite/reset`, { method: 'POST' })).status).toBe(200)

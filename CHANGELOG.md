@@ -4,6 +4,12 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-09
+
+### Changed
+
+- The privacy policy now has a section on Snackbert, a nutrition app you can tell about the dishes you cook, if you have an account there.
+
 ## [1.1.1] - 2026-11-09
 
 ### Changed
@@ -56,7 +62,8 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - Open to everyone: anyone can sign up, with Google or a code we email you, and delete your account yourself whenever you like.
 - What’s new: this page, linked at the end of your settings and marked New after every update.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christried/malkochen/releases/tag/v1.0.0
