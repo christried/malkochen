@@ -879,6 +879,7 @@ export const it: Strings = {
       push_switched: 'Push cambiato',
       digest_switched: 'Email giornaliera cambiata',
       snackbert_switched: 'Snackbert cambiato',
+      snackbert_report_sent: 'Snackbert Report inviato',
       account_deleted: 'Account eliminato',
       push_sent: 'Push inviato',
       digest_sent: 'Email giornaliera inviata',

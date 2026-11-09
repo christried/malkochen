@@ -1004,6 +1004,7 @@ export const de = {
       push_switched: 'Push umgeschaltet',
       digest_switched: 'Tägliche E-Mail umgeschaltet',
       snackbert_switched: 'Snackbert umgeschaltet',
+      snackbert_report_sent: 'Snackbert Report gesendet',
       account_deleted: 'Konto gelöscht',
       push_sent: 'Push gesendet',
       digest_sent: 'Tägliche E-Mail gesendet',

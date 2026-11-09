@@ -863,6 +863,7 @@ export const en: Strings = {
       push_switched: 'Push switched',
       digest_switched: 'Daily email switched',
       snackbert_switched: 'Snackbert switched',
+      snackbert_report_sent: 'Snackbert Report sent',
       account_deleted: 'Account deleted',
       push_sent: 'Push sent',
       digest_sent: 'Daily email sent',
