@@ -750,14 +750,17 @@ function cookSelected(origin: Point) {
 // already), the Gekocht Column's count bumping, and the pill saying how
 // many, with Topfbert's usual cheer. The toast says it to screen readers
 // (showBulkResult). Then each Dish the batch made a Klassiker celebrates
-// that, one after the other.
+// that, one after the other: if one looks like it (its 10th Cooking, the
+// pending one counted), the toast waits from now on (klassiker-queue).
 function celebrateBatch({ dishes, settled }: BulkResult, origin: Point) {
   hapticCelebrate()
   gekochtPill.show({ cheer: nextCheer(t.dish.cheers), count: dishes.length })
   confetti.fire(origin)
   const gekocht = board.value?.columns.find(c => c.isGekocht)
   if (gekocht) cueColumn({ columnId: gekocht.id, kind: 'bump' })
-  void klassiker.celebrate(settled?.then(r => r.klassiker ?? []) ?? Promise.resolve([]))
+  if (settled && dishes.some(dish => dish.cookings.length === MILESTONE_COOKINGS)) {
+    void klassiker.celebrate(settled.then(ended => ended.klassiker ?? []))
+  }
 }
 // The selection's "Löschen": all of them at once, with "Rückgängig".
 function deleteSelected() {

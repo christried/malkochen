@@ -114,3 +114,19 @@ test('a Cooking that failed celebrates nothing', async () => {
   expect(showing(queue)).toBe(null)
   expect(queue.toastPaused.value).toBe(false)
 })
+
+test('the toast waits from the Cooking on, while its Klassiker is still being recorded', async () => {
+  const { queue } = setup()
+  let record!: (found: ReturnType<typeof tenth>[]) => void
+  void queue.celebrate(new Promise(resolve => (record = resolve)))
+
+  expect(queue.toastPaused.value).toBe(true)
+  await vi.advanceTimersByTimeAsync(MOMENT * 5)
+  expect(showing(queue)).toBe(null)
+  expect(queue.toastPaused.value).toBe(true)
+
+  // The server answers: it wasn't one after all (cooked to 10 before).
+  record([])
+  await vi.advanceTimersByTimeAsync(0)
+  expect(queue.toastPaused.value).toBe(false)
+})

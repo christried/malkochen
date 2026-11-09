@@ -10,8 +10,10 @@ import { computed, effectScope, ref, shallowRef, watch } from 'vue'
 // it is given are reactive (the Board's), so an undone Cooking ends its
 // celebration.
 //
-// While one shows or another waits its turn, `toastPaused`: the toast's
-// countdown waits, so "Rückgängig" outlasts them all (#229).
+// From the Cooking on (while the server records it, and the moment after),
+// while one shows and while another waits its turn, `toastPaused`: the
+// toast's countdown waits, so "Rückgängig" outlasts them all (#229). So
+// it is told only of Cookings that look like a Klassiker (the 10th).
 
 export interface KlassikerCooking { id: string }
 export interface KlassikerDish { id: string, cookings: KlassikerCooking[] }
@@ -27,15 +29,23 @@ export function createKlassikerQueue<D extends KlassikerDish>(options: {
   const scope = effectScope(true)
   const current = shallowRef<Klassiker<D> | null>(null)
   const waiting = shallowRef<Klassiker<D>[]>([])
+  // Cookings still being recorded, or in the moment after.
+  const coming = ref(0)
   // Between one closing and the next showing.
-  const between = ref(false)
+  const pausing = ref(false)
 
   // The Dishes the Cooking (or batch) `recorded` made a Klassiker, in
   // order, once recorded; none if it failed.
   async function celebrate(recorded: Promise<Klassiker<D>[]>) {
-    const [found] = await Promise.all([recorded, options.moment()])
-    waiting.value = [...waiting.value, ...found]
-    if (!current.value && !between.value) next()
+    coming.value++
+    try {
+      const [found] = await Promise.all([recorded, options.moment()])
+      waiting.value = [...waiting.value, ...found]
+    }
+    finally {
+      coming.value--
+    }
+    if (!current.value && !pausing.value) next()
   }
 
   // The next one still recorded (not undone meanwhile) and not
@@ -44,20 +54,20 @@ export function createKlassikerQueue<D extends KlassikerDish>(options: {
     while (waiting.value.length > 0) {
       const [up, ...rest] = waiting.value
       waiting.value = rest
-      if (recorded(up!) && options.claim(up!.dish.id)) {
+      if (stillRecorded(up!) && options.claim(up!.dish.id)) {
         current.value = up!
         return
       }
     }
   }
 
-  function recorded({ dish, cooking }: Klassiker<D>) {
+  function stillRecorded({ dish, cooking }: Klassiker<D>) {
     return dish.cookings.some(c => c.id === cooking.id)
   }
 
   // Its Cooking undone (or deleted) while it shows, it ends.
   scope.run(() => {
-    watch(() => current.value && !recorded(current.value), (undone) => {
+    watch(() => current.value && !stillRecorded(current.value), (undone) => {
       if (undone) void close()
     })
   })
@@ -65,15 +75,15 @@ export function createKlassikerQueue<D extends KlassikerDish>(options: {
   async function close() {
     current.value = null
     if (waiting.value.length === 0) return
-    between.value = true
+    pausing.value = true
     await options.moment()
-    between.value = false
+    pausing.value = false
     next()
   }
 
   return {
     current: computed(() => current.value),
-    toastPaused: computed(() => !!current.value || waiting.value.length > 0),
+    toastPaused: computed(() => coming.value > 0 || !!current.value || waiting.value.length > 0),
     celebrate,
     close,
     stop: () => scope.stop(),
