@@ -15,7 +15,8 @@ function contentSecurityPolicy(nonce: string): string {
     // Any https: Add Dish shows the Source image straight from the platform
     // before saving; stored images are on the Blob store, Google's Profile
     // Pictures on Google's.
-    'img-src \'self\' https:',
+    // PROTOTYPE #422 (throwaway branch only): blob: for the report sheet's photo preview.
+    'img-src \'self\' https: blob:',
     'media-src \'self\'',
     'connect-src \'self\'',
     // Click-to-play video in the Dish detail (#221, shared/

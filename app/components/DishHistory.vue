@@ -74,6 +74,9 @@ const when = (at: string) => t.history.when(new Date(at))
 const nameOf = (person: { name: string } | null) => person?.name ?? t.history.deletedAccount
 // One still being recorded was recorded by whoever is looking.
 const recorderOf = (cooking: CookingView) => cooking.id ? nameOf(cooking.recordedBy) : me.value?.name ?? ''
+// PROTOTYPE #422 (throwaway): "Snackbert melden" on the Member's own Cookings, dev only.
+const p422 = import.meta.dev
+const ownCooking = (cooking: CookingView) => !cooking.id || cooking.recordedBy?.id === me.value?.id
 
 // The Member's own Vote: thumbs up (true), down (false), or none.
 const myVote = computed(() => voteOf(props.dish, me.value?.id))
@@ -327,6 +330,12 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             <span class="shrink-0 text-caption text-text-muted">
               {{ when(entry.at) }}<template v-if="entry.kind === 'comment' && entry.comment.editedAt">, {{ t.history.edited }}</template>
             </span>
+            <Prototype422Melden
+              v-if="p422 && entry.kind === 'cooking' && ownCooking(entry.cooking)"
+              :cooking-id="entry.cooking.id"
+              :dish="dish.title"
+              place="side"
+            />
             <button
               v-if="entry.kind === 'cooking' && boardModule.may('moveDishes')"
               type="button"
@@ -380,6 +389,12 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               /></svg>
             </button>
           </div>
+          <Prototype422Melden
+            v-if="p422 && entry.kind === 'cooking' && ownCooking(entry.cooking)"
+            :cooking-id="entry.cooking.id"
+            :dish="dish.title"
+            place="below"
+          />
           <p
             v-if="entry.kind === 'comment'"
             class="comment self-start whitespace-pre-line break-words px-3.5 py-2.5 font-display text-body-serif"

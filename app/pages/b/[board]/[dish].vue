@@ -20,6 +20,8 @@ import { boardLabel } from '~~/shared/board'
 // behind this dialog, so its Toast and the Gekocht celebration show in
 // here.
 definePageMeta({ alias: '/b/:board/d/:dish' })
+// PROTOTYPE #422 (throwaway): dev only.
+const p422 = import.meta.dev
 
 const props = defineProps<{ board: BoardView }>()
 const emit = defineEmits<{ result: [result: BoardResult, context?: ResultContext] }>()
@@ -225,6 +227,11 @@ watch(editing, async (isEditing) => {
       @close="close(); backdrop.onClosed()"
       @click.self="backdrop.onBackdropClick"
     >
+      <!-- PROTOTYPE #422 (throwaway): the variant bar inside the modal, dev only. -->
+      <Prototype422Bar
+        v-if="p422"
+        in-modal
+      />
       <template v-if="located">
         <DishDetailEditor
           v-if="editing"

@@ -1,0 +1,291 @@
+<title>Snackbert in malkochen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Petrona:ital,wght@0,500;0,600;1,500&display=swap">
+<style>
+/* Layout: one column of decisions, each a grid of screenshots that follow the
+   theme and device switch at the top. The app's own tokens (malkochen). */
+:root {
+  --bg: #F7F6F2;
+  --surface: #FFFFFF;
+  --muted: #EFEDE8;
+  --text: #1F1E1C;
+  --text-muted: #6F6B65;
+  --line: rgba(31,30,28,.12);
+  --butter: #F7B94A;
+  --squirrel: #C8641E;
+  --display: 'Petrona', Georgia, serif;
+  --ui: 'Figtree', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131211; --surface: #1E1C1A; --muted: #2A2825; --text: #F3EFE8; --text-muted: #A8A298;
+    --line: rgba(255,255,255,.12); --squirrel: #F09A55; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131211; --surface: #1E1C1A; --muted: #2A2825; --text: #F3EFE8; --text-muted: #A8A298;
+  --line: rgba(255,255,255,.12); --squirrel: #F09A55; color-scheme: dark;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 var(--ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+header.top { display: flex; flex-direction: column; gap: 10px; padding-top: 40px; }
+h1 { font: 600 clamp(32px, 6vw, 48px)/1.05 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 28px/1.15 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 600 15px/1.3 var(--ui); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--text-muted); font-size: 17px; }
+.kicker { font: 600 12px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--squirrel); }
+code { font: 13px ui-monospace, Menlo, monospace; background: var(--muted); padding: 1px 6px; border-radius: 6px; }
+
+.controls {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  padding: 10px 0; background: var(--bg); border-bottom: 1px solid var(--line);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.seg { display: inline-flex; background: var(--muted); border-radius: 999px; padding: 3px; }
+.seg button {
+  font: 600 13px/1 var(--ui); color: var(--text-muted); background: transparent; border: 0;
+  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.seg button:focus-visible, a:focus-visible { outline: 2px solid var(--butter); outline-offset: 2px; }
+.controls nav { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-left: auto; font-size: 13px; }
+.controls nav a { color: var(--text-muted); text-decoration: none; }
+.controls nav a:hover { color: var(--text); }
+
+section.q { display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 80px; }
+.q-head { display: flex; flex-direction: column; gap: 6px; }
+.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--col, 230px)), 1fr)); align-items: start; }
+body[data-size="desktop"] .grid { --col: 520px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+figure img, figure video {
+  width: 100%; height: auto; display: block; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--muted);
+}
+figcaption { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--text-muted); }
+figcaption b { font: 700 13px/1 var(--ui); color: var(--text); background: var(--butter); color: #1F1E1C; border-radius: 6px; padding: 3px 6px; }
+.row-label { font: 600 13px/1 var(--ui); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.videos { --col: 200px; }
+body[data-size="desktop"] .videos { --col: 200px; }
+
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+.table-scroll { overflow-x: auto; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.2 var(--ui); letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+td.serif { font-family: var(--display); font-size: 16px; }
+.answers { color: var(--text-muted); font-size: 13px; display: block; margin-top: 4px; font-family: var(--ui); }
+
+.notes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="kicker">Prototype #422, spec #421</span>
+    <h1>Snackbert in malkochen</h1>
+    <p class="lede">How Snackbert shows up after a Cooking, the sheet you report with, the thank-you, and "Snackbert melden" in the Dish History. Each choice has two or three variants, taken from the real app in light and dark, on a 360px phone and a desktop. Pick a letter per question.</p>
+  </header>
+
+  <div class="controls" role="toolbar" aria-label="View">
+    <div class="seg" id="theme-seg">
+      <button type="button" data-theme-pick="light" aria-pressed="true">Light</button>
+      <button type="button" data-theme-pick="dark" aria-pressed="false">Dark</button>
+    </div>
+    <div class="seg" id="size-seg">
+      <button type="button" data-size-pick="phone" aria-pressed="true">Phone</button>
+      <button type="button" data-size-pick="desktop" aria-pressed="false">Desktop</button>
+    </div>
+    <nav aria-label="Sections">
+      <a href="#frage">Where</a><a href="#wie">How</a><a href="#wortlaut">Wording</a><a href="#blatt">Sheet</a><a href="#danke">Thanks</a><a href="#verlauf">History</a><a href="#lokal">Locally</a>
+    </nav>
+  </div>
+
+  <section class="q" id="frage">
+    <div class="q-head">
+      <span class="kicker">Questions 1 and 2</span>
+      <h2>Where he comes in, and his bubble</h2>
+      <p>Once the Cooking can no longer be undone (the Gekocht toast has gone), his head comes in and asks. <b>A</b> from the right edge, leaning in, partly behind it. <b>B</b> from the bottom, looking over the screen's edge. <b>C</b> at the toast's place, sitting on the box's corner. The bubble: <b>A</b> light with a comic point, <b>B</b> dark like the toast, <b>C</b> a card with a butter rim. Rows are the place, columns the bubble.</p>
+    </div>
+    <div id="frage-grid" class="flex-col" style="display:flex;flex-direction:column;gap:28px"></div>
+  </section>
+
+  <section class="q" id="wie">
+    <div class="q-head">
+      <span class="kicker">Question 3</span>
+      <h2>How he comes in</h2>
+      <p><b>slide</b> glides in. <b>peek</b> looks in halfway, waits a beat with a tilt, then comes all the way. <b>bounce</b> hops in with a squash. Each video plays the Board opening, him asking, then "Nein": his last word with a finger on his lips, and his exit. Phone, light, bubble A, wording 2.</p>
+    </div>
+    <div id="wie-grid" class="flex-col" style="display:flex;flex-direction:column;gap:28px"></div>
+  </section>
+
+  <section class="q" id="wortlaut">
+    <div class="q-head">
+      <span class="kicker">Question 4</span>
+      <h2>Wording</h2>
+      <p>Three ways he asks, with the answer buttons, his line after "Nein", and the thank-you. The screenshots use 1. In the prototype, switch with <code>?text=1|2|3</code> and the language with <code>?sprache=de|en|it</code>.</p>
+    </div>
+    <div class="table-scroll"><table id="wording"></table></div>
+  </section>
+
+  <section class="q" id="blatt">
+    <div class="q-head">
+      <span class="kicker">Question 5</span>
+      <h2>The report sheet</h2>
+      <p>After "Ja", or "Snackbert melden" in the Dish History. A photo of the portion (camera or gallery), a recording (running time, stops at 2:00, record again), a few words, the line saying all of it is optional, "Senden" ("Ohne alles senden" while empty). <b>A</b> a list, one thing under the other. <b>B</b> three tiles with Snackbert holding a camera and a microphone; a tile opens its panel below. <b>C</b> a chat with Snackbert: what you add appears as your messages. Rows: empty, filled in, while recording.</p>
+    </div>
+    <div id="blatt-grid" style="display:flex;flex-direction:column;gap:28px"></div>
+  </section>
+
+  <section class="q" id="danke">
+    <div class="q-head">
+      <span class="kicker">Question 6</span>
+      <h2>After "Senden"</h2>
+      <p><b>A</b> the sheet says thanks, with his abacus face and "Fertig". <b>B</b> the sheet closes, he pops up with his abacus, says one line and leaves with it. <b>C</b> a toast with his head. B and C also show over the Dish detail.</p>
+    </div>
+    <div id="danke-grid" class="grid"></div>
+  </section>
+
+  <section class="q" id="verlauf">
+    <div class="q-head">
+      <span class="kicker">Question 7</span>
+      <h2>"Snackbert melden" in the Dish History</h2>
+      <p>Only on your own Cookings (here the newest, "Kim hat gekocht"); Mira's has none. <b>A</b> a pill under the line. <b>B</b> his head as a button beside the bin, a tick once reported. <b>C</b> a text link under the line. Rows: not yet reported, reported.</p>
+    </div>
+    <div id="verlauf-grid" style="display:flex;flex-direction:column;gap:28px"></div>
+  </section>
+
+  <section class="q" id="lokal">
+    <div class="q-head">
+      <span class="kicker">Try it yourself</span>
+      <h2>Running it locally</h2>
+    </div>
+    <div class="notes">
+      <div class="note">
+        <h3>Start</h3>
+        <p>On branch <code>issue-422-prototype</code>: <code>pnpm dev</code>, open a Board. Everything is dev only.</p>
+      </div>
+      <div class="note">
+        <h3>The real moment</h3>
+        <p>Cook a Dish ("Gekocht ✓"). Five seconds later, once "Rückgängig" has gone, he asks.</p>
+      </div>
+      <div class="note">
+        <h3>The bar at the top</h3>
+        <p>Chips pick the question, ← and → switch its variant and play it again. "Frage zeigen", "Blatt öffnen" and "Bestätigung zeigen" replay. In the Dish detail the bar sits inside the panel.</p>
+      </div>
+      <div class="note">
+        <h3>What's fake</h3>
+        <ul>
+          <li>Nothing is sent. "Senden" only marks the Cooking as reported until reload.</li>
+          <li>The recording is a running clock; the photo is real but stays in the page.</li>
+          <li>He asks on every Cooking, also without Snackbert switched on.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const WORDING = [
+  { n: '1', de: ['Na? Traust du dich, mir davon zu erzählen?', 'Ja / Nein', 'Schon gut, ich hab nix gesehen.', 'Hab’s! Ich rechne nach.'],
+    en: ['Well? Dare to tell me about it?', 'Yes / No', 'Fine, I saw nothing.', 'Got it! I’ll do the maths.'],
+    it: ['Allora? Hai il coraggio di raccontarmelo?', 'Sì / No', 'Va bene, non ho visto niente.', 'Ricevuto! Faccio due conti.'] },
+  { n: '2', de: ['Mmh, Cremige Pilzpasta! Beichtest du mir, wie viel du davon hattest?', 'Ich beichte / Heute nicht', 'Dein Geheimnis ist bei mir sicher.', 'Danke für die Beichte. Ich rechne nach.'],
+    en: ['Mmm, Cremige Pilzpasta! Will you confess how much you had?', 'I confess / Not today', 'Your secret is safe with me.', 'Thanks for confessing. I’ll do the maths.'],
+    it: ['Mmh, Cremige Pilzpasta! Mi confessi quanto ne hai mangiato?', 'Confesso / Oggi no', 'Il tuo segreto è al sicuro con me.', 'Grazie della confessione. Faccio due conti.'] },
+  { n: '3', de: ['Gekocht ist schön und gut. Aber was davon ist in dir gelandet?', 'Sag ich dir / Geht dich nix an', 'Pff. Ich merk mir das trotzdem.', 'Notiert. Ich kau mal drauf rum.'],
+    en: ['Cooking is all well and good. But how much of it ended up in you?', 'I’ll tell you / None of your business', 'Pff. I’ll remember anyway.', 'Noted. I’ll chew on that.'],
+    it: ['Cucinare va benissimo. Ma quanto ne è finito dentro di te?', 'Te lo dico / Non sono affari tuoi', 'Pff. Me lo ricordo lo stesso.', 'Segnato. Ci rimugino un po’.'] },
+]
+
+let theme = 'light'
+let size = 'phone'
+try {
+  theme = localStorage.getItem('p422-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+  size = localStorage.getItem('p422-size') || (matchMedia('(min-width: 900px)').matches ? 'desktop' : 'phone')
+} catch {}
+
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v)
+  for (const kid of kids) e.append(kid)
+  return e
+}
+const shot = (name, label, text) => {
+  const img = el('img', { 'data-shot': name, alt: `${label}: ${text}`, loading: 'lazy', width: '360', height: '780' })
+  return el('figure', {}, img, el('figcaption', {}, el('b', {}, label), text))
+}
+const row = (title, figures, cls = 'grid') => {
+  const g = el('div', { class: cls })
+  figures.forEach(f => g.append(f))
+  return el('div', { style: 'display:flex;flex-direction:column;gap:10px' }, el('span', { class: 'row-label' }, title), g)
+}
+
+const PLACES = { A: 'Vom Rand', B: 'Von unten', C: 'Am Platz des Toasts' }
+const BUBBLES = { A: 'Hell, Spitze', B: 'Dunkel', C: 'Butter-Rand' }
+const frage = document.getElementById('frage-grid')
+for (const f of 'ABC') frage.append(row(`Ort ${f}: ${PLACES[f]}`, [...'ABC'].map(b => shot(`frage-${f}-blase${b}`, `${f}${b}`, `Blase ${b}, ${BUBBLES[b]}`))))
+
+const wie = document.getElementById('wie-grid')
+for (const f of 'ABC') {
+  wie.append(row(`Ort ${f}: ${PLACES[f]}`, ['slide', 'peek', 'bounce'].map(w => {
+    const v = el('video', { src: `videos/frage-${f}-${w}.webm`, controls: '', muted: '', loop: '', playsinline: '', preload: 'metadata', width: '360', height: '780' })
+    v.muted = true
+    return el('figure', {}, v, el('figcaption', {}, el('b', {}, w), `Ort ${f}`))
+  }), 'grid videos'))
+}
+
+const table = document.getElementById('wording')
+table.append(el('tr', {}, el('th', {}, ''), el('th', {}, 'Deutsch'), el('th', {}, 'English'), el('th', {}, 'Italiano')))
+for (const w of WORDING) {
+  const cell = (l) => {
+    const td = el('td', { class: 'serif' }, l[0])
+    td.append(el('span', { class: 'answers' }, `Knöpfe: ${l[1]}`), el('span', { class: 'answers' }, `Nach „Nein“: ${l[2]}`), el('span', { class: 'answers' }, `Danke: ${l[3]}`))
+    return td
+  }
+  table.append(el('tr', {}, el('th', {}, w.n), cell(w.de), cell(w.en), cell(w.it)))
+}
+
+const SHEETS = { A: 'Liste', B: 'Kacheln', C: 'Chat' }
+const STATES = { leer: 'Leer', voll: 'Ausgefüllt', aufnahme: 'Beim Aufnehmen' }
+const blatt = document.getElementById('blatt-grid')
+for (const [s, label] of Object.entries(STATES)) blatt.append(row(label, [...'ABC'].map(b => shot(`blatt-${b}-${s}`, b, SHEETS[b]))))
+
+const THANKS = { A: 'Im Blatt', B: 'Er schnappt es sich', C: 'Toast mit Kopf' }
+const danke = document.getElementById('danke-grid')
+for (const d of 'ABC') danke.append(shot(`danke-${d}`, d, THANKS[d]))
+
+const MELDEN = { A: 'Pille', B: 'Kopf als Knopf', C: 'Textlink' }
+const verlauf = document.getElementById('verlauf-grid')
+for (const [s, label] of Object.entries({ offen: 'Noch nicht gemeldet', gemeldet: 'Gemeldet' })) verlauf.append(row(label, [...'ABC'].map(m => shot(`melden-${m}-${s}`, m, MELDEN[m]))))
+
+function render() {
+  document.documentElement.setAttribute('data-theme', theme)
+  document.body.dataset.size = size
+  document.querySelectorAll('img[data-shot]').forEach(img => {
+    img.src = `shots/${img.dataset.shot}-${size}-${theme}.webp`
+    img.removeAttribute('width'); img.removeAttribute('height')
+  })
+  document.querySelectorAll('[data-theme-pick]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themePick === theme)))
+  document.querySelectorAll('[data-size-pick]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sizePick === size)))
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-theme-pick], [data-size-pick]')
+  if (!t) return
+  if (t.dataset.themePick) theme = t.dataset.themePick
+  if (t.dataset.sizePick) size = t.dataset.sizePick
+  try { localStorage.setItem('p422-theme', theme); localStorage.setItem('p422-size', size) } catch {}
+  render()
+})
+render()
+</script>

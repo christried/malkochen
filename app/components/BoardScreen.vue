@@ -836,6 +836,9 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     ...mayCommentAndVote && { howWasIt: { comment: { label: t.dish.comment, run: () => commentOn(dish, toBoard) }, ...vote && { vote } } },
   })
   if (dish.cookings.length === MILESTONE_COOKINGS) void celebrateMilestone(dish, recorded)
+  // PROTOTYPE #422 (throwaway): the Snackbert Question once the Cooking can't
+  // be undone any more, dev only.
+  if (import.meta.dev) void recorded.then(cooking => cooking && setTimeout(() => p422Ask(dish.title, cooking.id), UNDO_WINDOW_MS + 400))
 }
 </script>
 
