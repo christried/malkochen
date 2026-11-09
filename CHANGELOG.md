@@ -4,6 +4,14 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+### Changed
+
+- The privacy policy now says that for TikTok links, as for Instagram, malkochen reads the post’s public embed page.
+
+### Fixed
+
+- Pasting a TikTok link fills in the title, the picture, who posted it and the post’s text again. TikTok had quietly stopped handing them out.
+
 ## [1.1.0] - 2026-10-26
 
 ### Added

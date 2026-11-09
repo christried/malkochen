@@ -140,7 +140,7 @@ const english: LegalText = {
     {
       heading: '15. Fetching links (TikTok, Instagram, YouTube, Pinterest, food blogs)',
       blocks: [
-        'When you paste a link while adding a dish, the application\'s server fetches the linked page or the public interface of the platform (e.g. the oEmbed interfaces of TikTok, YouTube and Pinterest) to find a title suggestion, the name of the publishing channel or blog (or of the person who pinned it), a preview picture and the post\'s caption, and whether its video can be played in malkochen. For Instagram the server reads the public embed page of the post. This fetch happens on the server; your IP address is not passed on to the platform, only the link itself is sent.',
+        'When you paste a link while adding a dish, the application\'s server fetches the linked page or the public interface of the platform (e.g. the oEmbed interfaces of TikTok, YouTube and Pinterest) to find a title suggestion, the name of the publishing channel or blog (or of the person who pinned it), a preview picture and the post\'s caption, and whether its video can be played in malkochen. For Instagram and TikTok the server reads the public embed page of the post. This fetch happens on the server; your IP address is not passed on to the platform, only the link itself is sent.',
         'For dishes added before this function existed, the server fetches the source once more in the same way, to fill in the caption and whether the video can be played.',
         'Before you save the dish, the application shows the preview picture found, for checking. This picture is loaded directly from the servers of the respective platform or website; technically, its operator then receives your IP address and usual browser information. After saving, a copy of the picture is used (section 14), so no connection to the platform is made when the dish is shown. Only when you click the source link of a dish do you open the platform\'s page; from then on its privacy terms apply.',
         'The legal basis is Art. 6(1)(b) GDPR, since taking over dishes from links is a core function of the application.',
@@ -239,7 +239,7 @@ const english: LegalText = {
     {
       heading: '28. Changes and status',
       blocks: [
-        'This privacy policy is adapted when the application or the legal situation changes; the version published here applies. Status: October 2026.',
+        'This privacy policy is adapted when the application or the legal situation changes; the version published here applies. Status: November 2026.',
       ],
     },
   ],
@@ -381,7 +381,7 @@ const italian: LegalText = {
     {
       heading: '15. Recupero dei link (TikTok, Instagram, YouTube, Pinterest, blog di cucina)',
       blocks: [
-        'Quando incollate un link aggiungendo un piatto, il server dell\'applicazione recupera la pagina collegata o l\'interfaccia pubblica della piattaforma (ad es. le interfacce oEmbed di TikTok, YouTube e Pinterest) per ricavare un suggerimento di titolo, il nome del canale o blog che ha pubblicato (o della persona che ha pinnato), un\'anteprima dell\'immagine e la descrizione del post, e se il suo video si può riprodurre in malkochen. Per Instagram il server legge la pagina di incorporamento pubblica del post. Questo recupero avviene sul server; il vostro indirizzo IP non viene trasmesso alla piattaforma, viene inviato solo il link.',
+        'Quando incollate un link aggiungendo un piatto, il server dell\'applicazione recupera la pagina collegata o l\'interfaccia pubblica della piattaforma (ad es. le interfacce oEmbed di TikTok, YouTube e Pinterest) per ricavare un suggerimento di titolo, il nome del canale o blog che ha pubblicato (o della persona che ha pinnato), un\'anteprima dell\'immagine e la descrizione del post, e se il suo video si può riprodurre in malkochen. Per Instagram e TikTok il server legge la pagina di incorporamento pubblica del post. Questo recupero avviene sul server; il vostro indirizzo IP non viene trasmesso alla piattaforma, viene inviato solo il link.',
         'Per i piatti aggiunti prima di questa funzione, il server recupera la fonte ancora una volta nello stesso modo, per completare la descrizione e la riproducibilità del video.',
         'Prima di salvare il piatto, l\'applicazione mostra l\'anteprima trovata, per il controllo. Questa immagine viene caricata direttamente dai server della rispettiva piattaforma o sito; tecnicamente il loro gestore riceve quindi il vostro indirizzo IP e le usuali informazioni del browser. Dopo il salvataggio viene usata una copia dell\'immagine (sezione 14), così che alla visualizzazione del piatto non si stabilisca più alcuna connessione con la piattaforma. Solo cliccando sul link alla fonte di un piatto aprite la pagina della piattaforma; da quel momento si applicano le sue informative sulla privacy.',
         'La base giuridica è l\'art. 6, par. 1, lett. b) GDPR, poiché riprendere piatti dai link è una funzione centrale dell\'applicazione.',
@@ -480,7 +480,7 @@ const italian: LegalText = {
     {
       heading: '28. Modifiche e stato',
       blocks: [
-        'La presente informativa sulla privacy viene adeguata quando cambiano l\'applicazione o la situazione giuridica; vale la versione pubblicata qui. Stato: ottobre 2026.',
+        'La presente informativa sulla privacy viene adeguata quando cambiano l\'applicazione o la situazione giuridica; vale la versione pubblicata qui. Stato: novembre 2026.',
       ],
     },
   ],
@@ -622,7 +622,7 @@ export const datenschutz: LegalText[] = [
       {
         heading: '15. Abruf von Links (TikTok, Instagram, YouTube, Pinterest, Food-Blogs)',
         blocks: [
-          'Wenn Sie beim Hinzufügen eines Gerichts einen Link einfügen, ruft der Server der Anwendung die verlinkte Seite bzw. die öffentliche Schnittstelle der jeweiligen Plattform (z. B. die oEmbed-Schnittstellen von TikTok, YouTube und Pinterest) ab, um einen Titelvorschlag, den Namen des veröffentlichenden Kanals bzw. Blogs (oder der Person, die gepinnt hat), ein Vorschaubild und die Beschreibung des Beitrags zu ermitteln, sowie ob sich sein Video in malkochen abspielen lässt. Bei Instagram liest der Server dafür die öffentliche Einbettungsseite des Beitrags. Dieser Abruf erfolgt serverseitig; Ihre IP-Adresse wird dabei nicht an die Plattform weitergegeben, übermittelt wird nur der Link selbst.',
+          'Wenn Sie beim Hinzufügen eines Gerichts einen Link einfügen, ruft der Server der Anwendung die verlinkte Seite bzw. die öffentliche Schnittstelle der jeweiligen Plattform (z. B. die oEmbed-Schnittstellen von TikTok, YouTube und Pinterest) ab, um einen Titelvorschlag, den Namen des veröffentlichenden Kanals bzw. Blogs (oder der Person, die gepinnt hat), ein Vorschaubild und die Beschreibung des Beitrags zu ermitteln, sowie ob sich sein Video in malkochen abspielen lässt. Bei Instagram und TikTok liest der Server dafür die öffentliche Einbettungsseite des Beitrags. Dieser Abruf erfolgt serverseitig; Ihre IP-Adresse wird dabei nicht an die Plattform weitergegeben, übermittelt wird nur der Link selbst.',
           'Für Gerichte, die schon vor dieser Funktion hinzugefügt wurden, ruft der Server die Quelle einmalig auf dieselbe Weise erneut ab, um Beschreibung und Abspielbarkeit nachzutragen.',
           'Bevor Sie das Gericht speichern, zeigt die Anwendung das gefundene Vorschaubild zur Kontrolle an. Dieses Bild wird direkt von den Servern der jeweiligen Plattform bzw. Website geladen; dabei erhält deren Betreiber technisch bedingt Ihre IP-Adresse und übliche Browserangaben. Nach dem Speichern wird eine Kopie des Bildes verwendet (Abschnitt 14), sodass beim Anzeigen des Gerichts keine Verbindung zur Plattform mehr entsteht. Erst wenn Sie den Quell-Link eines Gerichts anklicken, öffnen Sie die Seite der Plattform; ab dann gelten deren Datenschutzbestimmungen.',
           'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, da das Übernehmen von Gerichten aus Links eine Kernfunktion der Anwendung ist.',
@@ -721,7 +721,7 @@ export const datenschutz: LegalText[] = [
       {
         heading: '28. Änderungen und Stand',
         blocks: [
-          'Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: Oktober 2026.',
+          'Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: November 2026.',
         ],
       },
     ],

@@ -10,6 +10,7 @@ function lookupWith(routes: Route[], options: { timeoutMs?: number } = {}) {
 }
 
 const TIKTOK_OEMBED = 'https://www.tiktok.com/oembed?'
+const TIKTOK_EMBED = 'https://www.tiktok.com/embed/'
 
 describe('TikTok', () => {
   test('a video link gives its caption as Suggested Title and its cover as image', async () => {
@@ -69,7 +70,7 @@ describe('TikTok', () => {
     expect(result.suggestedTitle).toBe('Scramble up ur name & I’ll try to guess it')
   })
 
-  test('a short link whose oEmbed is unreachable still gives a clean video link', async () => {
+  test('a short link whose oEmbed and embed page are unreachable still gives a clean video link', async () => {
     const { lookup } = lookupWith([
       ['https://vm.tiktok.com/ZMhvqjqjq/', () => redirect('https://www.tiktok.com/@/video/6718335390845095173?_r=1&_d=secCgYIASAHKAESPgo8&share_item_id=6718335390845095173')],
       [TIKTOK_OEMBED, () => status(503)],
@@ -81,13 +82,110 @@ describe('TikTok', () => {
     })
   })
 
-  test('an unreachable oEmbed still gives the Source kind and the resolved link', async () => {
+  test('an unreachable oEmbed and embed page still give the Source kind and the resolved link', async () => {
     const { lookup } = lookupWith([
       ['https://vm.tiktok.com/ZMhvqjqjq/', () => redirect('https://www.tiktok.com/@scout2015/video/6718335390845095173?_r=1')],
       [TIKTOK_OEMBED, () => status(503)],
     ])
 
     expect(await lookup('https://vm.tiktok.com/ZMhvqjqjq/')).toEqual({
+      kind: 'tiktok',
+      canonicalLink: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
+      suggestedTitle: '',
+      creator: null,
+      imageUrl: null,
+      caption: null,
+      playableVideo: true,
+    })
+  })
+
+  // Since early November 2026, TikTok's oEmbed answers with the player alone:
+  // no title, no author, no thumbnail. The video's embed page still shows them.
+  test('when oEmbed leaves them out, the embed page gives the caption, the Creator and the cover', async () => {
+    const { lookup, upstream } = lookupWith([
+      [TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-stripped.json'))],
+      [TIKTOK_EMBED, () => html(fixture('tiktok-embed.html'))],
+    ])
+
+    const result = await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173?is_from_webapp=1&sender_device=pc')
+
+    expect(result).toEqual({
+      kind: 'tiktok',
+      canonicalLink: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
+      suggestedTitle: 'Scramble up ur name & I’ll try to guess it',
+      creator: 'Scout, Suki & Stella',
+      imageUrl: expect.stringMatching(/^https:\/\/p19-common-sign\.tiktokcdn-eu\.com\/tos-maliva-p-0068\/2367c7d45cf54a1397abd/),
+      caption: expect.stringMatching(/^Scramble up ur name & I’ll try to guess it/),
+      playableVideo: true,
+    })
+    expect(upstream.requested).toContain('https://www.tiktok.com/embed/6718335390845095173')
+  })
+
+  test('a food video\'s caption from the embed page gives its headline as Suggested Title', async () => {
+    const { lookup } = lookupWith([
+      [TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-stripped.json'))],
+      [TIKTOK_EMBED, () => html(fixture('tiktok-embed-eatthis.html'))],
+    ])
+
+    const result = await lookup('https://www.tiktok.com/@eatthisorg/video/7688042287548370208')
+
+    expect(result.suggestedTitle).toBe('Tofu-Reispapier-Nuggets aus dem Airfryer')
+    expect(result.creator).toBe('Eat this! / Vegan Foodblog')
+    expect(result.caption).toMatch(/^TOFU-REISPAPIER-NUGGETS AUS DEM AIRFRYER .*#vegandeutschland$/s)
+    expect(result.imageUrl).toMatch(/^https:\/\/p16-common-sign\.tiktokcdn-eu\.com\//)
+  })
+
+  test('a short link gets its username from the embed page', async () => {
+    const { lookup } = lookupWith([
+      ['https://vm.tiktok.com/ZMhvqjqjq/', () => redirect('https://www.tiktok.com/@/video/6718335390845095173?_r=1&share_item_id=6718335390845095173')],
+      [TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-stripped.json'))],
+      [TIKTOK_EMBED, () => html(fixture('tiktok-embed.html'))],
+      ['https://www.tiktok.com/@/video/', () => 'hang'],
+    ])
+
+    const result = await lookup('https://vm.tiktok.com/ZMhvqjqjq/')
+
+    expect(result.canonicalLink).toBe('https://www.tiktok.com/@scout2015/video/6718335390845095173')
+    expect(result.suggestedTitle).toBe('Scramble up ur name & I’ll try to guess it')
+  })
+
+  test('the embed page of another video tells nothing about this one', async () => {
+    const { lookup } = lookupWith([
+      [TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-stripped.json'))],
+      [TIKTOK_EMBED, () => html(fixture('tiktok-embed.html'))],
+    ])
+
+    expect(await lookup('https://www.tiktok.com/@someone/video/7000000000000000001')).toMatchObject({
+      suggestedTitle: '',
+      creator: null,
+      imageUrl: null,
+      caption: null,
+    })
+  })
+
+  test('an embed page turned away by a rate limit is asked for again', async () => {
+    let calls = 0
+    const { lookup } = lookupWith([
+      [TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-stripped.json'))],
+      [TIKTOK_EMBED, () => ++calls < 3 ? status(429) : html(fixture('tiktok-embed.html'))],
+    ])
+
+    expect((await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')).suggestedTitle).toBe('Scramble up ur name & I’ll try to guess it')
+  })
+
+  test.each([
+    // Recorded: TikTok answers 400 for a video that doesn't exist.
+    ['a missing video', () => html('<!doctype html><html><body></body></html>', 400)],
+    ['a page without its state', () => html('<!doctype html><html><body><p>Hi</p></body></html>')],
+    ['a state that isn\'t JSON', () => html('<script id="__FRONTITY_CONNECT_STATE__" type="application/json">{nope</script>')],
+    ['a rate limit every time', () => status(429)],
+  ])('an embed page with %s gives nothing more than oEmbed', async (_, reply) => {
+    const { lookup } = lookupWith([
+      [TIKTOK_OEMBED, () => json(fixture('tiktok-oembed-stripped.json'))],
+      [TIKTOK_EMBED, reply],
+    ])
+
+    expect(await lookup('https://www.tiktok.com/@scout2015/video/6718335390845095173')).toEqual({
       kind: 'tiktok',
       canonicalLink: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
       suggestedTitle: '',
