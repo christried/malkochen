@@ -614,6 +614,19 @@ export async function moveDishes(ids: string[], userId: string, columnId: string
   return rows.length === ids.length ? placedDishes(ids) : null
 }
 
+// A Dish "Gekocht ✓" on several Dishes (#451) recorded a Cooking for:
+// placed, with that Cooking (its Cooking History, `cookings`, has it too).
+export type CookedDish = PlacedDish & { cooking: CookingView }
+
+// "Rückgängig" after "Gekocht ✓" on several, for one of them: the Cooking
+// to take back and, for a Dish the cook moved into the Gekocht Column, the
+// Column and index it goes back to. One that was in the Gekocht Column
+// already has no `back`: it stays where it is.
+export interface CookingUndo {
+  cookingId: string
+  back?: { columnId: string, index: number }
+}
+
 // Where a Dish goes back to, undoing a move of several: its Column, and its
 // place among that Column's other Dishes.
 export interface DishPlace {

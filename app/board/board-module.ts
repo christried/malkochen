@@ -5,7 +5,7 @@ import type { BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
-import type { AddedDish, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
 import { viewerMay, type Permission } from '../../shared/permissions'
 import { landingIndex, recordsCooking } from '../../shared/placement'
@@ -127,6 +127,10 @@ export interface BoardTransport extends HistoryTransport, VoteTransport {
   placeDishes: (places: DishPlace[]) => Promise<PlacedDish[]>
   deleteDishes: (dishIds: string[]) => Promise<void>
   restoreDishes: (dishIds: string[]) => Promise<PlacedDish[]>
+  // "Gekocht ✓" on several (#451): each with the Cooking recorded, in the
+  // order sent; and its undo, answering the Dishes placed, in that order.
+  cookDishes: (dishIds: string[]) => Promise<CookedDish[]>
+  uncookDishes: (cookings: CookingUndo[]) => Promise<PlacedDish[]>
 }
 
 type BoardColumn = BoardView['columns'][number]

@@ -112,5 +112,17 @@ export const bulkBody = z.discriminatedUnion('action', [
   }),
   z.object({ action: z.literal('delete'), dishIds }),
   z.object({ action: z.literal('restore'), dishIds }),
+  // "Gekocht ✓" on several (#451): a Cooking for each, the Dishes in Board
+  // order, all on one Board.
+  z.object({ action: z.literal('cook'), dishIds }),
+  // "Rückgängig" after it: each Cooking taken back, and each Dish the cook
+  // moved back to its Column, at its index (`back`).
+  z.object({
+    action: z.literal('uncook'),
+    cookings: z.array(z.object({
+      cookingId: z.uuid(),
+      back: z.object({ columnId: z.uuid(), index: z.int().min(0).max(100_000) }).optional(),
+    })).min(1).max(500).refine(cookings => new Set(cookings.map(c => c.cookingId)).size === cookings.length),
+  }),
 ])
 export type BulkBody = z.input<typeof bulkBody>
