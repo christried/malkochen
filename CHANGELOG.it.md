@@ -4,6 +4,10 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+### Added
+
+- Hai cucinato più piatti? Selezionali (tieni premuto su uno, o Ctrl-clic sul desktop), tocca Cucinato ✓ e contano tutti. Una sola festa per tutti, un classico ha comunque la sua, e un solo Annulla li riporta tutti indietro.
+
 ## [1.1.2] - 2026-11-09
 
 ### Changed

@@ -4,6 +4,10 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+### Added
+
+- Cooked several dishes? Select them (long-press one, or Ctrl-click on desktop), tap Cooked ✓, and every one of them counts. One celebration for the lot, a classic still gets its own, and one Undo takes it all back.
+
 ## [1.1.2] - 2026-11-09
 
 ### Changed
