@@ -240,6 +240,10 @@ export const it: Strings = {
     deleteFailed: (count: number) => `Non è stato possibile archiviare ${dishCount(count)}. ${tryAgain}`,
     notAllowed: 'Con questi piatti non puoi più farlo su questa bacheca. Lo decide chi ne è titolare.',
     backFailed: (count: number) => `Non è stato possibile recuperare ${dishCount(count)}.`,
+    cook: 'Cucinato ✓',
+    cookLabel: (count: number) => `Cucinato ✓: ${dishCount(count)}`,
+    cooked: (count: number) => dishesDone(count, 'cucinat'),
+    cookFailed: (count: number) => `Non è stato possibile segnare ${dishCount(count)} come ${plural(count, { one: 'cucinato', other: 'cucinati' })}. ${tryAgain}`,
   },
   // A cooking (CONTEXT.md) is "una preparazione".
   cooking: {

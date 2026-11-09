@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNotNull, isNull, notExists, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNotNull, isNull, notExists, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db'
 import { cooking, dish, user } from '../db/schema'
@@ -71,6 +71,15 @@ function onMembersDish(cookingId: string, userId: string, { includingDeleted = f
 export async function cookingDishId(cookingId: string, userId: string): Promise<string | null> {
   const [found] = await db.select({ dishId: cooking.dishId }).from(cooking).where(onMembersDish(cookingId, userId))
   return found?.dishId ?? null
+}
+
+// The Dishes of the Cookings, in their order. Null unless the user may see
+// each of them (above).
+export async function cookingDishIds(cookingIds: string[], userId: string): Promise<string[] | null> {
+  const found = await db.select({ id: cooking.id, dishId: cooking.dishId }).from(cooking).where(or(...cookingIds.map(id => onMembersDish(id, userId))))
+  const dishIds = new Map(found.map(f => [f.id, f.dishId]))
+  const ordered = cookingIds.map(id => dishIds.get(id))
+  return ordered.every(id => id !== undefined) ? ordered : null
 }
 
 // How long after recording a Cooking "Rückgängig" in the Gekocht toast may

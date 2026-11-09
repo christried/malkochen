@@ -588,11 +588,11 @@ async function placedDishes(ids: string[]): Promise<PlacedDish[] | null> {
 // Moves Dishes to the top of a Column (the selection's "Verschieben
 // nach…"), on their Board or another one the user is a Member of, in the
 // order of `ids`, keeping their Cooking Histories; one already in that
-// Column stays where it is. Never into a Gekocht Column: cooking stays one
-// Dish at a time, so moving there records no Cookings. Answers them placed,
-// in the order of `ids`; null, moving none, unless every Dish is on a Board
-// the user is a Member of and not deleted, and the Column is on one too and
-// isn't a Gekocht Column.
+// Column stays where it is. Never into a Gekocht Column: cooking several
+// goes through cookDishes, so moving there records no Cookings. Answers
+// them placed, in the order of `ids`; null, moving none, unless every
+// Dish is on a Board the user is a Member of and not deleted, and the
+// Column is on one too and isn't a Gekocht Column.
 export async function moveDishes(ids: string[], userId: string, columnId: string): Promise<PlacedDish[] | null> {
   const rank = sql.join(ids.map((id, i) => sql`when ${id}::uuid then ${i}::integer`), sql` `)
   const move = db
@@ -612,6 +612,119 @@ export async function moveDishes(ids: string[], userId: string, columnId: string
     .returning(MOVED)
   const { rows } = await moveRecorded(db, move, ids, userId)
   return rows.length === ids.length ? placedDishes(ids) : null
+}
+
+// A Dish placed after "Gekocht ✓" on several Dishes (#451), with the
+// Cooking recorded for it (its Cooking History, `cookings`, has it too).
+export type CookedDish = PlacedDish & { cooking: CookingView }
+
+// "Rückgängig" after "Gekocht ✓" on several, for one of them: the Cooking
+// to take back and, for a Dish the cook moved into the Gekocht Column, the
+// Column and index it goes back to. One that was in the Gekocht Column
+// already has no `back`: it stays where it is.
+export interface CookingUndo {
+  cookingId: string
+  back?: { columnId: string, index: number }
+}
+
+// "Gekocht ✓" on several Dishes of one Board (#451): each gets a Cooking,
+// as one does by cookDish. Those outside the Gekocht Column go to the top of
+// it, in the order of `ids`, above every Dish already there; one already in
+// it stays where it is and gets another Cooking. Answers them placed, in the
+// order of `ids`, each with the Cooking this recorded for it; null, changing
+// nothing, unless every Dish is on a Board the user is a Member of, not
+// deleted, and all are on one Board.
+export async function cookDishes(ids: string[], userId: string): Promise<CookedDish[] | null> {
+  const gekochts = await db
+    .selectDistinct({ id: boardColumn.id, boardId: boardColumn.boardId })
+    .from(dish)
+    .innerJoin(boardColumn, and(eq(boardColumn.boardId, dish.boardId), eq(boardColumn.isGekocht, true)))
+    .where(inArray(dish.id, ids))
+  const [gekocht] = gekochts
+  if (!gekocht || gekochts.length !== 1) return null
+  const onItsBoard = db.select({ count: sql<number>`count(*)` }).from(dish).where(and(inArray(dish.id, ids), eq(dish.boardId, gekocht.boardId)))
+  const allowed = and(allOnMembersBoards(ids, userId), sql`(${onItsBoard}) = ${ids.length}`)
+  if (!await holds(allowed, userId)) return null
+
+  const cookingIds = ids.map(() => randomUUID())
+  const recorded = sql.join(ids.map((id, i) => sql`(${cookingIds[i]}::uuid, ${id}::uuid)`), sql`, `)
+  const rank = sql.join(ids.map((id, i) => sql`when ${id}::uuid then ${i}::integer`), sql` `)
+  await runAtomic(d => [
+    // Held until the end, so no other write changes them meanwhile and the
+    // check stays true for every step.
+    d.execute(sql`select ${dish.id} from ${dish} where ${inArray(dish.id, ids)} for update`),
+    d.execute(sql`
+      insert into ${cooking} (id, dish_id, recorded_by)
+      select recorded.id, recorded.dish_id, ${userId} from (values ${recorded}) as recorded(id, dish_id)
+      where ${allowed}
+    `),
+    moveRecorded(
+      d,
+      d.update(dish)
+        .set({
+          columnId: gekocht.id,
+          position: sql`(select coalesce(min(${dish.position}), 0) from ${dish} where ${dish.columnId} = ${gekocht.id})
+            - ${ids.length}::integer + (case ${dish.id} ${rank} end)`,
+        })
+        .where(and(inArray(dish.id, ids), ne(dish.columnId, gekocht.id), allowed))
+        .returning(MOVED),
+      ids,
+      userId,
+    ),
+    recordEvents(d, cookingEvent('cooking_recorded', userId), sql`from ${cooking} changed where changed.id in (${sql.join(cookingIds.map(id => sql`${id}::uuid`), sql`, `)})`),
+  ])
+
+  const placed = await placedDishes(ids)
+  if (!placed) return null
+  const cooked: CookedDish[] = []
+  for (const [i, view] of placed.entries()) {
+    const recordedNow = view.cookings.find(c => c.id === cookingIds[i])
+    // Not written: the check failed meanwhile.
+    if (!recordedNow) return null
+    cooked.push({ ...view, cooking: recordedNow })
+  }
+  return cooked
+}
+
+// "Rückgängig" after cookDishes: every Cooking of `undos` is removed for
+// good, as undoCooking removes one, and each Dish with a `back` goes back to
+// that Column and index, put Column by Column from the top so each lands at
+// its own index; one without stays where it is. `dishIds` are the Dishes of
+// the Cookings, in their order (the caller has checked that the user may see
+// them: cookingDishIds). Answers the Dishes placed, in that order; null,
+// changing nothing, unless every Cooking may be taken back (undoableCooking),
+// every Dish with a `back` is still in a Gekocht Column, and every `back`
+// Column is on a Board the user is a Member of.
+export async function uncookDishes(undos: CookingUndo[], dishIds: string[], userId: string): Promise<PlacedDish[] | null> {
+  const cookingIds = undos.map(u => u.cookingId)
+  const backs = undos.flatMap((u, i) => u.back ? [{ dishId: dishIds[i]!, ...u.back }] : [])
+  const inGekocht = (dishId: string) => exists(db
+    .select({ id: dish.id })
+    .from(dish)
+    .where(and(eq(dish.id, dishId), inArray(dish.columnId, db.select({ id: boardColumn.id }).from(boardColumn).where(eq(boardColumn.isGekocht, true))))))
+  const allowed = and(
+    ...undos.map((u, i) => exists(db.select({ id: cooking.id }).from(cooking).where(and(undoableCooking(u.cookingId, userId), eq(cooking.dishId, dishIds[i]!))))),
+    allOnMembersBoards([...new Set(dishIds)], userId),
+    backs.length > 0 ? allColumnsOfMember([...new Set(backs.map(b => b.columnId))], userId) : undefined,
+    ...backs.map(b => inGekocht(b.dishId)),
+  )
+  if (!await holds(allowed, userId)) return null
+
+  const cookingsGone = notExists(db.select({ id: cooking.id }).from(cooking).where(inArray(cooking.id, cookingIds)))
+  const ordered = backs.sort((a, b) => a.columnId.localeCompare(b.columnId) || a.index - b.index)
+  await runAtomic(d => [
+    // Held until the end, as for placeDishes.
+    d.execute(sql`select ${dish.id} from ${dish} where ${inArray(dish.id, dishIds)} for update`),
+    withEvents(
+      d,
+      d.delete(cooking).where(and(inArray(cooking.id, cookingIds), allowed)).returning({ id: cooking.id, dishId: cooking.dishId }),
+      cookingEvent('cooking_deleted', userId, { undo: true }),
+    ),
+    // Only once the Cookings are gone: the delete above went through.
+    ...ordered.map(b => moveRecorded(d, renumberForDrop(d, b.dishId, b.columnId, b.index, and(eq(dish.id, b.dishId), cookingsGone)), [b.dishId], userId, { undo: true })),
+  ])
+  const kept = await db.select({ id: cooking.id }).from(cooking).where(inArray(cooking.id, cookingIds))
+  return kept.length > 0 ? null : placedDishes(dishIds)
 }
 
 // Where a Dish goes back to, undoing a move of several: its Column, and its
