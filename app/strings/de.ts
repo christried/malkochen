@@ -17,7 +17,20 @@ import { intlFor } from './intl'
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
+// What an Unsent Change did, for the toast naming those that didn't arrive.
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany'
+function unsentChange(kind: UnsentKindName, label: string): string {
+  const named = `„${label}“`
+  switch (kind) {
+    case 'move': return `${named} verschoben`
+    case 'cook':
+    case 'cookMany': return `${named} gekocht`
+    case 'uncook':
+    case 'uncookMany': return `${named} wieder offen`
+  }
+}
+
+const { number, plural,day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -666,6 +679,19 @@ export const de = {
     bar: 'Offline. Deine Änderungen kommen an, sobald du Netz hast.',
     unreachable: 'malkochen ist gerade nicht erreichbar.',
     needsNet: 'Geht nur mit Netz',
+  },
+  // Changes made while malkochen didn't answer, and not sent yet (Unsent
+  // Changes, #459). The offline bar adds `count` to what it says; `allSent`
+  // when the last one went through. `didntArrive`: one toast naming those
+  // malkochen couldn't apply (a Dish deleted meanwhile, say), each by its
+  // kind and the Dish title(s).
+  unsent: {
+    count: (count: number) => `${number(count)} noch nicht gesendet`,
+    allSent: 'Alles gesendet',
+    didntArrive: (changes: { kind: UnsentKindName, label: string }[]) => {
+      const named = changes.map(({ kind, label }) => unsentChange(kind, label)).join(', ')
+      return `${number(changes.length)} ${plural(changes.length, { one: 'Änderung kam', other: 'Änderungen kamen' })} nicht an: ${named}`
+    },
   },
   // The error screen: a page that isn't there, or anything unexpected --
   // which is on malkochen's side, and it says so.

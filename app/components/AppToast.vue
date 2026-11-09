@@ -100,7 +100,7 @@ function act(action: ToastAction) {
                 type="button"
                 class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-focus"
                 :class="toast.howWasIt ? 'px-1.5' : 'px-3'"
-                :disabled="!action.navigates && !mayChange"
+                :disabled="!action.navigates && !action.offline && !mayChange"
                 @click="act(action)"
               >
                 {{ action.label }}

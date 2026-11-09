@@ -1,4 +1,5 @@
 import type { BoardModule } from '~/board/board-module'
+import type { UnsentChanges } from '~/board/unsent-changes'
 import { createBoardPoll, POLL_CADENCE, type BoardPoll, type PollCadence } from '~/board/board-poll'
 import type { BoardView } from '~~/server/utils/boards'
 
@@ -13,7 +14,7 @@ const REOPEN_AFTER_MS = 30 * 60_000
 // goes through the Board's module (sync), which merges what the server
 // answers, or drops it while `paused` (a Dish is being dragged) or if one of
 // its writes was under way meanwhile; the next check brings it.
-export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean) {
+export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean, unsent?: UnsentChanges | null) {
   const visit = useVisit()
   const { answering } = useConnection()
   let hiddenSince: number | null = null
@@ -39,6 +40,8 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
       await $fetch(`/api/boards/${id}/open`, { method: 'POST' })
       reopenDue = false
     }
+    // Unsent Changes go first (#459), so what loads has them in.
+    if (unsent?.count.value) await unsent.send()
     // Loading also records what the user has seen (so it isn't "Neu" next time).
     return boardModule.sync(() => $fetch<BoardView>(`/api/boards/${id}/seen`, { method: 'POST' }), { paused })
   }
@@ -90,6 +93,9 @@ export function useBoardSync(boardId: () => string, boardModule: BoardModule, pa
     for (const type of activity) window.addEventListener(type, onActivity, { capture: true, passive: true })
     poll.start()
   })
+
+  // Loads the Board now, whatever its version (Unsent Changes just went out).
+  return { syncNow: () => poll?.syncNow() }
   onBeforeUnmount(() => {
     poll?.stop()
     document.removeEventListener('visibilitychange', onVisibilityChange)

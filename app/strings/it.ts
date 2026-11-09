@@ -7,13 +7,25 @@
 // Relative imports, as in de.ts.
 import type { EventGroup } from '../../shared/admin'
 import type { DishField, EventKind } from '../../shared/event-kinds'
-import type { Strings } from './de'
+import type { Strings, UnsentKindName } from './de'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
+// What an Unsent Change did, for the toast naming those that didn't arrive.
+function unsentChange(kind: UnsentKindName, label: string): string {
+  const named = `“${label}”`
+  switch (kind) {
+    case 'move': return `${named} spostato`
+    case 'cook':
+    case 'cookMany': return `${named} cucinato`
+    case 'uncook':
+    case 'uncookMany': return `${named} di nuovo da cucinare`
+  }
+}
+
+const { number, plural,day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -580,6 +592,14 @@ export const it: Strings = {
     bar: 'Offline. Le tue modifiche arrivano appena torni in rete.',
     unreachable: 'malkochen al momento non è raggiungibile.',
     needsNet: 'Funziona solo in rete',
+  },
+  unsent: {
+    count: (count: number) => `${number(count)} ${plural(count, { one: 'modifica non ancora inviata', other: 'modifiche non ancora inviate' })}`,
+    allSent: 'Tutto inviato',
+    didntArrive: (changes: { kind: UnsentKindName, label: string }[]) => {
+      const named = changes.map(({ kind, label }) => unsentChange(kind, label)).join(', ')
+      return `${number(changes.length)} ${plural(changes.length, { one: 'modifica non è arrivata', other: 'modifiche non sono arrivate' })}: ${named}`
+    },
   },
   error: {
     headline: 'Qualcosa si è bruciato.',

@@ -18,6 +18,9 @@ const props = defineProps<{
 }>()
 defineEmits<{ move: [columnId: string, toBoard: BoardListing | null] }>()
 const t = useStrings()
+// Moving to another Board needs a connection (#459): offline, only this
+// Board's Columns are offered.
+const { mayChange } = useConnection()
 
 const otherBoards = ref<BoardListing[]>([])
 onMounted(async () => {
@@ -32,11 +35,11 @@ const offered = (column: ColumnView) => column.id !== props.fromColumnId && !(pr
 const groups = computed(() => [
   {
     id: props.board.id,
-    label: otherBoards.value.length ? t.dish.thisBoard : null,
+    label: otherBoards.value.length && mayChange.value ? t.dish.thisBoard : null,
     toBoard: null,
     columns: props.board.columns.map((column, index) => ({ column, accent: columnAccent(index) })).filter(({ column }) => offered(column)),
   },
-  ...otherBoards.value.map(other => ({
+  ...(mayChange.value ? otherBoards.value : []).map(other => ({
     id: other.id,
     label: boardLabel(other),
     toBoard: other,

@@ -9,9 +9,29 @@
 // the add button, the selection bar, sheets and the Dish detail) keeps
 // clear of. Over a modal (the Dish detail, a sheet) it's lifted into the top
 // layer as a manual popover, shown again after each opens so it stays on top.
+//
+// It counts the changes not sent yet (Unsent Changes, #459), offline or
+// while they go out, and says "Alles gesendet" for a moment once the last
+// has gone through.
 const t = useStrings()
 const { state } = useConnection()
-const text = computed(() => state.value === 'offline' ? t.offline.bar : state.value === 'unreachable' ? t.offline.unreachable : '')
+const unsent = useUnsentChanges().current
+const waiting = computed(() => unsent.value?.count.value ?? 0)
+const allSent = ref(false)
+let allSentTimer: ReturnType<typeof setTimeout> | undefined
+watch(() => unsent.value?.lastRun.value, (run) => {
+  if (!run?.emptied || run.sent === 0) return
+  allSent.value = true
+  clearTimeout(allSentTimer)
+  allSentTimer = setTimeout(() => (allSent.value = false), 3000)
+})
+onBeforeUnmount(() => clearTimeout(allSentTimer))
+const text = computed(() => {
+  const why = state.value === 'offline' ? t.offline.bar : state.value === 'unreachable' ? t.offline.unreachable : ''
+  const count = waiting.value > 0 ? t.unsent.count(waiting.value) : ''
+  if (why || count) return [why, count].filter(Boolean).join(' ')
+  return allSent.value ? t.unsent.allSent : ''
+})
 
 const region = useTemplateRef<HTMLElement>('region')
 const strip = useTemplateRef<HTMLElement>('strip')
