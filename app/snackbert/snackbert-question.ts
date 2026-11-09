@@ -4,9 +4,9 @@ import { computed, effectScope, shallowRef, watch, type Ref } from 'vue'
 // Cooking on this device, Snackbert's head comes up and asks whether
 // they'd like to tell him about it. This module decides when: the Board
 // tells it of each Cooking recorded singly (`cooked`; "Gekocht ✓" on
-// several Dishes at once starts none, `cookedMany`), and it asks the screen
-// what is going on. Plain Vue reactivity and timers, so it runs in Node (the "client"
-// Vitest project); SnackbertQuestion draws what it says.
+// several Dishes at once starts none, `cookedMany`), and it asks the
+// screen what is going on. Plain Vue reactivity and timers, so it runs in
+// Node (the "client" Vitest project); SnackbertQuestion draws what it says.
 //
 // A Cooking starts a pending Question, unless a Tour runs or it is the
 // Tour's Dish. It shows once Snackbert turns out to be on, the server has
@@ -15,10 +15,9 @@ import { computed, effectScope, shallowRef, watch, type Ref } from 'vue'
 // celebration, the Changelog Popup, a Notification Prompt, a sheet), and
 // no Tour runs; then a beat later, so the toast is out of the way. A newer
 // Cooking replaces the pending one (and sends away one he is asking about),
-// several at once too;
-// a Cooking undone, failed or deleted drops its own. He doesn't take the
-// visit's one prompt (useVisit): the Tour, the Changelog Popup and the
-// Notification Prompts go by their own rules.
+// several at once too; a Cooking undone, failed or deleted drops its own.
+// He doesn't take the visit's one prompt (useVisit): the Tour, the
+// Changelog Popup and the Notification Prompts go by their own rules.
 
 export interface QuestionCooking { id: string, cookedAt: string }
 

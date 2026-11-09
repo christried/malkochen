@@ -589,10 +589,10 @@ async function placedDishes(ids: string[]): Promise<PlacedDish[] | null> {
 // nach…"), on their Board or another one the user is a Member of, in the
 // order of `ids`, keeping their Cooking Histories; one already in that
 // Column stays where it is. Never into a Gekocht Column: cooking several
-// goes through cookDishes, so moving there records no Cookings. Answers them placed,
-// in the order of `ids`; null, moving none, unless every Dish is on a Board
-// the user is a Member of and not deleted, and the Column is on one too and
-// isn't a Gekocht Column.
+// goes through cookDishes, so moving there records no Cookings. Answers
+// them placed, in the order of `ids`; null, moving none, unless every
+// Dish is on a Board the user is a Member of and not deleted, and the
+// Column is on one too and isn't a Gekocht Column.
 export async function moveDishes(ids: string[], userId: string, columnId: string): Promise<PlacedDish[] | null> {
   const rank = sql.join(ids.map((id, i) => sql`when ${id}::uuid then ${i}::integer`), sql` `)
   const move = db

@@ -63,8 +63,8 @@ export interface BoardResult {
 // BoardResult does for one: the Dishes it was about, in Board order, a
 // notice, an undo, where focus goes, and what its write ended in. Its
 // notices are about the Dishes together: `movedMany`, `deletedMany` and
-// `cookedMany` come with an undo; the others say a write failed (`notAllowedMany`: as the
-// user's Permissions no longer allow it).
+// `cookedMany` come with an undo; the others say a write failed
+// (`notAllowedMany`: as the user's Permissions no longer allow it).
 export type BulkNotice = 'movedMany' | 'deletedMany' | 'moveManyFailed' | 'deleteManyFailed' | 'restoreManyFailed' | 'returnManyFailed' | 'cookedMany' | 'cookManyFailed' | 'uncookManyFailed' | 'notAllowedMany'
 
 export interface BulkResult {
@@ -703,9 +703,8 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Board or of another of the Member's Boards (`boardId`), in Board order;
   // one already in that Column stays where it is. They go there at once,
   // then where the server put them. Never into a Gekocht Column: that is
-  // cookDishes. If the move fails, every Dish goes back
-  // exactly where it was, with a notice. Null if none would move, or
-  // without "move Dishes".
+  // cookDishes. If the move fails, every Dish goes back exactly where it
+  // was, with a notice. Null if none would move, or without "move Dishes".
   function moveDishes(dishIds: string[], to: Destination | BoardDestination): BulkResult | null {
     if (!may('moveDishes')) return null
     const here = 'boardId' in to ? null : column(to.columnId)

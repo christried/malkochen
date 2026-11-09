@@ -16,9 +16,10 @@ import { areDishesOfMember, cookDishes, deleteDishes, moveDishes, placeDishes, r
 //   it, in the order sent; one already there stays. Answers each Dish placed
 //   with the Cooking recorded for it (CookedDish), needing "move Dishes".
 // - `uncook`: "Rückgängig" after it: each Cooking removed for good, as
-//   one Cooking's undo removes it (only the user's own, the Dish's newest, just
-//   recorded; else 409), and each Dish with a `back` put back at that Column
-//   and index, which it must still be in a Gekocht Column for (else 400).
+//   one Cooking's undo removes it (only the user's own, the Dish's newest,
+//   just recorded; else 409), and each Dish with a `back` put back at that
+//   Column and index, which it must still be in a Gekocht Column for (else
+//   400).
 // Each needs its Permission for every Dish: "move Dishes" (and "add
 // Dishes" on another Board moved to; "move Dishes" there, putting back),
 // "archive Dishes" (or that the user added it); else 403, changing none.

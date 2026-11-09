@@ -350,8 +350,9 @@ const adding = ref(false)
 // something shared. Once the Owner switches it off, the next check of the
 // Board takes the button away (useBoardSync).
 const mayAdd = computed(() => board.value?.permissions.addDishes ?? false)
-// The same for moving Dishes: no drag, no "Gekocht ✓" (also the selection's),
-// no "Verschieben nach…". Archiving goes by each Dish, as one's own may always be.
+// The same for moving Dishes: no drag, no "Gekocht ✓" (the selection's
+// neither), no "Verschieben nach…". Archiving goes by each Dish, as one's
+// own may always be.
 const mayMove = computed(() => boardModule.may('moveDishes'))
 const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
 // Your settings (UserSettingsSheet), from the header's cogwheel (#282).
