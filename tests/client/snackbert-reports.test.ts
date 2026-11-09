@@ -121,3 +121,15 @@ test('when the state cannot be loaded, Snackbert counts as off', async () => {
   await reports.load(DISH)
   expect(reports.on.value).toBe(false)
 })
+
+test('each load replaces what counts as reported, so nothing of a Dish or user before stays', async () => {
+  let state: DishSnackbert = { on: true, reported: [COOKING] }
+  const reports = createSnackbertReports({ state: async () => state, send: async () => ({}) })
+  await reports.load(DISH)
+  expect(reports.isReported(COOKING)).toBe(true)
+
+  // Someone else signed in (signing out doesn't reload the app), or another Dish.
+  state = { on: true, reported: [] }
+  await reports.load(DISH)
+  expect(reports.isReported(COOKING)).toBe(false)
+})

@@ -59,8 +59,9 @@ function outcomeOf(error: unknown): ReportOutcome {
 export function createSnackbertReports(transport: SnackbertTransport = defaultTransport) {
   // Whether the viewer has Snackbert on, as the server last said.
   const on = ref(false)
-  // The Cookings the viewer has reported. A Cooking's id is unique, so one set
-  // serves every Dish.
+  // The Cookings of the open Dish the viewer has reported. Each load replaces
+  // it with what the server says, so nothing of another Dish, or of whoever
+  // was signed in before (signing out doesn't reload the app), stays in it.
   const reported = reactive(new Set<string>())
   // Counts the loads; only the latest answer counts.
   let latest = 0
@@ -72,10 +73,13 @@ export function createSnackbertReports(transport: SnackbertTransport = defaultTr
       const state = await transport.state(dishId)
       if (run !== latest) return
       on.value = state.on
+      reported.clear()
       for (const id of state.reported) reported.add(id)
     }
     catch {
-      if (run === latest) on.value = false
+      if (run !== latest) return
+      on.value = false
+      reported.clear()
     }
   }
 

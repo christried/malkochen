@@ -15,9 +15,7 @@ import { readStoredImage } from './image-store'
 // Cooking (snackbert_report), so they see it as reported, and its Event Log
 // event. The route is server/api/cookings/[id]/snackbert-report.post.ts.
 
-// A Cooking a Member may report: not deleted, its Dish not archived, on a
-// Board they may see. Any Member may report for themselves, whatever their
-// Permissions. Null otherwise.
+// A Cooking a Member may report, with what Snackbert is told of its Dish.
 export interface ReportableCooking {
   id: string
   cookedAt: Date
@@ -33,6 +31,9 @@ export interface ReportableCooking {
   }
 }
 
+// The Cooking if the user may report it: not deleted, its Dish not archived,
+// on a Board they may see. Any Member may report for themselves, whatever
+// their Permissions. Null otherwise.
 export async function reportableCooking(cookingId: string, userId: string): Promise<ReportableCooking | null> {
   const [found] = await db
     .select({
