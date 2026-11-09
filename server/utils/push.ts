@@ -141,8 +141,9 @@ async function recordPushesSent(boardId: string, dishId: string, sent: { userId:
 // What each Member to notify gets told, by user id, and in which language:
 // the Dishes other Members added since that Member last had the Board open
 // (or joined it), and the Comments and Votes they gave since on Dishes
-// that aren't archived, Comments not deleted, and always `latest`. A Member
-// with nothing to be told isn't in it.
+// that aren't archived, Comments not deleted, and always `latest`. Since
+// and newest first by when they arrived, not when they are dated (ADR
+// 0012). A Member with nothing to be told isn't in it.
 async function boardNews(boardId: string, actorId: string, latest: Latest): Promise<Map<string, { language: Language, news: BoardNews }>> {
   const [found] = await db
     .select({ id: board.id, slug: slugOf, name: board.name, emoji: board.emoji })
@@ -194,7 +195,7 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
         // Writing one takes a Username, as voting does.
         by: sql<string>`${user.username}`,
         text: comment.text,
-        at: comment.createdAt,
+        at: comment.arrivedAt,
       })
       .from(membership)
       .innerJoin(dish, onBoard)
@@ -202,7 +203,7 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
         eq(comment.dishId, dish.id),
         isNull(comment.deletedAt),
         ne(comment.authorId, membership.userId),
-        or('commentId' in latest ? eq(comment.id, latest.commentId) : undefined, gt(comment.createdAt, since)),
+        or('commentId' in latest ? eq(comment.id, latest.commentId) : undefined, gt(comment.arrivedAt, since)),
       ))
       .innerJoin(user, eq(user.id, comment.authorId))
       .where(toNotify),
@@ -214,7 +215,7 @@ async function boardNews(boardId: string, actorId: string, latest: Latest): Prom
         image: dish.imageUrl,
         by: sql<string>`${user.username}`,
         up: vote.up,
-        at: vote.votedAt,
+        at: vote.arrivedAt,
       })
       .from(membership)
       .innerJoin(dish, onBoard)

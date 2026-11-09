@@ -8,7 +8,7 @@ import { inject } from 'vitest'
 // Makes a Cooking `minutes` older, as if it had been recorded that long
 // before.
 export async function backdateCooking(cookingId: string, minutes: number): Promise<void> {
-  await query(`update cooking set cooked_at = cooked_at - make_interval(mins => $2) where id = $1`, [cookingId, minutes])
+  await query(`update cooking set cooked_at = cooked_at - make_interval(mins => $2), arrived_at = arrived_at - make_interval(mins => $2) where id = $1`, [cookingId, minutes])
 }
 
 // Makes a deleted Dish, Cooking, Comment or Board `days` longer deleted, as if it had been
