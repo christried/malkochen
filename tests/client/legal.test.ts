@@ -51,8 +51,8 @@ test.each(datenschutz.map(text => [text.language, text] as const))('the %s Daten
   expect(sectionOf(text, '9.')).toContain('malkochen.dish-link')
 })
 
-test('the German Datenschutz lets the operator open every Board in section 19', () => {
-  const section = sectionOf(datenschutz[0]!, '19.')
+test('the German Datenschutz lets the operator open every Board in section 20', () => {
+  const section = sectionOf(datenschutz[0]!, '20.')
   expect(section).toContain('jedes Board öffnen')
   expect(section).not.toContain('nur **Zählwerte**')
 })

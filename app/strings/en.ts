@@ -665,6 +665,17 @@ export const en: Strings = {
     noMore: 'Had enough?',
     turnOff: 'Turn it off here',
   },
+  // Snackbert in Your Settings (#423): only for people with a Snackbert account. The consent text says what goes, to whom, and that switching off withdraws.
+  snackbert: {
+    heading: 'Snackbert',
+    consent: 'Switch Snackbert on and you can tell him what you ate after cooking. Your email address, the dish’s details and whatever you add yourself then go to Snackbert: the app run by the same person as malkochen, on Google Firebase and Gemini in the EU. Switching off stops it straight away.',
+    privacyLink: 'More in the privacy policy',
+    toggle: 'Report to Snackbert',
+    hint: 'After you cook, Snackbert asks how much you had. On all your devices.',
+    noAccount: 'Snackbert can’t find an account for your email address.',
+    unreachable: 'Snackbert can’t be reached right now. Try again later.',
+    failed,
+  },
   signInEmail: {
     subject: (code: string) => `${code} is your malkochen code`,
     headline: 'Your sign-in code',
@@ -803,6 +814,7 @@ export const en: Strings = {
       account: 'Accounts',
       notifications: 'Notifications',
       links: 'Links and copies',
+      snackbert: 'Snackbert',
       operator: 'Operation',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -850,6 +862,7 @@ export const en: Strings = {
       language_changed: 'Language changed',
       push_switched: 'Push switched',
       digest_switched: 'Daily email switched',
+      snackbert_switched: 'Snackbert switched',
       account_deleted: 'Account deleted',
       push_sent: 'Push sent',
       digest_sent: 'Daily email sent',

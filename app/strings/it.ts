@@ -681,6 +681,17 @@ export const it: Strings = {
     noMore: 'Non ti serve più?',
     turnOff: 'Disattivala qui',
   },
+  // Snackbert in Your Settings (#423): only for people with a Snackbert account. The consent text says what goes, to whom, and that switching off withdraws.
+  snackbert: {
+    heading: 'Snackbert',
+    consent: 'Se attivi Snackbert, dopo aver cucinato puoi raccontargli cosa hai mangiato. Il tuo indirizzo email, i dati del piatto e quello che aggiungi tu vanno allora a Snackbert: l’app dello stesso gestore, su Google Firebase e Gemini nell’UE. Disattivandolo, si ferma tutto subito.',
+    privacyLink: 'Di più nell’informativa sulla privacy',
+    toggle: 'Segnala a Snackbert',
+    hint: 'Dopo che hai cucinato, Snackbert ti chiede quanto ne hai mangiato. Su tutti i tuoi dispositivi.',
+    noAccount: 'Snackbert non trova un account per il tuo indirizzo email.',
+    unreachable: 'Snackbert al momento non è raggiungibile. Riprova più tardi.',
+    failed,
+  },
   signInEmail: {
     subject: (code: string) => `${code} è il tuo codice per malkochen`,
     headline: 'Il tuo codice di accesso',
@@ -819,6 +830,7 @@ export const it: Strings = {
       account: 'Account',
       notifications: 'Notifiche',
       links: 'Link e copie',
+      snackbert: 'Snackbert',
       operator: 'Gestione',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -866,6 +878,7 @@ export const it: Strings = {
       language_changed: 'Lingua cambiata',
       push_switched: 'Push cambiato',
       digest_switched: 'Email giornaliera cambiata',
+      snackbert_switched: 'Snackbert cambiato',
       account_deleted: 'Account eliminato',
       push_sent: 'Push inviato',
       digest_sent: 'Email giornaliera inviata',

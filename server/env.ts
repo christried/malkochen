@@ -60,6 +60,13 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // Tests only: where Resend's API is instead (a stand-in that keeps what is
   // sent). Empty: Resend itself.
   RESEND_BASE_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
+  // Snackbert (CONTEXT.md, #423): the Operator's nutrition app, which people
+  // with a Snackbert account can switch on in Your Settings
+  // (server/utils/snackbert.ts). SNACKBERT_URL is its malkochen function's
+  // address; SNACKBERT_SECRET is this malkochen's own secret for it, one per
+  // environment. Both or none: without them Snackbert is off everywhere.
+  SNACKBERT_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
+  SNACKBERT_SECRET: z.union([z.literal(''), z.string().min(16)]).default(''),
   // Tests only: the Version the server runs as (server/version.ts), in
   // place of package.json's, so the tests see the same one whatever the
   // newest Version is. Empty: package.json's.
@@ -82,6 +89,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
 ).refine(
   env => new Set([env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY, env.VAPID_SUBJECT].map(value => value === '')).size === 1,
   { path: ['VAPID_PUBLIC_KEY'], message: 'VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT must be set together, or none of them' },
+).refine(
+  env => new Set([env.SNACKBERT_URL, env.SNACKBERT_SECRET].map(value => value === '')).size === 1,
+  { path: ['SNACKBERT_URL'], message: 'SNACKBERT_URL and SNACKBERT_SECRET must be set together, or none of them' },
 )
 
 type Source = Record<string, string | undefined>

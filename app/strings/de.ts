@@ -799,6 +799,17 @@ export const de = {
     noMore: 'Keine Lust mehr?',
     turnOff: 'Hier ausschalten',
   },
+  // Snackbert in Your Settings (#423): only for people with a Snackbert account. The consent text says what goes, to whom, and that switching off withdraws.
+  snackbert: {
+    heading: 'Snackbert',
+    consent: 'Schaltest du Snackbert ein, kannst du ihm nach dem Kochen erzählen, was du gegessen hast. Dann gehen deine E-Mail-Adresse, die Angaben zum Gericht und was du selbst dazugibst an Snackbert: die App desselben Betreibers, auf Google Firebase und Gemini in der EU. Ausschalten stoppt das sofort.',
+    privacyLink: 'Mehr dazu im Datenschutz',
+    toggle: 'An Snackbert melden',
+    hint: 'Nach dem Kochen fragt dich Snackbert, wie viel du hattest. Für alle deine Geräte.',
+    noAccount: 'Snackbert findet kein Konto zu deiner E-Mail-Adresse.',
+    unreachable: 'Snackbert ist gerade nicht erreichbar. Versuch es später noch mal.',
+    failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+  },
   // The email with the sign-in code (#345, server/email/index.ts): the code
   // to type where sign-in started, and a link that signs in where it opens.
   signInEmail: {
@@ -944,6 +955,7 @@ export const de = {
       account: 'Konten',
       notifications: 'Benachrichtigungen',
       links: 'Links und Kopien',
+      snackbert: 'Snackbert',
       operator: 'Betrieb',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -991,6 +1003,7 @@ export const de = {
       language_changed: 'Sprache geändert',
       push_switched: 'Push umgeschaltet',
       digest_switched: 'Tägliche E-Mail umgeschaltet',
+      snackbert_switched: 'Snackbert umgeschaltet',
       account_deleted: 'Konto gelöscht',
       push_sent: 'Push gesendet',
       digest_sent: 'Tägliche E-Mail gesendet',

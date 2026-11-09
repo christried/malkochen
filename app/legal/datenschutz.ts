@@ -29,7 +29,7 @@ const english: LegalText = {
       heading: '3. Hosting (Vercel)',
       blocks: [
         'The application is hosted by Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA. When the application is called, Vercel processes technically necessary access data in server logs, including IP address, date and time of the request, the URL requested, the referrer, and browser and operating system information. These logs also contain technical error reports of the application, such as reports from your browser about violations of the content security policy; these include the page address called without search parameters, but no content.',
-        'The application\'s daily clean-up and sending tasks run through Vercel Cron. The legal basis is Art. 6(1)(f) GDPR (legitimate interest in secure, stable and error-free operation). Vercel is bound by a data processing agreement (Art. 28 GDPR). For transfers to the USA see section 22.',
+        'The application\'s daily clean-up and sending tasks run through Vercel Cron. The legal basis is Art. 6(1)(f) GDPR (legitimate interest in secure, stable and error-free operation). Vercel is bound by a data processing agreement (Art. 28 GDPR). For transfers to the USA see section 23.',
       ],
     },
     {
@@ -119,7 +119,7 @@ const english: LegalText = {
             'Your memberships, sessions, sign-in accounts, push subscriptions, the e-mail summary and your user data are deleted.',
             'What you contributed to other people\'s boards (dishes, cooking entries, comments and votes) stays for the other members, but is no longer assigned to any person and appears as "Deleted account".',
             'Pictures that only you used are removed. A confirmation goes to your e-mail address.',
-            'In the event log (section 19) the entries remain without your identifier.',
+            'In the event log (section 20) the entries remain without your identifier.',
           ],
         },
         'The legal basis is Art. 6(1)(b) GDPR (ending the user relationship).',
@@ -169,41 +169,48 @@ const english: LegalText = {
       ],
     },
     {
-      heading: '19. Event log and the operator',
+      heading: '19. Snackbert',
       blocks: [
-        'The application keeps an **event log**: one entry per action on boards and around your account. This includes, for example, that a board was created, a dish added, moved, copied or archived, a comment written, a vote given or a dish link opened; also your sign-up and every sign-in with its method, changes of Username, profile picture and language, turning push notifications and the e-mail summary on and off, suggestions to turn them on that were shown and answered, every push notification sent (per device, with the delivery result) and every e-mail summary sent, and the deletion of an account. An entry contains only the time, the kind of action, identifiers (of the board, the dish, the person involved, the comment) and a few non-content details, such as the kind of source of a dish, the sign-in method, or whether a dish link was opened by someone signed in. It does not itself contain titles, comment texts, names, e-mail addresses, IP addresses or links. Entries are not deleted; we remove your identifier when you delete your account.',
+        'If you have an account with **Snackbert**, the private nutrition app of the same operator, you can switch Snackbert on in your settings (off by default). So that the switch appears only then, malkochen asks Snackbert, with your e-mail address, whether an account exists for it there, and remembers the answer for a day (Art. 6(1)(f) GDPR). Once it is on, you can report a dish you cooked to Snackbert: your e-mail address, the details of the dish (title, source link, platform, channel or blog, description, image, time of cooking) and what you add yourself (a photo of your portion, a voice recording, a short text) then go to Snackbert. malkochen keeps none of it, only that and when you reported. Snackbert runs on Google Firebase and analyses the report with Gemini, both with Google Ireland Limited, processed in the EU. The legal basis is your consent (Art. 6(1)(a) GDPR). If you switch Snackbert off, nothing more is sent; this withdraws your consent for the future.',
+      ],
+    },
+    {
+      heading: '20. Event log and the operator',
+      blocks: [
+        'The application keeps an **event log**: one entry per action on boards and around your account. This includes, for example, that a board was created, a dish added, moved, copied or archived, a comment written, a vote given or a dish link opened; also your sign-up and every sign-in with its method, changes of Username, profile picture and language, turning push notifications, the e-mail summary and Snackbert on and off, suggestions to turn them on that were shown and answered, every push notification sent (per device, with the delivery result) and every e-mail summary sent, and the deletion of an account. An entry contains only the time, the kind of action, identifiers (of the board, the dish, the person involved, the comment) and a few non-content details, such as the kind of source of a dish, the sign-in method, or whether a dish link was opened by someone signed in. It does not itself contain titles, comment texts, names, e-mail addresses, IP addresses or links. Entries are not deleted; we remove your identifier when you delete your account.',
         'The **operator**, who runs the application, can open every board and do everything its owner can there, without appearing as a member; what they add there shows their Username. On the administration page they see the event log with the names of the people, boards and dishes and the comment texts as they are **now**: what was deleted shows as deleted, a deleted account as "Deleted account", and earlier versions are not kept. Besides that they see counts such as sign-ups per day and sign-up method, the number of active people and of events per kind, and storage, e-mail and call volumes against the free allowances of the services. This serves to help people who ask and to detect misuse, all the more as anyone can sign up without an invitation while Open Sign-up is on (section 7). The legal basis is Art. 6(1)(f) GDPR (legitimate interest in secure operation, in helping with problems and in detecting misuse).',
       ],
     },
     {
-      heading: '20. Fonts, symbols and tracking',
+      heading: '21. Fonts, symbols and tracking',
       blocks: [
         'The fonts (Petrona, Figtree) are delivered self-hosted; **no** connection to Google Fonts is made. Symbols, illustrations and animations are built into the application and are not loaded from external services. No analytics, tracking or advertising services are used, and no profiling takes place. A cookie banner is therefore not required.',
       ],
     },
     {
-      heading: '21. Recipients',
+      heading: '22. Recipients',
       blocks: [
-        'Your data is not sold and not passed on for advertising purposes. Recipients are exclusively the service providers named in this policy to the extent described, the members of the boards you belong to (section 11), people a member sends a dish link to, to the extent of section 11, and the operator to the extent of section 19. Data is passed on to authorities only where there is a legal obligation to do so.',
+        'Your data is not sold and not passed on for advertising purposes. Recipients are exclusively the service providers named in this policy to the extent described, the members of the boards you belong to (section 11), people a member sends a dish link to, to the extent of section 11, and the operator to the extent of section 20. Data is passed on to authorities only where there is a legal obligation to do so.',
       ],
     },
     {
-      heading: '22. Transfers to third countries',
+      heading: '23. Transfers to third countries',
       blocks: [
         'Vercel, Neon, Google, Resend and (when push notifications are on) Mozilla or Microsoft are, or belong to, companies based in the USA. Where personal data is transferred to the USA, this rests on the EU Commission\'s adequacy decision for the EU-US Data Privacy Framework (Art. 45 GDPR), where the provider in question is certified under it, and otherwise on the EU Commission\'s standard contractual clauses (Art. 46(2)(c) GDPR). When preview pictures are loaded directly from platforms and websites (section 15) and when videos are played (section 16), their servers may also be located outside the EU.',
       ],
     },
     {
-      heading: '23. Storage periods',
+      heading: '24. Storage periods',
       blocks: [
         {
           list: [
             'Account, boards and content: as long as your account exists or until you delete them; deleted dishes, cooking entries and comments 30 days beyond that (sections 12 and 13).',
-            'Event log: indefinitely, without content; without your identifier once you delete your account (section 19).',
+            'Event log: indefinitely, without content; without your identifier once you delete your account (section 20).',
             'Session data: until the session expires or you sign out.',
             'Misuse counters: only for short time windows (section 10).',
             'Dish link cookie: at most one hour (section 9).',
             'Times of the suggestions to turn on: as long as your account exists (section 18).',
+            'Snackbert: whether you have an account there, for a day; whether you switched Snackbert on, until you switch it off; that and when you reported, as long as the cooking history entry exists (section 19).',
             'Push subscriptions: until you turn notifications off or the push service reports that they are no longer valid.',
             'Server logs of the host: only for as long as needed for error analysis and security, and then deleted automatically.',
           ],
@@ -211,33 +218,33 @@ const english: LegalText = {
       ],
     },
     {
-      heading: '24. Obligation to provide data and automated decisions',
+      heading: '25. Obligation to provide data and automated decisions',
       blocks: [
         'You are neither legally nor contractually obliged to provide data. Without the details needed for sign-in (sections 5 and 6), however, you cannot use the application. No automated decision-making, including profiling within the meaning of Art. 22 GDPR, takes place; the check against the access list is a pure access control.',
       ],
     },
     {
-      heading: '25. Your rights',
+      heading: '26. Your rights',
       blocks: [
         'You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18) and data portability (Art. 20 GDPR). You can delete your account yourself in your settings (section 12). You can withdraw a consent given at any time with effect for the future (Art. 7(3) GDPR); the lawfulness of processing carried out until then remains unaffected. To exercise the other rights, a message to the address in section 1 is sufficient.',
         '**Right to object (Art. 21 GDPR):** where processing is based on Art. 6(1)(f) GDPR, you may object to it at any time on grounds relating to your particular situation. We will then no longer process the data, unless we can demonstrate compelling legitimate grounds that override your interests, rights and freedoms, or the processing serves to assert, exercise or defend legal claims.',
       ],
     },
     {
-      heading: '26. Right to lodge a complaint',
+      heading: '27. Right to lodge a complaint',
       blocks: [
         'You have the right to lodge a complaint with a data protection supervisory authority (Art. 77 GDPR), in particular in the Member State of your habitual residence, your place of work or the place of the alleged infringement. The authority responsible for the controller is:',
         'Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen\nKavalleriestraße 2–4\n40213 Düsseldorf, Germany',
       ],
     },
     {
-      heading: '27. Data security',
+      heading: '28. Data security',
       blocks: [
         'The connection to the application is encrypted throughout with TLS (HTTPS). We take appropriate technical and organisational measures to protect your data against loss, misuse and unauthorised access.',
       ],
     },
     {
-      heading: '28. Changes and status',
+      heading: '29. Changes and status',
       blocks: [
         'This privacy policy is adapted when the application or the legal situation changes; the version published here applies. Status: November 2026.',
       ],
@@ -270,7 +277,7 @@ const italian: LegalText = {
       heading: '3. Hosting (Vercel)',
       blocks: [
         'L\'applicazione è ospitata da Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA. Alla chiamata dell\'applicazione, Vercel tratta nei log del server i dati di accesso tecnicamente necessari, tra cui indirizzo IP, data e ora della richiesta, l\'URL richiesto, il referrer e le informazioni su browser e sistema operativo. In questi log finiscono anche le segnalazioni tecniche di errore dell\'applicazione, ad esempio le segnalazioni del vostro browser su violazioni della politica di sicurezza dei contenuti (Content Security Policy); esse contengono l\'indirizzo della pagina richiamata senza parametri di ricerca, ma nessun contenuto.',
-        'Le attività quotidiane di pulizia e di invio dell\'applicazione passano per Vercel Cron. La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo a un funzionamento sicuro, stabile e privo di errori). Con Vercel è in essere un contratto di trattamento dei dati (art. 28 GDPR). Per il trasferimento negli USA vedi la sezione 22.',
+        'Le attività quotidiane di pulizia e di invio dell\'applicazione passano per Vercel Cron. La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo a un funzionamento sicuro, stabile e privo di errori). Con Vercel è in essere un contratto di trattamento dei dati (art. 28 GDPR). Per il trasferimento negli USA vedi la sezione 23.',
       ],
     },
     {
@@ -360,7 +367,7 @@ const italian: LegalText = {
             'Le vostre appartenenze, sessioni, account di accesso, abbonamenti push, il riepilogo via e-mail e i vostri dati utente vengono eliminati.',
             'Ciò che avete contribuito a board di altri (piatti, voci di cottura, commenti e voti) resta per gli altri membri, ma non è più assegnato a nessuna persona e compare come "Account eliminato".',
             'Le immagini usate solo da voi vengono rimosse. Una conferma va al vostro indirizzo e-mail.',
-            'Nel registro degli eventi (sezione 19) le voci restano senza il vostro identificativo.',
+            'Nel registro degli eventi (sezione 20) le voci restano senza il vostro identificativo.',
           ],
         },
         'La base giuridica è l\'art. 6, par. 1, lett. b) GDPR (conclusione del rapporto d\'uso).',
@@ -410,41 +417,48 @@ const italian: LegalText = {
       ],
     },
     {
-      heading: '19. Registro degli eventi e gestore',
+      heading: '19. Snackbert',
       blocks: [
-        'L\'applicazione tiene un **registro degli eventi**: una voce per ogni azione sulle board e intorno al vostro account. Ne fanno parte, ad esempio, che una board è stata creata, un piatto aggiunto, spostato, copiato o archiviato, un commento scritto, un voto espresso o un link a un piatto aperto; inoltre la vostra registrazione e ogni accesso con la sua modalità, le modifiche di nome utente, immagine del profilo e lingua, l\'attivazione e la disattivazione delle notifiche push e del riepilogo via e-mail, i suggerimenti per attivarle mostrati e le risposte date, ogni notifica push inviata (per dispositivo, con l\'esito della consegna) e ogni riepilogo via e-mail inviato, e l\'eliminazione di un account. Una voce contiene solo l\'orario, il tipo di azione, gli identificativi (della board, del piatto, della persona coinvolta, del commento) e alcuni dettagli non di contenuto, come il tipo di fonte di un piatto, la modalità di accesso o se un link a un piatto è stato aperto da una persona che aveva effettuato l\'accesso. Non contiene di per sé titoli, testi di commenti, nomi, indirizzi e-mail, indirizzi IP o link. Le voci non vengono eliminate; il vostro identificativo lo rimuoviamo quando eliminate il vostro account.',
+        'Se avete un account su **Snackbert**, l\'app privata per l\'alimentazione dello stesso gestore, potete attivare Snackbert nelle impostazioni (disattivato di default). Affinché l\'interruttore compaia solo in quel caso, malkochen chiede a Snackbert, con il vostro indirizzo e-mail, se lì esiste un account corrispondente, e ricorda la risposta per un giorno (art. 6, par. 1, lett. f) GDPR). Una volta attivato, potete segnalare a Snackbert un piatto cucinato: vengono allora inviati a Snackbert il vostro indirizzo e-mail, i dati del piatto (titolo, link della fonte, piattaforma, canale o blog, descrizione, immagine, momento in cui è stato cucinato) e ciò che aggiungete voi (una foto della vostra porzione, una registrazione vocale, un breve testo). malkochen non ne conserva nulla, solo il fatto e il momento della segnalazione. Snackbert funziona su Google Firebase e analizza la segnalazione con Gemini, entrambi presso Google Ireland Limited, con trattamento nell\'UE. La base giuridica è il vostro consenso (art. 6, par. 1, lett. a) GDPR). Se disattivate Snackbert, non viene più inviato nulla; con ciò revocate il consenso per il futuro.',
+      ],
+    },
+    {
+      heading: '20. Registro degli eventi e gestore',
+      blocks: [
+        'L\'applicazione tiene un **registro degli eventi**: una voce per ogni azione sulle board e intorno al vostro account. Ne fanno parte, ad esempio, che una board è stata creata, un piatto aggiunto, spostato, copiato o archiviato, un commento scritto, un voto espresso o un link a un piatto aperto; inoltre la vostra registrazione e ogni accesso con la sua modalità, le modifiche di nome utente, immagine del profilo e lingua, l\'attivazione e la disattivazione delle notifiche push, del riepilogo via e-mail e di Snackbert, i suggerimenti per attivarle mostrati e le risposte date, ogni notifica push inviata (per dispositivo, con l\'esito della consegna) e ogni riepilogo via e-mail inviato, e l\'eliminazione di un account. Una voce contiene solo l\'orario, il tipo di azione, gli identificativi (della board, del piatto, della persona coinvolta, del commento) e alcuni dettagli non di contenuto, come il tipo di fonte di un piatto, la modalità di accesso o se un link a un piatto è stato aperto da una persona che aveva effettuato l\'accesso. Non contiene di per sé titoli, testi di commenti, nomi, indirizzi e-mail, indirizzi IP o link. Le voci non vengono eliminate; il vostro identificativo lo rimuoviamo quando eliminate il vostro account.',
         'Il **gestore**, che amministra l\'applicazione, può aprire ogni board e fare lì tutto ciò che può fare il suo proprietario, senza comparire come membro; ciò che vi aggiunge compare con il suo nome utente. Nella pagina di amministrazione vede il registro degli eventi con i nomi delle persone, delle board e dei piatti e i testi dei commenti così come sono **ora**: ciò che è stato eliminato compare come eliminato, un account eliminato come "Account eliminato", e le versioni precedenti non vengono conservate. Vede inoltre conteggi come le registrazioni per giorno e modalità, il numero di persone attive e di eventi per tipo, e i volumi di archiviazione, e-mail e chiamate rispetto ai piani gratuiti dei servizi. Questo serve ad aiutare le persone che lo chiedono e a riconoscere gli abusi, tanto più che con la registrazione aperta attiva (sezione 7) ci si può registrare anche senza invito. La base giuridica è l\'art. 6, par. 1, lett. f) GDPR (interesse legittimo a un funzionamento sicuro, all\'aiuto in caso di problemi e al riconoscimento degli abusi).',
       ],
     },
     {
-      heading: '20. Caratteri, simboli e tracciamento',
+      heading: '21. Caratteri, simboli e tracciamento',
       blocks: [
         'I caratteri (Petrona, Figtree) vengono forniti ospitati in autonomia; **non** viene stabilita alcuna connessione a Google Fonts. Simboli, illustrazioni e animazioni sono integrati nell\'applicazione e non vengono caricati da servizi esterni. Non si utilizzano servizi di analisi, tracciamento o pubblicità, e non avviene alcuna profilazione. Un banner dei cookie non è quindi necessario.',
       ],
     },
     {
-      heading: '21. Destinatari',
+      heading: '22. Destinatari',
       blocks: [
-        'I vostri dati non vengono venduti né trasmessi a fini pubblicitari. Destinatari sono esclusivamente i fornitori di servizi indicati in questa informativa nella misura descritta, i membri delle board di cui fate parte (sezione 11), le persone a cui un membro invia un link a un piatto, nella misura della sezione 11, e il gestore nella misura della sezione 19. I dati vengono trasmessi alle autorità solo quando vi è un obbligo di legge.',
+        'I vostri dati non vengono venduti né trasmessi a fini pubblicitari. Destinatari sono esclusivamente i fornitori di servizi indicati in questa informativa nella misura descritta, i membri delle board di cui fate parte (sezione 11), le persone a cui un membro invia un link a un piatto, nella misura della sezione 11, e il gestore nella misura della sezione 20. I dati vengono trasmessi alle autorità solo quando vi è un obbligo di legge.',
       ],
     },
     {
-      heading: '22. Trasferimenti verso paesi terzi',
+      heading: '23. Trasferimenti verso paesi terzi',
       blocks: [
         'Vercel, Neon, Google, Resend e (con le notifiche push attive) Mozilla o Microsoft sono, o appartengono a, società con sede negli USA. Ove dati personali vengano trasferiti negli USA, ciò si basa sulla decisione di adeguatezza della Commissione UE per il Data Privacy Framework UE-USA (art. 45 GDPR), se il rispettivo fornitore è certificato, e per il resto sulle clausole contrattuali tipo della Commissione UE (art. 46, par. 2, lett. c) GDPR). Quando le anteprime delle immagini vengono caricate direttamente da piattaforme e siti (sezione 15) e quando vengono riprodotti i video (sezione 16), anche i loro server possono trovarsi al di fuori dell\'UE.',
       ],
     },
     {
-      heading: '23. Durata della conservazione',
+      heading: '24. Durata della conservazione',
       blocks: [
         {
           list: [
             'Account, board e contenuti: finché il vostro account esiste o fino alla loro eliminazione; piatti, voci di cottura e commenti eliminati per altri 30 giorni (sezioni 12 e 13).',
-            'Registro degli eventi: a tempo indeterminato, senza contenuto; senza il vostro identificativo dopo l\'eliminazione del vostro account (sezione 19).',
+            'Registro degli eventi: a tempo indeterminato, senza contenuto; senza il vostro identificativo dopo l\'eliminazione del vostro account (sezione 20).',
             'Dati di sessione: fino alla scadenza della sessione o alla disconnessione.',
             'Contatori di abuso: solo per brevi finestre temporali (sezione 10).',
             'Cookie del link al piatto: al massimo un\'ora (sezione 9).',
             'Momenti dei suggerimenti per attivarle: finché il vostro account esiste (sezione 18).',
+            'Snackbert: se avete un account lì, per un giorno; se avete attivato Snackbert, finché non lo disattivate; il fatto e il momento di una segnalazione, finché esiste la voce della cronologia delle cotture (sezione 19).',
             'Abbonamenti push: finché disattivate le notifiche o il servizio push segnala che non sono più validi.',
             'Log del server dell\'host: solo per il tempo necessario all\'analisi degli errori e alla sicurezza, poi eliminati automaticamente.',
           ],
@@ -452,33 +466,33 @@ const italian: LegalText = {
       ],
     },
     {
-      heading: '24. Obbligo di fornire dati e decisioni automatizzate',
+      heading: '25. Obbligo di fornire dati e decisioni automatizzate',
       blocks: [
         'Non siete obbligati né per legge né per contratto a fornire dati. Senza i dati necessari per l\'accesso (sezioni 5 e 6), tuttavia, non potete usare l\'applicazione. Non avviene alcun processo decisionale automatizzato, compresa la profilazione ai sensi dell\'art. 22 GDPR; il controllo rispetto alla lista di accesso è un puro controllo degli accessi.',
       ],
     },
     {
-      heading: '25. I vostri diritti',
+      heading: '26. I vostri diritti',
       blocks: [
         'Avete il diritto di accesso (art. 15), rettifica (art. 16), cancellazione (art. 17), limitazione del trattamento (art. 18) e portabilità dei dati (art. 20 GDPR). Potete eliminare da soli il vostro account nelle impostazioni (sezione 12). Un consenso prestato può essere revocato in qualsiasi momento con effetto per il futuro (art. 7, par. 3 GDPR); la liceità del trattamento effettuato fino ad allora resta impregiudicata. Per esercitare gli altri diritti è sufficiente un messaggio all\'indirizzo indicato nella sezione 1.',
         '**Diritto di opposizione (art. 21 GDPR):** ove il trattamento si basi sull\'art. 6, par. 1, lett. f) GDPR, potete opporvi in qualsiasi momento per motivi legati alla vostra situazione particolare. Non trattiamo più i dati, salvo che possiamo dimostrare motivi legittimi cogenti che prevalgono sui vostri interessi, diritti e libertà, oppure il trattamento serva a far valere, esercitare o difendere diritti in sede giudiziaria.',
       ],
     },
     {
-      heading: '26. Diritto di reclamo',
+      heading: '27. Diritto di reclamo',
       blocks: [
         'Avete il diritto di proporre reclamo a un\'autorità di controllo per la protezione dei dati (art. 77 GDPR), in particolare nello Stato membro della vostra residenza abituale, del vostro luogo di lavoro o del luogo della presunta violazione. L\'autorità competente per il titolare è:',
         'Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen\nKavalleriestraße 2–4\n40213 Düsseldorf, Germania',
       ],
     },
     {
-      heading: '27. Sicurezza dei dati',
+      heading: '28. Sicurezza dei dati',
       blocks: [
         'La connessione all\'applicazione è cifrata per l\'intero percorso con TLS (HTTPS). Adottiamo misure tecniche e organizzative adeguate per proteggere i vostri dati da perdita, abuso e accesso non autorizzato.',
       ],
     },
     {
-      heading: '28. Modifiche e stato',
+      heading: '29. Modifiche e stato',
       blocks: [
         'La presente informativa sulla privacy viene adeguata quando cambiano l\'applicazione o la situazione giuridica; vale la versione pubblicata qui. Stato: novembre 2026.',
       ],
@@ -511,7 +525,7 @@ export const datenschutz: LegalText[] = [
         heading: '3. Hosting (Vercel)',
         blocks: [
           'Die Anwendung wird bei der Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA, gehostet. Beim Aufruf verarbeitet Vercel technisch notwendige Zugriffsdaten in Server-Logs, darunter IP-Adresse, Datum und Uhrzeit der Anfrage, die angefragte URL, den Referrer sowie Browser- und Betriebssystem-Angaben. Ebenfalls in diesen Logs landen technische Fehlermeldungen der Anwendung, etwa Berichte Ihres Browsers über Verstöße gegen die Sicherheitsrichtlinie (Content Security Policy); diese enthalten die aufgerufene Seitenadresse ohne Suchparameter, aber keine Inhalte.',
-          'Die täglichen Aufräum- und Versandaufgaben der Anwendung laufen über Vercel Cron. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, stabilen und fehlerfreien Betrieb). Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO). Zur Übermittlung in die USA siehe Abschnitt 22.',
+          'Die täglichen Aufräum- und Versandaufgaben der Anwendung laufen über Vercel Cron. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, stabilen und fehlerfreien Betrieb). Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO). Zur Übermittlung in die USA siehe Abschnitt 23.',
         ],
       },
       {
@@ -601,7 +615,7 @@ export const datenschutz: LegalText[] = [
               'Ihre Mitgliedschaften, Sitzungen, Anmeldungen, Push-Abonnements, die E-Mail-Zusammenfassung und Ihre Benutzerdaten werden gelöscht.',
               'Was Sie zu Boards anderer beigetragen haben (Gerichte, Kochverlauf-Einträge, Kommentare und Stimmen), bleibt für die übrigen Mitglieder erhalten, ist aber keiner Person mehr zugeordnet und erscheint als „Gelöschtes Konto“.',
               'Bilder, die nur Sie verwendet haben, werden entfernt. Eine Bestätigung geht an Ihre E-Mail-Adresse.',
-              'Im Ereignisprotokoll (Abschnitt 19) bleiben die Einträge ohne Ihre Kennung.',
+              'Im Ereignisprotokoll (Abschnitt 20) bleiben die Einträge ohne Ihre Kennung.',
             ],
           },
           'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Beendigung des Nutzungsverhältnisses).',
@@ -651,41 +665,48 @@ export const datenschutz: LegalText[] = [
         ],
       },
       {
-        heading: '19. Ereignisprotokoll und Betreiber',
+        heading: '19. Snackbert',
         blocks: [
-          'Die Anwendung führt ein **Ereignisprotokoll**: einen Eintrag je Vorgang auf Boards und rund um Ihr Konto. Dazu gehören etwa, dass ein Board angelegt, ein Gericht hinzugefügt, verschoben, kopiert oder archiviert, ein Kommentar geschrieben, eine Stimme abgegeben oder ein Gericht-Link geöffnet wurde; außerdem Ihre Registrierung und jede Anmeldung mit dem Anmeldeweg, Änderungen von Benutzername, Profilbild und Sprache, das Ein- und Ausschalten von Push-Benachrichtigungen und E-Mail-Zusammenfassung, angezeigte und beantwortete Hinweise zum Einschalten, jede versandte Push-Benachrichtigung (je Gerät, mit dem Ergebnis der Zustellung) und E-Mail-Zusammenfassung sowie die Löschung eines Kontos. Ein Eintrag enthält nur Zeitpunkt, Art des Vorgangs, Kennungen (des Boards, des Gerichts, der beteiligten Person, des Kommentars) und einige nicht inhaltliche Angaben, etwa die Art der Quelle eines Gerichts, den Anmeldeweg oder ob ein Gericht-Link von einer angemeldeten Person geöffnet wurde. Er enthält selbst keine Titel, Kommentartexte, Namen, E-Mail-Adressen, IP-Adressen oder Links. Die Einträge werden nicht gelöscht; Ihre Kennung entfernen wir, wenn Sie Ihr Konto löschen.',
+          'Haben Sie ein Konto bei **Snackbert**, der privaten Ernährungs-App desselben Betreibers, können Sie Snackbert in Ihren Einstellungen einschalten (standardmäßig aus). Damit der Schalter nur dann erscheint, fragt malkochen Snackbert mit Ihrer E-Mail-Adresse, ob es dort ein Konto dazu gibt, und merkt sich die Antwort einen Tag lang (Art. 6 Abs. 1 lit. f DSGVO). Eingeschaltet können Sie ein gekochtes Gericht an Snackbert melden: Dann gehen Ihre E-Mail-Adresse, die Angaben zum Gericht (Titel, Quell-Link, Plattform, Kanal bzw. Blog, Beschreibung, Bild, Zeitpunkt des Kochens) und was Sie selbst hinzufügen (ein Foto Ihrer Portion, eine Sprachaufnahme, ein kurzer Text) an Snackbert. malkochen speichert davon nichts, nur dass und wann Sie gemeldet haben. Snackbert läuft auf Google Firebase und wertet die Meldung mit Gemini aus, beides bei Google Ireland Limited mit Verarbeitung in der EU. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Schalten Sie Snackbert aus, wird nichts mehr gesendet; damit widerrufen Sie Ihre Einwilligung für die Zukunft.',
+        ],
+      },
+      {
+        heading: '20. Ereignisprotokoll und Betreiber',
+        blocks: [
+          'Die Anwendung führt ein **Ereignisprotokoll**: einen Eintrag je Vorgang auf Boards und rund um Ihr Konto. Dazu gehören etwa, dass ein Board angelegt, ein Gericht hinzugefügt, verschoben, kopiert oder archiviert, ein Kommentar geschrieben, eine Stimme abgegeben oder ein Gericht-Link geöffnet wurde; außerdem Ihre Registrierung und jede Anmeldung mit dem Anmeldeweg, Änderungen von Benutzername, Profilbild und Sprache, das Ein- und Ausschalten von Push-Benachrichtigungen, E-Mail-Zusammenfassung und Snackbert, angezeigte und beantwortete Hinweise zum Einschalten, jede versandte Push-Benachrichtigung (je Gerät, mit dem Ergebnis der Zustellung) und E-Mail-Zusammenfassung sowie die Löschung eines Kontos. Ein Eintrag enthält nur Zeitpunkt, Art des Vorgangs, Kennungen (des Boards, des Gerichts, der beteiligten Person, des Kommentars) und einige nicht inhaltliche Angaben, etwa die Art der Quelle eines Gerichts, den Anmeldeweg oder ob ein Gericht-Link von einer angemeldeten Person geöffnet wurde. Er enthält selbst keine Titel, Kommentartexte, Namen, E-Mail-Adressen, IP-Adressen oder Links. Die Einträge werden nicht gelöscht; Ihre Kennung entfernen wir, wenn Sie Ihr Konto löschen.',
           'Der **Betreiber**, der die Anwendung verwaltet, kann jedes Board öffnen und dort alles tun, was dessen Besitzerin oder Besitzer kann, ohne als Mitglied aufzutreten; was er dort hinzufügt, erscheint unter seinem Benutzernamen. Auf der Verwaltungsseite sieht er das Ereignisprotokoll mit den Namen der Personen, Boards und Gerichte sowie den Kommentartexten so, wie sie **jetzt** sind: Gelöschtes erscheint als gelöscht, ein gelöschtes Konto als „Gelöschtes Konto“, frühere Fassungen werden nicht aufbewahrt. Daneben sieht er Zählwerte wie Anmeldungen je Tag und Anmeldeweg, die Zahl aktiver Personen und der Ereignisse je Art sowie Speicher-, E-Mail- und Aufrufmengen gegenüber den kostenlosen Kontingenten der Dienste. Das dient dazu, Personen auf Nachfrage zu helfen und Missbrauch zu erkennen, zumal man sich bei eingeschalteter offener Registrierung (Abschnitt 7) auch ohne Einladung registrieren kann. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am sicheren Betrieb, an Hilfe bei Problemen und an der Erkennung von Missbrauch).',
         ],
       },
       {
-        heading: '20. Schriftarten, Symbole und Tracking',
+        heading: '21. Schriftarten, Symbole und Tracking',
         blocks: [
           'Die Schriftarten (Petrona, Figtree) werden selbst gehostet ausgeliefert; es wird **keine** Verbindung zu Google Fonts hergestellt. Symbole, Illustrationen und Animationen sind fest in die Anwendung eingebunden und werden nicht von externen Diensten nachgeladen. Es kommen keine Analyse-, Tracking- oder Werbedienste zum Einsatz und es findet kein Profiling statt. Ein Cookie-Banner ist daher nicht erforderlich.',
         ],
       },
       {
-        heading: '21. Empfänger',
+        heading: '22. Empfänger',
         blocks: [
-          'Ihre Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang, die Mitglieder der Boards, denen Sie angehören (Abschnitt 11), Personen, denen ein Mitglied einen Gericht-Link schickt, im Umfang von Abschnitt 11, und der Betreiber im Umfang von Abschnitt 19. Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht.',
+          'Ihre Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang, die Mitglieder der Boards, denen Sie angehören (Abschnitt 11), Personen, denen ein Mitglied einen Gericht-Link schickt, im Umfang von Abschnitt 11, und der Betreiber im Umfang von Abschnitt 20. Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht.',
         ],
       },
       {
-        heading: '22. Übermittlung in Drittländer',
+        heading: '23. Übermittlung in Drittländer',
         blocks: [
           'Vercel, Neon, Google, Resend sowie (bei aktivierten Push-Benachrichtigungen) Mozilla bzw. Microsoft sind bzw. gehören zu Unternehmen mit Sitz in den USA. Soweit dabei personenbezogene Daten in die USA übermittelt werden, stützt sich dies auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework (Art. 45 DSGVO), soweit der jeweilige Anbieter danach zertifiziert ist, und im Übrigen auf die Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO). Beim Laden von Vorschaubildern direkt von Plattformen und Websites (Abschnitt 15) sowie beim Abspielen von Videos (Abschnitt 16) können deren Server ebenfalls außerhalb der EU stehen.',
         ],
       },
       {
-        heading: '23. Speicherdauer',
+        heading: '24. Speicherdauer',
         blocks: [
           {
             list: [
               'Konto, Boards und Inhalte: solange Ihr Konto besteht bzw. bis Sie sie löschen; gelöschte Gerichte, Kochverlauf-Einträge und Kommentare 30 Tage darüber hinaus (Abschnitte 12 und 13).',
-              'Ereignisprotokoll: dauerhaft, ohne Inhalt; ohne Ihre Kennung, wenn Sie Ihr Konto löschen (Abschnitt 19).',
+              'Ereignisprotokoll: dauerhaft, ohne Inhalt; ohne Ihre Kennung, wenn Sie Ihr Konto löschen (Abschnitt 20).',
               'Sitzungsdaten: bis zum Ablauf der Sitzung bzw. bis zum Abmelden.',
               'Missbrauchszähler: nur für kurze Zeitfenster (Abschnitt 10).',
               'Gericht-Link-Cookie: höchstens eine Stunde (Abschnitt 9).',
               'Zeitpunkte der Hinweise zum Einschalten: solange Ihr Konto besteht (Abschnitt 18).',
+              'Snackbert: ob Sie dort ein Konto haben, einen Tag lang; ob Sie Snackbert eingeschaltet haben, bis Sie es ausschalten; dass und wann Sie gemeldet haben, solange der Kochverlauf-Eintrag besteht (Abschnitt 19).',
               'Push-Abonnements: bis Sie die Benachrichtigungen abschalten oder der Push-Dienst meldet, dass sie nicht mehr gültig sind.',
               'Server-Logs des Hosters: nur so lange, wie es zur Fehleranalyse und Sicherheit erforderlich ist, und danach automatisch gelöscht.',
             ],
@@ -693,33 +714,33 @@ export const datenschutz: LegalText[] = [
         ],
       },
       {
-        heading: '24. Pflicht zur Bereitstellung und automatisierte Entscheidungen',
+        heading: '25. Pflicht zur Bereitstellung und automatisierte Entscheidungen',
         blocks: [
           'Sie sind weder gesetzlich noch vertraglich verpflichtet, Daten bereitzustellen. Ohne die für die Anmeldung nötigen Angaben (Abschnitte 5 und 6) können Sie die Anwendung jedoch nicht nutzen. Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt; der Abgleich mit der Zugangsliste ist eine reine Zugangskontrolle.',
         ],
       },
       {
-        heading: '25. Ihre Rechte',
+        heading: '26. Ihre Rechte',
         blocks: [
           'Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18) und Datenübertragbarkeit (Art. 20 DSGVO). Ihr Konto können Sie in Ihren Einstellungen selbst löschen (Abschnitt 12). Eine erteilte Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3 DSGVO); die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Zur Ausübung der übrigen Rechte genügt eine Nachricht an die in Abschnitt 1 genannte Adresse.',
           '**Widerspruchsrecht (Art. 21 DSGVO):** Soweit eine Verarbeitung auf Art. 6 Abs. 1 lit. f DSGVO beruht, können Sie ihr aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit widersprechen. Wir verarbeiten die Daten dann nicht mehr, es sei denn, wir können zwingende schutzwürdige Gründe nachweisen, die Ihre Interessen, Rechte und Freiheiten überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen.',
         ],
       },
       {
-        heading: '26. Beschwerderecht',
+        heading: '27. Beschwerderecht',
         blocks: [
           'Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), insbesondere in dem Mitgliedstaat Ihres Aufenthaltsorts, Ihres Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Für den Verantwortlichen zuständig ist:',
           'Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen\nKavalleriestraße 2–4\n40213 Düsseldorf',
         ],
       },
       {
-        heading: '27. Datensicherheit',
+        heading: '28. Datensicherheit',
         blocks: [
           'Die Verbindung zur Anwendung ist durchgehend per TLS (HTTPS) verschlüsselt. Wir treffen angemessene technische und organisatorische Maßnahmen, um Ihre Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen.',
         ],
       },
       {
-        heading: '28. Änderungen und Stand',
+        heading: '29. Änderungen und Stand',
         blocks: [
           'Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: November 2026.',
         ],

@@ -6,7 +6,8 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // Your own settings (PRD stories 73–75), in a sheet over the Board (#210),
 // from 768px on its right edge (#283):
 // your Username, the Google account you're signed in with and your Profile
-// Picture, Darstellung, Sprache (LanguagePicker), the
+// Picture, Darstellung, Sprache (LanguagePicker), Snackbert for those with a
+// Snackbert account (#423), the
 // Board's keyboard shortcuts (where there's a keyboard and mouse),
 // "Rundgang starten", which starts the Tour again (`startTour`: the Board
 // closes the sheet and starts it), signing out and "Konto löschen"; then,
@@ -46,6 +47,15 @@ const pushMessage = computed(() => {
 // it is read again whenever the sheet opens, in case it was switched
 // elsewhere.
 const digest = useEmailDigest()
+// Snackbert (#423): only for people with a Snackbert account, so it is read
+// again whenever the sheet opens, like the digest.
+const snackbert = useSnackbert()
+const snackbertMessage = computed(() => {
+  if (snackbert.problem.value === 'noAccount') return t.snackbert.noAccount
+  if (snackbert.problem.value === 'unreachable') return t.snackbert.unreachable
+  if (snackbert.problem.value === 'failed') return t.snackbert.failed
+  return ''
+})
 
 // Opened again, it starts from the Username you have, not from what was
 // typed and left unsaved.
@@ -58,6 +68,7 @@ watch(open, (isOpen) => {
   if (!isOpen) return
   void push.refresh()
   void digest.refresh()
+  void snackbert.refresh()
 }, { immediate: true })
 
 // Your own Profile Picture: a picked photo is uploaded (checked, cut square
@@ -320,6 +331,40 @@ async function deleteAccount() {
               class="text-small text-danger empty:hidden"
             >{{ digest.failed.value ? t.emailDigest.failed : '' }}</p>
           </template>
+        </div>
+      </section>
+
+      <section
+        v-if="snackbert.available.value"
+        class="flex flex-col gap-3"
+        aria-labelledby="settings-snackbert"
+      >
+        <h3
+          id="settings-snackbert"
+          class="section-heading px-1"
+        >
+          {{ t.snackbert.heading }}
+        </h3>
+        <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
+          <p class="text-small text-text-muted">
+            {{ t.snackbert.consent }}
+            <NuxtLink
+              to="/datenschutz"
+              class="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
+            >{{ t.snackbert.privacyLink }}</NuxtLink>
+          </p>
+          <SettingsSwitch
+            :label="t.snackbert.toggle"
+            :hint="t.snackbert.hint"
+            :checked="snackbert.on.value === true"
+            :busy="snackbert.busy.value || snackbert.on.value === null"
+            :disabled="snackbert.busy.value || snackbert.on.value === null || snackbert.problem.value === 'noAccount'"
+            @toggle="snackbert.turn(!snackbert.on.value)"
+          />
+          <p
+            :role="snackbert.problem.value ? 'alert' : 'status'"
+            class="text-small text-danger empty:hidden"
+          >{{ snackbertMessage }}</p>
         </div>
       </section>
 
