@@ -384,17 +384,20 @@ test('a Board opened on the device opens cold offline, its Dish and the switcher
 
   // The app opened cold with no connection starts on that Board.
   await context.setOffline(true)
+  // Each cold open reads the development server's many files back from the
+  // device, which takes its time on a slow machine.
+  const cold = { timeout: 20_000 }
   await page.goto('/')
-  await expect(page).toHaveURL(new RegExp(`/b/${board.slug}$`))
-  await expect(titles(page, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+  await expect(page).toHaveURL(new RegExp(`/b/${board.slug}$`), cold)
+  await expect(titles(page, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'], cold)
   await expect(offlineBar(page)).toBeVisible()
 
   // Its Address, and a Dish's, open it from the device.
   await page.goto(`/b/${board.slug}`)
-  await expect(titles(page, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+  await expect(titles(page, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'], cold)
   await page.goto(dishUrl)
   const offlineDetail = page.getByRole('dialog', { name: 'Linsensuppe' })
-  await expect(offlineDetail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible()
+  await expect(offlineDetail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible(cold)
   // Its History was kept, and opening it offline doesn't open it.
   await expect(offlineDetail.locator('[data-dish-history]')).toBeVisible()
   await offlineDetail.getByRole('button', { name: 'Schließen' }).first().click()
@@ -404,7 +407,7 @@ test('a Board opened on the device opens cold offline, its Dish and the switcher
   await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'])
   await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
   await page.reload()
-  await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'])
+  await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'], cold)
   await expect(titles(page, 'Ideen')).toHaveText(['Linsensuppe'])
   await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
 
@@ -531,6 +534,16 @@ test('a Comment written offline on a Dish whose History was loaded reaches anoth
 test('a title edited offline shows at once, the rest of the form is greyed out, and the title reaches another Member', async ({ page, browser, context }) => {
   test.slow()
   const { other } = await boardWithTwoMembers(page, browser)
+
+  // A Dish's detail is opened once with a connection, so the page's files
+  // are there. The app fetches them by itself a moment after a Board opens
+  // (service-worker.client.ts), which a slow machine hasn't finished by the
+  // time the test goes offline.
+  await page.getByRole('link', { name: 'Linsensuppe' }).click()
+  const first = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(first.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible()
+  await first.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(first).toBeHidden()
 
   await context.setOffline(true)
   await expect(offlineBar(page)).toBeVisible()
