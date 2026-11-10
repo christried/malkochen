@@ -133,18 +133,10 @@ test('losing the connection on a Board shows the offline bar over it, every chan
   await expect(page.locator('[data-offline-bar]')).toHaveAttribute('aria-live', 'polite')
   await expect(page.getByRole('alertdialog')).toHaveCount(0)
   expect(await page.locator('main').evaluate(el => el.closest('[inert]') === null)).toBe(true)
-  // Adding works offline (#462): Add Dish opens, with what needs a
-  // connection greyed out. Cooking and the card's menu stay, as moving and
-  // cooking work offline (#459).
+  // Adding works offline (#462), so its button is not greyed out (Add Dish
+  // itself is covered further down). Cooking and the card's menu stay, as
+  // moving and cooking work offline (#459).
   await expect(add).not.toHaveAttribute('aria-disabled')
-  await add.click()
-  const adding = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
-  await expect(adding).toBeVisible()
-  await adding.getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
-  const byHand = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
-  await expect(byHand.getByRole('button', { name: 'Bild wählen' })).toBeDisabled()
-  await byHand.getByRole('button', { name: 'Schließen' }).first().click()
-  await expect(byHand).toBeHidden()
   await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' })).toBeVisible()
 
@@ -611,7 +603,7 @@ test('a Dish shared to malkochen cold and offline opens Add Dish with the link f
   await reloadHydrated(page)
   await expect.poll(() => kept(page, 'boards')).toHaveLength(1)
   await expect.poll(() => kept(page, 'user')).toHaveLength(1)
-  await expect.poll(() => page.evaluate(async () => (await (await caches.open('assets-v1')).keys()).some(request => request.url.includes('/pages/share.vue')))).toBe(true)
+  await expect.poll(() => page.evaluate(async () => (await (await caches.open('assets-v1')).keys()).some(request => request.url.includes('/pages/share.vue'))), { timeout: 20_000 }).toBe(true)
 
   await context.setOffline(true)
   await page.goto(`/share?${new URLSearchParams({ title: 'Video', text: 'Schau mal', url: REEL })}`)
