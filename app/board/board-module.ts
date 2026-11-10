@@ -446,9 +446,17 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     for (const { dish } of unsent.takeArrivals(board.value.id)) {
       const { placement: _, imageNotStored: __, duplicateOf: ___, cookings: ____, votes: _____, commentCount: ______, ...fields } = dish
       const shown = find(dish.id)?.dish
-      if (shown) Object.assign(shown, fields)
+      if (!shown) continue
+      // The code it was shown with still leads to it (an open detail).
+      arrivedCodes.set(shown.code, shown.id)
+      Object.assign(shown, fields)
     }
   }
+  const arrivedCodes = reactive(new Map<string, string>())
+
+  // The id of the Dish that was added offline, shown with `code` until it
+  // arrived; null for any other code.
+  const arrivedAs = (code: string): string | null => arrivedCodes.get(code) ?? null
 
   // Changes malkochen couldn't apply were dropped: a Dish added offline goes
   // from the Board, and the Comments among them from the open Dish History.
@@ -1160,7 +1168,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, takeArrivals, ...histories, ...votes, droppedChanges }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

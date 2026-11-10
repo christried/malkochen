@@ -2,6 +2,7 @@ import type { Page, Route } from '@playwright/test'
 import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED, E2E_ORIGIN } from '../support/test-auth-env'
 import { TOUR_VERSION } from '../../app/tour/tour'
+import { PASTA_TIKTOK, REEL } from '../support/source-lookup-fixtures'
 import { signIn } from './auth'
 import { moving } from './clips'
 import { titles } from './board'
@@ -132,14 +133,17 @@ test('losing the connection on a Board shows the offline bar over it, every chan
   await expect(page.locator('[data-offline-bar]')).toHaveAttribute('aria-live', 'polite')
   await expect(page.getByRole('alertdialog')).toHaveCount(0)
   expect(await page.locator('main').evaluate(el => el.closest('[inert]') === null)).toBe(true)
-  // Adding is greyed out and says why; cooking and the card's menu stay,
-  // as moving and cooking work offline (#459).
-  await expect(add).toHaveAttribute('aria-disabled', 'true')
-  await expect(add).toHaveAttribute('data-tooltip', NEEDS_NET)
-  // Playwright never clicks a button that says it is disabled; a finger can.
-  await add.dispatchEvent('click')
-  await expect(page.getByRole('status').filter({ hasText: NEEDS_NET })).toBeVisible()
-  await expect(page.getByRole('dialog', { name: 'Gericht hinzufügen' })).toBeHidden()
+  // Adding works offline (#462): Add Dish opens, with what needs a
+  // connection greyed out. Cooking and the card's menu stay, as moving and
+  // cooking work offline (#459).
+  await expect(add).not.toHaveAttribute('aria-disabled')
+  await add.click()
+  const adding = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
+  await expect(adding).toBeVisible()
+  await adding.getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
+  await expect(adding.getByRole('button', { name: 'Bild wählen' })).toBeDisabled()
+  await adding.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(adding).toBeHidden()
   await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' })).toBeVisible()
 
@@ -550,6 +554,79 @@ test('a title edited offline shows at once, the rest of the form is greyed out, 
   await context.setOffline(false)
   await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
   await expect(titles(other, 'Ideen')).toHaveText(['Pasta al limone', 'Linsensuppe'], { timeout: 15_000 })
+})
+
+// Adding a Dish offline (#462): from a link, with or without a title, or by
+// hand. It shows at once, marked "Noch nicht gesendet", with the Placeholder
+// Image and the link's site; the server looks the link up once it arrives
+// (the test server knows the links in tests/support/source-lookup-fixtures.ts).
+test('a Dish added offline by link without a title shows at once and marked, and once back it is looked up and reaches another Member', async ({ page, browser, context }) => {
+  test.slow()
+  const { other } = await boardWithTwoMembers(page, browser)
+
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+  await page.getByRole('button', { name: 'Gericht hinzufügen' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
+  await sheet.getByLabel('Link').fill(PASTA_TIKTOK)
+
+  // Nothing is looked up; a title is optional; what needs a connection is greyed out.
+  await expect(sheet.getByText('Kein Netz. Der Link wird nachgeschaut, sobald wieder Netz da ist.')).toBeVisible()
+  await expect(sheet.getByLabel('Titel (kann leer bleiben)')).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Bild wählen' })).toBeDisabled()
+  await sheet.getByRole('button', { name: 'Speichern' }).click()
+  await expect(sheet).toBeHidden()
+
+  await expect(titles(page, 'Ideen')).toHaveText(['tiktok.com', 'Pasta', 'Linsensuppe'])
+  const unsentCard = page.getByRole('article', { name: 'tiktok.com' })
+  await expect(unsentCard.getByText('Noch nicht gesendet')).toBeVisible()
+  await expect(unsentCard.locator('[data-dish-image]')).toHaveCount(0)
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+  await expect(titles(other, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+
+  await context.setOffline(false)
+
+  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
+  await expect(titles(page, 'Ideen')).toHaveText(['Cremige Pilzpasta', 'Pasta', 'Linsensuppe'])
+  const arrived = page.getByRole('article', { name: 'Cremige Pilzpasta' })
+  await expect(arrived.getByText('Noch nicht gesendet')).toHaveCount(0)
+  await expect(arrived.getByText('@mara.kocht')).toBeVisible()
+  await expect(arrived.locator('[data-dish-image]')).toHaveAttribute('src', /\/images\/dishes\//)
+  await expect(titles(other, 'Ideen')).toHaveText(['Cremige Pilzpasta', 'Pasta', 'Linsensuppe'], { timeout: 15_000 })
+})
+
+test('a Dish shared to malkochen cold and offline opens Add Dish with the link filled in, is kept through a reload, and is added once back', async ({ page, context }) => {
+  test.slow()
+  await page.addInitScript(() => {
+    (window as { e2eSeedOffline?: boolean }).e2eSeedOffline = true
+  })
+  await removeUsers(HILDEGARD)
+  await signIn(page, HILDEGARD)
+  const board = await createBoard(page, 'Kochclub Teilen', ['Linsensuppe'])
+  await gotoHydrated(page, `/b/${board.slug}`)
+  await serviceWorkerInControl(page)
+  await reloadHydrated(page)
+  await expect.poll(() => kept(page, 'boards')).toHaveLength(1)
+  await expect.poll(() => kept(page, 'user')).toHaveLength(1)
+  await expect.poll(() => page.evaluate(async () => (await (await caches.open('assets-v1')).keys()).some(request => request.url.includes('/pages/share.vue')))).toBe(true)
+
+  await context.setOffline(true)
+  await page.goto(`/share?${new URLSearchParams({ title: 'Video', text: 'Schau mal', url: REEL })}`)
+  const sheet = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
+  await expect(sheet).toBeVisible()
+  await expect(sheet.getByLabel('Link')).toHaveValue(REEL)
+  await sheet.getByRole('button', { name: 'Speichern' }).click()
+  await expect(titles(page, 'Ideen')).toHaveText(['instagram.com', 'Linsensuppe'])
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+
+  await page.reload()
+  await expect(titles(page, 'Ideen')).toHaveText(['instagram.com', 'Linsensuppe'])
+  await expect(page.getByRole('article', { name: 'instagram.com' }).getByText('Noch nicht gesendet')).toBeVisible()
+
+  await context.setOffline(false)
+  await gotoHydrated(page, `/b/${board.slug}`)
+  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
+  await expect(titles(page, 'Ideen')).toHaveText(['Instagram-Reel von mara.kocht', 'Linsensuppe'])
 })
 
 test('with reduced motion the Offline page shows its clip still',async ({ page, context }) => {

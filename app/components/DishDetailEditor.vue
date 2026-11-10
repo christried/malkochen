@@ -23,6 +23,10 @@ const props = defineProps<{ dish: DishView, boardId: string }>()
 const emit = defineEmits<{ saved: [result: BoardResult], cancel: [] }>()
 const t = useStrings()
 const boardModule = useBoardModule()
+// Added offline and not sent yet (#462): the image, Creator and Source wait
+// for the server, which looks the link up.
+const unsentAdd = computed(() => boardModule.isUnsentAdd(props.dish.id))
+const onlyIfSent = computed(() => unsentAdd.value ? false : undefined)
 const { answering } = useConnection()
 
 const title = ref(props.dish.title)
@@ -176,7 +180,8 @@ async function save() {
   if (reload.value === 'failed') reloadAsked.value = false
   try {
     // Offline, the title alone: the Source can't be looked up, nor an image stored.
-    const saved = await boardModule.editDish(props.dish.id, answering.value ? await allFields(choice) : { title: title.value })
+    // A Dish added offline that hasn't arrived has only its title to change.
+    const saved = await boardModule.editDish(props.dish.id, answering.value && !unsentAdd.value ? await allFields(choice) : { title: title.value })
     emit('saved', saved)
   }
   catch (error) {
@@ -210,7 +215,7 @@ async function save() {
       </button>
     </div>
 
-    <NeedsNet>
+    <NeedsNet :allowed="onlyIfSent">
       <div
         class="flex flex-col gap-3"
         data-morph-field="image"
@@ -289,7 +294,10 @@ async function save() {
       </AppField>
     </div>
 
-    <NeedsNet :note="false">
+    <NeedsNet
+      :note="false"
+      :allowed="onlyIfSent"
+    >
       <div
         class="flex flex-col"
         data-morph-field="creator"
@@ -310,7 +318,10 @@ async function save() {
       </div>
     </NeedsNet>
 
-    <NeedsNet :note="false">
+    <NeedsNet
+      :note="false"
+      :allowed="onlyIfSent"
+    >
       <div
         class="flex flex-col"
         data-morph-field="source"

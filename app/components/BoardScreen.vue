@@ -267,8 +267,12 @@ if (unsent) {
   })
   watch(unsent.lastRun, (run) => {
     if (!run) return
+    // A Dish added offline that has arrived takes the server's place on its
+    // card (#462).
+    boardModule.takeArrivals()
     if (unsent.forBoard(id).length === 0) void syncNow()
     tellDropped()
+    tellDuplicates()
   })
 }
 // Kept on the device as loaded, before the Unsent Changes are laid over it;
@@ -286,7 +290,15 @@ onMounted(async () => {
   await boardModule.layOverUnsent()
   if (unsent.count.value > 0) void unsent.send()
   tellDropped()
+  tellDuplicates()
 })
+// A Dish added offline whose link was on the Board already is told once,
+// naming the Dish that had it (#462). It stays on the Board.
+function tellDuplicates() {
+  for (const { title, columnName } of unsent?.takeDuplicates() ?? []) {
+    showToast({ text: t.unsent.alreadyOnBoard(title, columnName), duration: NOTICE_MS })
+  }
+}
 function tellDropped() {
   const dropped = unsent?.takeDropped() ?? []
   if (dropped.length === 0) return
@@ -442,13 +454,13 @@ const mayAdd = computed(() => board.value?.permissions.addDishes ?? false)
 // own may always be.
 const mayMove = computed(() => boardModule.may('moveDishes'))
 const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
-// While malkochen can't be reached (#458), no change can be made: adding is
-// greyed out and says why, a card has no "Gekocht ✓" or menu, none lifts,
-// and the add lane is gone (useConnection).
-const { answering, mayChange, mayChangeOffline, needsNet } = useConnection()
+// While malkochen can't be reached (#458), changes that need it can't be
+// made: a card has no "Gekocht ✓" or menu, none lifts, and the add lane is
+// gone (useConnection). Adding a Dish works offline (#462): it is kept as an
+// Unsent Change, and what needs a connection in Add Dish is greyed out there.
+const { answering, mayChange, mayChangeOffline } = useConnection()
 function addDish() {
-  if (mayChange.value) adding.value = true
-  else showNotice(t.offline.needsNet)
+  adding.value = true
 }
 // Your settings (UserSettingsSheet), from the header's cogwheel (#282).
 const showingSettings = ref(false)
@@ -810,6 +822,9 @@ function deleteFromMenu() {
 // user's other Boards; no Gekocht Column, as the bar's "Gekocht ✓" cooks
 // them. Picking one moves them all and ends the selection.
 const choosingTarget = ref(false)
+// A Dish added offline that hasn't arrived can't be moved in bulk or deleted
+// yet (#462): "Gekocht ✓" for them goes on.
+const selectionHasUnsentAdd = computed(() => selection.selectedIds.value.some(dishId => boardModule.isUnsentAdd(dishId)))
 const selectionColumnId = computed(() => {
   const columns = new Set(selection.selectedIds.value.map(id => board.value && dishOnBoard(board.value, id)?.column.id))
   return columns.size === 1 ? [...columns][0] ?? null : null
@@ -1223,6 +1238,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                         :dish="dish"
                         :is-new="newDishIds.has(dish.id)"
                         :new-in-history="newInHistoryDishIds.has(dish.id)"
+                        :unsent="boardModule.isUnsentAdd(dish.id)"
                         :motion="state === 'card' ? boardLoop.motionOf(dish.id) : null"
                         @motion-ended="boardLoop.ended(dish.id)"
                       />
@@ -1359,7 +1375,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt }"
       :aria-label="t.addDish.open"
       :data-tooltip="t.addDish.open"
-      v-bind="needsNet"
       data-tour="add-button"
       @click="addDish"
     >
@@ -1382,8 +1397,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <SelectionBar
       v-if="selecting"
       :count="selection.selectedIds.value.length"
-      :can-move="mayMove"
-      :can-delete="selection.selectedIds.value.every(dishId => boardModule.may('archiveDishes', dishId))"
+      :can-move="mayMove && !selectionHasUnsentAdd"
+      :can-delete="selection.selectedIds.value.every(dishId => boardModule.may('archiveDishes', dishId)) && !selectionHasUnsentAdd"
       :lifted="!!toast"
       @cook="cookSelected"
       @move="choosingTarget = true"
@@ -1455,7 +1470,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             >
               {{ t.dish.moveTo }}
             </button>
-            <NeedsNet v-if="menuDish && mayArchive(menuDish)">
+            <NeedsNet
+              v-if="menuDish && mayArchive(menuDish)"
+              :allowed="boardModule.isUnsentAdd(menuDish.id) ? false : undefined"
+            >
               <DangerButton
                 data-tour="menu-delete"
                 @click="deleteFromMenu"
@@ -1490,6 +1508,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
               v-if="menuColumnId"
               :board="board"
               :from-column-id="menuColumnId"
+              :this-board-only="!!menuDish && boardModule.isUnsentAdd(menuDish.id)"
               @move="moveFromMenu"
             />
           </template>
