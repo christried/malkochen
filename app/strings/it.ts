@@ -8,6 +8,7 @@
 import type { EventGroup } from '../../shared/admin'
 import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings, UnsentKindName } from './de'
+import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
@@ -22,6 +23,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `commento eliminato su ${named}`
     case 'vote': return `pollice su ${named}`
     case 'title': return `nuovo titolo per ${named}`
+    case 'add': return `${named} aggiunto`
     case 'move': return `${named} spostato`
     case 'cook':
     case 'cookMany': return `${named} cucinato`
@@ -427,6 +429,21 @@ export const it: Strings = {
     imageNotStored: (title: string) => `Non è stato possibile salvare l’immagine dal link. Ora “${title}” ha un’immagine segnaposto.`,
     photoNotStored: (title: string) => `Non è stato possibile salvare la tua foto. Ora “${title}” ha un’immagine segnaposto.`,
     notAllowed: 'Su questa bacheca non puoi aggiungere piatti. Lo decide chi ne è titolare.',
+    titleOptional: 'Titolo (può restare vuoto)',
+    titleOptionalHint: 'Senza titolo useremo quello del link appena torna la connessione.',
+    offlineHint: 'Nessuna connessione. Il link viene controllato appena torna la connessione.',
+    sourceTitle: (kind: SourceKind, creator: string | null, site: string): string => {
+      const by = (what: string, plain: string) => creator ? `${what} di ${creator}` : plain
+      switch (kind) {
+        case 'tiktok': return by('TikTok', 'Video TikTok')
+        case 'instagram-reel': return by('Reel Instagram', 'Reel Instagram')
+        case 'instagram-post': return by('Post Instagram', 'Post Instagram')
+        case 'youtube-short': return by('YouTube Short', 'YouTube Short')
+        case 'pinterest-pin': return by('Pin Pinterest', 'Pin Pinterest')
+        case 'blog': return creator ? `Ricetta di ${creator}` : site || 'Pagina web'
+        case 'other': return creator ? `Pagina web di ${creator}` : site || 'Pagina web'
+      }
+    },
   },
   placeholders: {
     pasta: 'Pasta',
@@ -603,6 +620,8 @@ export const it: Strings = {
   unsent: {
     count: (count: number) => `${number(count)} ${plural(count, { one: 'modifica non ancora inviata', other: 'modifiche non ancora inviate' })}`,
     allSent: 'Tutto inviato',
+    notSent: 'Non ancora inviato',
+    alreadyOnBoard: (title: string, column: string) => `Quel link era già sulla bacheca: “${title}” in ${column}`,
     copyText: 'Copia',
     copied: 'Copiato',
     copyFailed: 'Copia non riuscita.',

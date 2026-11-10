@@ -74,6 +74,22 @@ export const addDishBody = z.object({
 })
 export type AddDishBody = z.input<typeof addDishBody>
 
+// Adding a Dish that was made offline (#462; POST /api/boards/:id/dishes with
+// `offline: true`, so a Dish added online validates as ever): the form
+// skipped the Source Lookup, so there is a link as the Member pasted it, a
+// title only if they typed one (none if there is a link), the Placeholder
+// Image they chose, and the id the device made for the Dish. The server looks
+// the link up when it arrives (server/utils/late-add.ts). Nothing here can
+// need an upload: no photo, no Source image, no Caption.
+export const offlineAddBody = z.object({
+  offline: z.literal(true),
+  id: z.uuid(),
+  placeholder: z.enum(PLACEHOLDERS),
+  title: z.string().trim().max(200).nullish().transform(title => title || null),
+  source: z.object({ link: webLinkInput }).nullish().transform(source => source ?? null),
+}).refine(body => body.title !== null || body.source !== null)
+export type OfflineAddBody = z.input<typeof offlineAddBody>
+
 // Changes to a Dish (PATCH /api/dishes/:id); only the fields sent change.
 export const dishEditBody = z.object({
   title: dishTitle.optional(),

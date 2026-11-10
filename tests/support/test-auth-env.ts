@@ -1,3 +1,5 @@
+import { LOOKUP_FIXTURES } from './source-lookup-fixtures'
+
 // Where the browser tests' dev server listens (playwright.config.ts).
 export const E2E_ORIGIN = 'http://localhost:3100'
 
@@ -52,6 +54,9 @@ export function testAuthEnv(baseUrl: string): Record<string, string> {
     // Snackbert.
     SNACKBERT_URL: `http://127.0.0.1:${SNACKBERT_PORT}`,
     SNACKBERT_SECRET: TEST_SNACKBERT_SECRET,
+    // The Sources a Dish added offline is looked up with once it arrives
+    // (source-lookup-fixtures.ts), never the real ones.
+    SOURCE_LOOKUP_FIXTURES: JSON.stringify(LOOKUP_FIXTURES),
   }
 }
 

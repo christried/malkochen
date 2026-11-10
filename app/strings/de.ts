@@ -11,6 +11,7 @@ import type { SectionKind } from '../../shared/changelog'
 import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
+import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
@@ -18,7 +19,7 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'add'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -28,6 +29,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `gelöschter Kommentar zu ${named}`
     case 'vote': return `Daumen bei ${named}`
     case 'title': return `neuer Titel für ${named}`
+    case 'add': return `${named} hinzugefügt`
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`
@@ -488,6 +490,26 @@ export const de = {
     photoNotStored: (title: string) => `Dein Foto ließ sich nicht speichern. „${title}“ hat jetzt ein Platzhalterbild.`,
     // Refused for want of the Permission (403): the Owner switched it off.
     notAllowed: 'Auf diesem Board darfst du keine Gerichte hinzufügen. Das legt die Besitzer:in fest.',
+    // Offline (#462): the link isn't looked up, and what needs a connection
+    // (a photo, the image dialog, another Board) stays greyed out.
+    titleOptional: 'Titel (kann leer bleiben)',
+    titleOptionalHint: 'Ohne Titel nehmen wir den vom Link, sobald wieder Netz da ist.',
+    offlineHint: 'Kein Netz. Der Link wird nachgeschaut, sobald wieder Netz da ist.',
+    // The title of a Dish added offline whose Source shows none, made when it
+    // arrives (server/utils/source-title.ts): after its platform and Creator,
+    // else after the link's site.
+    sourceTitle: (kind: SourceKind, creator: string | null, site: string): string => {
+      const by = (what: string, plain: string) => creator ? `${what} von ${creator}` : plain
+      switch (kind) {
+        case 'tiktok': return by('TikTok', 'TikTok-Video')
+        case 'instagram-reel': return by('Instagram-Reel', 'Instagram-Reel')
+        case 'instagram-post': return by('Instagram-Beitrag', 'Instagram-Beitrag')
+        case 'youtube-short': return by('YouTube-Short', 'YouTube-Short')
+        case 'pinterest-pin': return by('Pinterest-Pin', 'Pinterest-Pin')
+        case 'blog': return by('Rezept', site || 'Webseite')
+        case 'other': return by('Webseite', site || 'Webseite')
+      }
+    },
   },
   placeholders: {
     pasta: 'Pasta',
@@ -698,6 +720,10 @@ export const de = {
   unsent: {
     count: (count: number) => `${number(count)} noch nicht gesendet`,
     allSent: 'Alles gesendet',
+    // On the card of a Dish added offline until it has arrived.
+    notSent: 'Noch nicht gesendet',
+    // Told once a Dish added offline has arrived and its link was on the Board already.
+    alreadyOnBoard: (title: string, column: string) => `Der Link war schon auf dem Board: „${title}“ in ${column}`,
     // `copyText` copies the Comments' texts among them, `copied` says it did.
     copyText: 'Kopieren',
     copied: 'Kopiert',
