@@ -2,7 +2,7 @@ import { computed, ref, shallowRef } from 'vue'
 // Relative imports, not `~~`: runs in plain Node under test, like the Board
 // module.
 import type { BoardView } from '../../server/utils/boards'
-import type { CookingUndo, DishView } from '../../server/utils/dishes'
+import type { CookingUndo, DishAdder, DishView } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
 import { landingIndex } from '../../shared/placement'
 import type { BoardTransport } from './board-module'
@@ -42,9 +42,20 @@ export type UnsentKind =
   // the Dish goes back to `back`.
   | { kind: 'uncook', dishId: string, cookingId: string, back: { columnId: string, index: number } }
   | { kind: 'uncookMany', dishIds: string[], cookings: CookingUndo[] }
+  // A Comment written, with the id the device made for it, and who wrote it
+  // (to show it before the server has it).
+  | { kind: 'comment', dishId: string, commentId: string, text: string, author: DishAdder }
+  // One of the Member's own Comments edited, or any deleted (the Owner's).
+  | { kind: 'commentEdit', dishId: string, commentId: string, text: string }
+  | { kind: 'commentDelete', dishId: string, commentId: string }
+  // The Member's Vote given or changed (`up`), or taken back (null), and who
+  // voted (to show it before the server has it).
+  | { kind: 'vote', dishId: string, up: boolean | null, voter: DishAdder }
+  // A Dish's title edited: the only field an edit can change offline.
+  | { kind: 'title', dishId: string, title: string }
 
 // The writes the Unsent Changes are sent with.
-export type UnsentTransport = Pick<BoardTransport, 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes'>
+export type UnsentTransport = Pick<BoardTransport, 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish'>
 
 // How a run of `send` ended: how many went out, and those dropped because
 // malkochen answered that it can't apply them; `emptied` when nothing is
@@ -100,6 +111,15 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
   // The one being sent now: asking to take a change back waits for it.
   let inFlight: { id: string, done: Promise<void> } | null = null
 
+  // A new Vote on a Dish replaces the Member's earlier ones still waiting:
+  // only the last counts, so only it is sent (the one being sent now goes
+  // out anyway).
+  function replaceVotes(dishId: string) {
+    for (const c of [...changes.value]) {
+      if (c.kind === 'vote' && c.dishId === dishId && c.id !== inFlight?.id) remove(c.id)
+    }
+  }
+
   // Takes a change back (the user undid it) so it is never sent. Waits for
   // it first if it is on its way: answers whether it was still unsent, and
   // so taken out; false if it had gone out by then.
@@ -146,6 +166,16 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
         return transport.undoCooking(change.cookingId, change.back)
       case 'uncookMany':
         return transport.uncookDishes(change.cookings)
+      case 'comment':
+        return transport.writeComment(change.dishId, change.text, { id: change.commentId, madeAt })
+      case 'commentEdit':
+        return transport.editComment(change.commentId, change.text)
+      case 'commentDelete':
+        return transport.deleteComment(change.commentId)
+      case 'vote':
+        return change.up === null ? transport.takeBackVote(change.dishId) : transport.setVote(change.dishId, change.up, { madeAt })
+      case 'title':
+        return transport.editDish(change.dishId, { title: change.title })
     }
   }
 
@@ -208,6 +238,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     saved: () => saving,
     add,
     remove,
+    replaceVotes,
     cancel,
     has,
     send,
@@ -294,6 +325,26 @@ function apply(view: BoardView, change: UnsentChange) {
     }
     case 'uncookMany': {
       change.cookings.forEach((undo, i) => uncook(view, change.dishIds[i]!, undo.cookingId, undo.back))
+      return
+    }
+    case 'title': {
+      const found = dishOnBoard(view, change.dishId)
+      if (found) found.dish.title = change.title
+      return
+    }
+    case 'vote': {
+      const found = dishOnBoard(view, change.dishId)
+      if (!found) return
+      const others = found.dish.votes.filter(v => v.voter?.id !== change.voter.id)
+      found.dish.votes = change.up === null ? others : [...others, { voter: change.voter, up: change.up, votedAt: change.madeAt }]
+      return
+    }
+    // The card's Comment count follows the Comments written and deleted. The
+    // Comments themselves are the Dish History's (dish-histories.ts).
+    case 'comment':
+    case 'commentDelete': {
+      const found = dishOnBoard(view, change.dishId)
+      if (found) found.dish.commentCount = Math.max(0, found.dish.commentCount + (change.kind === 'comment' ? 1 : -1))
     }
   }
 }

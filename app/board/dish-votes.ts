@@ -1,12 +1,15 @@
 // Relative imports, not `~~`, as in board-module.ts.
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
+import type { UnsentChanges, UnsentKind } from './unsent-changes'
+import { isUnanswered } from './write-failed'
 
 // The Board module's part for Votes (CONTEXT.md: Vote, #334): the Member's
 // thumb on a Cooked Dish, from "Wie war's?" in its detail and the Gekocht
 // toast, as an optimistic write like the Board's own (board-module.ts). A
 // Dish's Votes are part of it on the Board, so the card, the detail and the
-// Dish History all show them from there.
+// Dish History all show them from there. A Vote that gets no answer stays on
+// screen as an Unsent Change (unsent-changes.ts), dated when it was given.
 
 // What the page tells the Member about a Vote, as a key in its UI strings:
 // the write failed (`voteNotAllowed`: refused as the user's Permissions no
@@ -19,11 +22,15 @@ export interface VoteResult {
   notice?: VoteNotice
   undo?: () => Promise<VoteResult>
   settled?: Promise<VoteResult>
+  // The write got no answer, so the Vote stays on screen as an Unsent Change
+  // instead of failing; set on what it settled in.
+  unsent?: true
 }
 
 // How Votes reach the server (BoardTransport).
 export interface VoteTransport {
-  setVote: (dishId: string, up: boolean) => Promise<VoteView>
+  // `late`: when the Vote was given, which dates it.
+  setVote: (dishId: string, up: boolean, late?: { madeAt?: string }) => Promise<VoteView>
   takeBackVote: (dishId: string) => Promise<void>
 }
 
@@ -39,9 +46,14 @@ interface VoteHost {
   isRefused: (error: unknown) => boolean
   // Whether the user may vote on the Board ("comment and vote").
   mayVote: () => boolean
+  // The Unsent Changes (none: a write without an answer fails as ever), as
+  // for the Dish History (dish-histories.ts).
+  unsent?: UnsentChanges
+  keep: (kind: UnsentKind, madeAt: string, label: string) => string
+  anyUnsent: () => boolean
 }
 
-export function createDishVotes({ transport, find, queued, isRefused, mayVote }: VoteHost) {
+export function createDishVotes({ transport, find, queued, isRefused, mayVote, unsent, keep, anyUnsent }: VoteHost) {
   // Each Dish's Vote of the Member's as the server last had it, while a
   // Vote of theirs on it is under way: where a failed one goes back to,
   // also when one before it is still unconfirmed.
@@ -70,13 +82,32 @@ export function createDishVotes({ transport, find, queued, isRefused, mayVote }:
     if (!dish || dish.cookings.length === 0 || !mayVote()) return null
     const before = dish.votes.find(v => v.voter?.id === voter.id) ?? null
     if ((before?.up ?? null) === up) return null
-    const now: VoteView | null = up === null ? null : { voter, up, votedAt: new Date().toISOString() }
+    const madeAt = new Date().toISOString()
+    const now: VoteView | null = up === null ? null : { voter, up, votedAt: madeAt }
     if (!underWay.get(dishId)) confirmed.set(dishId, before)
     underWay.set(dishId, (underWay.get(dishId) ?? 0) + 1)
     show(dishId, voter.id, now)
 
-    const write = () => up === null ? transport.takeBackVote(dishId).then(() => null) : transport.setVote(dishId, up)
+    // The Vote stays as it is on screen; it replaces the Member's earlier
+    // ones still waiting, and goes out with the rest.
+    const kept = Symbol('kept')
+    function keepUnsent() {
+      unsent!.replaceVotes(dishId)
+      keep({ kind: 'vote', dishId, up, voter }, madeAt, find(dishId)?.title ?? '')
+      return kept
+    }
+    const write = async () => {
+      if (anyUnsent()) return keepUnsent()
+      try {
+        return up === null ? await transport.takeBackVote(dishId).then(() => null) : await transport.setVote(dishId, up, { madeAt })
+      }
+      catch (error) {
+        if (unsent && isUnanswered(error)) return keepUnsent()
+        throw error
+      }
+    }
     const settled = queued(dishId, write, { moves: false }).then((saved): VoteResult => {
+      if (saved === kept) return { vote: now, unsent: true }
       confirmed.set(dishId, saved)
       // A later Vote under way shows its own thumb until it settles.
       if (underWay.get(dishId) === 1 && now && saved) Object.assign(now, saved)
