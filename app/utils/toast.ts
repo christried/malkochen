@@ -32,7 +32,8 @@ export interface ToastAction {
   // can't be reached; any other action is a change, greyed out then (#458).
   navigates?: boolean
   // A change that works offline too (it becomes an Unsent Change, #459):
-  // "Rückgängig" on a move or Gekocht ✓ on this Board.
+  // "Rückgängig" on a move or Gekocht ✓ on this Board, or on a deleted
+  // Comment (#460); or "Kopieren", which needs no connection at all.
   offline?: boolean
 }
 

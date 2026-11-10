@@ -258,7 +258,9 @@ const { syncNow } = useBoardSync(() => id, boardModule, () => dragging.value, un
 // on the Board and go out; they go again whenever malkochen answers after
 // not having (the connection turns `online`). When a send has taken the
 // Board's own through, it asks for a fresh Board, so others' changes show.
-// Those malkochen couldn't apply are named, once, in one Toast.
+// Those malkochen couldn't apply are named, once, in one Toast; a Comment
+// among them keeps its text there, and "Kopieren" puts it on the clipboard
+// to write it again (#460).
 if (unsent) {
   watch(() => connection.value === 'online', (online) => {
     if (online && unsent.count.value > 0) void unsent.send()
@@ -288,7 +290,24 @@ onMounted(async () => {
 function tellDropped() {
   const dropped = unsent?.takeDropped() ?? []
   if (dropped.length === 0) return
-  showToast({ text: t.unsent.didntArrive(dropped), duration: NOTICE_MS })
+  // Comments dropped leave the open Dish History.
+  void boardModule.droppedChanges(dropped)
+  const texts = dropped.flatMap(c => c.kind === 'comment' || c.kind === 'commentEdit' ? [c.text] : [])
+  showToast({
+    text: t.unsent.didntArrive(dropped),
+    // Long enough to read the texts and tap "Kopieren".
+    duration: texts.length > 0 ? NOTICE_MS * 2 : NOTICE_MS,
+    ...texts.length > 0 && { actions: [{ label: t.unsent.copyText, run: () => void copyTexts(texts), offline: true }] },
+  })
+}
+async function copyTexts(texts: string[]) {
+  try {
+    await navigator.clipboard.writeText(texts.join('\n\n'))
+    showNotice(t.unsent.copied)
+  }
+  catch {
+    showNotice(t.unsent.copyFailed)
+  }
 }
 // Each Column's cards as they show, with the slot while a Dish is dragged.
 const lists = computed(() => new Map(board.value?.columns.map(c => [c.id, entries(c)])))

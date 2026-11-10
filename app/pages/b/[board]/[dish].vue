@@ -179,7 +179,7 @@ function showComment({ notice, undo, settled }: CommentResult) {
   if (notice) {
     const text = t.history[notice]
     toast.value = undo
-      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(showComment) }] }
+      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(showComment), offline: true }] }
       : { text, duration: NOTICE_MS }
   }
   void settled?.then(showComment)

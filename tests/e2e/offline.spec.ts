@@ -143,11 +143,12 @@ test('losing the connection on a Board shows the offline bar over it, every chan
   await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' })).toBeVisible()
 
-  // The Dish's detail opens to read; its changes are greyed out.
+  // The Dish's detail opens to read; its other changes are greyed out.
   await page.getByRole('link', { name: 'Linsensuppe' }).click()
   const detail = page.getByRole('dialog', { name: 'Linsensuppe' })
   await expect(detail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible()
-  await expect(detail.getByRole('button', { name: 'Bearbeiten' }).first()).toHaveAttribute('aria-disabled', 'true')
+  // The title can be edited offline (#460), the Comment field not: its History never loaded.
+  await expect(detail.getByRole('button', { name: 'Bearbeiten' }).first()).not.toHaveAttribute('aria-disabled')
   await expect(detail.getByRole('button', { name: 'Verschieben nach…' })).toBeDisabled()
   await expect(detail.getByRole('textbox', { name: 'Kommentar' })).toBeDisabled()
   await expect(detail.locator('[data-dish-history]').getByText(NEEDS_NET)).toBeVisible()
@@ -461,6 +462,94 @@ test('a Board left is removed from the device the next time online, and signing 
   }
   expect(await member.evaluate(() => caches.has('images-v1'))).toBe(false)
   await member.context().close()
+})
+
+// Comments and title edits offline (#460): a Comment is only offered on a
+// Dish whose Dish History has loaded; the title is the one field of the edit
+// form that works offline.
+async function boardWithTwoMembers(page: Page, browser: Parameters<typeof newTab>[0]) {
+  await removeUsers(HROSWITHA, TROTULA)
+  await fastPolls(page)
+  await signIn(page, HROSWITHA)
+  const res = await page.request.post('/api/boards', { data: { name: 'Offline-Küche', emoji: '🥘' } })
+  expect(res.status()).toBe(201)
+  const { id: boardId } = await res.json() as { id: string }
+  for (const title of ['Linsensuppe', 'Pasta']) {
+    expect((await page.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl' } })).status()).toBe(201)
+  }
+  const token = await inviteToken(page, boardId)
+  const other = await newTab(browser)
+  await fastPolls(other)
+  await signIn(other, TROTULA)
+  expect((await other.request.post(`/api/invites/${token}/join`, { headers: { origin: E2E_ORIGIN } })).status()).toBe(200)
+  await gotoHydrated(other, `/b/${boardId}`)
+  await gotoHydrated(page, `/b/${boardId}`)
+  await expect(titles(other, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+  return { boardId, other }
+}
+
+test('a Comment written offline on a Dish whose History was loaded reaches another Member; on one whose History was not, Comments are greyed out', async ({ page, browser, context }) => {
+  test.slow()
+  const { other } = await boardWithTwoMembers(page, browser)
+
+  // Linsensuppe's History loads while online.
+  await page.getByRole('link', { name: 'Linsensuppe' }).click()
+  const soup = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(soup.getByRole('textbox', { name: 'Kommentar' })).toBeEnabled()
+  await soup.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(soup).toBeHidden()
+
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+
+  // Pasta's never did: its comment field is greyed out.
+  await page.getByRole('link', { name: 'Pasta' }).click()
+  const pasta = page.getByRole('dialog', { name: 'Pasta' })
+  await expect(pasta.getByRole('textbox', { name: 'Kommentar' })).toBeDisabled()
+  await pasta.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(pasta).toBeHidden()
+
+  await page.getByRole('link', { name: 'Linsensuppe' }).click()
+  const field = soup.getByRole('textbox', { name: 'Kommentar' })
+  await expect(field).toBeEnabled()
+  await field.fill('Mit mehr Zitrone')
+  await soup.getByRole('button', { name: 'Senden' }).click()
+  await expect(soup.locator('[data-comment]')).toHaveText(/Mit mehr Zitrone/)
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+
+  await context.setOffline(false)
+  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
+  await expect(soup.locator('[data-comment]')).toHaveText(/Mit mehr Zitrone/)
+
+  await other.getByRole('link', { name: 'Linsensuppe' }).click()
+  const theirs = other.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(theirs.locator('[data-comment]')).toHaveText(/Mit mehr Zitrone/, { timeout: 15_000 })
+  await expect(theirs.locator('[data-comment]')).toHaveCount(1)
+})
+
+test('a title edited offline shows at once, the rest of the form is greyed out, and the title reaches another Member', async ({ page, browser, context }) => {
+  test.slow()
+  const { other } = await boardWithTwoMembers(page, browser)
+
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+  await page.getByRole('link', { name: 'Pasta' }).click()
+  const detail = page.getByRole('dialog', { name: 'Pasta' })
+  await detail.getByRole('button', { name: 'Bearbeiten' }).first().click()
+
+  await expect(detail.getByLabel('Titel')).toBeEnabled()
+  await expect(detail.getByLabel('Link')).toBeDisabled()
+  await expect(detail.getByRole('button', { name: 'Bild wählen' })).toBeDisabled()
+  await detail.getByLabel('Titel').fill('Pasta al limone')
+  await detail.getByRole('button', { name: 'Speichern' }).click()
+
+  await expect(page.getByRole('dialog', { name: 'Pasta al limone' }).getByRole('heading', { level: 1 })).toHaveText('Pasta al limone')
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+  await expect(titles(other, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+
+  await context.setOffline(false)
+  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
+  await expect(titles(other, 'Ideen')).toHaveText(['Pasta al limone', 'Linsensuppe'], { timeout: 15_000 })
 })
 
 test('with reduced motion the Offline page shows its clip still',async ({ page, context }) => {

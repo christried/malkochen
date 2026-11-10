@@ -18,10 +18,16 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany'
-function unsentChange(kind: UnsentKindName, label: string): string {
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title'
+// `text`: a Comment's text, kept in the message so it can be written again.
+function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
   switch (kind) {
+    case 'comment': return `Kommentar zu ${named} („${text}“)`
+    case 'commentEdit': return `Änderung am Kommentar zu ${named} („${text}“)`
+    case 'commentDelete': return `gelöschter Kommentar zu ${named}`
+    case 'vote': return `Daumen bei ${named}`
+    case 'title': return `neuer Titel für ${named}`
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`
@@ -692,8 +698,12 @@ export const de = {
   unsent: {
     count: (count: number) => `${number(count)} noch nicht gesendet`,
     allSent: 'Alles gesendet',
-    didntArrive: (changes: { kind: UnsentKindName, label: string }[]) => {
-      const named = changes.map(({ kind, label }) => unsentChange(kind, label)).join(', ')
+    // `copyText` copies the Comments' texts among them, `copied` says it did.
+    copyText: 'Kopieren',
+    copied: 'Kopiert',
+    copyFailed: 'Kopieren hat nicht geklappt.',
+    didntArrive: (changes: { kind: UnsentKindName, label: string, text?: string }[]) => {
+      const named = changes.map(({ kind, label, text }) => unsentChange(kind, label, text)).join(', ')
       return `${number(changes.length)} ${plural(changes.length, { one: 'Änderung kam', other: 'Änderungen kamen' })} nicht an: ${named}`
     },
   },
