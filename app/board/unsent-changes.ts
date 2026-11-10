@@ -2,9 +2,11 @@ import { computed, ref, shallowRef } from 'vue'
 // Relative imports, not `~~`: runs in plain Node under test, like the Board
 // module.
 import type { BoardView } from '../../server/utils/boards'
-import type { CookingUndo, DishAdder, DishView } from '../../server/utils/dishes'
+import type { AddedDish, CookingUndo, DishAdder, DishView } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
-import { landingIndex } from '../../shared/placement'
+import { guessKind, siteOf } from '../../shared/link-guess'
+import { columnForNewDishes, landingIndex } from '../../shared/placement'
+import type { Placeholder } from '../../shared/placeholders'
 import type { BoardTransport } from './board-module'
 import type { DeviceStore } from './device-store'
 import { WriteFailed } from './write-failed'
@@ -53,9 +55,29 @@ export type UnsentKind =
   | { kind: 'vote', dishId: string, up: boolean | null, voter: DishAdder }
   // A Dish's title edited: the only field an edit can change offline.
   | { kind: 'title', dishId: string, title: string }
+  // A Dish added (#462): with the id the device made for it, the link as
+  // pasted and the title typed, either of them none (not both), the
+  // Placeholder Image chosen, and who added it (to show it before the server
+  // has it). The server looks the link up when it arrives.
+  | { kind: 'add', dishId: string, link: string | null, title: string | null, placeholder: Placeholder, adder: DishAdder }
 
 // The writes the Unsent Changes are sent with.
-export type UnsentTransport = Pick<BoardTransport, 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish'>
+export type UnsentTransport = Pick<BoardTransport, 'addDishLate' | 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish'>
+
+// A Dish added offline, as the server answered once it had it: the Board
+// module puts it in place of the unsent one (takeArrivals).
+export interface Arrival {
+  boardId: string
+  dish: AddedDish
+}
+
+// Which Dish with the same Source was on the Board already when a Dish added
+// offline arrived (the Member couldn't be asked before saving it).
+export interface Duplicate {
+  boardId: string
+  title: string
+  columnName: string
+}
 
 // How a run of `send` ended: how many went out, and those dropped because
 // malkochen answered that it can't apply them; `emptied` when nothing is
@@ -153,9 +175,60 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
   // same user to sign in again (#463).
   const signedOut = (error: unknown) => error instanceof WriteFailed && error.status === 401
 
+  // Dishes added offline that have arrived, and which Dish had their Source
+  // already, not yet taken by the page (takeArrivals, takeDuplicates).
+  let arrivals: Arrival[] = []
+  let duplicates: Duplicate[] = []
+  function takeArrivals(boardId: string): Arrival[] {
+    const mine = arrivals.filter(a => a.boardId === boardId)
+    arrivals = arrivals.filter(a => a.boardId !== boardId)
+    return mine
+  }
+  function takeDuplicates(): Duplicate[] {
+    const told = duplicates
+    duplicates = []
+    return told
+  }
+  function arrived(change: UnsentChange, answer: unknown) {
+    if (change.kind !== 'add') return
+    const dish = answer as AddedDish
+    arrivals.push({ boardId: change.boardId, dish })
+    if (dish.duplicateOf) duplicates.push({ boardId: change.boardId, title: dish.duplicateOf.title, columnName: dish.duplicateOf.columnName })
+  }
+
+  // A Dish added offline was dropped on arrival: what was done to it since,
+  // sent after it, can't be applied either. Those go with it, unnamed, so
+  // the Member is told once about the Dish and not once per change; a bulk
+  // Cooking keeps the other Dishes it was about.
+  function dropDependants(dishId: string) {
+    for (const c of [...changes.value]) {
+      if ('dishId' in c && c.dishId === dishId && c.kind !== 'add') remove(c.id)
+      else if (c.kind === 'cookMany' && c.dishIds.includes(dishId)) {
+        const keep = c.dishIds.map((id, i) => id === dishId ? -1 : i).filter(i => i !== -1)
+        if (keep.length === 0) remove(c.id)
+        else {
+          c.dishIds = keep.map(i => c.dishIds[i]!)
+          c.cookingIds = keep.map(i => c.cookingIds[i]!)
+          persist()
+        }
+      }
+      else if (c.kind === 'uncookMany' && c.dishIds.includes(dishId)) {
+        const keep = c.dishIds.map((id, i) => id === dishId ? -1 : i).filter(i => i !== -1)
+        if (keep.length === 0) remove(c.id)
+        else {
+          c.cookings = keep.map(i => c.cookings[i]!)
+          c.dishIds = keep.map(i => c.dishIds[i]!)
+          persist()
+        }
+      }
+    }
+  }
+
   function deliver(change: UnsentChange): Promise<unknown> {
     const { madeAt } = change
     switch (change.kind) {
+      case 'add':
+        return transport.addDishLate(change.boardId, { offline: true, id: change.dishId, placeholder: change.placeholder, ...change.title && { title: change.title }, ...change.link && { source: { link: change.link } } })
       case 'move':
         return transport.moveDish(change.dishId, { columnId: change.columnId, ...change.index !== undefined && { index: change.index } }, { ...change.cookingId && { cookingId: change.cookingId }, madeAt })
       case 'cook':
@@ -206,13 +279,16 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
       const step = new Promise(resolve => resolve(deliver(change)))
       inFlight = { id: change.id, done: step.then(() => {}, () => {}) }
       try {
-        await step
+        arrived(change, await step)
         sent++
       }
       catch (error) {
         if (signedOut(error)) stopped = 'signedOut'
         else if (unanswered(error)) stopped = 'unanswered'
-        else dropped.push(change)
+        else {
+          dropped.push(change)
+          if (change.kind === 'add') dropDependants(change.dishId)
+        }
       }
       underWay--
       inFlight = null
@@ -246,6 +322,8 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     sentSince,
     lastRun,
     takeDropped,
+    takeArrivals,
+    takeDuplicates,
     forBoard: (boardId: string) => changes.value.filter(c => c.boardId === boardId),
     // Whether a Cooking with this id is still waiting to be sent.
     hasCooking: (cookingId: string) => changes.value.some(c =>
@@ -285,8 +363,40 @@ export function layOver(view: BoardView, changes: readonly UnsentChange[]): Boar
   return view
 }
 
+// The Dish a Dish added offline shows as until the server has it: the title
+// typed, else the link's site; the Source as the link's address says; the
+// short code its Address would have from its id, so its page opens (the
+// server's own code replaces it on arrival).
+export function dishOfAdd(change: Extract<UnsentChange, { kind: 'add' }>): DishView {
+  return {
+    id: change.dishId,
+    code: change.dishId.slice(-12),
+    title: change.title ?? siteOf(change.link ?? ''),
+    source: change.link ? { link: change.link, kind: guessKind(change.link) } : null,
+    creator: null,
+    caption: null,
+    playableVideo: null,
+    imageUrl: null,
+    imageFocus: { x: 50, y: 50 },
+    placeholder: change.placeholder,
+    addedBy: change.adder,
+    createdAt: change.madeAt,
+    cookings: [],
+    votes: [],
+    commentCount: 0,
+  }
+}
+
 function apply(view: BoardView, change: UnsentChange) {
   switch (change.kind) {
+    case 'add': {
+      // At the top of the Column that takes new Dishes, unless it is on the
+      // Board already (the server has it, or it was laid over before).
+      if (dishOnBoard(view, change.dishId)) return
+      const into = columnForNewDishes(view.columns)
+      if (into) into.dishes.unshift(dishOfAdd(change))
+      return
+    }
     case 'move': {
       const found = dishOnBoard(view, change.dishId)
       const target = view.columns.find(c => c.id === change.columnId)

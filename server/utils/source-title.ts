@@ -1,4 +1,5 @@
 import { stringsFor } from '../../app/strings'
+import { siteOf } from '../../shared/link-guess'
 import type { Language } from '../../shared/language'
 import type { DishSource } from './dishes'
 
@@ -11,13 +12,3 @@ export function titleFromSource(language: Language, source: DishSource, creator:
   return stringsFor(language).addDish.sourceTitle(source.kind, creator, siteOf(source.link))
 }
 
-// The link's site as the card shows it until the Dish has arrived
-// ("kochblog.example"): its host without a leading "www." or "m.".
-function siteOf(link: string): string {
-  try {
-    return new URL(link).hostname.replace(/^(www|m)\./, '')
-  }
-  catch {
-    return ''
-  }
-}

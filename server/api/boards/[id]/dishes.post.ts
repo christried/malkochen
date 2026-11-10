@@ -76,11 +76,11 @@ async function addLate(event: H3Event, boardId: string, raw: unknown): Promise<A
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'A link or a title, a Placeholder Image and an id are required' })
   const user = requireUser(event)
   await requirePermission(boardId, user.id, 'addDishes')
-  const { id, ...rest } = parsed.data
+  const { id } = parsed.data
   setResponseStatus(event, 201)
   const repeat = await alreadyAdded(id, boardId, user.id)
   if (repeat) return repeat
-  const { dish, duplicate } = await dishFromLateAdd(user.id, boardId, callerLanguage(event), rest)
+  const { dish, duplicate } = await dishFromLateAdd(user.id, boardId, callerLanguage(event), parsed.data)
   let created: AddedDish | null
   try {
     created = await addDish(boardId, user, dish, { id })
