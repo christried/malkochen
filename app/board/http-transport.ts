@@ -6,7 +6,7 @@ import type { DishHistory } from '~~/server/utils/dish-history'
 import type { AddedDish, CookedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import type { VoteView } from '~~/server/utils/votes'
 import type { BoardTransport } from './board-module'
-import { WriteFailed } from './write-failed'
+import { gotNoAnswer, WriteFailed } from './write-failed'
 
 // The client Board module's writes over HTTP, for the app. A failed request
 // rejects with WriteFailed and its status.
@@ -50,14 +50,11 @@ export function postColumn(boardId: string, name: string): Promise<ColumnView> {
   return $fetch<ColumnView>(`/api/boards/${boardId}/columns`, { method: 'POST', body: { name } })
 }
 
-// A request that fails with WriteFailed and its status. A Vercel platform
-// error (a 5xx with x-vercel-error, as the connection plugin tells them
-// apart) is no answer from malkochen: it fails without a status, like a
-// request that got no response at all.
+// A request that fails with WriteFailed and its status. No answer from
+// malkochen (gotNoAnswer: no response, or a Vercel platform error) fails
+// without a status.
 function asWrite<T>(request: Promise<T>): Promise<T> {
-  return request.catch((error: { statusCode?: number, response?: { status?: number, headers?: Headers } }) => {
-    const status = error.statusCode ?? error.response?.status
-    if (status !== undefined && status >= 500 && error.response?.headers?.has('x-vercel-error')) throw new WriteFailed()
-    throw new WriteFailed(error.statusCode)
+  return request.catch((error: { statusCode?: number }) => {
+    throw new WriteFailed(gotNoAnswer(error) ? undefined : error.statusCode)
   })
 }

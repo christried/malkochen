@@ -13,3 +13,13 @@ export class WriteFailed extends Error {
 export function isUnanswered(error: unknown): boolean {
   return error instanceof WriteFailed && error.status === undefined
 }
+
+// Whether a failed request got no answer from malkochen: no response at all,
+// or Vercel's own error page (a 5xx with x-vercel-error), as the connection
+// plugin and the service worker count it. What `$fetch` rejects with.
+export function gotNoAnswer(error: unknown): boolean {
+  const { statusCode, status, response } = (error ?? {}) as { statusCode?: number, status?: number, response?: { status?: number, headers?: Headers } }
+  const code = statusCode ?? response?.status ?? status
+  if (code === undefined) return true
+  return code >= 500 && !!response?.headers?.has('x-vercel-error')
+}

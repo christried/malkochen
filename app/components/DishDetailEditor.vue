@@ -3,6 +3,7 @@ import type { DishEditBody, SourceInput } from '~~/server/utils/dish-input'
 import type { DishView } from '~~/server/utils/dishes'
 import { FOCUS_CENTRE, focusPosition, sameFocus, type ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
+import { allowedOnceSent } from '~/board/allowed-once-sent'
 import { isRefused, type BoardResult } from '~/board/board-module'
 import type { UploadedPhoto } from '~/composables/usePhotoUpload'
 import { webLink } from '~/utils/web-link'
@@ -26,7 +27,7 @@ const boardModule = useBoardModule()
 // Added offline and not sent yet (#462): the image, Creator and Source wait
 // for the server, which looks the link up.
 const unsentAdd = computed(() => boardModule.isUnsentAdd(props.dish.id))
-const onlyIfSent = computed(() => unsentAdd.value ? false : undefined)
+const onlyIfSent = computed(() => allowedOnceSent(boardModule, props.dish.id))
 const { answering } = useConnection()
 
 const title = ref(props.dish.title)

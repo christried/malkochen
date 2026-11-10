@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { gotNoAnswer } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import { boardPath } from '~~/shared/address'
+import type { BoardSpot } from '~~/shared/board'
 import { sharedLink } from '~/utils/shared-link'
 
 // Share to malkochen (issue #204): the installed app's share target
@@ -20,7 +21,7 @@ const part = (name: string) => {
 const link = sharedLink({ url: part('url'), text: part('text'), title: part('title') })
 
 const device = useDevice()
-const landing = await useRequestFetch()<{ boardId: string, slug: string, canAdd: boolean }>('/api/boards/landing?adding').catch(async (error: { statusCode?: number }) => {
+const landing = await useRequestFetch()<BoardSpot & { canAdd: boolean }>('/api/boards/landing?adding').catch(async (error: { statusCode?: number }) => {
   if (device && gotNoAnswer(error)) {
     const kept = await (await device.keptOfUser())?.landingToAdd()
     if (kept) return kept

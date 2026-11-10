@@ -4,6 +4,8 @@ import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { Me } from '../../server/utils/people'
+import type { BoardSpot } from '../../shared/board'
+import { plainCopy } from './plain-copy'
 import type { UnsentChange } from './unsent-changes'
 
 // What the app keeps on the device for the signed-in user (CONTEXT.md: Unsent
@@ -58,8 +60,8 @@ export interface DeviceStore {
   }
   // The Board used last, which the app opens on.
   last: {
-    load: (userId: string) => Promise<{ boardId: string, slug: string } | null>
-    save: (userId: string, last: { boardId: string, slug: string }) => Promise<void>
+    load: (userId: string) => Promise<BoardSpot | null>
+    save: (userId: string, last: BoardSpot) => Promise<void>
   }
   // A Board no longer the user's: it, its Dish Histories and addresses go.
   removeBoard: (userId: string, boardId: string) => Promise<void>
@@ -132,9 +134,6 @@ async function itemsOf(store: IDBObjectStore, userId: string): Promise<{ key: st
   return keys.map((key, i) => ({ key: String(key), value: values[i] }))
 }
 
-// A plain copy: reactive proxies can't be cloned into the database.
-const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
-
 // Nothing it does throws: `fallback` stands in for what couldn't be read or
 // written.
 async function safely<T>(fallback: T, work: () => Promise<T>): Promise<T> {
@@ -153,7 +152,7 @@ async function read<T>(name: StoreName, key: string): Promise<T | null> {
 async function write(name: StoreName, key: string, value: unknown): Promise<void> {
   // Nowhere to keep it: it lives in memory until the app closes.
   await safely(undefined, () => inTransaction([name], 'readwrite', async (stores) => {
-    await asPromise(stores[name]!.put(plain(value), key))
+    await asPromise(stores[name]!.put(plainCopy(value), key))
   }))
 }
 
@@ -208,7 +207,7 @@ export function indexedDbStore(): DeviceStore {
       save: (userId, asked, dish, address) => write('addresses', item(userId, `${asked}${SEP}${dish}`), { boardId: address.boardId, value: address } satisfies Kept<BoardAddress>),
     },
     last: {
-      load: userId => read<{ boardId: string, slug: string }>('last', userId),
+      load: userId => read<BoardSpot>('last', userId),
       save: (userId, last) => write('last', userId, last),
     },
     removeBoard: (userId, boardId) => safely(undefined, () => inTransaction(['boards', 'histories', 'addresses', 'last'], 'readwrite', async (stores) => {

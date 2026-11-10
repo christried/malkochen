@@ -325,7 +325,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // "Gekocht ✓" on several (#451): all located on this Board (404 if one
   // isn't), else 400 for one on another Board. Those not in the Gekocht
   // Column go to its top in the order sent; each records a Cooking.
-  function cookManyOnServer(ids: string[], late: { cookingIds?: string[], madeAt?: string } = {}): CookedDish[] | null {
+  function cookManyOnServer(ids: string[], late: Late = {}): CookedDish[] | null {
     const found = allLocated(ids)
     if (!found) return null
     if (found.some(f => !server.columns.includes(f.column))) throw new WriteFailed(400)
@@ -434,7 +434,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // tests don't sign in). Null for a Dish the server doesn't have.
   // With the id the device made and when it was written (late), a repeat of
   // that id is done already, and the Comment is dated by when it was written.
-  function writeCommentOnServer(dishId: string, text: string, late: { id?: string, madeAt?: string } = {}): CommentView | null {
+  function writeCommentOnServer(dishId: string, text: string, late: Late = {}): CommentView | null {
     if (!server.columns.some(c => c.dishes.some(d => d.id === dishId))) return null
     const repeated = late.id ? commentOnServer(late.id) : null
     if (repeated) return structuredClone(repeated)
@@ -479,7 +479,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // so always "Ich"), only on a Dish with a Cooking (409 otherwise); the
   // same thumb again changes nothing. Null for a Dish the server doesn't
   // have.
-  function setVoteOnServer(dishId: string, up: boolean, late: { madeAt?: string } = {}): VoteView | null {
+  function setVoteOnServer(dishId: string, up: boolean, late: Late = {}): VoteView | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
     if (dish.cookings.length === 0) throw new WriteFailed(409)

@@ -153,6 +153,8 @@ test('a Board sync while changes are unsent keeps them on top of what the server
   await module.cookDish('b')!.settled
   fake.writeCommentElsewhere('c', 'hm')
   fake.server.columns[0]!.dishes.push({ ...fake.server.columns[0]!.dishes[0]!, id: 'z', title: 'Titel z' })
+  // A beat, so the sends the changes started have ended unanswered.
+  await new Promise(resolve => setTimeout(resolve))
 
   expect(await module.sync(() => Promise.resolve(structuredClone(fake.server)))).toBe(true)
 

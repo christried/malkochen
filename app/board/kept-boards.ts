@@ -3,7 +3,10 @@
 import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
+import type { BoardSpot } from '../../shared/board'
+import { deviceOwner } from './device-owner'
 import type { DeviceStore } from './device-store'
+import { plainCopy } from './plain-copy'
 
 // What the device keeps of one signed-in user's Boards (spec #456, ticket
 // #461), over the device store: each Board opened here as last loaded, the
@@ -33,29 +36,50 @@ export interface KeptBoards {
   // opened here.
   address: (asked: string, dish: string | undefined) => Promise<BoardAddress | null>
   // Where the app opens: the Board used last (else the one kept last).
-  landing: () => Promise<{ boardId: string, slug: string } | null>
+  landing: () => Promise<BoardSpot | null>
   // Where something shared opens: the Board used last that the user may add
   // Dishes to, `canAdd` false if they may add to none (then the Board used
   // last).
-  landingToAdd: () => Promise<{ boardId: string, slug: string, canAdd: boolean } | null>
+  landingToAdd: () => Promise<(BoardSpot & { canAdd: boolean }) | null>
   // A Board the server says is gone: it, its Dish Histories and addresses.
   remove: (boardId: string) => Promise<void>
   // Whatever is kept for an address that the server says isn't there.
   removeAddress: (asked: string) => Promise<void>
+  // The user signed out or the device was cleared: whatever is still being
+  // kept is not written any more.
+  close: () => void
 }
 
-// A copy through JSON, so what is kept never shares an object with the
-// Board on screen (and a reactive proxy can't be cloned into storage).
-const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+export interface KeptBoardsDeps {
+  store: DeviceStore
+  userId: string
+  // Takes images off the device (the service worker's cache of them), best
+  // effort: what a Board that went leaves behind.
+  forgetImages?: (urls: string[]) => Promise<void>
+}
 
-export function createKeptBoards({ store, userId }: { store: DeviceStore, userId: string }): KeptBoards {
-  async function keep(view: BoardView) {
-    await store.boards.save(userId, copy(view))
+export function createKeptBoards({ store, userId, forgetImages }: KeptBoardsDeps): KeptBoards {
+  // Writes go through here: nothing is written once the device is signed out
+  // or belongs to someone else (a tab that stayed open, a keep still under way).
+  const owner = deviceOwner(store, userId)
+  let closed = false
+  async function writing(write: () => Promise<void>) {
+    if (closed || !await owner.mine() || closed) return
+    await write()
+  }
+
+  // Copied before anything is awaited: the caller goes on changing what it passed.
+  function keep(view: BoardView) {
+    const copy = plainCopy(view)
+    return writing(() => store.boards.save(userId, copy))
   }
 
   async function opened(view: BoardView) {
-    await keep(view)
-    await store.last.save(userId, { boardId: view.id, slug: view.slug })
+    const copy = plainCopy(view)
+    await writing(async () => {
+      await store.boards.save(userId, copy)
+      await store.last.save(userId, { boardId: view.id, slug: view.slug })
+    })
   }
 
   // The kept Boards that `asked` (a slug, current or former, or an id) leads
@@ -100,12 +124,26 @@ export function createKeptBoards({ store, userId }: { store: DeviceStore, userId
     return (await store.listings.load(userId) ?? []).filter(b => kept.has(b.id))
   }
 
-  async function keepListings(list: BoardListing[]) {
-    await store.listings.save(userId, copy(list))
-    const there = new Set(list.map(b => b.id))
-    for (const kept of await store.boards.all(userId)) {
-      if (!there.has(kept.id)) await store.removeBoard(userId, kept.id)
-    }
+  // Removes a Board from the device, and its Dishes' images from the cache of
+  // them, except any that another kept Board shows too.
+  async function drop(boardId: string) {
+    const gone = await store.boards.load(userId, boardId)
+    await store.removeBoard(userId, boardId)
+    if (!gone || !forgetImages) return
+    const stay = new Set((await store.boards.all(userId)).flatMap(imagesOf))
+    const urls = imagesOf(gone).filter(url => !stay.has(url))
+    if (urls.length > 0) await forgetImages(urls).catch(() => {})
+  }
+
+  function keepListings(listed: BoardListing[]) {
+    const list = plainCopy(listed)
+    return writing(async () => {
+      await store.listings.save(userId, list)
+      const there = new Set(list.map(b => b.id))
+      for (const kept of await store.boards.all(userId)) {
+        if (!there.has(kept.id)) await drop(kept.id)
+      }
+    })
   }
 
   return {
@@ -114,30 +152,29 @@ export function createKeptBoards({ store, userId }: { store: DeviceStore, userId
     board: boardId => store.boards.load(userId, boardId),
     keepListings,
     listings,
-    keepHistory: (boardId, dishId, history) => store.histories.save(userId, boardId, dishId, copy(history)),
+    keepHistory: (boardId, dishId, history) => {
+      const copy = plainCopy(history)
+      return writing(() => store.histories.save(userId, boardId, dishId, copy))
+    },
     history: dishId => store.histories.load(userId, dishId),
-    keepAddress: (asked, dish, found) => store.addresses.save(userId, asked, dish ?? '', found),
+    keepAddress: (asked, dish, found) => writing(() => store.addresses.save(userId, asked, dish ?? '', found)),
     address,
     landing,
     landingToAdd,
-    remove: boardId => store.removeBoard(userId, boardId),
+    close: () => {
+      closed = true
+    },
+    remove: drop,
     removeAddress: async (asked) => {
       const known = await store.addresses.load(userId, asked, '')
       const view = known ? { id: known.boardId } : await boardAsked(asked)
-      if (view) await store.removeBoard(userId, view.id)
+      if (view) await drop(view.id)
     },
   }
 }
 
-// Whether a failed request got no answer from malkochen: no response at all,
-// or Vercel's own error page (a 5xx with x-vercel-error), as the connection
-// plugin and the service worker count it. What `$fetch` rejects with.
-export function gotNoAnswer(error: unknown): boolean {
-  const { statusCode, status, response } = (error ?? {}) as { statusCode?: number, status?: number, response?: { status?: number, headers?: Headers } }
-  const code = statusCode ?? response?.status ?? status
-  if (code === undefined) return true
-  return code >= 500 && !!response?.headers?.has('x-vercel-error')
-}
+// The addresses of the images a Board's Dishes show.
+const imagesOf = (view: BoardView): string[] => view.columns.flatMap(c => c.dishes.flatMap(d => d.imageUrl ? [d.imageUrl] : []))
 
 // Whether malkochen answered that the Board isn't the user's (any more): they
 // left it, were removed from it, or it was archived or deleted.

@@ -102,9 +102,8 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
       >
         {{ dish.title }}
       </h3>
-      <!-- One line under the title: the Creator, cut with "…" if long, then
-           "N× gekocht", which is never cut. Two lines would not fit under a
-           two-line title. -->
+      <!-- A Dish added offline that has not arrived yet: "Noch nicht gesendet" and
+           its site. -->
       <p
         v-if="unsent"
         class="mt-0.5 flex min-w-0 items-center gap-1.5 pr-1 text-caption text-text-muted"
@@ -117,6 +116,9 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
           data-site
         >{{ site }}</span>
       </p>
+      <!-- One line under the title: the Creator, cut with "…" if long, then
+           "N× gekocht", which is never cut. Two lines would not fit under a
+           two-line title. -->
       <p
         v-if="dish.creator || dish.cookings.length"
         class="mt-0.5 flex min-w-0 pr-1 text-caption text-text-muted"

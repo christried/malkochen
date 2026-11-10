@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest'
 import { ref } from 'vue'
 import { createBoardModule } from '../../app/board/board-module'
-import { boardIsGone, createKeptBoards, gotNoAnswer } from '../../app/board/kept-boards'
+import { boardIsGone, createKeptBoards } from '../../app/board/kept-boards'
+import { gotNoAnswer } from '../../app/board/write-failed'
 import { createUnsentChanges, layOver } from '../../app/board/unsent-changes'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
@@ -230,6 +231,8 @@ test('offline, opening a Dish asks nothing of malkochen', async () => {
   const asked = () => fake.sent.filter(s => s.startsWith('openDish')).length
   await module.openDish('boarda')
   expect(asked()).toBe(1)
+  // A beat, so the History is kept.
+  await new Promise(resolve => setTimeout(resolve))
   offline = true
   board.value!.newInHistoryDishIds = ['boarda']
 

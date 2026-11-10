@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, toRaw } from 'vue'
 // Relative imports, not `~~`: runs in plain Node under test, like the Board
 // module.
 import type { BoardView } from '../../server/utils/boards'
@@ -9,7 +9,9 @@ import { columnForNewDishes, landingIndex } from '../../shared/placement'
 import type { Placeholder } from '../../shared/placeholders'
 import type { BoardTransport } from './board-module'
 import type { DeviceStore } from './device-store'
-import { WriteFailed } from './write-failed'
+import { deviceOwner } from './device-owner'
+import { plainCopy } from './plain-copy'
+import { isUnanswered, WriteFailed } from './write-failed'
 
 // Unsent Changes (CONTEXT.md; ADR 0012; spec #456): what the user did while
 // malkochen didn't answer. Each shows on screen at once, is kept on the
@@ -57,9 +59,10 @@ export type UnsentKind =
   | { kind: 'title', dishId: string, title: string }
   // A Dish added (#462): with the id the device made for it, the link as
   // pasted and the title typed, either of them none (not both), the
-  // Placeholder Image chosen, and who added it (to show it before the server
+  // Placeholder Image chosen (`noImage`: over the Source's image, which the
+  // form had looked up before the save got no answer), and who added it (to show it before the server
   // has it). The server looks the link up when it arrives.
-  | { kind: 'add', dishId: string, link: string | null, title: string | null, placeholder: Placeholder, adder: DishAdder }
+  | { kind: 'add', dishId: string, link: string | null, title: string | null, placeholder: Placeholder, adder: DishAdder, noImage?: true }
 
 // The writes the Unsent Changes are sent with.
 export type UnsentTransport = Pick<BoardTransport, 'addDishLate' | 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish'>
@@ -113,8 +116,18 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
   let saving: Promise<void> = Promise.resolve()
   // Closed (signed out, account deleted): nothing is written or sent any more.
   let closed = false
+  // Whether the device still belongs to this user: another tab may have
+  // signed out or in as someone else since. If not, this tab closes.
+  const owner = deviceOwner(store, userId)
+  async function stillMine(): Promise<boolean> {
+    if (closed) return false
+    if (!await owner.mine()) closed = true
+    return !closed
+  }
   function persist() {
-    saving = saving.then(() => loaded).then(() => closed ? undefined : store.unsent.save(userId, JSON.parse(JSON.stringify(changes.value)) as UnsentChange[])).catch(() => {})
+    saving = saving.then(() => loaded).then(async () => {
+      if (await stillMine()) await store.unsent.save(userId, plainCopy(changes.value))
+    }).catch(() => {})
   }
 
   const has = (changeId: string) => changes.value.some(c => c.id === changeId)
@@ -172,7 +185,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
   // Whether malkochen gave no answer to the error's write: nothing to say
   // about the change yet, so it stays and the rest wait. A 5xx counts too,
   // as the server failing is not it saying it can't apply the change.
-  const unanswered = (error: unknown) => error instanceof WriteFailed && (error.status === undefined || error.status >= 500)
+  const unanswered = (error: unknown) => isUnanswered(error) || (error instanceof WriteFailed && error.status! >= 500)
   // A 401: the sign-in expired. The change is not refused, it waits for the
   // same user to sign in again (#463).
   const signedOut = (error: unknown) => error instanceof WriteFailed && error.status === 401
@@ -206,7 +219,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     for (const c of [...changes.value]) {
       if ('dishId' in c && c.dishId === dishId && c.kind !== 'add') remove(c.id)
       else if (c.kind === 'cookMany' && c.dishIds.includes(dishId)) {
-        const keep = c.dishIds.map((id, i) => id === dishId ? -1 : i).filter(i => i !== -1)
+        const keep = remaining(c.dishIds, dishId)
         if (keep.length === 0) remove(c.id)
         else {
           c.dishIds = keep.map(i => c.dishIds[i]!)
@@ -215,7 +228,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
         }
       }
       else if (c.kind === 'uncookMany' && c.dishIds.includes(dishId)) {
-        const keep = c.dishIds.map((id, i) => id === dishId ? -1 : i).filter(i => i !== -1)
+        const keep = remaining(c.dishIds, dishId)
         if (keep.length === 0) remove(c.id)
         else {
           c.cookings = keep.map(i => c.cookings[i]!)
@@ -230,7 +243,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     const { madeAt } = change
     switch (change.kind) {
       case 'add':
-        return transport.addDishLate(change.boardId, { offline: true, id: change.dishId, placeholder: change.placeholder, ...change.title && { title: change.title }, ...change.link && { source: { link: change.link } } })
+        return transport.addDishLate(change.boardId, { offline: true, id: change.dishId, placeholder: change.placeholder, ...change.noImage && { noImage: true }, ...change.title && { title: change.title }, ...change.link && { source: { link: change.link } } })
       case 'move':
         return transport.moveDish(change.dishId, { columnId: change.columnId, ...change.index !== undefined && { index: change.index } }, { ...change.cookingId && { cookingId: change.cookingId }, madeAt })
       case 'cook':
@@ -273,8 +286,12 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     let sent = 0
     let stopped: false | 'unanswered' | 'signedOut' = false
     const dropped: UnsentChange[] = []
-    while (!stopped && !closed && changes.value.length > 0) {
-      const change = changes.value[0]!
+    while (!stopped && changes.value.length > 0) {
+      // Not as someone else's: nothing goes out once the device is not this
+      // user's any more. (The list may have changed while that was read.)
+      if (!await stillMine()) break
+      const change = changes.value[0]
+      if (!change) break
       underWay++
       started++
       // A transport that throws rather than rejecting fails like one that rejects.
@@ -339,6 +356,9 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
   }
 }
 
+// The positions in `dishIds` of the Dishes other than `dishId`.
+const remaining = (dishIds: string[], dishId: string) => dishIds.flatMap((id, i) => id === dishId ? [] : [i])
+
 export type UnsentChanges = ReturnType<typeof createUnsentChanges>
 
 // Puts the Cooking on the Dish, newest first, unless it is there already (it
@@ -364,10 +384,25 @@ function place(dish: DishView, column: BoardView['columns'][number], index: numb
 // or deleted meanwhile) or a Column that isn't is skipped silently: sending
 // the change will drop it and name it.
 export function layOver(view: BoardView, changes: readonly UnsentChange[]): BoardView {
+  const counted = countedOn(toRaw(view))
   for (const change of changes) {
-    if (change.boardId === view.id) apply(view, change)
+    if (change.boardId !== view.id) continue
+    // A Comment count only moves by one: once per change on a given Board.
+    if (change.kind === 'comment' || change.kind === 'commentDelete') {
+      if (counted.has(change.id)) continue
+      counted.add(change.id)
+    }
+    apply(view, change)
   }
   return view
+}
+
+// Which Comment changes a Board object has been laid over with already.
+const countedChanges = new WeakMap<object, Set<string>>()
+function countedOn(view: object): Set<string> {
+  let counted = countedChanges.get(view)
+  if (!counted) countedChanges.set(view, counted = new Set())
+  return counted
 }
 
 // The Dish a Dish added offline shows as until the server has it: the title
