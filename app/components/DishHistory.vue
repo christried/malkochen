@@ -55,8 +55,12 @@ const summary = computed(() => {
 // History): no request, and what's new in it stays marked; it loads once
 // malkochen answers, if the detail is still open. Meanwhile its changes
 // are greyed out or hidden.
-const { answering, mayChange } = useConnection()
+const { answering, mayChange, mayChangeComments, needsNetUnless } = useConnection()
 const loadFailed = ref(false)
+// Comments work offline (#460) on a Dish whose history has loaded on this
+// page: their changes are kept as Unsent Changes laid over it. On one that
+// hasn't, they are greyed out.
+const canComment = computed(() => mayChangeComments(boardModule.historyLoaded(props.dish.id)))
 // The Dish whose history has loaded (or failed to).
 const loaded = ref<string | null>(null)
 async function load() {
@@ -262,12 +266,10 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       data-how-was-it
     >
       <span class="text-small text-text-muted">{{ t.history.howWasIt }}</span>
-      <NeedsNet :note="false">
-        <VoteButtons
-          :mine="myVote"
-          @vote="vote"
-        />
-      </NeedsNet>
+      <VoteButtons
+        :mine="myVote"
+        @vote="vote"
+      />
     </div>
     <div
       v-else-if="!dish.cookings.length"
@@ -379,14 +381,15 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
             </button>
             <button
-              v-else-if="entry.kind === 'comment' && entry.comment.id && canDelete(entry.comment) && mayChange"
+              v-else-if="entry.kind === 'comment' && entry.comment.id && canDelete(entry.comment)"
               type="button"
               class="-my-1.5"
               :class="iconButton"
               :aria-label="t.history.commentMenu(isOwn(entry.comment))"
               :aria-expanded="menuFor === entry.comment.id"
               :data-tooltip="t.history.commentMenu(isOwn(entry.comment))"
-              @click="toggleMenu(entry.comment)"
+              v-bind="needsNetUnless(canComment)"
+              @click="canComment && toggleMenu(entry.comment)"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -421,7 +424,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             @click="report(entry.cooking)"
           />
           <span
-            v-if="entry.kind === 'comment' && menuFor === entry.comment.id && mayChange"
+            v-if="entry.kind === 'comment' && menuFor === entry.comment.id && canComment"
             class="flex gap-1.5"
           >
             <button
@@ -466,7 +469,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       data-comment-form
       @submit.prevent="submit"
     >
-      <NeedsNet>
+      <NeedsNet :allowed="canComment">
         <p
           v-if="editing"
           class="flex items-center justify-between gap-3 px-1 text-caption text-text-muted"

@@ -90,13 +90,13 @@ export function createDishVotes({ transport, find, queued, isRefused, mayVote, u
 
     // The Vote stays as it is on screen; it replaces the Member's earlier
     // ones still waiting, and goes out with the rest.
-    const kept = Symbol('kept')
-    function keepUnsent() {
+    // Undefined once kept (null is a Vote taken back).
+    function keepUnsent(): undefined {
       unsent!.replaceVotes(dishId)
       keep({ kind: 'vote', dishId, up, voter }, madeAt, find(dishId)?.title ?? '')
-      return kept
+      return undefined
     }
-    const write = async () => {
+    const write = async (): Promise<VoteView | null | undefined> => {
       if (anyUnsent()) return keepUnsent()
       try {
         return up === null ? await transport.takeBackVote(dishId).then(() => null) : await transport.setVote(dishId, up, { madeAt })
@@ -107,7 +107,7 @@ export function createDishVotes({ transport, find, queued, isRefused, mayVote, u
       }
     }
     const settled = queued(dishId, write, { moves: false }).then((saved): VoteResult => {
-      if (saved === kept) return { vote: now, unsent: true }
+      if (saved === undefined) return { vote: now, unsent: true }
       confirmed.set(dishId, saved)
       // A later Vote under way shows its own thumb until it settles.
       if (underWay.get(dishId) === 1 && now && saved) Object.assign(now, saved)

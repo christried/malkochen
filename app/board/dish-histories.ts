@@ -248,12 +248,12 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
     const madeAt = new Date().toISOString()
     Object.assign(comment, { text: said, editedAt: madeAt })
     // The edit as an Unsent Change, while others wait or malkochen doesn't answer.
-    const kept = Symbol('kept')
-    const keepUnsent = () => {
+    // Null once kept.
+    const keepUnsent = (): null => {
       keep({ kind: 'commentEdit', dishId, commentId, text: said }, madeAt, find(dishId)?.title ?? '')
-      return kept
+      return null
     }
-    const edited = queued(commentId, async () => {
+    const edited = queued(commentId, async (): Promise<CommentView | null> => {
       if (anyUnsent()) return keepUnsent()
       try {
         return await transport.editComment(commentId, said)
@@ -265,7 +265,7 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
     }, { moves: false })
       .finally(() => editsUnderWay.set(comment, editsUnderWay.get(comment)! - 1))
     const settled = tracked(dishId, () => edited).then((saved): CommentResult => {
-      if (saved === kept) return { comment, unsent: true }
+      if (!saved) return { comment, unsent: true }
       confirmed.set(comment, { text: saved.text, editedAt: saved.editedAt })
       // A later edit under way shows its own text until it settles.
       if (!editsUnderWay.get(comment)) Object.assign(comment, saved)
