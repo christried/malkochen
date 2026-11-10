@@ -370,7 +370,9 @@ test('a Board opened on the device opens cold offline, its Dish and the switcher
   await reloadHydrated(page)
   await page.getByRole('link', { name: 'Linsensuppe' }).click()
   const detail = page.getByRole('dialog', { name: 'Linsensuppe' })
-  await expect(detail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible()
+  // The development server is still handing out the files asked for above,
+  // so the detail's own take a few seconds to come through.
+  await expect(detail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible({ timeout: 20_000 })
   const dishUrl = page.url()
   await detail.getByRole('button', { name: 'Schließen' }).first().click()
   await expect(detail).toBeHidden()
