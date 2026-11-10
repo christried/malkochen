@@ -12,6 +12,7 @@ import type { Me } from '~~/server/utils/people'
 export default defineNuxtRouteMiddleware(async (to) => {
   // A relative URL on purpose: during server rendering Nuxt then calls the
   // API in-process with the visitor's cookies.
+  const device = useDevice()
   // Without an answer, the user the device last knew stands in (#461), so
   // the guard lets them through as it would online.
   const { data: me, error } = await useFetch<Me>('/api/me', { key: `me:${to.fullPath}`, $fetch: useMeFetch() })
@@ -21,7 +22,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (me.value) useLanguageChoice().value = me.value.language
   else if (status === 401) useLanguageChoice().value = 'auto'
   // Remembered on the device, so it knows whose data it holds.
-  if (me.value && import.meta.client) void useDevice()?.remember(me.value)
+  if (me.value && import.meta.client) void device?.remember(me.value)
   // Without an answer (offline, or malkochen not answering, #458) and no
   // user known: the page opens as it would, a Dish's detail over its Board,
   // say, instead of sending them to sign in.

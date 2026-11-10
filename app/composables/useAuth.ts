@@ -9,6 +9,7 @@ const authClient = createAuthClient({ plugins: [emailOTPClient()] })
 
 export function useAuth() {
   const pushKey = useRuntimeConfig().public.vapidPublicKey
+  const device = useDevice()
   return {
     // Back to `callbackURL` once signed in: the Board used last, or the
     // invite landing, which then opens the invited Board.
@@ -22,7 +23,7 @@ export function useAuth() {
       await turnOffPushOnSignOut(pushKey)
       await authClient.signOut()
       // Nothing kept on the device stays for the next person (#461).
-      await useDevice()?.forget()
+      await device?.forget()
       await navigateTo('/login')
     },
   }

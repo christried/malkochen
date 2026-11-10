@@ -7,7 +7,9 @@ import type { Me } from '~~/server/utils/people'
 // "no answer" and stays one.
 export function useMeFetch(): typeof $fetch {
   const device = useDevice()
-  if (!device) return $fetch
+  // On the server the request's own cookies must go along (what useFetch does
+  // itself, unless it is given a fetch of its own).
+  if (!device) return import.meta.server ? useRequestFetch() : $fetch
   return ((url: string, options: object) => $fetch<Me>(url, options).catch(async (error: unknown) => {
     const known = gotNoAnswer(error) ? await device.keptUser() : null
     if (!known) throw error

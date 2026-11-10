@@ -16,7 +16,10 @@ export default defineNuxtPlugin((nuxtApp) => {
   const user = shallowRef<Me | null | undefined>(undefined)
   const keptOf = new Map<string, KeptBoards>()
 
+  // Remembering a user, under way: what asks who the user is waits for it.
+  let settling: Promise<void> = Promise.resolve()
   async function keptUser(): Promise<Me | null> {
+    await settling
     if (user.value === undefined) user.value = await store.user.load()
     return user.value
   }
@@ -39,12 +42,16 @@ export default defineNuxtPlugin((nuxtApp) => {
         // the one the data belongs to, theirs is removed from the device: the
         // Boards, Histories and list. Their Unsent Changes stay (they wait
         // for them to sign in again; asking before discarding them is #463).
-        async remember(me: Me) {
-          const known = await keptUser()
-          if (known && JSON.stringify(known) === JSON.stringify(me)) return
-          if (known && known.id !== me.id) await store.forgetUser(known.id)
-          user.value = me
-          await store.user.save(me)
+        remember(me: Me): Promise<void> {
+          settling = settling.then(async () => {
+            if (user.value === undefined) user.value = await store.user.load()
+            const known = user.value
+            if (known && JSON.stringify(known) === JSON.stringify(me)) return
+            if (known && known.id !== me.id) await store.forgetUser(known.id)
+            user.value = me
+            await store.user.save(me)
+          })
+          return settling
         },
         // A kept Board with the Unsent Changes laid over it, as it is shown.
         async openKept(boardId: string): Promise<BoardView | null> {
@@ -56,14 +63,15 @@ export default defineNuxtPlugin((nuxtApp) => {
           return layOver(view, unsent.forBoard(boardId))
         },
         // Signing out or deleting the account: everything kept goes, the
-        // Unsent Changes with it, and the service worker's images.
+        // Unsent Changes with it, and the images the service worker kept.
         async forget() {
           user.value = null
           keptOf.clear()
           nuxtApp.$unsent.reset()
           await store.clear()
-          const worker = await navigator.serviceWorker?.ready.catch(() => undefined)
-          worker?.active?.postMessage({ type: 'forget' })
+          // The images the service worker kept (IMAGES in public/sw.js): from the
+          // page, so it is done when this returns, with or without a worker.
+          await caches?.delete('images-v1').catch(() => false)
         },
       },
     },

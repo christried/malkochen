@@ -88,7 +88,7 @@ function serviceWorker(respond: Respond = () => new Response('ok')) {
     skipWaiting: async () => {},
     clients: { claim: async () => { claimed.value = true } },
   }
-  runInNewContext(SOURCE, { self, caches: store.api, fetch: fakeFetch, URL, Response, Promise, console })
+  runInNewContext(SOURCE, { self, caches: store.api, fetch: fakeFetch, URL, Request, Response, Promise, console })
 
   async function dispatch(type: string, event: Record<string, unknown>) {
     const waits: Promise<unknown>[] = []
@@ -120,7 +120,6 @@ function serviceWorker(respond: Respond = () => new Response('ok')) {
     claimed,
     install: () => dispatch('install', {}),
     activate: () => dispatch('activate', {}),
-    message: (data: unknown) => dispatch('message', { data }),
     request,
     navigate,
     goOffline: () => {
@@ -259,6 +258,17 @@ test('a built file with a hash in its name is kept when fetched and then served 
   expect(sw.fetched).toEqual([])
 })
 
+test('a stylesheet and a script at the same address are kept apart, as a development server answers them differently', async () => {
+  const sw = serviceWorker((url, request) => new Response(request.destination === 'style' ? 'CSS' : 'JS'))
+  await sw.install()
+  await sw.request('/_nuxt/pages/b/dish.vue?vue&type=style&lang.css', { destination: 'style' })
+  await sw.request('/_nuxt/pages/b/dish.vue?vue&type=style&lang.css', { destination: 'script' })
+  sw.goOffline()
+
+  expect(await text(await sw.request('/_nuxt/pages/b/dish.vue?vue&type=style&lang.css', { destination: 'style' }))).toBe('CSS')
+  expect(await text(await sw.request('/_nuxt/pages/b/dish.vue?vue&type=style&lang.css', { destination: 'script' }))).toBe('JS')
+})
+
 test('a built file without a hash comes from the network first and from the cache only without one', async () => {
   let version = 'v1'
   const sw = serviceWorker(url => new Response(url.endsWith('/_nuxt/app/entry.js') ? version : 'x'))
@@ -338,17 +348,6 @@ test('what a failed image would be kept as is not kept', async () => {
   await sw.request('/images/x.jpg', { destination: 'image' })
 
   expect(sw.store.urls('images-v1')).toEqual([])
-})
-
-test('signing out drops the images, and nothing else', async () => {
-  const sw = await installed({ '/offline.html': 'OFFLINE', '/app-shell': 'SHELL', '*': 'IMG' })
-  await sw.request('/images/linsen.jpg', { destination: 'image' })
-  expect(sw.store.urls('images-v1')).toHaveLength(1)
-
-  await sw.message({ type: 'forget' })
-
-  expect(sw.store.urls('images-v1')).toEqual([])
-  expect(sw.store.urls('offline-v14')).toContain('/app-shell')
 })
 
 test('offline.html\'s own check with HEAD goes through to the network', async () => {

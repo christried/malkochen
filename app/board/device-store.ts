@@ -118,7 +118,9 @@ const asPromise = <T>(request: IDBRequest<T>) => new Promise<T>((resolve, reject
 
 // All of one user's items in a store, as key and value.
 async function itemsOf(store: IDBObjectStore, userId: string): Promise<{ key: string, value: unknown }[]> {
-  const range = IDBKeyRange.bound(`${userId}${SEP}`, `${userId}${SEP}\u0001`, false, true)
+  // From the user's id and the NUL up to (not including) the user's id and
+  // the character after the NUL: everything of theirs, nothing of another's.
+  const range = IDBKeyRange.bound(`${userId}${SEP}`, `${userId}\u0001`, false, true)
   const [keys, values] = await Promise.all([asPromise(store.getAllKeys(range)), asPromise(store.getAll(range))])
   return keys.map((key, i) => ({ key: String(key), value: values[i] }))
 }

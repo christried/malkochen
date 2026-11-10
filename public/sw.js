@@ -23,7 +23,8 @@
 // Bump VERSION when offline.html, the shell or what is precached changes.
 const VERSION = 'offline-v14'
 // Built files, and images. Their names stay across versions: what they hold
-// is fetched by its own name or hash.
+// is fetched by its own name or hash. The app deletes IMAGES itself when the
+// user signs out (app/plugins/device.client.ts).
 const ASSETS = 'assets-v1'
 const IMAGES = 'images-v1'
 const FALLBACK_PAGE = '/offline.html'
@@ -66,12 +67,6 @@ self.addEventListener('activate', (event) => {
       .then(keys => Promise.all(keys.filter(key => !current.includes(key)).map(key => caches.delete(key))))
       .then(() => self.clients.claim()),
   )
-})
-
-// Signing out or deleting the account (app/plugins/device.client.ts): the
-// images seen on the user's Boards go with everything else kept.
-self.addEventListener('message', (event) => {
-  if (event.data?.type === 'forget') event.waitUntil(caches.delete(IMAGES))
 })
 
 async function fallback(pathname) {
@@ -151,6 +146,18 @@ async function keep(cacheName, request, response, limit) {
   }
 }
 
+// Kept files are found by their address alone: the browser's request for the
+// same file may carry other headers than the one they were kept for (Vary).
+const MATCH = { ignoreVary: true }
+
+// What a kept file is found by: its address, and for a stylesheet that too,
+// as a development server answers the same address with the stylesheet to a
+// <link> and with a script that adds it to a page that imports it.
+function keyOf(request) {
+  if (request.destination !== 'style') return request
+  return new Request(request.url + (request.url.includes('?') ? '&' : '?') + '__sw=style')
+}
+
 // The names of built files carry a hash of their content: a hit is current.
 const HASHED = /(?:^|[./])[A-Za-z0-9_-]{8}\.(?:js|css|woff2?|png|jpe?g|webp|svg)$/
 const isImmutable = url => url.pathname.startsWith('/_nuxt/fonts/') || (url.pathname.startsWith('/_nuxt/') && url.search === '' && HASHED.test(url.pathname))
@@ -160,17 +167,18 @@ const isImmutable = url => url.pathname.startsWith('/_nuxt/fonts/') || (url.path
 // name). Kept as they are fetched.
 async function built(request, url) {
   const cache = await caches.open(ASSETS)
+  const key = keyOf(request)
   if (isImmutable(url)) {
-    const hit = await cache.match(request)
+    const hit = await cache.match(key, MATCH)
     if (hit) return hit
   }
   try {
     const response = await fetch(request)
-    if (response.ok) await keep(ASSETS, request, response.clone(), ASSET_LIMIT)
+    if (response.ok) await keep(ASSETS, key, response.clone(), ASSET_LIMIT)
     return response
   }
   catch {
-    return (await cache.match(request)) ?? Response.error()
+    return (await cache.match(key, MATCH)) ?? Response.error()
   }
 }
 
@@ -183,7 +191,7 @@ async function shown(request, url) {
     return response
   }
   catch {
-    return (await caches.match(request)) ?? fallback(url.pathname)
+    return (await caches.match(request, MATCH)) ?? fallback(url.pathname)
   }
 }
 
@@ -197,7 +205,7 @@ const isBlobStore = url => url.protocol === 'https:' && url.hostname.endsWith('.
 // can't be had is an error, which the card answers with its Placeholder Image.
 async function image(request, url) {
   const cache = await caches.open(IMAGES)
-  const hit = await cache.match(request)
+  const hit = await cache.match(request, MATCH)
   if (hit) return hit
   try {
     const response = url.origin === self.location.origin

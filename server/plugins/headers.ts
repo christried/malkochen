@@ -18,7 +18,9 @@ function contentSecurityPolicy(nonce: string): string {
     // photo and plays back the recording before sending, both from blob: URLs.
     'img-src \'self\' https: blob:',
     'media-src \'self\' blob:',
-    'connect-src \'self\'',
+    // Vite's hot-reload socket falls back to its own port when the page's
+    // origin doesn't answer (an app shell opened offline in the browser tests).
+    `connect-src 'self'${import.meta.dev ? ' ws://localhost:*' : ''}`,
     // Click-to-play video in the Dish detail (#221, shared/
     // video-embed.ts): the embedded players of TikTok, YouTube (its no-cookie
     // domain) and Instagram. No other frame, not even the app's own.

@@ -21,7 +21,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   function set(connection: Connection) {
     const next = navigator.onLine ? connection : 'offline'
-    if (mounted || !nuxtApp.isHydrating) state.value = next
+    if (mounted || !nuxtApp.payload.serverRendered) state.value = next
     else found = next
   }
 

@@ -10,13 +10,18 @@ import { inviteToken } from './invite'
 import { fastPolls } from './polls'
 import { landingBoardId, removeUsers, seedDish, setSeen } from './seed'
 
-// The Offline page (PRD story 8): opening malkochen without a connection
-// gets the service worker's Offline page. Losing the connection with the app
+// The Offline page (PRD story 8): opening a page malkochen doesn't keep on the
+// device without a connection gets the service worker's Offline page (the
+// app's own addresses open what is kept, #461). Losing the connection with the app
 // open shows the offline bar instead (#458), further down.
 
 // The service worker is what serves the Offline page (blocked elsewhere,
 // playwright.config.ts).
 test.use({ serviceWorkers: 'allow' })
+
+// A page that isn't kept on the device (#461): the Offline page is what it gets.
+// The app's own addresses open the kept Boards instead, further down.
+const NOT_KEPT = '/changelog'
 
 async function serviceWorkerInControl(page: Page) {
   await page.evaluate(() => navigator.serviceWorker.ready)
@@ -30,7 +35,7 @@ test('opening malkochen offline shows the Offline page, which carries on once ba
   await serviceWorkerInControl(page)
 
   await context.setOffline(true)
-  await page.goto('/')
+  await page.goto(NOT_KEPT)
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
   // The page has the offline clip drawn in, so it plays with no connection,
@@ -44,7 +49,7 @@ test('opening malkochen offline shows the Offline page, which carries on once ba
 
   // No need to press it: the page reloads itself when the connection is back.
   await context.setOffline(false)
-  await expect(page).toHaveURL(/\/b\//)
+  await expect(page).toHaveURL(/\/changelog/)
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('Du bist offline.')
 })
 
@@ -56,13 +61,13 @@ test('back online before the connection gets through, the Offline page keeps try
   await gotoHydrated(page, '/')
   await serviceWorkerInControl(page)
   await context.setOffline(true)
-  await page.goto('/')
+  await page.goto(NOT_KEPT)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
 
-  await context.route(url => url.pathname === '/', route => route.abort('internetdisconnected'), { times: 1 })
+  await context.route(url => url.pathname === NOT_KEPT, route => route.abort('internetdisconnected'), { times: 1 })
   await context.setOffline(false)
 
-  await expect(page).toHaveURL(/\/b\//)
+  await expect(page).toHaveURL(/\/changelog/)
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('malkochen ist gerade nicht erreichbar.')
 })
 
@@ -77,9 +82,9 @@ for (const [what, outage] of [
     await gotoHydrated(page, '/')
     await serviceWorkerInControl(page)
 
-    const landing = (url: URL) => url.pathname === '/'
+    const landing = (url: URL) => url.pathname === NOT_KEPT
     await context.route(landing, outage)
-    await page.goto('/')
+    await page.goto(NOT_KEPT)
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('malkochen ist gerade nicht erreichbar.')
     await expect(page.getByText('Das liegt an uns, nicht an dir.')).toBeVisible()
@@ -90,7 +95,7 @@ for (const [what, outage] of [
 
     await context.unroute(landing)
     await page.getByRole('button', { name: 'Nochmal versuchen' }).click()
-    await expect(page).toHaveURL(/\/b\//)
+    await expect(page).toHaveURL(/\/changelog/)
   })
 }
 
@@ -301,6 +306,163 @@ test('a move and a Gekocht ✓ made offline are counted, sent once back, and rea
   await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'])
 })
 
+// Opening malkochen offline (#461): every Board opened on the device is kept
+// on it, and the service worker keeps the app itself, so the installed app or
+// the browser opens on the last Board with no connection, cold. Hildegard,
+// Hroswitha and Trotula are cleaned with `removeUsers` first, so these start
+// from nothing.
+
+// What the device keeps (device-store.ts): the keys of one of its stores, read
+// from the page's own IndexedDB.
+async function kept(page: Page, store: 'boards' | 'listings' | 'histories' | 'user' | 'addresses' | 'last' | 'unsent'): Promise<string[]> {
+  return page.evaluate(name => new Promise<string[]>((resolve) => {
+    const open = indexedDB.open('malkochen')
+    open.onerror = () => resolve([])
+    open.onsuccess = () => {
+      const db = open.result
+      if (!db.objectStoreNames.contains(name)) {
+        db.close()
+        resolve([])
+        return
+      }
+      const request = db.transaction(name).objectStore(name).getAllKeys()
+      request.onsuccess = () => {
+        db.close()
+        // The keys are the user's id, a NUL and the item's: the item's.
+        resolve(request.result.map(key => String(key).split('\u0000').pop()!))
+      }
+      request.onerror = () => {
+        db.close()
+        resolve([])
+      }
+    }
+  }), store)
+}
+
+async function createBoard(page: Page, name: string, dishes: string[] = []) {
+  const res = await page.request.post('/api/boards', { data: { name, emoji: '🥘' } })
+  expect(res.status()).toBe(201)
+  const board = await res.json() as { id: string, slug: string }
+  for (const title of dishes) {
+    expect((await page.request.post(`/api/boards/${board.id}/dishes`, { data: { title, placeholder: 'bowl' } })).status()).toBe(201)
+  }
+  return board
+}
+
+test('a Board opened on the device opens cold offline, its Dish and the switcher too, with an Unsent Change kept through a reload', async ({ page, context }) => {
+  test.slow()
+  // The app keeps the files of the pages it opens offline (the start, the
+  // share target) as soon as the worker is in control, not only the ones this
+  // test visits: the development server's hundreds of files make that too slow
+  // for every test, so it is asked for here.
+  await page.addInitScript(() => {
+    (window as { e2eSeedOffline?: boolean }).e2eSeedOffline = true
+  })
+  await removeUsers(HILDEGARD)
+  await signIn(page, HILDEGARD)
+  const board = await createBoard(page, 'Kochclub Offline', ['Linsensuppe', 'Pasta'])
+  const never = await createBoard(page, 'Nie geöffnet')
+
+  // Opened online: kept. The worker takes control, and the reload sends the
+  // app's files through it. A Dish's detail is opened too, for its History.
+  await gotoHydrated(page, `/b/${board.slug}`)
+  await serviceWorkerInControl(page)
+  await reloadHydrated(page)
+  await page.getByRole('link', { name: 'Linsensuppe' }).click()
+  const detail = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(detail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible()
+  const dishUrl = page.url()
+  await detail.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(detail).toBeHidden()
+  await expect.poll(() => kept(page, 'boards')).toHaveLength(1)
+  await expect.poll(() => kept(page, 'listings')).toHaveLength(1)
+  await expect.poll(() => kept(page, 'histories')).toHaveLength(1)
+  await expect.poll(() => kept(page, 'user')).toHaveLength(1)
+  await expect.poll(() => page.evaluate(async () => (await (await caches.open('assets-v1')).keys()).some(request => request.url.includes('/pages/share.vue')))).toBe(true)
+
+  // The app opened cold with no connection starts on that Board.
+  await context.setOffline(true)
+  await page.goto('/')
+  await expect(page).toHaveURL(new RegExp(`/b/${board.slug}$`))
+  await expect(titles(page, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+  await expect(offlineBar(page)).toBeVisible()
+
+  // Its Address, and a Dish's, open it from the device.
+  await page.goto(`/b/${board.slug}`)
+  await expect(titles(page, 'Ideen')).toHaveText(['Pasta', 'Linsensuppe'])
+  await page.goto(dishUrl)
+  const offlineDetail = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(offlineDetail.getByRole('heading', { name: 'Linsensuppe', level: 1 })).toBeVisible()
+  // Its History was kept, and opening it offline doesn't open it.
+  await expect(offlineDetail.locator('[data-dish-history]')).toBeVisible()
+  await offlineDetail.getByRole('button', { name: 'Schließen' }).first().click()
+
+  // An Unsent Change made now is still there after a reload, offline.
+  await page.getByRole('button', { name: 'Gekocht ✓: „Pasta“' }).click()
+  await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'])
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+  await page.reload()
+  await expect(titles(page, 'Gekocht')).toHaveText(['Pasta'])
+  await expect(titles(page, 'Ideen')).toHaveText(['Linsensuppe'])
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+
+  // The switcher lists the Boards kept here, not the one never opened.
+  await page.getByRole('button', { name: /Board wechseln/ }).click()
+  const panel = page.getByRole('navigation', { name: 'Deine Boards' })
+  await expect(panel.getByRole('link', { name: /Kochclub Offline/ }).first()).toBeVisible()
+  await expect(panel.getByRole('link', { name: /Nie geöffnet/ })).toHaveCount(0)
+
+  // A Board never opened here says it needs a connection; any other page
+  // gets the Offline page.
+  await page.goto(`/b/${never.slug}`)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Das braucht Netz.')
+  await page.goto(NOT_KEPT)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
+
+  // Back online, the Unsent Change goes out from the Board it was made on.
+  await context.setOffline(false)
+  await expect(page.getByRole('heading', { name: 'Was ist neu', level: 1 })).toBeVisible()
+  await gotoHydrated(page, `/b/${board.slug}`)
+  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
+  await expect.poll(async () => {
+    const served = await (await page.request.get(`/api/boards/${board.id}`)).json() as { columns: { isGekocht: boolean, dishes: { title: string }[] }[] }
+    return served.columns.find(c => c.isGekocht)!.dishes.map(d => d.title)
+  }).toEqual(['Pasta'])
+})
+
+test('a Board left is removed from the device the next time online, and signing out removes all of it', async ({ page, browser }) => {
+  test.slow()
+  await removeUsers(HROSWITHA, TROTULA)
+  await signIn(page, HROSWITHA)
+  const board = await createBoard(page, 'Verlassen', ['Brot'])
+  const token = await inviteToken(page, board.id)
+
+  const member = await newTab(browser)
+  await signIn(member, TROTULA)
+  expect((await member.request.post(`/api/invites/${token}/join`, { headers: { origin: E2E_ORIGIN } })).status()).toBe(200)
+  await gotoHydrated(member, `/b/${board.slug}`)
+  await expect.poll(() => kept(member, 'boards')).toContain(board.id)
+  await expect.poll(() => kept(member, 'listings')).toHaveLength(1)
+
+  // They leave it; the next time a Board loads with a connection, it is gone
+  // from the device.
+  const me = await (await member.request.get('/api/me')).json() as { id: string }
+  expect((await member.request.delete(`/api/boards/${board.id}/members/${me.id}`, { headers: { origin: E2E_ORIGIN } })).status()).toBe(204)
+  await gotoHydrated(member, '/')
+  await expect.poll(() => kept(member, 'boards')).not.toContain(board.id)
+
+  // Signing out removes everything kept, the user included.
+  await expect.poll(() => kept(member, 'boards')).toHaveLength(1)
+  await member.getByRole('button', { name: 'Dein Konto' }).click()
+  await member.getByRole('menuitem', { name: 'Abmelden' }).click()
+  await expect(member).toHaveURL(/\/login/)
+  for (const store of ['boards', 'listings', 'histories', 'user', 'last', 'addresses', 'unsent'] as const) {
+    await expect.poll(() => kept(member, store)).toEqual([])
+  }
+  expect(await member.evaluate(() => caches.has('images-v1'))).toBe(false)
+  await member.context().close()
+})
+
 test('with reduced motion the Offline page shows its clip still',async ({ page, context }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await signIn(page)
@@ -308,7 +470,7 @@ test('with reduced motion the Offline page shows its clip still',async ({ page, 
   await serviceWorkerInControl(page)
 
   await context.setOffline(true)
-  await page.goto('/')
+  await page.goto(NOT_KEPT)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
   const drawing = page.locator('svg[data-clip="offline"]')
   await expect(drawing).toBeVisible()
@@ -331,7 +493,7 @@ test('the Offline page is set in the app\'s fonts and type scale, on a phone and
     [800, { size: '32px', lineHeight: '34.56px', weight: '500', tracking: '-0.64px' }],
   ] as const) {
     await page.setViewportSize({ width, height: 800 })
-    await page.goto('/')
+    await page.goto(NOT_KEPT)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Du bist offline.')
     const looks = await page.evaluate(async () => {
       await document.fonts.ready
