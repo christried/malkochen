@@ -1,4 +1,4 @@
-import type { SourceKind } from '../server/source-lookup'
+import type { SourceKind } from '../../server/source-lookup'
 
 // What a link says about itself on the device, without any request: the
 // Source kind its address points to and the site it is on. For a Dish added

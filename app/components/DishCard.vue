@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DishView } from '~~/server/utils/dishes'
-import { siteOf } from '~~/shared/link-guess'
+import { siteOf } from '~/utils/link-guess'
 import type { ClipMotion } from '~/utils/motion'
 
 // The handoff's compact DishCard: 86px thumb + text, 128px high. The thumb

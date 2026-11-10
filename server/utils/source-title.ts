@@ -1,5 +1,5 @@
 import { stringsFor } from '../../app/strings'
-import { siteOf } from '../../shared/link-guess'
+import { siteOf } from '../../app/utils/link-guess'
 import type { Language } from '../../shared/language'
 import type { DishSource } from './dishes'
 
