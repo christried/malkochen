@@ -4,6 +4,7 @@ import { createBoardModule } from '../../app/board/board-module'
 import { createKeptBoards } from '../../app/board/kept-boards'
 import { createUnsentChanges, layOver, type UnsentChange } from '../../app/board/unsent-changes'
 import type { BoardView } from '../../server/utils/boards'
+import type { Me } from '../../server/utils/people'
 import type { DishView } from '../../server/utils/dishes'
 import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { memoryStore } from './memory-device-store'
@@ -13,8 +14,8 @@ import { memoryTransport } from './memory-transport'
 // that went leaves on the device.
 
 const at = '2026-10-01T12:00:00.000Z'
-const anna = { id: 'anna', name: 'Anna', image: null }
-const ben = { id: 'ben', name: 'Ben', image: null }
+const anna = { id: 'anna', name: 'Anna', image: null } as unknown as Me
+const ben = { id: 'ben', name: 'Ben', image: null } as unknown as Me
 const adder = { id: 'anna', name: 'Anna', image: null }
 
 function dish(id: string, extra: Partial<DishView> = {}): DishView {
@@ -166,4 +167,31 @@ test('opening a Dish that malkochen does not answer leaves what is new in its Hi
   fake.setAnswers('answering')
   expect(await module.openDish('a')).toBe(true)
   expect(board.value!.newInHistoryDishIds).toEqual(['b'])
+})
+
+function withImages(id: string, ...urls: string[]): BoardView {
+  const view = boardFixture()
+  view.id = id
+  view.slug = id
+  view.columns[0]!.dishes = urls.map((url, i) => dish(`${id}${i}`, { imageUrl: url }))
+  view.columns[1]!.dishes = [dish(`${id}x`)]
+  return view
+}
+
+test('a Board that is removed from the device takes its Dishes\' images with it, but not those another kept Board shows', async () => {
+  const gone: string[] = []
+  const store = memoryStore()
+  const kept = createKeptBoards({ store, userId: 'me', forgetImages: async (urls) => { gone.push(...urls) } })
+  await kept.keep(withImages('one', 'https://blob/a.jpg', 'https://blob/shared.jpg'))
+  await kept.keep(withImages('two', 'https://blob/b.jpg', 'https://blob/shared.jpg'))
+  await kept.keep(withImages('three', 'https://blob/c.jpg'))
+
+  await kept.remove('one')
+  expect(gone.sort()).toEqual(['https://blob/a.jpg'])
+  expect(await kept.board('one')).toBeNull()
+
+  // Left, archived or deleted elsewhere: the Board Switcher's list no longer has it.
+  gone.length = 0
+  await kept.keepListings([{ id: 'two', slug: 'two', name: 'two', emoji: 'x', isOwner: true, permissions: ALL_PERMISSIONS, dishCount: 1, members: [], columns: [] } as never])
+  expect(gone.sort()).toEqual(['https://blob/c.jpg'])
 })

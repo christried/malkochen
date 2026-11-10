@@ -9,6 +9,19 @@ import type { Me } from '~~/server/utils/people'
 // the user's Boards, the Board Switcher's list, the Dish Histories and the
 // addresses, so the app opens without a connection (#461). One for the whole
 // app; client only (the server renders without it).
+// The images the service worker kept (IMAGES in public/sw.js).
+const IMAGE_CACHE = 'images-v1'
+
+// Takes some of them out, from the page, best effort: without the Cache API
+// (an insecure page, a browser without it) there is nothing to take out.
+async function forgetImages(urls: string[]): Promise<void> {
+  try {
+    const cache = await globalThis.caches?.open(IMAGE_CACHE)
+    await Promise.all(urls.map(url => cache?.delete(url, { ignoreVary: true })))
+  }
+  catch {}
+}
+
 export default defineNuxtPlugin((nuxtApp) => {
   const store = indexedDbStore()
   // Who the device's data belongs to: /api/me as last answered. `undefined`
@@ -28,7 +41,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     return user.value
   }
   function kept(userId: string): KeptBoards {
-    if (!keptOf.has(userId)) keptOf.set(userId, createKeptBoards({ store, userId }))
+    if (!keptOf.has(userId)) keptOf.set(userId, createKeptBoards({ store, userId, forgetImages }))
     return keptOf.get(userId)!
   }
 
@@ -93,7 +106,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           await store.clear(options)
           // The images the service worker kept (IMAGES in public/sw.js): from the
           // page, so it is done when this returns, with or without a worker.
-          await caches?.delete('images-v1').catch(() => false)
+          await globalThis.caches?.delete(IMAGE_CACHE).catch(() => false)
         },
       },
     },

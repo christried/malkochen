@@ -49,7 +49,15 @@ export interface KeptBoards {
   close: () => void
 }
 
-export function createKeptBoards({ store, userId }: { store: DeviceStore, userId: string }): KeptBoards {
+export interface KeptBoardsDeps {
+  store: DeviceStore
+  userId: string
+  // Takes images off the device (the service worker's cache of them), best
+  // effort: what a Board that went leaves behind.
+  forgetImages?: (urls: string[]) => Promise<void>
+}
+
+export function createKeptBoards({ store, userId, forgetImages }: KeptBoardsDeps): KeptBoards {
   // Writes go through here: nothing is written once the device is signed out
   // or belongs to someone else (a tab that stayed open, a keep still under way).
   const owner = deviceOwner(store, userId)
@@ -115,14 +123,25 @@ export function createKeptBoards({ store, userId }: { store: DeviceStore, userId
     return (await store.listings.load(userId) ?? []).filter(b => kept.has(b.id))
   }
 
+  // Removes a Board from the device, and its Dishes' images from the cache of
+  // them, except any that another kept Board shows too.
+  async function drop(boardId: string) {
+    const gone = await store.boards.load(userId, boardId)
+    await store.removeBoard(userId, boardId)
+    if (!gone || !forgetImages) return
+    const stay = new Set((await store.boards.all(userId)).flatMap(imagesOf))
+    const urls = imagesOf(gone).filter(url => !stay.has(url))
+    if (urls.length > 0) await forgetImages(urls).catch(() => {})
+  }
+
   function keepListings(listed: BoardListing[]) {
     const list = plainCopy(listed)
     return writing(async () => {
-    await store.listings.save(userId, list)
-    const there = new Set(list.map(b => b.id))
-    for (const kept of await store.boards.all(userId)) {
-      if (!there.has(kept.id)) await store.removeBoard(userId, kept.id)
-    }
+      await store.listings.save(userId, list)
+      const there = new Set(list.map(b => b.id))
+      for (const kept of await store.boards.all(userId)) {
+        if (!there.has(kept.id)) await drop(kept.id)
+      }
     })
   }
 
@@ -144,14 +163,17 @@ export function createKeptBoards({ store, userId }: { store: DeviceStore, userId
     close: () => {
       closed = true
     },
-    remove: boardId => store.removeBoard(userId, boardId),
+    remove: drop,
     removeAddress: async (asked) => {
       const known = await store.addresses.load(userId, asked, '')
       const view = known ? { id: known.boardId } : await boardAsked(asked)
-      if (view) await store.removeBoard(userId, view.id)
+      if (view) await drop(view.id)
     },
   }
 }
+
+// The addresses of the images a Board's Dishes show.
+const imagesOf = (view: BoardView): string[] => view.columns.flatMap(c => c.dishes.flatMap(d => d.imageUrl ? [d.imageUrl] : []))
 
 // Whether a failed request got no answer from malkochen: no response at all,
 // or Vercel's own error page (a 5xx with x-vercel-error), as the connection
