@@ -5,6 +5,7 @@ import type { DishHistory, DishHistoryEntry } from '../../server/utils/dish-hist
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import { commentText } from '../utils/comment-text'
 import { historyEntries } from '../utils/history-entries'
+import type { Late } from './late'
 import { sendOrKeep } from './send-or-keep'
 import { isUnanswered, WriteFailed } from './write-failed'
 import type { UnsentChange, UnsentChanges, UnsentKind } from './unsent-changes'
@@ -43,7 +44,7 @@ export interface HistoryTransport {
   openDish: (dishId: string) => Promise<DishHistory>
   // `late`: the id the device made for the Comment and when it was written,
   // which the server keeps (a write sent again records it once).
-  writeComment: (dishId: string, text: string, late?: { id?: string, madeAt?: string }) => Promise<CommentView>
+  writeComment: (dishId: string, text: string, late?: Late) => Promise<CommentView>
   editComment: (commentId: string, text: string) => Promise<CommentView>
   deleteComment: (commentId: string) => Promise<void>
   restoreComment: (commentId: string) => Promise<CommentView>

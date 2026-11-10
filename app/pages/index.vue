@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { gotNoAnswer } from '~/board/write-failed'
 import { boardPath } from '~~/shared/address'
+import type { BoardSpot } from '~~/shared/board'
 
 // No page of its own: opens the Board used last ("Meine Küche" on a first
 // sign-in, created by the API). If that fails, the error screen says so;
@@ -13,7 +14,7 @@ import { boardPath } from '~~/shared/address'
 // a connection.
 const fetchPassingCookies = useFetchPassingCookies()
 const device = useDevice()
-const landing = await fetchPassingCookies<{ boardId: string, slug: string, dishLink?: string }>('/api/boards/landing?dishLink').catch(async (error: { statusCode?: number }): Promise<{ boardId: string, slug: string, dishLink?: string }> => {
+const landing = await fetchPassingCookies<BoardSpot & { dishLink?: string }>('/api/boards/landing?dishLink').catch(async (error: { statusCode?: number }): Promise<BoardSpot & { dishLink?: string }> => {
   if (device && gotNoAnswer(error)) {
     const kept = await (await device.keptOfUser())?.landing()
     if (kept) return kept

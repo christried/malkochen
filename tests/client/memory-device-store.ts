@@ -2,6 +2,7 @@ import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { Me } from '../../server/utils/people'
+import type { BoardSpot } from '../../shared/board'
 import type { DeviceStore } from '../../app/board/device-store'
 import type { UnsentChange } from '../../app/board/unsent-changes'
 
@@ -20,7 +21,7 @@ export function memoryStore(): DeviceStore & { broken: (on?: boolean) => void } 
   const listings = new Map<string, BoardListing[]>()
   const histories = new Map<string, Map<string, { boardId: string, history: DishHistory }>>()
   const addresses = new Map<string, Map<string, { boardId: string, address: BoardAddress }>>()
-  const last = new Map<string, { boardId: string, slug: string }>()
+  const last = new Map<string, BoardSpot>()
   let saves = 0
   let down = false
 
@@ -70,7 +71,7 @@ export function memoryStore(): DeviceStore & { broken: (on?: boolean) => void } 
       save: (userId, asked, dish, address) => writing(() => of(addresses, userId).set(`${asked}\0${dish}`, { boardId: address.boardId, address: copy(address) })),
     },
     last: {
-      load: userId => reading<{ boardId: string, slug: string } | null>(null, () => last.get(userId) ?? null),
+      load: userId => reading<BoardSpot | null>(null, () => last.get(userId) ?? null),
       save: (userId, value) => writing(() => last.set(userId, copy(value))),
     },
     removeBoard: (userId, boardId) => writing(() => {

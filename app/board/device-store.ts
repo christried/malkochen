@@ -4,6 +4,7 @@ import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { Me } from '../../server/utils/people'
+import type { BoardSpot } from '../../shared/board'
 import { plainCopy } from './plain-copy'
 import type { UnsentChange } from './unsent-changes'
 
@@ -59,8 +60,8 @@ export interface DeviceStore {
   }
   // The Board used last, which the app opens on.
   last: {
-    load: (userId: string) => Promise<{ boardId: string, slug: string } | null>
-    save: (userId: string, last: { boardId: string, slug: string }) => Promise<void>
+    load: (userId: string) => Promise<BoardSpot | null>
+    save: (userId: string, last: BoardSpot) => Promise<void>
   }
   // A Board no longer the user's: it, its Dish Histories and addresses go.
   removeBoard: (userId: string, boardId: string) => Promise<void>
@@ -206,7 +207,7 @@ export function indexedDbStore(): DeviceStore {
       save: (userId, asked, dish, address) => write('addresses', item(userId, `${asked}${SEP}${dish}`), { boardId: address.boardId, value: address } satisfies Kept<BoardAddress>),
     },
     last: {
-      load: userId => read<{ boardId: string, slug: string }>('last', userId),
+      load: userId => read<BoardSpot>('last', userId),
       save: (userId, last) => write('last', userId, last),
     },
     removeBoard: (userId, boardId) => safely(undefined, () => inTransaction(['boards', 'histories', 'addresses', 'last'], 'readwrite', async (stores) => {

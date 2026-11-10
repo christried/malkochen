@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { InviteView } from '~~/server/utils/invites'
 import { boardPath } from '~~/shared/address'
-import { boardLabel } from '~~/shared/board'
+import { boardLabel, type BoardSpot } from '~~/shared/board'
 
 // The invite landing (PRD stories 4, 64, 65): "Du wurdest zu 🍜 Kochclub
 // eingeladen", then sign-in, then the Board. A signed-in user joins at once
@@ -30,7 +30,7 @@ const { error: noAccess } = await useFetch('/api/me', { key: `me:${route.fullPat
 
 if (invite.value && !noAccess.value) {
   // Joining also clears a remembered invite, hence the cookies.
-  const joined = await fetchPassingCookies<{ boardId: string, slug: string }>(`/api/invites/${token}/join`, { method: 'POST' }).catch((err: { statusCode?: number }) => {
+  const joined = await fetchPassingCookies<BoardSpot>(`/api/invites/${token}/join`, { method: 'POST' }).catch((err: { statusCode?: number }) => {
     const refused = tooMany(err.statusCode)
     if (refused) throw refused
     return null

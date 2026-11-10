@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm'
 import { dishRef, dishSegment, isUuid, slugify } from '../../shared/address'
+import type { BoardSpot } from '../../shared/board'
 import { db, type Db } from '../db'
 import { board, boardSlug, dish } from '../db/schema'
 import { accessibleBoardIds } from './board-access'
@@ -12,9 +13,7 @@ import { accessibleBoardIds } from './board-access'
 // (for a Dish's address, of the Board the Dish is on now), and the Dish
 // part of the address (null for the Board itself). A Dish part that matches
 // no Dish on the user's Boards comes back as it was asked.
-export interface BoardAddress {
-  boardId: string
-  slug: string
+export interface BoardAddress extends BoardSpot {
   dish: string | null
 }
 

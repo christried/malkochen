@@ -10,6 +10,7 @@ import { MILESTONE_COOKINGS } from '../utils/achievement'
 import { dishOnBoard } from '../../shared/board'
 import { viewerMay, type Permission } from '../../shared/permissions'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
+import type { Late } from './late'
 import { sendOrKeep } from './send-or-keep'
 import { WriteFailed, isUnanswered } from './write-failed'
 import { dishOfAdd, layOver, type UnsentChange, type UnsentChanges, type UnsentKind } from './unsent-changes'
@@ -143,14 +144,11 @@ export interface BoardTransport extends HistoryTransport, VoteTransport {
   restoreDishes: (dishIds: string[]) => Promise<PlacedDish[]>
   // "Gekocht ✓" on several (#451): each with the Cooking recorded, in the
   // order sent; and its undo, answering the Dishes placed, in that order.
-  cookDishes: (dishIds: string[], late?: { cookingIds?: string[], madeAt?: string }) => Promise<CookedDish[]>
+  cookDishes: (dishIds: string[], late?: Late) => Promise<CookedDish[]>
   uncookDishes: (cookings: CookingUndo[]) => Promise<PlacedDish[]>
 }
 
-export interface Late {
-  cookingId?: string
-  madeAt?: string
-}
+export type { Late }
 
 type BoardColumn = BoardView['columns'][number]
 

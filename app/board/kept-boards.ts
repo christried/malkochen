@@ -3,6 +3,7 @@
 import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
+import type { BoardSpot } from '../../shared/board'
 import { deviceOwner } from './device-owner'
 import type { DeviceStore } from './device-store'
 import { plainCopy } from './plain-copy'
@@ -35,11 +36,11 @@ export interface KeptBoards {
   // opened here.
   address: (asked: string, dish: string | undefined) => Promise<BoardAddress | null>
   // Where the app opens: the Board used last (else the one kept last).
-  landing: () => Promise<{ boardId: string, slug: string } | null>
+  landing: () => Promise<BoardSpot | null>
   // Where something shared opens: the Board used last that the user may add
   // Dishes to, `canAdd` false if they may add to none (then the Board used
   // last).
-  landingToAdd: () => Promise<{ boardId: string, slug: string, canAdd: boolean } | null>
+  landingToAdd: () => Promise<(BoardSpot & { canAdd: boolean }) | null>
   // A Board the server says is gone: it, its Dish Histories and addresses.
   remove: (boardId: string) => Promise<void>
   // Whatever is kept for an address that the server says isn't there.

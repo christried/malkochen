@@ -5,8 +5,10 @@ import { shallowRef } from 'vue'
 // holds another user's (`switch`); `needsNet` only tells that signing out
 // didn't get through. One at a time for the whole app, shown by
 // LeavingQuestion in the app shell. Client only: nothing asks on the server.
+export type LeavingKind = 'signOut' | 'switch' | 'needsNet'
+
 export interface LeavingQuestion {
-  kind: 'signOut' | 'switch' | 'needsNet'
+  kind: LeavingKind
   count: number
   answer: (goAhead: boolean) => void
 }
@@ -14,7 +16,7 @@ export interface LeavingQuestion {
 const question = shallowRef<LeavingQuestion | null>(null)
 
 export function useLeavingQuestion() {
-  function ask(kind: 'signOut' | 'switch' | 'needsNet', count = 0): Promise<boolean> {
+  function ask(kind: LeavingKind, count = 0): Promise<boolean> {
     return new Promise((resolve) => {
       // Another one asked meanwhile: the earlier is answered no (the safe
       // answer: nothing is discarded, nobody signed out).

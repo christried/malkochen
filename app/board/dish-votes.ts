@@ -2,6 +2,7 @@
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
 import type { UnsentChanges, UnsentKind } from './unsent-changes'
+import type { Late } from './late'
 import { sendOrKeep } from './send-or-keep'
 
 // The Board module's part for Votes (CONTEXT.md: Vote, #334): the Member's
@@ -30,7 +31,7 @@ export interface VoteResult {
 // How Votes reach the server (BoardTransport).
 export interface VoteTransport {
   // `late`: when the Vote was given, which dates it.
-  setVote: (dishId: string, up: boolean, late?: { madeAt?: string }) => Promise<VoteView>
+  setVote: (dishId: string, up: boolean, late?: Late) => Promise<VoteView>
   takeBackVote: (dishId: string) => Promise<void>
 }
 
