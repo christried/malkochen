@@ -10,7 +10,7 @@ const databaseEnvSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
 })
 
-function isDeployed(vercelEnv: string | undefined): boolean {
+export function isDeployed(vercelEnv: string | undefined): boolean {
   return vercelEnv === 'production' || vercelEnv === 'preview'
 }
 
