@@ -717,6 +717,19 @@ export const de = {
     notFoundBody: 'Diese Seite gibt es nicht, oder du bist dort nicht (mehr) dabei.',
     toApp: 'Zu malkochen',
   },
+  // Signing out, or someone else signing in, while Unsent Changes wait on the
+  // device (#463). `lost` says how many are lost if you go ahead.
+  leaving: {
+    lost: (count: number) => `${number(count)} ${plural(count, { one: 'Änderung ist', other: 'Änderungen sind' })} noch nicht gesendet und ${plural(count, { one: 'geht', other: 'gehen' })} verloren.`,
+    signOutTitle: 'Wirklich abmelden?',
+    signOutGo: 'Trotzdem abmelden',
+    cancel: 'Abbrechen',
+    switchTitle: 'Auf diesem Gerät warten Änderungen von einem anderen Konto.',
+    switchGo: 'Verwerfen und weitermachen',
+    switchKeep: 'Abmelden, Änderungen behalten',
+    signOutNeedsNet: 'Abmelden geht nur mit Netz. Du bleibst angemeldet.',
+    understood: 'Verstanden',
+  },
   // Your Username (CONTEXT.md): picked before your first Board, confirmed
   // once if you were here before Usernames, changed in your settings. The
   // server answers with `problem`, `taken` and `tooMany` as they are

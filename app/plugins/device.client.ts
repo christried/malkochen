@@ -15,6 +15,10 @@ export default defineNuxtPlugin((nuxtApp) => {
   // until read from the device.
   const user = shallowRef<Me | null | undefined>(undefined)
   const keptOf = new Map<string, KeptBoards>()
+  // The user as the server last answered, once the device has taken note of
+  // them: what LeavingQuestion waits for to settle other users' Unsent
+  // Changes and to send the user's own (#463).
+  const signedIn = shallowRef<Me | null>(null)
 
   // Remembering a user, under way: what asks who the user is waits for it.
   let settling: Promise<void> = Promise.resolve()
@@ -33,6 +37,17 @@ export default defineNuxtPlugin((nuxtApp) => {
       device: {
         keptUser,
         kept,
+        signedIn,
+        store,
+        // How many Unsent Changes the signed-in user has, read from the device
+        // (no Board page needs to have opened them).
+        async unsentCount(): Promise<number> {
+          const me = await keptUser()
+          if (!me) return 0
+          const unsent = nuxtApp.$unsent.open(me.id)
+          await unsent.ready
+          return unsent.count.value
+        },
         // The device's user's kept Boards, if the device knows who that is.
         async keptOfUser(): Promise<KeptBoards | null> {
           const me = await keptUser()
@@ -40,8 +55,8 @@ export default defineNuxtPlugin((nuxtApp) => {
         },
         // The user as the server just answered. When it is another user than
         // the one the data belongs to, theirs is removed from the device: the
-        // Boards, Histories and list. Their Unsent Changes stay (they wait
-        // for them to sign in again; asking before discarding them is #463).
+        // Boards, Histories and list. Their Unsent Changes stay, for them to
+        // sign in again and send; LeavingQuestion asks about discarding them.
         remember(me: Me): Promise<void> {
           settling = settling.then(async () => {
             if (user.value === undefined) user.value = await store.user.load()
@@ -50,6 +65,8 @@ export default defineNuxtPlugin((nuxtApp) => {
             if (known && known.id !== me.id) await store.forgetUser(known.id)
             user.value = me
             await store.user.save(me)
+          }).then(() => {
+            signedIn.value = me
           })
           return settling
         },
@@ -64,11 +81,15 @@ export default defineNuxtPlugin((nuxtApp) => {
         },
         // Signing out or deleting the account: everything kept goes, the
         // Unsent Changes with it, and the images the service worker kept.
-        async forget() {
+        // `keepUnsent`: all but the Unsent Changes (signing out again so
+        // another user can send theirs, #463).
+        async forget(options?: { keepUnsent?: boolean }) {
           user.value = null
+          signedIn.value = null
           keptOf.clear()
+          // Nothing still to be sent is sent, or written back, after this.
           nuxtApp.$unsent.reset()
-          await store.clear()
+          await store.clear(options)
           // The images the service worker kept (IMAGES in public/sw.js): from the
           // page, so it is done when this returns, with or without a worker.
           await caches?.delete('images-v1').catch(() => false)

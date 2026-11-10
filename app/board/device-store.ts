@@ -19,6 +19,11 @@ export interface DeviceStore {
     load: (userId: string) => Promise<UnsentChange[]>
     // Replaces them all with `changes`.
     save: (userId: string, changes: UnsentChange[]) => Promise<void>
+    // The users the device holds Unsent Changes of (at least one), each with
+    // how many: to tell when another user signed in (#463).
+    holders: () => Promise<{ userId: string, count: number }[]>
+    // Drops one user's Unsent Changes (their go-ahead to lose them).
+    discard: (userId: string) => Promise<void>
   }
   // Who the device's data belongs to: /api/me as last answered, so the app
   // knows the user without a connection.
@@ -61,8 +66,10 @@ export interface DeviceStore {
   // Everything of the user's but their Unsent Changes (another user signed
   // in on the device).
   forgetUser: (userId: string) => Promise<void>
-  // Everything, Unsent Changes included (signing out, deleting the account).
-  clear: () => Promise<void>
+  // Everything, Unsent Changes included (signing out, deleting the account);
+  // `keepUnsent` for all but the Unsent Changes (signing out again to let
+  // another user send theirs, #463).
+  clear: (options?: { keepUnsent?: boolean }) => Promise<void>
 }
 
 const DB_NAME = 'malkochen'
@@ -162,6 +169,13 @@ export function indexedDbStore(): DeviceStore {
         return Array.isArray(found) ? found : []
       },
       save: (userId, changes) => write('unsent', userId, changes),
+      holders: () => safely<{ userId: string, count: number }[]>([], () => inTransaction(['unsent'], 'readonly', async (stores) => {
+        const [keys, values] = await Promise.all([asPromise(stores.unsent!.getAllKeys()), asPromise(stores.unsent!.getAll())])
+        return keys.flatMap((key, i) => Array.isArray(values[i]) && values[i].length > 0 ? [{ userId: String(key), count: values[i].length as number }] : [])
+      })),
+      discard: userId => safely(undefined, () => inTransaction(['unsent'], 'readwrite', async (stores) => {
+        stores.unsent!.delete(userId)
+      })),
     },
     user: {
       load: () => read<Me>('user', DEVICE),
@@ -214,8 +228,8 @@ export function indexedDbStore(): DeviceStore {
       stores.listings!.delete(userId)
       stores.last!.delete(userId)
     })),
-    clear: () => safely(undefined, () => inTransaction([...STORES], 'readwrite', async (stores) => {
-      for (const name of STORES) stores[name]!.clear()
+    clear: options => safely(undefined, () => inTransaction([...STORES], 'readwrite', async (stores) => {
+      for (const name of STORES) if (!(options?.keepUnsent && name === 'unsent')) stores[name]!.clear()
     })),
   }
 }
