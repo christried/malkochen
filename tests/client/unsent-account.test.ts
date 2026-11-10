@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { createUnsentChanges, type UnsentChange } from '../../app/board/unsent-changes'
-import { settleOtherUnsent, signOutAsking } from '../../app/board/unsent-account'
+import { sendOwnUnsent, settleOtherUnsent, signOutAsking } from '../../app/board/unsent-account'
 import { memoryStore } from './memory-device-store'
 import { memoryTransport } from './memory-transport'
 import type { BoardView } from '../../server/utils/boards'
@@ -174,4 +174,33 @@ test('Unsent Changes closed with the account do not come back from a send under 
   await unsent.saved()
   expect(await store.unsent.load('anna')).toEqual([])
   expect(fake.sent.filter(s => s.startsWith('cookDish'))).toHaveLength(1)
+})
+
+test('the same user signing in again on a page that is no Board sends their kept changes, once online', async () => {
+  const store = memoryStore()
+  const fake = memoryTransport(emptyBoard)
+  await keep(store, 'anna', 'a', 'b')
+  const anna = createUnsentChanges({ store, transport: fake.transport, userId: 'anna' })
+  const send = () => anna.send()
+  const count = async () => {
+    await anna.ready
+    return anna.count.value
+  }
+
+  // Still offline: nothing is sent, nothing lost.
+  expect(await sendOwnUnsent({ online: () => false, stillSignedIn: () => true, count, send })).toBe(false)
+  expect(fake.sent).toEqual([])
+  // Someone else is signed in by now: not sent as them.
+  expect(await sendOwnUnsent({ online: () => true, stillSignedIn: () => false, count, send })).toBe(false)
+  expect(fake.sent).toEqual([])
+
+  expect(await sendOwnUnsent({ online: () => true, stillSignedIn: () => true, count, send })).toBe(true)
+  expect(fake.sent).toHaveLength(2)
+  await anna.saved()
+  expect(await store.unsent.load('anna')).toEqual([])
+})
+
+test('nothing is sent when the signed-in user has no Unsent Changes', async () => {
+  const send = async () => { throw new Error('sent') }
+  expect(await sendOwnUnsent({ online: () => true, stillSignedIn: () => true, count: async () => 0, send })).toBe(false)
 })

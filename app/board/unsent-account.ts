@@ -60,3 +60,25 @@ export async function settleOtherUnsent({ store, userId, ask, leave }: SettleDep
   for (const { userId: other } of others) await store.unsent.discard(other)
   return 'discarded'
 }
+
+export interface SendOwnDeps {
+  // Whether malkochen answers right now.
+  online: () => boolean
+  // Whether the user is still the one signed in (not signed out, not replaced).
+  stillSignedIn: () => boolean
+  // How many Unsent Changes the user has, read from the device.
+  count: () => Promise<number>
+  send: () => Promise<unknown>
+}
+
+// A user signed in (again): their own Unsent Changes go out at once, without
+// waiting for a Board page to open, so an expired sign-in that was renewed on
+// any page delivers them. Never as someone else, never while offline (they
+// stay on the device and go with the next try).
+export async function sendOwnUnsent({ online, stillSignedIn, count, send }: SendOwnDeps): Promise<boolean> {
+  if (!stillSignedIn() || !online()) return false
+  if (await count() === 0) return false
+  if (!stillSignedIn()) return false
+  await send()
+  return true
+}

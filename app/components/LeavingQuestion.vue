@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { settleOtherUnsent } from '~/board/unsent-account'
+import { sendOwnUnsent, settleOtherUnsent } from '~/board/unsent-account'
 
 // The question asked while Unsent Changes wait on the device (#463), shown
 // over whatever page is open and blocking it until answered: before signing
@@ -49,10 +49,12 @@ if (device) {
       })
     }
     // Their own, after the question: never before the others' are settled.
-    void (settling ?? Promise.resolve()).then(async () => {
-      if (device.signedIn.value?.id !== me.id || connection.value !== 'online') return
-      if (await device.unsentCount() > 0) void unsentChanges.current.value?.send()
-    })
+    void (settling ?? Promise.resolve()).then(() => sendOwnUnsent({
+      online: () => connection.value === 'online',
+      stillSignedIn: () => device.signedIn.value?.id === me.id,
+      count: () => device.unsentCount(),
+      send: async () => unsentChanges.current.value?.send(),
+    }))
   })
 }
 </script>

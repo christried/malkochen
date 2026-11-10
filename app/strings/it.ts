@@ -627,7 +627,7 @@ export const it: Strings = {
     switchTitle: 'Su questo dispositivo ci sono modifiche di un altro account.',
     switchGo: 'Scarta e continua',
     switchKeep: 'Esci e tienile',
-    signOutNeedsNet: 'Uscire funziona solo in rete. Rimani dentro.',
+    signOutNeedsNet: 'Uscire funziona solo in rete. L’accesso resta attivo.',
     understood: 'Capito',
   },
   username: {
