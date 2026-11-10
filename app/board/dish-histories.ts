@@ -53,8 +53,10 @@ interface HistoryHost {
   transport: HistoryTransport
   // The Dish as the Board shows it, if it is on the Board.
   find: (dishId: string) => DishView | undefined
-  // Takes the card's mark for what's new in the Dish's history off.
-  clearNewInHistory: (dishId: string) => void
+  // Takes the card's mark for what's new in the Dish's history off; answers
+  // whether it was there. `markNewInHistory` puts it back.
+  clearNewInHistory: (dishId: string) => boolean
+  markNewInHistory: (dishId: string) => void
   // Runs `write` after the writes queued before it under the same key
   // (board-module.ts).
   queued: <T>(key: string, write: () => Promise<T>, options: { moves: false }) => Promise<T>
@@ -81,7 +83,7 @@ interface HistoryHost {
   anyUnsent: () => boolean
 }
 
-export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment, unsent, keep, anyUnsent, kept: device, offline, isUnsentAdd }: HistoryHost) {
+export function createDishHistories({ transport, find, clearNewInHistory, markNewInHistory, queued, isGone, isRefused, mayComment, unsent, keep, anyUnsent, kept: device, offline, isUnsentAdd }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -126,7 +128,7 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
       return true
     }
     // Offline it isn't opened, so what's new in it stays marked (#461).
-    if (!offline?.()) clearNewInHistory(dishId)
+    const wasNew = !offline?.() && clearNewInHistory(dishId)
     const asked = writes.get(dishId) ?? 0
     const quiet = !underWay.get(dishId)
     let history: DishHistory
@@ -138,6 +140,8 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
     catch (error) {
       // No answer: the History kept on the device stands in, and counts as
       // loaded (#461).
+      // The server was never told, so what's new in it is still new.
+      if (wasNew && isUnanswered(error)) markNewInHistory(dishId)
       const stored = isUnanswered(error) ? await device?.history(dishId) : null
       if (!stored) return false
       history = stored

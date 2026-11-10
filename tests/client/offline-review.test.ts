@@ -152,3 +152,18 @@ test('a Board opened from the device shows the Comment count once', async () => 
   await module.layOverUnsent()
   expect(board.value!.columns[0]!.dishes[0]!.commentCount).toBe(4)
 })
+
+test('opening a Dish that malkochen does not answer leaves what is new in its History marked', async () => {
+  const fake = memoryTransport(boardFixture())
+  const board = ref<BoardView | undefined>(structuredClone(fake.server))
+  const module = createBoardModule(board, fake.transport, {})
+  board.value!.newInHistoryDishIds = ['a', 'b']
+  fake.setAnswers('none')
+
+  expect(await module.openDish('a')).toBe(false)
+  expect([...board.value!.newInHistoryDishIds].sort()).toEqual(['a', 'b'])
+
+  fake.setAnswers('answering')
+  expect(await module.openDish('a')).toBe(true)
+  expect(board.value!.newInHistoryDishIds).toEqual(['b'])
+})

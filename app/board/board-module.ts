@@ -1154,12 +1154,21 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   const version = () => board.value?.version
 
   // Takes a Dish off the ones with something new in their Dish History.
-  function clearNewInHistory(dishId: string) {
-    if (board.value) removeFrom(board.value.newInHistoryDishIds, dishId)
+  // Answers whether it was marked.
+  function clearNewInHistory(dishId: string): boolean {
+    const marked = board.value?.newInHistoryDishIds
+    if (!marked?.includes(dishId)) return false
+    removeFrom(marked, dishId)
+    return true
+  }
+
+  // Marks it again: the server never heard it was opened.
+  function markNewInHistory(dishId: string) {
+    if (board.value && !board.value.newInHistoryDishIds.includes(dishId)) board.value.newInHistoryDishIds.push(dishId)
   }
 
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, offline, isUnsentAdd, kept: kept && { keep: (dishId, history) => { if (board.value) void kept.keepHistory(board.value.id, dishId, history) }, history: kept.history }, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, keep, anyUnsent })
+  const histories = createDishHistories({ transport, offline, isUnsentAdd, kept: kept && { keep: (dishId, history) => { if (board.value) void kept.keepHistory(board.value.id, dishId, history) }, history: kept.history }, find: dishId => find(dishId)?.dish, clearNewInHistory, markNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, keep, anyUnsent })
 
   // The Member's Votes on the Board's Dishes.
   const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote'), unsent, keep, anyUnsent })
