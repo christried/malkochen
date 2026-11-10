@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SourceInput } from '~~/server/utils/dish-input'
+import type { DishEditBody, SourceInput } from '~~/server/utils/dish-input'
 import type { DishView } from '~~/server/utils/dishes'
 import { FOCUS_CENTRE, focusPosition, sameFocus, type ImageFocus } from '~~/shared/image-focus'
 import type { Placeholder } from '~~/shared/placeholders'
@@ -15,11 +15,15 @@ import { webLink } from '~/utils/web-link'
 // none) is shown here and stored on Speichern, through the client Board
 // module. So is a Placeholder or the Member's own photo ("Eigenes Foto")
 // picked in the image dialog. Nothing changes until then.
+// While malkochen can't be reached (#460) only the title can be edited: the
+// rest of the form is greyed out, and saving sends the title alone (it
+// becomes an Unsent Change).
 // `boardId`: the Board it is on, where an own photo is uploaded to.
 const props = defineProps<{ dish: DishView, boardId: string }>()
 const emit = defineEmits<{ saved: [result: BoardResult], cancel: [] }>()
 const t = useStrings()
 const boardModule = useBoardModule()
+const { answering } = useConnection()
 
 const title = ref(props.dish.title)
 const titleInput = useTemplateRef<HTMLInputElement>('titleInput')
@@ -144,6 +148,24 @@ const saving = ref(false)
 const failed = ref<'notAllowed' | 'failed' | null>(null)
 const canSave = computed(() => title.value.trim() !== '' && !linkInvalid.value && reload.value !== 'looking' && !saving.value)
 
+// Everything the form can change, as the edit.
+async function allFields(choice: ImageChoice): Promise<DishEditBody> {
+  const { source, caption, playableVideo, sourceTicket } = await sourceToSave()
+  return {
+    title: title.value,
+    creator: creator.value,
+    source,
+    caption,
+    playableVideo,
+    sourceTicket,
+    placeholder: placeholder.value,
+    ...choice.kind === 'placeholder' && { imageUrl: null },
+    ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
+    ...choice.kind === 'photo' && { photo: { url: choice.url, ticket: choice.ticket } },
+    ...shiftableImage.value && focusChanged.value && { imageFocus: imageFocus.value },
+  }
+}
+
 async function save() {
   if (!canSave.value) return
   saving.value = true
@@ -153,20 +175,8 @@ async function save() {
   // finds mustn't become the image.
   if (reload.value === 'failed') reloadAsked.value = false
   try {
-    const { source, caption, playableVideo, sourceTicket } = await sourceToSave()
-    const saved = await boardModule.editDish(props.dish.id, {
-      title: title.value,
-      creator: creator.value,
-      source,
-      caption,
-      playableVideo,
-      sourceTicket,
-      placeholder: placeholder.value,
-      ...choice.kind === 'placeholder' && { imageUrl: null },
-      ...choice.kind === 'found' && { imageUrl: choice.url, imageTicket: choice.ticket },
-      ...choice.kind === 'photo' && { photo: { url: choice.url, ticket: choice.ticket } },
-      ...shiftableImage.value && focusChanged.value && { imageFocus: imageFocus.value },
-    })
+    // Offline, the title alone: the Source can't be looked up, nor an image stored.
+    const saved = await boardModule.editDish(props.dish.id, answering.value ? await allFields(choice) : { title: title.value })
     emit('saved', saved)
   }
   catch (error) {
@@ -200,10 +210,11 @@ async function save() {
       </button>
     </div>
 
-    <div
-      class="flex flex-col gap-3"
-      data-morph-field="image"
-    >
+    <NeedsNet>
+      <div
+        class="flex flex-col gap-3"
+        data-morph-field="image"
+      >
       <div class="aspect-[4/3] max-h-[45dvh] w-full overflow-hidden rounded-thumb bg-surface-muted">
         <img
           v-if="image.kind === 'found'"
@@ -254,7 +265,8 @@ async function save() {
         role="status"
         class="text-small text-text-muted empty:hidden"
       >{{ reloadMessage }}</p>
-    </div>
+      </div>
+    </NeedsNet>
 
     <div
       class="flex flex-col"
@@ -277,10 +289,11 @@ async function save() {
       </AppField>
     </div>
 
-    <div
-      class="flex flex-col"
-      data-morph-field="creator"
-    >
+    <NeedsNet :note="false">
+      <div
+        class="flex flex-col"
+        data-morph-field="creator"
+      >
       <AppField
         :label="t.dish.creator"
         :control-id="creatorId"
@@ -294,12 +307,14 @@ async function save() {
           :placeholder="t.detail.creatorPrompt"
         >
       </AppField>
-    </div>
+      </div>
+    </NeedsNet>
 
-    <div
-      class="flex flex-col"
-      data-morph-field="source"
-    >
+    <NeedsNet :note="false">
+      <div
+        class="flex flex-col"
+        data-morph-field="source"
+      >
       <AppField
         :label="t.detail.source"
         :control-id="linkId"
@@ -321,7 +336,8 @@ async function save() {
         :id="linkHintId"
         class="field-helper"
       >{{ t.detail.sourceHint }}</span>
-    </div>
+      </div>
+    </NeedsNet>
 
     <p
       v-if="failed"
@@ -333,8 +349,7 @@ async function save() {
 
     <!-- Saving, it shows its dots undimmed; save() ignores a second submit
          meanwhile. -->
-    <NeedsNet>
-      <button
+    <button
         type="submit"
         class="mt-auto rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         :disabled="!canSave && !saving"
@@ -347,7 +362,6 @@ async function save() {
           :busy="saving"
         />
       </button>
-    </NeedsNet>
 
     <ImageDialog
       v-model:open="choosingImage"

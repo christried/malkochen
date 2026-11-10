@@ -394,9 +394,35 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // recorded or a Vote under way shows there. A failed
   // write rejects with WriteFailed, for the form to say so; without "edit
   // Dishes" for it, at once with 403, as the server would.
+  //
+  // An edit of the title alone (the only field that works offline) whose
+  // write gets no answer, or that is made while Unsent Changes wait, shows
+  // at once and is kept as an Unsent Change instead; it wins over what
+  // others changed meanwhile.
   async function editDish(dishId: string, changes: DishEditBody): Promise<BoardResult> {
     if (!may('editDishes', dishId)) throw new WriteFailed(403)
-    const { imageNotStored, ...saved } = await queued(dishId, () => transport.editDish(dishId, changes), { moves: false })
+    const title = changes.title?.trim()
+    const titleOnly = !!title && Object.keys(changes).length === 1
+    const kept = Symbol('kept')
+    const madeAt = new Date().toISOString()
+    const answer = await queued(dishId, async () => {
+      if (titleOnly && unsent && anyUnsent()) return kept
+      try {
+        return await transport.editDish(dishId, changes)
+      }
+      catch (error) {
+        if (titleOnly && unsent && isUnanswered(error)) return kept
+        throw error
+      }
+    }, { moves: false })
+    if (answer === kept) {
+      const dish = find(dishId)?.dish
+      if (!dish) throw new WriteFailed(404)
+      keep({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
+      dish.title = title!
+      return { dish, unsent: true }
+    }
+    const { imageNotStored, ...saved } = answer
     const shown = find(dishId)?.dish
     if (shown) {
       const { cookings: _, votes: __, ...fields } = saved
@@ -1047,10 +1073,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   }
 
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote') })
+  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, keep, anyUnsent })
 
   // The Member's Votes on the Board's Dishes.
-  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote') })
+  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote'), unsent, keep, anyUnsent })
 
   // How many Dishes are on the Board, the Gekocht Column's included: it
   // follows every operation and poll, as the cards do.

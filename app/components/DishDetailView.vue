@@ -36,11 +36,10 @@ const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
 // While malkochen can't be reached (#458), the Dish is there to read: its
-// changes are greyed out, "Bearbeiten" saying why.
-const { mayChange, needsNet } = useConnection()
+// changes are greyed out. "Bearbeiten" opens all the same (#460): the title
+// can be changed offline, and the rest of its form is greyed out.
 function edit() {
-  if (mayChange.value) emit('edit')
-  else emit('notice', t.offline.needsNet)
+  emit('edit')
 }
 
 // "Link teilen": the Dish's Dish Link (made on the first share), then the
@@ -126,7 +125,6 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           v-if="mayEdit"
           type="button"
           class="shrink-0 rounded-pill bg-surface-muted px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          v-bind="needsNet"
           @click="edit"
         >
           {{ t.detail.edit }}
@@ -184,7 +182,6 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           type="button"
           class="rounded-pill bg-glass px-4 py-2.5 text-button text-text backdrop-blur-sm transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
           data-edit
-          v-bind="needsNet"
           @click="edit"
         >
           {{ t.detail.edit }}

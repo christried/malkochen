@@ -15,14 +15,20 @@ export function useConnectionState() {
 // (`needsNet`: aria-disabled, with "Geht nur mit Netz" as its tooltip) or
 // hidden, or sits in a NeedsNet group. `mayChangeOffline`: the same for a
 // change that works offline too (it becomes an Unsent Change, #459): moving
-// within the Board and "Gekocht ✓" with their "Rückgängig"; always yes. What
-// isn't a change asks `answering`.
+// within the Board and "Gekocht ✓" with their "Rückgängig", Votes, a Dish's
+// title (#460); always yes. `mayChangeComments`: Comments (#460) work offline
+// too, but only on a Dish whose Dish History has loaded on this page (the
+// Board module's historyLoaded): else they are greyed out like a change that
+// needs a connection (`needsNetUnless` greys out whatever isn't allowed).
+// What isn't a change asks `answering`.
 export function useConnection() {
   const state = useConnectionState()
   const t = useStrings()
   const answering = computed(() => state.value === 'online')
   const mayChange = answering
   const mayChangeOffline = computed(() => true)
-  const needsNet = computed(() => mayChange.value ? {} : { 'aria-disabled': 'true' as const, 'data-tooltip': t.offline.needsNet, 'data-needs-net': '' })
-  return { state: readonly(state), answering, mayChange, mayChangeOffline, needsNet }
+  const mayChangeComments = (historyLoaded: boolean) => answering.value || historyLoaded
+  const needsNetUnless = (may: boolean) => may ? {} : { 'aria-disabled': 'true' as const, 'data-tooltip': t.offline.needsNet, 'data-needs-net': '' }
+  const needsNet = computed(() => needsNetUnless(mayChange.value))
+  return { state: readonly(state), answering, mayChange, mayChangeOffline, mayChangeComments, needsNet, needsNetUnless }
 }

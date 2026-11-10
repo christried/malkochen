@@ -29,11 +29,11 @@ export function httpTransport(): BoardTransport {
     cookDishes: (dishIds, late) => asWrite(bulk({ action: 'cook', dishIds, ...late }) as Promise<CookedDish[]>),
     uncookDishes: cookings => asWrite(bulk({ action: 'uncook', cookings })),
     openDish: dishId => asWrite($fetch<DishHistory>(`/api/dishes/${dishId}/open`, { method: 'POST' })),
-    writeComment: (dishId, text) => asWrite($fetch<CommentView>(`/api/dishes/${dishId}/comments`, { method: 'POST', body: { text } })),
+    writeComment: (dishId, text, late) => asWrite($fetch<CommentView>(`/api/dishes/${dishId}/comments`, { method: 'POST', body: { text, ...late } })),
     editComment: (commentId, text) => asWrite($fetch<CommentView>(`/api/comments/${commentId}`, { method: 'PATCH', body: { text } })),
     deleteComment: commentId => asWrite($fetch<unknown>(`/api/comments/${commentId}`, { method: 'DELETE' })).then(() => undefined),
     restoreComment: commentId => asWrite($fetch<CommentView>(`/api/comments/${commentId}/restore`, { method: 'POST' })),
-    setVote: (dishId, up) => asWrite($fetch<VoteView>(`/api/dishes/${dishId}/vote`, { method: 'PUT', body: { up } })),
+    setVote: (dishId, up, late) => asWrite($fetch<VoteView>(`/api/dishes/${dishId}/vote`, { method: 'PUT', body: { up, ...late } })),
     takeBackVote: dishId => asWrite($fetch<unknown>(`/api/dishes/${dishId}/vote`, { method: 'DELETE' })).then(() => undefined),
   }
 }

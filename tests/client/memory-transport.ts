@@ -384,9 +384,13 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
 
   // A Comment as the server keeps it: trimmed. By nobody in particular (the
   // tests don't sign in). Null for a Dish the server doesn't have.
-  function writeCommentOnServer(dishId: string, text: string): CommentView | null {
+  // With the id the device made and when it was written (late), a repeat of
+  // that id is done already, and the Comment is dated by when it was written.
+  function writeCommentOnServer(dishId: string, text: string, late: { id?: string, madeAt?: string } = {}): CommentView | null {
     if (!server.columns.some(c => c.dishes.some(d => d.id === dishId))) return null
-    const comment = { id: `comment-${++commentsWritten}`, text: text.trim(), createdAt: new Date().toISOString(), editedAt: null, author: { id: 'me', name: 'Ich', image: null } }
+    const repeated = late.id ? commentOnServer(late.id) : null
+    if (repeated) return structuredClone(repeated)
+    const comment = { id: late.id ?? `comment-${++commentsWritten}`, text: text.trim(), createdAt: late.madeAt ?? new Date().toISOString(), editedAt: null, author: { id: 'me', name: 'Ich', image: null } }
     comments.set(dishId, [...comments.get(dishId) ?? [], comment])
     countOnServer(dishId, 1)
     return structuredClone(comment)
@@ -427,13 +431,13 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // so always "Ich"), only on a Dish with a Cooking (409 otherwise); the
   // same thumb again changes nothing. Null for a Dish the server doesn't
   // have.
-  function setVoteOnServer(dishId: string, up: boolean): VoteView | null {
+  function setVoteOnServer(dishId: string, up: boolean, late: { madeAt?: string } = {}): VoteView | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
     if (dish.cookings.length === 0) throw new WriteFailed(409)
     const mine = dish.votes.find(v => v.voter?.id === 'me')
     if (mine?.up === up) return structuredClone(mine)
-    const vote = { voter: { id: 'me', name: 'Ich', image: null }, up, votedAt: new Date().toISOString() }
+    const vote = { voter: { id: 'me', name: 'Ich', image: null }, up, votedAt: late.madeAt ?? new Date().toISOString() }
     dish.votes = [...dish.votes.filter(v => v !== mine), vote]
     return structuredClone(vote)
   }
@@ -498,11 +502,11 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
     openDish: dishId => answer('openDish', dishId, () => openOnServer(dishId)),
-    writeComment: (dishId, text) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text)),
+    writeComment: (dishId, text, late) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text, late)),
     editComment: (commentId, text) => answer('editComment', `${commentId} ${text}`, () => editCommentOnServer(commentId, text)),
     deleteComment: commentId => answer('deleteComment', commentId, () => deleteCommentOnServer(commentId)).then(() => undefined),
     restoreComment: commentId => answer('restoreComment', commentId, () => restoreCommentOnServer(commentId)),
-    setVote: (dishId, up) => answer('setVote', `${dishId} ${up}`, () => setVoteOnServer(dishId, up)),
+    setVote: (dishId, up, late) => answer('setVote', `${dishId} ${up}`, () => setVoteOnServer(dishId, up, late)),
     takeBackVote: dishId => answer('takeBackVote', dishId, () => takeBackVoteOnServer(dishId)).then(() => undefined),
   }
 

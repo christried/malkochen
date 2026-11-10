@@ -11,9 +11,14 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-function unsentChange(kind: UnsentKindName, label: string): string {
+function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `“${label}”`
   switch (kind) {
+    case 'comment': return `comment on ${named} (“${text}”)`
+    case 'commentEdit': return `edit of the comment on ${named} (“${text}”)`
+    case 'commentDelete': return `deleted comment on ${named}`
+    case 'vote': return `thumb on ${named}`
+    case 'title': return `new title for ${named}`
     case 'move': return `${named} moved`
     case 'cook':
     case 'cookMany': return `${named} cooked`
@@ -581,8 +586,11 @@ export const en: Strings = {
   unsent: {
     count: (count: number) => `${number(count)} not sent yet`,
     allSent: 'All sent',
-    didntArrive: (changes: { kind: UnsentKindName, label: string }[]) => {
-      const named = changes.map(({ kind, label }) => unsentChange(kind, label)).join(', ')
+    copyText: 'Copy',
+    copied: 'Copied',
+    copyFailed: 'Copying didn’t work.',
+    didntArrive: (changes: { kind: UnsentKindName, label: string, text?: string }[]) => {
+      const named = changes.map(({ kind, label, text }) => unsentChange(kind, label, text)).join(', ')
       return `${number(changes.length)} ${plural(changes.length, { one: 'change', other: 'changes' })} didn’t arrive: ${named}`
     },
   },
