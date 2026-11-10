@@ -43,6 +43,8 @@ export function memoryStore(): DeviceStore & { broken: (on?: boolean) => void } 
       load: userId => reading<UnsentChange[]>([], () => unsent.get(userId) ?? []),
       // Through JSON, as reactive proxies can't be structured-cloned.
       save: (userId, changes) => writing(() => unsent.set(userId, copy(changes))),
+      holders: () => reading<{ userId: string, count: number }[]>([], () => [...unsent].filter(([, kept]) => kept.length > 0).map(([userId, kept]) => ({ userId, count: kept.length }))),
+      discard: userId => writing(() => unsent.delete(userId)),
     },
     user: {
       load: () => reading<Me | null>(null, () => user),
@@ -85,8 +87,8 @@ export function memoryStore(): DeviceStore & { broken: (on?: boolean) => void } 
       addresses.delete(userId)
       last.delete(userId)
     }),
-    clear: () => writing(() => {
-      unsent.clear()
+    clear: options => writing(() => {
+      if (!options?.keepUnsent) unsent.clear()
       user = null
       boards.clear()
       listings.clear()

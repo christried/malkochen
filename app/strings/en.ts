@@ -623,6 +623,17 @@ export const en: Strings = {
     notFoundBody: 'This page doesn’t exist, or you’re not part of it (any more).',
     toApp: 'Go to malkochen',
   },
+  leaving: {
+    lost: (count: number) => `${number(count)} ${plural(count, { one: 'change hasn’t', other: 'changes haven’t' })} been sent yet and will be lost.`,
+    signOutTitle: 'Really sign out?',
+    signOutGo: 'Sign out anyway',
+    cancel: 'Cancel',
+    switchTitle: 'Changes from another account are waiting on this device.',
+    switchGo: 'Discard and continue',
+    switchKeep: 'Sign out and keep them',
+    signOutNeedsNet: 'Signing out only works online. You stay signed in.',
+    understood: 'Got it',
+  },
   username: {
     label: 'Name',
     pickHeadline: 'What should we call you?',

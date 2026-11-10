@@ -1,3 +1,5 @@
+import type { ShallowRef } from 'vue'
+import type { DeviceStore } from '~/board/device-store'
 import type { KeptBoards } from '~/board/kept-boards'
 import type { BoardView } from '~~/server/utils/boards'
 import type { Me } from '~~/server/utils/people'
@@ -10,7 +12,12 @@ export interface Device {
   keptOfUser: () => Promise<KeptBoards | null>
   remember: (me: Me) => Promise<void>
   openKept: (boardId: string) => Promise<BoardView | null>
-  forget: () => Promise<void>
+  // The user as last answered, once taken note of; the device store; how many
+  // Unsent Changes the user has (#463).
+  signedIn: ShallowRef<Me | null>
+  store: DeviceStore
+  unsentCount: () => Promise<number>
+  forget: (options?: { keepUnsent?: boolean }) => Promise<void>
 }
 
 export function useDevice(): Device | undefined {

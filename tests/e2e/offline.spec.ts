@@ -681,3 +681,139 @@ test('the Offline page is set in the app\'s fonts and type scale, on a phone and
   }
   await context.setOffline(false)
 })
+
+// Signing out or switching account with Unsent Changes (#463): they are only
+// ever sent as the user who made them. Signing out asks first; an expired
+// sign-in keeps them for the same user; someone else signing in asks, then
+// discards them. Agnodice, Theano, Hildegard, Hroswitha and Trotula are used
+// as above, each cleaned first.
+async function cooked(page: Page, boardId: string): Promise<string[]> {
+  const served = await (await page.request.get(`/api/boards/${boardId}`)).json() as { columns: { isGekocht: boolean, dishes: { title: string }[] }[] }
+  return served.columns.find(c => c.isGekocht)!.dishes.map(d => d.title)
+}
+
+// Gekocht ✓ gets no answer, while everything else (signing out, signing in)
+// does: the change stays unsent with a connection, as when malkochen is down.
+const COOK = (url: URL) => /^\/api\/dishes\/[^/]+\/cook$/.test(url.pathname)
+const signOutQuestion = (page: Page) => page.getByRole('dialog', { name: 'Wirklich abmelden?' })
+const switchQuestion = (page: Page) => page.getByRole('dialog', { name: 'Auf diesem Gerät warten Änderungen von einem anderen Konto.' })
+
+async function signOutFromMenu(page: Page) {
+  await page.getByRole('button', { name: 'Dein Konto' }).click()
+  await page.getByRole('menuitem', { name: 'Abmelden' }).click()
+}
+
+test('signing out with Unsent Changes warns with their count; cancelling keeps them, and they arrive once back', async ({ page, context }) => {
+  test.slow()
+  await removeUsers(AGNODICE)
+  await fastPolls(page)
+  await signIn(page, AGNODICE)
+  const board = await createBoard(page, 'Abmelden', ['Linsensuppe', 'Pasta'])
+  await gotoHydrated(page, `/b/${board.slug}`)
+
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+  await page.getByRole('button', { name: 'Gekocht ✓: „Pasta“' }).click()
+  await page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' }).click()
+  await expect(bar(page, '2 noch nicht gesendet')).toBeVisible()
+
+  await signOutFromMenu(page)
+  const question = signOutQuestion(page)
+  await expect(question).toBeVisible()
+  await expect(question.getByText('2 Änderungen sind noch nicht gesendet und gehen verloren.')).toBeVisible()
+  await question.getByText('Abbrechen', { exact: true }).click()
+  await expect(question).toBeHidden()
+  await expect(page).toHaveURL(new RegExp(`/b/${board.slug}$`))
+  await expect(bar(page, '2 noch nicht gesendet')).toBeVisible()
+
+  await context.setOffline(false)
+  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
+  await expect.poll(() => cooked(page, board.id)).toEqual(expect.arrayContaining(['Pasta', 'Linsensuppe']))
+})
+
+test('going ahead with a sign-out discards the Unsent Changes: they never arrive, not even after signing in again', async ({ page }) => {
+  test.slow()
+  await removeUsers(THEANO)
+  await fastPolls(page)
+  await signIn(page, THEANO)
+  const board = await createBoard(page, 'Abmelden und verwerfen', ['Pasta'])
+  await gotoHydrated(page, `/b/${board.slug}`)
+
+  await page.route(COOK, route => route.abort('connectionrefused'))
+  await page.getByRole('button', { name: 'Gekocht ✓: „Pasta“' }).click()
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+
+  await signOutFromMenu(page)
+  const question = signOutQuestion(page)
+  await expect(question.getByText('1 Änderung ist noch nicht gesendet und geht verloren.')).toBeVisible()
+  await question.getByRole('button', { name: 'Trotzdem abmelden' }).click()
+  await expect(page).toHaveURL(/\/login/)
+  for (const store of ['boards', 'user', 'unsent'] as const) {
+    await expect.poll(() => kept(page, store)).toEqual([])
+  }
+
+  // Signing in again as the same user: nothing is left to send.
+  await page.unroute(COOK)
+  await signIn(page, THEANO)
+  await gotoHydrated(page, `/b/${board.slug}`)
+  await expect(titles(page, 'Ideen')).toHaveText(['Pasta'])
+  await expect(bar(page, 'noch nicht gesendet')).toBeHidden()
+  expect(await cooked(page, board.id)).toEqual([])
+})
+
+test('a sign-in that expired offline keeps the Unsent Changes, and signing in again as the same user sends them from any page', async ({ page, context }) => {
+  test.slow()
+  await removeUsers(HILDEGARD)
+  await fastPolls(page)
+  await signIn(page, HILDEGARD)
+  const board = await createBoard(page, 'Abgelaufen', ['Pasta'])
+  await gotoHydrated(page, `/b/${board.slug}`)
+
+  await context.setOffline(true)
+  await expect(offlineBar(page)).toBeVisible()
+  await page.getByRole('button', { name: 'Gekocht ✓: „Pasta“' }).click()
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+  // The session ran out meanwhile.
+  await context.clearCookies()
+  await context.setOffline(false)
+  await expect.poll(() => kept(page, 'unsent')).toHaveLength(1)
+
+  // Signed in again (a fresh page: the device still holds the change), on a
+  // page that is no Board.
+  await signIn(page, HILDEGARD)
+  await gotoHydrated(page, NOT_KEPT)
+  await expect.poll(() => cooked(page, board.id), { timeout: 15_000 }).toEqual(['Pasta'])
+})
+
+test('signing in as another user on the device warns, then discards the Unsent Changes; they are never sent as that user', async ({ page, browser }) => {
+  test.slow()
+  await removeUsers(HROSWITHA, TROTULA)
+  await fastPolls(page)
+  await signIn(page, HROSWITHA)
+  const board = await createBoard(page, 'Kontowechsel', ['Pasta'])
+  await gotoHydrated(page, `/b/${board.slug}`)
+
+  await page.route(COOK, route => route.abort('connectionrefused'))
+  await page.getByRole('button', { name: 'Gekocht ✓: „Pasta“' }).click()
+  await expect(bar(page, '1 noch nicht gesendet')).toBeVisible()
+
+  // Someone else signs in on the same browser.
+  await signIn(page, TROTULA)
+  await gotoHydrated(page, '/')
+  const question = switchQuestion(page)
+  await expect(question).toBeVisible()
+  await expect(question.getByText('1 Änderung ist noch nicht gesendet und geht verloren.')).toBeVisible()
+  // Until the answer, nothing of the first user's is touched.
+  expect(await kept(page, 'unsent')).toHaveLength(1)
+  await question.getByRole('button', { name: 'Verwerfen und weitermachen' }).click()
+  await expect(question).toBeHidden()
+  await expect.poll(() => kept(page, 'unsent')).toEqual([])
+
+  // Nothing reached the first user's Board, with or without a connection.
+  await page.unroute(COOK)
+  await page.waitForTimeout(2_000)
+  const owner = await newTab(browser)
+  await signIn(owner, HROSWITHA)
+  expect(await cooked(owner, board.id)).toEqual([])
+  await owner.context().close()
+})
