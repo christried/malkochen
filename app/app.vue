@@ -10,5 +10,6 @@ const staging = useRuntimeConfig().public.staging
   <OfflineBar />
   <SplashScreen />
   <AppTooltip />
+  <LeavingQuestion />
   <StagingLabel v-if="staging" />
 </template>

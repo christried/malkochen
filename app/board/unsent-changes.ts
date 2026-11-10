@@ -89,8 +89,10 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     if (kept.length) changes.value = [...kept, ...changes.value]
   })
   let saving: Promise<void> = Promise.resolve()
+  // Closed (signed out, account deleted): nothing is written or sent any more.
+  let closed = false
   function persist() {
-    saving = saving.then(() => loaded).then(() => store.unsent.save(userId, JSON.parse(JSON.stringify(changes.value)) as UnsentChange[])).catch(() => {})
+    saving = saving.then(() => loaded).then(() => closed ? undefined : store.unsent.save(userId, JSON.parse(JSON.stringify(changes.value)) as UnsentChange[])).catch(() => {})
   }
 
   const has = (changeId: string) => changes.value.some(c => c.id === changeId)
@@ -198,7 +200,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     let sent = 0
     let stopped: false | 'unanswered' | 'signedOut' = false
     const dropped: UnsentChange[] = []
-    while (!stopped && changes.value.length > 0) {
+    while (!stopped && !closed && changes.value.length > 0) {
       const change = changes.value[0]!
       underWay++
       started++
@@ -234,6 +236,11 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     count,
     // Loaded from the device.
     ready: loaded,
+    // The user signed out or deleted the account: what was still to be sent
+    // is not, and none of it is written to the device again (#463).
+    close() {
+      closed = true
+    },
     // Resolves once everything added or removed so far is written.
     saved: () => saving,
     add,

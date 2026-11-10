@@ -619,6 +619,17 @@ export const it: Strings = {
     notFoundBody: 'Questa pagina non esiste, oppure non ne fai (più) parte.',
     toApp: 'Vai a malkochen',
   },
+  leaving: {
+    lost: (count: number) => `${number(count)} ${plural(count, { one: 'modifica non è ancora stata inviata e andrà persa', other: 'modifiche non sono ancora state inviate e andranno perse' })}.`,
+    signOutTitle: 'Vuoi davvero uscire?',
+    signOutGo: 'Esci comunque',
+    cancel: 'Annulla',
+    switchTitle: 'Su questo dispositivo ci sono modifiche di un altro account.',
+    switchGo: 'Scarta e continua',
+    switchKeep: 'Esci e tienile',
+    signOutNeedsNet: 'Uscire funziona solo in rete. Rimani dentro.',
+    understood: 'Capito',
+  },
   username: {
     label: 'Nome',
     pickHeadline: 'Come ti chiamiamo?',
