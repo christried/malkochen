@@ -3,6 +3,7 @@ import type { BoardSummary } from '~~/server/utils/boards'
 import type { CookingView } from '~~/server/utils/cookings'
 import type { DishView } from '~~/server/utils/dishes'
 import { videoEmbed, videoPill } from '~~/shared/video-embed'
+import { allowedOnceSent } from '~/board/allowed-once-sent'
 import type { CommentResult } from '~/board/dish-histories'
 import type { VoteResult } from '~/board/dish-votes'
 
