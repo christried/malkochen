@@ -5,6 +5,7 @@ import type { DishHistory, DishHistoryEntry } from '../../server/utils/dish-hist
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import { commentText } from '../utils/comment-text'
 import { historyEntries } from '../utils/history-entries'
+import { isUnanswered, WriteFailed } from './write-failed'
 
 // The Board module's part for the Dish History ("Verlauf", #332) of the
 // Dishes whose detail opens: loaded from the server as the detail opens,
@@ -55,9 +56,15 @@ interface HistoryHost {
   isRefused: (error: unknown) => boolean
   // Whether the user may comment on the Board ("comment and vote").
   mayComment: () => boolean
+  // The Dish History kept on the device (kept-boards.ts): a History that
+  // loads is kept, and one opened with no answer shows the kept one.
+  kept?: { keep: (dishId: string, history: DishHistory) => void, history: (dishId: string) => Promise<DishHistory | null> }
+  // malkochen can't be reached: opening a Dish isn't opening it, so nothing
+  // is asked.
+  offline?: () => boolean
 }
 
-export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment }: HistoryHost) {
+export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment, kept: device, offline }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -102,10 +109,16 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
     const quiet = !underWay.get(dishId)
     let history: DishHistory
     try {
+      if (offline?.()) throw new WriteFailed()
       history = await transport.openDish(dishId)
+      device?.keep(dishId, history)
     }
-    catch {
-      return false
+    catch (error) {
+      // No answer: the History kept on the device stands in, and counts as
+      // loaded (#461).
+      const stored = isUnanswered(error) ? await device?.history(dishId) : null
+      if (!stored) return false
+      history = stored
     }
     const first = !loadedOnce.has(dishId)
     loadedOnce.add(dishId)
