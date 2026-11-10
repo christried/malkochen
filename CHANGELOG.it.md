@@ -4,6 +4,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-10
+
 ### Added
 
 - Hai cucinato più piatti? Selezionali (tieni premuto su uno, o Ctrl-clic sul desktop), tocca Cucinato ✓ e contano tutti. Una sola festa per tutti, un classico ha comunque la sua, e un solo Annulla li riporta tutti indietro.
@@ -67,7 +69,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Aperto a tutti: chiunque può iscriversi, con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
 - Novità: questa pagina, in fondo alle tue impostazioni e segnata come Nuovo dopo ogni aggiornamento.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0

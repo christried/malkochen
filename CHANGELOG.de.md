@@ -4,6 +4,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-10
+
 ### Added
 
 - Mehrere Gerichte gekocht? Wähl sie aus (lang auf eins drücken, am Desktop mit Strg-Klick), tipp auf Gekocht ✓, und jedes zählt. Eine Feier für alle zusammen, ein Klassiker bekommt trotzdem seine eigene, und ein Tipp auf Rückgängig nimmt alles zurück.
@@ -67,7 +69,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/christried/malkochen/compare/v1.0.0...v1.1.0
