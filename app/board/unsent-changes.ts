@@ -11,7 +11,7 @@ import type { BoardTransport } from './board-module'
 import type { DeviceStore } from './device-store'
 import { deviceOwner } from './device-owner'
 import { plainCopy } from './plain-copy'
-import { WriteFailed } from './write-failed'
+import { isUnanswered, WriteFailed } from './write-failed'
 
 // Unsent Changes (CONTEXT.md; ADR 0012; spec #456): what the user did while
 // malkochen didn't answer. Each shows on screen at once, is kept on the
@@ -185,7 +185,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
   // Whether malkochen gave no answer to the error's write: nothing to say
   // about the change yet, so it stays and the rest wait. A 5xx counts too,
   // as the server failing is not it saying it can't apply the change.
-  const unanswered = (error: unknown) => error instanceof WriteFailed && (error.status === undefined || error.status >= 500)
+  const unanswered = (error: unknown) => isUnanswered(error) || (error instanceof WriteFailed && error.status! >= 500)
   // A 401: the sign-in expired. The change is not refused, it waits for the
   // same user to sign in again (#463).
   const signedOut = (error: unknown) => error instanceof WriteFailed && error.status === 401
@@ -219,7 +219,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     for (const c of [...changes.value]) {
       if ('dishId' in c && c.dishId === dishId && c.kind !== 'add') remove(c.id)
       else if (c.kind === 'cookMany' && c.dishIds.includes(dishId)) {
-        const keep = c.dishIds.map((id, i) => id === dishId ? -1 : i).filter(i => i !== -1)
+        const keep = remaining(c.dishIds, dishId)
         if (keep.length === 0) remove(c.id)
         else {
           c.dishIds = keep.map(i => c.dishIds[i]!)
@@ -228,7 +228,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
         }
       }
       else if (c.kind === 'uncookMany' && c.dishIds.includes(dishId)) {
-        const keep = c.dishIds.map((id, i) => id === dishId ? -1 : i).filter(i => i !== -1)
+        const keep = remaining(c.dishIds, dishId)
         if (keep.length === 0) remove(c.id)
         else {
           c.cookings = keep.map(i => c.cookings[i]!)
@@ -355,6 +355,9 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
       || (c.kind === 'cookMany' && c.cookingIds.includes(cookingId))),
   }
 }
+
+// The positions in `dishIds` of the Dishes other than `dishId`.
+const remaining = (dishIds: string[], dishId: string) => dishIds.flatMap((id, i) => id === dishId ? [] : [i])
 
 export type UnsentChanges = ReturnType<typeof createUnsentChanges>
 

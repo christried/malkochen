@@ -49,11 +49,11 @@ interface VoteHost {
   // The Unsent Changes (none: a write without an answer fails as ever), as
   // for the Dish History (dish-histories.ts).
   unsent?: UnsentChanges
-  keep: (kind: UnsentKind, madeAt: string, label: string) => string
+  queueUnsent: (kind: UnsentKind, madeAt: string, label: string) => string
   anyUnsent: () => boolean
 }
 
-export function createDishVotes({ transport, find, queued, isRefused, mayVote, unsent, keep, anyUnsent }: VoteHost) {
+export function createDishVotes({ transport, find, queued, isRefused, mayVote, unsent, queueUnsent, anyUnsent }: VoteHost) {
   // Each Dish's Vote of the Member's as the server last had it, while a
   // Vote of theirs on it is under way: where a failed one goes back to,
   // also when one before it is still unconfirmed.
@@ -93,7 +93,7 @@ export function createDishVotes({ transport, find, queued, isRefused, mayVote, u
     // Undefined once kept (null is a Vote taken back).
     function keepUnsent(): undefined {
       unsent!.replaceVotes(dishId)
-      keep({ kind: 'vote', dishId, up, voter }, madeAt, find(dishId)?.title ?? '')
+      queueUnsent({ kind: 'vote', dishId, up, voter }, madeAt, find(dishId)?.title ?? '')
       return undefined
     }
     const write = () => sendOrKeep<VoteView | null, undefined>({

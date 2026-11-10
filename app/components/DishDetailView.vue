@@ -38,7 +38,7 @@ const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
 // Added offline and not sent yet (#462): sharing, copying and deleting wait
 // for the server to have the Dish; they are greyed out like what needs a
 // connection.
-const onlyIfSent = computed(() => boardModule.isUnsentAdd(props.dish.id) ? false : undefined)
+const onlyIfSent = computed(() => allowedOnceSent(boardModule, props.dish.id))
 // While malkochen can't be reached (#458), the Dish is there to read: its
 // changes are greyed out. "Bearbeiten" opens all the same (#460): the title
 // can be changed offline, and the rest of its form is greyed out.

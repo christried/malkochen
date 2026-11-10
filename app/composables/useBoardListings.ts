@@ -1,4 +1,4 @@
-import { gotNoAnswer } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import type { BoardListing } from '~~/server/utils/boards'
 
 // The user's Boards as the Board switcher last fetched them: its list, and

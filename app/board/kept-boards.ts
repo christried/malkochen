@@ -175,16 +175,6 @@ export function createKeptBoards({ store, userId, forgetImages }: KeptBoardsDeps
 // The addresses of the images a Board's Dishes show.
 const imagesOf = (view: BoardView): string[] => view.columns.flatMap(c => c.dishes.flatMap(d => d.imageUrl ? [d.imageUrl] : []))
 
-// Whether a failed request got no answer from malkochen: no response at all,
-// or Vercel's own error page (a 5xx with x-vercel-error), as the connection
-// plugin and the service worker count it. What `$fetch` rejects with.
-export function gotNoAnswer(error: unknown): boolean {
-  const { statusCode, status, response } = (error ?? {}) as { statusCode?: number, status?: number, response?: { status?: number, headers?: Headers } }
-  const code = statusCode ?? response?.status ?? status
-  if (code === undefined) return true
-  return code >= 500 && !!response?.headers?.has('x-vercel-error')
-}
-
 // Whether malkochen answered that the Board isn't the user's (any more): they
 // left it, were removed from it, or it was archived or deleted.
 export function boardIsGone(error: unknown): boolean {

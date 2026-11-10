@@ -26,7 +26,7 @@ const boardModule = useBoardModule()
 // Added offline and not sent yet (#462): the image, Creator and Source wait
 // for the server, which looks the link up.
 const unsentAdd = computed(() => boardModule.isUnsentAdd(props.dish.id))
-const onlyIfSent = computed(() => unsentAdd.value ? false : undefined)
+const onlyIfSent = computed(() => allowedOnceSent(boardModule, props.dish.id))
 const { answering } = useConnection()
 
 const title = ref(props.dish.title)

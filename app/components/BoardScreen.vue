@@ -5,7 +5,8 @@ import type { DishView } from '~~/server/utils/dishes'
 import type { Me } from '~~/server/utils/people'
 import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
-import { boardIsGone, gotNoAnswer } from '~/board/kept-boards'
+import { boardIsGone } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import { createKlassikerQueue } from '~/board/klassiker-queue'
 import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
 import { duePrompt } from '~/utils/notification-prompt'
@@ -240,7 +241,7 @@ const { drag, dragging, entries } = useDishDrag(columnsEl, {
   press: dishId => selection.toggle(dishId),
   paused: () => selecting.value,
   // Without "move Dishes" no card lifts; a long-press still selects one.
-  pinned: () => !mayMove.value || !mayChangeOffline.value,
+  pinned: () => !mayMove.value,
 })
 // What plays on the Board: the lifted card's Placeholder, the hovered
 // card's, or one where the Board comes to rest; and beside it an empty
@@ -458,7 +459,7 @@ const mayArchive = (dish: DishView) => boardModule.may('archiveDishes', dish.id)
 // made: a card has no "Gekocht ✓" or menu, none lifts, and the add lane is
 // gone (useConnection). Adding a Dish works offline (#462): it is kept as an
 // Unsent Change, and what needs a connection in Add Dish is greyed out there.
-const { answering, mayChange, mayChangeOffline } = useConnection()
+const { answering, mayChange } = useConnection()
 function addDish() {
   adding.value = true
 }
@@ -1472,7 +1473,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             </button>
             <NeedsNet
               v-if="menuDish && mayArchive(menuDish)"
-              :allowed="boardModule.isUnsentAdd(menuDish.id) ? false : undefined"
+              :allowed="allowedOnceSent(boardModule, menuDish.id)"
             >
               <DangerButton
                 data-tour="menu-delete"

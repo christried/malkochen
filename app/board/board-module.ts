@@ -220,7 +220,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   const anyUnsent = () => (unsent?.count.value ?? 0) > 0
 
   // Keeps a change as an Unsent Change, and tries to send them all.
-  function keep(kind: UnsentKind, madeAt: string, label: string): string {
+  function queueUnsent(kind: UnsentKind, madeAt: string, label: string): string {
     const change = { id: crypto.randomUUID(), boardId: board.value!.id, madeAt, label, ...kind } as UnsentChange
     unsent!.add(change)
     void unsent!.send()
@@ -428,7 +428,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const kind = { kind: 'add', dishId, link, title, placeholder: input.placeholder, adder, ...noImage && { noImage: true as const } } as const
     const shown = dishOfAdd({ id: '', boardId: board.value!.id, madeAt, label: '', ...kind })
     into.dishes.unshift(shown)
-    keep(kind, madeAt, shown.title)
+    queueUnsent(kind, madeAt, shown.title)
     return { dish: find(dishId)?.dish ?? shown, placement: { boardId: board.value!.id, columnId: into.id, index: 0 }, unsent: true }
   }
 
@@ -447,12 +447,12 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   function takeArrivals() {
     if (!unsent || !board.value) return
     for (const { dish } of unsent.takeArrivals(board.value.id)) {
-      const { placement: _, imageNotStored: __, duplicateOf: ___, cookings: ____, votes: _____, commentCount: ______, ...fields } = dish
-      const shown = find(dish.id)?.dish
+      const { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt } = dish
+      const shown = find(id)?.dish
       if (!shown) continue
       // The code it was shown with still leads to it (an open detail).
       arrivedCodes.set(shown.code, shown.id)
-      Object.assign(shown, fields)
+      Object.assign(shown, { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt })
     }
   }
   const arrivedCodes = reactive(new Map<string, string>())
@@ -500,7 +500,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     if (answer === titleKept) {
       const dish = find(dishId)?.dish
       if (!dish) throw new WriteFailed(404)
-      keep({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
+      queueUnsent({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
       dish.title = title!
       return { dish, unsent: true }
     }
@@ -605,7 +605,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       const kind: UnsentKind = cook
         ? { kind: 'cook', dishId, cookingId: cookingId! }
         : { kind: 'move', dishId, columnId: target!.id, ...to.index !== undefined && { index: to.index }, ...cookingId && { cookingId } }
-      ended.unsentId = keep(kind, madeAt, dish.title)
+      ended.unsentId = queueUnsent(kind, madeAt, dish.title)
       return { dish, placement, unsent: true, ...pending && { cooking: pending } }
     }
 
@@ -719,7 +719,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         // Recorded: answered, or sent from the Unsent Changes since.
         const recorded = ended.recorded ?? (ended.unsentId ? pending : undefined)
         const keepUncook = (): BoardResult => {
-          keep({ kind: 'uncook', dishId, cookingId: pending.id, back }, new Date().toISOString(), dish.title)
+          queueUnsent({ kind: 'uncook', dishId, cookingId: pending.id, back }, new Date().toISOString(), dish.title)
           return { dish, unsent: true }
         }
         try {
@@ -1004,7 +1004,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     function keepUnsent(): BulkResult {
       for (const id of cookingIds) recording.delete(id)
       for (const id of ids) rolledBackTo.delete(id)
-      unsentId = keep({ kind: 'cookMany', dishIds: ids, cookingIds }, madeAt, dishes.map(d => d.title).join(', '))
+      unsentId = queueUnsent({ kind: 'cookMany', dishIds: ids, cookingIds }, madeAt, dishes.map(d => d.title).join(', '))
       const klassiker = dishes
         .map((dish, i) => ({ dish, cooking: pendings[i]! }))
         .filter(({ dish }) => dish.cookings.length === MILESTONE_COOKINGS)
@@ -1060,7 +1060,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
         return { cookingId: cookingIds[i]!, ...origin && { back: { columnId: origin.columnId, index: origin.index } } }
       })
       const keepUncook = (): BulkResult => {
-        keep({ kind: 'uncookMany', dishIds: ids, cookings: undos }, new Date().toISOString(), dishes.map(d => d.title).join(', '))
+        queueUnsent({ kind: 'uncookMany', dishIds: ids, cookings: undos }, new Date().toISOString(), dishes.map(d => d.title).join(', '))
         return { dishes, unsent: true }
       }
       const uncooked = queued(ids, async (latest): Promise<BulkResult> => {
@@ -1187,10 +1187,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   }
 
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, offline, isUnsentAdd, kept: kept && { keep: (dishId, history) => { if (board.value) void kept.keepHistory(board.value.id, dishId, history) }, history: kept.history }, find: dishId => find(dishId)?.dish, clearNewInHistory, markNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, keep, anyUnsent })
+  const histories = createDishHistories({ transport, offline, isUnsentAdd, device: kept && { keep: (dishId, history) => { if (board.value) void kept.keepHistory(board.value.id, dishId, history) }, history: kept.history }, find: dishId => find(dishId)?.dish, clearNewInHistory, markNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, queueUnsent, anyUnsent })
 
   // The Member's Votes on the Board's Dishes.
-  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote'), unsent, keep, anyUnsent })
+  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote'), unsent, queueUnsent, anyUnsent })
 
   // How many Dishes are on the Board, the Gekocht Column's included: it
   // follows every operation and poll, as the cards do.

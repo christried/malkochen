@@ -1,5 +1,6 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
-import { boardIsGone, gotNoAnswer } from '~/board/kept-boards'
+import { boardIsGone } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import type { BoardAddress } from '~~/server/utils/addresses'
 
 // The Board at the page's address (CONTEXT.md: Address): /b/<slug>, and a

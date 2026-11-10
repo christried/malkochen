@@ -4,6 +4,7 @@ import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { Me } from '../../server/utils/people'
+import { plainCopy } from './plain-copy'
 import type { UnsentChange } from './unsent-changes'
 
 // What the app keeps on the device for the signed-in user (CONTEXT.md: Unsent
@@ -132,9 +133,6 @@ async function itemsOf(store: IDBObjectStore, userId: string): Promise<{ key: st
   return keys.map((key, i) => ({ key: String(key), value: values[i] }))
 }
 
-// A plain copy: reactive proxies can't be cloned into the database.
-const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
-
 // Nothing it does throws: `fallback` stands in for what couldn't be read or
 // written.
 async function safely<T>(fallback: T, work: () => Promise<T>): Promise<T> {
@@ -153,7 +151,7 @@ async function read<T>(name: StoreName, key: string): Promise<T | null> {
 async function write(name: StoreName, key: string, value: unknown): Promise<void> {
   // Nowhere to keep it: it lives in memory until the app closes.
   await safely(undefined, () => inTransaction([name], 'readwrite', async (stores) => {
-    await asPromise(stores[name]!.put(plain(value), key))
+    await asPromise(stores[name]!.put(plainCopy(value), key))
   }))
 }
 

@@ -1,4 +1,4 @@
-import { gotNoAnswer } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import type { Me } from '~~/server/utils/people'
 
 // The fetch that asks for the signed-in user (/api/me): with no answer from

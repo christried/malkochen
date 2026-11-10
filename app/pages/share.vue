@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { gotNoAnswer } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import { boardPath } from '~~/shared/address'
 import { sharedLink } from '~/utils/shared-link'
 

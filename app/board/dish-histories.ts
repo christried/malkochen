@@ -69,7 +69,7 @@ interface HistoryHost {
   mayComment: () => boolean
   // The Dish History kept on the device (kept-boards.ts): a History that
   // loads is kept, and one opened with no answer shows the kept one.
-  kept?: { keep: (dishId: string, history: DishHistory) => void, history: (dishId: string) => Promise<DishHistory | null> }
+  device?: { keep: (dishId: string, history: DishHistory) => void, history: (dishId: string) => Promise<DishHistory | null> }
   // malkochen can't be reached: opening a Dish isn't opening it, so nothing
   // is asked.
   offline?: () => boolean
@@ -77,14 +77,14 @@ interface HistoryHost {
   // it has no History to load, so its History counts as loaded, and empty.
   isUnsentAdd?: (dishId: string) => boolean
   // The Unsent Changes (none: a write without an answer fails as ever).
-  // `keep` keeps a change as one and tries to send them all; `anyUnsent`:
+  // `queueUnsent` keeps a change as one and tries to send them all; `anyUnsent`:
   // changes wait, so new ones join their end without trying the network.
   unsent?: UnsentChanges
-  keep: (kind: UnsentKind, madeAt: string, label: string) => string
+  queueUnsent: (kind: UnsentKind, madeAt: string, label: string) => string
   anyUnsent: () => boolean
 }
 
-export function createDishHistories({ transport, find, clearNewInHistory, markNewInHistory, queued, isGone, isRefused, mayComment, unsent, keep, anyUnsent, kept: device, offline, isUnsentAdd }: HistoryHost) {
+export function createDishHistories({ transport, find, clearNewInHistory, markNewInHistory, queued, isGone, isRefused, mayComment, unsent, queueUnsent, anyUnsent, device, offline, isUnsentAdd }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -233,7 +233,7 @@ export function createDishHistories({ transport, find, clearNewInHistory, markNe
     count(dishId, 1)
     function keepUnsent(): CommentResult {
       pending.id = commentId
-      keep({ kind: 'comment', dishId, commentId, text: said!, author }, madeAt, find(dishId)?.title ?? '')
+      queueUnsent({ kind: 'comment', dishId, commentId, text: said!, author }, madeAt, find(dishId)?.title ?? '')
       return { comment: pending, unsent: true }
     }
     const settled = tracked(dishId, async (): Promise<CommentResult> => {
@@ -282,7 +282,7 @@ export function createDishHistories({ transport, find, clearNewInHistory, markNe
     // The edit as an Unsent Change, while others wait or malkochen doesn't answer.
     // Null once kept.
     const keepUnsent = (): null => {
-      keep({ kind: 'commentEdit', dishId, commentId, text: said }, madeAt, find(dishId)?.title ?? '')
+      queueUnsent({ kind: 'commentEdit', dishId, commentId, text: said }, madeAt, find(dishId)?.title ?? '')
       return null
     }
     const edited = queued(commentId, () => sendOrKeep<CommentView | null, null>({
@@ -336,7 +336,7 @@ export function createDishHistories({ transport, find, clearNewInHistory, markNe
     // The delete as an Unsent Change, while others wait or malkochen doesn't answer.
     let unsentId: string | undefined
     const keepUnsent = () => {
-      unsentId = keep({ kind: 'commentDelete', dishId, commentId }, new Date().toISOString(), find(dishId)?.title ?? '')
+      unsentId = queueUnsent({ kind: 'commentDelete', dishId, commentId }, new Date().toISOString(), find(dishId)?.title ?? '')
     }
     const deleted = tracked(dishId, () => queued(commentId, () => sendOrKeep({
       canKeep: !!unsent,

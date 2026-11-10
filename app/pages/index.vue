@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { gotNoAnswer } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import { boardPath } from '~~/shared/address'
 
 // No page of its own: opens the Board used last ("Meine Küche" on a first
