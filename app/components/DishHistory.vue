@@ -52,18 +52,24 @@ const summary = computed(() => {
 
 // Loaded as the detail opens, and again for another Dish. Opening a Dish
 // while malkochen can't be reached isn't opening it (#458, CONTEXT.md Dish
-// History): no request, and what's new in it stays marked; it loads once
-// malkochen answers, if the detail is still open. Meanwhile its changes
-// are greyed out or hidden.
-const { answering, mayChange } = useConnection()
+// History): no request, and what's new in it stays marked; the History kept
+// on the device shows (#461), and it loads once malkochen answers, if the
+// detail is still open. Meanwhile its changes are greyed out or hidden.
+const { answering, mayChange, mayChangeComments, needsNetUnless } = useConnection()
 const loadFailed = ref(false)
+// Comments work offline (#460) on a Dish whose history has loaded on this
+// page: their changes are kept as Unsent Changes laid over it. On one that
+// hasn't, they are greyed out.
+const canComment = computed(() => mayChangeComments(boardModule.historyLoaded(props.dish.id)))
 // The Dish whose history has loaded (or failed to).
 const loaded = ref<string | null>(null)
 async function load() {
   const dishId = props.dish.id
-  if (!answering.value) return
-  loadFailed.value = !await boardModule.openDish(dishId)
-  loaded.value = dishId
+  const shown = await boardModule.openDish(dishId)
+  // Nothing kept to show offline isn't a failure to load.
+  loadFailed.value = !shown && answering.value
+  // Only an answer from malkochen counts as loaded.
+  loaded.value = answering.value ? dishId : null
 }
 onMounted(load)
 watch(() => props.dish.id, load)
@@ -79,7 +85,7 @@ const reportOpen = ref(false)
 // The Cooking the sheet is for; kept while the sheet moves out.
 const reporting = ref<{ id: string, cookedAt: string } | null>(null)
 function report(cooking: CookingView) {
-  if (!cooking.id) return
+  if (boardModule.isRecording(cooking.id)) return
   reporting.value = { id: cooking.id, cookedAt: cooking.cookedAt }
   reportOpen.value = true
 }
@@ -100,7 +106,7 @@ function keyOf(entry: DishHistoryEntry): string {
 const when = (at: string) => t.history.when(new Date(at))
 const nameOf = (person: { name: string } | null) => person?.name ?? t.history.deletedAccount
 // One still being recorded was recorded by whoever is looking.
-const recorderOf = (cooking: CookingView) => cooking.id ? nameOf(cooking.recordedBy) : me.value?.name ?? ''
+const recorderOf = (cooking: CookingView) => boardModule.isRecording(cooking.id) ? me.value?.name ?? '' : nameOf(cooking.recordedBy)
 
 // The Member's own Vote: thumbs up (true), down (false), or none.
 const myVote = computed(() => voteOf(props.dish, me.value?.id))
@@ -249,7 +255,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
         </p>
       </div>
       <CookButton
-        v-if="boardModule.may('moveDishes') && mayChange"
+        v-if="boardModule.may('moveDishes')"
         class="shrink-0 px-4 py-2.5"
         :cooked="dish.cookings.length > 0"
         @cook="origin => emit('cook', origin)"
@@ -262,12 +268,10 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       data-how-was-it
     >
       <span class="text-small text-text-muted">{{ t.history.howWasIt }}</span>
-      <NeedsNet :note="false">
-        <VoteButtons
-          :mine="myVote"
-          @vote="vote"
-        />
-      </NeedsNet>
+      <VoteButtons
+        :mine="myVote"
+        @vote="vote"
+      />
     </div>
     <div
       v-else-if="!dish.cookings.length"
@@ -363,7 +367,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               :class="iconButton"
               :aria-label="t.cooking.deleteLabel(new Date(entry.cooking.cookedAt))"
               :data-tooltip="t.cooking.deleteTip"
-              :disabled="!entry.cooking.id"
+              :disabled="boardModule.isRecording(entry.cooking.id)"
               @click="emit('deleteCooking', entry.cooking)"
             >
               <svg
@@ -379,14 +383,15 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
             </button>
             <button
-              v-else-if="entry.kind === 'comment' && entry.comment.id && canDelete(entry.comment) && mayChange"
+              v-else-if="entry.kind === 'comment' && entry.comment.id && canDelete(entry.comment)"
               type="button"
               class="-my-1.5"
               :class="iconButton"
               :aria-label="t.history.commentMenu(isOwn(entry.comment))"
               :aria-expanded="menuFor === entry.comment.id"
               :data-tooltip="t.history.commentMenu(isOwn(entry.comment))"
-              @click="toggleMenu(entry.comment)"
+              v-bind="needsNetUnless(canComment)"
+              @click="canComment && toggleMenu(entry.comment)"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -416,12 +421,12 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             {{ entry.comment.text }}
           </p>
           <SnackbertReportButton
-            v-if="entry.kind === 'cooking' && entry.cooking.id && snackbert.on.value"
+            v-if="entry.kind === 'cooking' && !boardModule.isRecording(entry.cooking.id) && snackbert.on.value"
             :reported="snackbert.isReported(entry.cooking.id)"
             @click="report(entry.cooking)"
           />
           <span
-            v-if="entry.kind === 'comment' && menuFor === entry.comment.id && mayChange"
+            v-if="entry.kind === 'comment' && menuFor === entry.comment.id && canComment"
             class="flex gap-1.5"
           >
             <button
@@ -466,7 +471,7 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       data-comment-form
       @submit.prevent="submit"
     >
-      <NeedsNet>
+      <NeedsNet :allowed="canComment">
         <p
           v-if="editing"
           class="flex items-center justify-between gap-3 px-1 text-caption text-text-muted"

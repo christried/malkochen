@@ -62,8 +62,10 @@ test.describe('with an English browser', () => {
       await page.evaluate(() => navigator.serviceWorker.ready)
       await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
 
+      // A page that isn't kept on the device: the app's own addresses open
+      // the kept Boards instead (#461, offline.spec.ts).
       await context.setOffline(true)
-      await page.goto('/')
+      await page.goto('/changelog')
 
       await expect(page.locator('html')).toHaveAttribute('lang', 'en')
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('You’re offline.')

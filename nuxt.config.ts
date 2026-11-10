@@ -123,6 +123,10 @@ export default defineNuxtConfig({
   // a rendered page gets (its own Cache-Control, the nonce'd CSP) is set in
   // server/plugins/headers.ts.
   routeRules: {
+    // The app shell (public/sw.js, #461): the app rendered in the browser
+    // alone, with no data of anyone's in it, which the service worker shows
+    // for an app address opened without a connection.
+    '/app-shell': { ssr: false },
     // The Offline page enforces a policy of its own (#344), with hashes in
     // place of a nonce. Before '/**' and with all of its headers: Vercel
     // applies the first rule that matches a file, and orders rules of the

@@ -43,17 +43,18 @@ const t = useStrings()
       >{{ count }}</span>
       <span class="sr-only tablet:not-sr-only tablet:whitespace-nowrap">{{ t.selection.count(count) }}</span>
     </p>
-    <!-- Greyed out while malkochen can't be reached (#458). -->
+    <!-- "Gekocht ✓" works offline too (#459). -->
+    <button
+      v-if="canMove"
+      type="button"
+      class="shrink-0 rounded-pill px-1.5 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+      :aria-label="t.selection.cookLabel(count)"
+      @click="$emit('cook', centreOf(($event.currentTarget as HTMLElement).getBoundingClientRect()))"
+    >
+      {{ t.selection.cook }}
+    </button>
+    <!-- The rest is greyed out while malkochen can't be reached (#458). -->
     <NeedsNet :note="false">
-      <button
-        v-if="canMove"
-        type="button"
-        class="shrink-0 rounded-pill px-1.5 py-2 text-button tablet:px-3.5 transition-[scale,background-color] duration-tap ease-tap hover:bg-on-inverse/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="t.selection.cookLabel(count)"
-        @click="$emit('cook', centreOf(($event.currentTarget as HTMLElement).getBoundingClientRect()))"
-      >
-        {{ t.selection.cook }}
-      </button>
       <button
         v-if="canMove"
         type="button"

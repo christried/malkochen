@@ -70,3 +70,18 @@ export async function spendClientLimit(client: string, limited: ClientRateLimite
   }
   return counted && counted.calls > calls ? new Date(counted.windowEnd) : null
 }
+
+// Counts one more of the user's calls to `limited`, and says whether it was
+// within the limit, instead of refusing with 429: for work that must not be
+// refused, only done without the costly part (a Dish added offline, which has
+// arrived and so must be kept).
+export async function spendRateLimitIfWithin(userId: string, limited: RateLimited): Promise<boolean> {
+  try {
+    await spendRateLimit(userId, limited)
+    return true
+  }
+  catch (error) {
+    if ((error as { statusCode?: number } | null)?.statusCode === 429) return false
+    throw error
+  }
+}

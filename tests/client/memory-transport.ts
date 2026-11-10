@@ -1,10 +1,11 @@
-import type { BoardTransport } from '../../app/board/board-module'
+import type { BoardTransport, Late  } from '../../app/board/board-module'
 import { WriteFailed } from '../../app/board/board-module'
 import type { BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
 import type { CommentView } from '../../server/utils/comments'
 import type { CookingView } from '../../server/utils/cookings'
-import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
+import type { DishEditBody, AddDishBody, OfflineAddBody } from '../../server/utils/dish-input'
+import { guessKind, siteOf } from '../../app/utils/link-guess'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
@@ -36,6 +37,13 @@ export interface MemoryTransport {
   failNext: (write: Write, status: number) => void
   // The next call of `write` stays pending until the test lets it succeed.
   holdNext: (write: Write) => Held
+  // How malkochen answers from now on: `answering` as ever; `none`, every
+  // write rejects with WriteFailed (no status) and changes nothing; `lost`,
+  // every write is applied, then rejects the same way (the answer was lost).
+  setAnswers: (mode: 'answering' | 'none' | 'lost') => void
+  // What the server finds when it looks a link up for a Dish added offline,
+  // by link: the Source's title, Creator and image.
+  lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }>
   // Another Member deletes a Dish, or a Column (its deleted Dishes go to
   // the top of the Column that takes new Dishes, as on the real server).
   deleteDishElsewhere: (dishId: string) => void
@@ -63,6 +71,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   const comments = new Map<string, (CommentView & { deleted?: true })[]>()
   let added = 0
   let addedColumns = 0
+  const lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }> = {}
+  let answers: 'answering' | 'none' | 'lost' = 'answering'
 
   // The Dish on the server that `matches`, and its Column: on this Board, or
   // on another of the Member's Boards it was moved to.
@@ -78,19 +88,25 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // Cooking where the rules say so; without a Column, to the Gekocht Column
   // ("Gekocht ✓"). A Column on another of the Member's Boards takes it
   // there. Null for a Dish the server doesn't have.
-  function moveOnServer(dishId: string, columnId: string | undefined, index: number | undefined, cook: boolean): MovedDish | null {
+  function moveOnServer(dishId: string, columnId: string | undefined, index: number | undefined, cook: boolean, late: Late = {}): MovedDish | null {
     const found = located(d => d.id === dishId)
     const isTarget = (c: BoardView['columns'][number]) => columnId === undefined ? c.isGekocht : c.id === columnId
     const onto = [server, ...others].find(b => b.columns.some(isTarget))
     const target = onto?.columns.find(isTarget)
     if (!found) return null
     if (!onto || !target) throw new WriteFailed(400)
+    // A repeat of a Cooking with the device's id is done already.
+    const repeated = late.cookingId ? found.dish.cookings.find(c => c.id === late.cookingId) : undefined
+    if (repeated) {
+      const there = [server, ...others].find(b => b.columns.includes(found.column))!
+      return { ...structuredClone(found.dish), placement: { boardId: there.id, columnId: found.column.id, index: found.column.dishes.indexOf(found.dish) }, cooking: structuredClone(repeated) }
+    }
     const to = landingIndex(target, dishId, index)
     found.column.dishes.splice(found.column.dishes.indexOf(found.dish), 1)
     target.dishes.splice(to, 0, found.dish)
     const placed = { ...structuredClone(found.dish), placement: { boardId: onto.id, columnId: target.id, index: to } }
     if (!recordsCooking(found.column, target, { cook })) return placed
-    const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), recordedBy: null }
+    const cooking = { id: late.cookingId ?? `cooking-${++cookings}`, cookedAt: late.madeAt ?? new Date().toISOString(), recordedBy: null }
     found.dish.cookings.unshift(cooking)
     return { ...placed, cookings: structuredClone(found.dish.cookings), cooking: structuredClone(cooking) }
   }
@@ -110,9 +126,15 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // image without its Image Ticket isn't stored, as on the server; nor is an
   // own photo without its photo ticket.
   function addOnServer(boardId: string, input: AddDishBody): AddedDish {
+    // A repeat of the id the device made answers the Dish where it is now.
+    const there = input.id ? located(d => d.id === input.id) : null
+    if (there) {
+      const onto = [server, ...others].find(b => b.columns.includes(there.column))!
+      return { ...structuredClone(there.dish), placement: { boardId: onto.id, columnId: there.column.id, index: there.column.dishes.indexOf(there.dish) } }
+    }
     const dish: DishView = {
-      id: `added-${++added}`,
-      code: `new${added}`,
+      id: input.id ?? `added-${added + 1}`,
+      code: `new${++added}`,
       title: input.title,
       source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,
       creator: input.creator?.trim() || null,
@@ -136,6 +158,43 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const placed = { ...structuredClone(dish), placement: { boardId, columnId: column.id, index: 0 } }
     const refused = input.photo ? !input.photo.ticket : input.imageUrl && !input.imageTicket
     return refused ? { ...placed, imageNotStored: true } : placed
+  }
+
+  // Adds a Dish that was made offline, as the server does (late-add.ts): the
+  // id the device made, the link looked up now (what `lookups` says of it),
+  // the title typed, else the one the Source showed, else one made from the
+  // link's site. A repeat of the id answers the Dish where it is now. The
+  // answer names the Dish that had the same Source on the Board already.
+  function addLateOnServer(boardId: string, body: OfflineAddBody): AddedDish {
+    const there = located(d => d.id === body.id)
+    if (there) {
+      const onto = [server, ...others].find(b => b.columns.includes(there.column))!
+      return { ...structuredClone(there.dish), placement: { boardId: onto.id, columnId: there.column.id, index: there.column.dishes.indexOf(there.dish) } }
+    }
+    const link = body.source?.link ?? null
+    const found = link ? lookups[link] : undefined
+    const same = link ? located(d => d.source?.link === link) : null
+    const dish: DishView = {
+      id: body.id,
+      code: `late${++added}`,
+      title: body.title?.trim() || found?.title || `Von ${siteOf(link ?? '')}`,
+      source: link ? { link, kind: guessKind(link) } : null,
+      creator: found?.creator ?? null,
+      caption: null,
+      playableVideo: null,
+      imageUrl: found?.imageUrl ?? null,
+      imageFocus: { x: 50, y: 50 },
+      placeholder: body.placeholder,
+      addedBy: null,
+      createdAt: new Date().toISOString(),
+      cookings: [],
+      votes: [],
+      commentCount: 0,
+    }
+    const column = boardId === server.id ? columnForNewDishes(server.columns)! : { id: 'elsewhere', dishes: [] as DishView[] }
+    column.dishes.unshift(dish)
+    const placed = { ...structuredClone(dish), placement: { boardId, columnId: column.id, index: 0 } }
+    return same ? { ...placed, duplicateOf: { id: same.dish.id, code: same.dish.code, title: same.dish.title, columnName: (same.column as { name?: string }).name ?? '' } } : placed
   }
 
   // Saves the fields sent, as the server reads them (trimmed; a blank
@@ -266,17 +325,21 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // "Gekocht ✓" on several (#451): all located on this Board (404 if one
   // isn't), else 400 for one on another Board. Those not in the Gekocht
   // Column go to its top in the order sent; each records a Cooking.
-  function cookManyOnServer(ids: string[]): CookedDish[] | null {
+  function cookManyOnServer(ids: string[], late: Late = {}): CookedDish[] | null {
     const found = allLocated(ids)
     if (!found) return null
     if (found.some(f => !server.columns.includes(f.column))) throw new WriteFailed(400)
+    // A repeat of all of them is done already.
+    if (late.cookingIds && found.every(({ dish }, i) => dish.cookings.some(c => c.id === late.cookingIds![i]))) {
+      return placedOnServer(ids).map((placed, i) => ({ ...placed, cooking: structuredClone(found[i]!.dish.cookings.find(c => c.id === late.cookingIds![i])!) }))
+    }
     const gekocht = server.columns.find(c => c.isGekocht)!
     const moving = found.filter(f => f.column !== gekocht)
     for (const { dish, column } of moving) column.dishes.splice(column.dishes.indexOf(dish), 1)
     gekocht.dishes.unshift(...moving.map(f => f.dish))
     const made = new Map<string, CookingView>()
-    for (const { dish } of found) {
-      const cooking = { id: `cooking-${++cookings}`, cookedAt: new Date().toISOString(), recordedBy: null }
+    for (const [i, { dish }] of found.entries()) {
+      const cooking = { id: late.cookingIds?.[i] ?? `cooking-${++cookings}`, cookedAt: late.madeAt ?? new Date().toISOString(), recordedBy: null }
       dish.cookings.unshift(cooking)
       made.set(dish.id, cooking)
     }
@@ -369,9 +432,13 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
 
   // A Comment as the server keeps it: trimmed. By nobody in particular (the
   // tests don't sign in). Null for a Dish the server doesn't have.
-  function writeCommentOnServer(dishId: string, text: string): CommentView | null {
+  // With the id the device made and when it was written (late), a repeat of
+  // that id is done already, and the Comment is dated by when it was written.
+  function writeCommentOnServer(dishId: string, text: string, late: Late = {}): CommentView | null {
     if (!server.columns.some(c => c.dishes.some(d => d.id === dishId))) return null
-    const comment = { id: `comment-${++commentsWritten}`, text: text.trim(), createdAt: new Date().toISOString(), editedAt: null, author: { id: 'me', name: 'Ich', image: null } }
+    const repeated = late.id ? commentOnServer(late.id) : null
+    if (repeated) return structuredClone(repeated)
+    const comment = { id: late.id ?? `comment-${++commentsWritten}`, text: text.trim(), createdAt: late.madeAt ?? new Date().toISOString(), editedAt: null, author: { id: 'me', name: 'Ich', image: null } }
     comments.set(dishId, [...comments.get(dishId) ?? [], comment])
     countOnServer(dishId, 1)
     return structuredClone(comment)
@@ -412,13 +479,13 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // so always "Ich"), only on a Dish with a Cooking (409 otherwise); the
   // same thumb again changes nothing. Null for a Dish the server doesn't
   // have.
-  function setVoteOnServer(dishId: string, up: boolean): VoteView | null {
+  function setVoteOnServer(dishId: string, up: boolean, late: Late = {}): VoteView | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
     if (dish.cookings.length === 0) throw new WriteFailed(409)
     const mine = dish.votes.find(v => v.voter?.id === 'me')
     if (mine?.up === up) return structuredClone(mine)
-    const vote = { voter: { id: 'me', name: 'Ich', image: null }, up, votedAt: new Date().toISOString() }
+    const vote = { voter: { id: 'me', name: 'Ich', image: null }, up, votedAt: late.madeAt ?? new Date().toISOString() }
     dish.votes = [...dish.votes.filter(v => v !== mine), vote]
     return structuredClone(vote)
   }
@@ -447,7 +514,15 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     }
     const reply = replies.get(write)?.shift()
     return new Promise<T>((resolve, reject) => {
-      if (!reply) settle(resolve, reject)
+      if (answers === 'none') {
+        reject(new WriteFailed())
+      }
+      else if (answers === 'lost') {
+        // Applied (or refused, as it would be), but the answer never comes.
+        settle(() => {}, () => {})
+        reject(new WriteFailed())
+      }
+      else if (!reply) settle(resolve, reject)
       else if ('fail' in reply) settle(resolve, reject, reply.fail)
       else reply.hold({ succeed: () => settle(resolve, reject) })
     })
@@ -459,27 +534,28 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
 
   const transport: BoardTransport = {
     addDish: (boardId, input) => answer('addDish', `${boardId} ${input.title}`, () => addOnServer(boardId, input)),
+    addDishLate: (boardId, body) => answer('addDishLate', `${boardId} ${body.id} ${body.title ?? ''} ${body.source?.link ?? ''}`, () => addLateOnServer(boardId, body)),
     editDish: (dishId, changes) => answer('editDish', dishId, () => editOnServer(dishId, changes)),
     deleteDish: dishId => answer('deleteDish', dishId, () => deleteOnServer(dishId) || null).then(() => undefined),
     restoreDish: dishId => answer('restoreDish', dishId, () => restoreOnServer(dishId)),
-    moveDish: (dishId, { columnId, index }) => answer('moveDish', `${dishId} ${columnId} ${index ?? ''}`, () => moveOnServer(dishId, columnId, index, false)),
-    cookDish: dishId => answer('cookDish', dishId, () => moveOnServer(dishId, undefined, undefined, true)),
+    moveDish: (dishId, { columnId, index }, late) => answer('moveDish', `${dishId} ${columnId} ${index ?? ''}`, () => moveOnServer(dishId, columnId, index, false, late)),
+    cookDish: (dishId, late) => answer('cookDish', dishId, () => moveOnServer(dishId, undefined, undefined, true, late)),
     undoCooking: (cookingId, { columnId, index }) => answer('undoCooking', `${cookingId} ${columnId} ${index}`, () => undoOnServer(cookingId, columnId, index)),
     deleteCooking: cookingId => answer('deleteCooking', cookingId, () => deleteCookingOnServer(cookingId) || null).then(() => undefined),
     restoreCooking: cookingId => answer('restoreCooking', cookingId, () => restoreCookingOnServer(cookingId)),
     moveDishes: (ids, columnId) => answer('moveDishes', `${ids.join()} ${columnId}`, () => moveManyOnServer(ids, columnId)),
     placeDishes: places => answer('placeDishes', places.map(p => `${p.dishId}:${p.columnId}:${p.index}`).join(), () => placeManyOnServer(places)),
-    cookDishes: ids => answer('cookDishes', ids.join(), () => cookManyOnServer(ids)),
+    cookDishes: (ids, late) => answer('cookDishes', ids.join(), () => cookManyOnServer(ids, late)),
     uncookDishes: cookings => answer('uncookDishes', cookings.map(c => c.back ? `${c.cookingId}:${c.back.columnId}:${c.back.index}` : c.cookingId).join(), () => uncookManyOnServer(cookings)),
     deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),
     restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
     openDish: dishId => answer('openDish', dishId, () => openOnServer(dishId)),
-    writeComment: (dishId, text) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text)),
+    writeComment: (dishId, text, late) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text, late)),
     editComment: (commentId, text) => answer('editComment', `${commentId} ${text}`, () => editCommentOnServer(commentId, text)),
     deleteComment: commentId => answer('deleteComment', commentId, () => deleteCommentOnServer(commentId)).then(() => undefined),
     restoreComment: commentId => answer('restoreComment', commentId, () => restoreCommentOnServer(commentId)),
-    setVote: (dishId, up) => answer('setVote', `${dishId} ${up}`, () => setVoteOnServer(dishId, up)),
+    setVote: (dishId, up, late) => answer('setVote', `${dishId} ${up}`, () => setVoteOnServer(dishId, up, late)),
     takeBackVote: dishId => answer('takeBackVote', dishId, () => takeBackVoteOnServer(dishId)).then(() => undefined),
   }
 
@@ -487,6 +563,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     transport,
     server,
     sent,
+    setAnswers: (mode) => { answers = mode },
+    lookups,
     failNext: (write, status) => script(write, { fail: status }),
     holdNext(write) {
       let held: Held | undefined

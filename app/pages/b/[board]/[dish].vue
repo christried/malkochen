@@ -4,7 +4,7 @@ import { isRefused, type BoardResult } from '~/board/board-module'
 import type { CommentResult } from '~/board/dish-histories'
 import type { VoteResult } from '~/board/dish-votes'
 import type { CopiedDish } from '~~/server/utils/copies'
-import { boardPath as pathOfBoard, dishAt, dishPath } from '~~/shared/address'
+import { boardPath as pathOfBoard, dishAt, dishPath, dishRef } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
@@ -30,8 +30,21 @@ const route = useRoute()
 const router = useRouter()
 
 // The Dish shown, and its Column.
-const located = computed(() => dishAt(props.board, route.params.dish))
+// A Dish added offline gets its own code once it has arrived (#462): the
+// address it was opened at still finds it, and the address follows.
+const located = computed(() => {
+  const found = dishAt(props.board, route.params.dish)
+  if (found) return found
+  const segment = route.params.dish
+  const ref = typeof segment === 'string' ? dishRef(segment) : null
+  const arrived = ref && 'code' in ref ? boardModule.arrivedAs(ref.code) : null
+  return arrived ? dishAt(props.board, arrived) : null
+})
 if (!located.value) throw createError({ statusCode: 404, statusMessage: 'Dish not found', fatal: true })
+watch(() => located.value?.dish.code, () => {
+  const dish = located.value?.dish
+  if (dish && dishAt(props.board, route.params.dish) === null) void router.replace(dishPath(props.board, dish))
+})
 
 useHead({ title: () => located.value ? `${located.value.dish.title} · ${t.app.name}` : t.app.name })
 
@@ -179,7 +192,7 @@ function showComment({ notice, undo, settled }: CommentResult) {
   if (notice) {
     const text = t.history[notice]
     toast.value = undo
-      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(showComment) }] }
+      ? { text, duration: UNDO_WINDOW_MS, actions: [{ label: t.dish.undo, run: () => void undo().then(showComment), offline: true }] }
       : { text, duration: NOTICE_MS }
   }
   void settled?.then(showComment)
@@ -261,6 +274,7 @@ watch(editing, async (isEditing) => {
             class="mt-5"
             :board="board"
             :from-column-id="located.column.id"
+            :this-board-only="boardModule.isUnsentAdd(located.dish.id)"
             @move="onMove"
           />
         </NeedsNet>

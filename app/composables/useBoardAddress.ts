@@ -1,4 +1,6 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import { boardIsGone } from '~/board/kept-boards'
+import { gotNoAnswer } from '~/board/write-failed'
 import type { BoardAddress } from '~~/server/utils/addresses'
 
 // The Board at the page's address (CONTEXT.md: Address): /b/<slug>, and a
@@ -8,7 +10,9 @@ import type { BoardAddress } from '~~/server/utils/addresses'
 // opened twice (which would move on what is marked "Neu"). Answers the
 // Board's id, and what `load` brought for it, or null while forwarding. An
 // address that isn't one of the user's Boards shows the error screen, the
-// same whether it doesn't exist or isn't theirs. `under` is what follows the
+// same whether it doesn't exist or isn't theirs. Without an answer from
+// malkochen, an address opened here before leads to its kept Board (#461)
+// and one that wasn't says it needs a connection (needsConnection). `under` is what follows the
 // Board's address on a page of its own under it ("/settings").
 //
 // `load` runs at a current address only, in the same request as finding it
@@ -23,14 +27,38 @@ export async function useBoardAddress<T = undefined>(
   const nuxtApp = useNuxtApp()
   const route = useRoute()
   const fetchPassingCookies = useFetchPassingCookies()
+  const device = useDevice()
   const asked = String(route.params.board)
   const dish = typeof route.params.dish === 'string' ? route.params.dish : undefined
 
+  // Where the address leads: as malkochen says, kept for the next time
+  // (on the device, once the page has mounted); without an answer, from what
+  // the device kept. A Board malkochen says isn't the user's any more is
+  // removed from the device.
+  async function resolve(): Promise<BoardAddress> {
+    try {
+      const found = await fetchPassingCookies<BoardAddress>(`/api/addresses/${encodeURIComponent(asked)}`, { query: { dish } })
+      if (device) void device.keptOfUser().then(kept => kept?.keepAddress(asked, dish, found))
+      return found
+    }
+    catch (error) {
+      if (!device) throw error
+      const kept = await device.keptOfUser()
+      if (gotNoAnswer(error)) {
+        const found = await kept?.address(asked, dish)
+        if (found) return found
+        throw needsConnection()
+      }
+      if (boardIsGone(error)) await kept?.removeAddress(asked)
+      throw error
+    }
+  }
+
   const { data, error } = await useAsyncData(`address:${asked}:${dish ?? ''}:${under}`, async () => {
-    const found = await fetchPassingCookies<BoardAddress>(`/api/addresses/${encodeURIComponent(asked)}`, { query: { dish } })
+    const found = await resolve()
     return { found, loaded: load && isCurrent(found, route) ? await load(found.boardId) : undefined }
   }, { deep: true })
-  if (!data.value) throw createError({ statusCode: error.value?.statusCode ?? 500, statusMessage: error.value?.statusMessage, fatal: true })
+  if (!data.value) throw createError({ statusCode: error.value?.statusCode ?? 500, statusMessage: error.value?.statusMessage, data: error.value?.data, fatal: true })
   if (isCurrent(data.value.found, route)) return { boardId: data.value.found.boardId, loaded: toRef(data.value, 'loaded') as Ref<T | undefined> }
 
   const current = data.value.found

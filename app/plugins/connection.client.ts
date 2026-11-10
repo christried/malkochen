@@ -10,7 +10,9 @@ import type { Connection } from '~/composables/useConnection'
 // swapped for one with hooks). The browser going offline says so at once;
 // coming back online, one cheap request asks whether malkochen answers (the
 // open Board's version checks keep asking too). Only once the app has
-// mounted, so hydration renders as the server did.
+// mounted, so hydration renders as the server did; an app that was not
+// rendered by the server (the service worker's app shell, opened offline,
+// #461) has no HTML to match and knows at once.
 export default defineNuxtPlugin((nuxtApp) => {
   const state = useConnectionState()
   let mounted = false
@@ -19,7 +21,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   function set(connection: Connection) {
     const next = navigator.onLine ? connection : 'offline'
-    if (mounted) state.value = next
+    if (mounted || !nuxtApp.payload.serverRendered) state.value = next
     else found = next
   }
 

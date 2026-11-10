@@ -7,6 +7,7 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 ### Added
 
 - Mehrere Gerichte gekocht? Wähl sie aus (lang auf eins drücken, am Desktop mit Strg-Klick), tipp auf Gekocht ✓, und jedes zählt. Eine Feier für alle zusammen, ein Klassiker bekommt trotzdem seine eigene, und ein Tipp auf Rückgängig nimmt alles zurück.
+- malkochen geht jetzt auch mit schlechtem Netz oder ganz ohne. Boards, die du schon geöffnet hast, bleiben auf deinem Handy: Du kannst Gerichte verschieben, auf Gekocht ✓ tippen, kommentieren, Daumen geben, einen Titel ändern oder ein Gericht per Link hinzufügen. Alles kommt an, sobald du wieder Netz hast, und eine kleine Leiste zeigt dir, was noch wartet.
 
 ## [1.1.2] - 2026-11-09
 

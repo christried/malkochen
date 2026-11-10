@@ -7,19 +7,26 @@
 // Changelog, the Impressum and the Datenschutz are open to everyone too.
 // The API has its own boundary (server/middleware/auth.ts); this only
 // decides which page to show.
+import type { Me } from '~~/server/utils/people'
+
 export default defineNuxtRouteMiddleware(async (to) => {
   // A relative URL on purpose: during server rendering Nuxt then calls the
   // API in-process with the visitor's cookies.
-  const { data: me, error } = await useFetch('/api/me', { key: `me:${to.fullPath}` })
+  const device = useDevice()
+  // Without an answer, the user the device last knew stands in (#461), so
+  // the guard lets them through as it would online.
+  const { data: me, error } = await useFetch<Me>('/api/me', { key: `me:${to.fullPath}`, $fetch: useMeFetch() })
   const status = error.value?.statusCode
   // The language follows the signed-in user's choice; signed out, the
   // browser's languages alone. A failed check (offline) changes nothing.
   if (me.value) useLanguageChoice().value = me.value.language
   else if (status === 401) useLanguageChoice().value = 'auto'
-  // Without an answer (offline, or malkochen not answering, #458) nothing
-  // is known about the user: the page opens as it would, a Dish's detail
-  // over its Board, say, instead of sending them to sign in.
-  if (error.value && import.meta.client && useConnectionState().value !== 'online') return
+  // Remembered on the device, so it knows whose data it holds.
+  if (me.value && import.meta.client) void device?.remember(me.value)
+  // Without an answer (offline, or malkochen not answering, #458) and no
+  // user known: the page opens as it would, a Dish's detail over its Board,
+  // say, instead of sending them to sign in.
+  if (error.value && import.meta.client && (status === undefined || useConnectionState().value !== 'online')) return
 
   if (to.path.startsWith('/invite/')) return
   // A Dish Link (#401) is for anyone who has it, signed in or not.

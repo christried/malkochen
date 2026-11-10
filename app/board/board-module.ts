@@ -1,16 +1,21 @@
-import { computed, type InjectionKey, type Ref } from 'vue'
+import { computed, reactive, type InjectionKey, type Ref } from 'vue'
 // Relative imports, not `~~`: the module's tests run in plain Node (the
 // "client" Vitest project), which knows no Nuxt aliases.
 import type { BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
-import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
-import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
+import type { DishEditBody, AddDishBody, OfflineAddBody } from '../../server/utils/dish-input'
+import type { AddedDish, CookedDish, CookingUndo, DishAdder, DishPlace, DishPlacement, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import { MILESTONE_COOKINGS } from '../utils/achievement'
 import { dishOnBoard } from '../../shared/board'
 import { viewerMay, type Permission } from '../../shared/permissions'
-import { landingIndex, recordsCooking } from '../../shared/placement'
+import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
+import type { Late } from './late'
+import { sendOrKeep } from './send-or-keep'
+import { WriteFailed, isUnanswered } from './write-failed'
+import { dishOfAdd, layOver, type UnsentChange, type UnsentChanges, type UnsentKind } from './unsent-changes'
 import { createDishHistories, type HistoryTransport } from './dish-histories'
+import type { KeptBoards } from './kept-boards'
 import { createDishVotes, type VoteTransport } from './dish-votes'
 
 // The client Board module (spec #61): owns the app's copy of an open Board.
@@ -57,6 +62,9 @@ export interface BoardResult {
   undo?: () => Promise<BoardResult>
   focus?: FocusTarget
   settled?: Promise<BoardResult>
+  // The write got no answer, so the change stays on screen as an Unsent
+  // Change (unsent-changes.ts) instead of failing; set on what it settled in.
+  unsent?: true
 }
 
 // What an operation on several Dishes at once (#218) answers, as
@@ -73,18 +81,15 @@ export interface BulkResult {
   undo?: () => Promise<BulkResult>
   focus?: FocusTarget
   settled?: Promise<BulkResult>
+  // As for BoardResult.
+  unsent?: true
   // For `cookDishes`, once settled: the Dishes whose new Cooking made them a
   // Klassiker, each with that Cooking, in Board order (#452 celebrates them).
   klassiker?: { dish: DishView, cooking: CookingView }[]
 }
 
-// A write the server refused or never answered; `status` is its HTTP status
-// if there was one (404: the Dish is gone there).
-export class WriteFailed extends Error {
-  constructor(readonly status?: number) {
-    super(status === undefined ? 'Write failed' : `Write failed (${status})`)
-  }
-}
+// A write the server refused or never answered (write-failed.ts).
+export { WriteFailed }
 
 // Whether a write failed because the server no longer has what it was
 // about (404): another Member deleted it.
@@ -117,11 +122,17 @@ function failedManyAs(error: unknown, notice: BulkNotice): BulkNotice {
 // (dish-votes.ts).
 export interface BoardTransport extends HistoryTransport, VoteTransport {
   addDish: (boardId: string, dish: AddDishBody) => Promise<AddedDish>
+  // A Dish added offline, sent once malkochen answers (unsent-changes.ts):
+  // the server looks its link up then (#462).
+  addDishLate: (boardId: string, dish: OfflineAddBody) => Promise<AddedDish>
   editDish: (dishId: string, changes: DishEditBody) => Promise<SavedDish>
   deleteDish: (dishId: string) => Promise<void>
   restoreDish: (dishId: string) => Promise<PlacedDish>
-  moveDish: (dishId: string, to: Destination) => Promise<MovedDish>
-  cookDish: (dishId: string) => Promise<MovedDish>
+  // `late`, only from the Unsent Changes (unsent-changes.ts): when the change
+  // was made; and, whenever a Cooking is recorded, the id the device made for
+  // it, so a write sent again records it once.
+  moveDish: (dishId: string, to: Destination, late?: Late) => Promise<MovedDish>
+  cookDish: (dishId: string, late?: Late) => Promise<MovedDish>
   undoCooking: (cookingId: string, to: { columnId: string, index: number }) => Promise<PlacedDish>
   deleteCooking: (cookingId: string) => Promise<void>
   restoreCooking: (cookingId: string) => Promise<CookingView>
@@ -133,9 +144,11 @@ export interface BoardTransport extends HistoryTransport, VoteTransport {
   restoreDishes: (dishIds: string[]) => Promise<PlacedDish[]>
   // "Gekocht ✓" on several (#451): each with the Cooking recorded, in the
   // order sent; and its undo, answering the Dishes placed, in that order.
-  cookDishes: (dishIds: string[]) => Promise<CookedDish[]>
+  cookDishes: (dishIds: string[], late?: Late) => Promise<CookedDish[]>
   uncookDishes: (cookings: CookingUndo[]) => Promise<PlacedDish[]>
 }
+
+export type { Late }
 
 type BoardColumn = BoardView['columns'][number]
 
@@ -169,6 +182,8 @@ interface MoveEnded {
   failed: boolean
   recorded?: CookingView
   undone: boolean
+  // The Unsent Change the move became, while it is one.
+  unsentId?: string
 }
 
 function placeOf(column: BoardColumn, index: number): Place {
@@ -181,9 +196,34 @@ function removeFrom<T>(list: T[], item: T | undefined) {
   if (at !== -1) list.splice(at, 1)
 }
 
-export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: BoardTransport) {
+// With `unsent` (one for the whole app, shared by every Board's module), a
+// move or "Gekocht ✓" whose write gets no answer stays on screen and is kept
+// as an Unsent Change; without it the module behaves as ever. With `kept`
+// (kept-boards.ts), every load that merges keeps the Board on the device, as
+// the server said it, and a Dish History opened is kept too. `offline`: the
+// app knows malkochen can't be reached, so nothing is asked of it (opening a
+// Dish marks it seen, which offline it doesn't).
+export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: BoardTransport, { unsent, kept, offline }: { unsent?: UnsentChanges, kept?: KeptBoards, offline?: () => boolean } = {}) {
   // Every write goes through `transport`, so each is counted for sync.
   const { transport, mark, writesSince } = counted(uncounted)
+
+  // Cookings shown before the server has answered for them. Each has the id
+  // the device made for it, which the server keeps. Those in an Unsent Change
+  // are in the Unsent Changes' list instead (isRecording).
+  const recording = reactive(new Set<string>())
+  const isRecording = (cookingId: string) => recording.has(cookingId) || !!unsent?.hasCooking(cookingId)
+
+  // Whether Unsent Changes wait: then new ones join their end, nothing is
+  // tried on the network.
+  const anyUnsent = () => (unsent?.count.value ?? 0) > 0
+
+  // Keeps a change as an Unsent Change, and tries to send them all.
+  function queueUnsent(kind: UnsentKind, madeAt: string, label: string): string {
+    const change = { id: crypto.randomUUID(), boardId: board.value!.id, madeAt, label, ...kind } as UnsentChange
+    unsent!.add(change)
+    void unsent!.send()
+    return change.id
+  }
 
   // Each Dish's writes, in the order they were made: one starts once the
   // one before it has settled, so they never cross on the way. With none
@@ -325,11 +365,12 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   }
 
   // The server's Cooking History, with each Cooking already shown kept as
-  // the same object and filled in. The pending one (no id yet) is the
-  // Cooking the server just recorded.
+  // the same object and filled in. The pending one has the id the device
+  // made for it, which the server kept.
   function keepShownCookings(shown: CookingView[], settled: CookingView[], recorded: CookingView | undefined): CookingView[] {
     return settled.map((cooking) => {
-      const same = shown.find(c => c.id ? c.id === cooking.id : cooking.id === recorded?.id)
+      const same = shown.find(c => c.id === cooking.id)
+      if (cooking.id === recorded?.id) recording.delete(cooking.id)
       return same ? Object.assign(same, cooking) : cooking
     })
   }
@@ -341,15 +382,90 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // A failed write rejects with WriteFailed, for the form to say so; on
   // this Board without "add Dishes" (its Permissions as last loaded), at
   // once with 403, as the server would.
-  async function addDish(boardId: string, input: AddDishBody): Promise<BoardResult> {
+  //
+  // Offline (#462) it is kept instead, if `adder` (who adds it) is given and
+  // it is for this Board, from a link and/or a title, without an Own Photo
+  // and not during the Tour: it shows at once at the top of the Column that
+  // takes new Dishes, as an Unsent Change, and the server looks its link up
+  // when it arrives. The same when a save gets no answer, or while Unsent
+  // Changes wait (it joins their end). Its id is the device's own, sent online
+  // too, so a save whose answer was lost is recorded once.
+  async function addDish(boardId: string, input: AddDishBody, adder?: DishAdder): Promise<BoardResult> {
     if (board.value?.id === boardId && !board.value.permissions.addDishes) throw new WriteFailed(403)
-    const { imageNotStored, placement, ...fields } = await transport.addDish(boardId, input)
+    const title = input.title.trim()
+    const link = input.source?.link ?? null
+    const keepable = !!(unsent && adder && board.value?.id === boardId && !input.photo && !input.tour && (title || link))
+    const dishId = input.id ?? crypto.randomUUID()
+    if (keepable && (offline?.() || anyUnsent())) return keepAdded(dishId, input, adder)
+    let answer: AddedDish
+    try {
+      answer = await transport.addDish(boardId, { ...input, id: dishId })
+    }
+    catch (error) {
+      if (keepable && isUnanswered(error)) return keepAdded(dishId, input, adder)
+      throw error
+    }
+    const { imageNotStored, placement, ...fields } = answer
     // Another Board's Column isn't on this one.
     const into = column(placement.columnId)
     if (into && !find(fields.id)) insert(into, placement.index, fields)
     // The Board's own copy, once it shows.
     const dish = find(fields.id)?.dish ?? fields
     return { dish, placement, ...imageNotStored && { notice: input.photo ? 'photoNotStored' : 'imageNotStored' } }
+  }
+
+  // Shows a Dish added at once and keeps it as an Unsent Change.
+  function keepAdded(dishId: string, input: AddDishBody, adder: DishAdder | undefined): BoardResult {
+    const into = columnForNewDishes(board.value!.columns)
+    if (!into || !adder) throw new WriteFailed()
+    const link = input.source?.link ?? null
+    const title = input.title.trim() || null
+    const madeAt = new Date().toISOString()
+    // A save that had its link looked up and sent no image chose the Placeholder Image.
+    const noImage = !!(input.sourceTicket && !input.imageUrl)
+    const kind = { kind: 'add', dishId, link, title, placeholder: input.placeholder, adder, ...noImage && { noImage: true as const } } as const
+    const shown = dishOfAdd({ id: '', boardId: board.value!.id, madeAt, label: '', ...kind })
+    into.dishes.unshift(shown)
+    queueUnsent(kind, madeAt, shown.title)
+    return { dish: find(dishId)?.dish ?? shown, placement: { boardId: board.value!.id, columnId: into.id, index: 0 }, unsent: true }
+  }
+
+  // Whether the Dish was added offline and has not arrived yet. What needs
+  // the server to have it (deleting it, moving it to another Board, editing
+  // more than its title, its image, Creator and Source, archiving, sharing,
+  // copying) is greyed out until then; moves within the Board, "Gekocht ✓",
+  // Comments, Votes and its title go on, and are sent after it.
+  function isUnsentAdd(dishId: string): boolean {
+    return !!unsent?.changes.value.some(c => c.kind === 'add' && c.dishId === dishId)
+  }
+
+  // The Dishes added offline that have arrived since: the Board's card takes
+  // the Dish as the server made it (its code, title, image, Creator), keeping
+  // its Cookings, Votes and Comment count, which others unsent still change.
+  function takeArrivals() {
+    if (!unsent || !board.value) return
+    for (const { dish } of unsent.takeArrivals(board.value.id)) {
+      const { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt } = dish
+      const shown = find(id)?.dish
+      if (!shown) continue
+      // The code it was shown with still leads to it (an open detail).
+      arrivedCodes.set(shown.code, shown.id)
+      Object.assign(shown, { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt })
+    }
+  }
+  const arrivedCodes = reactive(new Map<string, string>())
+
+  // The id of the Dish that was added offline, shown with `code` until it
+  // arrived; null for any other code.
+  const arrivedAs = (code: string): string | null => arrivedCodes.get(code) ?? null
+
+  // Changes malkochen couldn't apply were dropped: a Dish added offline goes
+  // from the Board, and the Comments among them from the open Dish History.
+  function droppedChanges(dropped: readonly UnsentChange[]) {
+    for (const change of dropped) {
+      if (change.kind === 'add' && board.value?.id === change.boardId) takeOut(change.dishId)
+    }
+    return histories.droppedChanges(dropped)
   }
 
   // Editing a Dish (PRD stories 43–45), from the Dish detail, which waits
@@ -360,9 +476,33 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // recorded or a Vote under way shows there. A failed
   // write rejects with WriteFailed, for the form to say so; without "edit
   // Dishes" for it, at once with 403, as the server would.
+  //
+  // An edit of the title alone (the only field that works offline) whose
+  // write gets no answer, or that is made while Unsent Changes wait, shows
+  // at once and is kept as an Unsent Change instead; it wins over what
+  // others changed meanwhile.
   async function editDish(dishId: string, changes: DishEditBody): Promise<BoardResult> {
     if (!may('editDishes', dishId)) throw new WriteFailed(403)
-    const { imageNotStored, ...saved } = await queued(dishId, () => transport.editDish(dishId, changes), { moves: false })
+    const title = changes.title?.trim()
+    const titleOnly = !!title && Object.keys(changes).length === 1
+    // The server has nothing to change yet but the title, which is sent after the add.
+    if (isUnsentAdd(dishId) && !titleOnly) throw new WriteFailed()
+    const titleKept = Symbol('title kept as an Unsent Change')
+    const madeAt = new Date().toISOString()
+    const answer = await queued(dishId, () => sendOrKeep({
+      canKeep: titleOnly && !!unsent,
+      waiting: anyUnsent(),
+      send: () => transport.editDish(dishId, changes),
+      keep: (): typeof titleKept => titleKept,
+    }), { moves: false })
+    if (answer === titleKept) {
+      const dish = find(dishId)?.dish
+      if (!dish) throw new WriteFailed(404)
+      queueUnsent({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
+      dish.title = title!
+      return { dish, unsent: true }
+    }
+    const { imageNotStored, ...saved } = answer
     const shown = find(dishId)?.dish
     if (shown) {
       const { cookings: _, votes: __, ...fields } = saved
@@ -377,7 +517,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Dishes" for it.
   function deleteDish(dishId: string): BoardResult | null {
     const found = find(dishId)
-    if (!found || !may('archiveDishes', dishId)) return null
+    if (!found || !may('archiveDishes', dishId) || isUnsentAdd(dishId)) return null
     const { dish } = found
     const { origin: place, focus } = leave(dish, found.column)
     focusWhenGone.set(dishId, focus)
@@ -421,18 +561,20 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // offers "Rückgängig". Null if it wouldn't move or record one, or without
   // "move Dishes".
   function moveDish(dishId: string, to: Destination): BoardResult | null {
-    return move(dishId, to, () => transport.moveDish(dishId, to))
+    return move(dishId, to)
   }
 
   // "Gekocht ✓" (PRD story 35): to the top of the Gekocht Column, or where
   // it is if it is there already, recording a Cooking either way.
   function cookDish(dishId: string): BoardResult | null {
     const gekocht = board.value?.columns.find(c => c.isGekocht)
-    return gekocht ? move(dishId, { columnId: gekocht.id }, () => transport.cookDish(dishId), { cook: true }) : null
+    return gekocht ? move(dishId, { columnId: gekocht.id }, { cook: true }) : null
   }
 
-  // Moves a Dish as moveDish says, sending `write` for it.
-  function move(dishId: string, to: Destination, write: () => Promise<MovedDish>, { cook = false } = {}): BoardResult | null {
+  // Moves a Dish as moveDish says (`cook`: as cookDish does). Without an
+  // answer from malkochen the move stays and is kept as an Unsent Change; so
+  // is one made while Unsent Changes wait, without trying the network.
+  function move(dishId: string, to: Destination, { cook = false } = {}): BoardResult | null {
     const found = find(dishId)
     const target = column(to.columnId)
     if (!found || !target || !board.value || !may('moveDishes')) return null
@@ -447,30 +589,55 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const focus = stays ? { dish: dishId } : left.focus
     insert(target, landing, dish)
     const placement = { boardId: board.value.id, columnId: target.id, index: landing }
-    const pending = cooks ? recordPending(dish) : undefined
+    const cookingId = cooks ? crypto.randomUUID() : undefined
+    const madeAt = new Date().toISOString()
+    const pending = cookingId ? recordPending(dish, cookingId, madeAt) : undefined
     const ended: MoveEnded = { failed: false, undone: false }
+    const write = () => cook
+      ? transport.cookDish(dishId, { cookingId })
+      : transport.moveDish(dishId, to, cookingId ? { cookingId } : undefined)
+    // The Dish stays where it is on screen; the change waits to be sent.
+    function keepUnsent(): BoardResult {
+      rolledBackTo.delete(dishId)
+      if (cookingId) recording.delete(cookingId)
+      const kind: UnsentKind = cook
+        ? { kind: 'cook', dishId, cookingId: cookingId! }
+        : { kind: 'move', dishId, columnId: target!.id, ...to.index !== undefined && { index: to.index }, ...cookingId && { cookingId } }
+      ended.unsentId = queueUnsent(kind, madeAt, dish.title)
+      return { dish, placement, unsent: true, ...pending && { cooking: pending } }
+    }
 
     const settled = queued(dishId, async (latest): Promise<BoardResult> => {
       try {
-        const moved = await write()
-        ended.recorded = moved.cooking
-        rolledBackTo.delete(dishId)
-        if (latest()) settle(dish, moved)
-        // A later write has the Dish elsewhere by now: only the Cooking
-        // settles, if it still shows, or goes if none was recorded.
-        else settlePending(dish, pending, moved.cooking)
-        return { dish, placement: moved.placement, ...shownCooking(dish, moved.cooking) }
+        // No answer: the move may or may not have arrived. It stays, and is
+        // sent again with the same ids.
+        return await sendOrKeep({
+          canKeep: !!unsent,
+          waiting: anyUnsent(),
+          keep: keepUnsent,
+          send: async (): Promise<BoardResult> => {
+            const moved = await write()
+            ended.recorded = moved.cooking
+            rolledBackTo.delete(dishId)
+            if (latest()) settle(dish, moved)
+            // A later write has the Dish elsewhere by now: only the Cooking
+            // settles, if it still shows, or goes if none was recorded.
+            else settlePending(dish, pending, moved.cooking)
+            return { dish, placement: moved.placement, ...shownCooking(dish, moved.cooking) }
+          },
+        })
       }
       catch (error) {
         ended.failed = true
         if (isGone(error)) {
           takeOut(dishId)
+          dropCooking(dish, pending)
           return { dish }
         }
         // Back where the server still has it. A later write moves it on, or
         // goes back there in turn.
         const back = rollBackTo(dishId, origin)
-        removeFrom(dish.cookings, pending)
+        dropCooking(dish, pending)
         // Undone already, it is back, and nothing is left to tell.
         if (ended.undone) return { dish }
         if (latest()) moveBack(dish, back)
@@ -478,22 +645,36 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       }
     })
 
-    return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo: undoCooked(dish, origin, pending, ended) } }
+    return { dish, placement, focus, settled, ...pending && { cooking: pending, notice: 'cook', undo: undoCooked(dish, origin, pending, ended, true) } }
   }
 
   // The Cooking a move records, shown in the Dish's Cooking History at once
-  // and filled in once the server has recorded it. The Board's own
-  // (reactive) copy, so filling it in shows.
-  function recordPending(dish: DishView): CookingView {
-    dish.cookings.unshift({ id: '', cookedAt: new Date().toISOString(), recordedBy: null })
+  // with the id the device made for it and the time it was tapped, and
+  // filled in once the server has recorded it. The Board's own (reactive)
+  // copy, so filling it in shows.
+  function recordPending(dish: DishView, id: string, cookedAt: string): CookingView {
+    dish.cookings.unshift({ id, cookedAt, recordedBy: null })
+    recording.add(id)
     return dish.cookings[0]!
+  }
+
+  // Takes a Cooking out of the Dish's Cooking History, found by its id (a
+  // Board load may have replaced the object).
+  function dropCooking(dish: DishView, cooking: { id: string } | undefined) {
+    if (!cooking) return
+    recording.delete(cooking.id)
+    const at = dish.cookings.findIndex(c => c.id === cooking.id)
+    if (at !== -1) dish.cookings.splice(at, 1)
   }
 
   // Fills in the pending Cooking as the server recorded it, or takes it out
   // of the Cooking History if the server recorded none.
   function settlePending(dish: DishView, pending: CookingView | undefined, recorded: CookingView | undefined) {
-    if (pending && recorded) Object.assign(pending, recorded)
-    else removeFrom(dish.cookings, pending)
+    if (pending && recorded) {
+      recording.delete(pending.id)
+      Object.assign(dish.cookings.find(c => c.id === pending.id) ?? pending, recorded)
+    }
+    else dropCooking(dish, pending)
   }
 
   // The recorded Cooking as the Dish's Cooking History shows it, unless it
@@ -511,7 +692,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // the Dish is cooked again where it was, with a notice: back in this
   // Board's Gekocht Column, or off this Board again. After a failed move,
   // the Dish is back already.
-  function undoCooked(dish: DishView, origin: Place, pending: CookingView, ended: MoveEnded) {
+  //
+  // On this Board (`keepable`), what is unsent is taken back without
+  // sending anything; a Cooking the server has recorded (or that was sent
+  // since) is taken off by an Unsent Change when malkochen doesn't answer.
+  function undoCooked(dish: DishView, origin: Place, pending: CookingView, ended: MoveEnded, keepable = false) {
     const dishId = dish.id
     return async (): Promise<BoardResult> => {
       if (ended.failed) return { dish }
@@ -519,16 +704,33 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       const now = find(dishId)
       const cooked = now && placeOf(now.column, now.column.dishes.indexOf(now.dish))
       moveBack(dish, origin)
-      removeFrom(dish.cookings, dish.cookings.find(c => c === pending || c.id === ended.recorded?.id))
+      dropCooking(dish, pending)
 
       const back = { columnId: origin.columnId, index: origin.index }
       const undoing = queued(dishId, async (latest): Promise<BoardResult> => {
         if (ended.failed) return { dish }
-        const { recorded } = ended
+        // Still unsent: taken back, and nothing is sent.
+        if (unsent && ended.unsentId && await unsent.cancel(ended.unsentId)) {
+          ended.unsentId = undefined
+          return { dish, unsent: true }
+        }
+        // Recorded: answered, or sent from the Unsent Changes since.
+        const recorded = ended.recorded ?? (ended.unsentId ? pending : undefined)
+        const keepUncook = (): BoardResult => {
+          queueUnsent({ kind: 'uncook', dishId, cookingId: pending.id, back }, new Date().toISOString(), dish.title)
+          return { dish, unsent: true }
+        }
         try {
-          const placed = recorded ? await transport.undoCooking(recorded.id, back) : await transport.moveDish(dishId, back)
-          if (latest()) settle(dish, placed)
-          return { dish, placement: placed.placement }
+          return await sendOrKeep({
+            canKeep: keepable && !!unsent && !!recorded,
+            waiting: anyUnsent(),
+            keep: keepUncook,
+            send: async (): Promise<BoardResult> => {
+              const placed = recorded ? await transport.undoCooking(recorded.id, back) : await transport.moveDish(dishId, back)
+              if (latest()) settle(dish, placed)
+              return { dish, placement: placed.placement }
+            },
+          })
         }
         catch (error) {
           // Its Cooking stays gone if it is gone on the server (deleted
@@ -564,17 +766,18 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // the Dish back here.
   function moveToBoard(dishId: string, to: BoardDestination): BoardResult | null {
     const found = find(dishId)
-    if (!found || !may('moveDishes')) return null
+    if (!found || !may('moveDishes') || isUnsentAdd(dishId)) return null
     const { dish } = found
     const cooks = recordsCooking(found.column, { id: to.columnId, isGekocht: to.isGekocht })
     const { origin, focus } = leave(dish, found.column)
     focusWhenGone.set(dishId, focus)
-    const pending = cooks ? recordPending(dish) : undefined
+    const cookingId = cooks ? crypto.randomUUID() : undefined
+    const pending = cookingId ? recordPending(dish, cookingId, new Date().toISOString()) : undefined
     const ended: MoveEnded = { failed: false, undone: false }
 
     const settled = queued(dishId, async (latest): Promise<BoardResult> => {
       try {
-        const moved = await transport.moveDish(dishId, { columnId: to.columnId })
+        const moved = await transport.moveDish(dishId, { columnId: to.columnId }, cookingId ? { cookingId } : undefined)
         ended.recorded = moved.cooking
         rolledBackTo.delete(dishId)
         settlePending(dish, pending, moved.cooking)
@@ -582,7 +785,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       }
       catch (error) {
         ended.failed = true
-        removeFrom(dish.cookings, pending)
+        dropCooking(dish, pending)
         if (isGone(error)) return { dish }
         // Back where the server still has it.
         const back = rollBackTo(dishId, origin)
@@ -614,11 +817,12 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   function deleteCooking(dishId: string, cookingId: string): BoardResult | null {
     if (!may('moveDishes')) return null
     const found = find(dishId)
-    // One still being recorded has no id yet: nothing to delete on the server.
-    const at = cookingId ? found?.dish.cookings.findIndex(c => c.id === cookingId) ?? -1 : -1
+    // One still being recorded isn't on the server yet: nothing to delete there.
+    const at = isRecording(cookingId) ? -1 : found?.dish.cookings.findIndex(c => c.id === cookingId) ?? -1
     if (!found || at === -1) return null
     const { dish } = found
     const [cooking] = dish.cookings.splice(at, 1) as [CookingView]
+
 
     // Why it wasn't deleted, as a notice; none once it is.
     const notDeleted = queued(cookingId, () => transport.deleteCooking(cookingId)).then(() => null, (error: unknown): Notice | null => {
@@ -710,7 +914,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const here = 'boardId' in to ? null : column(to.columnId)
     if ('boardId' in to ? to.isGekocht : !here || here.isGekocht) return null
     const moving = inBoardOrder(dishIds).filter(f => f.column !== here)
-    if (moving.length === 0) return null
+    if (moving.length === 0 || moving.some(f => isUnsentAdd(f.dish.id))) return null
     const dishes = moving.map(f => f.dish)
     const ids = dishes.map(d => d.id)
     const { origins, focus } = leaveAll(moving)
@@ -786,31 +990,53 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       movers.forEach((dish, i) => insert(gekocht!, i, dish))
     }
     intoGekocht()
-    const pendings = dishes.map(recordPending)
+    const cookingIds = dishes.map(() => crypto.randomUUID())
+    const madeAt = new Date().toISOString()
+    const pendings = dishes.map((dish, i) => recordPending(dish, cookingIds[i]!, madeAt))
     // The Cookings the server recorded, for "Rückgängig".
     const recorded = new Map<string, CookingView>()
+    let unsentId: string | undefined
+
+    // Where malkochen doesn't answer, the Dishes stay cooked on screen, and
+    // the Klassiker are told by the phone's count (#452).
+    function keepUnsent(): BulkResult {
+      for (const id of cookingIds) recording.delete(id)
+      for (const id of ids) rolledBackTo.delete(id)
+      unsentId = queueUnsent({ kind: 'cookMany', dishIds: ids, cookingIds }, madeAt, dishes.map(d => d.title).join(', '))
+      const klassiker = dishes
+        .map((dish, i) => ({ dish, cooking: pendings[i]! }))
+        .filter(({ dish }) => dish.cookings.length === MILESTONE_COOKINGS)
+      return { dishes, klassiker, unsent: true }
+    }
 
     const settled = queued(ids, async (latest): Promise<BulkResult> => {
       try {
-        const answers = await transport.cookDishes(ids)
-        for (const answer of answers) {
-          const i = ids.indexOf(answer.id)
-          const dish = dishes[i]
-          if (!dish) continue
-          recorded.set(dish.id, answer.cooking)
-          if (latest(dish.id)) settle(dish, answer)
-          else settlePending(dish, pendings[i], answer.cooking)
-        }
-        for (const id of ids) rolledBackTo.delete(id)
-        // The Dishes this Cooking made a Klassiker (#452 celebrates them).
-        const klassiker = dishes
-          .filter(d => answers.find(a => a.id === d.id)?.cookings.length === MILESTONE_COOKINGS)
-          .map(dish => ({ dish, cooking: recorded.get(dish.id)! }))
-        return { dishes, klassiker }
+        return await sendOrKeep({
+          canKeep: !!unsent,
+          waiting: anyUnsent(),
+          keep: keepUnsent,
+          send: async (): Promise<BulkResult> => {
+            const answers = await transport.cookDishes(ids, { cookingIds })
+            for (const answer of answers) {
+              const i = ids.indexOf(answer.id)
+              const dish = dishes[i]
+              if (!dish) continue
+              recorded.set(dish.id, answer.cooking)
+              if (latest(dish.id)) settle(dish, answer)
+              else settlePending(dish, pendings[i], answer.cooking)
+            }
+            for (const id of ids) rolledBackTo.delete(id)
+            // The Dishes this Cooking made a Klassiker (#452 celebrates them).
+            const klassiker = dishes
+              .filter(d => answers.find(a => a.id === d.id)?.cookings.length === MILESTONE_COOKINGS)
+              .map(dish => ({ dish, cooking: recorded.get(dish.id)! }))
+            return { dishes, klassiker }
+          },
+        })
       }
       catch (error) {
         // Back where the server still has them, without the Cookings.
-        dishes.forEach((dish, i) => removeFrom(dish.cookings, pendings[i]))
+        dishes.forEach((dish, i) => dropCooking(dish, pendings[i]))
         putAllBack(movers, movers.map((dish, i) => rollBackTo(dish.id, origins[i]!)), latest)
         return { dishes, notice: failedManyAs(error, 'cookManyFailed') }
       }
@@ -824,16 +1050,33 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     async function undo(): Promise<BulkResult> {
       if ((await settled).notice) return { dishes } // Never cooked, and back already.
       putAllBack(movers, origins)
-      const cookings = dishes.map(dish => recorded.get(dish.id)!)
-      dishes.forEach((dish, i) => removeFrom(dish.cookings, dish.cookings.find(c => c.id === cookings[i]!.id)))
+      // The Cookings as shown, with the ids the device made for them.
+      const cookings = dishes.map((dish, i) => recorded.get(dish.id) ?? pendings[i]!)
+      dishes.forEach((dish, i) => dropCooking(dish, cookings[i]))
       const undos = dishes.map((dish, i) => {
         const origin = origins[moverIds.indexOf(dish.id)]
-        return { cookingId: cookings[i]!.id, ...origin && { back: { columnId: origin.columnId, index: origin.index } } }
+        return { cookingId: cookingIds[i]!, ...origin && { back: { columnId: origin.columnId, index: origin.index } } }
       })
+      const keepUncook = (): BulkResult => {
+        queueUnsent({ kind: 'uncookMany', dishIds: ids, cookings: undos }, new Date().toISOString(), dishes.map(d => d.title).join(', '))
+        return { dishes, unsent: true }
+      }
       const uncooked = queued(ids, async (latest): Promise<BulkResult> => {
+        // Still unsent: taken back, and nothing is sent.
+        if (unsent && unsentId && await unsent.cancel(unsentId)) {
+          unsentId = undefined
+          return { dishes, unsent: true }
+        }
         try {
-          settleAll(dishes, await transport.uncookDishes(undos), latest)
-          return { dishes }
+          return await sendOrKeep({
+            canKeep: !!unsent,
+            waiting: anyUnsent(),
+            keep: keepUncook,
+            send: async (): Promise<BulkResult> => {
+              settleAll(dishes, await transport.uncookDishes(undos), latest)
+              return { dishes }
+            },
+          })
         }
         catch (error) {
           intoGekocht()
@@ -852,7 +1095,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Dishes" holds for every one of them.
   function deleteDishes(dishIds: string[]): BulkResult | null {
     const found = inBoardOrder(dishIds)
-    if (found.length === 0 || found.some(f => !may('archiveDishes', f.dish.id))) return null
+    if (found.length === 0 || found.some(f => !may('archiveDishes', f.dish.id) || isUnsentAdd(f.dish.id))) return null
     const dishes = found.map(f => f.dish)
     const ids = dishes.map(d => d.id)
     const { origins, focus } = leaveAll(found)
@@ -902,31 +1145,56 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // Board's version, so the next check still sees a dropped one as new.
   async function sync(ask: () => Promise<BoardView>, { paused = () => false }: { paused?: () => boolean } = {}): Promise<boolean> {
     const asked = mark()
+    const sending = unsent?.mark() ?? null
     const fresh = await ask()
-    if (writesSince(asked) || paused() || board.value?.id !== fresh.id) return false
+    // A send of Unsent Changes counts as a write under way. Waiting ones
+    // don't: they are laid over what the server says, so nothing flickers.
+    if (writesSince(asked) || (unsent && unsent.sentSince(sending)) || paused() || board.value?.id !== fresh.id) return false
+    // Kept as the server says it, before the Unsent Changes are laid over it:
+    // a change dropped on arrival must not stick in the kept copy.
+    void kept?.keep(fresh)
+    if (unsent) layOver(fresh, unsent.forBoard(fresh.id))
     merge(board.value, fresh)
     return true
+  }
+
+  // Shows the Unsent Changes kept on the device (or made on another page
+  // before) on this Board, once they are loaded: as a Board load brings it
+  // from the server, nothing of them is there.
+  async function layOverUnsent() {
+    if (!unsent) return
+    await unsent.ready
+    if (board.value) layOver(board.value, unsent.forBoard(board.value.id))
   }
 
   // The Board Version (ADR 0008) of the Board as the app shows it.
   const version = () => board.value?.version
 
   // Takes a Dish off the ones with something new in their Dish History.
-  function clearNewInHistory(dishId: string) {
-    if (board.value) removeFrom(board.value.newInHistoryDishIds, dishId)
+  // Answers whether it was marked.
+  function clearNewInHistory(dishId: string): boolean {
+    const marked = board.value?.newInHistoryDishIds
+    if (!marked?.includes(dishId)) return false
+    removeFrom(marked, dishId)
+    return true
+  }
+
+  // Marks it again: the server never heard it was opened.
+  function markNewInHistory(dishId: string) {
+    if (board.value && !board.value.newInHistoryDishIds.includes(dishId)) board.value.newInHistoryDishIds.push(dishId)
   }
 
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote') })
+  const histories = createDishHistories({ transport, offline, isUnsentAdd, device: kept && { keep: (dishId, history) => { if (board.value) void kept.keepHistory(board.value.id, dishId, history) }, history: kept.history }, find: dishId => find(dishId)?.dish, clearNewInHistory, markNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, queueUnsent, anyUnsent })
 
   // The Member's Votes on the Board's Dishes.
-  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote') })
+  const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote'), unsent, queueUnsent, anyUnsent })
 
   // How many Dishes are on the Board, the Gekocht Column's included: it
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, version, focusAfterDetail, dishCount, may, ...histories, ...votes }
+  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

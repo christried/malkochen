@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, desc, eq, exists, ilike, inArray, isNotNull, isNull, ne, notExists, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, ilike, inArray, isNotNull, isNull, lte, ne, notExists, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm'
 import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
@@ -76,8 +76,10 @@ export interface DishPlacement {
 export type PlacedDish = DishView & { placement: DishPlacement }
 
 // What adding a Dish answers: the Dish placed, and whether its Source image
-// could not be stored, as for SavedDish.
-export type AddedDish = PlacedDish & { imageNotStored?: true }
+// could not be stored, as for SavedDish. A Dish added offline (#462) also
+// says which Dish with the same Source was already on the Board, if any:
+// the Member had no chance to be asked before saving it.
+export type AddedDish = PlacedDish & { imageNotStored?: true, duplicateOf?: DuplicateDish }
 
 export interface NewDish {
   title: string
@@ -934,12 +936,19 @@ export interface DuplicateDish {
 
 // The Board's newest Dish whose Source is this canonical link, if any.
 // Deleted Dishes don't count.
-export async function dishWithSource(boardId: string, canonicalLink: string): Promise<DuplicateDish | null> {
+// `earlierThan`: only a Dish other than that one and added before it (the
+// Dish that had the Source when that one arrived).
+export async function dishWithSource(boardId: string, canonicalLink: string, earlierThan?: { id: string, createdAt: string }): Promise<DuplicateDish | null> {
   const [found] = await db
     .select({ id: dish.id, code: dish.code, title: dish.title, columnName: boardColumn.name })
     .from(dish)
     .innerJoin(boardColumn, eq(boardColumn.id, dish.columnId))
-    .where(and(eq(dish.boardId, boardId), eq(dish.sourceLink, canonicalLink), isNull(dish.deletedAt)))
+    .where(and(
+      eq(dish.boardId, boardId),
+      eq(dish.sourceLink, canonicalLink),
+      isNull(dish.deletedAt),
+      ...earlierThan ? [ne(dish.id, earlierThan.id), lte(dish.createdAt, new Date(earlierThan.createdAt))] : [],
+    ))
     .orderBy(desc(dish.createdAt), desc(dish.id))
     .limit(1)
   return found ?? null

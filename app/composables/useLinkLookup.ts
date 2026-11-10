@@ -29,7 +29,7 @@ type State
 const TYPING_PAUSE = 300
 
 // The app's Source Lookup, over HTTP. Tests pass a fake instead.
-function sourceLookup(link: string): Promise<LookupAnswer> {
+export function sourceLookup(link: string): Promise<LookupAnswer> {
   return $fetch<LookupAnswer>('/api/source-lookup', { query: { link } })
 }
 

@@ -113,7 +113,9 @@ test('a written Comment shows at the end at once, trimmed, and is filled in once
   held.succeed()
   const settled = await result.settled!
   expect(settled.notice).toBeUndefined()
-  expect(shown('a')).toEqual(['added Ada', 'comment comment-1 Lecker!'])
+  // With the id the device made for it.
+  expect(result.comment.id).toMatch(/^[0-9a-f-]{36}$/)
+  expect(shown('a')).toEqual(['added Ada', `comment ${result.comment.id} Lecker!`])
   // The same object, filled in, so the history keeps its entry.
   expect(module.historyOf('a').at(-1)).toEqual({ kind: 'comment', at: result.comment.createdAt, comment: result.comment })
   expect(settled.comment).toBe(result.comment)
@@ -256,7 +258,7 @@ test('a history loading while the Member writes their first Comment keeps it bes
   heldWrite.succeed()
   await written.settled
 
-  expect(shown('a')).toEqual(['added Ada', `comment ${theirs.id} Von Ada`, 'comment comment-2 Von mir'])
+  expect(shown('a')).toEqual(['added Ada', `comment ${theirs.id} Von Ada`, `comment ${written.comment.id} Von mir`])
 })
 
 test('a history loaded again while a delete is under way doesn\'t bring the Comment back', async () => {
@@ -277,10 +279,11 @@ test('Cookings recorded and deleted on the Board show in the Dish History at onc
   await module.openDish('b')
 
   const cooked = module.cookDish('b')!
-  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', 'cooking '])
+  const id = cooked.cooking!.id
+  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', `cooking ${id}`])
   await cooked.settled
-  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', 'cooking cooking-1'])
+  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-0', 'cooking b-cooking-1', `cooking ${id}`])
 
   module.deleteCooking('b', 'b-cooking-0')
-  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-1', 'cooking cooking-1'])
+  expect(shown('b')).toEqual(['added Ada', 'cooking b-cooking-1', `cooking ${id}`])
 })

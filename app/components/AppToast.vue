@@ -7,8 +7,9 @@ const toast = defineModel<Toast | null>({ required: true })
 const t = useStrings()
 const bar = useTemplateRef<HTMLElement>('bar')
 const paused = useToastPaused()
-// While malkochen can't be reached (#458), its changes ("Rückgängig", a
-// Vote) are greyed out.
+// While malkochen can't be reached (#458), its changes ("Rückgängig") are
+// greyed out, except those that work offline (Toast.actions[].offline; a
+// Vote, #460, is one).
 const { mayChange } = useConnection()
 
 // The bar's animation is also the timer. A Web Animation, not CSS, so the
@@ -100,7 +101,7 @@ function act(action: ToastAction) {
                 type="button"
                 class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-focus"
                 :class="toast.howWasIt ? 'px-1.5' : 'px-3'"
-                :disabled="!action.navigates && !mayChange"
+                :disabled="!action.navigates && !action.offline && !mayChange"
                 @click="act(action)"
               >
                 {{ action.label }}
@@ -113,14 +114,12 @@ function act(action: ToastAction) {
           >
             <template v-if="toast.howWasIt.vote">
               <span class="whitespace-nowrap text-on-inverse/70">{{ t.history.howWasIt }}</span>
-              <NeedsNet :note="false">
-                <VoteButtons
-                  :mine="toast.howWasIt.vote.mine()"
-                  :size="36"
-                  inverse
-                  @vote="toast.howWasIt.vote.set"
-                />
-              </NeedsNet>
+              <VoteButtons
+                :mine="toast.howWasIt.vote.mine()"
+                :size="36"
+                inverse
+                @vote="toast.howWasIt.vote.set"
+              />
             </template>
             <button
               type="button"

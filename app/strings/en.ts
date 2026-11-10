@@ -4,11 +4,30 @@
 // and Topfbert keep their names. Relative imports, as in de.ts.
 import type { EventGroup } from '../../shared/admin'
 import type { DishField, EventKind } from '../../shared/event-kinds'
-import type { Strings } from './de'
+import type { Strings, UnsentKindName } from './de'
+import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
+
+// What an Unsent Change did, for the toast naming those that didn't arrive.
+function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
+  const named = `“${label}”`
+  switch (kind) {
+    case 'comment': return `comment on ${named} (“${text}”)`
+    case 'commentEdit': return `edit of the comment on ${named} (“${text}”)`
+    case 'commentDelete': return `deleted comment on ${named}`
+    case 'vote': return `thumb on ${named}`
+    case 'title': return `new title for ${named}`
+    case 'add': return `${named} added`
+    case 'move': return `${named} moved`
+    case 'cook':
+    case 'cookMany': return `${named} cooked`
+    case 'uncook':
+    case 'uncookMany': return `${named} uncooked`
+  }
+}
 
 const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
 
@@ -397,6 +416,21 @@ export const en: Strings = {
     imageNotStored: (title: string) => `The image from the link couldn’t be saved. “${title}” has a placeholder image now.`,
     photoNotStored: (title: string) => `Your photo couldn’t be saved. “${title}” has a placeholder image now.`,
     notAllowed: 'You can’t add dishes to this board. The owner decides that.',
+    titleOptional: 'Title (can stay empty)',
+    titleOptionalHint: 'Without a title we use the link’s once you’re back online.',
+    offlineHint: 'No connection. The link is looked up once you’re back online.',
+    sourceTitle: (kind: SourceKind, creator: string | null, site: string): string => {
+      const by = (what: string, plain: string) => creator ? `${what} by ${creator}` : plain
+      switch (kind) {
+        case 'tiktok': return by('TikTok', 'TikTok video')
+        case 'instagram-reel': return by('Instagram Reel', 'Instagram Reel')
+        case 'instagram-post': return by('Instagram post', 'Instagram post')
+        case 'youtube-short': return by('YouTube Short', 'YouTube Short')
+        case 'pinterest-pin': return by('Pinterest Pin', 'Pinterest Pin')
+        case 'blog': return creator ? `Recipe from ${creator}` : site || 'Web page'
+        case 'other': return creator ? `Web page from ${creator}` : site || 'Web page'
+      }
+    },
   },
   placeholders: {
     pasta: 'Pasta',
@@ -565,6 +599,21 @@ export const en: Strings = {
     bar: 'Offline. Your changes will arrive as soon as you’re back online.',
     unreachable: 'malkochen can’t be reached right now.',
     needsNet: 'Only works online',
+    notKeptHeadline: 'This needs a connection.',
+    notKeptBody: 'You haven’t opened this on this device yet. As soon as you’re back online, you can carry on here.',
+  },
+  unsent: {
+    count: (count: number) => `${number(count)} not sent yet`,
+    allSent: 'All sent',
+    notSent: 'Not sent yet',
+    alreadyOnBoard: (title: string, column: string) => `That link was already on the board: “${title}” in ${column}`,
+    copyText: 'Copy',
+    copied: 'Copied',
+    copyFailed: 'Copying didn’t work.',
+    didntArrive: (changes: { kind: UnsentKindName, label: string, text?: string }[]) => {
+      const named = changes.map(({ kind, label, text }) => unsentChange(kind, label, text)).join(', ')
+      return `${number(changes.length)} ${plural(changes.length, { one: 'change', other: 'changes' })} didn’t arrive: ${named}`
+    },
   },
   error: {
     headline: 'Something got burnt.',
@@ -573,6 +622,17 @@ export const en: Strings = {
     notFoundHeadline: 'That’s not here.',
     notFoundBody: 'This page doesn’t exist, or you’re not part of it (any more).',
     toApp: 'Go to malkochen',
+  },
+  leaving: {
+    lost: (count: number) => `${number(count)} ${plural(count, { one: 'change hasn’t', other: 'changes haven’t' })} been sent yet and will be lost.`,
+    signOutTitle: 'Really sign out?',
+    signOutGo: 'Sign out anyway',
+    cancel: 'Cancel',
+    switchTitle: 'Changes from another account are waiting on this device.',
+    switchGo: 'Discard and continue',
+    switchKeep: 'Sign out and keep them',
+    signOutNeedsNet: 'Signing out only works online. You stay signed in.',
+    understood: 'Got it',
   },
   username: {
     label: 'Name',

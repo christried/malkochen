@@ -7,6 +7,7 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 ### Added
 
 - Hai cucinato più piatti? Selezionali (tieni premuto su uno, o Ctrl-clic sul desktop), tocca Cucinato ✓ e contano tutti. Una sola festa per tutti, un classico ha comunque la sua, e un solo Annulla li riporta tutti indietro.
+- malkochen funziona anche con poco segnale, o senza. Le bacheche che hai già aperto restano sul tuo telefono: puoi spostare i piatti, toccare Cucinato ✓, commentare, dare un pollice, correggere un titolo o aggiungere un piatto da un link. Arriva tutto appena torni in rete, e una piccola barra ti dice cosa sta ancora aspettando.
 
 ## [1.1.2] - 2026-11-09
 
