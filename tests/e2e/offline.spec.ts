@@ -141,9 +141,10 @@ test('losing the connection on a Board shows the offline bar over it, every chan
   const adding = page.getByRole('dialog', { name: 'Gericht hinzufügen' })
   await expect(adding).toBeVisible()
   await adding.getByRole('button', { name: 'Ohne Link hinzufügen' }).click()
-  await expect(adding.getByRole('button', { name: 'Bild wählen' })).toBeDisabled()
-  await adding.getByRole('button', { name: 'Schließen' }).first().click()
-  await expect(adding).toBeHidden()
+  const byHand = page.getByRole('dialog', { name: 'Ohne Link hinzufügen' })
+  await expect(byHand.getByRole('button', { name: 'Bild wählen' })).toBeDisabled()
+  await byHand.getByRole('button', { name: 'Schließen' }).first().click()
+  await expect(byHand).toBeHidden()
   await expect(page.getByRole('button', { name: 'Gekocht ✓: „Linsensuppe“' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mehr zu „Linsensuppe“' })).toBeVisible()
 
@@ -186,7 +187,9 @@ for (const [what, outage] of [
 
     await expect(unreachableBar(page)).toBeVisible()
     await expect(offlineBar(page)).toBeHidden()
-    await expect(add).toHaveAttribute('aria-disabled', 'true')
+    // Adding works without an answer too (#462): what needs one is greyed out
+    // inside Add Dish.
+    await expect(add).not.toHaveAttribute('aria-disabled')
 
     await page.unroute(check)
     await expect(unreachableBar(page)).toBeHidden()
@@ -625,8 +628,11 @@ test('a Dish shared to malkochen cold and offline opens Add Dish with the link f
 
   await context.setOffline(false)
   await gotoHydrated(page, `/b/${board.slug}`)
-  await expect(bar(page, 'Alles gesendet')).toBeVisible({ timeout: 15_000 })
-  await expect(titles(page, 'Ideen')).toHaveText(['Instagram-Reel von mara.kocht', 'Linsensuppe'])
+  // "Alles gesendet" is only there for a moment, so it is the Dish that is waited for.
+  await expect(titles(page, 'Ideen')).toHaveText(['Instagram-Reel von mara.kocht', 'Linsensuppe'], { timeout: 15_000 })
+  await expect(bar(page, 'noch nicht gesendet')).toBeHidden()
+  const sent = await (await page.request.get(`/api/boards/${board.id}`)).json() as { columns: { dishes: { title: string }[] }[] }
+  expect(sent.columns.flatMap(c => c.dishes).filter(d => d.title === 'Instagram-Reel von mara.kocht')).toHaveLength(1)
 })
 
 test('with reduced motion the Offline page shows its clip still',async ({ page, context }) => {
