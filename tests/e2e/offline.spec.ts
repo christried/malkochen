@@ -810,8 +810,16 @@ test('signing in as another user on the device warns, then discards the Unsent C
   await expect.poll(() => kept(page, 'unsent')).toEqual([])
 
   // Nothing reached the first user's Board, with or without a connection.
+  // "Nothing arrived" has no event to wait for, so the page is given a few
+  // of its (fast) poll rounds, and the Cooking request is watched for, not
+  // only its effect on the Board.
+  const cookRequests: string[] = []
+  page.on('request', (request) => {
+    if (COOK(new URL(request.url()))) cookRequests.push(request.url())
+  })
   await page.unroute(COOK)
   await page.waitForTimeout(2_000)
+  expect(cookRequests).toEqual([])
   const owner = await newTab(browser)
   await signIn(owner, HROSWITHA)
   expect(await cooked(owner, board.id)).toEqual([])
