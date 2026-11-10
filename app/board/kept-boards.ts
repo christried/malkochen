@@ -3,7 +3,6 @@
 import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
-import { dishAt, dishSegment } from '../../shared/address'
 import type { DeviceStore } from './device-store'
 
 // What the device keeps of one signed-in user's Boards (spec #456, ticket
@@ -72,10 +71,11 @@ export function createKeptBoards({ store, userId }: { store: DeviceStore, userId
     if (known && await store.boards.load(userId, known.boardId)) return known
     const view = await boardAsked(asked)
     if (!view) return null
-    if (dish === undefined) return { boardId: view.id, slug: view.slug, dish: null }
-    const found = dishAt(view, dish.toLowerCase())
-    // As the server answers a Dish part it doesn't know: as it was asked.
-    return { boardId: view.id, slug: view.slug, dish: found ? dishSegment(found.dish) : dish }
+    // A Dish's part as it was asked: offline there is no forwarding to its
+    // current title (the Dish page finds the Dish by its code). Not looked up
+    // with shared/address.ts here, which the app's build would then pull in
+    // from a relative path it can't resolve.
+    return { boardId: view.id, slug: view.slug, dish: dish ?? null }
   }
 
   async function landing() {

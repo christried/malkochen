@@ -147,7 +147,7 @@ test('an address leads to a kept Board by its slug, its id or a Dish in it, and 
 
   expect(await kept.address('kochclub', undefined)).toEqual({ boardId: 'board', slug: 'kochclub', dish: null })
   expect(await kept.address('board', undefined)).toEqual({ boardId: 'board', slug: 'kochclub', dish: null })
-  expect(await kept.address('kochclub', 'egal-cboarda')).toEqual({ boardId: 'board', slug: 'kochclub', dish: 'titel-boarda-cboarda' })
+  expect(await kept.address('kochclub', 'titel-boarda-cboarda')).toEqual({ boardId: 'board', slug: 'kochclub', dish: 'titel-boarda-cboarda' })
   expect(await kept.address('nie-offen', undefined)).toBeNull()
 })
 
