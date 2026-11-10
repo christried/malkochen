@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // The Gekocht celebration at the top of the screen (#105, variant B): a
 // short inverse pill with Topfbert sitting in it, saying one of his cheers,
-// and "Gekocht ✓"; for a Dish moved into another Board's Gekocht Column, a
-// second line names that Board ("in 🍲 Familie"). It slides down from the
+// and "Gekocht ✓" ("3 Gerichte gekocht ✓" for several at once, #452); for
+// a Dish moved into another Board's Gekocht Column, a second line names
+// that Board ("in 🍲 Familie"). It slides down from the
 // top edge a moment after the confetti and goes by itself
 // (useGekochtPill). Its actions are the Gekocht toast's, at the bottom.
 // Decoration beside that toast, which says it all to screen readers.
@@ -46,7 +47,7 @@ useTopLayerInModal(place)
           class="-my-5 shrink-0"
         />
         <p class="min-w-0">
-          <span class="block whitespace-nowrap text-button">{{ t.dish.cook }}</span>
+          <span class="block whitespace-nowrap text-button">{{ pill.count ? t.selection.cookedPill(pill.count) : t.dish.cook }}</span>
           <span
             v-if="pill.board"
             class="block truncate text-caption opacity-75"

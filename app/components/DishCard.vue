@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DishView } from '~~/server/utils/dishes'
+import { siteOf } from '~/utils/link-guess'
 import type { ClipMotion } from '~/utils/motion'
 
 // The handoff's compact DishCard: 86px thumb + text, 128px high. The thumb
@@ -15,6 +16,9 @@ const props = defineProps<{
   isNew?: boolean
   // Something new in its Dish History since you last opened it (#335).
   newInHistory?: boolean
+  // Added offline and not sent yet (#462): it wears the mark, and shows the
+  // link's site until the server has looked the link up.
+  unsent?: boolean
   // Shown before (the dragged copy of a card): no pop-in, no ring.
   seen?: boolean
   // The Placeholder's loop, when the Board lets this card play it.
@@ -22,6 +26,11 @@ const props = defineProps<{
 }>()
 defineEmits<{ motionEnded: [] }>()
 const t = useStrings()
+// The link's site, next to the mark, unless the title is that already.
+const site = computed(() => {
+  const host = props.dish.source ? siteOf(props.dish.source.link) : ''
+  return host && host !== props.dish.title ? host : ''
+})
 
 // The "Neu" pebble (handoff "Neu pebble") pops in as the card enters, and a
 // ring pulses around it until the card has been in view for a moment.
@@ -93,6 +102,20 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
       >
         {{ dish.title }}
       </h3>
+      <!-- A Dish added offline that has not arrived yet: "Noch nicht gesendet" and
+           its site. -->
+      <p
+        v-if="unsent"
+        class="mt-0.5 flex min-w-0 items-center gap-1.5 pr-1 text-caption text-text-muted"
+        data-unsent
+      >
+        <span class="shrink-0 rounded-pill bg-surface-muted px-2 py-0.5">{{ t.unsent.notSent }}</span>
+        <span
+          v-if="site"
+          class="truncate"
+          data-site
+        >{{ site }}</span>
+      </p>
       <!-- One line under the title: the Creator, cut with "…" if long, then
            "N× gekocht", which is never cut. Two lines would not fit under a
            two-line title. -->

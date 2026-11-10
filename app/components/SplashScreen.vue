@@ -35,7 +35,10 @@ const SHOWN_MS = 2000
 
 // Only a page as the server sent it has the splash: app.vue first rendered
 // in the browser (after an error page's way back home) is in-app navigation.
-const fromServer = import.meta.server || useNuxtApp().isHydrating
+// (Not the app shell the service worker shows offline, #461: that one is
+// rendered in the browser, with no script to hide the overlay.)
+const nuxtApp = useNuxtApp()
+const fromServer = import.meta.server || (nuxtApp.isHydrating && nuxtApp.payload.serverRendered)
 
 const key = JSON.stringify(SPLASH_SEEN_KEY)
 useHead({

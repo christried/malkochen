@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { and, asc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { COMMENT_MAX } from '../../app/utils/comment-text'
@@ -6,6 +7,7 @@ import { comment, dish, user } from '../db/schema'
 import { accessibleBoardIds, ownedBoardIds } from './board-access'
 import type { DishAdder } from './dishes'
 import { commentEvent, withEvents } from './events'
+import { deviceIdInput, madeAtInput, madeAtOrNow, writeOnce, type DeviceIdStanding } from './late-changes'
 import { pictureOf } from './people'
 
 // Comments (CONTEXT.md: Comment): a Member's message on a Dish, in its Dish
@@ -27,6 +29,10 @@ export interface CommentView {
 // What writing or editing one accepts: trimmed, never empty, at most
 // COMMENT_MAX characters.
 export const commentBody = z.object({ text: z.string().trim().min(1).max(COMMENT_MAX) })
+
+// What writing one accepts besides: sent from offline (late-changes.ts),
+// the id the device made for it and when it was written.
+export const newCommentBody = commentBody.extend({ id: deviceIdInput, madeAt: madeAtInput })
 
 // Why a Member may not change a Comment they can see: to edit it, it must
 // be theirs; to delete or restore it, theirs or on a Board they own.
@@ -109,20 +115,43 @@ async function findComment(where: ReturnType<typeof and>): Promise<CommentView |
   return row ? toView(row) : null
 }
 
-// Writes a Comment on a Dish, by the user. Null unless the Dish is on a
-// Board they are a Member of and not archived.
-export async function writeComment(dishId: string, userId: string, text: string): Promise<CommentView | null> {
-  const { rows } = await withEvents(
-    db,
-    // Drizzle's insert … select wants every column selected.
-    sql`insert into ${comment} (dish_id, author_id, text)
-      select ${dish.id}, ${userId}::text, ${text}::text from ${dish}
-      where ${and(eq(dish.id, dishId), inArray(dish.id, membersDishes(userId)))}
-      returning id, dish_id`,
-    commentEvent('comment_written', userId),
-  )
-  const [written] = rows as { id: string }[]
-  return written ? findComment(eq(comment.id, written.id)) : null
+// Writes a Comment on a Dish, by the user, keeping the `id` the device made
+// for it and dated `madeAt` if it was written offline (late-changes.ts).
+// `repeat`: that id was written already (its answer was lost), so this
+// wrote nothing and answers it as it is. Null unless the Dish is on a Board
+// they are a Member of and not archived, and, for a repeat, the Comment
+// isn't deleted; 'taken' if the id is another user's or another Dish's.
+export async function writeComment(
+  dishId: string,
+  userId: string,
+  text: string,
+  { id, madeAt }: { id?: string, madeAt?: string } = {},
+): Promise<{ comment: CommentView, repeat: boolean } | 'taken' | null> {
+  const commentId = id ?? randomUUID()
+  const write = async () => {
+    await withEvents(
+      db,
+      // Drizzle's insert … select wants every column selected.
+      sql`insert into ${comment} (id, dish_id, author_id, text, created_at)
+        select ${commentId}::uuid, ${dish.id}, ${userId}::text, ${text}::text, ${madeAtOrNow(madeAt)} from ${dish}
+        where ${and(eq(dish.id, dishId), inArray(dish.id, membersDishes(userId)))}
+        returning id, dish_id`,
+      commentEvent('comment_written', userId),
+    )
+  }
+  const standing = await writeOnce(id ? () => commentIdStanding(id, dishId, userId) : undefined, write)
+  if (standing === 'taken') return 'taken'
+  const written = await findComment(seenBy(commentId, userId))
+  return written ? { comment: written, repeat: standing === 'repeat' } : null
+}
+
+// How the id a device made for a new Comment stands (late-changes.ts): a
+// repeat if it is the user's Comment on that Dish (deleted since or not),
+// taken if it is any other.
+async function commentIdStanding(commentId: string, dishId: string, userId: string): Promise<DeviceIdStanding> {
+  const [found] = await db.select({ dishId: comment.dishId, authorId: comment.authorId }).from(comment).where(eq(comment.id, commentId))
+  if (!found) return 'free'
+  return found.dishId === dishId && found.authorId === userId ? 'repeat' : 'taken'
 }
 
 // Changes the text of the user's own Comment; it is "bearbeitet" from then

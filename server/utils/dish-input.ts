@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { PLACEHOLDERS } from '../../shared/placeholders'
 import { captionOf, guessSource, SOURCE_KINDS } from '../source-lookup'
 import type { DishSource } from './dishes'
+import { deviceIdInput, madeAtInput } from './late-changes'
 
 // What adding and editing a Dish accept from the client, shared by both.
 
@@ -68,8 +69,29 @@ export const addDishBody = z.object({
   // Added during the Tour (ADR 0006): the other Members get no Push
   // Notification for it; nothing else changes.
   tour: z.boolean().optional(),
+  // The id the device made for it, added offline (late-changes.ts).
+  id: deviceIdInput,
 })
 export type AddDishBody = z.input<typeof addDishBody>
+
+// Adding a Dish that was made offline (#462; POST /api/boards/:id/dishes with
+// `offline: true`, so a Dish added online validates as ever): the form
+// skipped the Source Lookup, so there is a link as the Member pasted it, a
+// title only if they typed one (none if there is a link), the Placeholder
+// Image they chose, and the id the device made for the Dish. The server looks
+// the link up when it arrives (server/utils/late-add.ts). Nothing here can
+// need an upload: no photo, no Source image, no Caption.
+export const offlineAddBody = z.object({
+  offline: z.literal(true),
+  id: z.uuid(),
+  placeholder: z.enum(PLACEHOLDERS),
+  // The Member chose the Placeholder Image over the Source's image (an
+  // online save that got no answer became this): the image is not copied.
+  noImage: z.literal(true).optional(),
+  title: z.string().trim().max(200).nullish().transform(title => title || null),
+  source: z.object({ link: webLinkInput }).nullish().transform(source => source ?? null),
+}).refine(body => body.title !== null || body.source !== null)
+export type OfflineAddBody = z.input<typeof offlineAddBody>
 
 // Changes to a Dish (PATCH /api/dishes/:id); only the fields sent change.
 export const dishEditBody = z.object({
@@ -102,8 +124,9 @@ export type DishEditBody = z.input<typeof dishEditBody>
 const dishIds = z.array(z.uuid()).min(1).max(500).refine(ids => new Set(ids).size === ids.length)
 
 export const bulkBody = z.discriminatedUnion('action', [
-  // To the top of a Column.
-  z.object({ action: z.literal('move'), dishIds, columnId: z.uuid() }),
+  // To the top of a Column. Sent from offline (late-changes.ts), when it
+  // was made: then a Column deleted meanwhile is the Board's first.
+  z.object({ action: z.literal('move'), dishIds, columnId: z.uuid(), madeAt: madeAtInput }),
   // Each back to its Column, at its index.
   z.object({
     action: z.literal('place'),
@@ -112,5 +135,24 @@ export const bulkBody = z.discriminatedUnion('action', [
   }),
   z.object({ action: z.literal('delete'), dishIds }),
   z.object({ action: z.literal('restore'), dishIds }),
+  // "Gekocht ✓" on several (#451): a Cooking for each, the Dishes in Board
+  // order, all on one Board. Sent from offline (late-changes.ts): the
+  // Cookings' device-made ids, one per Dish in that order, and when it was
+  // tapped.
+  z.object({
+    action: z.literal('cook'),
+    dishIds,
+    cookingIds: z.array(z.uuid()).max(500).refine(ids => new Set(ids).size === ids.length).optional(),
+    madeAt: madeAtInput,
+  }).refine(cook => cook.cookingIds === undefined || cook.cookingIds.length === cook.dishIds.length),
+  // "Rückgängig" after it: each Cooking taken back, and each Dish the cook
+  // moved back to its Column, at its index (`back`).
+  z.object({
+    action: z.literal('uncook'),
+    cookings: z.array(z.object({
+      cookingId: z.uuid(),
+      back: z.object({ columnId: z.uuid(), index: z.int().min(0).max(100_000) }).optional(),
+    })).min(1).max(500).refine(cookings => new Set(cookings.map(c => c.cookingId)).size === cookings.length),
+  }),
 ])
 export type BulkBody = z.input<typeof bulkBody>

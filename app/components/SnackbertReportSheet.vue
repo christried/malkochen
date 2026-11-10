@@ -16,10 +16,13 @@ import type { ReportOutcome } from '~/composables/useSnackbertReports'
 // with everything that was added, and says why. Every opening starts empty.
 // What is sent, and what each answer means, is useSnackbertReports'.
 const open = defineModel<boolean>('open', { required: true })
-const props = defineProps<{ dish: string, cookingId: string | null, cookedAt: string | null }>()
+// `waiting`: its Cooking is still an Unsent Change, so the server doesn't have it yet
+// (#459): the sheet says what it does offline, and sends nothing.
+const props = defineProps<{ dish: string, cookingId: string | null, cookedAt: string | null, waiting?: boolean }>()
 const t = useStrings()
 const reports = useSnackbertReports()
-const online = useOnline()
+const reachable = useOnline()
+const online = computed(() => reachable.value && !props.waiting)
 const voice = useVoiceRecording()
 
 type Tile = 'photo' | 'voice' | 'text'

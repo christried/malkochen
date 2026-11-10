@@ -7,6 +7,10 @@ const toast = defineModel<Toast | null>({ required: true })
 const t = useStrings()
 const bar = useTemplateRef<HTMLElement>('bar')
 const paused = useToastPaused()
+// While malkochen can't be reached (#458), its changes ("Rückgängig") are
+// greyed out, except those that work offline (Toast.actions[].offline; a
+// Vote, #460, is one).
+const { mayChange } = useConnection()
 
 // The bar's animation is also the timer. A Web Animation, not CSS, so the
 // reduced-motion rule (main.css) doesn't shorten the undo window.
@@ -55,7 +59,7 @@ function act(action: ToastAction) {
     ref="region"
     popover="manual"
     role="status"
-    class="pointer-events-none fixed bottom-6 top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-8"
+    class="pointer-events-none fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] top-auto z-toast m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit tablet:bottom-[calc(2rem+var(--offline-bar,0px))]"
     :class="twoRows ? 'inset-x-3 tablet:inset-x-4' : 'inset-x-4'"
   >
     <Transition name="toast">
@@ -95,8 +99,9 @@ function act(action: ToastAction) {
                 v-for="action in toast.actions"
                 :key="action.label"
                 type="button"
-                class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                class="shrink-0 rounded-pill py-1.5 text-button text-on-inverse underline decoration-2 underline-offset-4 transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-focus"
                 :class="toast.howWasIt ? 'px-1.5' : 'px-3'"
+                :disabled="!action.navigates && !action.offline && !mayChange"
                 @click="act(action)"
               >
                 {{ action.label }}

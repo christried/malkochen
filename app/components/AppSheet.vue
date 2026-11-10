@@ -84,7 +84,7 @@ function onHandleUp(event: PointerEvent) {
     @click.self="backdrop.onBackdropClick"
   >
     <div
-      class="px-5 pb-6 tablet:px-7 tablet:pt-6"
+      class="px-5 pb-[calc(1.5rem+var(--offline-bar,0px))] tablet:px-7 tablet:pt-6"
       :class="variant === 'dialog' ? 'pt-6' : 'pt-3'"
     >
       <div

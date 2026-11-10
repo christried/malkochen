@@ -11,11 +11,32 @@ import type { SectionKind } from '../../shared/changelog'
 import type { LanguageChoice } from '../../shared/language'
 import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
+import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
+
+// What an Unsent Change did, for the toast naming those that didn't arrive.
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'add'
+// `text`: a Comment's text, kept in the message so it can be written again.
+function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
+  const named = `„${label}“`
+  switch (kind) {
+    case 'comment': return `Kommentar zu ${named} („${text}“)`
+    case 'commentEdit': return `Änderung am Kommentar zu ${named} („${text}“)`
+    case 'commentDelete': return `gelöschter Kommentar zu ${named}`
+    case 'vote': return `Daumen bei ${named}`
+    case 'title': return `neuer Titel für ${named}`
+    case 'add': return `${named} hinzugefügt`
+    case 'move': return `${named} verschoben`
+    case 'cook':
+    case 'cookMany': return `${named} gekocht`
+    case 'uncook':
+    case 'uncookMany': return `${named} wieder offen`
+  }
+}
 
 const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
 
@@ -283,6 +304,12 @@ export const de = {
     deleteFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht archivieren. Versuch es gleich noch mal.`,
     notAllowed: 'Das darfst du mit diesen Gerichten auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
     backFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht zurückholen.`,
+    cook: 'Gekocht ✓',
+    cookLabel: (count: number) => `Gekocht ✓: ${dishCount(count)}`,
+    cooked: (count: number) => `${dishCount(count)} gekocht`,
+    // The batch celebration's pill (#452).
+    cookedPill: (count: number) => `${dishCount(count)} gekocht ✓`,
+    cookFailed: (count: number) => `${dishCount(count)} ${lassenPast(count)} sich nicht als gekocht eintragen. Versuch es gleich noch mal.`,
   },
   cooking: {
     summary: (count: number, last: Date) => `${number(count)}× gekocht · zuletzt ${addedDate(last)}`,
@@ -463,6 +490,26 @@ export const de = {
     photoNotStored: (title: string) => `Dein Foto ließ sich nicht speichern. „${title}“ hat jetzt ein Platzhalterbild.`,
     // Refused for want of the Permission (403): the Owner switched it off.
     notAllowed: 'Auf diesem Board darfst du keine Gerichte hinzufügen. Das legt die Besitzer:in fest.',
+    // Offline (#462): the link isn't looked up, and what needs a connection
+    // (a photo, the image dialog, another Board) stays greyed out.
+    titleOptional: 'Titel (kann leer bleiben)',
+    titleOptionalHint: 'Ohne Titel nehmen wir den vom Link, sobald wieder Netz da ist.',
+    offlineHint: 'Kein Netz. Der Link wird nachgeschaut, sobald wieder Netz da ist.',
+    // The title of a Dish added offline whose Source shows none, made when it
+    // arrives (server/utils/source-title.ts): after its platform and Creator,
+    // else after the link's site.
+    sourceTitle: (kind: SourceKind, creator: string | null, site: string): string => {
+      const by = (what: string, plain: string) => creator ? `${what} von ${creator}` : plain
+      switch (kind) {
+        case 'tiktok': return by('TikTok', 'TikTok-Video')
+        case 'instagram-reel': return by('Instagram-Reel', 'Instagram-Reel')
+        case 'instagram-post': return by('Instagram-Beitrag', 'Instagram-Beitrag')
+        case 'youtube-short': return by('YouTube-Short', 'YouTube-Short')
+        case 'pinterest-pin': return by('Pinterest-Pin', 'Pinterest-Pin')
+        case 'blog': return by('Rezept', site || 'Webseite')
+        case 'other': return by('Webseite', site || 'Webseite')
+      }
+    },
   },
   placeholders: {
     pasta: 'Pasta',
@@ -648,13 +695,43 @@ export const de = {
     // A change refused as the Owner just switched the Permission off.
     notAllowed: 'Das darfst du auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
   },
-  // public/offline.html repeats these, for the service worker. It also has
-  // the only copy of "malkochen ist gerade nicht erreichbar", which only it
-  // shows.
+  // public/offline.html repeats the first three, for the service worker,
+  // and has its own copy of "malkochen ist gerade nicht erreichbar". The
+  // offline bar (OfflineBar) says `bar` without a connection, `unreachable`
+  // when malkochen doesn't answer; a change that needs a connection says
+  // `needsNet` meanwhile (useConnection).
   offline: {
     headline: 'Du bist offline.',
     body: 'Sobald du wieder Netz hast, geht’s hier weiter.',
     retry: 'Nochmal versuchen',
+    bar: 'Offline. Deine Änderungen kommen an, sobald du Netz hast.',
+    unreachable: 'malkochen ist gerade nicht erreichbar.',
+    needsNet: 'Geht nur mit Netz',
+    // The error screen for what isn't kept on this device (a Board never
+    // opened here, say) while malkochen can't be reached.
+    notKeptHeadline: 'Das braucht Netz.',
+    notKeptBody: 'Das hast du auf diesem Gerät noch nicht geöffnet. Sobald du wieder Netz hast, geht’s hier weiter.',
+  },
+  // Changes made while malkochen didn't answer, and not sent yet (Unsent
+  // Changes, #459). The offline bar adds `count` to what it says; `allSent`
+  // when the last one went through. `didntArrive`: one toast naming those
+  // malkochen couldn't apply (a Dish deleted meanwhile, say), each by its
+  // kind and the Dish title(s).
+  unsent: {
+    count: (count: number) => `${number(count)} noch nicht gesendet`,
+    allSent: 'Alles gesendet',
+    // On the card of a Dish added offline until it has arrived.
+    notSent: 'Noch nicht gesendet',
+    // Told once a Dish added offline has arrived and its link was on the Board already.
+    alreadyOnBoard: (title: string, column: string) => `Der Link war schon auf dem Board: „${title}“ in ${column}`,
+    // `copyText` copies the Comments' texts among them, `copied` says it did.
+    copyText: 'Kopieren',
+    copied: 'Kopiert',
+    copyFailed: 'Kopieren hat nicht geklappt.',
+    didntArrive: (changes: { kind: UnsentKindName, label: string, text?: string }[]) => {
+      const named = changes.map(({ kind, label, text }) => unsentChange(kind, label, text)).join(', ')
+      return `${number(changes.length)} ${plural(changes.length, { one: 'Änderung kam', other: 'Änderungen kamen' })} nicht an: ${named}`
+    },
   },
   // The error screen: a page that isn't there, or anything unexpected --
   // which is on malkochen's side, and it says so.
@@ -665,6 +742,19 @@ export const de = {
     notFoundHeadline: 'Das gibt’s hier nicht.',
     notFoundBody: 'Diese Seite gibt es nicht, oder du bist dort nicht (mehr) dabei.',
     toApp: 'Zu malkochen',
+  },
+  // Signing out, or someone else signing in, while Unsent Changes wait on the
+  // device (#463). `lost` says how many are lost if you go ahead.
+  leaving: {
+    lost: (count: number) => `${number(count)} ${plural(count, { one: 'Änderung ist', other: 'Änderungen sind' })} noch nicht gesendet und ${plural(count, { one: 'geht', other: 'gehen' })} verloren.`,
+    signOutTitle: 'Wirklich abmelden?',
+    signOutGo: 'Trotzdem abmelden',
+    cancel: 'Abbrechen',
+    switchTitle: 'Auf diesem Gerät warten Änderungen von einem anderen Konto.',
+    switchGo: 'Verwerfen und weitermachen',
+    switchKeep: 'Abmelden, Änderungen behalten',
+    signOutNeedsNet: 'Abmelden geht nur mit Netz. Du bleibst angemeldet.',
+    understood: 'Verstanden',
   },
   // Your Username (CONTEXT.md): picked before your first Board, confirmed
   // once if you were here before Usernames, changed in your settings. The

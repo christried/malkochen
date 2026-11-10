@@ -435,4 +435,17 @@ describe('Comments and Votes', () => {
     await commented(mileva, dal, 'Hallo')
     expect(messages().map(m => m.title)).toEqual([`Von ${mile} in Zuschauen`])
   })
+
+  // ADR 0012: what was made offline is sent once malkochen answers again,
+  // dated when it was made; notifications go by when it arrived.
+  test('a Comment written offline before the Member last opened the Board still notifies, and counts with the next', async () => {
+    const { mileva, dal, mile } = await talkingBoard('Funkloch')
+    const madeAt = new Date(Date.now() - 3600_000).toISOString()
+
+    expect((await mileva.fetch(`/api/dishes/${dal.id}/comments`, json('POST', { text: 'Von gestern Abend', madeAt }))).status).toBe(201)
+    expect(messages()).toEqual([expect.objectContaining({ title: `Von ${mile} in Funkloch`, body: 'Kommentar zu Linsen-Dal: „Von gestern Abend“' })])
+
+    await commented(mileva, dal, 'Und noch was')
+    expect(messages().at(-1)!.body).toContain('2 Kommentare')
+  })
 })

@@ -7,11 +7,30 @@
 // Relative imports, as in de.ts.
 import type { EventGroup } from '../../shared/admin'
 import type { DishField, EventKind } from '../../shared/event-kinds'
-import type { Strings } from './de'
+import type { Strings, UnsentKindName } from './de'
+import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
+
+// What an Unsent Change did, for the toast naming those that didn't arrive.
+function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
+  const named = `“${label}”`
+  switch (kind) {
+    case 'comment': return `commento su ${named} (“${text}”)`
+    case 'commentEdit': return `modifica del commento su ${named} (“${text}”)`
+    case 'commentDelete': return `commento eliminato su ${named}`
+    case 'vote': return `pollice su ${named}`
+    case 'title': return `nuovo titolo per ${named}`
+    case 'add': return `${named} aggiunto`
+    case 'move': return `${named} spostato`
+    case 'cook':
+    case 'cookMany': return `${named} cucinato`
+    case 'uncook':
+    case 'uncookMany': return `${named} di nuovo da cucinare`
+  }
+}
 
 const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
 
@@ -240,6 +259,11 @@ export const it: Strings = {
     deleteFailed: (count: number) => `Non è stato possibile archiviare ${dishCount(count)}. ${tryAgain}`,
     notAllowed: 'Con questi piatti non puoi più farlo su questa bacheca. Lo decide chi ne è titolare.',
     backFailed: (count: number) => `Non è stato possibile recuperare ${dishCount(count)}.`,
+    cook: 'Cucinato ✓',
+    cookLabel: (count: number) => `Cucinato ✓: ${dishCount(count)}`,
+    cooked: (count: number) => dishesDone(count, 'cucinat'),
+    cookedPill: (count: number) => `${dishesDone(count, 'cucinat')} ✓`,
+    cookFailed: (count: number) => `Non è stato possibile segnare ${dishCount(count)} come ${plural(count, { one: 'cucinato', other: 'cucinati' })}. ${tryAgain}`,
   },
   // A cooking (CONTEXT.md) is "una preparazione".
   cooking: {
@@ -405,6 +429,21 @@ export const it: Strings = {
     imageNotStored: (title: string) => `Non è stato possibile salvare l’immagine dal link. Ora “${title}” ha un’immagine segnaposto.`,
     photoNotStored: (title: string) => `Non è stato possibile salvare la tua foto. Ora “${title}” ha un’immagine segnaposto.`,
     notAllowed: 'Su questa bacheca non puoi aggiungere piatti. Lo decide chi ne è titolare.',
+    titleOptional: 'Titolo (può restare vuoto)',
+    titleOptionalHint: 'Senza titolo useremo quello del link appena torna la connessione.',
+    offlineHint: 'Nessuna connessione. Il link viene controllato appena torna la connessione.',
+    sourceTitle: (kind: SourceKind, creator: string | null, site: string): string => {
+      const by = (what: string, plain: string) => creator ? `${what} di ${creator}` : plain
+      switch (kind) {
+        case 'tiktok': return by('TikTok', 'Video TikTok')
+        case 'instagram-reel': return by('Reel Instagram', 'Reel Instagram')
+        case 'instagram-post': return by('Post Instagram', 'Post Instagram')
+        case 'youtube-short': return by('YouTube Short', 'YouTube Short')
+        case 'pinterest-pin': return by('Pin Pinterest', 'Pin Pinterest')
+        case 'blog': return creator ? `Ricetta di ${creator}` : site || 'Pagina web'
+        case 'other': return creator ? `Pagina web di ${creator}` : site || 'Pagina web'
+      }
+    },
   },
   placeholders: {
     pasta: 'Pasta',
@@ -572,6 +611,24 @@ export const it: Strings = {
     headline: 'Sei offline.',
     body: 'Appena torni online, puoi continuare da qui.',
     retry: 'Riprova',
+    bar: 'Offline. Le tue modifiche arrivano appena torni in rete.',
+    unreachable: 'malkochen al momento non è raggiungibile.',
+    needsNet: 'Funziona solo in rete',
+    notKeptHeadline: 'Serve la rete.',
+    notKeptBody: 'Non l’hai ancora aperto su questo dispositivo. Appena torni online, puoi continuare da qui.',
+  },
+  unsent: {
+    count: (count: number) => `${number(count)} ${plural(count, { one: 'modifica non ancora inviata', other: 'modifiche non ancora inviate' })}`,
+    allSent: 'Tutto inviato',
+    notSent: 'Non ancora inviato',
+    alreadyOnBoard: (title: string, column: string) => `Quel link era già sulla bacheca: “${title}” in ${column}`,
+    copyText: 'Copia',
+    copied: 'Copiato',
+    copyFailed: 'Copia non riuscita.',
+    didntArrive: (changes: { kind: UnsentKindName, label: string, text?: string }[]) => {
+      const named = changes.map(({ kind, label, text }) => unsentChange(kind, label, text)).join(', ')
+      return `${number(changes.length)} ${plural(changes.length, { one: 'modifica non è arrivata', other: 'modifiche non sono arrivate' })}: ${named}`
+    },
   },
   error: {
     headline: 'Qualcosa si è bruciato.',
@@ -580,6 +637,17 @@ export const it: Strings = {
     notFoundHeadline: 'Qui non c’è.',
     notFoundBody: 'Questa pagina non esiste, oppure non ne fai (più) parte.',
     toApp: 'Vai a malkochen',
+  },
+  leaving: {
+    lost: (count: number) => `${number(count)} ${plural(count, { one: 'modifica non è ancora stata inviata e andrà persa', other: 'modifiche non sono ancora state inviate e andranno perse' })}.`,
+    signOutTitle: 'Vuoi davvero uscire?',
+    signOutGo: 'Esci comunque',
+    cancel: 'Annulla',
+    switchTitle: 'Su questo dispositivo ci sono modifiche di un altro account.',
+    switchGo: 'Scarta e continua',
+    switchKeep: 'Esci e tienile',
+    signOutNeedsNet: 'Uscire funziona solo in rete. L’accesso resta attivo.',
+    understood: 'Capito',
   },
   username: {
     label: 'Nome',

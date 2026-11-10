@@ -14,6 +14,10 @@ _Avoid_: List, workspace, personal board
 A number every change to what a Board's Members see on it moves on: its Dishes, Cookings, Votes, Comments, Columns, Members, name, emoji and Invite Link. What one Member has read or opened never moves it. An open Board asks only for it, and loads the whole Board when it moved (ADR 0008). Never shown to users, and not malkochen's Version.
 _Avoid_: Revision, etag, board timestamp
 
+**Unsent Change**:
+A change a Member made to a Board without a connection (or while malkochen didn’t answer), already on their own screen but not yet with the other Members ("Noch nicht gesendet"). It arrives once the device is back online, dated when it was made, and is then applied to the Board as it is by then: a move or edit wins over what others did meanwhile, a Cooking, Comment or Vote is added, and one that no longer can be (its Dish archived, a Permission switched off) is dropped and the Member told which. Kept on the device until it arrives, however long that takes, and only ever sent as the user who made it (ADR 0012).
+_Avoid_: Pending change, queued change, outbox, draft, sync
+
 **Board Switcher**:
 The Board's emoji and name at the top of a Board, which lists all of a user's Boards to switch between and starts a new one.
 _Avoid_: Board picker, board menu, dropdown
@@ -101,7 +105,7 @@ A kind of Source malkochen fully supports, with an image reliably found: TikTok 
 _Avoid_: Platform, integration
 
 **Suggested Title**:
-The title proposed from the Source when a Dish is being added, which the user can edit before saving. One that the Source writes mostly in capitals is proposed in normal case ("CREMIGE PILZPASTA" becomes "Cremige Pilzpasta"); titles typed by hand stay as written.
+The title proposed from the Source when a Dish is being added, which the user can edit before saving. One that the Source writes mostly in capitals is proposed in normal case ("CREMIGE PILZPASTA" becomes "Cremige Pilzpasta"); titles typed by hand stay as written. A Dish added without a connection gets its Suggested Title once it arrives, unless one was typed; when the Source shows none, it’s titled after the Source ("TikTok von @mara.kocht", "TikTok-Video").
 _Avoid_: Inferred title, auto title
 
 **Caption**:
@@ -117,7 +121,7 @@ A new Dish made from another one ("Kopieren"), through its Dish Link or into ano
 _Avoid_: Duplicate, clone
 
 **New Dish**:
-A Dish another Member added to a Board since you last opened that Board (or joined it, if you never opened it), including ones added while you have it open. Marked "Neu" until you open the Board again; coming back to the app after half an hour or more away counts as opening it.
+A Dish another Member added to a Board since you last opened that Board (or joined it, if you never opened it), including ones added while you have it open. Marked "Neu" until you open the Board again; coming back to the app after half an hour or more away counts as opening it. Opening it without a connection doesn’t.
 _Avoid_: Unread, notification
 
 **Push Notification**:
@@ -153,7 +157,7 @@ A Dish is Cooked once it has been moved into the Gekocht Column at least once.
 _Avoid_: Done, finished, completed
 
 **Cooking**:
-One occasion a Dish was cooked, with a date and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. A Dish's Cookings appear in its Dish History and are kept when it moves out again.
+One occasion a Dish was cooked, with a date and who recorded it. Recorded each time the Dish is moved into the Gekocht Column, and by "Gekocht ✓" on a Dish that is already there; not when its Column is deleted and its Dishes are moved there instead. "Gekocht ✓" on several selected Dishes at once records one Cooking for each, all dated now, by the same rules. A Dish's Cookings appear in its Dish History and are kept when it moves out again.
 _Avoid_: Done entry, log entry
 
 **Achievement Level**:
@@ -173,7 +177,7 @@ A Member's thumbs up or thumbs down on a Cooked Dish. Any Member can give one, o
 _Avoid_: Rating, like, review, score
 
 **Dish History**:
-Everything that happened to a Dish, at the bottom of its detail like a chat ("Verlauf"), oldest first: when it was added, its Cookings, Votes and Comments. Moves aren't part of it. The Dish's card shows its Votes and how many Comments it has, and turns orange when another Member added a Comment, Vote or Cooking since you last opened the Dish ("Neues im Verlauf"), until you open it. That's apart from a New Dish's "Neu".
+Everything that happened to a Dish, at the bottom of its detail like a chat ("Verlauf"), oldest first: when it was added, its Cookings, Votes and Comments. Moves aren't part of it. The Dish's card shows its Votes and how many Comments it has, and turns orange when another Member added a Comment, Vote or Cooking since you last opened the Dish ("Neues im Verlauf"), until you open it with a connection. That's apart from a New Dish's "Neu".
 _Avoid_: Cooking History, timeline, activity feed, log
 
 **Archived Dish**:
@@ -191,7 +195,7 @@ A separate Android app for keeping track of what one eats, with a mascot of the 
 _Avoid_: Snackbert integration, nutrition app, the tracker
 
 **Snackbert Question**:
-Snackbert's head popping up after a Cooking to ask the Member who recorded it whether they'd like to tell him about it. It comes once the Cooking can no longer be undone, after a Klassiker celebration and never during the Tour, and only for Members who switched Snackbert on in Your Settings. "Nein" sends him away for that Cooking.
+Snackbert's head popping up after a Cooking to ask the Member who recorded it whether they'd like to tell him about it. It comes once the Cooking can no longer be undone, after a Klassiker celebration and never during the Tour or after several Dishes were cooked at once, and only for Members who switched Snackbert on in Your Settings. "Nein" sends him away for that Cooking.
 _Avoid_: Prompt (that's a Notification Prompt), popup, nag
 
 **Snackbert Report**:

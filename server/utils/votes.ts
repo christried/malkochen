@@ -4,6 +4,7 @@ import { db } from '../db'
 import { cooking, dish, user, vote } from '../db/schema'
 import { onMembersBoard, type DishAdder } from './dishes'
 import { insertEvents, voteEvent, withEvents } from './events'
+import { madeAtInput, madeAtOrNow } from './late-changes'
 import { pictureOf } from './people'
 
 // Votes (CONTEXT.md: Vote): a Member's thumbs up or down on a Cooked Dish.
@@ -21,8 +22,9 @@ export interface VoteView {
   votedAt: string
 }
 
-// What giving one accepts.
-export const voteBody = z.object({ up: z.boolean() })
+// What giving one accepts; sent from offline (late-changes.ts), when it was
+// given.
+export const voteBody = z.object({ up: z.boolean(), madeAt: madeAtInput })
 
 // Why a Member may not vote on a Dish they can see: it isn't Cooked (no
 // Cooking recorded, or every one deleted).
@@ -72,9 +74,11 @@ async function cookedFor(dishId: string, userId: string): Promise<boolean | null
 
 // Gives the user's Vote on a Dish, or changes the one they gave; the same
 // thumb again changes nothing, not even when it was set. `given`: it is a
-// new Vote, not a changed or the same one (it notifies, push.ts). Null
-// unless the Dish is on a Board they are a Member of and not archived.
-export async function setVote(dishId: string, userId: string, up: boolean): Promise<{ vote: VoteView, given: boolean } | VoteRefusal | null> {
+// new Vote, not a changed or the same one (it notifies, push.ts). Given or
+// changed offline, it is dated `madeAt` (late-changes.ts); when it arrived
+// is kept apart. Null unless the Dish is on a Board they are a Member of and
+// not archived.
+export async function setVote(dishId: string, userId: string, up: boolean, madeAt?: string): Promise<{ vote: VoteView, given: boolean } | VoteRefusal | null> {
   const cooked = await cookedFor(dishId, userId)
   if (cooked === null) return null
   if (!cooked) return 'uncooked'
@@ -82,9 +86,9 @@ export async function setVote(dishId: string, userId: string, up: boolean): Prom
   const { rows: [outcome] } = await db.execute<{ given: boolean }>(sql`
     with earlier as (select from ${vote} where ${theirs}),
     changed as (
-      insert into ${vote} (dish_id, user_id, up)
-      select ${dish.id}, ${userId}::text, ${up}::boolean from ${dish} where ${and(onMembersBoard(dishId, userId), isCooked)}
-      on conflict (dish_id, user_id) do update set up = excluded.up, voted_at = now() where ${vote.up} <> excluded.up
+      insert into ${vote} (dish_id, user_id, up, voted_at)
+      select ${dish.id}, ${userId}::text, ${up}::boolean, ${madeAtOrNow(madeAt)} from ${dish} where ${and(onMembersBoard(dishId, userId), isCooked)}
+      on conflict (dish_id, user_id) do update set up = excluded.up, voted_at = excluded.voted_at, arrived_at = now() where ${vote.up} <> excluded.up
       returning dish_id, up
     ),
     given as (${insertEvents(voteEvent('vote_set', userId), sql`from changed where not exists (select from earlier)`)}),

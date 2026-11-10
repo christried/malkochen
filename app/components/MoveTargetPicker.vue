@@ -15,9 +15,14 @@ const props = defineProps<{
   // The Column the Dish (or every selected Dish) is in, not offered.
   fromColumnId?: string | null
   noGekocht?: boolean
+  // A Dish added offline that hasn't arrived can only move within this Board.
+  thisBoardOnly?: boolean
 }>()
 defineEmits<{ move: [columnId: string, toBoard: BoardListing | null] }>()
 const t = useStrings()
+// Moving to another Board needs a connection (#459): offline, only this
+// Board's Columns are offered.
+const { mayChange } = useConnection()
 
 const otherBoards = ref<BoardListing[]>([])
 onMounted(async () => {
@@ -29,14 +34,15 @@ onMounted(async () => {
 // One group per Board, each Column with its accent. This Board's group is
 // named only once there are others to tell it from.
 const offered = (column: ColumnView) => column.id !== props.fromColumnId && !(props.noGekocht && column.isGekocht)
+const toOtherBoards = computed(() => mayChange.value && !props.thisBoardOnly)
 const groups = computed(() => [
   {
     id: props.board.id,
-    label: otherBoards.value.length ? t.dish.thisBoard : null,
+    label: otherBoards.value.length && toOtherBoards.value ? t.dish.thisBoard : null,
     toBoard: null,
     columns: props.board.columns.map((column, index) => ({ column, accent: columnAccent(index) })).filter(({ column }) => offered(column)),
   },
-  ...otherBoards.value.map(other => ({
+  ...(toOtherBoards.value ? otherBoards.value : []).map(other => ({
     id: other.id,
     label: boardLabel(other),
     toBoard: other,

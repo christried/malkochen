@@ -23,3 +23,10 @@ export function boardLabel(board: { emoji: string, name: string }): string {
 // (server/rate-limits.ts) keeps archiving and creating again slow.
 export const BOARDS_PER_USER = 20
 export const BOARD_LIMIT_REACHED = 409
+
+// A Board and the slug of its Address (CONTEXT.md: Address): where the app
+// opens, and where something shared goes.
+export interface BoardSpot {
+  boardId: string
+  slug: string
+}

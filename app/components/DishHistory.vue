@@ -50,17 +50,32 @@ const summary = computed(() => {
   return last ? t.cooking.summary(props.dish.cookings.length, new Date(last.cookedAt)) : t.detail.cookingHistoryEmpty
 })
 
-// Loaded as the detail opens, and again for another Dish.
+// Loaded as the detail opens, and again for another Dish. Opening a Dish
+// while malkochen can't be reached isn't opening it (#458, CONTEXT.md Dish
+// History): no request, and what's new in it stays marked; the History kept
+// on the device shows (#461), and it loads once malkochen answers, if the
+// detail is still open. Meanwhile its changes are greyed out or hidden.
+const { answering, mayChange, mayChangeComments, needsNetUnless } = useConnection()
 const loadFailed = ref(false)
+// Comments work offline (#460) on a Dish whose history has loaded on this
+// page: their changes are kept as Unsent Changes laid over it. On one that
+// hasn't, they are greyed out.
+const canComment = computed(() => mayChangeComments(boardModule.historyLoaded(props.dish.id)))
 // The Dish whose history has loaded (or failed to).
 const loaded = ref<string | null>(null)
 async function load() {
   const dishId = props.dish.id
-  loadFailed.value = !await boardModule.openDish(dishId)
-  loaded.value = dishId
+  const shown = await boardModule.openDish(dishId)
+  // Nothing kept to show offline isn't a failure to load.
+  loadFailed.value = !shown && answering.value
+  // Only an answer from malkochen counts as loaded.
+  loaded.value = answering.value ? dishId : null
 }
 onMounted(load)
 watch(() => props.dish.id, load)
+watch(answering, (back) => {
+  if (back && loaded.value !== props.dish.id) void load()
+})
 
 // Snackbert: whether the viewer has him on, and which Cookings they reported.
 const snackbert = useSnackbertReports()
@@ -70,7 +85,7 @@ const reportOpen = ref(false)
 // The Cooking the sheet is for; kept while the sheet moves out.
 const reporting = ref<{ id: string, cookedAt: string } | null>(null)
 function report(cooking: CookingView) {
-  if (!cooking.id) return
+  if (boardModule.isRecording(cooking.id)) return
   reporting.value = { id: cooking.id, cookedAt: cooking.cookedAt }
   reportOpen.value = true
 }
@@ -91,7 +106,7 @@ function keyOf(entry: DishHistoryEntry): string {
 const when = (at: string) => t.history.when(new Date(at))
 const nameOf = (person: { name: string } | null) => person?.name ?? t.history.deletedAccount
 // One still being recorded was recorded by whoever is looking.
-const recorderOf = (cooking: CookingView) => cooking.id ? nameOf(cooking.recordedBy) : me.value?.name ?? ''
+const recorderOf = (cooking: CookingView) => boardModule.isRecording(cooking.id) ? me.value?.name ?? '' : nameOf(cooking.recordedBy)
 
 // The Member's own Vote: thumbs up (true), down (false), or none.
 const myVote = computed(() => voteOf(props.dish, me.value?.id))
@@ -346,13 +361,13 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               {{ when(entry.at) }}<template v-if="entry.kind === 'comment' && entry.comment.editedAt">, {{ t.history.edited }}</template>
             </span>
             <button
-              v-if="entry.kind === 'cooking' && boardModule.may('moveDishes')"
+              v-if="entry.kind === 'cooking' && boardModule.may('moveDishes') && mayChange"
               type="button"
               class="-my-1.5"
               :class="iconButton"
               :aria-label="t.cooking.deleteLabel(new Date(entry.cooking.cookedAt))"
               :data-tooltip="t.cooking.deleteTip"
-              :disabled="!entry.cooking.id"
+              :disabled="boardModule.isRecording(entry.cooking.id)"
               @click="emit('deleteCooking', entry.cooking)"
             >
               <svg
@@ -375,7 +390,8 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
               :aria-label="t.history.commentMenu(isOwn(entry.comment))"
               :aria-expanded="menuFor === entry.comment.id"
               :data-tooltip="t.history.commentMenu(isOwn(entry.comment))"
-              @click="toggleMenu(entry.comment)"
+              v-bind="needsNetUnless(canComment)"
+              @click="canComment && toggleMenu(entry.comment)"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -405,12 +421,12 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
             {{ entry.comment.text }}
           </p>
           <SnackbertReportButton
-            v-if="entry.kind === 'cooking' && entry.cooking.id && snackbert.on.value"
+            v-if="entry.kind === 'cooking' && !boardModule.isRecording(entry.cooking.id) && snackbert.on.value"
             :reported="snackbert.isReported(entry.cooking.id)"
             @click="report(entry.cooking)"
           />
           <span
-            v-if="entry.kind === 'comment' && menuFor === entry.comment.id"
+            v-if="entry.kind === 'comment' && menuFor === entry.comment.id && canComment"
             class="flex gap-1.5"
           >
             <button
@@ -455,56 +471,58 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       data-comment-form
       @submit.prevent="submit"
     >
-      <p
-        v-if="editing"
-        class="flex items-center justify-between gap-3 px-1 text-caption text-text-muted"
-      >
-        {{ t.history.editPrompt }}
-        <button
-          type="button"
-          class="rounded-pill px-2.5 py-1 text-label text-text transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-          @click="cancelEdit"
+      <NeedsNet :allowed="canComment">
+        <p
+          v-if="editing"
+          class="flex items-center justify-between gap-3 px-1 text-caption text-text-muted"
         >
-          {{ t.history.cancelEdit }}
-        </button>
-      </p>
-      <div class="flex min-w-0 items-end rounded-[24px] bg-surface-muted focus-within:outline-2 focus-within:outline-focus">
-        <textarea
-          ref="field"
-          v-model="text"
-          rows="1"
-          :maxlength="COMMENT_MAX"
-          class="block max-h-[136px] min-h-[52px] w-full resize-none bg-transparent py-[15px] pl-4 pr-1 text-body leading-[22px] outline-none placeholder:text-text-muted"
-          :placeholder="editing ? t.history.editPrompt : t.history.fieldPrompt"
-          :aria-label="t.history.field"
-          @keydown.enter.exact="onEnter"
-          @keydown.esc="onFieldEscape"
-        />
-        <button
-          type="submit"
-          class="m-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-inverse text-on-inverse transition duration-tap ease-tap enabled:active:scale-90 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
-          :disabled="!sendable"
-          :aria-label="editing ? t.history.saveEdit : t.history.send"
-          :data-tooltip="editing ? t.history.saveEdit : t.history.send"
-        >
-          <AppIcon
-            v-if="editing"
-            name="check"
+          {{ t.history.editPrompt }}
+          <button
+            type="button"
+            class="rounded-pill px-2.5 py-1 text-label text-text transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            @click="cancelEdit"
+          >
+            {{ t.history.cancelEdit }}
+          </button>
+        </p>
+        <div class="flex min-w-0 items-end rounded-[24px] bg-surface-muted focus-within:outline-2 focus-within:outline-focus">
+          <textarea
+            ref="field"
+            v-model="text"
+            rows="1"
+            :maxlength="COMMENT_MAX"
+            class="block max-h-[136px] min-h-[52px] w-full resize-none bg-transparent py-[15px] pl-4 pr-1 text-body leading-[22px] outline-none placeholder:text-text-muted"
+            :placeholder="editing ? t.history.editPrompt : t.history.fieldPrompt"
+            :aria-label="t.history.field"
+            @keydown.enter.exact="onEnter"
+            @keydown.esc="onFieldEscape"
           />
-          <svg
-            v-else
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          ><path d="M12 19V5" /><path d="M6 11l6-6 6 6" /></svg>
-        </button>
-      </div>
+          <button
+            type="submit"
+            class="m-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-inverse text-on-inverse transition duration-tap ease-tap enabled:active:scale-90 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-focus"
+            :disabled="!sendable"
+            :aria-label="editing ? t.history.saveEdit : t.history.send"
+            :data-tooltip="editing ? t.history.saveEdit : t.history.send"
+          >
+            <AppIcon
+              v-if="editing"
+              name="check"
+            />
+            <svg
+              v-else
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            ><path d="M12 19V5" /><path d="M6 11l6-6 6 6" /></svg>
+          </button>
+        </div>
+      </NeedsNet>
     </form>
 
     <SnackbertReportSheet

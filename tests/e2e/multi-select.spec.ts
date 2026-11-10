@@ -3,6 +3,7 @@ import { expect, newTab, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { tab, titles } from './board'
+import { ANY_CHEER, cheer, confettiOrigin, gekochtPill } from './celebration'
 import { contrast, rgb } from './colour'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
@@ -72,9 +73,11 @@ test('desktop: Ctrl-click selects Dishes across Columns, the bar counts them, Es
   await checkbox(page, 'Curry').click()
   await expect(bar(page)).toContainText('2 ausgewählt')
   await expect(page).toHaveURL(/\/b\/[^/]+$/)
-  // No bulk "Gekocht": cooking stays one Dish at a time.
-  await expect(bar(page).getByRole('button')).toHaveText(['', 'Verschieben', 'Archivieren'])
-  await expect(page.getByRole('button', { name: /^Gekocht/ })).toHaveCount(0)
+  // "Gekocht ✓" is the bar's own button (#451); the cards' own stay hidden
+  // while Dishes are selected.
+  await expect(bar(page).getByRole('button')).toHaveText(['', 'Gekocht ✓', 'Verschieben', 'Archivieren'])
+  await expect(page.getByRole('button', { name: /^Gekocht/ })).toHaveCount(1)
+  await expect(bar(page).getByRole('button', { name: /^Gekocht/ })).toHaveCount(1)
   // "Archivieren" is a filled red pill with white text, readable (AA) in both
   // themes, so it doesn't look disabled (#280).
   for (const scheme of ['light', 'dark'] as const) {
@@ -213,4 +216,74 @@ test('phone: a long-press selects a Dish, taps add Dishes from other Columns, an
   await gotoHydrated(page, `/b/${otherId}`)
   await tab(page, 'Diese Woche 3').click()
   await expect(titles(page, 'Diese Woche')).toHaveText(['Tacos', 'Ramen', 'Bowl'])
+})
+
+// #451. These two run on Nettie's landing Board, whichever it is by now.
+test('desktop: "Gekocht ✓" in the bar cooks several Dishes together, with one undo', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, NETTIE)
+  await seedDish(page, { title: 'Linsensuppe', sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  await seedDish(page, { title: 'Shakshuka', sourceLink: TIKTOK, sourceKind: 'tiktok', column: 1 })
+  await gotoHydrated(page, '/')
+  await expect(titles(page, 'Ideen').first()).toHaveText('Linsensuppe')
+  await expect(titles(page, 'Diese Woche').first()).toHaveText('Shakshuka')
+
+  await ctrlClick(card(page, 'Linsensuppe'))
+  await checkbox(page, 'Shakshuka').click()
+  await expect(bar(page)).toContainText('2 ausgewählt')
+  // The button's middle as it is clicked: the bar may still be rising in.
+  const cook = bar(page).getByRole('button', { name: /^Gekocht ✓/ })
+  type Pressed = { pressedAt?: { x: number, y: number } }
+  await cook.evaluate((el) => {
+    el.addEventListener('click', () => {
+      const box = el.getBoundingClientRect()
+      ;(window as unknown as Pressed).pressedAt = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }, { once: true, capture: true })
+  })
+  await cook.click()
+
+  await expect(bar(page)).toBeHidden()
+  // One celebration for both (#452): confetti from the bar's button, the
+  // pill with the count and Topfbert's cheer.
+  const origin = await confettiOrigin(page)
+  const button = await page.evaluate(() => (window as unknown as Pressed).pressedAt)
+  expect(button, 'the click reached the button').toBeDefined()
+  expect(Math.abs(origin.x - button!.x)).toBeLessThan(2)
+  expect(Math.abs(origin.y - button!.y)).toBeLessThan(2)
+  await expect(gekochtPill(page).locator('p')).toHaveText('2 Gerichte gekocht ✓')
+  await expect(cheer(gekochtPill(page))).toHaveText(ANY_CHEER)
+  const toast = page.getByRole('status').filter({ hasText: '2 Gerichte gekocht' })
+  await expect(toast).toBeVisible()
+  await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
+  await expect(toast.getByRole('button', { name: 'Kommentieren' })).toHaveCount(0)
+  // At the top of Gekocht, in Board order.
+  await expect(titles(page, 'Gekocht').first()).toHaveText('Linsensuppe')
+  await expect(titles(page, 'Gekocht').nth(1)).toHaveText('Shakshuka')
+
+  await toast.getByRole('button', { name: 'Rückgängig' }).click()
+
+  await expect(titles(page, 'Ideen').first()).toHaveText('Linsensuppe')
+  await expect(titles(page, 'Diese Woche').first()).toHaveText('Shakshuka')
+  await expect(titles(page, 'Gekocht')).toHaveText([])
+  await reloadHydrated(page)
+  await expect(titles(page, 'Ideen').first()).toHaveText('Linsensuppe')
+  await expect(titles(page, 'Diese Woche').first()).toHaveText('Shakshuka')
+  await expect(titles(page, 'Gekocht')).toHaveText([])
+})
+
+test('desktop: "Gekocht ✓" in the bar on one Dish cooks it as its card does', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, NETTIE)
+  await gotoHydrated(page, '/')
+
+  await ctrlClick(card(page, 'Linsensuppe'))
+  await bar(page).getByRole('button', { name: /^Gekocht ✓/ }).click()
+
+  await expect(bar(page)).toBeHidden()
+  await expect(titles(page, 'Gekocht')).toHaveText(['Linsensuppe'])
+  // The card's own celebration: "Gekocht ✓" in the pill, no count (#452).
+  await expect(gekochtPill(page).locator('p')).toHaveText('Gekocht ✓')
+  const toast = page.getByRole('status').filter({ has: page.getByRole('button', { name: 'Kommentieren' }) })
+  await expect(toast).toBeVisible()
+  await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
 })

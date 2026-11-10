@@ -9,7 +9,8 @@ import { isDishMember } from './dishes'
 // Member last opened the Dish's detail, or, if they never did, since they
 // joined its Board. Their own never mark it, nor anything deleted since,
 // nor the Dish's adding (a New Dish wears "Neu" instead). Opening the Dish
-// clears it.
+// clears it. By when each arrived, not when it is dated: one made offline
+// and sent late marks the Dish too (ADR 0012).
 
 // Records that the user just opened the Dish's detail. False unless it is
 // on a Board they are a Member of and not archived.
@@ -37,13 +38,13 @@ export async function newInHistoryDishIds(boardId: string, userId: string): Prom
       isNull(dish.deletedAt),
       or(
         exists(db.select({ id: comment.id }).from(comment).where(and(
-          eq(comment.dishId, dish.id), isNull(comment.deletedAt), byOthers(comment.authorId), gt(comment.createdAt, since),
+          eq(comment.dishId, dish.id), isNull(comment.deletedAt), byOthers(comment.authorId), gt(comment.arrivedAt, since),
         ))),
         exists(db.select({ id: cooking.id }).from(cooking).where(and(
-          eq(cooking.dishId, dish.id), isNull(cooking.deletedAt), byOthers(cooking.recordedBy), gt(cooking.cookedAt, since),
+          eq(cooking.dishId, dish.id), isNull(cooking.deletedAt), byOthers(cooking.recordedBy), gt(cooking.arrivedAt, since),
         ))),
         exists(db.select({ up: vote.up }).from(vote).where(and(
-          eq(vote.dishId, dish.id), ne(vote.userId, userId), gt(vote.votedAt, since),
+          eq(vote.dishId, dish.id), ne(vote.userId, userId), gt(vote.arrivedAt, since),
         ))),
       ),
     ))

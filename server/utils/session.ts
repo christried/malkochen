@@ -49,6 +49,12 @@ export function dishNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Dish not found' })
 }
 
+// 409 for an id a device made (late-changes.ts) that another user's, Dish's
+// or Board's row has already.
+export function idTaken() {
+  return createError({ statusCode: 409, statusMessage: 'Id already taken' })
+}
+
 // A Dish id from the route. Anything that isn't a UUID can't be a Dish.
 export function dishIdParam(event: H3Event): string {
   const id = getRouterParam(event, 'id') ?? ''

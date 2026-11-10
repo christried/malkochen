@@ -32,7 +32,14 @@ const withoutLink = ref(false)
 const link = ref('')
 // Looks the link up as soon as it is one: at once when pasted, after a short
 // pause while typing. Only the latest lookup's answer counts.
-const lookup = useLinkLookup(link)
+// Offline (#462) nothing is looked up and no duplicate is asked about: the
+// link is kept as pasted, the server looks it up once it arrives, and a title
+// is optional with a link. What needs a connection (a photo, the image
+// dialog, another Board) is greyed out.
+const { answering } = useConnection()
+const offline = computed(() => !answering.value)
+const { data: me } = useMe()
+const lookup = useLinkLookup(link, address => offline.value ? Promise.reject(new Error('offline')) : sourceLookup(address))
 const { status: lookupStatus, result, canonicalLink, tooMany: lookupTooMany } = lookup
 
 const title = ref('')
@@ -56,7 +63,11 @@ const saving = ref(false)
 // more: the Owner just switched it off), or anything else.
 const failed = ref<'notAllowed' | 'failed' | null>(null)
 
-const showForm = computed(() => withoutLink.value || lookupStatus.value === 'found' || lookupStatus.value === 'failed')
+// Offline, a link is enough to show the form, as soon as it is one.
+const offlineLink = computed(() => offline.value && !withoutLink.value && webLink(link.value) !== null)
+const showForm = computed(() => withoutLink.value || offlineLink.value || (!offline.value && (lookupStatus.value === 'found' || lookupStatus.value === 'failed')))
+// The title may stay empty: the Source's will be used once it is looked up.
+const titleOptional = computed(() => offlineLink.value)
 
 // The Member's own photo, once uploaded: it is the image, whatever the
 // link brings.
@@ -94,7 +105,7 @@ const titleNeeded = computed(() => result.value !== null && result.value.suggest
 const sourceLink = computed(() => {
   if (withoutLink.value) return null
   if (canonicalLink.value) return canonicalLink.value
-  return lookupStatus.value === 'failed' ? webLink(link.value) : null
+  return lookupStatus.value === 'failed' || offlineLink.value ? webLink(link.value) : null
 })
 
 // A Dish with this Source already on the chosen Board (PRD story 24), asked
@@ -109,7 +120,7 @@ watch([sourceLink, boardId], async ([target, board]) => {
   const run = ++duplicateRun
   duplicate.value = null
   saveAnyway.value = false
-  if (!target) {
+  if (!target || offline.value) {
     checkingDuplicate.value = false
     return
   }
@@ -123,7 +134,7 @@ watch([sourceLink, boardId], async ([target, board]) => {
 const warnDuplicate = computed(() => duplicate.value !== null && !saveAnyway.value)
 
 const canSave = computed(() =>
-  showForm.value && title.value.trim() !== '' && !saving.value && !checkingDuplicate.value && !warnDuplicate.value)
+  showForm.value && (title.value.trim() !== '' || titleOptional.value) && !saving.value && !checkingDuplicate.value && !warnDuplicate.value)
 
 function saveDespiteDuplicate() {
   saveAnyway.value = true
@@ -202,20 +213,22 @@ watch(open, async (isOpen) => {
     lookup.pasted()
     link.value = props.sharedLink
   }
-  // Only the Boards the Member may add Dishes to.
-  boards.value = (await $fetch<BoardSummary[]>('/api/boards').catch(() => [])).filter(b => b.permissions.addDishes)
+  // Only the Boards the Member may add Dishes to. None offline.
+  boards.value = offline.value ? [] : (await $fetch<BoardSummary[]>('/api/boards').catch(() => [])).filter(b => b.permissions.addDishes)
 })
 
 async function save() {
   if (!canSave.value) return
   saving.value = true
   failed.value = null
-  const target = boardId.value
+  // Offline, the Board the Member is on.
+  const target = offline.value ? props.boardId : boardId.value
   const source = withoutLink.value
     ? null
     : result.value
       ? { link: result.value.canonicalLink, kind: result.value.kind }
       : { link: link.value.trim() }
+  const adder = me.value && { id: me.value.id, name: me.value.name, image: me.value.image }
   try {
     const added = await boardModule.addDish(target, {
       title: title.value,
@@ -230,7 +243,7 @@ async function save() {
       photo: photo.value,
       ...shownImage.value && { imageFocus: imageFocus.value },
       ...props.forTour && { tour: true },
-    })
+    }, adder || undefined)
     const image = form.value?.querySelector('[data-source-image], [role="radio"][aria-checked="true"]')
     emit('added', added, image?.getBoundingClientRect() ?? null)
     open.value = false
@@ -291,7 +304,7 @@ async function save() {
                 @paste="lookup.pasted()"
               >
               <LoadingDots
-                v-if="lookupStatus === 'looking'"
+                v-if="lookupStatus === 'looking' && !offline"
                 class="shrink-0 text-text-muted"
               />
               <span
@@ -326,8 +339,17 @@ async function save() {
           </button>
         </div>
 
+        <p
+          v-if="offline"
+          role="status"
+          class="text-small text-text-muted"
+          data-offline-hint
+        >
+          {{ t.addDish.offlineHint }}
+        </p>
+
         <div
-          v-if="lookupStatus === 'looking'"
+          v-else-if="lookupStatus === 'looking'"
           role="status"
           class="lookup-panel flex flex-col items-center gap-3 rounded-panel px-4 py-6"
           data-lookup="looking"
@@ -428,28 +450,28 @@ async function save() {
 
         <div class="flex flex-col">
           <AppField
-            :label="t.addDish.title"
+            :label="titleOptional ? t.addDish.titleOptional : t.addDish.title"
             :control-id="titleId"
           >
             <input
               :id="titleId"
               v-model="shownTitle"
               type="text"
-              required
+              :required="!titleOptional"
               maxlength="200"
               autocomplete="off"
               :placeholder="titlePlaceholder"
-              :aria-describedby="titleNeeded ? titleHintId : undefined"
+              :aria-describedby="titleNeeded || titleOptional ? titleHintId : undefined"
               class="font-display text-title-s"
               :class="{ 'title-prompt': titleNeeded }"
               @focus="titleTypeIn.finish()"
             >
           </AppField>
           <span
-            v-if="titleNeeded"
+            v-if="titleNeeded || titleOptional"
             :id="titleHintId"
             class="field-helper"
-          >{{ t.addDish.titleNeededHint }}</span>
+          >{{ titleOptional ? t.addDish.titleOptionalHint : t.addDish.titleNeededHint }}</span>
           <p
             v-if="creator"
             class="break-words pl-4 pt-2 text-small text-text-muted"
@@ -483,13 +505,16 @@ async function save() {
               >
                 {{ t.addDish.useSourceImage }}
               </button>
-              <button
-                type="button"
-                class="rounded-pill bg-surface-muted px-3.5 py-2 text-label text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
-                @click="choosingImage = true"
-              >
-                {{ t.addDish.chooseImage }}
-              </button>
+              <!-- The image dialog takes an own photo: it needs a connection. -->
+              <NeedsNet :note="false">
+                <button
+                  type="button"
+                  class="rounded-pill bg-surface-muted px-3.5 py-2 text-label text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                  @click="choosingImage = true"
+                >
+                  {{ t.addDish.chooseImage }}
+                </button>
+              </NeedsNet>
             </div>
           </div>
           <PlaceholderPicker
@@ -500,25 +525,29 @@ async function save() {
         </div>
 
         <!-- During the Tour, the Dish goes onto the Board the Tour is on. -->
-        <AppField
+        <NeedsNet
           v-if="boards.length > 1 && !forTour"
-          :label="t.addDish.board"
-          :control-id="boardSelectId"
+          :note="false"
         >
-          <select
-            :id="boardSelectId"
-            v-model="boardId"
+          <AppField
+            :label="t.addDish.board"
+            :control-id="boardSelectId"
           >
-            <option
-              v-for="board in boards"
-              :key="board.id"
-              :value="board.id"
+            <select
+              :id="boardSelectId"
+              v-model="boardId"
             >
-              {{ board.emoji }} {{ board.name }}
-            </option>
-          </select>
-          <AppIcon name="down" />
-        </AppField>
+              <option
+                v-for="board in boards"
+                :key="board.id"
+                :value="board.id"
+              >
+                {{ board.emoji }} {{ board.name }}
+              </option>
+            </select>
+            <AppIcon name="down" />
+          </AppField>
+        </NeedsNet>
 
         <p
           v-if="failed"
@@ -550,6 +579,7 @@ async function save() {
             </span>
             {{ t.addDish.duplicateHint }}
           </p>
+          <!-- Saving works offline: the Dish is kept and sent later (#462). -->
           <button
             type="submit"
             class="rounded-pill bg-inverse px-6 py-4 text-button-l text-on-inverse transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"

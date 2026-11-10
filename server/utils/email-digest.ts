@@ -156,7 +156,8 @@ async function uncover(covered: Coverage[]): Promise<void> {
 // each newest first. Never on a Dish archived since, nor a Comment deleted
 // since; nothing from before they joined the Board. A Vote counts when it
 // was given in it, not when changed: given before, it was listed then.
-// Members with nothing new are left out.
+// All by when they arrived, so one made offline and sent late is still in
+// the next one (ADR 0012). Members with nothing new are left out.
 async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
   const onBoard = and(eq(dish.boardId, membership.boardId), isNull(dish.deletedAt))
   const inCoverage = (at: AnyPgColumn) => or(...covered.map(c => and(eq(membership.userId, c.userId), gt(at, c.since), lte(at, c.until))))
@@ -191,7 +192,7 @@ async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
         // Writing one takes a Username, as voting does.
         by: sql<string>`${user.username}`,
         text: comment.text,
-        at: comment.createdAt,
+        at: comment.arrivedAt,
       })
       .from(membership)
       .innerJoin(board, eq(board.id, membership.boardId))
@@ -200,10 +201,10 @@ async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
         eq(comment.dishId, dish.id),
         isNull(comment.deletedAt),
         ne(comment.authorId, membership.userId),
-        gt(comment.createdAt, membership.joinedAt),
+        gt(comment.arrivedAt, membership.joinedAt),
       ))
       .innerJoin(user, eq(user.id, comment.authorId))
-      .where(inCoverage(comment.createdAt)),
+      .where(inCoverage(comment.arrivedAt)),
     db
       .select({
         recipient: membership.userId,
@@ -212,7 +213,7 @@ async function newsFor(covered: Coverage[]): Promise<Map<string, BoardNews[]>> {
         code: dish.code,
         by: sql<string>`${user.username}`,
         up: vote.up,
-        at: vote.votedAt,
+        at: vote.arrivedAt,
       })
       .from(membership)
       .innerJoin(board, eq(board.id, membership.boardId))

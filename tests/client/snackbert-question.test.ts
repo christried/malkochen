@@ -190,6 +190,28 @@ test('a newer Cooking sends away the Question showing, and he asks about the new
   expect(question.asking.value).toMatchObject({ dish: 'Linsensuppe' })
 })
 
+test('Dishes cooked together start no Question, and drop a pending one', async () => {
+  const { question, cook, toastGoes } = setup()
+  await cook('Pilzpasta').record()
+
+  question.cookedMany()
+  await toastGoes()
+
+  expect(question.asking.value).toBeNull()
+})
+
+test('Dishes cooked together send away the Question showing, and nothing new comes', async () => {
+  const { question, cook, toastGoes } = setup()
+  await cook('Pilzpasta').record()
+  await toastGoes()
+  expect(question.asking.value).toMatchObject({ dish: 'Pilzpasta' })
+
+  question.cookedMany()
+  expect(question.asking.value).toBeNull()
+  await toastGoes()
+  expect(question.asking.value).toBeNull()
+})
+
 test('an undo drops its own Cooking, before or after the server recorded it', async () => {
   const { question, cook, toastGoes } = setup()
   const pasta = cook('Pilzpasta')

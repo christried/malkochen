@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import { landingBoard as landingBoardOf, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
+import { watchEvents } from './event-log'
 
 // Moving or deleting several Dishes at once (#218): POST /api/dishes/bulk
 // moves Dishes to the top of a Column, puts them back where they were
@@ -123,7 +124,7 @@ test('Dishes move to a Column on another of the user’s Boards', async () => {
   expect((await columnIds(rosalind, home.id)).flat()).not.toContain(a.id)
 })
 
-test('several Dishes can’t be moved into a Gekocht Column: cooking stays one Dish at a time', async () => {
+test('several Dishes can’t be moved into a Gekocht Column: cooking goes through cook', async () => {
   const rosalind = await signIn(ROSALIND)
   const { id: boardId, columns } = await landingBoard(rosalind)
   const a = await addDish(rosalind, 'Linsencurry')
@@ -291,11 +292,229 @@ test('a bulk request names its action and at least one Dish, each by id, each on
     { action: 'move', dishIds: ['not-a-dish'], columnId: ideen!.id },
     { action: 'move', dishIds: [a.id, a.id], columnId: ideen!.id },
     { action: 'move', dishIds: [a.id] },
-    { action: 'cook', dishIds: [a.id] },
+    { action: 'cook', dishIds: [] },
+    { action: 'cook', dishIds: [a.id, a.id] },
+    { action: 'uncook', cookings: [] },
+    { action: 'uncook', cookings: [{ cookingId: 'not-a-cooking' }] },
+    { action: 'uncook', cookings: [{ cookingId: a.id }, { cookingId: a.id }] },
+    { action: 'uncook', cookings: [{ cookingId: a.id, back: { columnId: ideen!.id, index: -1 } }] },
     { action: 'delete' },
     { action: 'place', places: [{ dishId: a.id, columnId: ideen!.id, index: -1 }] },
     { dishIds: [a.id] },
   ]) {
     expect((await bulk(rosalind, body)).status, JSON.stringify(body)).toBe(400)
   }
+})
+
+// "Gekocht ✓" on several (#451), on a Board of its own: Dishes in Ideen
+// (`fromIdeen`) and Diese Woche (`fromWoche`), and `inGekocht`, which was cooked
+// once already; then all three cooked together, in the order sent.
+interface Cooked extends Dish {
+  placement: { boardId: string, columnId: string, index: number }
+  cooking: { id: string, cookedAt: string, recordedBy: { id: string } | null }
+}
+
+async function cookedTogether(caller: Caller, name: string) {
+  const home = await createBoard(caller, name)
+  const [ideen, woche, gekocht] = home.columns as [Board['columns'][number], Board['columns'][number], Board['columns'][number]]
+  const inGekocht = await addDish(caller, `${name}: schon gekocht`, {}, home.id)
+  await addDish(caller, `${name}: Beilage`, {}, home.id)
+  const fromIdeen = await addDish(caller, `${name}: aus Ideen`, {}, home.id)
+  const fromWoche = await addDish(caller, `${name}: aus Diese Woche`, {}, home.id)
+  expect((await moveDish(caller, inGekocht.id, gekocht.id)).status).toBe(200)
+  expect((await moveDish(caller, fromWoche.id, woche.id)).status).toBe(200)
+  const before = await columnIds(caller, home.id)
+  const counts = await cookingCounts(caller, home.id)
+  const sent = [inGekocht.id, fromIdeen.id, fromWoche.id]
+  const res = await bulk(caller, { action: 'cook', dishIds: sent })
+  return { home, ideen, woche, gekocht, inGekocht, fromIdeen, fromWoche, before, counts, sent, res }
+}
+
+// The Dishes of each Column of a Board with how many Cookings each has.
+async function cookingCounts(caller: Caller, boardId: string): Promise<[string, number][][]> {
+  return (await board(caller, boardId)).columns.map(c => c.dishes.map(d => [d.id, d.cookings.length]))
+}
+
+// What undoing a cook of `cooked` sends: each Cooking, and for a Dish that
+// moved, where it was in `before`.
+function undoOf(cooked: Cooked[], before: string[][], home: Board) {
+  return cooked.map(c => {
+    const column = home.columns.findIndex(col => col.id !== c.placement.columnId && before[home.columns.indexOf(col)]!.includes(c.id))
+    return column === -1
+      ? { cookingId: c.cooking.id }
+      : { cookingId: c.cooking.id, back: { columnId: home.columns[column]!.id, index: before[column]!.indexOf(c.id) } }
+  })
+}
+
+test('several Dishes are cooked together: a Cooking each, the ones outside Gekocht on top of it in the order sent', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const { home, gekocht, inGekocht, fromIdeen, fromWoche, sent, res } = await cookedTogether(rosalind, 'Kochabend')
+  const rosalindId = ((await (await rosalind.fetch('/api/me')).json()) as { id: string }).id
+
+  expect(res.status).toBe(200)
+  const cooked = await res.json() as Cooked[]
+  // Answered in the order sent, each placed and with the Cooking recorded.
+  expect(cooked.map(d => [d.id, d.placement])).toEqual([
+    [inGekocht.id, { boardId: home.id, columnId: gekocht.id, index: 2 }],
+    [fromIdeen.id, { boardId: home.id, columnId: gekocht.id, index: 0 }],
+    [fromWoche.id, { boardId: home.id, columnId: gekocht.id, index: 1 }],
+  ])
+  expect(cooked.map(d => d.cookings.length)).toEqual([2, 1, 1])
+  for (const d of cooked) {
+    expect((d.cookings as { id: string }[]).map(c => c.id)).toContain(d.cooking.id)
+    expect(d.cooking.recordedBy!.id).toBe(rosalindId)
+    expect(Math.abs(Date.now() - Date.parse(d.cooking.cookedAt))).toBeLessThan(10_000)
+  }
+  const after = await board(rosalind, home.id)
+  expect(after.columns[2]!.dishes.map(d => [d.id, d.cookings.length])).toEqual([[fromIdeen.id, 1], [fromWoche.id, 1], [inGekocht.id, 2]])
+  expect(sent.every(id => after.columns.slice(0, 2).every(c => c.dishes.every(d => d.id !== id)))).toBe(true)
+})
+
+test('"Rückgängig" after cooking several takes every Cooking back and the moved Dishes to their places', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const { home, inGekocht, fromIdeen, fromWoche, before, counts, res } = await cookedTogether(rosalind, 'Rückgabe')
+  const cooked = await res.json() as Cooked[]
+
+  const undo = await bulk(rosalind, { action: 'uncook', cookings: undoOf(cooked, before, home) })
+
+  expect(undo.status).toBe(200)
+  const placed = await undo.json() as Cooked[]
+  expect(placed.map(d => d.id)).toEqual([inGekocht.id, fromIdeen.id, fromWoche.id])
+  expect(placed.map(d => d.placement.columnId)).toEqual([home.columns[2]!.id, home.columns[0]!.id, home.columns[1]!.id])
+  expect(await columnIds(rosalind, home.id)).toEqual(before)
+  expect(await cookingCounts(rosalind, home.id)).toEqual(counts)
+})
+
+test('cooking several is all or nothing, and only Dishes of the user’s Boards, all on one Board', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const outsider = await signIn(OUTSIDER)
+  const home = await createBoard(rosalind, 'Alles oder nichts')
+  const second = await createBoard(rosalind, 'Zweite Küche')
+  const mine = await addDish(rosalind, 'Eigenes Gericht', {}, home.id)
+  const theirs = await addDish(outsider, 'Fremdes Gericht')
+  const archived = await addDish(rosalind, 'Archiviertes Gericht', {}, home.id)
+  expect((await rosalind.fetch(`/api/dishes/${archived.id}`, { method: 'DELETE' })).status).toBe(204)
+  const elsewhere = await addDish(rosalind, 'Gericht der zweiten Küche', {}, second.id)
+  const beforeHome = await cookingCounts(rosalind, home.id)
+  const beforeSecond = await cookingCounts(rosalind, second.id)
+
+  for (const other of [theirs.id, archived.id, '00000000-0000-4000-8000-000000000000']) {
+    expect((await bulk(rosalind, { action: 'cook', dishIds: [mine.id, other] })).status).toBe(404)
+  }
+  expect((await bulk(rosalind, { action: 'cook', dishIds: [mine.id, elsewhere.id] })).status).toBe(400)
+
+  expect(await cookingCounts(rosalind, home.id)).toEqual(beforeHome)
+  expect(await cookingCounts(rosalind, second.id)).toEqual(beforeSecond)
+})
+
+test('without "move Dishes" nothing is cooked together', async () => {
+  const planck = await signIn(ALLOWLISTED[142])
+  const dirac = await signIn(ALLOWLISTED[143])
+  const home = await createBoard(planck, 'Gemeinsame Küche')
+  const { inviteToken } = await (await planck.fetch(`/api/boards/${home.id}`)).json() as { inviteToken: string }
+  expect((await dirac.fetch(`/api/invites/${inviteToken}/join`, { method: 'POST' })).status).toBe(200)
+  const diracId = ((await (await dirac.fetch('/api/me')).json()) as { id: string }).id
+  const a = await addDish(planck, 'Erstes', {}, home.id)
+  const b = await addDish(dirac, 'Zweites', {}, home.id)
+  const patch = await planck.fetch(`/api/boards/${home.id}/members/${diracId}/permissions`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ moveDishes: false }),
+  })
+  expect(patch.status).toBe(200)
+  const before = await cookingCounts(planck, home.id)
+
+  const res = await bulk(dirac, { action: 'cook', dishIds: [a.id, b.id] })
+
+  expect(res.status).toBe(403)
+  expect((await res.json()).data).toEqual({ permission: 'moveDishes' })
+  expect(await cookingCounts(planck, home.id)).toEqual(before)
+})
+
+test('"Rückgängig" after cooking several is refused for a Cooking that isn’t the Dish’s newest, changing nothing', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const home = await createBoard(rosalind, 'Zweimal gekocht')
+  const dish = await addDish(rosalind, 'Zweimal', {}, home.id)
+  const fresh = await addDish(rosalind, 'Einmal', {}, home.id)
+  const cook = (id: string) => rosalind.fetch(`/api/dishes/${id}/cook`, { method: 'POST' })
+  const older = (await (await cook(dish.id)).json() as Cooked).cooking
+  await cook(dish.id)
+  const only = (await (await cook(fresh.id)).json() as Cooked).cooking
+  const before = await columnIds(rosalind, home.id)
+  const counts = await cookingCounts(rosalind, home.id)
+
+  const res = await bulk(rosalind, { action: 'uncook', cookings: [{ cookingId: only.id }, { cookingId: older.id }] })
+
+  expect(res.status).toBe(409)
+  expect(await columnIds(rosalind, home.id)).toEqual(before)
+  expect(await cookingCounts(rosalind, home.id)).toEqual(counts)
+})
+
+test('"Rückgängig" after cooking several is refused for a Cooking the user can’t see, or a Dish moved on from Gekocht', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const outsider = await signIn(OUTSIDER)
+  const home = await createBoard(rosalind, 'Weitergezogen')
+  const a = await addDish(rosalind, 'Weiter', {}, home.id)
+  const cooked = await (await bulk(rosalind, { action: 'cook', dishIds: [a.id] })).json() as Cooked[]
+  const cookingId = cooked[0]!.cooking.id
+
+  expect((await bulk(outsider, { action: 'uncook', cookings: [{ cookingId }] })).status).toBe(404)
+  expect((await bulk(rosalind, { action: 'uncook', cookings: [{ cookingId: '00000000-0000-4000-8000-000000000000' }] })).status).toBe(404)
+  // Moved on to another Column by hand: it can't go "back" from Gekocht.
+  expect((await moveDish(rosalind, a.id, home.columns[0]!.id)).status).toBe(200)
+  expect((await bulk(rosalind, { action: 'uncook', cookings: [{ cookingId, back: { columnId: home.columns[1]!.id, index: 0 } }] })).status).toBe(400)
+
+  expect((await cookingCounts(rosalind, home.id)).flat().find(([id]) => id === a.id)).toEqual([a.id, 1])
+})
+
+test('cooking several and taking it back are recorded as events, as one Dish’s are', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const home = await createBoard(rosalind, 'Protokoll')
+  const [ideen, woche, gekocht] = home.columns as [Board['columns'][number], Board['columns'][number], Board['columns'][number]]
+  const staying = await addDish(rosalind, 'Bleibt', {}, home.id)
+  const fromIdeen = await addDish(rosalind, 'Aus Ideen', {}, home.id)
+  const fromWoche = await addDish(rosalind, 'Aus Woche', {}, home.id)
+  expect((await moveDish(rosalind, staying.id, gekocht.id)).status).toBe(200)
+  expect((await moveDish(rosalind, fromWoche.id, woche.id)).status).toBe(200)
+  const userId = ((await (await rosalind.fetch('/api/me')).json()) as { id: string }).id
+  const inKeyOrder = (_key: string, value: unknown) => value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).sort()) : value
+  const sorted = (events: unknown[]) => events.map(e => JSON.stringify(e, inKeyOrder)).sort()
+
+  const cooking = await watchEvents()
+  const cooked = await (await bulk(rosalind, { action: 'cook', dishIds: [staying.id, fromIdeen.id, fromWoche.id] })).json() as Cooked[]
+  const recorded = await cooking.recorded()
+  expect(recorded).toHaveLength(5)
+  expect(sorted(recorded)).toEqual(sorted([
+    ...cooked.map(c => ({ kind: 'cooking_recorded', boardId: home.id, dishId: c.id, userId, details: { cooking: c.cooking.id } })),
+    { kind: 'dish_moved', boardId: home.id, dishId: fromIdeen.id, userId, details: { from: ideen.id, to: gekocht.id } },
+    { kind: 'dish_moved', boardId: home.id, dishId: fromWoche.id, userId, details: { from: woche.id, to: gekocht.id } },
+  ]))
+
+  const undoing = await watchEvents()
+  const undo = await bulk(rosalind, { action: 'uncook', cookings: [
+    { cookingId: cooked[0]!.cooking.id },
+    { cookingId: cooked[1]!.cooking.id, back: { columnId: ideen.id, index: 0 } },
+    { cookingId: cooked[2]!.cooking.id, back: { columnId: woche.id, index: 0 } },
+  ] })
+  expect(undo.status).toBe(200)
+  const undone = await undoing.recorded()
+  expect(undone).toHaveLength(5)
+  expect(sorted(undone)).toEqual(sorted([
+    ...cooked.map(c => ({ kind: 'cooking_deleted', boardId: home.id, dishId: c.id, userId, details: { cooking: c.cooking.id, undo: true } })),
+    { kind: 'dish_moved', boardId: home.id, dishId: fromIdeen.id, userId, details: { from: gekocht.id, to: ideen.id, undo: true } },
+    { kind: 'dish_moved', boardId: home.id, dishId: fromWoche.id, userId, details: { from: gekocht.id, to: woche.id, undo: true } },
+  ]))
+})
+
+test('cooking several moves the Board’s version on', async () => {
+  const rosalind = await signIn(ROSALIND)
+  const home = await createBoard(rosalind, 'Versionen')
+  const a = await addDish(rosalind, 'Version A', {}, home.id)
+  const b = await addDish(rosalind, 'Version B', {}, home.id)
+  const versionOf = async () => ((await (await rosalind.fetch(`/api/boards/${home.id}/version`)).json()) as { version: number }).version
+  const before = await versionOf()
+
+  expect((await bulk(rosalind, { action: 'cook', dishIds: [a.id, b.id] })).status).toBe(200)
+
+  expect(await versionOf()).toBeGreaterThan(before)
 })

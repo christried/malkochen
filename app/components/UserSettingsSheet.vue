@@ -21,6 +21,7 @@ const t = useStrings()
 const { signOut } = useAuth()
 
 const { data: me } = useMe()
+const device = useDevice()
 
 // Your Username: changed here at any time, for every Member to see.
 const username = useUsernameForm(me)
@@ -158,6 +159,7 @@ async function deleteAccount() {
   deleteFailed.value = null
   try {
     await $fetch('/api/me', { method: 'DELETE', body: { username: typedUsername.value } })
+    await device?.forget()
     hapticReject()
     await navigateTo('/login')
   }
@@ -178,293 +180,297 @@ async function deleteAccount() {
     :close-label="t.userSettings.close"
   >
     <div class="mt-5 flex flex-col gap-8">
-      <section
-        v-if="me"
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-account"
-      >
-        <h3
-          id="settings-account"
-          class="section-heading px-1"
+      <!-- Greyed out while malkochen can't be reached (#458); the links below
+           still open. -->
+      <NeedsNet>
+        <section
+          v-if="me"
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-account"
         >
-          {{ t.userSettings.account }}
-        </h3>
-        <div class="flex flex-col gap-4 rounded-card bg-surface-muted p-4">
-          <div class="flex items-center gap-4">
-            <UserAvatar
-              :name="me.name"
-              :image="me.image"
-              :size="56"
-            />
-            <div class="flex min-w-0 flex-col">
-              <span class="truncate font-display text-title-s">{{ me.name }}</span>
-              <span class="truncate text-small text-text-muted">{{ me.email }}</span>
-            </div>
-          </div>
-          <form
-            class="flex flex-col gap-2"
-            novalidate
-            @submit.prevent="saveUsername"
+          <h3
+            id="settings-account"
+            class="section-heading px-1"
           >
-            <div class="flex items-start gap-2">
-              <AppField
-                class="min-w-0 flex-1"
-                :label="t.username.label"
-                :control-id="usernameId"
+            {{ t.userSettings.account }}
+          </h3>
+          <div class="flex flex-col gap-4 rounded-card bg-surface-muted p-4">
+            <div class="flex items-center gap-4">
+              <UserAvatar
+                :name="me.name"
+                :image="me.image"
+                :size="56"
+              />
+              <div class="flex min-w-0 flex-col">
+                <span class="truncate font-display text-title-s">{{ me.name }}</span>
+                <span class="truncate text-small text-text-muted">{{ me.email }}</span>
+              </div>
+            </div>
+            <form
+              class="flex flex-col gap-2"
+              novalidate
+              @submit.prevent="saveUsername"
+            >
+              <div class="flex items-start gap-2">
+                <AppField
+                  class="min-w-0 flex-1"
+                  :label="t.username.label"
+                  :control-id="usernameId"
+                >
+                  <input
+                    :id="usernameId"
+                    v-model="username.typed.value"
+                    type="text"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    :aria-invalid="username.message.value ? true : undefined"
+                    :aria-describedby="usernameHintId"
+                  >
+                </AppField>
+                <button
+                  type="submit"
+                  class="mt-[6px] h-(--field-h) shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60"
+                  :disabled="!username.changed.value || username.saving.value"
+                >
+                  <BusyLabel
+                    :label="t.username.save"
+                    :busy-label="t.username.saving"
+                    :busy="username.saving.value"
+                  />
+                </button>
+              </div>
+              <p
+                :id="usernameHintId"
+                class="field-helper -mt-2"
+                :class="{ 'text-danger': username.message.value }"
+                :role="username.message.value ? 'alert' : 'status'"
+              >
+                {{ username.message.value ?? (usernameSaved ? t.username.saved : t.username.hint) }}
+              </p>
+            </form>
+            <div class="flex flex-wrap gap-2">
+              <!-- A label around the file input: the browser's own picker,
+                   which on phones offers the camera too. -->
+              <label
+                class="inline-flex cursor-pointer items-center gap-2 rounded-pill bg-surface px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus"
+                :class="{ 'pointer-events-none opacity-60': busy }"
               >
                 <input
-                  :id="usernameId"
-                  v-model="username.typed.value"
-                  type="text"
-                  autocomplete="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                  :aria-invalid="username.message.value ? true : undefined"
-                  :aria-describedby="usernameHintId"
+                  type="file"
+                  :accept="PHOTO_ACCEPT"
+                  class="sr-only"
+                  :disabled="busy"
+                  @change="pickPicture"
                 >
-              </AppField>
-              <button
-                type="submit"
-                class="mt-[6px] h-(--field-h) shrink-0 rounded-pill bg-inverse px-5 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60"
-                :disabled="!username.changed.value || username.saving.value"
-              >
-                <BusyLabel
-                  :label="t.username.save"
-                  :busy-label="t.username.saving"
-                  :busy="username.saving.value"
+                <LoadingDots v-if="uploading" />
+                <AppIcon
+                  v-else
+                  name="camera"
                 />
+                {{ me.ownPicture ? t.userSettings.changePicture : t.userSettings.pickPicture }}
+              </label>
+              <button
+                v-if="me.ownPicture"
+                type="button"
+                class="rounded-pill px-4 py-2.5 text-button text-text-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
+                :disabled="busy"
+                @click="removePicture"
+              >
+                {{ t.userSettings.removePicture }}
               </button>
             </div>
             <p
-              :id="usernameHintId"
-              class="field-helper -mt-2"
-              :class="{ 'text-danger': username.message.value }"
-              :role="username.message.value ? 'alert' : 'status'"
+              v-if="problemMessage"
+              role="alert"
+              class="text-small text-danger"
             >
-              {{ username.message.value ?? (usernameSaved ? t.username.saved : t.username.hint) }}
+              {{ problemMessage }}
             </p>
-          </form>
-          <div class="flex flex-wrap gap-2">
-            <!-- A label around the file input: the browser's own picker,
-                 which on phones offers the camera too. -->
-            <label
-              class="inline-flex cursor-pointer items-center gap-2 rounded-pill bg-surface px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus"
-              :class="{ 'pointer-events-none opacity-60': busy }"
-            >
-              <input
-                type="file"
-                :accept="PHOTO_ACCEPT"
-                class="sr-only"
-                :disabled="busy"
-                @change="pickPicture"
-              >
-              <LoadingDots v-if="uploading" />
-              <AppIcon
-                v-else
-                name="camera"
+            <p
+              v-else
+              role="status"
+              class="text-small text-text-muted empty:hidden"
+            >{{ uploading ? t.userSettings.uploadingPicture : '' }}</p>
+          </div>
+        </section>
+
+        <section
+          v-if="push.offered || digest.offered"
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-notifications"
+        >
+          <h3
+            id="settings-notifications"
+            class="section-heading px-1"
+          >
+            {{ t.push.heading }}
+          </h3>
+          <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
+            <template v-if="push.offered">
+              <SettingsSwitch
+                :label="t.push.toggle"
+                :hint="t.push.hint"
+                :checked="pushOn"
+                :busy="push.busy.value || push.state.value === null"
+                :disabled="!pushSwitchable"
+                @toggle="push.turn(!pushOn)"
               />
-              {{ me.ownPicture ? t.userSettings.changePicture : t.userSettings.pickPicture }}
-            </label>
+              <p
+                :role="push.failed.value ? 'alert' : 'status'"
+                class="text-small empty:hidden"
+                :class="push.failed.value ? 'text-danger' : 'text-text-muted'"
+              >{{ pushMessage ?? '' }}</p>
+            </template>
+            <template v-if="digest.offered">
+              <SettingsSwitch
+                :label="t.emailDigest.toggle"
+                :hint="t.emailDigest.hint"
+                :checked="digest.on.value === true"
+                :busy="digest.busy.value || digest.on.value === null"
+                :disabled="digest.busy.value || digest.on.value === null"
+                @toggle="digest.turn(!digest.on.value)"
+              />
+              <p
+                :role="digest.failed.value ? 'alert' : 'status'"
+                class="text-small text-danger empty:hidden"
+              >{{ digest.failed.value ? t.emailDigest.failed : '' }}</p>
+            </template>
+          </div>
+        </section>
+
+        <section
+          v-if="snackbert.available.value"
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-snackbert"
+        >
+          <h3
+            id="settings-snackbert"
+            class="section-heading px-1"
+          >
+            {{ t.snackbert.heading }}
+          </h3>
+          <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
+            <p class="text-small text-text-muted">
+              {{ t.snackbert.consent }}
+              <NuxtLink
+                to="/datenschutz"
+                class="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
+              >{{ t.snackbert.privacyLink }}</NuxtLink>
+            </p>
+            <SettingsSwitch
+              :label="t.snackbert.toggle"
+              :hint="t.snackbert.hint"
+              :checked="snackbert.on.value === true"
+              :busy="snackbert.busy.value || snackbert.on.value === null"
+              :disabled="snackbert.busy.value || snackbert.on.value === null || snackbert.problem.value === 'noAccount'"
+              @toggle="snackbert.turn(!snackbert.on.value)"
+            />
+            <p
+              :role="snackbert.problem.value ? 'alert' : 'status'"
+              class="text-small text-danger empty:hidden"
+            >{{ snackbertMessage }}</p>
+          </div>
+        </section>
+
+        <section
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-theme"
+        >
+          <h3
+            id="settings-theme"
+            class="section-heading px-1"
+          >
+            {{ t.theme.label }}
+          </h3>
+          <ThemePicker />
+        </section>
+
+        <section
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-language"
+        >
+          <h3
+            id="settings-language"
+            class="section-heading px-1"
+          >
+            {{ t.userSettings.language }}
+          </h3>
+          <LanguagePicker />
+        </section>
+
+        <!-- Only where there's a keyboard and mouse (scoped style below). -->
+        <section
+          class="shortcuts flex flex-col gap-3"
+          aria-labelledby="settings-shortcuts"
+        >
+          <h3
+            id="settings-shortcuts"
+            class="section-heading px-1"
+          >
+            {{ t.shortcuts.title }}
+          </h3>
+          <div class="flex flex-col gap-4 rounded-card bg-surface-muted p-4">
+            <p class="text-small text-text-muted">
+              {{ t.shortcuts.intro }}
+            </p>
+            <ShortcutList />
+          </div>
+        </section>
+
+        <section
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-tour"
+        >
+          <h3
+            id="settings-tour"
+            class="section-heading px-1"
+          >
+            {{ t.tour.label }}
+          </h3>
+          <div class="flex flex-col items-start gap-3 rounded-card bg-surface-muted p-4">
+            <p class="text-small text-text-muted">
+              {{ t.tour.startHint }}
+            </p>
             <button
-              v-if="me.ownPicture"
               type="button"
-              class="rounded-pill px-4 py-2.5 text-button text-text-muted transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
-              :disabled="busy"
-              @click="removePicture"
+              class="rounded-pill bg-surface px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              @click="emit('startTour')"
             >
-              {{ t.userSettings.removePicture }}
+              {{ t.tour.start }}
             </button>
           </div>
-          <p
-            v-if="problemMessage"
-            role="alert"
-            class="text-small text-danger"
+        </section>
+
+        <button
+          type="button"
+          class="self-start rounded-pill bg-surface-muted px-5 py-3.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          @click="signOut"
+        >
+          {{ t.userSettings.signOut }}
+        </button>
+
+        <section
+          v-if="me"
+          class="flex flex-col gap-3"
+          aria-labelledby="settings-delete-account"
+        >
+          <h3
+            id="settings-delete-account"
+            class="section-heading px-1"
           >
-            {{ problemMessage }}
-          </p>
-          <p
-            v-else
-            role="status"
-            class="text-small text-text-muted empty:hidden"
-          >{{ uploading ? t.userSettings.uploadingPicture : '' }}</p>
-        </div>
-      </section>
-
-      <section
-        v-if="push.offered || digest.offered"
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-notifications"
-      >
-        <h3
-          id="settings-notifications"
-          class="section-heading px-1"
-        >
-          {{ t.push.heading }}
-        </h3>
-        <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
-          <template v-if="push.offered">
-            <SettingsSwitch
-              :label="t.push.toggle"
-              :hint="t.push.hint"
-              :checked="pushOn"
-              :busy="push.busy.value || push.state.value === null"
-              :disabled="!pushSwitchable"
-              @toggle="push.turn(!pushOn)"
-            />
-            <p
-              :role="push.failed.value ? 'alert' : 'status'"
-              class="text-small empty:hidden"
-              :class="push.failed.value ? 'text-danger' : 'text-text-muted'"
-            >{{ pushMessage ?? '' }}</p>
-          </template>
-          <template v-if="digest.offered">
-            <SettingsSwitch
-              :label="t.emailDigest.toggle"
-              :hint="t.emailDigest.hint"
-              :checked="digest.on.value === true"
-              :busy="digest.busy.value || digest.on.value === null"
-              :disabled="digest.busy.value || digest.on.value === null"
-              @toggle="digest.turn(!digest.on.value)"
-            />
-            <p
-              :role="digest.failed.value ? 'alert' : 'status'"
-              class="text-small text-danger empty:hidden"
-            >{{ digest.failed.value ? t.emailDigest.failed : '' }}</p>
-          </template>
-        </div>
-      </section>
-
-      <section
-        v-if="snackbert.available.value"
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-snackbert"
-      >
-        <h3
-          id="settings-snackbert"
-          class="section-heading px-1"
-        >
-          {{ t.snackbert.heading }}
-        </h3>
-        <div class="flex flex-col gap-3 rounded-card bg-surface-muted p-4">
-          <p class="text-small text-text-muted">
-            {{ t.snackbert.consent }}
-            <NuxtLink
-              to="/datenschutz"
-              class="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
-            >{{ t.snackbert.privacyLink }}</NuxtLink>
-          </p>
-          <SettingsSwitch
-            :label="t.snackbert.toggle"
-            :hint="t.snackbert.hint"
-            :checked="snackbert.on.value === true"
-            :busy="snackbert.busy.value || snackbert.on.value === null"
-            :disabled="snackbert.busy.value || snackbert.on.value === null || snackbert.problem.value === 'noAccount'"
-            @toggle="snackbert.turn(!snackbert.on.value)"
-          />
-          <p
-            :role="snackbert.problem.value ? 'alert' : 'status'"
-            class="text-small text-danger empty:hidden"
-          >{{ snackbertMessage }}</p>
-        </div>
-      </section>
-
-      <section
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-theme"
-      >
-        <h3
-          id="settings-theme"
-          class="section-heading px-1"
-        >
-          {{ t.theme.label }}
-        </h3>
-        <ThemePicker />
-      </section>
-
-      <section
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-language"
-      >
-        <h3
-          id="settings-language"
-          class="section-heading px-1"
-        >
-          {{ t.userSettings.language }}
-        </h3>
-        <LanguagePicker />
-      </section>
-
-      <!-- Only where there's a keyboard and mouse (scoped style below). -->
-      <section
-        class="shortcuts flex flex-col gap-3"
-        aria-labelledby="settings-shortcuts"
-      >
-        <h3
-          id="settings-shortcuts"
-          class="section-heading px-1"
-        >
-          {{ t.shortcuts.title }}
-        </h3>
-        <div class="flex flex-col gap-4 rounded-card bg-surface-muted p-4">
-          <p class="text-small text-text-muted">
-            {{ t.shortcuts.intro }}
-          </p>
-          <ShortcutList />
-        </div>
-      </section>
-
-      <section
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-tour"
-      >
-        <h3
-          id="settings-tour"
-          class="section-heading px-1"
-        >
-          {{ t.tour.label }}
-        </h3>
-        <div class="flex flex-col items-start gap-3 rounded-card bg-surface-muted p-4">
-          <p class="text-small text-text-muted">
-            {{ t.tour.startHint }}
-          </p>
-          <button
-            type="button"
-            class="rounded-pill bg-surface px-4 py-2.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            @click="emit('startTour')"
-          >
-            {{ t.tour.start }}
-          </button>
-        </div>
-      </section>
-
-      <button
-        type="button"
-        class="self-start rounded-pill bg-surface-muted px-5 py-3.5 text-button text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        @click="signOut"
-      >
-        {{ t.userSettings.signOut }}
-      </button>
-
-      <section
-        v-if="me"
-        class="flex flex-col gap-3"
-        aria-labelledby="settings-delete-account"
-      >
-        <h3
-          id="settings-delete-account"
-          class="section-heading px-1"
-        >
-          {{ t.deleteAccount.heading }}
-        </h3>
-        <div class="flex flex-col items-start gap-3 rounded-card bg-surface-muted p-4">
-          <p class="text-small text-text-muted">
-            {{ t.deleteAccount.hint }}
-          </p>
-          <DangerButton @click="confirmingDelete = true">
-            {{ t.deleteAccount.open }}
-          </DangerButton>
-        </div>
-      </section>
+            {{ t.deleteAccount.heading }}
+          </h3>
+          <div class="flex flex-col items-start gap-3 rounded-card bg-surface-muted p-4">
+            <p class="text-small text-text-muted">
+              {{ t.deleteAccount.hint }}
+            </p>
+            <DangerButton @click="confirmingDelete = true">
+              {{ t.deleteAccount.open }}
+            </DangerButton>
+          </div>
+        </section>
+      </NeedsNet>
 
       <NuxtLink
         v-if="me?.isOperator"
