@@ -5,6 +5,7 @@
 import type { EventGroup } from '../../shared/admin'
 import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings, UnsentKindName } from './de'
+import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
 import { intlFor } from './intl'
 
@@ -19,6 +20,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `deleted comment on ${named}`
     case 'vote': return `thumb on ${named}`
     case 'title': return `new title for ${named}`
+    case 'add': return `${named} added`
     case 'move': return `${named} moved`
     case 'cook':
     case 'cookMany': return `${named} cooked`
@@ -414,6 +416,21 @@ export const en: Strings = {
     imageNotStored: (title: string) => `The image from the link couldn’t be saved. “${title}” has a placeholder image now.`,
     photoNotStored: (title: string) => `Your photo couldn’t be saved. “${title}” has a placeholder image now.`,
     notAllowed: 'You can’t add dishes to this board. The owner decides that.',
+    titleOptional: 'Title (can stay empty)',
+    titleOptionalHint: 'Without a title we use the link’s once you’re back online.',
+    offlineHint: 'No connection. The link is looked up once you’re back online.',
+    sourceTitle: (kind: SourceKind, creator: string | null, site: string): string => {
+      const by = (what: string, plain: string) => creator ? `${what} by ${creator}` : plain
+      switch (kind) {
+        case 'tiktok': return by('TikTok', 'TikTok video')
+        case 'instagram-reel': return by('Instagram Reel', 'Instagram Reel')
+        case 'instagram-post': return by('Instagram post', 'Instagram post')
+        case 'youtube-short': return by('YouTube Short', 'YouTube Short')
+        case 'pinterest-pin': return by('Pinterest Pin', 'Pinterest Pin')
+        case 'blog': return creator ? `Recipe from ${creator}` : site || 'Web page'
+        case 'other': return creator ? `Web page from ${creator}` : site || 'Web page'
+      }
+    },
   },
   placeholders: {
     pasta: 'Pasta',
@@ -588,6 +605,8 @@ export const en: Strings = {
   unsent: {
     count: (count: number) => `${number(count)} not sent yet`,
     allSent: 'All sent',
+    notSent: 'Not sent yet',
+    alreadyOnBoard: (title: string, column: string) => `That link was already on the board: “${title}” in ${column}`,
     copyText: 'Copy',
     copied: 'Copied',
     copyFailed: 'Copying didn’t work.',

@@ -4,7 +4,8 @@ import type { BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
 import type { CommentView } from '../../server/utils/comments'
 import type { CookingView } from '../../server/utils/cookings'
-import type { DishEditBody, AddDishBody } from '../../server/utils/dish-input'
+import type { DishEditBody, AddDishBody, OfflineAddBody } from '../../server/utils/dish-input'
+import { guessKind, siteOf } from '../../app/utils/link-guess'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
@@ -40,6 +41,9 @@ export interface MemoryTransport {
   // write rejects with WriteFailed (no status) and changes nothing; `lost`,
   // every write is applied, then rejects the same way (the answer was lost).
   setAnswers: (mode: 'answering' | 'none' | 'lost') => void
+  // What the server finds when it looks a link up for a Dish added offline,
+  // by link: the Source's title, Creator and image.
+  lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }>
   // Another Member deletes a Dish, or a Column (its deleted Dishes go to
   // the top of the Column that takes new Dishes, as on the real server).
   deleteDishElsewhere: (dishId: string) => void
@@ -67,6 +71,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   const comments = new Map<string, (CommentView & { deleted?: true })[]>()
   let added = 0
   let addedColumns = 0
+  const lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }> = {}
   let answers: 'answering' | 'none' | 'lost' = 'answering'
 
   // The Dish on the server that `matches`, and its Column: on this Board, or
@@ -121,9 +126,15 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   // image without its Image Ticket isn't stored, as on the server; nor is an
   // own photo without its photo ticket.
   function addOnServer(boardId: string, input: AddDishBody): AddedDish {
+    // A repeat of the id the device made answers the Dish where it is now.
+    const there = input.id ? located(d => d.id === input.id) : null
+    if (there) {
+      const onto = [server, ...others].find(b => b.columns.includes(there.column))!
+      return { ...structuredClone(there.dish), placement: { boardId: onto.id, columnId: there.column.id, index: there.column.dishes.indexOf(there.dish) } }
+    }
     const dish: DishView = {
-      id: `added-${++added}`,
-      code: `new${added}`,
+      id: input.id ?? `added-${added + 1}`,
+      code: `new${++added}`,
       title: input.title,
       source: input.source ? { link: input.source.link, kind: input.source.kind ?? 'other' } : null,
       creator: input.creator?.trim() || null,
@@ -147,6 +158,43 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const placed = { ...structuredClone(dish), placement: { boardId, columnId: column.id, index: 0 } }
     const refused = input.photo ? !input.photo.ticket : input.imageUrl && !input.imageTicket
     return refused ? { ...placed, imageNotStored: true } : placed
+  }
+
+  // Adds a Dish that was made offline, as the server does (late-add.ts): the
+  // id the device made, the link looked up now (what `lookups` says of it),
+  // the title typed, else the one the Source showed, else one made from the
+  // link's site. A repeat of the id answers the Dish where it is now. The
+  // answer names the Dish that had the same Source on the Board already.
+  function addLateOnServer(boardId: string, body: OfflineAddBody): AddedDish {
+    const there = located(d => d.id === body.id)
+    if (there) {
+      const onto = [server, ...others].find(b => b.columns.includes(there.column))!
+      return { ...structuredClone(there.dish), placement: { boardId: onto.id, columnId: there.column.id, index: there.column.dishes.indexOf(there.dish) } }
+    }
+    const link = body.source?.link ?? null
+    const found = link ? lookups[link] : undefined
+    const same = link ? located(d => d.source?.link === link) : null
+    const dish: DishView = {
+      id: body.id,
+      code: `late${++added}`,
+      title: body.title?.trim() || found?.title || `Von ${siteOf(link ?? '')}`,
+      source: link ? { link, kind: guessKind(link) } : null,
+      creator: found?.creator ?? null,
+      caption: null,
+      playableVideo: null,
+      imageUrl: found?.imageUrl ?? null,
+      imageFocus: { x: 50, y: 50 },
+      placeholder: body.placeholder,
+      addedBy: null,
+      createdAt: new Date().toISOString(),
+      cookings: [],
+      votes: [],
+      commentCount: 0,
+    }
+    const column = boardId === server.id ? columnForNewDishes(server.columns)! : { id: 'elsewhere', dishes: [] as DishView[] }
+    column.dishes.unshift(dish)
+    const placed = { ...structuredClone(dish), placement: { boardId, columnId: column.id, index: 0 } }
+    return same ? { ...placed, duplicateOf: { id: same.dish.id, code: same.dish.code, title: same.dish.title, columnName: (same.column as { name?: string }).name ?? '' } } : placed
   }
 
   // Saves the fields sent, as the server reads them (trimmed; a blank
@@ -486,6 +534,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
 
   const transport: BoardTransport = {
     addDish: (boardId, input) => answer('addDish', `${boardId} ${input.title}`, () => addOnServer(boardId, input)),
+    addDishLate: (boardId, body) => answer('addDishLate', `${boardId} ${body.id} ${body.title ?? ''} ${body.source?.link ?? ''}`, () => addLateOnServer(boardId, body)),
     editDish: (dishId, changes) => answer('editDish', dishId, () => editOnServer(dishId, changes)),
     deleteDish: dishId => answer('deleteDish', dishId, () => deleteOnServer(dishId) || null).then(() => undefined),
     restoreDish: dishId => answer('restoreDish', dishId, () => restoreOnServer(dishId)),
@@ -515,6 +564,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     server,
     sent,
     setAnswers: (mode) => { answers = mode },
+    lookups,
     failNext: (write, status) => script(write, { fail: status }),
     holdNext(write) {
       let held: Held | undefined

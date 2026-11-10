@@ -5,6 +5,9 @@ import { createFoundImageStore } from '../image-store/found-image'
 import { createPhotoStore, PICTURE_SIDE } from '../image-store/photo'
 import { createImageTickets } from '../image-store/tickets'
 import { parseServerEnv } from '../env'
+import { fixtureImages } from '../source-lookup/fixtures'
+import { publicFetch } from '../source-lookup/public-network'
+import { lookupFixtures } from './source-lookup'
 import { isMember } from './board-access'
 
 const { BLOB_READ_WRITE_TOKEN, BETTER_AUTH_SECRET, IMAGE_DIR: imageDir } = parseServerEnv(process.env)
@@ -18,7 +21,7 @@ const logNotCopied = (imageUrl: string, reason: string) => console.warn(`[image-
 
 export const storage = BLOB_READ_WRITE_TOKEN ? blobStorage(BLOB_READ_WRITE_TOKEN) : diskStorage(IMAGE_DIR)
 
-export const copyImage: ImageStore = createImageStore({ storage, onFailure: logNotCopied })
+export const copyImage: ImageStore = createImageStore({ storage, onFailure: logNotCopied, ...lookupFixtures && { fetch: fixtureImages(lookupFixtures, publicFetch) } })
 
 // Signs the images Source Lookup finds, so only those are ever copied.
 export const imageTickets = createImageTickets(BETTER_AUTH_SECRET)

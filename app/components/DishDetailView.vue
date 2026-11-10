@@ -35,6 +35,10 @@ const emit = defineEmits<{
 const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
+// Added offline and not sent yet (#462): sharing, copying and deleting wait
+// for the server to have the Dish; they are greyed out like what needs a
+// connection.
+const onlyIfSent = computed(() => boardModule.isUnsentAdd(props.dish.id) ? false : undefined)
 // While malkochen can't be reached (#458), the Dish is there to read: its
 // changes are greyed out. "Bearbeiten" opens all the same (#460): the title
 // can be changed offline, and the rest of its form is greyed out.
@@ -256,7 +260,10 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         class="flex flex-col gap-2"
         data-share-actions
       >
-        <NeedsNet :note="false">
+        <NeedsNet
+          :note="false"
+          :allowed="onlyIfSent"
+        >
           <button
             type="button"
             class="flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
@@ -304,6 +311,12 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           >
             {{ t.dish.moveTo }}
           </button>
+        </NeedsNet>
+        <!-- A Dish added offline can't be deleted until it has arrived. -->
+        <NeedsNet
+          :note="false"
+          :allowed="onlyIfSent"
+        >
           <DangerButton
             v-if="boardModule.may('archiveDishes', dish.id)"
             @click="$emit('delete')"

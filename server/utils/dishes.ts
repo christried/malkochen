@@ -76,8 +76,10 @@ export interface DishPlacement {
 export type PlacedDish = DishView & { placement: DishPlacement }
 
 // What adding a Dish answers: the Dish placed, and whether its Source image
-// could not be stored, as for SavedDish.
-export type AddedDish = PlacedDish & { imageNotStored?: true }
+// could not be stored, as for SavedDish. A Dish added offline (#462) also
+// says which Dish with the same Source was already on the Board, if any:
+// the Member had no chance to be asked before saving it.
+export type AddedDish = PlacedDish & { imageNotStored?: true, duplicateOf?: DuplicateDish }
 
 export interface NewDish {
   title: string

@@ -70,6 +70,9 @@ interface HistoryHost {
   // malkochen can't be reached: opening a Dish isn't opening it, so nothing
   // is asked.
   offline?: () => boolean
+  // Whether the Dish was added offline and the server hasn't it yet (#462):
+  // it has no History to load, so its History counts as loaded, and empty.
+  isUnsentAdd?: (dishId: string) => boolean
   // The Unsent Changes (none: a write without an answer fails as ever).
   // `keep` keeps a change as one and tries to send them all; `anyUnsent`:
   // changes wait, so new ones join their end without trying the network.
@@ -78,7 +81,7 @@ interface HistoryHost {
   anyUnsent: () => boolean
 }
 
-export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment, unsent, keep, anyUnsent, kept: device, offline }: HistoryHost) {
+export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment, unsent, keep, anyUnsent, kept: device, offline, isUnsentAdd }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -118,6 +121,10 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
   // (the Member's own, written meanwhile) stay beside it. False if it
   // couldn't load.
   async function openDish(dishId: string): Promise<boolean> {
+    if (isUnsentAdd?.(dishId)) {
+      loadedOnce.add(dishId)
+      return true
+    }
     // Offline it isn't opened, so what's new in it stays marked (#461).
     if (!offline?.()) clearNewInHistory(dishId)
     const asked = writes.get(dishId) ?? 0

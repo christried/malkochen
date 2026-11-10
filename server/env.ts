@@ -71,6 +71,11 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // place of package.json's, so the tests see the same one whatever the
   // newest Version is. Empty: package.json's.
   MALKOCHEN_VERSION: z.union([z.literal(''), z.string().regex(/^\d+\.\d+\.\d+$/, 'must be a Version such as 1.0.0')]).default(''),
+  // Tests only: the links the server knows the Source Lookup answer of, as
+  // JSON (server/source-lookup/fixtures.ts), in place of asking the Source;
+  // their images are served from the same fixtures. Empty: every link is
+  // looked up.
+  SOURCE_LOOKUP_FIXTURES: z.string().default(''),
   // Set by Vercel itself; used to refuse the dev bypass there and to require
   // the Blob token.
   VERCEL_ENV: z.string().optional(),
@@ -83,6 +88,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
 ).refine(
   env => !(env.MALKOCHEN_VERSION !== '' && isDeployed(env.VERCEL_ENV)),
   { path: ['MALKOCHEN_VERSION'], message: 'must never be set in Vercel production or preview' },
+).refine(
+  env => !(env.SOURCE_LOOKUP_FIXTURES !== '' && isDeployed(env.VERCEL_ENV)),
+  { path: ['SOURCE_LOOKUP_FIXTURES'], message: 'must never be set in Vercel production or preview' },
 ).refine(
   env => env.BLOB_READ_WRITE_TOKEN !== '' || !isDeployed(env.VERCEL_ENV),
   { path: ['BLOB_READ_WRITE_TOKEN'], message: 'is required in Vercel production and preview' },
