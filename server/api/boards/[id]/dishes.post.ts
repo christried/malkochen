@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import { addDishBody, offlineAddBody, sourceOf } from '../../../utils/dish-input'
-import { addDish, dishIdStanding, placedDish, type AddedDish } from '../../../utils/dishes'
+import { addDish, dishIdStanding, dishWithSource, placedDish, type AddedDish } from '../../../utils/dishes'
 import { storeDishImage } from '../../../utils/image-store'
 import { dishFromLateAdd } from '../../../utils/late-add'
 import { isUniqueViolation } from '../../../utils/late-changes'
@@ -79,7 +79,7 @@ async function addLate(event: H3Event, boardId: string, raw: unknown): Promise<A
   const { id } = parsed.data
   setResponseStatus(event, 201)
   const repeat = await alreadyAdded(id, boardId, user.id)
-  if (repeat) return repeat
+  if (repeat) return withDuplicate(repeat)
   const { dish, duplicate } = await dishFromLateAdd(user.id, boardId, callerLanguage(event), parsed.data)
   let created: AddedDish | null
   try {
@@ -88,11 +88,19 @@ async function addLate(event: H3Event, boardId: string, raw: unknown): Promise<A
   catch (err) {
     const first = isUniqueViolation(err) ? await alreadyAdded(id, boardId, user.id) : null
     if (!first) throw err
-    return first
+    return withDuplicate(first)
   }
   if (!created) throw boardNotFound()
   await notifyNewDish(boardId, created.id, user.id)
   return duplicate ? { ...created, duplicateOf: duplicate } : created
+}
+
+// A repeat of a Dish added offline (its first answer was lost) names the Dish
+// that had its Source before it, as the first answer did; never itself.
+async function withDuplicate(added: AddedDish): Promise<AddedDish> {
+  const link = added.source?.link
+  const duplicate = link ? await dishWithSource(added.placement.boardId, link, added) : null
+  return duplicate ? { ...added, duplicateOf: duplicate } : added
 }
 
 // The Dish a repeat of adding it (the same device-made id, late-changes.ts)

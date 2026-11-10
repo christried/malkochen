@@ -59,9 +59,10 @@ export type UnsentKind =
   | { kind: 'title', dishId: string, title: string }
   // A Dish added (#462): with the id the device made for it, the link as
   // pasted and the title typed, either of them none (not both), the
-  // Placeholder Image chosen, and who added it (to show it before the server
+  // Placeholder Image chosen (`noImage`: over the Source's image, which the
+  // form had looked up before the save got no answer), and who added it (to show it before the server
   // has it). The server looks the link up when it arrives.
-  | { kind: 'add', dishId: string, link: string | null, title: string | null, placeholder: Placeholder, adder: DishAdder }
+  | { kind: 'add', dishId: string, link: string | null, title: string | null, placeholder: Placeholder, adder: DishAdder, noImage?: true }
 
 // The writes the Unsent Changes are sent with.
 export type UnsentTransport = Pick<BoardTransport, 'addDishLate' | 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish'>
@@ -242,7 +243,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     const { madeAt } = change
     switch (change.kind) {
       case 'add':
-        return transport.addDishLate(change.boardId, { offline: true, id: change.dishId, placeholder: change.placeholder, ...change.title && { title: change.title }, ...change.link && { source: { link: change.link } } })
+        return transport.addDishLate(change.boardId, { offline: true, id: change.dishId, placeholder: change.placeholder, ...change.noImage && { noImage: true }, ...change.title && { title: change.title }, ...change.link && { source: { link: change.link } } })
       case 'move':
         return transport.moveDish(change.dishId, { columnId: change.columnId, ...change.index !== undefined && { index: change.index } }, { ...change.cookingId && { cookingId: change.cookingId }, madeAt })
       case 'cook':

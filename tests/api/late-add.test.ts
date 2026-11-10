@@ -59,12 +59,13 @@ async function newBoard(caller: Caller, name: string, members: Caller[] = []): P
 }
 
 // What the device sends for a Dish added offline.
-const lateAdd = (body: { title?: string, link?: string, id?: string }) => ({
+const lateAdd = (body: { title?: string, link?: string, id?: string, noImage?: true }) => ({
   offline: true,
   id: body.id ?? randomUUID(),
   placeholder: 'ramen',
   ...body.title !== undefined && { title: body.title },
   ...body.link !== undefined && { source: { link: body.link } },
+  ...body.noImage && { noImage: true },
 })
 
 async function addLate(caller: Caller, boardId: string, body: Parameters<typeof lateAdd>[0]): Promise<Dish> {
@@ -177,6 +178,35 @@ test('a repeat of the same device-made id records once and answers the same', as
   expect(await again.json()).toEqual(first)
   expect(await dishesOf(caller, board.id)).toHaveLength(1)
   expect(await storedImages()).toEqual(imagesAfterFirst)
+})
+
+test('a repeat of a Dish whose Source was on the Board already answers with the Dish that had it, never with itself', async () => {
+  const caller = await signIn(outsider)
+  const board = await newBoard(caller, 'Doppelt bekannt')
+  const earlier = await addLate(caller, board.id, { link: PASTA_TIKTOK })
+  const body = lateAdd({ link: PASTA_TIKTOK })
+  const first = await (await postDish(caller, board.id, body)).json() as Dish
+  expect(first.duplicateOf).toMatchObject({ id: earlier.id })
+
+  const again = await (await postDish(caller, board.id, body)).json() as Dish
+
+  expect(again.id).toBe(first.id)
+  expect(again.duplicateOf).toEqual(first.duplicateOf)
+  // The only Dish with its Source: nothing to name.
+  const alone = lateAdd({ link: BLOG })
+  await postDish(caller, board.id, alone)
+  expect((await (await postDish(caller, board.id, alone)).json() as Dish).duplicateOf).toBeUndefined()
+})
+
+test('a late add that says the Member chose the Placeholder Image keeps it though the link has an image', async () => {
+  const caller = await signIn(outsider)
+  const board = await newBoard(caller, 'Platzhalter')
+  const imagesBefore = await storedImages()
+
+  const dish = await addLate(caller, board.id, { link: PASTA_TIKTOK, noImage: true })
+
+  expect(dish).toMatchObject({ imageUrl: null, creator: '@mara.kocht', placeholder: 'ramen' })
+  expect(await storedImages()).toEqual(imagesBefore)
 })
 
 test('an id another user\'s Dish has is refused', async () => {

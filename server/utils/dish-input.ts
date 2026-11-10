@@ -85,6 +85,9 @@ export const offlineAddBody = z.object({
   offline: z.literal(true),
   id: z.uuid(),
   placeholder: z.enum(PLACEHOLDERS),
+  // The Member chose the Placeholder Image over the Source's image (an
+  // online save that got no answer became this): the image is not copied.
+  noImage: z.literal(true).optional(),
   title: z.string().trim().max(200).nullish().transform(title => title || null),
   source: z.object({ link: webLinkInput }).nullish().transform(source => source ?? null),
 }).refine(body => body.title !== null || body.source !== null)

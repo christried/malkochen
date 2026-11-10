@@ -422,7 +422,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const link = input.source?.link ?? null
     const title = input.title.trim() || null
     const madeAt = new Date().toISOString()
-    const kind = { kind: 'add', dishId, link, title, placeholder: input.placeholder, adder } as const
+    // A save that had its link looked up and sent no image chose the Placeholder Image.
+    const noImage = !!(input.sourceTicket && !input.imageUrl)
+    const kind = { kind: 'add', dishId, link, title, placeholder: input.placeholder, adder, ...noImage && { noImage: true as const } } as const
     const shown = dishOfAdd({ id: '', boardId: board.value!.id, madeAt, label: '', ...kind })
     into.dishes.unshift(shown)
     keep(kind, madeAt, shown.title)

@@ -195,3 +195,26 @@ test('a Board that is removed from the device takes its Dishes\' images with it,
   await kept.keepListings([{ id: 'two', slug: 'two', name: 'two', emoji: 'x', isOwner: true, permissions: ALL_PERMISSIONS, dishCount: 1, members: [], columns: [] } as never])
   expect(gone.sort()).toEqual(['https://blob/c.jpg'])
 })
+
+test('a save that got no answer keeps the Member\'s choice of the Placeholder Image over the Source\'s image', async () => {
+  const fake = memoryTransport(boardFixture())
+  const sentLate: unknown[] = []
+  const transport = { ...fake.transport, addDishLate: (boardId: string, body: Parameters<typeof fake.transport.addDishLate>[1]) => { sentLate.push(body); return fake.transport.addDishLate(boardId, body) } }
+  const store = memoryStore()
+  const board = ref<BoardView | undefined>(structuredClone(fake.server))
+  const unsent = createUnsentChanges({ store, transport, userId: 'anna' })
+  const module = createBoardModule(board, transport, { unsent })
+  fake.setAnswers('none')
+
+  // Looked up online, then the Member picked a Placeholder Image: no image sent.
+  await module.addDish('board', { title: 'Pasta', placeholder: 'bowl', source: { link: 'https://example.com/a' }, sourceTicket: 'ticket', imageUrl: null }, adder)
+  // Never looked up (offline from the start): nothing was chosen.
+  await module.addDish('board', { title: '', placeholder: 'bowl', source: { link: 'https://example.com/b' } }, adder)
+  expect(unsent.changes.value).toMatchObject([{ kind: 'add', link: 'https://example.com/a', noImage: true }, { kind: 'add', link: 'https://example.com/b' }])
+  expect(unsent.changes.value[1]).not.toHaveProperty('noImage')
+
+  fake.setAnswers('answering')
+  await unsent.send()
+  expect(sentLate).toMatchObject([{ source: { link: 'https://example.com/a' }, noImage: true }, { source: { link: 'https://example.com/b' } }])
+  expect(sentLate[1]).not.toHaveProperty('noImage')
+})

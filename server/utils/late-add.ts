@@ -39,7 +39,7 @@ export async function dishFromLateAdd(
   const found = mayLookUp ? await lookupSource(link) : nothingFound(guessSource(link))
   const source = sourceOf({ link: found.canonicalLink, kind: found.kind })
   const duplicate = await dishWithSource(boardId, source.link)
-  const imageUrl = mayCopy && found.imageUrl ? await copyImage(found.imageUrl) : null
+  const imageUrl = mayCopy && !body.noImage && found.imageUrl ? await copyImage(found.imageUrl) : null
   const creator = found.creator
   return {
     duplicate,
