@@ -21,6 +21,7 @@ const t = useStrings()
 const { signOut } = useAuth()
 
 const { data: me } = useMe()
+const device = useDevice()
 
 // Your Username: changed here at any time, for every Member to see.
 const username = useUsernameForm(me)
@@ -158,6 +159,7 @@ async function deleteAccount() {
   deleteFailed.value = null
   try {
     await $fetch('/api/me', { method: 'DELETE', body: { username: typedUsername.value } })
+    await device?.forget()
     hapticReject()
     await navigateTo('/login')
   }

@@ -597,6 +597,8 @@ export const it: Strings = {
     bar: 'Offline. Le tue modifiche arrivano appena torni in rete.',
     unreachable: 'malkochen al momento non è raggiungibile.',
     needsNet: 'Funziona solo in rete',
+    notKeptHeadline: 'Serve la rete.',
+    notKeptBody: 'Non l’hai ancora aperto su questo dispositivo. Appena torni online, puoi continuare da qui.',
   },
   unsent: {
     count: (count: number) => `${number(count)} ${plural(count, { one: 'modifica non ancora inviata', other: 'modifiche non ancora inviate' })}`,

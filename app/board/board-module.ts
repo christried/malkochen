@@ -13,6 +13,7 @@ import { landingIndex, recordsCooking } from '../../shared/placement'
 import { WriteFailed, isUnanswered } from './write-failed'
 import { layOver, type UnsentChange, type UnsentChanges, type UnsentKind } from './unsent-changes'
 import { createDishHistories, type HistoryTransport } from './dish-histories'
+import type { KeptBoards } from './kept-boards'
 import { createDishVotes, type VoteTransport } from './dish-votes'
 
 // The client Board module (spec #61): owns the app's copy of an open Board.
@@ -195,8 +196,12 @@ function removeFrom<T>(list: T[], item: T | undefined) {
 
 // With `unsent` (one for the whole app, shared by every Board's module), a
 // move or "Gekocht ✓" whose write gets no answer stays on screen and is kept
-// as an Unsent Change; without it the module behaves as ever.
-export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: BoardTransport, { unsent }: { unsent?: UnsentChanges } = {}) {
+// as an Unsent Change; without it the module behaves as ever. With `kept`
+// (kept-boards.ts), every load that merges keeps the Board on the device, as
+// the server said it, and a Dish History opened is kept too. `offline`: the
+// app knows malkochen can't be reached, so nothing is asked of it (opening a
+// Dish marks it seen, which offline it doesn't).
+export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: BoardTransport, { unsent, kept, offline }: { unsent?: UnsentChanges, kept?: KeptBoards, offline?: () => boolean } = {}) {
   // Every write goes through `transport`, so each is counted for sync.
   const { transport, mark, writesSince } = counted(uncounted)
 
@@ -1050,6 +1055,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     // A send of Unsent Changes counts as a write under way. Waiting ones
     // don't: they are laid over what the server says, so nothing flickers.
     if (writesSince(asked) || (unsent && unsent.sentSince(sending)) || paused() || board.value?.id !== fresh.id) return false
+    // Kept as the server says it, before the Unsent Changes are laid over it:
+    // a change dropped on arrival must not stick in the kept copy.
+    void kept?.keep(fresh)
     if (unsent) layOver(fresh, unsent.forBoard(fresh.id))
     merge(board.value, fresh)
     return true
@@ -1073,7 +1081,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   }
 
   // The Dish History of the Dishes whose detail opens, and their Comments.
-  const histories = createDishHistories({ transport, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, keep, anyUnsent })
+  const histories = createDishHistories({ transport, offline, kept: kept && { keep: (dishId, history) => { if (board.value) void kept.keepHistory(board.value.id, dishId, history) }, history: kept.history }, find: dishId => find(dishId)?.dish, clearNewInHistory, queued, isGone, isRefused, mayComment: () => may('commentAndVote'), unsent, keep, anyUnsent })
 
   // The Member's Votes on the Board's Dishes.
   const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote'), unsent, keep, anyUnsent })

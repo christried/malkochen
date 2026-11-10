@@ -16,10 +16,13 @@ useThemeAttribute()
 useLanguageAttribute()
 const t = useStrings()
 const { state } = useConnection()
-const offline = computed(() => state.value !== 'online')
+// Something not kept on this device, asked for while malkochen can't be
+// reached (needsConnection).
+const notKept = computed(() => !!(props.error.data as { needsConnection?: boolean } | undefined)?.needsConnection)
+const offline = computed(() => state.value !== 'online' || notKept.value)
 const notFound = computed(() => !offline.value && props.error.statusCode === 404)
-const headline = computed(() => state.value === 'offline' ? t.offline.headline : state.value === 'unreachable' ? t.offline.unreachable : notFound.value ? t.error.notFoundHeadline : t.error.headline)
-const body = computed(() => state.value === 'offline' ? t.offline.body : notFound.value ? t.error.notFoundBody : t.error.body)
+const headline = computed(() => notKept.value ? t.offline.notKeptHeadline : state.value === 'offline' ? t.offline.headline : state.value === 'unreachable' ? t.offline.unreachable : notFound.value ? t.error.notFoundHeadline : t.error.headline)
+const body = computed(() => notKept.value ? t.offline.notKeptBody : state.value === 'offline' ? t.offline.body : notFound.value ? t.error.notFoundBody : t.error.body)
 
 useHead({ title: () => `${headline.value} · ${t.app.name}` })
 

@@ -5,7 +5,7 @@ import type { DishHistory, DishHistoryEntry } from '../../server/utils/dish-hist
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import { commentText } from '../utils/comment-text'
 import { historyEntries } from '../utils/history-entries'
-import { isUnanswered } from './write-failed'
+import { isUnanswered, WriteFailed } from './write-failed'
 import type { UnsentChange, UnsentChanges, UnsentKind } from './unsent-changes'
 
 // The Board module's part for the Dish History ("Verlauf", #332) of the
@@ -64,6 +64,12 @@ interface HistoryHost {
   isRefused: (error: unknown) => boolean
   // Whether the user may comment on the Board ("comment and vote").
   mayComment: () => boolean
+  // The Dish History kept on the device (kept-boards.ts): a History that
+  // loads is kept, and one opened with no answer shows the kept one.
+  kept?: { keep: (dishId: string, history: DishHistory) => void, history: (dishId: string) => Promise<DishHistory | null> }
+  // malkochen can't be reached: opening a Dish isn't opening it, so nothing
+  // is asked.
+  offline?: () => boolean
   // The Unsent Changes (none: a write without an answer fails as ever).
   // `keep` keeps a change as one and tries to send them all; `anyUnsent`:
   // changes wait, so new ones join their end without trying the network.
@@ -72,7 +78,7 @@ interface HistoryHost {
   anyUnsent: () => boolean
 }
 
-export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment, unsent, keep, anyUnsent }: HistoryHost) {
+export function createDishHistories({ transport, find, clearNewInHistory, queued, isGone, isRefused, mayComment, unsent, keep, anyUnsent, kept: device, offline }: HistoryHost) {
   // Each Dish's Comments, oldest first, once its history has loaded or a
   // Comment was written on it; a Comment still being written has no id yet.
   const comments = reactive(new Map<string, CommentView[]>())
@@ -112,15 +118,22 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
   // (the Member's own, written meanwhile) stay beside it. False if it
   // couldn't load.
   async function openDish(dishId: string): Promise<boolean> {
-    clearNewInHistory(dishId)
+    // Offline it isn't opened, so what's new in it stays marked (#461).
+    if (!offline?.()) clearNewInHistory(dishId)
     const asked = writes.get(dishId) ?? 0
     const quiet = !underWay.get(dishId)
     let history: DishHistory
     try {
+      if (offline?.()) throw new WriteFailed()
       history = await transport.openDish(dishId)
+      device?.keep(dishId, history)
     }
-    catch {
-      return false
+    catch (error) {
+      // No answer: the History kept on the device stands in, and counts as
+      // loaded (#461).
+      const stored = isUnanswered(error) ? await device?.history(dishId) : null
+      if (!stored) return false
+      history = stored
     }
     const first = !loadedOnce.has(dishId)
     loadedOnce.add(dishId)

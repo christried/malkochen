@@ -685,6 +685,10 @@ export const de = {
     bar: 'Offline. Deine Änderungen kommen an, sobald du Netz hast.',
     unreachable: 'malkochen ist gerade nicht erreichbar.',
     needsNet: 'Geht nur mit Netz',
+    // The error screen for what isn't kept on this device (a Board never
+    // opened here, say) while malkochen can't be reached.
+    notKeptHeadline: 'Das braucht Netz.',
+    notKeptBody: 'Das hast du auf diesem Gerät noch nicht geöffnet. Sobald du wieder Netz hast, geht’s hier weiter.',
   },
   // Changes made while malkochen didn't answer, and not sent yet (Unsent
   // Changes, #459). The offline bar adds `count` to what it says; `allSent`
