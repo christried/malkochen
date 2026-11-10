@@ -19,7 +19,9 @@ async function forgetImages(urls: string[]): Promise<void> {
     const cache = await globalThis.caches?.open(IMAGE_CACHE)
     await Promise.all(urls.map(url => cache?.delete(url, { ignoreVary: true })))
   }
-  catch {}
+  catch {
+    // Best effort: an image left behind is trimmed or goes at sign-out.
+  }
 }
 
 export default defineNuxtPlugin((nuxtApp) => {
