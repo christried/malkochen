@@ -2,7 +2,7 @@
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
 import type { UnsentChanges, UnsentKind } from './unsent-changes'
-import { isUnanswered } from './write-failed'
+import { sendOrKeep } from './send-or-keep'
 
 // The Board module's part for Votes (CONTEXT.md: Vote, #334): the Member's
 // thumb on a Cooked Dish, from "Wie war's?" in its detail and the Gekocht
@@ -96,16 +96,12 @@ export function createDishVotes({ transport, find, queued, isRefused, mayVote, u
       keep({ kind: 'vote', dishId, up, voter }, madeAt, find(dishId)?.title ?? '')
       return undefined
     }
-    const write = async (): Promise<VoteView | null | undefined> => {
-      if (anyUnsent()) return keepUnsent()
-      try {
-        return up === null ? await transport.takeBackVote(dishId).then(() => null) : await transport.setVote(dishId, up, { madeAt })
-      }
-      catch (error) {
-        if (unsent && isUnanswered(error)) return keepUnsent()
-        throw error
-      }
-    }
+    const write = () => sendOrKeep<VoteView | null, undefined>({
+      canKeep: !!unsent,
+      waiting: anyUnsent(),
+      send: () => up === null ? transport.takeBackVote(dishId).then(() => null) : transport.setVote(dishId, up, { madeAt }),
+      keep: keepUnsent,
+    })
     const settled = queued(dishId, write, { moves: false }).then((saved): VoteResult => {
       if (saved === undefined) return { vote: now, unsent: true }
       confirmed.set(dishId, saved)

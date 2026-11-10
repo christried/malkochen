@@ -10,6 +10,7 @@ import { MILESTONE_COOKINGS } from '../utils/achievement'
 import { dishOnBoard } from '../../shared/board'
 import { viewerMay, type Permission } from '../../shared/permissions'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
+import { sendOrKeep } from './send-or-keep'
 import { WriteFailed, isUnanswered } from './write-failed'
 import { dishOfAdd, layOver, type UnsentChange, type UnsentChanges, type UnsentKind } from './unsent-changes'
 import { createDishHistories, type HistoryTransport } from './dish-histories'
@@ -488,19 +489,15 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     const titleOnly = !!title && Object.keys(changes).length === 1
     // The server has nothing to change yet but the title, which is sent after the add.
     if (isUnsentAdd(dishId) && !titleOnly) throw new WriteFailed()
-    const kept = Symbol('kept')
+    const titleKept = Symbol('title kept as an Unsent Change')
     const madeAt = new Date().toISOString()
-    const answer = await queued(dishId, async () => {
-      if (titleOnly && unsent && anyUnsent()) return kept
-      try {
-        return await transport.editDish(dishId, changes)
-      }
-      catch (error) {
-        if (titleOnly && unsent && isUnanswered(error)) return kept
-        throw error
-      }
-    }, { moves: false })
-    if (answer === kept) {
+    const answer = await queued(dishId, () => sendOrKeep({
+      canKeep: titleOnly && !!unsent,
+      waiting: anyUnsent(),
+      send: () => transport.editDish(dishId, changes),
+      keep: (): typeof titleKept => titleKept,
+    }), { moves: false })
+    if (answer === titleKept) {
       const dish = find(dishId)?.dish
       if (!dish) throw new WriteFailed(404)
       keep({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
@@ -613,21 +610,26 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     }
 
     const settled = queued(dishId, async (latest): Promise<BoardResult> => {
-      if (anyUnsent()) return keepUnsent()
       try {
-        const moved = await write()
-        ended.recorded = moved.cooking
-        rolledBackTo.delete(dishId)
-        if (latest()) settle(dish, moved)
-        // A later write has the Dish elsewhere by now: only the Cooking
-        // settles, if it still shows, or goes if none was recorded.
-        else settlePending(dish, pending, moved.cooking)
-        return { dish, placement: moved.placement, ...shownCooking(dish, moved.cooking) }
-      }
-      catch (error) {
         // No answer: the move may or may not have arrived. It stays, and is
         // sent again with the same ids.
-        if (unsent && isUnanswered(error)) return keepUnsent()
+        return await sendOrKeep({
+          canKeep: !!unsent,
+          waiting: anyUnsent(),
+          keep: keepUnsent,
+          send: async (): Promise<BoardResult> => {
+            const moved = await write()
+            ended.recorded = moved.cooking
+            rolledBackTo.delete(dishId)
+            if (latest()) settle(dish, moved)
+            // A later write has the Dish elsewhere by now: only the Cooking
+            // settles, if it still shows, or goes if none was recorded.
+            else settlePending(dish, pending, moved.cooking)
+            return { dish, placement: moved.placement, ...shownCooking(dish, moved.cooking) }
+          },
+        })
+      }
+      catch (error) {
         ended.failed = true
         if (isGone(error)) {
           takeOut(dishId)
@@ -720,14 +722,19 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
           keep({ kind: 'uncook', dishId, cookingId: pending.id, back }, new Date().toISOString(), dish.title)
           return { dish, unsent: true }
         }
-        if (keepable && unsent && recorded && anyUnsent()) return keepUncook()
         try {
-          const placed = recorded ? await transport.undoCooking(recorded.id, back) : await transport.moveDish(dishId, back)
-          if (latest()) settle(dish, placed)
-          return { dish, placement: placed.placement }
+          return await sendOrKeep({
+            canKeep: keepable && !!unsent && !!recorded,
+            waiting: anyUnsent(),
+            keep: keepUncook,
+            send: async (): Promise<BoardResult> => {
+              const placed = recorded ? await transport.undoCooking(recorded.id, back) : await transport.moveDish(dishId, back)
+              if (latest()) settle(dish, placed)
+              return { dish, placement: placed.placement }
+            },
+          })
         }
         catch (error) {
-          if (keepable && unsent && recorded && isUnanswered(error)) return keepUncook()
           // Its Cooking stays gone if it is gone on the server (deleted
           // from the Cooking History meanwhile).
           if (recorded && !isGone(error) && !dish.cookings.some(c => c.id === recorded.id)) dish.cookings.unshift(recorded)
@@ -1005,26 +1012,31 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     }
 
     const settled = queued(ids, async (latest): Promise<BulkResult> => {
-      if (anyUnsent()) return keepUnsent()
       try {
-        const answers = await transport.cookDishes(ids, { cookingIds })
-        for (const answer of answers) {
-          const i = ids.indexOf(answer.id)
-          const dish = dishes[i]
-          if (!dish) continue
-          recorded.set(dish.id, answer.cooking)
-          if (latest(dish.id)) settle(dish, answer)
-          else settlePending(dish, pendings[i], answer.cooking)
-        }
-        for (const id of ids) rolledBackTo.delete(id)
-        // The Dishes this Cooking made a Klassiker (#452 celebrates them).
-        const klassiker = dishes
-          .filter(d => answers.find(a => a.id === d.id)?.cookings.length === MILESTONE_COOKINGS)
-          .map(dish => ({ dish, cooking: recorded.get(dish.id)! }))
-        return { dishes, klassiker }
+        return await sendOrKeep({
+          canKeep: !!unsent,
+          waiting: anyUnsent(),
+          keep: keepUnsent,
+          send: async (): Promise<BulkResult> => {
+            const answers = await transport.cookDishes(ids, { cookingIds })
+            for (const answer of answers) {
+              const i = ids.indexOf(answer.id)
+              const dish = dishes[i]
+              if (!dish) continue
+              recorded.set(dish.id, answer.cooking)
+              if (latest(dish.id)) settle(dish, answer)
+              else settlePending(dish, pendings[i], answer.cooking)
+            }
+            for (const id of ids) rolledBackTo.delete(id)
+            // The Dishes this Cooking made a Klassiker (#452 celebrates them).
+            const klassiker = dishes
+              .filter(d => answers.find(a => a.id === d.id)?.cookings.length === MILESTONE_COOKINGS)
+              .map(dish => ({ dish, cooking: recorded.get(dish.id)! }))
+            return { dishes, klassiker }
+          },
+        })
       }
       catch (error) {
-        if (unsent && isUnanswered(error)) return keepUnsent()
         // Back where the server still has them, without the Cookings.
         dishes.forEach((dish, i) => dropCooking(dish, pendings[i]))
         putAllBack(movers, movers.map((dish, i) => rollBackTo(dish.id, origins[i]!)), latest)
@@ -1057,13 +1069,18 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
           unsentId = undefined
           return { dishes, unsent: true }
         }
-        if (unsent && anyUnsent()) return keepUncook()
         try {
-          settleAll(dishes, await transport.uncookDishes(undos), latest)
-          return { dishes }
+          return await sendOrKeep({
+            canKeep: !!unsent,
+            waiting: anyUnsent(),
+            keep: keepUncook,
+            send: async (): Promise<BulkResult> => {
+              settleAll(dishes, await transport.uncookDishes(undos), latest)
+              return { dishes }
+            },
+          })
         }
         catch (error) {
-          if (unsent && isUnanswered(error)) return keepUncook()
           intoGekocht()
           if (!isGone(error)) dishes.forEach((dish, i) => putBackCooking(dish.id, cookings[i]!))
           return { dishes, notice: failedManyAs(error, 'uncookManyFailed') }

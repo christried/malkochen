@@ -5,6 +5,7 @@ import type { DishHistory, DishHistoryEntry } from '../../server/utils/dish-hist
 import type { DishAdder, DishView } from '../../server/utils/dishes'
 import { commentText } from '../utils/comment-text'
 import { historyEntries } from '../utils/history-entries'
+import { sendOrKeep } from './send-or-keep'
 import { isUnanswered, WriteFailed } from './write-failed'
 import type { UnsentChange, UnsentChanges, UnsentKind } from './unsent-changes'
 
@@ -236,13 +237,18 @@ export function createDishHistories({ transport, find, clearNewInHistory, markNe
       return { comment: pending, unsent: true }
     }
     const settled = tracked(dishId, async (): Promise<CommentResult> => {
-      if (anyUnsent()) return keepUnsent()
       try {
-        Object.assign(pending, await transport.writeComment(dishId, said, { id: commentId, madeAt }))
-        return { comment: pending }
+        return await sendOrKeep({
+          canKeep: !!unsent,
+          waiting: anyUnsent(),
+          keep: keepUnsent,
+          send: async (): Promise<CommentResult> => {
+            Object.assign(pending, await transport.writeComment(dishId, said, { id: commentId, madeAt }))
+            return { comment: pending }
+          },
+        })
       }
       catch (error) {
-        if (unsent && isUnanswered(error)) return keepUnsent()
         removeFrom(listOf(dishId), pending)
         count(dishId, -1)
         return { comment: pending, notice: isRefused(error) ? 'commentNotAllowed' : 'commentFailed' }
@@ -279,16 +285,12 @@ export function createDishHistories({ transport, find, clearNewInHistory, markNe
       keep({ kind: 'commentEdit', dishId, commentId, text: said }, madeAt, find(dishId)?.title ?? '')
       return null
     }
-    const edited = queued(commentId, async (): Promise<CommentView | null> => {
-      if (anyUnsent()) return keepUnsent()
-      try {
-        return await transport.editComment(commentId, said)
-      }
-      catch (error) {
-        if (unsent && isUnanswered(error)) return keepUnsent()
-        throw error
-      }
-    }, { moves: false })
+    const edited = queued(commentId, () => sendOrKeep<CommentView | null, null>({
+      canKeep: !!unsent,
+      waiting: anyUnsent(),
+      send: () => transport.editComment(commentId, said),
+      keep: keepUnsent,
+    }), { moves: false })
       .finally(() => editsUnderWay.set(comment, editsUnderWay.get(comment)! - 1))
     const settled = tracked(dishId, () => edited).then((saved): CommentResult => {
       if (!saved) return { comment, unsent: true }
@@ -336,16 +338,12 @@ export function createDishHistories({ transport, find, clearNewInHistory, markNe
     const keepUnsent = () => {
       unsentId = keep({ kind: 'commentDelete', dishId, commentId }, new Date().toISOString(), find(dishId)?.title ?? '')
     }
-    const deleted = tracked(dishId, () => queued(commentId, async () => {
-      if (anyUnsent()) return keepUnsent()
-      try {
-        await transport.deleteComment(commentId)
-      }
-      catch (error) {
-        if (unsent && isUnanswered(error)) return keepUnsent()
-        throw error
-      }
-    }, { moves: false })).then(() => true, (error: unknown) => {
+    const deleted = tracked(dishId, () => queued(commentId, () => sendOrKeep({
+      canKeep: !!unsent,
+      waiting: anyUnsent(),
+      send: () => transport.deleteComment(commentId),
+      keep: keepUnsent,
+    }), { moves: false })).then(() => true, (error: unknown) => {
       if (isGone(error)) return true
       putBack(dishId, comment)
       return false
