@@ -86,6 +86,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         async forget(options?: { keepUnsent?: boolean }) {
           user.value = null
           signedIn.value = null
+          for (const open of keptOf.values()) open.close()
           keptOf.clear()
           // Nothing still to be sent is sent, or written back, after this.
           nuxtApp.$unsent.reset()

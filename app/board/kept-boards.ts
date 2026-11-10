@@ -3,7 +3,9 @@
 import type { BoardAddress } from '../../server/utils/addresses'
 import type { BoardListing, BoardView } from '../../server/utils/boards'
 import type { DishHistory } from '../../server/utils/dish-history'
+import { deviceOwner } from './device-owner'
 import type { DeviceStore } from './device-store'
+import { plainCopy } from './plain-copy'
 
 // What the device keeps of one signed-in user's Boards (spec #456, ticket
 // #461), over the device store: each Board opened here as last loaded, the
@@ -42,20 +44,33 @@ export interface KeptBoards {
   remove: (boardId: string) => Promise<void>
   // Whatever is kept for an address that the server says isn't there.
   removeAddress: (asked: string) => Promise<void>
+  // The user signed out or the device was cleared: whatever is still being
+  // kept is not written any more.
+  close: () => void
 }
 
-// A copy through JSON, so what is kept never shares an object with the
-// Board on screen (and a reactive proxy can't be cloned into storage).
-const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
-
 export function createKeptBoards({ store, userId }: { store: DeviceStore, userId: string }): KeptBoards {
-  async function keep(view: BoardView) {
-    await store.boards.save(userId, copy(view))
+  // Writes go through here: nothing is written once the device is signed out
+  // or belongs to someone else (a tab that stayed open, a keep still under way).
+  const owner = deviceOwner(store, userId)
+  let closed = false
+  async function writing(write: () => Promise<void>) {
+    if (closed || !await owner.mine() || closed) return
+    await write()
+  }
+
+  // Copied before anything is awaited: the caller goes on changing what it passed.
+  function keep(view: BoardView) {
+    const copy = plainCopy(view)
+    return writing(() => store.boards.save(userId, copy))
   }
 
   async function opened(view: BoardView) {
-    await keep(view)
-    await store.last.save(userId, { boardId: view.id, slug: view.slug })
+    const copy = plainCopy(view)
+    await writing(async () => {
+      await store.boards.save(userId, copy)
+      await store.last.save(userId, { boardId: view.id, slug: view.slug })
+    })
   }
 
   // The kept Boards that `asked` (a slug, current or former, or an id) leads
@@ -100,12 +115,15 @@ export function createKeptBoards({ store, userId }: { store: DeviceStore, userId
     return (await store.listings.load(userId) ?? []).filter(b => kept.has(b.id))
   }
 
-  async function keepListings(list: BoardListing[]) {
-    await store.listings.save(userId, copy(list))
+  function keepListings(listed: BoardListing[]) {
+    const list = plainCopy(listed)
+    return writing(async () => {
+    await store.listings.save(userId, list)
     const there = new Set(list.map(b => b.id))
     for (const kept of await store.boards.all(userId)) {
       if (!there.has(kept.id)) await store.removeBoard(userId, kept.id)
     }
+    })
   }
 
   return {
@@ -114,12 +132,18 @@ export function createKeptBoards({ store, userId }: { store: DeviceStore, userId
     board: boardId => store.boards.load(userId, boardId),
     keepListings,
     listings,
-    keepHistory: (boardId, dishId, history) => store.histories.save(userId, boardId, dishId, copy(history)),
+    keepHistory: (boardId, dishId, history) => {
+      const copy = plainCopy(history)
+      return writing(() => store.histories.save(userId, boardId, dishId, copy))
+    },
     history: dishId => store.histories.load(userId, dishId),
-    keepAddress: (asked, dish, found) => store.addresses.save(userId, asked, dish ?? '', found),
+    keepAddress: (asked, dish, found) => writing(() => store.addresses.save(userId, asked, dish ?? '', found)),
     address,
     landing,
     landingToAdd,
+    close: () => {
+      closed = true
+    },
     remove: boardId => store.removeBoard(userId, boardId),
     removeAddress: async (asked) => {
       const known = await store.addresses.load(userId, asked, '')

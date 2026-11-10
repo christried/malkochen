@@ -395,7 +395,7 @@ test('an unsent Comment stays the same object when a History load lays it over a
   const written = module.writeComment('a', 'Bleibt', me)!
   await written.settled
 
-  fake.setAnswers('answering')
+  await answerAgain(fake)
   expect(await module.openDish('a')).toBe(true)
 
   const shown = module.historyOf('a').flatMap(e => e.kind === 'comment' ? [e.comment] : [])

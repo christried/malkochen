@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, toRaw } from 'vue'
 // Relative imports, not `~~`: runs in plain Node under test, like the Board
 // module.
 import type { BoardView } from '../../server/utils/boards'
@@ -9,6 +9,8 @@ import { columnForNewDishes, landingIndex } from '../../shared/placement'
 import type { Placeholder } from '../../shared/placeholders'
 import type { BoardTransport } from './board-module'
 import type { DeviceStore } from './device-store'
+import { deviceOwner } from './device-owner'
+import { plainCopy } from './plain-copy'
 import { WriteFailed } from './write-failed'
 
 // Unsent Changes (CONTEXT.md; ADR 0012; spec #456): what the user did while
@@ -113,8 +115,18 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
   let saving: Promise<void> = Promise.resolve()
   // Closed (signed out, account deleted): nothing is written or sent any more.
   let closed = false
+  // Whether the device still belongs to this user: another tab may have
+  // signed out or in as someone else since. If not, this tab closes.
+  const owner = deviceOwner(store, userId)
+  async function stillMine(): Promise<boolean> {
+    if (closed) return false
+    if (!await owner.mine()) closed = true
+    return !closed
+  }
   function persist() {
-    saving = saving.then(() => loaded).then(() => closed ? undefined : store.unsent.save(userId, JSON.parse(JSON.stringify(changes.value)) as UnsentChange[])).catch(() => {})
+    saving = saving.then(() => loaded).then(async () => {
+      if (await stillMine()) await store.unsent.save(userId, plainCopy(changes.value))
+    }).catch(() => {})
   }
 
   const has = (changeId: string) => changes.value.some(c => c.id === changeId)
@@ -273,8 +285,12 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
     let sent = 0
     let stopped: false | 'unanswered' | 'signedOut' = false
     const dropped: UnsentChange[] = []
-    while (!stopped && !closed && changes.value.length > 0) {
-      const change = changes.value[0]!
+    while (!stopped && changes.value.length > 0) {
+      // Not as someone else's: nothing goes out once the device is not this
+      // user's any more. (The list may have changed while that was read.)
+      if (!await stillMine()) break
+      const change = changes.value[0]
+      if (!change) break
       underWay++
       started++
       // A transport that throws rather than rejecting fails like one that rejects.
@@ -364,10 +380,25 @@ function place(dish: DishView, column: BoardView['columns'][number], index: numb
 // or deleted meanwhile) or a Column that isn't is skipped silently: sending
 // the change will drop it and name it.
 export function layOver(view: BoardView, changes: readonly UnsentChange[]): BoardView {
+  const counted = countedOn(toRaw(view))
   for (const change of changes) {
-    if (change.boardId === view.id) apply(view, change)
+    if (change.boardId !== view.id) continue
+    // A Comment count only moves by one: once per change on a given Board.
+    if (change.kind === 'comment' || change.kind === 'commentDelete') {
+      if (counted.has(change.id)) continue
+      counted.add(change.id)
+    }
+    apply(view, change)
   }
   return view
+}
+
+// Which Comment changes a Board object has been laid over with already.
+const countedChanges = new WeakMap<object, Set<string>>()
+function countedOn(view: object): Set<string> {
+  let counted = countedChanges.get(view)
+  if (!counted) countedChanges.set(view, counted = new Set())
+  return counted
 }
 
 // The Dish a Dish added offline shows as until the server has it: the title

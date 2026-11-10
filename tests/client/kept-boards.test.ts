@@ -230,6 +230,8 @@ test('offline, opening a Dish asks nothing of malkochen', async () => {
   const asked = () => fake.sent.filter(s => s.startsWith('openDish')).length
   await module.openDish('boarda')
   expect(asked()).toBe(1)
+  // A beat, so the History is kept.
+  await new Promise(resolve => setTimeout(resolve))
   offline = true
   board.value!.newInHistoryDishIds = ['boarda']
 
