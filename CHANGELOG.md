@@ -7,6 +7,7 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 ### Added
 
 - Cooked several dishes? Select them (long-press one, or Ctrl-click on desktop), tap Cooked ✓, and every one of them counts. One celebration for the lot, a classic still gets its own, and one Undo takes it all back.
+- malkochen works with a weak signal, or none at all. Boards you’ve opened stay on your phone, so you can move dishes, tap Cooked ✓, comment, give a thumb, fix a title or add a dish by link. It all arrives once you’re back online, and a small bar tells you what’s still waiting.
 
 ## [1.1.2] - 2026-11-09
 
