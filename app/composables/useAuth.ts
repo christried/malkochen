@@ -21,6 +21,8 @@ export function useAuth() {
       // While still signed in: only the user can turn theirs off.
       await turnOffPushOnSignOut(pushKey)
       await authClient.signOut()
+      // Nothing kept on the device stays for the next person (#461).
+      await useDevice()?.forget()
       await navigateTo('/login')
     },
   }

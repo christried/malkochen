@@ -104,7 +104,8 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
   // (the Member's own, written meanwhile) stay beside it. False if it
   // couldn't load.
   async function openDish(dishId: string): Promise<boolean> {
-    clearNewInHistory(dishId)
+    // Offline it isn't opened, so what's new in it stays marked (#461).
+    if (!offline?.()) clearNewInHistory(dishId)
     const asked = writes.get(dishId) ?? 0
     const quiet = !underWay.get(dishId)
     let history: DishHistory

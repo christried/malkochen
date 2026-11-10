@@ -14,14 +14,16 @@ const REOPEN_AFTER_MS = 30 * 60_000
 // goes through the Board's module (sync), which merges what the server
 // answers, or drops it while `paused` (a Dish is being dragged) or if one of
 // its writes was under way meanwhile; the next check brings it.
-export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean, unsent?: UnsentChanges | null) {
+export function useBoardSync(boardId: () => string, boardModule: BoardModule, paused: () => boolean, unsent?: UnsentChanges | null, openedFromDevice = false) {
   const visit = useVisit()
   const { answering } = useConnection()
   let hiddenSince: number | null = null
   // The user came back after long enough away to reopen the Board, and it
   // hasn't been reopened yet: the next sync does that before it loads. Kept
   // until the reopen succeeds, as a phone coming back may still be offline.
-  let reopenDue = false
+  // A Board opened from the device (#461) was not opened on the server: it is
+  // due the same way, once a request gets through.
+  let reopenDue = openedFromDevice
   // A browser test that waits for polls may shorten the cadence on its page
   // (tests/e2e/polls.ts); anywhere but the tests' server, it can't.
   const e2e = useRuntimeConfig().public.e2e

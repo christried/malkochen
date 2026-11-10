@@ -52,18 +52,20 @@ const summary = computed(() => {
 
 // Loaded as the detail opens, and again for another Dish. Opening a Dish
 // while malkochen can't be reached isn't opening it (#458, CONTEXT.md Dish
-// History): no request, and what's new in it stays marked; it loads once
-// malkochen answers, if the detail is still open. Meanwhile its changes
-// are greyed out or hidden.
+// History): no request, and what's new in it stays marked; the History kept
+// on the device shows (#461), and it loads once malkochen answers, if the
+// detail is still open. Meanwhile its changes are greyed out or hidden.
 const { answering, mayChange } = useConnection()
 const loadFailed = ref(false)
 // The Dish whose history has loaded (or failed to).
 const loaded = ref<string | null>(null)
 async function load() {
   const dishId = props.dish.id
-  if (!answering.value) return
-  loadFailed.value = !await boardModule.openDish(dishId)
-  loaded.value = dishId
+  const shown = await boardModule.openDish(dishId)
+  // Nothing kept to show offline isn't a failure to load.
+  loadFailed.value = !shown && answering.value
+  // Only an answer from malkochen counts as loaded.
+  loaded.value = answering.value ? dishId : null
 }
 onMounted(load)
 watch(() => props.dish.id, load)

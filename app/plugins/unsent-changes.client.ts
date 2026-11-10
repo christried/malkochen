@@ -24,6 +24,12 @@ export default defineNuxtPlugin(() => {
           }
           return current.value
         },
+        // Signed out: the in-memory list goes too, so the next to sign in
+        // starts from what the device holds for them.
+        reset() {
+          current.value = null
+          userId = null
+        },
       },
     },
   }

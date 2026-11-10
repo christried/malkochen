@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ArchivedBoardView } from '~~/server/utils/archived-boards'
-import type { BoardListing, BoardNameAndEmoji, BoardSummary } from '~~/server/utils/boards'
+import type { BoardNameAndEmoji, BoardSummary } from '~~/server/utils/boards'
 import { boardPath, boardSettingsPath } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
 import { daysLeft } from '~/utils/archive'
@@ -26,6 +26,7 @@ const route = useRoute()
 
 const open = ref(false)
 const boards = useBoardListings()
+const refreshListings = useRefreshBoardListings()
 const creating = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const pill = useTemplateRef<HTMLButtonElement>('pill')
@@ -38,7 +39,7 @@ async function toggle() {
   open.value = !open.value
   if (!open.value) return
   fetchArchived()
-  boards.value = await $fetch<BoardListing[]>('/api/boards').catch(() => boards.value)
+  await refreshListings()
 }
 
 async function fetchArchived() {

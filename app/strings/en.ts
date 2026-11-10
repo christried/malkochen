@@ -577,6 +577,8 @@ export const en: Strings = {
     bar: 'Offline. Your changes will arrive as soon as you’re back online.',
     unreachable: 'malkochen can’t be reached right now.',
     needsNet: 'Only works online',
+    notKeptHeadline: 'This needs a connection.',
+    notKeptBody: 'You haven’t opened this on this device yet. As soon as you’re back online, you can carry on here.',
   },
   unsent: {
     count: (count: number) => `${number(count)} not sent yet`,

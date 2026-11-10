@@ -231,9 +231,12 @@ test('offline, opening a Dish asks nothing of malkochen', async () => {
   await module.openDish('boarda')
   expect(asked()).toBe(1)
   offline = true
+  board.value!.newInHistoryDishIds = ['boarda']
 
   expect(await module.openDish('boarda')).toBe(true)
   expect(asked()).toBe(1)
+  // Not opened, so what is new in it stays marked.
+  expect(board.value!.newInHistoryDishIds).toEqual(['boarda'])
 })
 
 test('signing out removes everything; another user signing in removes the other one\'s Boards but not their Unsent Changes', async () => {

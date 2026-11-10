@@ -5,6 +5,7 @@ import type { DishView } from '~~/server/utils/dishes'
 import type { Me } from '~~/server/utils/people'
 import { boardModuleKey, createBoardModule, type BoardResult, type BulkNotice, type BulkResult, type Notice } from '~/board/board-module'
 import { httpTransport } from '~/board/http-transport'
+import { boardIsGone, gotNoAnswer } from '~/board/kept-boards'
 import { createKlassikerQueue } from '~/board/klassiker-queue'
 import { SETTLE_MS, TOUR_VERSION } from '~/tour/tour'
 import { duePrompt } from '~/utils/notification-prompt'
@@ -30,11 +31,31 @@ const route = useRoute()
 // Board isn't opened there (useBoardAddress). Opening the Board first
 // remembers it as the one to reopen next time and moves on what is marked
 // "Neu" (PRD story 37); the Board then comes with its New Dishes. The
-// client Board module changes it in place.
+// client Board module changes it in place. Without an answer from malkochen
+// (#461) the Board comes from the device: as last kept, with the Unsent
+// Changes laid over it, and not opened, as that would move on what is marked
+// "Neu"; one never opened here says it needs a connection. A Board malkochen
+// says is no longer the user's is removed from the device. All inside the one
+// await, as the sync tests need.
 const fetchPassingCookies = useFetchPassingCookies()
+const device = useDevice()
+let fromDevice = false
 const opened = await useBoardAddress('', async (boardId) => {
-  await fetchPassingCookies(`/api/boards/${boardId}/open`, { method: 'POST' })
-  return fetchPassingCookies<BoardView>(`/api/boards/${boardId}`)
+  try {
+    await fetchPassingCookies(`/api/boards/${boardId}/open`, { method: 'POST' })
+    return await fetchPassingCookies<BoardView>(`/api/boards/${boardId}`)
+  }
+  catch (error) {
+    if (!device) throw error
+    if (gotNoAnswer(error)) {
+      const kept = await device.openKept(boardId)
+      if (!kept) throw needsConnection()
+      fromDevice = true
+      return kept
+    }
+    if (boardIsGone(error)) await (await device.keptOfUser())?.remove(boardId)
+    throw error
+  }
 })
 const id = opened?.boardId ?? ''
 const board = opened?.loaded ?? ref<BoardView>()
@@ -92,7 +113,10 @@ function commentOn(dish: DishView, toBoard?: BoardListing | null) {
 // move or "Gekocht ✓" that gets no answer stays on screen and is sent once
 // malkochen answers (none on the server, which renders without them).
 const unsent = me.value ? useUnsentChanges().open(me.value.id) : null
-const boardModule = createBoardModule(board, httpTransport(), unsent ? { unsent } : {})
+// What the device keeps of the user's Boards (#461).
+const kept = me.value ? device?.kept(me.value.id) : undefined
+const connection = useConnectionState()
+const boardModule = createBoardModule(board, httpTransport(), { ...unsent && { unsent }, ...kept && { kept }, offline: () => connection.value !== 'online' })
 provide(boardModuleKey, boardModule)
 const confetti = useConfetti()
 const gekochtPill = useGekochtPill()
@@ -226,14 +250,15 @@ const boardLoop = useBoardLoop(columnsEl, {
   covered: () => !!route.params.dish || adding.value || menuOpen.value || choosingTarget.value || showingShortcuts.value || showingSettings.value,
 })
 // Others' changes, while the Board is open; not mid-drag.
-const { syncNow } = useBoardSync(() => id, boardModule, () => dragging.value, unsent)
+// A Board opened from the device wasn't opened on the server: the first
+// answer from it does that.
+const { syncNow } = useBoardSync(() => id, boardModule, () => dragging.value, unsent, fromDevice)
 
 // Unsent Changes (#459): once the app is up, those left from last time show
 // on the Board and go out; they go again whenever malkochen answers after
 // not having (the connection turns `online`). When a send has taken the
 // Board's own through, it asks for a fresh Board, so others' changes show.
 // Those malkochen couldn't apply are named, once, in one Toast.
-const connection = useConnectionState()
 if (unsent) {
   watch(() => connection.value === 'online', (online) => {
     if (online && unsent.count.value > 0) void unsent.send()
@@ -244,6 +269,16 @@ if (unsent) {
     tellDropped()
   })
 }
+// Kept on the device as loaded, before the Unsent Changes are laid over it;
+// the user's list of Boards with it (a Board gone from it is removed from the
+// device), and who the user is.
+const refreshListings = useRefreshBoardListings()
+onMounted(() => {
+  if (fromDevice || !device) return
+  if (me.value) void device.remember(me.value)
+  if (board.value) void kept?.opened(board.value)
+  void refreshListings()
+})
 onMounted(async () => {
   if (!unsent) return
   await boardModule.layOverUnsent()
@@ -695,10 +730,9 @@ useBoardShortcuts((shortcut) => {
 let switching = 0
 async function switchBoard(index: number) {
   const press = ++switching
-  const boards = await $fetch<BoardListing[]>('/api/boards').catch(() => listings.value)
+  await refreshListings()
   if (press !== switching) return
-  listings.value = boards
-  const target = boards[index]
+  const target = listings.value[index]
   if (target && target.id !== board.value?.id) await navigateTo(boardPath(target))
 }
 
