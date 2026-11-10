@@ -25,6 +25,23 @@ When set to `yes`, PRs run through the same labels and states as issues, using t
 
 GitHub shares one number space across issues and PRs, so a bare `#42` may be either: resolve with `gh pr view 42` and fall back to `gh issue view 42`.
 
+## Ideas
+
+An idea that isn't grilled yet is an **Idea issue**. `/capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
+
+- **Title**: `Idea: <the idea in a few words>`. The prefix says what the issue is: a placeholder, not a ticket.
+- **Labels**: `enhancement` + `needs-triage`, where `needs-triage` means "not grilled yet". An Idea issue waits for a grilling, not for `/triage`: it is the user's own.
+- **Body**: unfinished on purpose. The idea in the user's words, where it came from (a review, a device check, a session), and, where known, what it contradicts (`CONTEXT.md`, an ADR, the design handoff) and the open questions. People appear as roles, never by name: the repo is public.
+- **One idea per issue**: a note that holds several ideas becomes several issues.
+- **Create**: `gh issue create --title "Idea: …" --label enhancement --label needs-triage --body-file body.md`.
+- **Find**: `gh issue list --state open --label needs-triage --search "Idea in:title" --json number,title,body`. Every grilling for a next spec reads them.
+- **Not a ticket**: an Idea issue is not in `docs/agents/implementation-order.md` and `/implement` never picks one up.
+- **Picked up**: a grilling that takes an idea into a spec closes the Idea issue with a link to the spec, or rewrites it into one of the spec's tickets (new title, `ready-for-agent` instead of `needs-triage`). An idea too small for a spec goes into a bundle ticket. An idea the user drops is closed as not planned (`gh issue close <n> --reason "not planned"`), with the reason in a comment.
+- **In a cloud session** (`CLAUDE_CODE_REMOTE=true`), `gh issue …` fails with a 403, so use REST:
+  - **Create**: `gh api repos/christried/malkochen/issues -f title="Idea: …" -F body=@body.md -f "labels[]=enhancement" -f "labels[]=needs-triage"`
+  - **List**: `gh api 'repos/christried/malkochen/issues?state=open&labels=needs-triage&per_page=100' --jq '[.[] | select(.pull_request | not) | {number, title}]'`
+  - **Comment**: `gh api repos/christried/malkochen/issues/<n>/comments -F body=@comment.md`
+
 ## When a skill says "publish to the issue tracker"
 
 Create a GitHub issue.
