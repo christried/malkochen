@@ -387,3 +387,18 @@ test('a Comment, Vote or title edit of a Dish the server no longer has is droppe
   expect(run.dropped.map(c => c.kind)).toEqual(['comment', 'commentEdit', 'title'])
   expect(run).toMatchObject({ sent: 1, emptied: true })
 })
+
+test('an unsent Comment stays the same object when a History load lays it over again', async () => {
+  const { fake, module } = phone()
+  await module.openDish('a')
+  fake.setAnswers('none')
+  const written = module.writeComment('a', 'Bleibt', me)!
+  await written.settled
+
+  fake.setAnswers('answering')
+  expect(await module.openDish('a')).toBe(true)
+
+  const shown = module.historyOf('a').flatMap(e => e.kind === 'comment' ? [e.comment] : [])
+  expect(shown).toHaveLength(1)
+  expect(shown[0]).toBe(written.comment)
+})

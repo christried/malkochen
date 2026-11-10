@@ -131,7 +131,7 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
     // The ones still shown stay the same objects, as the history keys its
     // entries by them.
     const merged = [...loaded.map(c => Object.assign(shown.find(s => s.id === c.id) ?? c, c)), ...kept]
-    layOverUnsent(dishId, merged)
+    layOverUnsent(dishId, merged, shown)
     shown.splice(0, shown.length, ...merged.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)))
     return true
   }
@@ -145,17 +145,19 @@ export function createDishHistories({ transport, find, clearNewInHistory, queued
   // not there yet is added, an edited one has its text, a deleted one goes.
   // Doing it twice changes nothing more. (After a restart there are no
   // Comments shown yet, so the list is what the server said.)
-  function layOverUnsent(dishId: string, list: CommentView[]) {
+  function layOverUnsent(dishId: string, list: CommentView[], shown: readonly CommentView[]) {
     for (const change of unsent?.changes.value ?? []) {
       if (!('dishId' in change) || change.dishId !== dishId) continue
-      applyToComments(change, list)
+      applyToComments(change, list, shown)
     }
   }
 
-  function applyToComments(change: UnsentChange, list: CommentView[]) {
+  // A Comment already shown stays the same object, as the history keys its
+  // entries by them (a new one would play the entry animation again).
+  function applyToComments(change: UnsentChange, list: CommentView[], shown: readonly CommentView[]) {
     switch (change.kind) {
       case 'comment':
-        if (!list.some(c => c.id === change.commentId)) list.push({ id: change.commentId, text: change.text, createdAt: change.madeAt, editedAt: null, author: change.author })
+        if (!list.some(c => c.id === change.commentId)) list.push(shown.find(c => c.id === change.commentId) ?? { id: change.commentId, text: change.text, createdAt: change.madeAt, editedAt: null, author: change.author })
         return
       case 'commentEdit': {
         const found = list.find(c => c.id === change.commentId)
