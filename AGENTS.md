@@ -6,7 +6,7 @@ A shared board for collecting food found online (TikTok, Instagram, YouTube Shor
 
 ### Issue tracker
 
-Issues and specs live in this repo's GitHub Issues (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+Issues and specs live in this repo's GitHub Issues (via the `gh` CLI). See `docs/agents/issue-tracker.md`. An idea for later becomes an Idea issue through `/capture-idea` (§ Ideas there).
 
 ### Triage labels
 

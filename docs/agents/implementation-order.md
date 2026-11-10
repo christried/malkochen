@@ -409,4 +409,4 @@ From the offline editing grilling session on 2026-11-09 (`CONTEXT.md` → Unsent
 
 ## Keeping this file current
 
-When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.
+When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently. Idea issues (`Idea: …`, `docs/agents/issue-tracker.md` § Ideas) are not tickets: they wait for a grilling and never belong on this list.
