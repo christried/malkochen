@@ -9,10 +9,14 @@ export function isObject(node: Json): node is JsonObject {
   return !!node && typeof node === 'object' && !Array.isArray(node)
 }
 
+// Whether a node is of a schema.org type, alone or in a list of types.
+export function hasType(node: JsonObject, type: string): boolean {
+  const types = node['@type']
+  return types === type || (Array.isArray(types) && types.includes(type))
+}
+
 export function isRecipe(node: Json): node is JsonObject {
-  if (!isObject(node)) return false
-  const type = node['@type']
-  return type === 'Recipe' || (Array.isArray(type) && type.includes('Recipe'))
+  return isObject(node) && hasType(node, 'Recipe')
 }
 
 // The nodes of a JSON-LD block: at the top level, in an array, or in an

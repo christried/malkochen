@@ -1,5 +1,5 @@
 import { decodeEntities } from './html'
-import { isObject, type Json, type JsonObject } from './json-ld'
+import { hasType, isObject, type Json, type JsonObject } from './json-ld'
 import { sentencesOf } from './sentence'
 import type { PageRecipe } from './types'
 
@@ -26,14 +26,15 @@ function ingredientsOf(value: Json): string[] {
 }
 
 // Instructions come as one string, a list of strings, a list of steps, or
-// steps grouped in sections. Several pieces of text are a Step each. A single
-// one holds every Step: one per line, or, written as one line, one per number
-// ("1. … 2. …") or sentence.
+// steps grouped in sections. Several pieces of text are a Step each, and a
+// single one of several lines a Step per line. Only one string on one line
+// has its Steps told apart within the line: one per number ("1. … 2. …"),
+// else one per sentence.
 function stepsOf(instructions: Json): string[] {
   const texts = textsOf(instructions).map(plainLines).filter(lines => lines.length)
   if (texts.length !== 1) return withoutNumbering(texts.map(lines => lines.join(' ')))
   const lines = texts[0]!
-  if (lines.length > 1) return withoutNumbering(lines)
+  if (lines.length > 1 || typeof instructions !== 'string') return withoutNumbering(lines)
   return numberedParts(lines[0]!) ?? withoutNumbering(sentencesOf(lines[0]!))
 }
 
@@ -44,7 +45,7 @@ function textsOf(value: Json): string[] {
   if (typeof value === 'string') return [value]
   if (Array.isArray(value)) return value.flatMap(textsOf)
   if (!isObject(value)) return []
-  if (value.itemListElement !== undefined) return textsOf(value.itemListElement)
+  if (value.itemListElement !== undefined || hasType(value, 'HowToSection')) return textsOf(value.itemListElement)
   // A ListItem wraps its step.
   if (value.item !== undefined) return textsOf(value.item)
   const text = [value.text, value.name].find(candidate => typeof candidate === 'string' && candidate.trim() !== '')
@@ -71,14 +72,14 @@ function plainLines(text: string): string[] {
 }
 
 // A number in front of a Step: "1. ", "2) ".
-const NUMBER = String.raw`(\d{1,2})[.)]\s+`
+const STEP_NUMBER = String.raw`(\d{1,2})[.)]\s+`
 
 // Steps the page numbered itself ("1. Linsen waschen", "2. Aufkochen"),
 // without the numbers, since Steps are shown numbered. Only when every Step
 // starts with its own position, so "2 EL Öl dazu" keeps its amount.
 function withoutNumbering(steps: string[]): string[] {
   const numbered = steps.map((step, at) => {
-    const number = new RegExp(`^${NUMBER}`).exec(step)
+    const number = new RegExp(`^${STEP_NUMBER}`).exec(step)
     return number && Number(number[1]) === at + 1 ? step.slice(number[0].length) : null
   })
   return numbered.every(step => step) ? numbered as string[] : steps
@@ -89,7 +90,7 @@ function withoutNumbering(steps: string[]): string[] {
 function numberedParts(line: string): string[] | null {
   // Where each number in turn starts, and where its Step's text does.
   const marks: Array<{ at: number, text: number }> = []
-  for (const number of line.matchAll(new RegExp(String.raw`(?<=^|\s)${NUMBER}`, 'g'))) {
+  for (const number of line.matchAll(new RegExp(String.raw`(?<=^|\s)${STEP_NUMBER}`, 'g'))) {
     if (Number(number[1]) === marks.length + 1) marks.push({ at: number.index, text: number.index + number[0].length })
   }
   if (marks.length < 2 || marks[0]!.at !== 0) return null

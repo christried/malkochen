@@ -21,6 +21,8 @@ export interface SourceLookupOptions {
   fetch?: typeof fetch
 }
 
+const DEFAULT_TIMEOUT_MS = 8000
+
 // The first whose `match` answers handles the link; webPage takes the rest.
 const STRATEGIES: Strategy[] = [tiktok, instagram, youtube, pinterest, webPage]
 
@@ -48,7 +50,7 @@ function matchStrategy(link: string): { url: URL | null, strategy: Strategy, gue
 }
 
 export function createSourceLookup(options: SourceLookupOptions = {}): SourceLookup {
-  const timeoutMs = options.timeoutMs ?? 8000
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
   return async (link) => {
     const { url, strategy, guess } = matchStrategy(link)
@@ -68,7 +70,7 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
 // same time budget and through the same fetching as a lookup. A link whose
 // kind of Source never carries one is answered without a request.
 export function createRecipeLookup(options: SourceLookupOptions = {}): RecipeLookup {
-  const timeoutMs = options.timeoutMs ?? 8000
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
   return async (link) => {
     const { url, strategy } = matchStrategy(link)
