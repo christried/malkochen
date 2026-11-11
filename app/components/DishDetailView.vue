@@ -276,7 +276,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         <CookButton
           v-if="mayMove"
           class="shrink-0 px-5 py-3.5"
-          cooked
+          filled
           @cook="origin => $emit('cook', origin)"
         />
       </div>

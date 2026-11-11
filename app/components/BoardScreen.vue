@@ -1251,7 +1251,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                     <span
                       v-if="selecting"
                       aria-hidden="true"
-                      class="selection-check pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full"
+                      class="selection-check pointer-events-none absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-full"
                       data-selection-check
                     >
                       <AppIcon
@@ -1263,14 +1263,14 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                     <template v-else>
                     <!-- Who added it, over the picture the card draws. -->
                     <CardPersonButton
-                      v-if="dish.addedBy"
+                      v-if="dish.addedBy && !boardModule.isUnsentAdd(dish.id)"
                       :person="dish.addedBy"
                       :board-id="board.id"
                     />
                     <button
                       v-if="mayMove || (mayChange && mayArchive(dish))"
                       type="button"
-                      class="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+                      class="absolute bottom-1.5 right-1.5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-transform duration-tap ease-tap hover:bg-surface-muted active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
                       :aria-label="t.dish.menu(dish.title)"
                       :data-tooltip="t.dish.more"
                       aria-haspopup="dialog"
@@ -1299,8 +1299,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
                     </button>
                     <CookButton
                       v-if="mayMove"
-                      class="absolute bottom-2.5 right-2.5 px-3.5 py-2"
-                      :cooked="dish.cookings.length > 0"
+                      class="absolute bottom-2 left-[108px] px-3.5 py-2"
                       :label="t.dish.cookLabel(dish.title)"
                       data-cook
                       @cook="origin => cookFromCard(dish.id, origin)"
