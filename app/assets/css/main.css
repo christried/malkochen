@@ -118,27 +118,33 @@ html {
    tint"). A lane a Dish is dragged over fills more (BoardScreen). Muted text
    in a lane is pulled 30% toward the text colour (darker in light, lighter in
    dark), so it keeps WCAG AA (4.5:1) on every accent's tint; the Board's name
-   keeps it on the page (board-colour.spec.ts checks both). Lanes are
-   [data-lane], not .column, which other Column pictures use too. */
+   keeps it on the page (board-colour.spec.ts checks both). On phones a lane
+   has no fill of its own (#478): what is in it lies on the page, which wears
+   the active Column's tint just as full, so muted text is pulled the same
+   way there. Lanes are [data-lane], not .column, which other Column pictures
+   use too. */
 :root {
   --wash-page: 10%;
   --wash-lane: 24%;
   --wash-lane-target: 36%;
 }
-/* What a lane is filled with, as `--lane`, for what is drawn on it to take
-   (LaneBlob): on phones the plain surface-muted (the page wears the tint),
-   once every Column shows its accent's tint. */
-[data-lane] {
-  --lane: var(--color-surface-muted);
+/* What lies behind a lane's contents, as `--lane`, for what is drawn on it
+   to take (LaneBlob): on phones the page in this Column's tint (what the
+   page wears while the Column shows), once every Column shows the lane's own
+   fill. */
+.board {
+  --board-muted: var(--color-text-muted);
+}
+.board [data-lane] {
+  --lane: color-mix(in oklch, var(--accent) var(--wash-lane), var(--color-bg));
+  --color-text-muted: color-mix(in oklab, var(--color-text) 30%, var(--board-muted));
 }
 @media (min-width: 768px) {
   .board {
-    --board-muted: var(--color-text-muted);
     background-image: var(--board-gradient);
   }
   .board [data-lane] {
     --lane: color-mix(in oklab, var(--accent) var(--wash-lane), var(--color-bg));
-    --color-text-muted: color-mix(in oklab, var(--color-text) 30%, var(--board-muted));
     background-color: var(--lane);
   }
 }
@@ -149,7 +155,10 @@ html {
    page does, also mid-swipe. Its name is in the ink that goes on an accent,
    the same in both themes, which is why dark fills it fuller still: the name
    keeps WCAG AA on every accent's fill, and the fill stands out from the
-   page behind it (several-boards.spec.ts checks both). With every Column
+   page behind it (several-boards.spec.ts checks both). Dark mode on phones
+   (#478) is quieter: the dark surface with a little of that accent, darker
+   than the page as the cards are, its name in the text colour and its pebble
+   on surface-muted, so the active tab is what stands out. With every Column
    showing (#285): white, in the text colour, its pebble on surface-muted,
    inside a 1.5px aura (`.aura`, below) in the Board's Column accents. Under
    a mouse it lifts 2px and its shadow deepens, besides growing like every
@@ -159,20 +168,27 @@ html {
   --shadow-pill-lift: 0 18px 30px -12px rgba(70,55,30,.34), 0 3px 8px rgba(70,55,30,.10);
 }
 [data-theme="dark"] {
-  --wash-pill: 86%;
+  --wash-pill: 8%;
+  --pill-ink: var(--color-text);
+  --pill-pebble: var(--color-surface-muted);
   --shadow-pill-lift: 0 18px 30px -12px rgba(0,0,0,.80), 0 3px 8px rgba(0,0,0,.40);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --wash-pill: 86%;
+    --wash-pill: 8%;
+    --pill-ink: var(--color-text);
+    --pill-pebble: var(--color-surface-muted);
     --shadow-pill-lift: 0 18px 30px -12px rgba(0,0,0,.80), 0 3px 8px rgba(0,0,0,.40);
   }
 }
 .board-pill {
   background-color: color-mix(in oklch, var(--tint, var(--color-butter)) var(--wash-pill), var(--color-surface));
-  color: var(--color-on-accent);
+  color: var(--pill-ink, var(--color-on-accent));
   box-shadow: var(--shadow-card);
   transition: scale var(--dur-tap) var(--ease-tap), translate var(--dur-lift) var(--ease-lift), box-shadow var(--dur-fade) var(--ease-fade), background-color var(--dur-swoosh) var(--ease-fade);
+}
+.board-pill [data-emoji-pebble] {
+  background-color: var(--pill-pebble, var(--color-surface));
 }
 .board.following .board-pill {
   transition: none;

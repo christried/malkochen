@@ -174,8 +174,11 @@ test('on a phone, tapping a picture on a card shows the popover without opening 
   await popover(page).getByText('Johnson', { exact: true }).tap()
   await expect(popover(page)).toBeVisible()
 
-  // The empty lane under the cards.
-  await page.touchscreen.tap(40, PHONE.height - 160)
+  // The empty page between the last card and the footer, beside the popover.
+  const footer = (await page.getByTestId('board-footer').boundingBox())!
+  const shown = (await popover(page).boundingBox())!
+  expect(shown.x + shown.width).toBeLessThan(PHONE.width - 30)
+  await page.touchscreen.tap(PHONE.width - 20, footer.y - 12)
   await expect(popover(page)).toBeHidden()
   expect(page.url()).toBe(url)
 

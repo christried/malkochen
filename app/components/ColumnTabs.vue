@@ -127,7 +127,9 @@ watch(() => props.active, index => tabs[index]?.scrollIntoView({
 
 <style scoped>
 /* Three layers: the tabs' own pebbles at the back, the accent pebble over
-   them (so it can slide across the next tab mid-swipe), the labels on top. */
+   them (so it can slide across the next tab mid-swipe), the labels on top.
+   A tab's own pebble is on surface with the card shadow (#478), so it stands
+   out from the tinted page in light and dark. */
 nav {
   isolation: isolate;
 }
@@ -137,7 +139,8 @@ nav {
   inset: 0;
   z-index: -2;
   border-radius: inherit;
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 /* The active tab is the accent pebble, a little bigger and tilted (handoff:
    active · scale 1.06, −1.5°). Tilting makes it a layer of its own, so its
@@ -148,12 +151,13 @@ nav {
 }
 .tab.is-active::before {
   background: transparent;
+  box-shadow: none;
 }
 /* Under a mouse (a narrow window on a computer), a tab that isn't the
    active one darkens a little. */
 @media (hover: hover) and (pointer: fine) {
   .tab:not(.is-active, .is-drop-target):hover::before {
-    background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface-muted));
+    background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
   }
 }
 .tab-pebble {
@@ -184,6 +188,7 @@ nav {
 }
 .tab.is-drop-target::before {
   background: var(--accent);
+  box-shadow: none;
 }
 .tab.is-dimmed {
   opacity: .45;
