@@ -416,7 +416,7 @@ From the design check on 2026-11-11: the current app against the design handoff,
 | #476 | Dish detail: Gekocht ✓ under the title, chips and a quiet share row | One "Gekocht ✓" in the detail; "Link teilen" quieter (revisits #392's look) |
 | #477 | Dish card: buttons on the bottom row, neutral Gekocht ✓ | Every width. Departs from the handoff's filled cooked button on purpose |
 | #478 | Phone Board: cards on the Column colour, white tabs, quieter pill in dark mode | Under 768px only. After #477. Narrows #285 for dark mode |
-| #479 | Changelog entry for this spec | Blocked by #476, #477 and #478. Under , no Version |
+| #479 | Changelog entry for this spec | Blocked by #476, #477 and #478. Under `[Unreleased]`, no Version |
 
 ## Keeping this file current
 
