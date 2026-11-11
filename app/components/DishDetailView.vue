@@ -37,8 +37,8 @@ const emit = defineEmits<{
 const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
-const mayCook = computed(() => boardModule.may('moveDishes'))
-const shareClass = 'flex min-w-0 items-center justify-center gap-2 rounded-pill bg-surface-muted px-3 py-3.5 text-center text-button text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus'
+const mayMove = computed(() => boardModule.may('moveDishes'))
+const quietButton = 'flex min-w-0 items-center justify-center gap-2 rounded-pill bg-surface-muted px-3 py-3.5 text-center text-button text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus'
 // Added offline and not sent yet (#462): sharing, copying and deleting wait
 // for the server to have the Dish; they are greyed out like what needs a
 // connection.
@@ -258,7 +258,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
            start; without "move Dishes" the link has the row; with neither
            there is no row. Edit mode's Source field morphs from it. -->
       <div
-        v-if="dish.source || mayCook"
+        v-if="dish.source || mayMove"
         class="flex items-stretch gap-2.5"
         data-main-actions
         data-morph-field="source"
@@ -274,7 +274,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         </a>
         <!-- The detail's only "Gekocht ✓", always sage: the main action. -->
         <CookButton
-          v-if="mayCook"
+          v-if="mayMove"
           class="shrink-0 px-5 py-3.5"
           cooked
           @cook="origin => $emit('cook', origin)"
@@ -294,7 +294,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         >
           <button
             type="button"
-            :class="shareClass"
+            :class="quietButton"
             :disabled="sharing"
             data-share-link
             @click="shareLink"
@@ -307,7 +307,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           </button>
           <button
             type="button"
-            :class="shareClass"
+            :class="quietButton"
             data-copy-dish
             @click="emit('copy')"
           >
@@ -336,7 +336,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
       >
         <NeedsNet :note="false">
           <button
-            v-if="boardModule.may('moveDishes')"
+            v-if="mayMove"
             type="button"
             class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
             aria-haspopup="dialog"

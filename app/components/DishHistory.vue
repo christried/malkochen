@@ -10,7 +10,8 @@ import { neverCookedScene } from '~/utils/never-cooked'
 
 // A Dish's Dish History at the bottom of its detail ("Verlauf", #332; the
 // look #330 picked, its variant B): "3× gekocht · zuletzt 12. Sept." under its
-// achievement badge ("Gekocht ✓" is under the Dish's title, #476), once Cooked "Wie war's?" with 👍 👎 for
+// achievement badge ("Gekocht ✓" is under the Dish's title, #476), once
+// Cooked "Wie war's?" with 👍 👎 for
 // the Member's Vote (#334), and a line down the left with a dot per entry,
 // oldest first like a chat: a plus for who added the Dish, a pot for each
 // Cooking (with its bin), the thumb for each Member's Vote, on a backdrop

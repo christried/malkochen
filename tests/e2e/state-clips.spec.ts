@@ -222,10 +222,10 @@ test('a Dish never cooked loops its own scene in the Cooking History, until it i
   const first = await openNeverCooked('Linsencurry')
   await first.detail.getByRole('button', { name: 'Schließen' }).click()
   await expect(first.detail).toBeHidden()
-  const { clip, history } = await openNeverCooked('Ofengemüse')
+  const { clip, detail, history } = await openNeverCooked('Ofengemüse')
 
   // Cooked: no scene any more, nor its still.
-  await history.getByRole('button', { name: 'Gekocht ✓' }).click()
+  await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
   await expect(history.locator('[data-svg-loop]')).toHaveCount(0)
   await expect(loopStill(history, clip, 'dark')).toHaveCount(0)
 })

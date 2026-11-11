@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // "Gekocht ✓" (handoff "Gekocht button"), on a card and under the title in
-// the Dish detail. Tapped, it springs from 1.12 back to 1, fills sage and draws its
-// check, and says `cook` with its centre, where the celebration's confetti
-// bursts from. Cooked before, it is sage anyway. Reduced motion: colour and
-// check only.
+// the Dish detail. Tapped, it springs from 1.12 back to 1, fills sage and
+// draws its check, and says `cook` with its centre, where the celebration's
+// confetti bursts from. `cooked`: it is sage anyway (a Dish cooked before;
+// in the detail, always). Reduced motion: colour and check only.
 const props = defineProps<{ cooked: boolean, label?: string }>()
 const emit = defineEmits<{ cook: [origin: Point] }>()
 const t = useStrings()
