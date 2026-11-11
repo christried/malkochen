@@ -17,7 +17,9 @@ import { FORGOTTEN_INVITE_COOKIE, lookUpSecret } from './invites'
 
 // What the Dish Link page shows: the Dish's own fields, and nothing of its
 // Board (no name, Members, history, who added it, Caption or Cookings), but
-// for the Board's id where the viewer is on that Board (`ownBoard`).
+// for the Board's id where the viewer is on that Board (`ownBoard`). Never its
+// Recipe either (ADR 0013): no Source's recipe text is published to anyone with
+// a link.
 export interface DishLinkView {
   title: string
   imageUrl: string | null

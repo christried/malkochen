@@ -41,6 +41,7 @@ interface Dish {
   creator: string | null
   caption: string | null
   source: { link: string, kind: string } | null
+  recipe: { ingredients: string[], steps: string[], link: string | null } | null
   placement?: { boardId: string, columnId: string, index: number }
   addedBy: { id: string } | null
 }
@@ -129,6 +130,21 @@ test('a Copy from a Dish Link by someone not on the source Board: first non-Geko
     userId: await idOf(grace),
     details: { from: original.id, source: 'tiktok', viaLink: true },
   }])
+})
+
+test('a Copy through a Dish Link takes the Recipe along', async () => {
+  const { source, target, ada, grace } = await boards('Rezept')
+  const ingredients = ['250 g Mehl', '2 Eier', '1 Prise Salz']
+  const steps = ['Mehl und Eier verrühren.', 'Eine Stunde ruhen lassen.']
+  const original = await addDish(ada, source.id, { title: 'Nudelteig' })
+  expect((await patch(ada, `/api/dishes/${original.id}`, { recipe: { ingredients, steps } })).status).toBe(200)
+  const link = await linkOf(ada, original.id)
+
+  const res = await copyFromLink(grace, link, target.id)
+  expect(res.status).toBe(201)
+  const { dish } = await res.json() as { dish: Dish }
+
+  expect(dish.recipe).toEqual({ ingredients, steps, link: null })
 })
 
 test('refused: a dead Dish Link (archived, or purged) is 404; a made-up secret is 404', async () => {
