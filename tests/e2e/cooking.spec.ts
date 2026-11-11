@@ -270,6 +270,7 @@ test('"99× gekocht" shows in full beside a long Creator and an avatar, side by 
       avatar: card.locator('[data-added-by]'),
       count,
       cook: page.getByRole('button', { name: `Gekocht ✓: „${title}“` }),
+      menu: page.getByRole('button', { name: `Mehr zu „${title}“` }),
     }
     const boxes = await Promise.all(Object.entries(parts).map(async ([name, part]) => ({ name, box: (await part.boundingBox())! })))
     for (const [i, a] of boxes.entries()) {
@@ -284,7 +285,78 @@ test('"99× gekocht" shows in full beside a long Creator and an avatar, side by 
     for (const { name, box } of boxes) {
       expect(box.y + box.height, `${name} below the card at ${viewport.width}px`).toBeLessThanOrEqual(cardBox.y + cardBox.height)
     }
+
+    // #477: three rows. The title has the text column's whole width; under
+    // it the avatar, the Creator and "N× gekocht" on one line; at the bottom
+    // "Gekocht ✓" at the column's start and "…" at the card's end.
+    const at = Object.fromEntries(boxes.map(({ name, box }) => [name, { ...box, right: box.x + box.width, bottom: box.y + box.height, middle: box.y + box.height / 2 }]))
+    const where = `at ${viewport.width}px`
+    expect(cardBox.x + cardBox.width - at.title!.right, `the title reaches the card's end ${where}`).toBeLessThanOrEqual(20)
+    expect(Math.abs(at.avatar!.x - at.title!.x), `the avatar starts the meta line ${where}`).toBeLessThanOrEqual(1)
+    expect(at.avatar!.right, `the avatar before the Creator ${where}`).toBeLessThanOrEqual(at.creator!.x)
+    expect(at.creator!.right, `the Creator before the count ${where}`).toBeLessThanOrEqual(at.count!.x)
+    for (const part of ['creator', 'count']) {
+      expect(Math.abs(at[part]!.middle - at.avatar!.middle), `${part} on the avatar's line ${where}`).toBeLessThanOrEqual(2)
+    }
+    expect(at.avatar!.bottom, `the meta line above "Gekocht ✓" ${where}`).toBeLessThanOrEqual(at.cook!.y)
+    expect(Math.abs(at.cook!.x - at.title!.x), `"Gekocht ✓" at the text column's start ${where}`).toBeLessThanOrEqual(1)
+    expect(cardBox.x + cardBox.width - at.menu!.right, `"…" at the card's end ${where}`).toBeLessThanOrEqual(12)
+    expect(Math.abs(at.menu!.middle - at.cook!.middle), `"…" on the row of "Gekocht ✓" ${where}`).toBeLessThanOrEqual(2)
+    expect(cardBox.y + cardBox.height - at.cook!.bottom, `"Gekocht ✓" at the card's bottom ${where}`).toBeLessThanOrEqual(12)
+    await expect(card).toHaveCSS('height', '128px')
+    await expect(card.locator('[data-thumb]')).toHaveCSS('width', '86px')
   }
+})
+
+// #477: a card's "Gekocht ✓" doesn't say whether the Dish was cooked ("N×
+// gekocht" does), or every button in Gekocht would be green. It is sage
+// while it springs after a tap, and on hover under a mouse.
+test('a card’s "Gekocht ✓" is neutral at rest on a cooked Dish too, sage on hover and right after a tap', async ({ page }) => {
+  // In Gekocht, so cooking it again leaves its card where it is.
+  const title = 'Kürbissuppe'
+  await signIn(page, ALLOWLISTED[6])
+  await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', column: 2 })
+  await seedCookings(page, title, 1)
+  for (const colorScheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme })
+    await gotoHydrated(page, '/')
+    const cook = page.getByRole('button', { name: `Gekocht ✓: „${title}“` })
+    await cardAtRest(cook)
+    const colours = await page.evaluate(() => {
+      const style = getComputedStyle(document.documentElement)
+      const probe = document.body.appendChild(document.createElement('i'))
+      const computed = (token: string) => {
+        probe.style.background = style.getPropertyValue(token)
+        return getComputedStyle(probe).backgroundColor
+      }
+      const colours = { sage: computed('--color-sage'), neutral: computed('--color-surface-muted') }
+      probe.remove()
+      return colours
+    })
+    expect(colours.sage).not.toBe(colours.neutral)
+
+    // At rest: no button is sage, in Gekocht or anywhere else.
+    await page.mouse.move(0, 0)
+    const buttons = page.locator('[data-cook]')
+    await expect(column(page, 'Gekocht').getByRole('button', { name: `Gekocht ✓: „${title}“` })).toBeVisible()
+    expect(await buttons.count()).toBeGreaterThan(1)
+    for (const button of await buttons.all()) await expect(button).toHaveCSS('background-color', colours.neutral)
+
+    await cook.hover()
+    await expect(cook).toHaveCSS('background-color', colours.sage)
+    await page.mouse.move(0, 0)
+    await expect(cook).toHaveCSS('background-color', colours.neutral)
+  }
+
+  // Tapped, without a mouse over it: sage with its check drawn, then
+  // neutral again.
+  const cook = page.getByRole('button', { name: `Gekocht ✓: „${title}“` })
+  const neutral = await cook.evaluate(el => getComputedStyle(el).backgroundColor)
+  await cook.dispatchEvent('click')
+  await expect(cook).not.toHaveCSS('background-color', neutral)
+  await expect(cook.locator('path.draw')).toHaveCount(1)
+  await expect(cook).toHaveCSS('background-color', neutral)
+  await expect(column(page, 'Gekocht').getByRole('article', { name: title }).locator('[data-cooked-count]')).toHaveText('2× gekocht')
 })
 
 // #114: Topfbert says a different cheer each time he pops up, and every one

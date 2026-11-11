@@ -20,6 +20,9 @@ const LONG = 'Knuspriger Sesam-Tofu mit Erdnusssoße und Frühlingszwiebeln'
 // ones that start a third line are what used to peek out under the second.
 const UMLAUTS = 'Überbackene Äpfel Über Öl Über Äpfel Über Öl Über Äpfel Über Öl'
 const SHORT = 'Linsensuppe'
+// Two lines on a 360px phone, now that no button sits beside the title
+// (#477); it used to be cut there.
+const TWO_LINES = 'Knuspriger Sesam-Tofu mit Erdnusssoße'
 // As long as a title can be (200 characters).
 const LONGEST = 'Ofengemüse mit Kichererbsen, Tahini-Dressing, Granatapfelkernen, gerösteten Mandeln, frischer Minze und Zitronenzeste, dazu Fladenbrot aus der Pfanne und ein Joghurt-Dip aus Soja mit Knoblauch & Salz.'
 
@@ -68,7 +71,7 @@ test.beforeAll(async ({ browser }) => {
   await signIn(page, ALLOWLISTED[22])
   await resetBoard(page)
   // The first seeded ends up at the bottom of Ideen.
-  for (const text of [LONGEST, LONG, UMLAUTS, SHORT]) await seedDish(page, { title: text, sourceLink: TIKTOK, sourceKind: 'tiktok' })
+  for (const text of [LONGEST, LONG, UMLAUTS, TWO_LINES, SHORT]) await seedDish(page, { title: text, sourceLink: TIKTOK, sourceKind: 'tiktok' })
   await page.context().close()
 })
 
@@ -82,6 +85,9 @@ for (const [device, size] of [['phone', PHONE], ['desktop', DESKTOP]] as const) 
     for (const text of [LONG, UMLAUTS]) {
       const heading = title(page, text)
       await cardAtRest(heading)
+      // Away from the add button floating in the screen's corner: the title
+      // reaches the card's end now (#477), under that button's aura.
+      await heading.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
       const lines = await heading.evaluate((el) => {
         const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight)
         return { shown: Math.round(el.getBoundingClientRect().height / lineHeight * 10) / 10, clamped: el.scrollHeight > el.clientHeight }
@@ -93,6 +99,41 @@ for (const [device, size] of [['phone', PHONE], ['desktop', DESKTOP]] as const) 
     }
   })
 }
+
+// #477: "Gekocht ✓" and "…" are on the card's bottom row, so the title has
+// the text column to itself.
+test('on a 360px phone the title has the text column’s whole width, and a title of two lines there is not cut', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await signIn(page, ALLOWLISTED[22])
+  await gotoHydrated(page, '/')
+  await page.evaluate(() => document.fonts.ready)
+  const heading = column(page, 'Ideen').getByRole('heading', { level: 3, name: TWO_LINES, exact: true })
+  await cardAtRest(heading)
+
+  const measured = await heading.evaluate((el) => {
+    const article = el.closest('article')!
+    const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight)
+    return {
+      lines: Math.round(el.getBoundingClientRect().height / lineHeight * 10) / 10,
+      clamped: el.scrollHeight > el.clientHeight,
+      toCardEnd: article.getBoundingClientRect().right - el.getBoundingClientRect().right,
+    }
+  })
+  expect(measured.lines).toBe(2)
+  expect(measured.clamped).toBe(false)
+  // The card's padding and the text column's, nothing kept for a button.
+  expect(measured.toCardEnd).toBeLessThanOrEqual(20)
+  await expect(column(page, 'Ideen').getByRole('link', { name: TWO_LINES, exact: true }).locator('[data-title-tip]')).toHaveCount(0)
+
+  // The buttons are under the title, on a short title's card as well.
+  for (const text of [TWO_LINES, SHORT]) {
+    const titleBox = (await column(page, 'Ideen').getByRole('heading', { level: 3, name: text, exact: true }).boundingBox())!
+    for (const name of [`Gekocht ✓: „${text}“`, `Mehr zu „${text}“`]) {
+      const box = (await page.getByRole('button', { name, exact: true }).boundingBox())!
+      expect(box.y, `${name} under the title`).toBeGreaterThanOrEqual(titleBox.y + titleBox.height)
+    }
+  }
+})
 
 test('the lines cut off give the lanes nothing to scroll down to', async ({ page }) => {
   await page.setViewportSize(DESKTOP)

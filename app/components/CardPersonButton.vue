@@ -8,9 +8,10 @@ import type { DishAdder } from '~~/server/utils/dishes'
 //
 // It goes in the box the card fills. Where the picture is follows DishCard's
 // layout: the text column starts at 108px (10px padding, the 86px thumb, a
-// 12px gap), and the bottom line ends 14px above the card's bottom (10px
-// padding, 4px), as high as the picture (22px). user-popover.spec.ts checks
-// the two line up.
+// 12px gap), where the meta line starts with the picture (20px). That line's
+// middle is 72.6px below the card's top: 14px (10px padding, 4px), the
+// title's two lines (2 × 19px × 1.2), 2px, and half the line's 22px.
+// user-popover.spec.ts checks the two line up.
 defineProps<{
   person: DishAdder
   boardId: string
@@ -18,8 +19,8 @@ defineProps<{
 const t = useStrings()
 
 const SIZE = 32
-const AVATAR = 22
-const center = { x: 108 + AVATAR / 2, bottom: 14 + AVATAR / 2 }
+const AVATAR = 20
+const center = { x: 108 + AVATAR / 2, y: 14 + 2 * 19 * 1.2 + 2 + 22 / 2 }
 </script>
 
 <template>
@@ -27,7 +28,7 @@ const center = { x: 108 + AVATAR / 2, bottom: 14 + AVATAR / 2 }
     :person="person"
     :board-id="boardId"
     class="absolute rounded-full transition-colors duration-tap ease-tap hover:bg-text/10 focus-visible:outline-2 focus-visible:outline-focus"
-    :style="{ width: `${SIZE}px`, height: `${SIZE}px`, left: `${center.x - SIZE / 2}px`, bottom: `${center.bottom - SIZE / 2}px` }"
+    :style="{ width: `${SIZE}px`, height: `${SIZE}px`, left: `${center.x - SIZE / 2}px`, top: `${center.y - SIZE / 2}px` }"
     :aria-label="t.dish.addedBy(person.name)"
   />
 </template>
