@@ -4,6 +4,8 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-11
+
 ### Changed
 
 - A tidier look: in a dish, Cooked ✓ now sits right under the title, next to Open original, so you don’t have to scroll for it. Cards show more of a dish’s title, and on phones the board is calmer, with the cards lying straight on the column’s colour.
@@ -73,7 +75,8 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - Open to everyone: anyone can sign up, with Google or a code we email you, and delete your account yourself whenever you like.
 - What’s new: this page, linked at the end of your settings and marked New after every update.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1

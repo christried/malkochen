@@ -4,6 +4,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-11
+
 ### Changed
 
 - Più ordine: nel piatto, Cucinato ✓ ora sta subito sotto il titolo, accanto ad Apri l’originale, così non devi più scorrere per trovarlo. Le schede mostrano più del titolo di un piatto, e sul telefono la bacheca è più tranquilla, con le schede direttamente sul colore della colonna.
@@ -73,7 +75,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Aperto a tutti: chiunque può iscriversi, con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
 - Novità: questa pagina, in fondo alle tue impostazioni e segnata come Nuovo dopo ogni aggiornamento.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
