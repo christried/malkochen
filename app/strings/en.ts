@@ -924,6 +924,7 @@ export const en: Strings = {
       notifications: 'Notifications',
       links: 'Links and copies',
       snackbert: 'Snackbert',
+      recipeFinder: 'Recipe Finder',
       operator: 'Operation',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -974,6 +975,8 @@ export const en: Strings = {
       digest_switched: 'Daily email switched',
       snackbert_switched: 'Snackbert switched',
       snackbert_report_sent: 'Snackbert Report sent',
+      recipe_finder_asked: 'Recipe Finder asked for',
+      recipe_finder_switched: 'Recipe Finder switched',
       account_deleted: 'Account deleted',
       push_sent: 'Push sent',
       digest_sent: 'Daily email sent',
@@ -981,6 +984,13 @@ export const en: Strings = {
       prompt_answered: 'Prompt answered',
       dish_link_opened: 'Dish link opened',
     } satisfies Record<EventKind, string>,
+  },
+  recipeFinderAskedEmail: {
+    subject: (name: string) => `${name} is asking for the Recipe Finder`,
+    headline: 'A request for the Recipe Finder',
+    asked: (name: string) => `${name} would like to use the Recipe Finder.`,
+    decide: 'Whether you switch it on is up to you, on the Admin Page. If you leave the request, it simply stays asked.',
+    openAdmin: 'Open the Admin Page',
   },
   accountDeletedEmail: {
     subject: 'Your malkochen account is deleted',

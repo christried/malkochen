@@ -61,6 +61,8 @@ export type EventDetails =
   | { column: string }
   // column_subtitle_changed: which Column, and whether it has a Subtitle now.
   | { column: string, on: boolean }
+  // recipe_finder_switched: whose, and whether it is on now.
+  | { member: string, on: boolean }
   // permission_changed: whose, which Permission, and whether it is on now.
   | { member: string, permission: Permission, on: boolean }
   // default_permission_changed: which Permission, and whether it is on now.

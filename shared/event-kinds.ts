@@ -81,6 +81,11 @@ export const EVENT_KINDS = [
   // A Snackbert Report (#424) sent for a Cooking: its Board, Dish and user,
   // never what it said or what it showed.
   'snackbert_report_sent',
+  // A user asked for the Recipe Finder (CONTEXT.md, #497) in Your Settings.
+  'recipe_finder_asked',
+  // The Operator switched the Recipe Finder on or off for a user (the
+  // event's `member`).
+  'recipe_finder_switched',
   // A Deleted Account: no user (its others' events lose theirs too).
   'account_deleted',
   // A Push Notification sent to one of a Member's devices, for the Board

@@ -940,6 +940,7 @@ export const it: Strings = {
       notifications: 'Notifiche',
       links: 'Link e copie',
       snackbert: 'Snackbert',
+      recipeFinder: 'Trova ricette',
       operator: 'Gestione',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -990,6 +991,8 @@ export const it: Strings = {
       digest_switched: 'Email giornaliera cambiata',
       snackbert_switched: 'Snackbert cambiato',
       snackbert_report_sent: 'Snackbert Report inviato',
+      recipe_finder_asked: 'Trova ricette richiesto',
+      recipe_finder_switched: 'Trova ricette attivato o disattivato',
       account_deleted: 'Account eliminato',
       push_sent: 'Push inviato',
       digest_sent: 'Email giornaliera inviata',
@@ -997,6 +1000,13 @@ export const it: Strings = {
       prompt_answered: 'Invito risposto',
       dish_link_opened: 'Link del piatto aperto',
     } satisfies Record<EventKind, string>,
+  },
+  recipeFinderAskedEmail: {
+    subject: (name: string) => `${name} chiede il Trova ricette`,
+    headline: 'Una richiesta per il Trova ricette',
+    asked: (name: string) => `${name} vorrebbe usare il Trova ricette.`,
+    decide: 'Se attivarlo lo decidi tu, nella pagina Admin. Se lasci la richiesta, resta semplicemente in attesa.',
+    openAdmin: 'Apri la pagina Admin',
   },
   accountDeletedEmail: {
     subject: 'Il tuo account malkochen è stato eliminato',
