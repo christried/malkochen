@@ -4,6 +4,10 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+### Changed
+
+- A tidier look: in a dish, Cooked ✓ now sits right under the title, next to Open original, so you don’t have to scroll for it. Cards show more of a dish’s title, and on phones the board is calmer, with the cards lying straight on the column’s colour.
+
 ## [1.2.0] - 2026-11-10
 
 ### Added

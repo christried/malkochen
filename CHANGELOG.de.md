@@ -4,6 +4,10 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+### Changed
+
+- Aufgeräumt: Im Gericht sitzt Gekocht ✓ jetzt direkt unter dem Titel, neben Original öffnen, du musst also nicht mehr danach scrollen. Karten zeigen mehr vom Titel eines Gerichts, und am Handy ist das Board ruhiger, weil die Karten direkt auf der Farbe der Spalte liegen.
+
 ## [1.2.0] - 2026-11-10
 
 ### Added
