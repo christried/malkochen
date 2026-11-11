@@ -643,7 +643,14 @@ for (const scheme of ['light', 'dark'] as const) {
       // neither butter-filled.
       const share = detail.getByRole('button', { name: 'Link teilen', exact: true })
       const copy = detail.getByRole('button', { name: 'Kopieren', exact: true })
-      const [shareBox, copyBox] = [await boxOf(share), await boxOf(copy)]
+      // Both measured in the same frame: the detail may still be settling.
+      await expect(copy).toBeVisible()
+      const [shareBox, copyBox] = await share.evaluate((el) => {
+        return [el, el.parentElement!.querySelector('[data-copy-dish]')!].map((b) => {
+          const { x, y, width, height } = b.getBoundingClientRect()
+          return { x, y, width, height }
+        })
+      }) as [{ x: number, y: number, width: number, height: number }, { x: number, y: number, width: number, height: number }]
       expect(copyBox.y).toBeCloseTo(shareBox.y, 0)
       expect(copyBox.width).toBeCloseTo(shareBox.width, 0)
       expect(copyBox.x).toBeGreaterThan(shareBox.x + shareBox.width)

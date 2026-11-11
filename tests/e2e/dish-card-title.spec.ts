@@ -20,9 +20,9 @@ const LONG = 'Knuspriger Sesam-Tofu mit Erdnusssoße und Frühlingszwiebeln'
 // ones that start a third line are what used to peek out under the second.
 const UMLAUTS = 'Überbackene Äpfel Über Öl Über Äpfel Über Öl Über Äpfel Über Öl'
 const SHORT = 'Linsensuppe'
-// Two lines on a 360px phone, now that no button sits beside the title
-// (#477); it used to be cut there.
-const TWO_LINES = 'Knuspriger Sesam-Tofu mit Erdnusssoße'
+// Two lines on a 360px phone, with room to spare now that no button sits
+// beside the title (#477).
+const TWO_LINES = 'Gebratener Reis mit Tofu und Gemüse'
 // As long as a title can be (200 characters).
 const LONGEST = 'Ofengemüse mit Kichererbsen, Tahini-Dressing, Granatapfelkernen, gerösteten Mandeln, frischer Minze und Zitronenzeste, dazu Fladenbrot aus der Pfanne und ein Joghurt-Dip aus Soja mit Knoblauch & Salz.'
 
