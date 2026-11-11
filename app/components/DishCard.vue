@@ -5,12 +5,14 @@ import type { ClipMotion } from '~/utils/motion'
 
 // The handoff's compact DishCard: 86px thumb + text, 128px high. The thumb
 // crops any image, portrait (TikTok, Reels, Shorts) or landscape (blogs), to
-// fill it. The Board puts the "…" menu button in its top-right corner and
-// "Gekocht ✓" in its bottom-right one, so the title and the bottom line leave
-// room for them. "N× gekocht" goes under the title, above the button, where
-// it has the whole width. A New Dish wears the "Neu" pebble on the thumb's
-// corner, and the thumb's other top corner the chip with its Votes and
-// Comments (HistoryChip).
+// fill it. The text column is three rows (#477): the title, with the
+// column's whole width and room for two lines; the meta line (who added it,
+// the Creator, "N× gekocht"); and a bottom row the card leaves empty, where
+// the Board lays "Gekocht ✓" at the start and the "…" menu button at the
+// end. The title always keeps its two lines' room, so the rows under it are
+// in the same place on every card: CardPersonButton relies on that. A New
+// Dish wears the "Neu" pebble on the thumb's corner, and the thumb's other
+// top corner the chip with its Votes and Comments (HistoryChip).
 const props = defineProps<{
   dish: DishView
   isNew?: boolean
@@ -98,39 +100,50 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
     <div class="flex min-w-0 flex-1 flex-col py-1 pr-1">
       <h3
         ref="title"
-        class="title pr-8 font-display text-title-s"
+        class="title font-display text-title-s"
       >
         {{ dish.title }}
       </h3>
-      <!-- A Dish added offline that has not arrived yet: "Noch nicht gesendet" and
-           its site. -->
+      <!-- One line under the title: who added it, the Creator, cut with "…"
+           if long, then "N× gekocht", which is never cut. A Dish added
+           offline that has not arrived yet says "Noch nicht gesendet" and its
+           site there instead: it has no Creator yet, and you added it. -->
       <p
-        v-if="unsent"
-        class="mt-0.5 flex min-w-0 items-center gap-1.5 pr-1 text-caption text-text-muted"
-        data-unsent
+        class="meta mt-0.5 flex min-w-0 items-center pr-1 text-caption text-text-muted"
+        :data-unsent="unsent || undefined"
       >
-        <span class="shrink-0 rounded-pill bg-surface-muted px-2 py-0.5">{{ t.unsent.notSent }}</span>
+        <template v-if="unsent">
+          <span class="min-w-0 truncate rounded-pill bg-surface-muted px-2 py-0.5">{{ t.unsent.notSent }}</span>
+          <span
+            v-if="site"
+            class="ml-1.5 min-w-0 shrink-[99] truncate"
+            data-site
+          >{{ site }}</span>
+        </template>
+        <template v-else>
+          <!-- Drawn here; the button that opens their popover
+               (CardPersonButton) lies over it, outside the card's link. -->
+          <span
+            v-if="dish.addedBy"
+            class="mr-1.5 inline-flex shrink-0"
+            data-added-by
+          >
+            <UserAvatar
+              :name="dish.addedBy.name"
+              :image="dish.addedBy.image"
+              :size="20"
+            />
+            <span class="sr-only">{{ t.dish.addedBy(dish.addedBy.name) }}</span>
+          </span>
+          <span
+            v-if="dish.creator"
+            class="truncate"
+            :data-tooltip="dish.creator"
+            data-creator
+          ><span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}</span>
+        </template>
         <span
-          v-if="site"
-          class="truncate"
-          data-site
-        >{{ site }}</span>
-      </p>
-      <!-- One line under the title: the Creator, cut with "…" if long, then
-           "N× gekocht", which is never cut. Two lines would not fit under a
-           two-line title. -->
-      <p
-        v-if="dish.creator || dish.cookings.length"
-        class="mt-0.5 flex min-w-0 pr-1 text-caption text-text-muted"
-      >
-        <span
-          v-if="dish.creator"
-          class="truncate"
-          :data-tooltip="dish.creator"
-          data-creator
-        ><span class="sr-only">{{ `${t.dish.creator} ` }}</span>{{ dish.creator }}</span>
-        <span
-          v-if="dish.creator && dish.cookings.length"
+          v-if="dish.cookings.length && (unsent || dish.creator)"
           aria-hidden="true"
           class="shrink-0 px-1"
         >·</span>
@@ -140,21 +153,6 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
           data-cooked-count
         >{{ t.dish.cookedCount(dish.cookings.length) }}</span>
       </p>
-      <div class="mt-auto flex min-w-0 items-center gap-2 pr-[108px] text-text-muted">
-        <!-- Drawn here; the button that opens their popover
-             (CardPersonButton) lies over it, outside the card's link. -->
-        <span
-          v-if="dish.addedBy"
-          class="inline-flex"
-          data-added-by
-        >
-          <UserAvatar
-            :name="dish.addedBy.name"
-            :image="dish.addedBy.image"
-          />
-          <span class="sr-only">{{ t.dish.addedBy(dish.addedBy.name) }}</span>
-        </span>
-      </div>
     </div>
     <!-- For the eyes only: the heading and the card's link already give
          screen readers the whole title. -->
@@ -178,8 +176,11 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
    Above and before the first line nothing is cut, so its own accents keep
    their tops. The lines cut off are clipped (not hidden), so that they
    don't make the lane scrollable either. Recheck these numbers if the font
-   changes; dish-card-title.spec.ts catches a third line showing. */
+   changes; dish-card-title.spec.ts catches a third line showing. A title of
+   one line keeps the room of two, so the meta line and the Board's buttons
+   are in the same place on every card. */
 .title {
+  min-height: 2.4em;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -189,11 +190,17 @@ const titleCut = useTextCut(titleEl, () => props.dish.title)
   line-height: 1.2;
 }
 
+/* The meta line is as high on every card, with or without a picture or the
+   "Noch nicht gesendet" mark in it. */
+.meta {
+  height: 22px;
+}
+
 /* The full title of a cut one (handoff Toast colours): under the title,
    across the card, so it stays within the card unless the title is very
    long. It comes up after a short hover, so it doesn't flash while the mouse
    crosses the Board, and at once with keyboard focus; not while a Dish is
-   being dragged. The pointer goes through it to "Gekocht ✓" under it. Until
+   being dragged. The pointer goes through it to the buttons under it. Until
    it shows it takes no room, so a long one doesn't make the lane scrollable. */
 .title-tip {
   display: none;

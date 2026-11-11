@@ -1,8 +1,9 @@
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { column, swipe, tab, titles } from './board'
+import { backgroundOf, colourOf, contrast, rgb } from './colour'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { removeUsers, seedDish } from './seed'
 
@@ -153,3 +154,89 @@ test('from 768px all Columns show side by side and scroll-snap', async ({ page }
   await page.setViewportSize(PHONE)
   await expect(tab(page, 'Ideen 1')).toHaveAttribute('aria-pressed', 'true')
 })
+
+// #478: the phone Board after the handoff's "Farbfeld kompakt".
+// A tab's own pebble (its ::before) and the tokens it is made of.
+async function tabLooks(page: Page, name: string) {
+  return tab(page, name).evaluate((el) => {
+    const token = (property: 'color' | 'boxShadow', value: string) => {
+      const probe = document.createElement('span')
+      probe.style[property] = value
+      document.body.append(probe)
+      const resolved = getComputedStyle(probe)[property]
+      probe.remove()
+      return resolved
+    }
+    const pebble = getComputedStyle(el, '::before')
+    return {
+      background: pebble.backgroundColor,
+      shadow: pebble.boxShadow,
+      surface: token('color', 'var(--color-surface)'),
+      cardShadow: token('boxShadow', 'var(--shadow-card)'),
+    }
+  })
+}
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`phones (${scheme}): inactive tabs are on surface with the card shadow, the active one is the accent pebble`, async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 })
+    await page.emulateMedia({ colorScheme: scheme })
+    await signIn(page, ALLOWLISTED[4])
+    await gotoHydrated(page, '/')
+
+    for (const name of ['Diese Woche', 'Gekocht']) {
+      const looks = await tabLooks(page, name)
+      expect(looks.background, name).toBe(looks.surface)
+      expect(looks.shadow, name).toBe(looks.cardShadow)
+    }
+    // The active tab has no pebble of its own: the accent one lies behind it.
+    await expect(tab(page, 'Ideen')).toHaveAttribute('aria-pressed', 'true')
+    const active = await tabLooks(page, 'Ideen')
+    expect(active.background).toBe('rgba(0, 0, 0, 0)')
+    expect(active.shadow).toBe('none')
+  })
+
+  test(`phones (${scheme}): cards and an empty Column lie straight on the Column colour`, async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 })
+    await page.emulateMedia({ colorScheme: scheme })
+    await signIn(page, ALLOWLISTED[4])
+    await gotoHydrated(page, '/')
+    const panel = (name: string) => column(page, name).evaluate((el) => {
+      const style = getComputedStyle(el)
+      return { background: style.backgroundColor, padding: style.padding }
+    })
+
+    // A card reaches the page's side padding (16px).
+    await tab(page, 'Diese Woche').click()
+    expect(await panel('Diese Woche')).toEqual({ background: 'rgba(0, 0, 0, 0)', padding: '0px' })
+    const card = column(page, 'Diese Woche').locator('[data-dish-id]').first()
+    // Once the Column has slid in.
+    await expect.poll(async () => Math.round((await card.boundingBox())!.x)).toBe(16)
+    expect((await card.boundingBox())!.width).toBeCloseTo(360 - 32, 0)
+
+    // An empty Column: its picture and its line, no panel, readable on the page.
+    await tab(page, 'Gekocht').click()
+    await expect(tab(page, 'Gekocht')).toHaveAttribute('aria-pressed', 'true')
+    expect(await panel('Gekocht')).toEqual({ background: 'rgba(0, 0, 0, 0)', padding: '0px' })
+    const line = column(page, 'Gekocht').getByText('Noch nichts hier.')
+    await expect(line).toBeVisible()
+    await expect(column(page, 'Gekocht').locator('[data-blob]')).toBeVisible()
+    await page.locator('main.board').evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+    const [ink, behind] = await rgb(page, [await colourOf(line), await backgroundOf(page.locator('main.board'))])
+    expect(contrast(ink!, behind!)).toBeGreaterThanOrEqual(4.5)
+  })
+}
+
+for (const width of [768, 1440]) {
+  test(`at ${width}px the lanes keep their panel`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await signIn(page, ALLOWLISTED[4])
+    await gotoHydrated(page, '/')
+
+    const lane = column(page, 'Diese Woche')
+    await expect(lane).toHaveCSS('padding', '16px')
+    expect(await backgroundOf(lane)).not.toBe('rgba(0, 0, 0, 0)')
+    const [box, card] = [(await lane.boundingBox())!, (await lane.locator('[data-dish-id]').first().boundingBox())!]
+    expect(card.x - box.x).toBeCloseTo(16, 0)
+  })
+}

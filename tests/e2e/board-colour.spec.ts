@@ -119,7 +119,7 @@ function along(colour: Rgb, from: Rgb, to: Rgb) {
 // The blob behind „Noch nichts hier." (#215), the empty Board's and the
 // empty Columns', is the colour of its lane, a little fuller toward the
 // lane's accent: on the tinted lanes once every Column shows, and on the
-// phone's plain ones, in light and dark.
+// phone's, which are the page in that Column's tint (#478), in light and dark.
 for (const scheme of ['light', 'dark'] as const) {
   for (const [layout, size] of [['desktop', DESKTOP], ['phone', { width: 400, height: 860 }]] as const) {
     test(`${layout} (${scheme}): the blob behind an empty Column's „Noch nichts hier." is its lane's colour`, async ({ page }) => {
@@ -132,11 +132,14 @@ for (const scheme of ['light', 'dark'] as const) {
 
       // The empty Board's in the first, the empty Columns' in the others.
       for (const [i, name] of ['Ideen', 'Diese Woche', 'Gekocht'].entries()) {
-        if (layout === 'phone') await tab(page, `${name} 0`).click()
+        if (layout === 'phone') {
+          await tab(page, `${name} 0`).click()
+          await page.locator('main.board').evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)))
+        }
         const lane = column(page, name)
         const blob = lane.locator('[data-blob]')
         await expect(blob).toBeVisible()
-        const [fill, behind] = await rgb(page, [await blob.evaluate(el => getComputedStyle(el).fill), await backgroundOf(lane)])
+        const [fill, behind] = await rgb(page, [await blob.evaluate(el => getComputedStyle(el).fill), await backgroundOf(layout === 'phone' ? page.locator('main.board') : lane)])
         const { share, off } = along(fill!, behind!, palette[i]!)
         expect(share, `${name}: toward its accent`).toBeGreaterThan(0.05)
         expect(share, `${name}: still near its lane`).toBeLessThan(0.25)

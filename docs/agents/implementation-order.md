@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session: a branch from `staging`, a PR into `staging`.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449, #456, #475) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -407,6 +407,17 @@ From the offline editing grilling session on 2026-11-09 (`CONTEXT.md` → Unsent
 | #463 | Signing out or switching account with Unsent Changes | After #459 |
 | #464 | Changelog entry for this spec | Blocked by every other ticket of #456. Under `[Unreleased]`, no Version |
 
+### Phase 24: Design check against the handoff (#475)
+
+From the design check on 2026-11-11: the current app against the design handoff, phone first. Each ticket is a sub-issue of #475. #476 to #478 don't block each other, but #477 and #478 both change the Board screen, so take them in this order, one after the other.
+
+| # | Ticket | Note |
+|---|---|---|
+| #476 | Dish detail: Gekocht ✓ under the title, chips and a quiet share row | One "Gekocht ✓" in the detail; "Link teilen" quieter (revisits #392's look) |
+| #477 | Dish card: buttons on the bottom row, neutral Gekocht ✓ | Every width. Departs from the handoff's filled cooked button on purpose |
+| #478 | Phone Board: cards on the Column colour, white tabs, quieter pill in dark mode | Under 768px only. After #477. Narrows #285 for dark mode |
+| #479 | Changelog entry for this spec | Blocked by #476, #477 and #478. Under `[Unreleased]`, no Version |
+
 ## Keeping this file current
 
-When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently.
+When new tickets are created (for example by `/to-tickets`), add them here in the right place, or tell the user they aren't listed yet. A ticket that is open but missing from this list should be raised with the user, not picked up silently. Idea issues (`Idea: …`, `docs/agents/issue-tracker.md` § Ideas) are not tickets: they wait for a grilling and never belong on this list.

@@ -73,7 +73,7 @@ test('signing in, adding a Dish from a link, cooking it and searching show still
   await expect(detail.getByRole('button', { name: 'Bearbeiten' })).toBeFocused()
   const history = detail.getByRole('region', { name: 'Verlauf' })
   await expect(loopStill(history, neverCooked)).toBeVisible()
-  await history.getByRole('button', { name: 'Gekocht ✓' }).click()
+  await detail.getByRole('button', { name: 'Gekocht ✓' }).click()
   await expect(history.locator('[data-cooking]')).toHaveCount(1)
   // The celebration: Topfbert's still in the Gekocht pill, and no confetti.
   await expect(topfbert(detail).locator('img[src="/illustrations/topfbert-happy.svg"]')).toBeVisible()

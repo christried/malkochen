@@ -1,10 +1,12 @@
 <script setup lang="ts">
-// "Gekocht ✓" (handoff "Gekocht button"), on a card and in the Cooking
-// History. Tapped, it springs from 1.12 back to 1, fills sage and draws its
-// check, and says `cook` with its centre, where the celebration's confetti
-// bursts from. Cooked before, it is sage anyway. Reduced motion: colour and
-// check only.
-const props = defineProps<{ cooked: boolean, label?: string }>()
+// "Gekocht ✓" (handoff "Gekocht button"), on a card and under the title in
+// the Dish detail. Tapped, it springs from 1.12 back to 1, fills sage and
+// draws its check, and says `cook` with its centre, where the celebration's
+// confetti bursts from. `filled`: it is sage anyway (the Dish detail's, the
+// main action there). On a card it is neutral at rest, also on a Dish cooked
+// before ("N× gekocht" says that), and sage on hover under a mouse (#477).
+// Reduced motion: colour and check only.
+const props = defineProps<{ filled?: boolean, label?: string }>()
 const emit = defineEmits<{ cook: [origin: Point] }>()
 const t = useStrings()
 
@@ -33,8 +35,8 @@ function onClick() {
   <button
     ref="button"
     type="button"
-    class="inline-flex items-center gap-1 rounded-pill text-button transition duration-tap ease-tap active:scale-[.94] focus-visible:outline-2 focus-visible:outline-focus"
-    :class="props.cooked || springing ? 'bg-sage text-sage-ink' : 'bg-surface-muted text-text'"
+    class="cook inline-flex items-center gap-1 rounded-pill text-button transition duration-tap ease-tap active:scale-[.94] focus-visible:outline-2 focus-visible:outline-focus"
+    :class="props.filled || springing ? 'bg-sage text-sage-ink' : 'bg-surface-muted text-text'"
     :aria-label="label ?? t.dish.cook"
     @click="onClick"
   >
@@ -59,6 +61,13 @@ function onClick() {
 </template>
 
 <style scoped>
+@media (hover: hover) and (pointer: fine) {
+  .cook:hover {
+    background: var(--color-sage);
+    color: var(--color-sage-ink);
+  }
+}
+
 /* The check draws itself 120ms into the spring, over 260ms. */
 .draw {
   stroke-dasharray: 20;

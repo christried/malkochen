@@ -170,8 +170,8 @@ for (const scheme of ['light', 'dark'] as const) {
       const phone = width < 768
       expect(looks.pill).toEqual({ shadow: phone ? expect.stringContaining(looks.cardShadow) : 'none', family: expect.stringMatching(/^Figtree/), size: '15px', weight: '600' })
       // The pebble is on surface where the pill around it is filled (#206),
-      // on surface-muted where it is white (#285).
-      expect(looks.pebble).toEqual({ background: phone ? looks.surface : looks.surfaceMuted, round: true, emojiInside: true, inPill: true })
+      // on surface-muted where it is white (#285) or the dark surface (#478).
+      expect(looks.pebble).toEqual({ background: phone && scheme === 'light' ? looks.surface : looks.surfaceMuted, round: true, emojiInside: true, inPill: true })
       expect(looks.chevron).toBe(1)
       expect(looks.buttons).toEqual([looks.surface, looks.surface])
     }
@@ -185,7 +185,9 @@ for (const scheme of ['light', 'dark'] as const) {
 // button and doesn't blend into the page: they show one Column at a time and
 // the page wears that Column's accent, so the pill does too, fuller. With
 // every Column showing (#285), the pill is white in an aura of the Board's
-// Column accents. Its name stays readable on it (WCAG AA).
+// Column accents. Its name stays readable on it (WCAG AA). In dark mode on
+// phones (#478) it is the dark surface with a little of that accent, in the
+// text colour: quieter than the active tab, which wears the accent whole.
 async function deleteColumn(page: Page, boardId: string, name: string) {
   const board = await (await page.request.get(`/api/boards/${boardId}`)).json() as { columns: { id: string, name: string }[] }
   const res = await page.request.delete(`/api/columns/${board.columns.find(c => c.name === name)!.id}`)
@@ -193,7 +195,7 @@ async function deleteColumn(page: Page, boardId: string, name: string) {
 }
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`on a phone the switcher pill is filled in the Column's tint the page wears, and follows it (${scheme})`, async ({ page }) => {
+  test(`on a phone the switcher pill ${scheme === 'light' ? 'is filled in' : 'is the dark surface with a little of'} the Column's tint the page wears, and follows it (${scheme})`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.emulateMedia({ colorScheme: scheme })
     await signIn(page, ALLOWLISTED[9])
@@ -207,9 +209,23 @@ for (const scheme of ['light', 'dark'] as const) {
     expect(tintedWith(await fill(), known)).toBe('butter')
     // Filled: neither plain surface nor the page behind it.
     const [behind, ink] = await rgb(page, [await backgroundOf(page.locator('main.board')), await colourOf(pill)])
-    expect(contrast(await fill(), known.background)).toBeGreaterThan(1.15)
+    if (scheme === 'light') expect(contrast(await fill(), known.background)).toBeGreaterThan(1.15)
     expect(contrast(await fill(), behind!)).toBeGreaterThan(1.15)
     expect(contrast(ink!, await fill())).toBeGreaterThanOrEqual(4.5)
+    if (scheme === 'dark') {
+      // Not the accent, and standing out from the page less than the active
+      // tab does; its name and count in the text colour.
+      const butter = known.palette[0]!
+      expect(contrast(await fill(), butter)).toBeGreaterThan(3)
+      expect(contrast(await fill(), behind!)).toBeLessThan(contrast(butter, behind!))
+      const [text] = await rgb(page, [await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-text'))])
+      expect(ink).toEqual(text)
+      // The Dish count is that ink at less than full strength: still readable.
+      const strength = Number(await pill.locator('[data-dish-count]').evaluate(el => getComputedStyle(el).opacity))
+      const filled = await fill()
+      const count = ink!.map((v, i) => v * strength + filled[i]! * (1 - strength)) as [number, number, number]
+      expect(contrast(count, filled)).toBeGreaterThanOrEqual(4.5)
+    }
 
     for (const [name, accent] of [['Diese Woche', 'orchid'], ['Gekocht', 'sage']] as const) {
       await tab(page, name).click()
