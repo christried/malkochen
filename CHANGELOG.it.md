@@ -4,6 +4,10 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+### Changed
+
+- Più ordine: nel piatto, Cucinato ✓ ora sta subito sotto il titolo, accanto ad Apri l’originale, così non devi più scorrere per trovarlo. Le schede mostrano più del titolo di un piatto, e sul telefono la bacheca è più tranquilla, con le schede direttamente sul colore della colonna.
+
 ## [1.2.0] - 2026-11-10
 
 ### Added
