@@ -1093,6 +1093,7 @@ export const de = {
       notifications: 'Benachrichtigungen',
       links: 'Links und Kopien',
       snackbert: 'Snackbert',
+      recipeFinder: 'Rezeptfinder',
       operator: 'Betrieb',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -1143,6 +1144,8 @@ export const de = {
       digest_switched: 'Tägliche E-Mail umgeschaltet',
       snackbert_switched: 'Snackbert umgeschaltet',
       snackbert_report_sent: 'Snackbert Report gesendet',
+      recipe_finder_asked: 'Rezeptfinder angefragt',
+      recipe_finder_switched: 'Rezeptfinder umgeschaltet',
       account_deleted: 'Konto gelöscht',
       push_sent: 'Push gesendet',
       digest_sent: 'Tägliche E-Mail gesendet',
@@ -1150,6 +1153,15 @@ export const de = {
       prompt_answered: 'Hinweis beantwortet',
       dish_link_opened: 'Gericht-Link geöffnet',
     } satisfies Record<EventKind, string>,
+  },
+  // The email to the Operator when someone asks for the Recipe Finder
+  // (#497), in the Operator's language.
+  recipeFinderAskedEmail: {
+    subject: (name: string) => `${name} fragt nach dem Rezeptfinder`,
+    headline: 'Anfrage für den Rezeptfinder',
+    asked: (name: string) => `${name} möchte den Rezeptfinder benutzen.`,
+    decide: 'Ob du ihn einschaltest, entscheidest du auf der Admin-Seite. Lässt du die Anfrage liegen, bleibt sie einfach angefragt.',
+    openAdmin: 'Admin-Seite öffnen',
   },
   // The email confirming it (#346), in the language of whoever deleted it.
   accountDeletedEmail: {

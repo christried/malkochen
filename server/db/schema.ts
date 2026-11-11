@@ -151,6 +151,17 @@ export const snackbert = pgTable('snackbert', {
   checkedAt: timestamp('checked_at', { withTimezone: true }).notNull(),
 })
 
+// The Recipe Finder (CONTEXT.md, #497, ADR 0013): one row per user who asked
+// for it or has it (server/utils/recipe-finder.ts). Off is no row, as for
+// every new user.
+export const recipeFinder = pgTable('recipe_finder', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  // Switched on by the Operator; until then, asked.
+  switchedOn: boolean('switched_on').notNull().default(false),
+  // When they asked; null when the Operator switched it on unasked.
+  askedAt: timestamp('asked_at', { withTimezone: true }),
+})
+
 // ---------------------------------------------------------------------------
 // Boards (CONTEXT.md: Board, Member, Owner, Column, Gekocht Column).
 
