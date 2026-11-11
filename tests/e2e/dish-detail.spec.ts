@@ -4,10 +4,12 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { cardAtRest, column } from './board'
 import { expectCardShape } from './card-shape'
+import { confetti, confettiOrigin } from './celebration'
+import { backgroundOf, rgb } from './colour'
 import { editMorph, expectFieldsMorphing, slowAnimations } from './edit-morph'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { clickAndExpectSaving } from './loading'
-import { removeStoredImages, resetBoard, seedCookings, seedDish, storedImage } from './seed'
+import { landingBoardId, removeStoredImages, resetBoard, seedCookings, seedDish, storedImage } from './seed'
 import { stubImage, stubSourceLookup } from './source-lookup-stub'
 
 // The Dish detail (PRD stories 41–45): tapping a card opens it, full-screen
@@ -51,7 +53,6 @@ test('tapping a card opens its detail with everything about the Dish', async ({ 
   const original = detail.getByRole('link', { name: 'Original öffnen' })
   await expect(original).toHaveAttribute('href', TIKTOK)
   await expect(original).toHaveAttribute('target', '_blank')
-  await expectCardShape(detail.locator('[data-morph-field="source"]'))
   await expect(detail.getByText('Meine Küche · Diese Woche')).toBeVisible()
   // Who added it opens its Verlauf; this one's account is gone.
   await expect(detail.locator('[data-history-added]')).toContainText('Gelöschtes Konto hat das Gericht hinzugefügt')
@@ -79,7 +80,6 @@ for (const [width, panel] of [[1024, 440], [1440, 480]] as const) {
     const detail = await openDetail(page, 'Crispy Tofu')
 
     expect(await settledBox(detail)).toEqual({ x: width - panel, y: 0, width: panel, height: 900 })
-    await expectCardShape(detail.locator('[data-morph-field="source"]'))
     await page.keyboard.press('Escape')
     await expect(detail).toBeHidden()
     await expect(page).toHaveURL(/\/b\/[^/]+$/)
@@ -579,4 +579,165 @@ test('with reduced motion, the image scrolls with the content, and the bar still
   expect(opacity).toBe(1)
   await scrollDetailTo(detail, await imageHeight(detail))
   await expect(detail.locator('[data-detail-bar]')).toBeVisible()
+})
+
+// The layout against the handoff (#476): chips, title, Creator, Caption, the
+// action row ("Original öffnen", "Gekocht ✓"), the share row, the Verlauf.
+
+// A Dish without a link, added like Add Dish adds one without.
+async function addDishWithoutLink(page: Page, title: string) {
+  const res = await page.request.post(`/api/boards/${await landingBoardId(page)}/dishes`, { data: { title, placeholder: 'bowl' } })
+  expect(res.status()).toBe(201)
+}
+
+async function boxOf(locator: Locator) {
+  const box = await locator.boundingBox()
+  expect(box).not.toBeNull()
+  return box!
+}
+
+// A handoff colour as the screen shows it.
+async function token(page: Page, name: string) {
+  const value = await page.evaluate(n => getComputedStyle(document.documentElement).getPropertyValue(`--color-${n}`), name)
+  const [[r, g, b]] = await rgb(page, [value]) as [[number, number, number]]
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+for (const scheme of ['light', 'dark'] as const) {
+  for (const [width, height] of [[360, 780], [1280, 900]] as const) {
+    test(`${scheme}, ${width}px: chips above the title, "Gekocht ✓" beside "Original öffnen" in view, and a quiet share row`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme })
+      await page.setViewportSize({ width, height })
+      await signIn(page, ALLOWLISTED[0])
+      const title = `Reihe ${scheme} ${width}`
+      await seedDish(page, { title, sourceLink: TIKTOK, sourceKind: 'tiktok', creator: 'Scout', caption: 'Schnell gemacht.' })
+      // Cooked or not, the button looks the same.
+      await seedCookings(page, title, width === 360 ? 0 : 2)
+      await gotoHydrated(page, '/')
+      const detail = await openDetail(page, title)
+      await settledBox(detail)
+
+      // The chip row: the Source, then where the Dish is.
+      const chips = detail.locator('[data-detail-chips] > *')
+      await expect(chips).toHaveText(['TikTok', /Meine Küche · Ideen$/])
+      for (const chip of await chips.all()) expect(await backgroundOf(chip)).toBe(await token(page, 'surface-muted'))
+
+      // One "Gekocht ✓", sage, in view without scrolling, to the right of
+      // "Original öffnen", which takes the rest of the row. No panel
+      // around them.
+      const row = detail.locator('[data-main-actions]')
+      const cook = detail.getByRole('button', { name: 'Gekocht ✓' })
+      const original = detail.getByRole('link', { name: 'Original öffnen' })
+      await expect(cook).toHaveCount(1)
+      await expect(cook).toBeInViewport({ ratio: 1 })
+      expect(await backgroundOf(cook)).toBe(await token(page, 'sage'))
+      expect(await backgroundOf(row)).toBe('rgba(0, 0, 0, 0)')
+      const [rowBox, cookBox, originalBox] = [await boxOf(row), await boxOf(cook), await boxOf(original)]
+      expect(originalBox.x).toBeCloseTo(rowBox.x, 0)
+      expect(cookBox.x).toBeGreaterThan(originalBox.x + originalBox.width)
+      expect(cookBox.x + cookBox.width).toBeCloseTo(rowBox.x + rowBox.width, 0)
+      expect(originalBox.width).toBeGreaterThan(cookBox.width)
+      expect(cookBox.height).toBeCloseTo(originalBox.height, 0)
+
+      // "Link teilen" and "Kopieren": one row, equal, each with its icon,
+      // neither butter-filled.
+      const share = detail.getByRole('button', { name: 'Link teilen', exact: true })
+      const copy = detail.getByRole('button', { name: 'Kopieren', exact: true })
+      const [shareBox, copyBox] = [await boxOf(share), await boxOf(copy)]
+      expect(copyBox.y).toBeCloseTo(shareBox.y, 0)
+      expect(copyBox.width).toBeCloseTo(shareBox.width, 0)
+      expect(copyBox.x).toBeGreaterThan(shareBox.x + shareBox.width)
+      for (const button of [share, copy]) {
+        expect(await backgroundOf(button)).toBe(await token(page, 'surface-muted'))
+        await expect(button.locator('svg')).toHaveCount(1)
+      }
+
+      // The order, as it is read: place, title, Creator, Caption, actions,
+      // share row, Verlauf, then the Dish's other buttons.
+      const parts = ['[data-detail-chips]', 'h1', '[data-creator]', '[data-caption]', '[data-main-actions]', '[data-share-actions]', '[data-dish-history]', '[data-move]']
+      const inOrder = await detail.evaluate((el, parts) => {
+        const found = parts.map(part => el.querySelector(part))
+        return found.map((part, i) => !!part && (i === 0 || !!(found[i - 1]!.compareDocumentPosition(part) & Node.DOCUMENT_POSITION_FOLLOWING)))
+      }, parts)
+      expect(inOrder).toEqual(parts.map(() => true))
+
+      // The Verlauf keeps its heading and summary, without a button of its own.
+      const history = detail.locator('[data-dish-history]')
+      await expect(history.getByRole('heading', { level: 2 })).toHaveText('Verlauf')
+      await expect(history.locator('[data-cooking-summary]')).toBeVisible()
+      await expect(history.getByRole('button', { name: 'Gekocht ✓' })).toHaveCount(0)
+    })
+  }
+}
+
+test('a Dish without a link: "Gekocht ✓" alone at the row\'s start, in view on a 360px phone, and only the place chip', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await signIn(page, ALLOWLISTED[0])
+  await addDishWithoutLink(page, 'Ohne Link')
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Ohne Link')
+  await settledBox(detail)
+
+  await expect(detail.locator('[data-detail-chips] > *')).toHaveText([/Meine Küche · Ideen$/])
+  await expect(detail.locator('[data-source-badge]')).toHaveCount(0)
+  await expect(detail.getByRole('link', { name: 'Original öffnen' })).toHaveCount(0)
+  const cook = detail.getByRole('button', { name: 'Gekocht ✓' })
+  await expect(cook).toHaveCount(1)
+  await expect(cook).toBeInViewport({ ratio: 1 })
+  const [rowBox, cookBox] = [await boxOf(detail.locator('[data-main-actions]')), await boxOf(cook)]
+  expect(cookBox.x).toBeCloseTo(rowBox.x, 0)
+  expect(cookBox.width).toBeLessThan(rowBox.width / 2)
+})
+
+test('the celebration bursts from "Gekocht ✓" under the title', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await signIn(page, ALLOWLISTED[0])
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Ohne Link')
+  await settledBox(detail)
+  const cook = detail.getByRole('button', { name: 'Gekocht ✓' })
+  // The button's middle as it is clicked: the detail may still be settling.
+  type Pressed = { pressedAt?: { x: number, y: number } }
+  await cook.evaluate((el) => {
+    el.addEventListener('click', () => {
+      const box = el.getBoundingClientRect()
+      const w = window as unknown as Pressed
+      w.pressedAt = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }, { once: true, capture: true })
+  })
+
+  await cook.click()
+
+  await expect(confetti(detail)).toHaveCount(14)
+  const origin = await confettiOrigin(detail)
+  const button = await page.evaluate(() => (window as unknown as Pressed).pressedAt)
+  expect(button, 'the click reached the button').toBeDefined()
+  expect(Math.abs(origin.x - button!.x)).toBeLessThan(2)
+  expect(Math.abs(origin.y - button!.y)).toBeLessThan(2)
+  await expect(detail.locator('[data-cooking]')).toHaveCount(1)
+  await expect(page.getByRole('status').getByRole('button', { name: 'Rückgängig' })).toBeVisible()
+})
+
+// Last in this file: it renames the Board (the first test puts it back).
+test('with a long Board name the chips wrap, and nothing is cut at 360px', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await signIn(page, ALLOWLISTED[0])
+  const name = 'Sonntagsfrühstücksbrunchvorbereitungen mit allen Nachbarn'
+  expect((await page.request.patch(`/api/boards/${await landingBoardId(page)}`, { data: { name } })).status()).toBe(200)
+  await gotoHydrated(page, '/')
+  const detail = await openDetail(page, 'Reihe light 360')
+
+  const chips = detail.locator('[data-detail-chips] > *')
+  await expect(chips).toHaveCount(2)
+  await expect(chips.last()).toContainText(`${name} · Ideen`)
+  const [source, place] = [await boxOf(chips.first()), await boxOf(chips.last())]
+  // The place chip has gone under the Source chip.
+  expect(place.y).toBeGreaterThanOrEqual(source.y + source.height)
+  for (const chip of await chips.all()) {
+    const box = await boxOf(chip)
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(360)
+    expect(await chip.evaluate(el => el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight)).toBe(true)
+  }
+  expect(await detail.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
 })

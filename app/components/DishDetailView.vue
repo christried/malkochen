@@ -7,11 +7,12 @@ import { allowedOnceSent } from '~/board/allowed-once-sent'
 import type { CommentResult } from '~/board/dish-histories'
 import type { VoteResult } from '~/board/dish-votes'
 
-// The Dish detail's contents: a large image, the title with the Creator
-// under it, the Source with "Original öffnen", where the Dish is
-// (Board and Column), its Dish History ("Verlauf": who added it and when,
-// its Cookings, Votes and Comments, the comment field) with "Gekocht ✓",
-// "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
+// The Dish detail's contents, in the handoff's order (#476): a large image,
+// two chips (the Source, and where the Dish is: Board and Column), the
+// title with the Creator and Caption under it, "Original öffnen" beside
+// "Gekocht ✓", "Link teilen" beside "Kopieren", its Dish History ("Verlauf":
+// who added it and when, its Cookings, Votes and Comments, the comment
+// field), "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
 // at the top keeps close, the title and "Bearbeiten" at hand
 // (useDetailScroll). Each action only for a Member it is allowed to
 // (their Permissions): "Bearbeiten" with "edit Dishes", "Verschieben
@@ -36,6 +37,8 @@ const emit = defineEmits<{
 const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
+const mayMove = computed(() => boardModule.may('moveDishes'))
+const quietButton = 'flex min-w-0 items-center justify-center gap-2 rounded-pill bg-surface-muted px-3 py-3.5 text-center text-button text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus'
 // Added offline and not sent yet (#462): sharing, copying and deleting wait
 // for the server to have the Dish; they are greyed out like what needs a
 // connection.
@@ -212,11 +215,22 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         class="flex flex-col gap-2"
         data-morph-field="title"
       >
-        <p class="text-small text-text-muted">
-          <span aria-hidden="true">{{ board.emoji }}</span> {{ t.detail.placement(board.name, columnName) }}
-        </p>
-        <h1 class="font-display text-title-l"
+        <!-- Chips above the title: the Source, then where the Dish is. They
+             wrap, and a long Board name breaks inside its chip. -->
+        <div
+          class="flex flex-wrap gap-2"
+          data-detail-chips
         >
+          <SourceBadge
+            v-if="dish.source"
+            :kind="dish.source.kind"
+            chip
+          />
+          <p class="min-w-0 rounded-chip bg-surface-muted px-2.5 py-1.5 text-caption text-text [overflow-wrap:anywhere]">
+            <span aria-hidden="true">{{ board.emoji }}</span> {{ t.detail.placement(board.name, columnName) }}
+          </p>
+        </div>
+        <h1 class="font-display text-title-l">
           {{ dish.title }}
         </h1>
       </div>
@@ -238,27 +252,40 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         :caption="dish.caption"
       />
 
+      <!-- The action row, right under the title, so a Cooking needs no
+           scrolling (#476): "Original öffnen" takes the width "Gekocht ✓"
+           leaves. Without a link "Gekocht ✓" stands alone at the row's
+           start; without "move Dishes" the link has the row; with neither
+           there is no row. Edit mode's Source field morphs from it. -->
       <div
-        v-if="dish.source"
-        class="flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-muted p-3 pl-4"
+        v-if="dish.source || mayMove"
+        class="flex items-stretch gap-2.5"
+        data-main-actions
         data-morph-field="source"
       >
-        <SourceBadge :kind="dish.source.kind" />
         <a
+          v-if="dish.source"
           :href="dish.source.link"
           target="_blank"
           rel="noopener noreferrer"
-          class="rounded-pill bg-inverse px-5 py-3 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          class="flex min-w-0 flex-1 items-center justify-center rounded-pill bg-inverse px-5 py-3.5 text-center text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           {{ t.detail.openOriginal }}
         </a>
+        <!-- The detail's only "Gekocht ✓", always sage: the main action. -->
+        <CookButton
+          v-if="mayMove"
+          class="shrink-0 px-5 py-3.5"
+          cooked
+          @cook="origin => $emit('cook', origin)"
+        />
       </div>
 
-      <!-- Full width under the Creator and Source, on a phone and in the
-           desktop panel alike (#392 decision 5): "Link teilen" and, under it,
-           "Kopieren" (#402), a Copy on another of the user's Boards. -->
+      <!-- Under the action row, on a phone and in the desktop panel alike:
+           "Link teilen" and "Kopieren" (#402, a Copy on another of the
+           user's Boards), two equal, quiet buttons on one row (#476). -->
       <div
-        class="flex flex-col gap-2"
+        class="grid grid-cols-2 gap-2"
         data-share-actions
       >
         <NeedsNet
@@ -267,20 +294,27 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         >
           <button
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-pill bg-butter px-5 py-3.5 text-button-l text-on-accent transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus"
+            :class="quietButton"
             :disabled="sharing"
             data-share-link
             @click="shareLink"
           >
-            <AppIcon name="link" />
+            <AppIcon
+              name="link"
+              class="shrink-0"
+            />
             {{ t.settings.shareLink }}
           </button>
           <button
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-pill bg-surface-muted px-5 py-3.5 text-button-l text-text transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+            :class="quietButton"
             data-copy-dish
             @click="emit('copy')"
           >
+            <AppIcon
+              name="copy"
+              class="shrink-0"
+            />
             {{ t.detail.copy }}
           </button>
         </NeedsNet>
@@ -291,7 +325,6 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         :board-id="board.id"
         :is-owner="board.isOwner"
         data-morph-field="history"
-        @cook="origin => $emit('cook', origin)"
         @delete-cooking="cooking => $emit('deleteCooking', cooking)"
         @comment="result => $emit('comment', result)"
         @vote="result => $emit('vote', result)"
@@ -303,7 +336,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
       >
         <NeedsNet :note="false">
           <button
-            v-if="boardModule.may('moveDishes')"
+            v-if="mayMove"
             type="button"
             class="rounded-pill bg-surface-muted px-5 py-3.5 text-button transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
             aria-haspopup="dialog"

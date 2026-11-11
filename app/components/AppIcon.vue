@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The line icons buttons share: a 24-unit grid, drawn in the text colour.
-withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip' | 'check' | 'camera' | 'link' | 'sign-out' | 'plus' | 'play', size?: number }>(), { size: 18 })
+withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip' | 'check' | 'camera' | 'link' | 'copy' | 'sign-out' | 'plus' | 'play', size?: number }>(), { size: 18 })
 </script>
 
 <template>
@@ -74,6 +74,11 @@ withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up'
     <path
       v-else-if="name === 'link'"
       d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"
+    />
+    <!-- Two sheets, one behind the other. -->
+    <path
+      v-else-if="name === 'copy'"
+      d="M10.5 8h7A2.5 2.5 0 0 1 20 10.5v7a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 8 17.5v-7A2.5 2.5 0 0 1 10.5 8zM4.5 15.5A2 2 0 0 1 4 14V6.5A2.5 2.5 0 0 1 6.5 4H14a2 2 0 0 1 1.5.5"
     />
     <!-- A door with an arrow leaving it. -->
     <path

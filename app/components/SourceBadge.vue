@@ -6,16 +6,18 @@ import { badgeKind } from '~~/shared/source-badge'
 // coloured dot and the Source's name. `dotOnly`: its dot-only variant from
 // desktop width (handoff "dot-only (desktop card)"), where a lane's card
 // thumbnail is too narrow for the name; the name stays for screen readers,
-// and under a mouse the Tooltip says it.
-const props = defineProps<{ kind: SourceKind, dotOnly?: boolean }>()
+// and under a mouse the Tooltip says it. `chip`: its chip variant (handoff
+// "chip (on surface-muted)"), for a badge on the page instead of on an image,
+// like the one above the Dish detail's title.
+const props = defineProps<{ kind: SourceKind, dotOnly?: boolean, chip?: boolean }>()
 const t = useStrings()
 const badge = computed(() => badgeKind(props.kind))
 </script>
 
 <template>
   <span
-    class="inline-flex items-center gap-1 rounded-chip bg-glass px-1.5 py-0.5 text-caption text-text backdrop-blur-sm"
-    :class="{ 'desktop:p-1': dotOnly }"
+    class="inline-flex items-center rounded-chip text-caption text-text"
+    :class="[chip ? 'gap-1.5 bg-surface-muted px-2.5 py-1.5' : 'gap-1 bg-glass px-1.5 py-0.5 backdrop-blur-sm', { 'desktop:p-1': dotOnly }]"
     :data-tooltip="dotOnly ? t.sources[badge] : undefined"
     data-source-badge
   >
