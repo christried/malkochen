@@ -4,6 +4,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-11
+
 ### Changed
 
 - Aufgeräumt: Im Gericht sitzt Gekocht ✓ jetzt direkt unter dem Titel, neben Original öffnen, du musst also nicht mehr danach scrollen. Karten zeigen mehr vom Titel eines Gerichts, und am Handy ist das Board ruhiger, weil die Karten direkt auf der Farbe der Spalte liegen.
@@ -73,7 +75,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/christried/malkochen/compare/v1.1.0...v1.1.1
