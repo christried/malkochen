@@ -5,18 +5,20 @@ import { parseServerEnv } from '../env'
 
 const { OPERATOR_EMAIL } = parseServerEnv(process.env)
 
+// The Operator's email address as compared: trimmed, lower case; empty for none.
+export const operatorEmail = OPERATOR_EMAIL.trim().toLowerCase()
+
 // The Operator (CONTEXT.md, #348): the one user whose email is
 // OPERATOR_EMAIL, and the only one the Admin Page is for.
 export function isOperator(email: string): boolean {
-  return OPERATOR_EMAIL !== '' && email.trim().toLowerCase() === OPERATOR_EMAIL.trim().toLowerCase()
+  return operatorEmail !== '' && email.trim().toLowerCase() === operatorEmail
 }
 
 // Whether the user with this id is the Operator, as SQL to filter on: for the
 // one access check (server/utils/board-access.ts, ADR 0009).
 export function isOperatorUser(userId: string): SQL<boolean> {
-  const email = OPERATOR_EMAIL.trim().toLowerCase()
-  if (email === '') return sql<boolean>`false`
-  return sql<boolean>`exists (select 1 from ${user} where ${user.id} = ${userId} and lower(${user.email}) = ${email})`
+  if (operatorEmail === '') return sql<boolean>`false`
+  return sql<boolean>`exists (select 1 from ${user} where ${user.id} = ${userId} and lower(${user.email}) = ${operatorEmail})`
 }
 
 // What the Admin Page's endpoints answer anyone but the Operator: there is

@@ -49,9 +49,9 @@ function passOn(d: Db, table: Memberships, userId: string) {
 // the user's Boards with others pass on; Boards only they are on, live or
 // archived, are deleted for good; the user goes, and with them (on delete
 // cascade) their memberships, sessions, accounts, push subscriptions, Email
-// Digest setting, Recipe Finder state and limits. What they added stays, by nobody (on delete
-// set null): Dishes, Cookings, Comments and Votes then show "Gelöschtes
-// Konto". The event log keeps its rows, with them emptied out. Then the
+// Digest setting, Recipe Finder state and limits. What they added stays,
+// by nobody (on delete set null): Dishes, Cookings, Comments and Votes then
+// show "Gelöschtes Konto". The event log keeps its rows, with them emptied out. Then the
 // images only they used leave the Image Store, and the confirmation email
 // goes out in `language`.
 export async function deleteAccount(deleted: { id: string, email: string, username: string, ownPicture?: string | null }, language: Language): Promise<void> {

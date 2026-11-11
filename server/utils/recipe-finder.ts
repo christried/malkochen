@@ -6,6 +6,7 @@ import { recipeFinderAskedEmail } from '../email'
 import { parseServerEnv } from '../env'
 import { detailsOf, userEvent, withEvents } from './events'
 import { mailSender } from './mail'
+import { operatorEmail } from './operator'
 import { recipientLanguage } from './people'
 
 // The Recipe Finder switch (CONTEXT.md, #497, ADR 0013): off for every new
@@ -29,7 +30,6 @@ export async function recipeFinderStateOf(userId: string): Promise<RecipeFinderS
 // The Operator hears of a request by email, in their language, naming the
 // user by their Username (their email address before they picked one).
 async function mailOperator(name: string): Promise<void> {
-  const operatorEmail = env.OPERATOR_EMAIL.trim().toLowerCase()
   if (!sendEmails || operatorEmail === '') return
   const [operator] = await db
     .select({ language: user.language, browserLanguage: user.browserLanguage })
