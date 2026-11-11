@@ -22,6 +22,7 @@ function dish(id: string): DishView {
     creator: null,
     caption: null,
     playableVideo: null,
+    recipe: null,
     imageUrl: null,
     imageFocus: { x: 50, y: 50 },
     placeholder: 'bowl',

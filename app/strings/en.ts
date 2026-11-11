@@ -953,6 +953,7 @@ export const en: Strings = {
       vote_taken_back: 'Thumb taken back',
       open_sign_up_switched: 'Open sign-up switched',
       dish_edited: 'Dish edited',
+      recipe_edited: 'Recipe edited',
       column_added: 'Column added',
       column_renamed: 'Column renamed',
       column_subtitle_changed: 'Column subtitle changed',

@@ -1122,6 +1122,7 @@ export const de = {
       vote_taken_back: 'Daumen zurückgenommen',
       open_sign_up_switched: 'Anmeldung offen umgeschaltet',
       dish_edited: 'Gericht bearbeitet',
+      recipe_edited: 'Rezept bearbeitet',
       column_added: 'Spalte hinzugefügt',
       column_renamed: 'Spalte umbenannt',
       column_subtitle_changed: 'Spaltenuntertitel geändert',

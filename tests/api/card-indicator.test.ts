@@ -151,6 +151,19 @@ test('a Comment deleted again no longer marks the Dish', async () => {
   expect(await isMarked(yalow, board.id, dish.id)).toBe(false)
 })
 
+test('another Member\'s Recipe change neither marks the Dish nor is in its Dish History (#494)', async () => {
+  const { board, yalow, widnall } = await sharedBoard('Rezept geändert')
+  const dish = await addDish(yalow, board.id)
+  await opened(yalow, dish.id)
+
+  const res = await widnall.fetch(`/api/dishes/${dish.id}`, { method: 'PATCH', ...json({ recipe: { ingredients: ['Eier', 'Tomaten'], steps: ['Stocken lassen.'] } }) })
+  expect(res.status).toBe(200)
+
+  expect(await isMarked(yalow, board.id, dish.id)).toBe(false)
+  const history = await (await openDish(yalow, dish.id)).json() as { entries: { kind: string }[] }
+  expect(history.entries.map(e => e.kind)).toEqual(['added'])
+})
+
 test('opening a Dish answers its Dish History', async () => {
   const { board, yalow, widnall } = await sharedBoard('Öffnen')
   const dish = await addDish(yalow, board.id)

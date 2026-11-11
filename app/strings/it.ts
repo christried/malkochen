@@ -969,6 +969,7 @@ export const it: Strings = {
       vote_taken_back: 'Pollice ritirato',
       open_sign_up_switched: 'Registrazione aperta cambiata',
       dish_edited: 'Piatto modificato',
+      recipe_edited: 'Ricetta modificata',
       column_added: 'Colonna aggiunta',
       column_renamed: 'Colonna rinominata',
       column_subtitle_changed: 'Sottotitolo della colonna cambiato',

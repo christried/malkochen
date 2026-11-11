@@ -445,12 +445,12 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   function takeArrivals() {
     if (!unsent || !board.value) return
     for (const { dish } of unsent.takeArrivals(board.value.id)) {
-      const { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt } = dish
+      const { id, code, title, source, creator, caption, playableVideo, recipe, imageUrl, imageFocus, placeholder, addedBy, createdAt } = dish
       const shown = find(id)?.dish
       if (!shown) continue
       // The code it was shown with still leads to it (an open detail).
       arrivedCodes.set(shown.code, shown.id)
-      Object.assign(shown, { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt })
+      Object.assign(shown, { id, code, title, source, creator, caption, playableVideo, recipe, imageUrl, imageFocus, placeholder, addedBy, createdAt })
     }
   }
   const arrivedCodes = reactive(new Map<string, string>())

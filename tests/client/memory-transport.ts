@@ -141,6 +141,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       // As the server does, with the ticket only checked for being sent.
       caption: input.source && input.sourceTicket ? input.caption?.trim() || null : null,
       playableVideo: input.source && input.sourceTicket ? input.playableVideo ?? null : null,
+      recipe: null,
       imageUrl: input.photo
         ? (input.photo.ticket ? input.photo.url : null)
         : input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
@@ -182,6 +183,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       creator: found?.creator ?? null,
       caption: null,
       playableVideo: null,
+      recipe: null,
       imageUrl: found?.imageUrl ?? null,
       imageFocus: { x: 50, y: 50 },
       placeholder: body.placeholder,

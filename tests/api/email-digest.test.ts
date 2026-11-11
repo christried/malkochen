@@ -195,6 +195,22 @@ test('no email for a Member who switched it off, whose only new Dishes are their
   expect(emailsTo(PEREY)).toEqual([])
 })
 
+test('a Recipe change is no news: it brings no email (#494)', async () => {
+  const wu = await switchedOnFor(await signIn(WU))
+  const conway = await signIn(CONWAY)
+  const board = await sharedBoard(wu, [conway], 'Rezeptpost')
+  const dish = await addDish(conway, board.id, 'Hummus')
+  await run()
+  expect(emailsTo(WU)).toHaveLength(1)
+  resend.forget()
+
+  const res = await conway.fetch(`/api/dishes/${dish.id}`, json('PATCH', { recipe: { ingredients: ['1 Dose Kichererbsen'], steps: ['Pürieren.'] } }))
+  expect(res.status).toBe(200)
+  await run()
+
+  expect(emailsTo(WU)).toEqual([])
+})
+
 test('a Dish is listed once: the next day\'s digest has only what was added since', async () => {
   const wu = await switchedOnFor(await signIn(WU))
   const conway = await signIn(CONWAY)

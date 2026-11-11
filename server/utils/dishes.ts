@@ -3,6 +3,7 @@ import { and, asc, desc, eq, exists, ilike, inArray, isNotNull, isNull, lte, ne,
 import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
+import type { Recipe } from '../../shared/recipe'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, user } from '../db/schema'
@@ -42,6 +43,8 @@ export interface DishView {
   // Whether its Source has a video that plays in malkochen (#394); null when
   // not known yet.
   playableVideo: boolean | null
+  // Its Recipe (CONTEXT.md): Ingredients and Steps; null if it has neither.
+  recipe: Recipe | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -127,6 +130,9 @@ function selectDishes() {
       creator: dish.creator,
       caption: dish.caption,
       playableVideo: dish.playableVideo,
+      recipeIngredients: dish.recipeIngredients,
+      recipeSteps: dish.recipeSteps,
+      recipeLink: dish.recipeLink,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -144,9 +150,10 @@ function selectDishes() {
 
 type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
 
-function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
+function toView({ columnId: _, sourceLink, sourceKind, recipeIngredients, recipeSteps, recipeLink, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
   return {
     ...row,
+    recipe: recipeIngredients.length > 0 || recipeSteps.length > 0 ? { ingredients: recipeIngredients, steps: recipeSteps, link: recipeLink } : null,
     imageFocus: { x: imageFocusX, y: imageFocusY },
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
@@ -189,7 +196,10 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
 // `imageIsOwnPhoto` comes with `imageUrl` whenever that is changed.
+// `recipe` replaces the Recipe as a whole, its lines already trimmed and
+// within the limits (dish-input.ts); null, or no line in it, clears it.
 export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'playableVideo' | 'imageUrl' | 'imageIsOwnPhoto' | 'imageFocus' | 'placeholder'>>
+  & { recipe?: Pick<Recipe, 'ingredients' | 'steps'> | null }
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -261,7 +271,9 @@ export async function boardOfDish(dishId: string): Promise<string | null> {
 
 // Edits a Dish. Null unless it exists and the user is a Member of its Board.
 export async function editDish(dishId: string, userId: string, changes: DishChanges): Promise<DishView | null> {
-  const { source, imageFocus, ...rest } = changes
+  const { source, imageFocus, recipe, ...rest } = changes
+  const ingredients = recipe?.ingredients ?? []
+  const steps = recipe?.steps ?? []
   const focus = rest.imageUrl === undefined ? imageFocus : focusOf(rest.imageUrl, imageFocus)
   const values = {
     ...rest,
@@ -270,10 +282,17 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
     ...focus && (rest.imageUrl === undefined
       ? { imageFocusX: unlessPlaceholder(focus.x, FOCUS_CENTRE.x), imageFocusY: unlessPlaceholder(focus.y, FOCUS_CENTRE.y) }
       : { imageFocusX: focus.x, imageFocusY: focus.y }),
+    ...recipe !== undefined && {
+      recipeIngredients: ingredients,
+      recipeSteps: steps,
+      // The link it was found at stays with it until nothing is left of it.
+      ...ingredients.length === 0 && steps.length === 0 && { recipeLink: null },
+    },
   }
   const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
-    // Recorded only if a field changed, with which (never their values).
+    // Recorded only if a field changed, with which (never their values); a
+    // changed Recipe is an event of its own, the Recipe Finder's kinds beside it.
     const { rows } = await withEvents(
       db,
       db
@@ -291,11 +310,18 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
           sourceLink: dish.sourceLink,
           sourceKind: dish.sourceKind,
           creator: dish.creator,
+          recipeIngredients: dish.recipeIngredients,
+          recipeSteps: dish.recipeSteps,
         }),
-      dishEvent('dish_edited', userId, sql`jsonb_build_object('fields', ${changedFields()})`),
+      [
+        { ...dishEvent('dish_edited', userId, sql`jsonb_build_object('fields', ${changedFields()})`), when: sql`${changedFields()} <> '[]'::jsonb` },
+        {
+          ...dishEvent('recipe_edited', userId),
+          when: sql`changed.recipe_ingredients is distinct from earlier.recipe_ingredients or changed.recipe_steps is distinct from earlier.recipe_steps`,
+        },
+      ],
       {
-        earlier: sql`select ${dish.id}, ${dish.title}, ${dish.imageUrl}, ${dish.placeholder}, ${dish.imageFocusX}, ${dish.imageFocusY}, ${dish.sourceLink}, ${dish.sourceKind}, ${dish.creator} from ${dish} where ${target}`,
-        where: sql`${changedFields()} <> '[]'::jsonb`,
+        earlier: sql`select ${dish.id}, ${dish.title}, ${dish.imageUrl}, ${dish.placeholder}, ${dish.imageFocusX}, ${dish.imageFocusY}, ${dish.sourceLink}, ${dish.sourceKind}, ${dish.creator}, ${dish.recipeIngredients}, ${dish.recipeSteps} from ${dish} where ${target}`,
       },
     )
     if (rows.length === 0) return null
@@ -1042,6 +1068,7 @@ export async function addDish(
     creator: input.creator,
     caption: input.caption,
     playableVideo: input.playableVideo,
+    recipe: null,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

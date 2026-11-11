@@ -44,6 +44,8 @@ export const EVENT_KINDS = [
   'open_sign_up_switched',
   // "Bearbeiten" on a Dish: which of its fields changed (EventDetails).
   'dish_edited',
+  // A Dish's Recipe (CONTEXT.md) changed by a Member, never what it says.
+  'recipe_edited',
   // Board settings: Columns added, renamed, given or without a Column
   // Subtitle, put in a new order, and deleted.
   'column_added',
