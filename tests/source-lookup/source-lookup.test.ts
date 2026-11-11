@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createSourceLookup } from '../../server/source-lookup'
+import { createRecipeLookup, createSourceLookup } from '../../server/source-lookup'
 import { createHttp } from '../../server/source-lookup/http'
 import { playsInPlace } from '../../server/source-lookup/instagram'
 import { fakeUpstream, fixture, html, json, redirect, status, type Route } from './fake-upstream'
@@ -1046,5 +1046,193 @@ describe('Playable video (#394)', () => {
     const { lookup } = lookupWith([])
 
     expect((await lookup('kein Link')).playableVideo).toBe(false)
+  })
+})
+
+// The recipe a page carries as schema.org Recipe data (#499): its ingredient
+// list as Ingredients, its instructions as Steps (CONTEXT.md).
+describe('the recipe a page carries', () => {
+  function recipeWith(routes: Route[], options: { timeoutMs?: number } = {}) {
+    const upstream = fakeUpstream(routes)
+    return { recipe: createRecipeLookup({ fetch: upstream.fetch, ...options }), upstream }
+  }
+
+  test('a food blog\'s Recipe data gives its Ingredients and Steps in order, as plain text (recorded)', async () => {
+    const { recipe } = recipeWith([['https://www.loveandlemons.com/brownies-recipe/', () => html(fixture('blog-recipe-array.html'))]])
+
+    expect(await recipe('https://www.loveandlemons.com/brownies-recipe/?utm_source=pinterest')).toEqual({
+      outcome: 'found',
+      recipe: {
+        ingredients: [
+          '1 1/2 cups granulated sugar*',
+          '3/4 cup all-purpose flour',
+          '2/3 cup cocoa powder (sifted if lumpy)',
+          '1/2 cup powdered sugar (sifted if lumpy)',
+          '1/2 cup dark chocolate chips',
+          '3/4 teaspoons sea salt',
+          '2 large eggs',
+          '1/2 cup canola oil or extra-virgin olive oil**',
+          '2 tablespoons water',
+          '1/2 teaspoon vanilla',
+        ],
+        steps: [
+          'Preheat the oven to 325°F. Lightly spray an 8x8 baking dish (not a 9x9 dish or your brownies will overcook) with cooking spray and line it with parchment paper. Spray the parchment paper.',
+          'In a medium bowl, combine the sugar, flour, cocoa powder, powdered sugar, chocolate chips, and salt.',
+          'In a large bowl, whisk together the eggs, olive oil, water, and vanilla.',
+          'Sprinkle the dry mix over the wet mix and stir until just combined.',
+          'Pour the batter into the prepared pan (it\'ll be thick - that\'s ok) and use a spatula to smooth the top. Bake for 40 to 48 minutes, or until a toothpick comes out with only a few crumbs attached (note: it\'s better to pull the brownies out early than to leave them in too long). Cool completely before slicing.*** Store in an airtight container at room temperature for up to 3 days. These also freeze well!',
+        ],
+      },
+    })
+  })
+
+  test('a Recipe with only an ingredient list gives Ingredients and no Steps', async () => {
+    const link = 'https://veggie-kueche.example/knuspriger-tofu/'
+    const { recipe } = recipeWith([[link, () => html(fixture('blog-recipe-string.html'))]])
+
+    expect(await recipe(link)).toEqual({ outcome: 'found', recipe: { ingredients: ['400 g Tofu', '2 EL Speisestärke'], steps: [] } })
+  })
+
+  test('Steps grouped in sections come out flat and in order, from a Recipe in a graph with a list of types, HTML reduced to plain text', async () => {
+    const link = 'https://ofenliebe.example/linsenlasagne/'
+    const { recipe } = recipeWith([[link, () => html(fixture('blog-recipe-sections.html'))]])
+
+    expect(await recipe(link)).toEqual({
+      outcome: 'found',
+      recipe: {
+        ingredients: ['250 g rote Linsen', '1 Dose gehackte Tomaten', '12 Lasagneplatten', '500 ml Hafermilch & 40 g Mehl'],
+        steps: [
+          'Zwiebel und Knoblauch in Öl anbraten.',
+          'Linsen und Tomaten dazugeben, 20 Min. köcheln lassen.',
+          'Mehl in Margarine anschwitzen, Hafermilch einrühren.',
+          'Alles schichten und 35 Minuten bei 200 °C backen.',
+        ],
+      },
+    })
+  })
+
+  test('instructions as one string of HTML give a Step per paragraph or list item', async () => {
+    const link = 'https://suppenglueck.example/kuerbissuppe'
+    const { recipe } = recipeWith([[link, () => html(fixture('blog-recipe-text.html'))]])
+
+    expect(await recipe(link)).toEqual({
+      outcome: 'found',
+      recipe: {
+        ingredients: ['1 Hokkaido', '400 ml Kokosmilch'],
+        steps: [
+          'Den Kürbis waschen, entkernen und würfeln.',
+          'Mit 600 ml Brühe ca. 20 Min. weich kochen. Dann pürieren.',
+          'Kokosmilch einrühren & abschmecken.',
+        ],
+      },
+    })
+  })
+
+  // What a page's recipeInstructions give as Steps.
+  async function stepsOf(recipeInstructions: unknown) {
+    const link = 'https://blog.example/rezept'
+    const data = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Recipe', 'name': 'Dal', recipeInstructions })
+    const { recipe } = recipeWith([[link, () => html(`<html><head><script type="application/ld+json">${data}</script></head></html>`)]])
+    const result = await recipe(link)
+    return result.outcome === 'found' ? result.recipe.steps : result.outcome
+  }
+
+  test.each<[string, unknown, string[]]>([
+    ['a list of strings gives a Step each', ['Linsen waschen.', ' Mit Wasser aufkochen. Schaum abschöpfen. ', ''], ['Linsen waschen.', 'Mit Wasser aufkochen. Schaum abschöpfen.']],
+    ['a list of step objects gives a Step each', [{ '@type': 'HowToStep', 'text': 'Linsen waschen.' }, { '@type': 'HowToStep', 'text': 'Aufkochen.' }], ['Linsen waschen.', 'Aufkochen.']],
+    ['a step object with only a name gives that', [{ '@type': 'HowToStep', 'name': 'Linsen waschen.' }, { '@type': 'HowToStep', 'name': 'Aufkochen.' }], ['Linsen waschen.', 'Aufkochen.']],
+    ['a step object as a list item', [{ '@type': 'ListItem', 'position': 1, 'item': { '@type': 'HowToStep', 'text': 'Linsen waschen.' } }, { '@type': 'ListItem', 'position': 2, 'item': { '@type': 'HowToStep', 'text': 'Aufkochen.' } }], ['Linsen waschen.', 'Aufkochen.']],
+    ['a list of steps as an ItemList', { '@type': 'ItemList', 'itemListElement': [{ '@type': 'HowToStep', 'text': 'Linsen waschen.' }, 'Aufkochen.'] }, ['Linsen waschen.', 'Aufkochen.']],
+    ['one string gives a Step per line', 'Linsen waschen.\r\nMit Wasser aufkochen. Schaum abschöpfen.\n\n  Würzen.', ['Linsen waschen.', 'Mit Wasser aufkochen. Schaum abschöpfen.', 'Würzen.']],
+    ['one string on one line gives a Step per sentence, as written', 'Linsen waschen! Mit 500 ml Wasser ca. 15 Min. kochen. Würzen und servieren', ['Linsen waschen!', 'Mit 500 ml Wasser ca. 15 Min. kochen.', 'Würzen und servieren']],
+    ['a list of one string is read like one string', ['Linsen waschen. Aufkochen.'], ['Linsen waschen.', 'Aufkochen.']],
+    ['one step object holding everything is read like one string', [{ '@type': 'HowToStep', 'text': 'Linsen waschen.<br>Aufkochen.' }], ['Linsen waschen.', 'Aufkochen.']],
+    ['a sentence that can\'t be told apart stays one Step', 'Den Ofen auf 180 °C vorheizen', ['Den Ofen auf 180 °C vorheizen']],
+    ['numbering in front of Steps is left out, since Steps are numbered', '1. Linsen waschen.\n2) Aufkochen.\n3. 2 EL Öl dazu.', ['Linsen waschen.', 'Aufkochen.', '2 EL Öl dazu.']],
+    ['numbering in one line too', '1. Linsen waschen. 2. Aufkochen. 3. Würzen.', ['Linsen waschen.', 'Aufkochen.', 'Würzen.']],
+    ['HTML that arrives as entities is reduced too', '&lt;p&gt;Linsen waschen.&lt;/p&gt;&lt;p&gt;Aufkochen.&lt;/p&gt;', ['Linsen waschen.', 'Aufkochen.']],
+    ['a "<" that is no tag stays', ['Hitze < 100 °C halten, bis > 5 Min. um sind.', 'Würzen.'], ['Hitze < 100 °C halten, bis > 5 Min. um sind.', 'Würzen.']],
+  ])('instructions: %s', async (_, instructions, expected) => {
+    expect(await stepsOf(instructions)).toEqual(expected)
+  })
+
+  test.each<[string, unknown]>([
+    ['an empty string', '  '],
+    ['an empty list', []],
+    ['something else', 42],
+  ])('instructions that are %s give no Steps, and no recipe without ingredients', async (_, instructions) => {
+    expect(await stepsOf(instructions)).toBe('none')
+  })
+
+  test.each<[string, Record<string, unknown>, string[]]>([
+    ['one string gives an Ingredient per line', { recipeIngredient: '200 g Linsen\n1 Zwiebel<br>2 EL Öl' }, ['200 g Linsen', '1 Zwiebel', '2 EL Öl']],
+    ['the older "ingredients" property counts too', { ingredients: ['200 g Linsen', '1 Zwiebel'] }, ['200 g Linsen', '1 Zwiebel']],
+    ['a number in front of an Ingredient is its amount and stays', { recipeIngredient: ['1. Wahl Tomaten', '2 Zwiebeln'] }, ['1. Wahl Tomaten', '2 Zwiebeln']],
+  ])('ingredients: %s', async (_, properties, expected) => {
+    const link = 'https://blog.example/rezept'
+    const data = JSON.stringify({ '@type': 'Recipe', ...properties })
+    const { recipe } = recipeWith([[link, () => html(`<script type="application/ld+json">${data}</script>`)]])
+
+    expect(await recipe(link)).toEqual({ outcome: 'found', recipe: { ingredients: expected, steps: [] } })
+  })
+
+  test('a Recipe that says nothing is passed over for one further down the page that does', async () => {
+    const link = 'https://blog.example/rezept'
+    const scripts = '<script type="application/ld+json">{"@type":"Recipe","name":"Dal"}</script>'
+      + '<script type="application/ld+json">{"@graph":[{"@type":"Recipe","name":"Dal","recipeIngredient":["200 g Linsen"]}]}</script>'
+    const { recipe } = recipeWith([[link, () => html(scripts)]])
+
+    expect(await recipe(link)).toEqual({ outcome: 'found', recipe: { ingredients: ['200 g Linsen'], steps: [] } })
+  })
+
+  test.each([
+    ['without Recipe data', 'blog-og-only.html'],
+    ['whose Recipe has neither ingredients nor instructions', 'blog-recipe-object.html'],
+    ['that is broken', 'broken-page.html'],
+  ])('a page %s carries none', async (_, name) => {
+    const link = 'https://blog.example/seite'
+    const { recipe } = recipeWith([[link, () => html(fixture(name))]])
+
+    expect(await recipe(link)).toEqual({ outcome: 'none' })
+  })
+
+  test.each<[string, Route[]]>([
+    ['answers with an error', [['https://down.example/', () => status(500)]]],
+    ['is unreachable', []],
+    ['never answers', [['https://down.example/', () => 'hang']]],
+    ['is no HTML', [['https://down.example/', () => json({ recipeIngredient: ['1 Zwiebel'] })]]],
+  ])('a page that %s couldn\'t be read, which is not the same as carrying none', async (_, routes) => {
+    const { recipe } = recipeWith(routes, { timeoutMs: 50 })
+
+    expect(await recipe('https://down.example/rezept')).toEqual({ outcome: 'unreadable' })
+  })
+
+  test('a private address is never fetched', async () => {
+    const { recipe, upstream } = recipeWith([['http', () => html(fixture('blog-recipe-string.html'))]])
+
+    expect(await recipe('http://127.0.0.1/rezept')).toEqual({ outcome: 'unreadable' })
+    expect(upstream.requested).toEqual([])
+  })
+
+  test.each([
+    'https://www.tiktok.com/@scout2015/video/6718335390845095173',
+    'https://www.instagram.com/reel/C0WUh-tqkxU/',
+    'https://www.youtube.com/shorts/tPEE9ZwTmy0',
+    'https://www.pinterest.com/pin/99360735500167749/',
+    'kein Link',
+  ])('%s is no page that carries a recipe: none, and nothing is requested', async (link) => {
+    const { recipe, upstream } = recipeWith([['http', () => html(fixture('blog-recipe-string.html'))]])
+
+    expect(await recipe(link)).toEqual({ outcome: 'none' })
+    expect(upstream.requested).toEqual([])
+  })
+
+  test('a redirected link is read where it ends up', async () => {
+    const { recipe } = recipeWith([
+      ['http://veggie-kueche.example/?p=812', () => redirect('https://veggie-kueche.example/knuspriger-tofu/', 301)],
+      ['https://veggie-kueche.example/knuspriger-tofu/', () => html(fixture('blog-recipe-string.html'))],
+    ])
+
+    expect(await recipe('http://veggie-kueche.example/?p=812')).toMatchObject({ outcome: 'found' })
   })
 })

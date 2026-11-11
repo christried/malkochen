@@ -1,7 +1,9 @@
 import { captionOf } from './caption'
 import { creatorName } from './creator'
-import { attributes, decodeEntities, metaTags, TAG_BODY } from './html'
+import { decodeEntities, metaTags } from './html'
+import { isObject, isRecipe, jsonLdNodes, type Json, type JsonObject } from './json-ld'
 import { httpUrl, withoutTracking } from './link'
+import { pageRecipe } from './recipe'
 import { shortenTitle } from './title'
 import { nothingFound, type Strategy } from './types'
 
@@ -9,29 +11,8 @@ import { nothingFound, type Strategy } from './types'
 // taken from the first of schema.org Recipe (JSON-LD), og:, twitter:, and
 // (title only) <title>; the Creator from the Recipe's author, else
 // og:site_name. A page that yields a title or an image is a blog; one that
-// can't be read or says nothing is "other".
-
-type Json = unknown
-type JsonObject = Record<string, Json>
-
-function isObject(node: Json): node is JsonObject {
-  return !!node && typeof node === 'object' && !Array.isArray(node)
-}
-
-function isRecipe(node: Json): node is JsonObject {
-  if (!isObject(node)) return false
-  const type = node['@type']
-  return type === 'Recipe' || (Array.isArray(type) && type.includes('Recipe'))
-}
-
-// The nodes of a JSON-LD block: at the top level, in an array, or in an
-// @graph.
-function* nodesOf(node: Json): Generator<JsonObject> {
-  if (isObject(node)) yield node
-  const children = Array.isArray(node) ? node : isObject(node) ? node['@graph'] : null
-  if (!Array.isArray(children)) return
-  for (const child of children) yield* nodesOf(child)
-}
+// can't be read or says nothing is "other". The recipe itself (its
+// ingredients and instructions) is read apart from that, only when asked for.
 
 // The page's first Recipe, and the nodes of all its JSON-LD blocks by @id,
 // since the Recipe's properties may refer to one ({"@id": …}) instead of
@@ -43,16 +24,7 @@ interface JsonLdRecipe {
 }
 
 function jsonLdRecipe(html: string): JsonLdRecipe | null {
-  const nodes: JsonObject[] = []
-  for (const [, body, content] of html.matchAll(new RegExp(String.raw`<script\b${TAG_BODY}([\s\S]*?)</script>`, 'gi'))) {
-    if (!/ld\+json/i.test(attributes(body ?? '').type ?? '')) continue
-    try {
-      nodes.push(...nodesOf(JSON.parse(content ?? '')))
-    }
-    catch {
-      // Malformed JSON-LD is common; the other blocks still count.
-    }
-  }
+  const nodes = jsonLdNodes(html)
   const recipe = nodes.find(isRecipe)
   if (!recipe) return null
   const byId = new Map<string, JsonObject>()
@@ -140,5 +112,12 @@ export const webPage: Strategy = {
     // The meta description, whatever kind the page is (best effort).
     const caption = captionOf(meta.get('description'))
     return { kind: suggestedTitle || imageUrl ? 'blog' : 'other', canonicalLink, suggestedTitle, creator, imageUrl, caption, playableVideo: false }
+  },
+
+  async recipe(url, { http }) {
+    const page = await http.page(url.href)
+    if (!page.html) return { outcome: 'unreadable' }
+    const recipe = pageRecipe(jsonLdNodes(page.html).filter(isRecipe))
+    return recipe ? { outcome: 'found', recipe } : { outcome: 'none' }
   },
 }

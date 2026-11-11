@@ -46,6 +46,26 @@ export function nothingFound(guess: SourceGuess): SourceLookupResult {
 // Given a link, return what we know about it. Never rejects.
 export type SourceLookup = (link: string) => Promise<SourceLookupResult>
 
+// The recipe a page carries as schema.org Recipe data: its ingredient list as
+// Ingredients and its instructions as Steps (CONTEXT.md), each plain text the
+// way the page wrote it, in the page's order. Either list may be empty, never
+// both. Not held to the Recipe's limits (shared/recipe.ts).
+export interface PageRecipe {
+  ingredients: string[]
+  steps: string[]
+}
+
+// What reading a link's page for its recipe gave: the recipe, or that the page
+// carries none (a kind of Source that never does included), or that the page
+// couldn't be read, which another try may change.
+export type RecipeLookupResult
+  = | { outcome: 'found', recipe: PageRecipe }
+    | { outcome: 'none' }
+    | { outcome: 'unreadable' }
+
+// Given a link, return the recipe its page carries. Never rejects.
+export type RecipeLookup = (link: string) => Promise<RecipeLookupResult>
+
 interface StrategyContext {
   http: Http
   // The time budget for the whole lookup, shared by all of `http`'s requests.
@@ -57,4 +77,7 @@ interface StrategyContext {
 export interface Strategy {
   match: (url: URL) => SourceGuess | null
   lookup: (url: URL, context: StrategyContext) => Promise<SourceLookupResult>
+  // The recipe the link's page carries, for the kinds of Source whose pages
+  // carry one.
+  recipe?: (url: URL, context: StrategyContext) => Promise<RecipeLookupResult>
 }
