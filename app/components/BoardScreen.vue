@@ -1145,12 +1145,12 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
          edges while the Columns scroll under them. -->
     <div
       v-show="!searching"
-      class="relative tablet:-mx-4"
+      class="relative -mx-4"
     >
       <div
         ref="columns"
         data-testid="columns"
-        class="columns mt-2 tablet:-mb-6 tablet:mt-5 tablet:snap-x tablet:snap-mandatory tablet:scroll-px-4 tablet:overflow-x-auto tablet:px-4 tablet:pb-10 tablet:pt-3"
+        class="columns mt-2 px-4 tablet:-mb-6 tablet:mt-5 tablet:snap-x tablet:snap-mandatory tablet:scroll-px-4 tablet:overflow-x-auto tablet:pb-10 tablet:pt-3"
       >
         <div
           class="track flex items-start gap-4"
@@ -1163,7 +1163,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
             :key="column.id"
             :aria-label="column.name"
             tabindex="-1"
-            class="column w-full shrink-0 rounded-panel bg-surface-muted p-3 focus-visible:outline-2 focus-visible:outline-focus tablet:w-[340px] tablet:snap-start desktop:w-[330px] tablet:p-4"
+            class="column w-full shrink-0 rounded-panel focus-visible:outline-2 focus-visible:outline-focus tablet:w-[340px] tablet:snap-start tablet:p-4 desktop:w-[330px]"
             :class="{
               'parked': parked(index),
               'lane-target': drag?.laneColumnId === column.id,
@@ -1578,7 +1578,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 /* Phones: the Columns sit in a row, one screen wide each, and the row slides
    to the active one (and with the finger while swiping). At rest only the
    active Column is laid out, so a short Column doesn't leave the page as long
-   as the longest. The background takes the active Column's tint. */
+   as the longest. The background takes the active Column's tint, and the
+   Columns have no panel of their own (#478): their cards lie on it, out to
+   the page's side padding. The row is clipped at the screen's edges, not at
+   that padding, so the cards' shadows aren't cut. */
 @media (max-width: 767.98px) {
   .board {
     background-color: color-mix(in oklch, var(--tint) 24%, var(--color-bg));
@@ -1604,7 +1607,6 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   .column.parked {
     visibility: hidden;
     height: 0;
-    padding-block: 0;
     overflow: hidden;
   }
 }

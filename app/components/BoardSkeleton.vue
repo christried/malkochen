@@ -95,18 +95,18 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
       <span
         v-for="column in columns"
         :key="column.id"
-        class="rounded-pill bg-surface-muted px-4 py-2.5 text-button"
+        class="rounded-pill bg-surface px-4 py-2.5 text-button shadow-card"
       ><span class="inline-block w-16">&nbsp;</span></span>
     </div>
 
-    <div class="mt-2 overflow-x-clip tablet:mt-8 tablet:overflow-x-auto tablet:pb-4">
+    <div class="-mx-4 mt-2 overflow-x-clip px-4 tablet:mx-0 tablet:mt-8 tablet:overflow-x-auto tablet:px-0 tablet:pb-4">
       <div class="flex items-start gap-4">
         <section
           v-for="(column, index) in columns"
           :id="`column-${column.id}`"
           :key="column.id"
           :aria-label="column.name || undefined"
-          class="column w-full shrink-0 rounded-panel bg-surface-muted p-3 tablet:w-[340px] desktop:w-[330px] tablet:p-4"
+          class="column w-full shrink-0 rounded-panel tablet:w-[340px] tablet:p-4 desktop:w-[330px]"
           :style="{ '--accent': columnAccent(index) }"
           data-lane
         >
@@ -154,7 +154,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
 
 <style scoped>
 /* Phones: the background takes the first Column's tint, as the Board's
-   does, and only that Column shows. */
+   does, and only that Column shows, without a panel (#478). */
 @media (max-width: 767.98px) {
   .board {
     background-color: color-mix(in oklch, var(--tint) 24%, var(--color-bg));
