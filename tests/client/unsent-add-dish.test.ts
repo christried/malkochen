@@ -18,7 +18,7 @@ const me = { id: 'me', name: 'Ich', image: null }
 const LINK = 'https://www.tiktok.com/@mara.kocht/video/7300000000000000001'
 
 function dish(id: string): DishView {
-  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 }
+  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, recipe: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 }
 }
 
 // A Board with Ideen (a, b), and Gekocht (d).

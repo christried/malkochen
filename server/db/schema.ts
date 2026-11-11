@@ -323,6 +323,14 @@ export const dish = pgTable('dish', {
   // else. Null when not known yet (every Dish from before #394 until #395
   // fills it in), or there is no Source.
   playableVideo: boolean('playable_video'),
+  // The Recipe (CONTEXT.md): its Ingredients and its Steps, each a plain line
+  // of text, in their order. Both empty for a Dish without one.
+  recipeIngredients: text('recipe_ingredients').array().notNull().default(sql`'{}'::text[]`),
+  recipeSteps: text('recipe_steps').array().notNull().default(sql`'{}'::text[]`),
+  // The link the Recipe was found at when that isn't the Source itself
+  // (CONTEXT.md: Recipe Finder). Null for one a Member typed, and without a
+  // Recipe.
+  recipeLink: text('recipe_link'),
   // The image: a copy in the Image Store if there is one, else the
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),

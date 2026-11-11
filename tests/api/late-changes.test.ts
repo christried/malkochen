@@ -384,6 +384,57 @@ test('a late change to a Dish archived meanwhile is refused as today', async () 
   expect((await comment(kahn, dish.id, { id: randomUUID(), text: 'Hm', madeAt: minutesAgo(5) })).status).toBe(404)
 })
 
+// A Recipe edit (#494) carries the whole Recipe, so the one that arrives last
+// is the Recipe, whenever it was made: as for a title.
+const RECIPE = { ingredients: ['4 Eier', '1 EL Butter'], steps: ['Eier verquirlen.', 'In Butter stocken lassen.'] }
+const setRecipe = (caller: Caller, dishId: string, recipe: unknown) => caller.fetch(`/api/dishes/${dishId}`, json('PATCH', { recipe }))
+const recipeOf = async (caller: Caller, boardId: string, dishId: string) =>
+  ((await located(caller, boardId, dishId)).dish as Dish & { recipe: unknown }).recipe
+
+test('a Recipe edit arriving late replaces the Recipe as a whole: the last to arrive wins', async () => {
+  const { cerf, kahn, board } = await sharedBoard()
+  const dish = await addDish(cerf, board.id, 'Omelett')
+  expect((await setRecipe(cerf, dish.id, RECIPE)).status).toBe(200)
+
+  // Kahn's edit, made offline before Cerf's, arrives after it.
+  const late = { ingredients: ['3 Eier'], steps: [] }
+  expect((await setRecipe(kahn, dish.id, late)).status).toBe(200)
+
+  expect(await recipeOf(cerf, board.id, dish.id)).toEqual({ ...late, link: null })
+})
+
+test('a late Recipe edit to a Dish archived meanwhile is refused as not found, and the restored Dish has the Recipe it had', async () => {
+  const { cerf, kahn, board } = await sharedBoard()
+  const dish = await addDish(cerf, board.id, 'Frittata')
+  expect((await setRecipe(cerf, dish.id, RECIPE)).status).toBe(200)
+  expect((await cerf.fetch(`/api/dishes/${dish.id}`, { method: 'DELETE' })).status).toBe(204)
+
+  expect((await setRecipe(kahn, dish.id, { ingredients: ['3 Eier'], steps: [] })).status).toBe(404)
+
+  expect((await post(cerf, `/api/dishes/${dish.id}/restore`)).status).toBe(200)
+  expect(await recipeOf(cerf, board.id, dish.id)).toEqual({ ...RECIPE, link: null })
+})
+
+test('a late Recipe edit by a Member whose Permission is gone meanwhile is refused, saying which', async () => {
+  const { cerf, kahn, board } = await sharedBoard()
+  const dish = await addDish(cerf, board.id, 'Tortilla')
+  expect((await setRecipe(cerf, dish.id, RECIPE)).status).toBe(200)
+  const { id: kahnId } = await (await kahn.fetch('/api/me')).json() as { id: string }
+  const permit = (editDishes: boolean) => cerf.fetch(`/api/boards/${board.id}/members/${kahnId}/permissions`, json('PATCH', { editDishes }))
+  expect((await permit(false)).status).toBe(200)
+
+  try {
+    const res = await setRecipe(kahn, dish.id, { ingredients: ['3 Eier'], steps: [] })
+    expect(res.status).toBe(403)
+    expect((await res.json()).data).toEqual({ permission: 'editDishes' })
+    expect(await recipeOf(cerf, board.id, dish.id)).toEqual({ ...RECIPE, link: null })
+  }
+  finally {
+    // The Board is the whole file's.
+    expect((await permit(true)).status).toBe(200)
+  }
+})
+
 // A move into a deleted Column
 
 async function deletedColumn(caller: Caller, boardId: string): Promise<string> {

@@ -131,6 +131,10 @@ test('every change to the Board\'s Dishes moves its version on', async () => {
     return res
   }, 201)
   await expectMoves(rubin, board.id, () => send(rubin, 'PATCH', `/api/dishes/${dish.id}`, { title: 'Miso-Ramen' }))
+  // Its Recipe (#494): set, changed and cleared.
+  await expectMoves(carson, board.id, () => send(carson, 'PATCH', `/api/dishes/${dish.id}`, { recipe: { ingredients: ['Miso', 'Nudeln'], steps: ['Brühe kochen.'] } }))
+  await expectMoves(rubin, board.id, () => send(rubin, 'PATCH', `/api/dishes/${dish.id}`, { recipe: { ingredients: ['Nudeln', 'Miso'], steps: ['Brühe kochen.'] } }))
+  await expectMoves(rubin, board.id, () => send(rubin, 'PATCH', `/api/dishes/${dish.id}`, { recipe: null }))
   await expectMoves(rubin, board.id, () => send(rubin, 'POST', `/api/dishes/${dish.id}/move`, { columnId: ideas.id, index: 0 }))
 
   // Cooked: a Cooking, then a Vote, changed and taken back.

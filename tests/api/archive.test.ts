@@ -92,6 +92,21 @@ async function uploadPhoto(caller: Caller, boardId: string): Promise<Uploaded> {
 
 const fileOf = (url: string) => url.split('/').pop()!
 
+test('an Archived Dish keeps its Recipe when restored (#494)', async () => {
+  const { board, cecilia, edith } = await sharedBoard('Rezeptarchiv')
+  const dish = await addDish(cecilia, board.id, 'Borschtsch')
+  const recipe = { ingredients: ['3 Rote Bete', '1 Zwiebel'], steps: ['Würfeln.', 'Eine Stunde köcheln.'] }
+  expect((await cecilia.fetch(`/api/dishes/${dish.id}`, { method: 'PATCH', ...json({ recipe }) })).status).toBe(200)
+
+  expect((await archive(cecilia, dish.id)).status).toBe(204)
+  const restored = await restore(edith, dish.id)
+
+  expect(restored.status).toBe(200)
+  expect(await restored.json()).toMatchObject({ id: dish.id, recipe: { ...recipe, link: null } })
+  const onBoard = (await getBoard(cecilia, board.id)).columns.flatMap(c => c.dishes).find(d => d.id === dish.id)
+  expect(onBoard).toMatchObject({ recipe: { ...recipe, link: null } })
+})
+
 test('an archived Dish is in its Board’s Archive, with who archived it, when, and when it goes for good', async () => {
   const { board, cecilia, edith } = await sharedBoard('Archiv')
   const older = await addDish(cecilia, board.id, 'Shakshuka')

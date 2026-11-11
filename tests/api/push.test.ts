@@ -262,6 +262,8 @@ test('moving, editing, cooking or deleting a Dish notifies nobody', async () => 
   const gekocht = board.columns.find(c => c.isGekocht)!
 
   expect((await katalin.fetch(`/api/dishes/${dish.id}`, json('PATCH', { title: 'Leise Suppe' }))).status).toBe(200)
+  // Its Recipe (#494) is an edit like any other.
+  expect((await katalin.fetch(`/api/dishes/${dish.id}`, json('PATCH', { recipe: { ingredients: ['Linsen'], steps: ['Köcheln.'] } }))).status).toBe(200)
   expect((await katalin.fetch(`/api/dishes/${dish.id}/move`, json('POST', { columnId: gekocht.id }))).status).toBe(200)
   expect((await katalin.fetch(`/api/dishes/${dish.id}/cook`, { method: 'POST' })).status).toBe(200)
   expect((await katalin.fetch(`/api/dishes/${dish.id}`, { method: 'DELETE' })).status).toBe(204)

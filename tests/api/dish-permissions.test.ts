@@ -189,3 +189,36 @@ test('a missing Dish is still not found, not refused', async () => {
   expect((await cook(quimby, missing)).status).toBe(404)
   expect((await archive(quimby, missing)).status).toBe(404)
 })
+
+// The Recipe (#494) is part of the Dish edit: the same rule.
+
+const RECIPE = { ingredients: ['1 Dose Kichererbsen', '2 EL Tahini'], steps: ['Alles pürieren.', 'Kalt stellen.'] }
+const setRecipe = (caller: Caller, dish: Dish, recipe: unknown) => send(caller, 'PATCH', `/api/dishes/${dish.id}`, { recipe })
+const recipeOf = async (caller: Caller, boardId: string, dish: Dish) =>
+  ((await getBoard(caller, boardId)).columns.flatMap(c => c.dishes).find(d => d.id === dish.id) as Dish & { recipe: unknown }).recipe
+
+test('without "edit Dishes" a Member changes the Recipe only of the Dishes they added', async () => {
+  const { board, mitchell, quimby, theirs, own } = await sharedBoard('Rezeptur', { editDishes: false })
+  expect((await setRecipe(mitchell, theirs, RECIPE)).status).toBe(200)
+
+  await expectRefused(await setRecipe(quimby, theirs, { ingredients: ['Salz'], steps: [] }), 'editDishes')
+  await expectRefused(await setRecipe(quimby, theirs, null), 'editDishes')
+  expect((await setRecipe(quimby, own, RECIPE)).status).toBe(200)
+
+  // Mitchell's is as it was, and every Member reads both in the same order.
+  for (const reader of [mitchell, quimby]) {
+    expect(await recipeOf(reader, board.id, theirs)).toEqual({ ...RECIPE, link: null })
+    expect(await recipeOf(reader, board.id, own)).toEqual({ ...RECIPE, link: null })
+  }
+})
+
+test('with "edit Dishes" a Member sets, changes and clears the Recipe of anyone\'s Dish', async () => {
+  const { board, mitchell, quimby, theirs } = await sharedBoard('Rezeptbuch', {})
+
+  expect((await setRecipe(quimby, theirs, RECIPE)).status).toBe(200)
+  expect(await recipeOf(mitchell, board.id, theirs)).toEqual({ ...RECIPE, link: null })
+  expect((await setRecipe(quimby, theirs, { ingredients: ['2 EL Tahini'], steps: [] })).status).toBe(200)
+  expect(await recipeOf(mitchell, board.id, theirs)).toEqual({ ingredients: ['2 EL Tahini'], steps: [], link: null })
+  expect((await setRecipe(quimby, theirs, null)).status).toBe(200)
+  expect(await recipeOf(mitchell, board.id, theirs)).toBeNull()
+})

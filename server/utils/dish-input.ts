@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { PLACEHOLDERS } from '../../shared/placeholders'
+import { RECIPE_LIMITS } from '../../shared/recipe'
 import { captionOf, guessSource, SOURCE_KINDS } from '../source-lookup'
 import type { DishSource } from './dishes'
 import { deviceIdInput, madeAtInput } from './late-changes'
@@ -45,6 +46,22 @@ const photoInput = z.object({ url: z.string().min(1).max(2048), ticket: z.string
 // a point within the image, kept in whole percent.
 const percent = z.number().min(0).max(100).transform(Math.round)
 const imageFocusInput = z.object({ x: percent, y: percent })
+
+// The lines of a Recipe (CONTEXT.md: Ingredient, Step) as a Member sent them:
+// trimmed, the empty ones dropped, then held to the limits.
+function recipeLines({ lines, characters }: { lines: number, characters: number }) {
+  return z.array(z.string())
+    .transform(sent => sent.map(line => line.trim()).filter(line => line !== ''))
+    .pipe(z.array(z.string().max(characters)).max(lines))
+}
+
+// A Dish's Recipe, always as a whole: both lists, complete, so an edit that
+// arrives late replaces what is there (ADR 0012). Null, or nothing left in
+// either list, is no Recipe.
+const recipeInput = z.object({
+  ingredients: recipeLines(RECIPE_LIMITS.ingredients),
+  steps: recipeLines(RECIPE_LIMITS.steps),
+}).nullable()
 
 // Adding a Dish (POST /api/boards/:id/dishes).
 export const addDishBody = z.object({
@@ -116,6 +133,9 @@ export const dishEditBody = z.object({
   // Shifts the image. A new image (or the Placeholder) starts in the centre
   // unless this comes with it.
   imageFocus: imageFocusInput.optional(),
+  // The Recipe, replaced as a whole; null clears it. Unlike the Caption it
+  // is the Dish's own, so it needs no Source Ticket.
+  recipe: recipeInput.optional(),
 })
 export type DishEditBody = z.input<typeof dishEditBody>
 
