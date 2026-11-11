@@ -4,11 +4,11 @@ import { pinterest } from './pinterest'
 import { tiktok } from './tiktok'
 import { webPage } from './web-page'
 import { youtube } from './youtube'
-import { nothingFound, type SourceGuess, type SourceLookup, type Strategy } from './types'
+import { nothingFound, type RecipeLookup, type SourceGuess, type SourceLookup, type Strategy } from './types'
 
 export { SOURCE_KINDS } from './types'
 export { captionOf } from './caption'
-export type { SourceGuess, SourceKind, SourceLookup, SourceLookupResult } from './types'
+export type { PageRecipe, RecipeLookup, RecipeLookupResult, SourceGuess, SourceKind, SourceLookup, SourceLookupResult } from './types'
 
 // Source Lookup: given a link, return what we know about it (Source kind,
 // Suggested Title, image, canonical link). The strategy for each kind of
@@ -20,6 +20,8 @@ export interface SourceLookupOptions {
   timeoutMs?: number
   fetch?: typeof fetch
 }
+
+const DEFAULT_TIMEOUT_MS = 8000
 
 // The first whose `match` answers handles the link; webPage takes the rest.
 const STRATEGIES: Strategy[] = [tiktok, instagram, youtube, pinterest, webPage]
@@ -48,7 +50,7 @@ function matchStrategy(link: string): { url: URL | null, strategy: Strategy, gue
 }
 
 export function createSourceLookup(options: SourceLookupOptions = {}): SourceLookup {
-  const timeoutMs = options.timeoutMs ?? 8000
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
   return async (link) => {
     const { url, strategy, guess } = matchStrategy(link)
@@ -60,6 +62,26 @@ export function createSourceLookup(options: SourceLookupOptions = {}): SourceLoo
     }
     catch {
       return nothingFound(guess)
+    }
+  }
+}
+
+// The recipe a link's page carries (CONTEXT.md: Recipe Finder), under the
+// same time budget and through the same fetching as a lookup. A link whose
+// kind of Source never carries one is answered without a request.
+export function createRecipeLookup(options: SourceLookupOptions = {}): RecipeLookup {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+
+  return async (link) => {
+    const { url, strategy } = matchStrategy(link)
+    if (!url || !strategy.recipe) return { outcome: 'none' }
+
+    const http = createHttp(AbortSignal.timeout(timeoutMs), options.fetch)
+    try {
+      return await strategy.recipe(url, { http, timeoutMs })
+    }
+    catch {
+      return { outcome: 'unreadable' }
     }
   }
 }
