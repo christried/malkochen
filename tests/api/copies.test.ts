@@ -9,12 +9,14 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 import { watchEvents } from './event-log'
 import { startPushService, type PushService } from './push-service'
 import { IMAGE_DIR, storedImages } from './server-env'
+import { databaseRows } from './time-travel'
 
 // Copies (#402; CONTEXT.md: Copy). "Kopieren" makes a new Dish on another
 // of the user's Boards from one they can see: POST /api/dishes/:id/copy
 // { boardId } answers it placed, on that Board's first Column that isn't
 // Gekocht, added by the copier. It takes the title, Source, Creator, Caption,
-// image, Focus Point and Placeholder; not the Cookings, Comments or Votes.
+// Recipe (with the link it was found at), image, Focus Point and Placeholder;
+// not the Cookings, Comments or Votes.
 // Its image is a copy of the original's, so purging either Dish leaves the
 // other's file. [160] owns both Boards made here, [161] copies, [162] is a
 // Member of the target without "add Dishes", [163] is a Member of the source
@@ -49,6 +51,7 @@ interface Dish {
   imageUrl: string | null
   imageFocus: { x: number, y: number }
   placeholder: string
+  recipe: { ingredients: string[], steps: string[], link: string | null } | null
   placement?: { boardId: string, columnId: string, index: number }
   cookings: { id: string }[]
   votes: unknown[]
@@ -168,7 +171,28 @@ test('a Dish with its Placeholder only is copied with the same Placeholder and n
   const { dish, imageCopied } = await res.json() as { dish: Dish, imageCopied: boolean }
 
   expect(dish).toMatchObject({ title: 'Ohne Bild', placeholder: 'wok', imageUrl: null })
+  expect(dish.recipe).toBeNull()
   expect(imageCopied).toBe(true)
+})
+
+test('a Copy takes the Recipe along, in the same order, with the link it was found at', async () => {
+  const { source, target, ada, grace } = await sharedBoards('Rezept')
+  const ingredients = ['3 Eier', '100 g Zucker', '1 Prise Salz']
+  const steps = ['Eier trennen.', 'Eiweiß steif schlagen.', 'Zucker einrieseln lassen.']
+  const original = await addDish(ada, source.id, { title: 'Baiser' })
+  expect((await patch(ada, `/api/dishes/${original.id}`, { recipe: { ingredients, steps } })).status).toBe(200)
+  await databaseRows('update dish set recipe_link = $1 where id = $2', ['https://kochblog.example/rezepte/baiser', original.id])
+  const events = await watchEvents()
+
+  const res = await copy(grace, original.id, target.id)
+  expect(res.status).toBe(201)
+  const { dish: copied } = await res.json() as { dish: Dish }
+
+  const recipe = { ingredients, steps, link: 'https://kochblog.example/rezepte/baiser' }
+  expect(copied.recipe).toEqual(recipe)
+  const onBoard = (await getBoard(ada, target.id)).columns.flatMap(c => c.dishes).find(d => d.id === copied.id)
+  expect(onBoard?.recipe).toEqual(recipe)
+  expect((await events.recorded()).map(e => e.kind)).not.toContain('recipe_edited')
 })
 
 test('a Copy lands in the first Column of the target that isn’t Gekocht, even when Gekocht comes first', async () => {

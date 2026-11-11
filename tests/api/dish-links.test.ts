@@ -110,6 +110,25 @@ test('the page data holds the Dish own fields and nothing of its Board', async (
   })
 })
 
+test('the public answer never holds the Dish\'s Recipe', async () => {
+  const { dishId, hedwig } = await setup('Ohne Rezept')
+  const recipe = { ingredients: ['7 Wacholderbeeren', '200 g Sauerkraut'], steps: ['Im Bräter schmoren.'] }
+  expect((await hedwig.fetch(`/api/dishes/${dishId}`, { method: 'PATCH', ...json({ recipe }) })).status).toBe(200)
+  const path = await pathOf(hedwig, dishId)
+
+  for (const caller of [anonymous(), hedwig]) {
+    const res = await open(caller, path)
+    expect(res.status).toBe(200)
+    const text = await res.text()
+    const view = JSON.parse(text) as Record<string, unknown>
+    expect(view).not.toHaveProperty('recipe')
+    expect(view).not.toHaveProperty('ingredients')
+    expect(view).not.toHaveProperty('steps')
+    expect(text).not.toContain('Wacholderbeeren')
+    expect(text).not.toContain('Bräter')
+  }
+})
+
 test('any slug opens it with the right secret, and a renamed Dish keeps its link', async () => {
   const { dishId, hedwig } = await setup('Umbenannt')
   const path = await pathOf(hedwig, dishId)

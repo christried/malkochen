@@ -3,12 +3,14 @@ import { landingBoard as landingBoardOf, postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 
 // Searching a Board (PRD story 36): GET /api/boards/:id/dishes?q=… finds the
-// Board's Dishes whose title contains the query, in any Column. Margaret's
-// and Katherine's Boards are used by this file only.
+// Board's Dishes whose title, Creator, Caption or Ingredient contains the
+// query, in any Column; Steps are not searched. Margaret's and Katherine's
+// Boards are used by this file only.
 
 interface Dish {
   id: string
   title: string
+  recipe: { ingredients: string[], steps: string[], link: string | null } | null
 }
 interface Board {
   id: string
@@ -23,6 +25,14 @@ async function addDish(caller: Caller, title: string): Promise<Dish> {
   const res = await postDish(caller, board.id, { title, placeholder: 'bowl' })
   expect(res.status).toBe(201)
   return res.json()
+}
+
+function editDish(caller: Caller, dishId: string, body: unknown) {
+  return caller.fetch(`/api/dishes/${dishId}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 }
 
 function moveDish(caller: Caller, dishId: string, columnId: string) {
@@ -70,6 +80,29 @@ test('finds neither deleted Dishes nor Dishes on other Boards', async () => {
   const dishes = await found(caller, board.id, 'ofengemüse')
 
   expect(dishes.map(d => d.id)).toEqual([kept.id])
+})
+
+test('finds Dishes by a word that is only in their Ingredients, ignoring case', async () => {
+  const caller = await margaret()
+  const board = await landingBoard(caller)
+  const first = await addDish(caller, 'Orientalischer Eintopf')
+  await addDish(caller, 'Grüner Salat')
+  const res = await editDish(caller, first.id, { recipe: { ingredients: ['2 EL Granatapfelkerne', '200 g Spinat'], steps: ['Alles kochen.'] } })
+  expect(res.status).toBe(200)
+
+  const dishes = await found(caller, board.id, 'granatapfelKERNE')
+
+  expect(dishes.map(d => d.id)).toEqual([first.id])
+})
+
+test('a word that is only in a Dish\'s Steps finds nothing', async () => {
+  const caller = await margaret()
+  const board = await landingBoard(caller)
+  const dish = await addDish(caller, 'Nudelauflauf')
+  const res = await editDish(caller, dish.id, { recipe: { ingredients: ['Mehl'], steps: ['Den Teig mit dem Nudelholz ausrollen.'] } })
+  expect(res.status).toBe(200)
+
+  expect(await found(caller, board.id, 'nudelholz')).toEqual([])
 })
 
 test('% and _ in the query are just characters', async () => {
