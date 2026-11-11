@@ -132,10 +132,10 @@ test('the Owner sets the Default Permissions, and a Member joining through the I
 // "…" menu offers "Archivieren" only on the Dish Radia added.
 test('without moving and archiving, a Member can\'t drag or cook, and archives only their own Dishes', async ({ page, browser }) => {
   const { boardId, radia } = await sharedBoard(page, browser, 'Gemüsegarten')
-  const addDish = async (on: Page, title: string) =>
-    expect((await on.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl' } })).status()).toBe(201)
+  const addDish = async (on: Page, title: string, source?: { link: string }) =>
+    expect((await on.request.post(`/api/boards/${boardId}/dishes`, { data: { title, placeholder: 'bowl', source } })).status()).toBe(201)
   await addDish(page, 'Evelyns Kürbissuppe')
-  await addDish(radia, 'Radias Rote Bete')
+  await addDish(radia, 'Radias Rote Bete', { link: 'https://example.com/rote-bete' })
   await fastPolls(radia)
   await gotoHydrated(radia, `/b/${boardId}`)
   const cookButtons = radia.locator('[data-cook]')
@@ -166,6 +166,23 @@ test('without moving and archiving, a Member can\'t drag or cook, and archives o
   await expect(menu.getByRole('button', { name: 'Verschieben nach…' })).toHaveCount(0)
   await menu.getByRole('button', { name: 'Schließen' }).click()
   await expect(menu).toHaveCount(0)
+
+  // In the detail (#476): no "Gekocht ✓", so "Original öffnen" has the row
+  // under the title alone; a Dish without a link has no such row.
+  await radia.getByRole('link', { name: 'Radias Rote Bete', exact: true }).click()
+  let detail = radia.getByRole('dialog', { name: 'Radias Rote Bete' })
+  const row = detail.locator('[data-main-actions]')
+  await expect(row.getByRole('link', { name: 'Original öffnen' })).toBeVisible()
+  await expect(detail.getByRole('button', { name: 'Gekocht ✓' })).toHaveCount(0)
+  expect((await row.getByRole('link').boundingBox())!.width).toBeCloseTo((await row.boundingBox())!.width, 0)
+  await radia.keyboard.press('Escape')
+  await expect(detail).toBeHidden()
+  await radia.getByRole('link', { name: 'Evelyns Kürbissuppe', exact: true }).click()
+  detail = radia.getByRole('dialog', { name: 'Evelyns Kürbissuppe' })
+  await expect(detail.locator('[data-dish-history]')).toBeVisible()
+  await expect(detail.locator('[data-main-actions]')).toHaveCount(0)
+  await radia.keyboard.press('Escape')
+  await expect(detail).toBeHidden()
 
   // On a phone a long-press still selects the Dish, to archive it with
   // others, though it doesn't lift.

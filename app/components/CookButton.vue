@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// "Gekocht ✓" (handoff "Gekocht button"), on a card and in the Cooking
-// History. Tapped, it springs from 1.12 back to 1, fills sage and draws its
+// "Gekocht ✓" (handoff "Gekocht button"), on a card and under the title in
+// the Dish detail. Tapped, it springs from 1.12 back to 1, fills sage and draws its
 // check, and says `cook` with its centre, where the celebration's confetti
 // bursts from. Cooked before, it is sage anyway. Reduced motion: colour and
 // check only.

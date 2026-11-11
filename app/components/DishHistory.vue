@@ -10,7 +10,7 @@ import { neverCookedScene } from '~/utils/never-cooked'
 
 // A Dish's Dish History at the bottom of its detail ("Verlauf", #332; the
 // look #330 picked, its variant B): "3× gekocht · zuletzt 12. Sept." under its
-// achievement badge, "Gekocht ✓", once Cooked "Wie war's?" with 👍 👎 for
+// achievement badge ("Gekocht ✓" is under the Dish's title, #476), once Cooked "Wie war's?" with 👍 👎 for
 // the Member's Vote (#334), and a line down the left with a dot per entry,
 // oldest first like a chat: a plus for who added the Dish, a pot for each
 // Cooking (with its bin), the thumb for each Member's Vote, on a backdrop
@@ -34,7 +34,6 @@ import { neverCookedScene } from '~/utils/never-cooked'
 // opens the sheet. The state is asked for with the history.
 const props = defineProps<{ dish: DishView, boardId: string, isOwner: boolean }>()
 const emit = defineEmits<{
-  cook: [origin: Point]
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
   vote: [result: VoteResult]
@@ -239,27 +238,19 @@ const menuButton = 'rounded-pill bg-surface-muted px-3 py-1.5 text-label transit
       v-if="dish.cookings.length"
       :count="dish.cookings.length"
     />
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex flex-col gap-1">
-        <h2
-          :id="headingId"
-          class="font-display text-title-s"
-        >
-          {{ t.history.heading }}
-        </h2>
-        <p
-          class="text-small text-text-muted"
-          data-cooking-summary
-        >
-          {{ summary }}
-        </p>
-      </div>
-      <CookButton
-        v-if="boardModule.may('moveDishes')"
-        class="shrink-0 px-4 py-2.5"
-        :cooked="dish.cookings.length > 0"
-        @cook="origin => emit('cook', origin)"
-      />
+    <div class="flex flex-col gap-1">
+      <h2
+        :id="headingId"
+        class="font-display text-title-s"
+      >
+        {{ t.history.heading }}
+      </h2>
+      <p
+        class="text-small text-text-muted"
+        data-cooking-summary
+      >
+        {{ summary }}
+      </p>
     </div>
 
     <div
