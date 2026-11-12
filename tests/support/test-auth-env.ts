@@ -1,3 +1,4 @@
+import { ANTHROPIC_PORT } from './anthropic-port'
 import { LOOKUP_FIXTURES } from './source-lookup-fixtures'
 
 // Where the browser tests' dev server listens (playwright.config.ts).
@@ -73,8 +74,8 @@ export const SNACKBERT_PORT = 3197
 
 export const TEST_ANTHROPIC_API_KEY = 'sk-ant-test-recipe-finder-key-0123456789'
 
-// Where the stand-in for Anthropic listens.
-export const ANTHROPIC_PORT = 3196
+// Where the stand-in for Anthropic listens (anthropic-port.ts).
+export { ANTHROPIC_PORT }
 
 export const TEST_RESEND_API_KEY ='re_test_email_digest_key'
 

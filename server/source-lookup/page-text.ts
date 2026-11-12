@@ -18,8 +18,9 @@ const PARAGRAPH_BREAKS = [
   'p', 'div', 'section', 'article', 'main', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'table', 'blockquote',
   'pre', 'dl', 'dt', 'dd', 'figure', 'figcaption', 'hr', 'details', 'summary', 'fieldset', 'address',
 ]
-const LINE = '\u0001'
-const PARAGRAPH = '\u0002'
+// Private-use characters, standing in for the breaks until they are merged.
+const LINE = '\uE000'
+const PARAGRAPH = '\uE001'
 
 // The first `<name>` element: where its opening tag starts, where its content
 // starts and ends, and where it ends after its closing tag, counting nested
@@ -85,10 +86,10 @@ export function pageText(html: string): string {
       .replace(/\s+/g, ' '),
   )
   return text
-    .replace(/[ \t ]+/g, ' ')
+    .replace(/[ \t\u00A0]+/g, ' ')
     // Each run of breaks (and the spaces between) is one line break, or one
     // blank line when a paragraph ends in it.
-    .replace(/[ \u0001\u0002]*[\u0001\u0002][ \u0001\u0002]*/g, run => run.includes(PARAGRAPH) ? '\n\n' : '\n')
+    .replace(/[ \uE000\uE001]*[\uE000\uE001][ \uE000\uE001]*/g, run => run.includes(PARAGRAPH) ? '\n\n' : '\n')
     .trim()
     .slice(0, PAGE_TEXT_CHARACTERS)
     .trimEnd()

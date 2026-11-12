@@ -37,7 +37,7 @@ Leave out everything that is not the recipe: hashtags, greetings, the story arou
 
 A caption may hold only ingredients or only steps: then return what is there and leave the other list empty. If the caption holds no recipe, only a title, a teaser or a description of the dish, return both lists empty. An empty answer is right far more often than a guess: a dish's name or a row of hashtags is not an ingredient list.
 
-Link: a caption often holds no recipe but points to it ("full recipe on my blog: example.com/tofu"). If a web address is written out in the caption and looks like the place where this dish's recipe is, return it in `link`, exactly as it is written there. Return at most one, and return it whether or not you also found the recipe in the caption. Return an empty string when no address is written out, when the caption only says "link in bio" or the like, or when the addresses in it are for something else (a shop, a discount, a profile, another account). Never make an address up, and never complete one from a name.`
+Link: a caption often holds no recipe but points to it ("full recipe on my blog: example.com/tofu"). If a web address is written out in the caption and looks like the place where this dish's recipe is, return it in \`link\`, exactly as it is written there. Return at most one, and return it whether or not you also found the recipe in the caption. Return an empty string when no address is written out, when the caption only says "link in bio" or the like, or when the addresses in it are for something else (a shop, a discount, a profile, another account). Never make an address up, and never complete one from a name.`
 
 // What the model is told for the text of a page a post linked to (#502), which
 // is read the same way but never names a link: a followed page is the last one.
@@ -53,7 +53,7 @@ Copy, never write. Keep the page's language and do not translate. Do not add amo
 
 If the page holds more than one recipe, take the one the page is about. Leave out everything that is not that recipe: the story before it, nutrition tables, tips, comments, adverts, newsletter prompts and other recipes.
 
-A page may hold only ingredients or only steps: then return what is there and leave the other list empty. If the page holds no recipe, return both lists empty: an empty answer is right far more often than a guess. Always return an empty string as `link`.`
+A page may hold only ingredients or only steps: then return what is there and leave the other list empty. If the page holds no recipe, return both lists empty: an empty answer is right far more often than a guess. Always return an empty string as \`link\`.`
 
 // The answer asked for: the two lists, and a link (an empty string: none).
 const answerSchema = z.object({ ingredients: z.array(z.string()), steps: z.array(z.string()), link: z.string() })
