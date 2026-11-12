@@ -15,4 +15,8 @@ export interface AdminRecipeFinderUser {
   state: 'asked' | 'on'
   // When they asked, as an ISO time; null when switched on unasked.
   askedAt: string | null
+  // Their Recipe Finder searches so far, by how each ended (the Event Log's
+  // recipe_found, recipe_not_found and recipe_search_failed). Only the first
+  // two counted against their daily cap.
+  searches: { found: number, none: number, failed: number }
 }

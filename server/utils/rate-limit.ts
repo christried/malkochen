@@ -85,3 +85,12 @@ export async function spendRateLimitIfWithin(userId: string, limited: RateLimite
     throw error
   }
 }
+
+// Gives the user back one call to `limited` they were counted for: for work
+// that turned out to cost nothing (a Recipe search that failed).
+export async function refundRateLimit(userId: string, limited: RateLimited): Promise<void> {
+  await db
+    .update(rateLimitUse)
+    .set({ calls: sql`${rateLimitUse.calls} - 1` })
+    .where(and(eq(rateLimitUse.userId, userId), eq(rateLimitUse.limited, limited), gt(rateLimitUse.calls, 0)))
+}

@@ -1,6 +1,6 @@
 import { isDeployed } from '../env'
-import { createSourceLookup, type SourceLookup } from '../source-lookup'
-import { withFixtures, type LookupFixtures } from '../source-lookup/fixtures'
+import { createRecipeLookup, createSourceLookup, type RecipeLookup, type SourceLookup } from '../source-lookup'
+import { withFixtures, withRecipeFixtures, type LookupFixtures } from '../source-lookup/fixtures'
 
 // The fixtures the test servers know (SOURCE_LOOKUP_FIXTURES); none anywhere
 // else. Read on its own, not with the whole server environment: the backfill
@@ -15,3 +15,7 @@ export const lookupFixtures: LookupFixtures | null = (() => {
 // The app's one Source Lookup. Swapping in a paid unfurl service means
 // changing only this line.
 export const lookupSource: SourceLookup = lookupFixtures ? withFixtures(createSourceLookup(), lookupFixtures) : createSourceLookup()
+
+// The app's one reader of the recipe a link's page carries (CONTEXT.md:
+// Recipe Finder), with the same fixtures in the test servers.
+export const lookupRecipe: RecipeLookup = lookupFixtures ? withRecipeFixtures(createRecipeLookup(), lookupFixtures) : createRecipeLookup()

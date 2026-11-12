@@ -1,7 +1,7 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { desc, eq, inArray, sql } from 'drizzle-orm'
 import type { AdminRecipeFinderUser, RecipeFinderState } from '../../shared/recipe-finder'
 import { db } from '../db'
-import { recipeFinder, user } from '../db/schema'
+import { eventLog, recipeFinder, user } from '../db/schema'
 import { recipeFinderAskedEmail } from '../email'
 import { parseServerEnv } from '../env'
 import { detailsOf, userEvent, withEvents } from './events'
@@ -84,10 +84,26 @@ export async function recipeFinderUsers(): Promise<AdminRecipeFinderUser[]> {
     .from(recipeFinder)
     .innerJoin(user, eq(user.id, recipeFinder.userId))
     .orderBy(recipeFinder.switchedOn, desc(recipeFinder.askedAt), user.username)
-  return rows.map(row => ({
-    id: row.id,
-    name: row.name ?? '',
-    state: row.switchedOn ? 'on' : 'asked',
-    askedAt: row.askedAt?.toISOString() ?? null,
-  }))
+  // How each of them searched (#500), by the Event Log's kinds of search.
+  const searched = await db
+    .select({ userId: eventLog.userId, kind: eventLog.kind, count: sql<number>`count(*)::int` })
+    .from(eventLog)
+    .where(inArray(eventLog.kind, ['recipe_found', 'recipe_not_found', 'recipe_search_failed']))
+    .groupBy(eventLog.userId, eventLog.kind)
+  return rows.map((row) => {
+    const counts = { found: 0, none: 0, failed: 0 }
+    for (const search of searched) {
+      if (search.userId !== row.id) continue
+      if (search.kind === 'recipe_found') counts.found = search.count
+      else if (search.kind === 'recipe_not_found') counts.none = search.count
+      else if (search.kind === 'recipe_search_failed') counts.failed = search.count
+    }
+    return {
+      id: row.id,
+      name: row.name ?? '',
+      state: row.switchedOn ? 'on' : 'asked',
+      askedAt: row.askedAt?.toISOString() ?? null,
+      searches: counts,
+    }
+  })
 }

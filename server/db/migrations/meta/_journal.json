@@ -344,6 +344,13 @@
       "when": 1794426758112,
       "tag": "0048_wild_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794436204281,
+      "tag": "0049_bouncy_meteorite",
+      "breakpoints": true
     }
   ]
 }

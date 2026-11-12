@@ -3,7 +3,7 @@ import { and, asc, desc, eq, exists, ilike, inArray, isNotNull, isNull, lte, ne,
 import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
-import type { Recipe } from '../../shared/recipe'
+import type { Recipe, RecipeSearchState } from '../../shared/recipe'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, user } from '../db/schema'
@@ -15,6 +15,14 @@ import { madeAtOrNow, writeOnce, type DeviceIdStanding } from './late-changes'
 import { pictureOf, shownAs } from './people'
 import { votesByDish, type VoteView } from './votes'
 import { escapeLike } from './like'
+
+// A search still 'looking' after this long counts as failed, so a crashed
+// search never leaves a Dish stuck: it reads as not searched, and "Rezept
+// finden" works for it again.
+export const RECIPE_SEARCH_GIVES_UP_AFTER = '5 minutes'
+
+// The Dish's search state as it stands now (RECIPE_SEARCH_GIVES_UP_AFTER).
+const recipeSearchNow = sql<RecipeSearchState | null>`case when ${dish.recipeSearch} = 'looking' and ${dish.recipeSearchAt} < now() - ${RECIPE_SEARCH_GIVES_UP_AFTER}::interval then null else ${dish.recipeSearch} end`
 
 // The Member who added a Dish, as the card shows them.
 export interface DishAdder {
@@ -45,6 +53,9 @@ export interface DishView {
   playableVideo: boolean | null
   // Its Recipe (CONTEXT.md): Ingredients and Steps; null if it has neither.
   recipe: Recipe | null
+  // Where the Recipe Finder stands on it (shared/recipe.ts); null when it
+  // isn't looking and hasn't found nothing.
+  recipeSearch: RecipeSearchState | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -133,6 +144,7 @@ function selectDishes() {
       recipeIngredients: dish.recipeIngredients,
       recipeSteps: dish.recipeSteps,
       recipeLink: dish.recipeLink,
+      recipeSearch: recipeSearchNow,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -277,7 +289,14 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
   const focus = rest.imageUrl === undefined ? imageFocus : focusOf(rest.imageUrl, imageFocus)
   const values = {
     ...rest,
-    ...source !== undefined && { sourceLink: source?.link ?? null, sourceKind: source?.kind ?? null },
+    ...source !== undefined && {
+      sourceLink: source?.link ?? null,
+      sourceKind: source?.kind ?? null,
+      // Another Source is searched afresh: what the Recipe Finder made of the
+      // old one says nothing about it.
+      recipeSearch: sql`case when ${dish.sourceLink} is distinct from ${source?.link ?? null}::text then null else ${dish.recipeSearch} end`,
+      recipeSearchAt: sql`case when ${dish.sourceLink} is distinct from ${source?.link ?? null}::text then null else ${dish.recipeSearchAt} end`,
+    },
     // Shifting the image the Dish has: a Placeholder stays centred.
     ...focus && (rest.imageUrl === undefined
       ? { imageFocusX: unlessPlaceholder(focus.x, FOCUS_CENTRE.x), imageFocusY: unlessPlaceholder(focus.y, FOCUS_CENTRE.y) }
@@ -1069,6 +1088,7 @@ export async function addDish(
     caption: input.caption,
     playableVideo: input.playableVideo,
     recipe: null,
+    recipeSearch: null,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

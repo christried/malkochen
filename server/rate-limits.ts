@@ -21,6 +21,10 @@ export const RATE_LIMITS = {
   // Each Snackbert Report is a Gemini analysis on the Operator's bill. Snackbert
   // itself takes 20 a day per account, so this only stops a client stuck in a loop.
   'snackbert-report': { calls: 30, window: '1 day' },
+  // The Recipe Finder's searches ("Rezept finden", and the search after
+  // adding a Dish): each may cost a model call on the Operator's bill. A
+  // search that failed is given back (server/utils/recipe-search.ts).
+  'recipe-search': { calls: 30, window: '1 day' },
 } as const
 
 export type RateLimited = keyof typeof RATE_LIMITS

@@ -142,6 +142,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       caption: input.source && input.sourceTicket ? input.caption?.trim() || null : null,
       playableVideo: input.source && input.sourceTicket ? input.playableVideo ?? null : null,
       recipe: null,
+      recipeSearch: null,
       imageUrl: input.photo
         ? (input.photo.ticket ? input.photo.url : null)
         : input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
@@ -184,6 +185,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       caption: null,
       playableVideo: null,
       recipe: null,
+      recipeSearch: null,
       imageUrl: found?.imageUrl ?? null,
       imageFocus: { x: 50, y: 50 },
       placeholder: body.placeholder,

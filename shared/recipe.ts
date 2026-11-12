@@ -13,3 +13,8 @@ export const RECIPE_LIMITS = {
   ingredients: { lines: 60, characters: 200 },
   steps: { lines: 40, characters: 1000 },
 } as const
+
+// Where the Recipe Finder (CONTEXT.md) stands on a Dish: 'looking' while a
+// search runs; 'none' once nothing was found for its current Source, so it
+// isn't searched again until the Source changes.
+export type RecipeSearchState = 'looking' | 'none'

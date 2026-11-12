@@ -86,6 +86,12 @@ export const EVENT_KINDS = [
   // The Operator switched the Recipe Finder on or off for a user (the
   // event's `member`).
   'recipe_finder_switched',
+  // A Recipe Finder search (#500), by how it ended: a Recipe found, none found
+  // for the Dish's Source, or the search itself failed (free, and repeatable).
+  // The event's user searched.
+  'recipe_found',
+  'recipe_not_found',
+  'recipe_search_failed',
   // A Deleted Account: no user (its others' events lose theirs too).
   'account_deleted',
   // A Push Notification sent to one of a Member's devices, for the Board

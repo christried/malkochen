@@ -1,6 +1,6 @@
 import { deflateSync } from 'node:zlib'
 import { guessSource } from '.'
-import { nothingFound, type SourceLookup, type SourceLookupResult } from './types'
+import { nothingFound, type PageRecipe, type RecipeLookup, type SourceLookup, type SourceLookupResult } from './types'
 
 // Tests only (SOURCE_LOOKUP_FIXTURES, server/env.ts): the links the test
 // servers know the answer of, in place of asking the Source. A Dish added
@@ -8,7 +8,18 @@ import { nothingFound, type SourceLookup, type SourceLookupResult } from './type
 // browser test or API test can stand in for the lookup, so the server itself
 // answers a link it has a fixture for. Any other link is looked up as ever.
 
-export type LookupFixtures = Record<string, Partial<SourceLookupResult>>
+// What the test servers know about one link: its Source Lookup answer, and
+// the recipe its page carries (createRecipeLookup).
+export interface LookupFixture extends Partial<SourceLookupResult> {
+  // The recipe the page carries; left out, the page carries none.
+  // 'unreadable': the page can't be read.
+  recipe?: PageRecipe | 'unreadable'
+  // How long reading the page for its recipe takes, for tests of what
+  // happens meanwhile.
+  recipeDelayMs?: number
+}
+
+export type LookupFixtures = Record<string, LookupFixture>
 
 // The fixture for `link` (as sent or as its canonical form), laid over what
 // the link says about itself.
@@ -16,7 +27,21 @@ export function withFixtures(lookup: SourceLookup, fixtures: LookupFixtures): So
   return async (link) => {
     const guess = guessSource(link)
     const fixture = fixtures[link] ?? fixtures[guess.canonicalLink]
-    return fixture ? { ...nothingFound(guess), ...fixture } : lookup(link)
+    if (!fixture) return lookup(link)
+    const { recipe: _recipe, recipeDelayMs: _recipeDelayMs, ...found } = fixture
+    return { ...nothingFound(guess), ...found }
+  }
+}
+
+// The recipe of a link the fixtures know (as sent or as its canonical form),
+// in place of reading its page. Any other link is read as ever.
+export function withRecipeFixtures(lookup: RecipeLookup, fixtures: LookupFixtures): RecipeLookup {
+  return async (link) => {
+    const fixture = fixtures[link] ?? fixtures[guessSource(link).canonicalLink]
+    if (!fixture) return lookup(link)
+    if (fixture.recipeDelayMs) await new Promise(resolve => setTimeout(resolve, fixture.recipeDelayMs))
+    if (fixture.recipe === 'unreadable') return { outcome: 'unreadable' }
+    return fixture.recipe ? { outcome: 'found', recipe: fixture.recipe } : { outcome: 'none' }
   }
 }
 
