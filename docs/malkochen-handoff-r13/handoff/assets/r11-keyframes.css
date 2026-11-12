@@ -1,0 +1,36 @@
+/* malkochen R11 keyframes: new placeholders (pasta, bowl, breakfast), cast clips, never-cooked scenes, Topfbert idle.
+   Usage: animation: r11-<name> <duration> <easing> <delay> infinite both; transform-box: view-box; transform-origin: <data-pivot>px.
+   Multiply durations and delays by --spd (1 = normal). Under prefers-reduced-motion: no animation, show frame 0. */
+@keyframes r11-fork{0%,100%{transform:none}45%,55%{transform:translateY(-12px) rotate(-6deg)}}
+@keyframes r11-strand{0%,100%{transform:scaleY(1)}45%,55%{transform:scaleY(1.75)}}
+@keyframes r11-leaves{0%,100%{transform:none}50%{transform:translateY(-2px) rotate(-4deg)}}
+@keyframes r11-tomato{0%,50%,100%{transform:none}64%{transform:translateY(-10px)}76%{transform:scale(1.14,.86)}84%{transform:scale(.96,1.04)}90%{transform:none}}
+@keyframes r11-drip{0%,8%{transform:scaleY(1)}55%{transform:scaleY(1.9)}68%{transform:scaleY(.9)}78%,100%{transform:scaleY(1)}}
+@keyframes r11-drop{0%,55%{opacity:0;transform:translateY(0) scale(.6)}58%{opacity:1;transform:translateY(0) scale(1)}78%{opacity:1;transform:translateY(18px) scale(1)}82%{opacity:1;transform:translateY(19px) scale(1.7,.4)}92%,100%{opacity:0;transform:translateY(19px) scale(1.9,.3)}}
+@keyframes r11-berry{0%,46%,100%{transform:rotate(0)}12%{transform:rotate(-10deg)}24%{transform:rotate(7deg)}36%{transform:rotate(-3deg)}}
+@keyframes r11-roll{0%{transform:translateX(0px) rotate(0deg);animation-timing-function:cubic-bezier(.61,1,.88,1)}25%{transform:translateX(40px) rotate(154deg);animation-timing-function:cubic-bezier(.37,0,.63,1)}75%{transform:translateX(-40px) rotate(-154deg);animation-timing-function:cubic-bezier(.12,0,.39,0)}100%{transform:translateX(0px) rotate(0deg)}}
+@keyframes r11-rock{0%{transform:rotate(0deg);animation-timing-function:cubic-bezier(.61,1,.88,1)}25%{transform:rotate(9deg);animation-timing-function:cubic-bezier(.37,0,.63,1)}75%{transform:rotate(-9deg);animation-timing-function:cubic-bezier(.12,0,.39,0)}100%{transform:rotate(0deg)}}
+@keyframes r11-sprout{0%{transform:rotate(0deg);animation-timing-function:cubic-bezier(.61,1,.88,1)}25%{transform:rotate(-12deg);animation-timing-function:cubic-bezier(.37,0,.63,1)}75%{transform:rotate(12deg);animation-timing-function:cubic-bezier(.12,0,.39,0)}100%{transform:rotate(0deg)}}
+@keyframes r11-blink{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.1)}}
+@keyframes r11-hop{0%{transform:none}6%{transform:scale(1.07,.93)}17%{transform:translateY(-16px) scale(.96,1.05)}28%{transform:translateY(0) scale(1.09,.91)}34%{transform:scale(.98,1.02)}40%,100%{transform:none}}
+@keyframes r11-look{0%,44%{transform:none}52%,64%{transform:translateX(-1.6px)}72%,86%{transform:translateX(1.6px)}94%,100%{transform:none}}
+@keyframes r11-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.985,1.025)}}
+@keyframes r11-steam{0%{opacity:0;transform:translateY(6px) scaleY(.8)}40%{opacity:1}100%{opacity:0;transform:translateY(-14px) scaleY(1.1)}}
+@keyframes r11-hattip{0%,12%{transform:none}20%{transform:translateY(-4px) rotate(-20deg)}24%,60%{transform:translateY(-3px) rotate(-16deg)}68%{transform:rotate(3deg)}72%{transform:rotate(-1deg)}76%,100%{transform:none}}
+@keyframes r11-peapop{0%,17%{transform:translateY(30px)}25%{transform:translateY(-3px) scale(.94,1.08)}29%{transform:translateY(0) scale(1.04,.96)}33%,56%{transform:none}64%,100%{transform:translateY(30px)}}
+@keyframes r11-pealook{0%,33%{transform:none}37%,45%{transform:translateX(-2px)}49%,55%{transform:translateX(2px)}58%,100%{transform:none}}
+@keyframes r11-gazehut{0%,18%{transform:none}24%,58%{transform:translate(1.5px,-3px)}64%,100%{transform:none}}
+@keyframes r11-eo{0%,85%{opacity:1}86%,89%{opacity:0}90%,100%{opacity:1}}
+@keyframes r11-ec{0%,85%{opacity:0}86%,89%{opacity:1}90%,100%{opacity:0}}
+@keyframes r11-leapx{0%,6%{transform:translateX(0);animation-timing-function:cubic-bezier(.45,0,.55,1)}33%,56%{transform:translateX(54px);animation-timing-function:cubic-bezier(.45,0,.55,1)}83%,100%{transform:translateX(0)}}
+@keyframes r11-leapy{0%{transform:translateY(0) rotate(0deg) scale(1,1)}6%{transform:translateY(0) rotate(0deg) scale(1.08,.92);animation-timing-function:cubic-bezier(.2,.7,.4,1)}20%{transform:translateY(-34px) rotate(10deg) scale(1,1);animation-timing-function:cubic-bezier(.6,0,.8,.3)}33%{transform:translateY(0) rotate(0deg) scale(1.1,.9)}38%{transform:translateY(0) rotate(0deg) scale(1,1)}44%{transform:translateY(0) rotate(0deg) scale(-1,1)}56%{transform:translateY(0) rotate(0deg) scale(-1.08,.92);animation-timing-function:cubic-bezier(.2,.7,.4,1)}70%{transform:translateY(-34px) rotate(-10deg) scale(-1,1);animation-timing-function:cubic-bezier(.6,0,.8,.3)}83%{transform:translateY(0) rotate(0deg) scale(-1.1,.9)}88%{transform:translateY(0) rotate(0deg) scale(-1,1)}94%,100%{transform:translateY(0) rotate(0deg) scale(1,1)}}
+@keyframes r11-duck{0%,12%,28%,62%,78%,100%{transform:scale(1,1)}20%,70%{transform:scale(1.14,.8)}}
+@keyframes r11-gazesprung{0%{transform:translate(-3px,0)}20%{transform:translate(0,-3px)}33%,50%{transform:translate(3px,0)}70%{transform:translate(0,-3px)}83%,100%{transform:translate(-3px,0)}}
+@keyframes r11-ride{0%,14%{transform:none}22%{transform:translateY(1px) scale(1.08,.92)}36%{transform:translateY(-22px) rotate(-6deg)}50%{transform:translateY(-26px) rotate(5deg)}62%{transform:translateY(-19px) rotate(-3deg)}74%{transform:translateY(0) scale(1.1,.9)}80%{transform:scale(.97,1.03)}86%,100%{transform:none}}
+@keyframes r11-puff{0%,16%{opacity:0;transform:translateY(8px) scale(.4)}26%{opacity:1;transform:translateY(0) scale(1)}50%{opacity:1;transform:translateY(-14px) scale(1.12)}70%,100%{opacity:0;transform:translateY(-28px) scale(1.25)}}
+@keyframes r11-gazedampf{0%,22%{transform:none}30%,66%{transform:translate(2px,-3px)}74%,100%{transform:none}}
+@keyframes r11-wiggle{0%,100%{transform:rotate(0)}50%{transform:rotate(-12deg)}}
+@keyframes r11-blink48{0%,88%,92%,100%{transform:scaleY(1)}90%{transform:scaleY(.1)}}
+@keyframes r11-ihat{0%,100%{transform:none}50%{transform:translateY(-1px) rotate(3deg)}}
+@keyframes r11-ieo{0%,33%{opacity:1}33.5%,35.5%{opacity:0}36%,83%{opacity:1}83.5%,85.5%{opacity:0}86%,88%{opacity:1}88.5%,90.5%{opacity:0}91%,100%{opacity:1}}
+@keyframes r11-iec{0%,33%{opacity:0}33.5%,35.5%{opacity:1}36%,83%{opacity:0}83.5%,85.5%{opacity:1}86%,88%{opacity:0}88.5%,90.5%{opacity:1}91%,100%{opacity:0}}

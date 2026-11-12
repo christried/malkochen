@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,100..900;1,100..900&amp;family=Figtree:ital,wght@0,300..900;1,300..900&amp;display=swap" rel="stylesheet"></helmet>
+<div style="width:{{ fw }};box-sizing:border-box;padding:{{ pad }};border-radius:24px;background:var(--bg);color:var(--ink);font-family:'Figtree',system-ui,sans-serif;box-shadow:0 30px 60px -30px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:22px;{{ vars }}">
+  <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px solid var(--line);opacity:.55">
+    <span style="font:500 22px/1.1 'Petrona',Georgia,serif">Boards</span>
+    <i style="height:8px;width:60%;border-radius:4px;background:var(--line2)"></i>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px">
+      <span style="font:500 26px/1.1 'Petrona',Georgia,serif">Rezeptfinder</span>
+      <span style="font:500 14px/1.3 'Figtree',system-ui;color:var(--ink2)">{{ summary }}</span>
+    </div>
+    <sc-if value="{{ isEmpty }}">
+      <div style="padding:22px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line);font:500 14.5px/1.4 'Figtree',system-ui;color:var(--ink2)">Noch hat niemand nach dem Rezeptfinder gefragt.</div>
+    </sc-if>
+    <sc-if value="{{ wideList }}">
+      <div style="border-radius:18px;background:var(--surface);border:1px solid var(--line);overflow:hidden">
+        <div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.1fr) minmax(0,1fr) 120px;gap:16px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);font:600 12.5px/1 'Figtree',system-ui;color:var(--ink2)">
+          <span>Person</span><span>Angefragt</span><span>Suchen</span><span style="text-align:right">Rezeptfinder</span>
+        </div>
+        <sc-for list="{{ users }}" as="u" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.1fr) minmax(0,1fr) 120px;gap:16px;align-items:center;padding:12px 18px;border-top:{{ u.bt }}">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0"><span style="flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:{{ u.bg }};color:{{ u.fg }};font:700 13px/1 'Figtree',system-ui">{{ u.a }}</span><div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font:600 14.5px/1.2 'Figtree',system-ui">{{ u.n }}</span><span style="font:500 12.5px/1.2 'Figtree',system-ui;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ u.m }}</span></div></div>
+            <span style="font:500 14px/1.3 'Figtree',system-ui">{{ u.d }}</span>
+            <div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 14.5px/1 'Figtree',system-ui;font-variant-numeric:tabular-nums">{{ u.s }}</span><span style="font:500 12.5px/1 'Figtree',system-ui;color:var(--ink2)">{{ u.today }}</span></div>
+            <div style="display:flex;justify-content:flex-end"><span style="position:relative;width:46px;height:28px;border-radius:14px;background:{{ u.swBg }}"><i style="position:absolute;left:{{ u.knob }};top:3px;width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.25)"></i></span></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ narrowList }}">
+      <div style="border-radius:18px;background:var(--surface);border:1px solid var(--line);overflow:hidden">
+        <sc-for list="{{ users }}" as="u" hint-placeholder-count="5">
+          <div style="display:flex;gap:12px;padding:14px 14px 14px 14px;border-top:{{ u.bt }}">
+            <span style="flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:{{ u.bg }};color:{{ u.fg }};font:700 13px/1 'Figtree',system-ui">{{ u.a }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+              <span style="font:600 14.5px/1.2 'Figtree',system-ui">{{ u.n }}</span>
+              <span style="font:500 12.5px/1.3 'Figtree',system-ui;color:var(--ink2)">Angefragt am {{ u.d }}</span>
+              <span style="font:500 12.5px/1.3 'Figtree',system-ui;color:var(--ink2)">{{ u.sLong }}</span>
+            </div>
+            <span style="flex:none;position:relative;width:46px;height:28px;border-radius:14px;background:{{ u.swBg }}"><i style="position:absolute;left:{{ u.knob }};top:3px;width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.25)"></i></span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line);opacity:.55">
+    <span style="font:500 22px/1.1 'Petrona',Georgia,serif">Event Log</span>
+    <i style="height:8px;width:48%;border-radius:4px;background:var(--line2)"></i>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:980,&quot;height&quot;:560},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;list&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;list&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;desktop&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const VARS = {
+  light: '--bg:#F7F6F2;--surface:#FFFFFF;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--off:rgba(31,30,28,.18)',
+  dark: '--bg:#131211;--surface:#1E1C1A;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--off:rgba(255,255,255,.2)'
+};
+const U = [
+  ['N', 'Noor Haddad', 'noor@posteo.de', '11. Nov.', 0, 0, false, '#A8BEE3', '#0F2340'],
+  ['S', 'Sam Okafor', 'sam.okafor@gmail.com', '9. Nov.', 0, 0, false, '#F7C85C', '#2B1E04'],
+  ['L', 'Lisa Berger', 'lisa.berger@web.de', '2. Okt.', 214, 6, true, '#F7C85C', '#2B1E04'],
+  ['J', 'Jonas Ahmadi', 'jonas.a@gmx.de', '28. Sep.', 87, 0, true, '#A9C9B1', '#12291A'],
+  ['M', 'Mia Kowalski', 'mia.kowalski@mailbox.org', '14. Sep.', 31, 1, true, '#DDB0F6', '#2D0F3F']
+];
+class Component extends DCLogic {
+  renderVals() {
+    const empty = this.props.variant === 'empty', phone = this.props.width === 'phone';
+    const users = empty ? [] : U.map(([a, n, m, d, s, t, on, bg, fg], i) => ({ a, n, m, d, s: String(s), today: `${t} heute`, sLong: s ? `${s} Suchen, ${t} heute` : 'Noch keine Suchen', bt: i ? '1px solid var(--line)' : 'none', swBg: on ? '#A5C7AE' : 'var(--off)', knob: on ? '21px' : '3px', bg, fg }));
+    return {
+      vars: VARS[this.props.theme === 'dark' ? 'dark' : 'light'], fw: phone ? '360px' : '980px', pad: phone ? '24px 14px' : '32px 36px',
+      isEmpty: empty, wideList: !empty && !phone, narrowList: !empty && phone, users,
+      summary: empty ? 'Niemand hat angefragt.' : '2 angefragt, 3 eingeschaltet. Neue Anfragen stehen oben.'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,100..900;1,100..900&amp;family=Figtree:ital,wght@0,300..900;1,300..900&amp;display=swap" rel="stylesheet"><style>
+@keyframes r13-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes r13-card{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes r13-fade{from{opacity:0}to{opacity:1}}
+@keyframes r13-out{to{opacity:0;transform:scale(.97)}}
+@keyframes r13-hop{0%{transform:none}45%{transform:translateY(-7px)}100%{transform:translateY(-2px) scale(.7);opacity:0}}
+@keyframes r13-stir{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+@keyframes r13-peek{0%,100%{transform:translateY(13px)}10%{transform:translateY(-3px)}17%{transform:translateY(0)}30%{transform:translateY(13px)}}
+@keyframes r13-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.985,1.025)}}
+@keyframes r13-hat{0%,100%{transform:none}50%{transform:translateY(-1px) rotate(3deg)}}
+@keyframes r13-hold{0%,100%{transform:translateY(-10px) rotate(-1.5deg) scale(1.03)}50%{transform:translateY(-5px) rotate(-1deg) scale(1.03)}}
+@keyframes r13-caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes r13-toast{from{transform:translateY(120px)}to{transform:none}}
+@keyframes r13-bar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+</style></helmet>
+<div style="position:relative;width:{{ fw }};height:760px;border-radius:{{ frad }};overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Figtree',system-ui,sans-serif;box-shadow:0 30px 60px -30px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.08);{{ vars }}">
+  <div ref="{{ setSc }}" onScroll="{{ onScroll }}" style="position:absolute;inset:0;overflow-y:auto;scrollbar-width:none">
+    <div style="height:{{ heroH }};background:{{ ph }};background-size:cover;background-position:center"></div>
+    <div style="position:relative;margin-top:-26px;background:var(--bg);border-radius:28px 28px 0 0;padding:{{ pad }};display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span style="height:30px;padding:0 11px 0 9px;border-radius:15px;background:var(--s2);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Figtree',system-ui"><i style="width:10px;height:10px;border-radius:50%;background:{{ srcDot }}"></i>{{ srcName }}</span>
+        <span style="height:30px;padding:0 10px 0 9px;border-radius:15px;background:var(--s2);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Figtree',system-ui"><span style="font-size:13px">🍜</span>WG-Küche<i style="width:9px;height:9px;margin-left:3px;border-radius:50%;background:#DE8CF2"></i>Diese Woche<svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink2);stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6l6 6-6 6"></path></svg></span>
+      </div>
+      <div style="font:500 {{ titleSize }}/1.1 'Petrona',Georgia,serif;letter-spacing:-.015em;text-wrap:pretty">{{ title }}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:-6px"><span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#A8BEE3;color:#0F2340;font:700 10px/1 'Figtree',system-ui">{{ creatorL }}</span><span style="font:500 13.5px/1 'Figtree',system-ui;color:var(--ink2)">{{ creator }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font:500 15.5px/1.45 'Figtree',system-ui;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:pretty">{{ caption }}</span>
+        <span style="align-self:flex-start;font:600 14px/1 'Figtree',system-ui;text-decoration:underline;text-underline-offset:3px;padding:4px 0">mehr</span>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1;min-width:0;height:54px;border-radius:27px;background:var(--inv);color:var(--onInv);display:flex;align-items:center;justify-content:center;gap:9px;padding:0 14px"><i style="flex:none;width:11px;height:11px;border-radius:50%;background:{{ srcDot }}"></i><div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font:600 15.5px/1 'Figtree',system-ui;white-space:nowrap">Original öffnen</span><span style="font:500 11.5px/1 'Figtree',system-ui;opacity:.7;white-space:nowrap">{{ srcSub }}</span></div><svg width="16" height="16" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M7 17L17 7M9 7h8v8"></path></svg></div>
+        <div style="flex:none;height:54px;padding:0 20px;border-radius:28px 25px 29px 26px;background:#A5C7AE;color:#10261A;display:flex;align-items:center;gap:8px;font:600 15.5px/1 'Figtree',system-ui">Gekocht<svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg></div>
+      </div>
+      <div data-anchor="{{ shareAnc }}" style="display:flex;gap:4px;margin:-6px 0 0 -8px">
+        <span style="height:40px;padding:0 10px;border-radius:20px;display:flex;align-items:center;gap:7px;font:600 14px/1 'Figtree',system-ui;color:var(--ink2)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"></path></svg>Link teilen</span>
+        <span style="height:40px;padding:0 10px;border-radius:20px;display:flex;align-items:center;gap:7px;font:600 14px/1 'Figtree',system-ui;color:var(--ink2)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M5 15V5h10"></path></svg>Kopieren</span>
+      </div>
+
+      <div data-anchor="{{ recAnc }}" style="display:{{ recDisp }};flex-direction:column;gap:14px;padding-top:4px">
+        <sc-if value="{{ addOnly }}" hint-placeholder-val="{{ false }}">
+          <div style="height:52px;border-radius:26px;border:2px dashed var(--line2);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15.5px/1 'Figtree',system-ui"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg>Rezept hinzufügen</div>
+        </sc-if>
+        <sc-if value="{{ fAction }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <div style="flex:1 1 150px;height:52px;padding:0 18px;border-radius:26px;background:var(--s2);display:flex;align-items:center;justify-content:center;gap:8px;font:600 15.5px/1 'Figtree',system-ui;white-space:nowrap;opacity:{{ findOp }}"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>Rezept finden</div>
+            <div style="flex:1 1 150px;height:52px;padding:0 18px;border-radius:26px;border:2px dashed var(--line2);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15.5px/1 'Figtree',system-ui;white-space:nowrap"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg>Rezept hinzufügen</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ fSearch }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:14px;padding:12px 18px 12px 12px;border-radius:28px 24px 30px 26px;background:var(--surface);box-shadow:var(--shadow);animation:{{ searchAnim }}">
+            <div style="flex:none;width:66px;height:66px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:var(--butterSoft);display:grid;place-items:center">
+              <svg width="56" height="60" viewBox="0 -20 140 150" style="overflow:visible;animation:{{ hopAnim }}">
+                <g style="transform-box:view-box;transform-origin:70px 123px;animation:{{ aBreathe }}">
+                  <g style="transform-box:view-box;transform-origin:71.5px 54.4px;animation:{{ aSpoon }}"><rect x="68.25" y="-12.75" width="6.5" height="73.5" rx="4" fill="#D9A86C" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+                  <g transform="translate(-28 0)"><g style="transform:translateY(13px);animation:{{ aPeek1 }}"><rect x="63.25" y="31.25" width="15.5" height="15.5" rx="5.5" fill="#F08A5D" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g>
+                  <g transform="translate(27 0)"><g style="transform:translateY(13px);animation:{{ aPeek2 }}"><circle cx="69.5" cy="37.5" r="6.25" fill="#8DB596" stroke="#1F1E1C" stroke-width="2.5"></circle></g></g>
+                  <g transform="translate(10 0)"><g style="transform:translateY(-1px);animation:{{ aPeek3 }}"><rect x="63.25" y="31.25" width="14.5" height="14.5" rx="7" fill="#F7D58A" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g>
+                  <rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect><rect x="111.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect>
+                  <path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="2.5"></path>
+                  <path d="M45.5 76A5 5 0 0 1 55.5 76M84.5 76A5 5 0 0 1 94.5 76" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round"></path>
+                  <ellipse cx="41.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse><ellipse cx="98.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse>
+                  <path d="M59.5 82H78.5A9.5 8.5 0 0 1 59.5 82Z" fill="#1F1E1C"></path><ellipse cx="66" cy="87" rx="4.5" ry="3" fill="#F08A8A"></ellipse>
+                  <rect x="13.25" y="41.25" width="113.5" height="12.5" rx="6.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect>
+                  <g style="transform-box:view-box;transform-origin:36px 46px;animation:{{ aHat }}"><g transform="rotate(-14 36 46)"><circle cx="22" cy="6" r="10.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="39" cy="1" r="11.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="50" cy="8" r="8.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><rect x="16" y="8" width="40" height="22" fill="#fff"></rect><rect x="16.25" y="23.25" width="39.5" height="13.5" rx="3" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g>
+                </g>
+              </svg>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+              <span style="font:500 20px/1.15 'Petrona',Georgia,serif">Rezept wird gesucht</span>
+              <span style="font:500 13.5px/1.4 'Figtree',system-ui;color:var(--ink2);text-wrap:pretty">Das dauert meist ein paar Sekunden, manchmal auch eine halbe Minute.</span>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ fNote }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <sc-if value="{{ noteImg }}"><img src="{{ noteSrc }}" alt="" style="flex:none;width:46px;height:49px"></sc-if>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <span style="font:500 19px/1.2 'Petrona',Georgia,serif;text-wrap:pretty">{{ noteT }}</span>
+                <sc-if value="{{ noteHasSub }}"><span style="font:500 13.5px/1.4 'Figtree',system-ui;color:var(--ink2);text-wrap:pretty">{{ noteSub }}</span></sc-if>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px">
+              <sc-if value="{{ retryOn }}"><div style="flex:1 1 150px;height:52px;padding:0 18px;border-radius:26px;background:var(--s2);display:flex;align-items:center;justify-content:center;gap:8px;font:600 15.5px/1 'Figtree',system-ui;white-space:nowrap"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Noch mal suchen</div></sc-if>
+              <sc-if value="{{ noteAdd }}"><div style="flex:1 1 150px;height:52px;padding:0 18px;border-radius:26px;border:2px dashed var(--line2);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15.5px/1 'Figtree',system-ui;white-space:nowrap"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg>Rezept hinzufügen</div></sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showRecipe }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:10px;min-height:40px;animation:{{ headAnim }}">
+            <span style="flex:1;font:500 25px/1.1 'Petrona',Georgia,serif;letter-spacing:-.01em">Rezept</span>
+            <sc-if value="{{ unsent }}"><span style="display:flex;align-items:center;gap:5px;font:500 12.5px/1 'Figtree',system-ui;color:var(--ink2)"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 9.1 4.5 4.5 0 0 0 7 18z"></path><path d="M12 10v4M12 16.6v.1"></path></svg>Noch nicht gesendet</span></sc-if>
+            <sc-if value="{{ canEdit }}"><span style="height:38px;padding:0 14px 0 11px;border-radius:19px;background:var(--s2);display:flex;align-items:center;gap:7px;font:600 14px/1 'Figtree',system-ui;box-shadow:{{ editRing }}"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20h4l10-10-4-4L4 16z"></path><path d="M13 7l4 4"></path></svg>Bearbeiten</span></sc-if>
+          </div>
+          <sc-if value="{{ hasIng }}">
+            <div data-sec="ing" style="padding:16px 18px 6px;border-radius:28px 24px 30px 26px;background:var(--surface);box-shadow:var(--shadow);animation:{{ ingCardAnim }}">
+              <div style="display:flex;align-items:baseline;gap:8px;padding-bottom:6px"><span style="font:500 21px/1.15 'Petrona',Georgia,serif">Zutaten</span><span style="font:600 14px/1 'Figtree',system-ui;color:var(--ink2)">{{ ingCount }}</span></div>
+              <sc-for list="{{ ing }}" as="i" hint-placeholder-count="8">
+                <div data-anchor="{{ i.anc }}" style="display:flex;gap:12px;padding:10px 0 11px;border-top:{{ i.bt }};animation:{{ i.anim }}"><i style="flex:none;width:8px;height:8px;margin-top:9px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:#F7B94A"></i><span style="flex:1;min-width:0;font:500 18px/1.45 'Figtree',system-ui;text-wrap:pretty">{{ i.t }}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasSteps }}">
+            <div data-sec="steps" style="padding:16px 18px 8px;border-radius:30px 26px 28px 24px;background:var(--surface);box-shadow:var(--shadow);animation:{{ stCardAnim }}">
+              <div style="display:flex;align-items:baseline;gap:8px;padding-bottom:6px"><span style="font:500 21px/1.15 'Petrona',Georgia,serif">Schritte</span><span style="font:600 14px/1 'Figtree',system-ui;color:var(--ink2)">{{ stCount }}</span></div>
+              <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+                <div data-anchor="{{ s.anc }}" style="display:flex;gap:14px;padding:13px 0 14px;border-top:{{ s.bt }};animation:{{ s.anim }}"><span style="flex:none;width:34px;height:34px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:var(--s2);display:grid;place-items:center;font:500 18px/1 'Petrona',Georgia,serif">{{ s.n }}</span><span style="flex:1;min-width:0;padding-top:4px;font:500 18px/1.5 'Figtree',system-ui;text-wrap:pretty">{{ s.t }}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div data-sec="end" data-anchor="{{ endAnc }}" style="display:flex;align-items:center;gap:7px;min-height:4px;padding-left:4px;font:500 13.5px/1.3 'Figtree',system-ui;color:var(--ink2)">
+            <sc-if value="{{ fromPage }}"><svg width="15" height="15" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg><span>Rezept von <span style="color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px">kichererbsenliebe.de</span></span></sc-if>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:16px 16px 8px;border-radius:30px 26px 31px 27px;background:var(--surface);box-shadow:var(--shadow)">
+        <span style="font:500 21px/1.15 'Petrona',Georgia,serif">Verlauf</span>
+        <sc-for list="{{ hist }}" as="h" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)"><span style="flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:{{ h.bg }};color:{{ h.fg }};font:700 10.5px/1 'Figtree',system-ui">{{ h.a }}</span><span style="flex:1;min-width:0;font:500 14px/1.35 'Figtree',system-ui">{{ h.t }}</span><span style="flex:none;font:500 12.5px/1 'Figtree',system-ui;color:var(--ink2)">{{ h.d }}</span></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;padding:6px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)">
+        <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 12px 0 8px"><span style="width:36px;height:36px;border-radius:50%;background:var(--s2);display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 12h13M12 6l6 6-6 6"></path></svg></span><span style="flex:1;font:600 15.5px/1 'Figtree',system-ui">Verschieben nach…</span></div>
+        <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 12px 0 8px"><span style="width:36px;height:36px;border-radius:50%;background:var(--s2);display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 6h16v4H4z"></path><path d="M6 10v9h12v-9M10 14h4"></path></svg></span><span style="flex:1;font:600 15.5px/1 'Figtree',system-ui">Archivieren</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:0;right:0;top:0;height:{{ barH }};z-index:10;pointer-events:none;background:var(--bg);opacity:{{ barOp }};box-shadow:0 1px 0 var(--line)"></div>
+  <div style="position:absolute;left:{{ barX }};right:{{ barX }};top:{{ barTop }};z-index:11;display:flex;align-items:center;gap:10px">
+    <div style="flex:none;width:42px;height:42px;border-radius:50%;background:var(--glass);display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="{{ backIcon }}"></path></svg></div>
+    <span style="flex:1;min-width:0;font:500 18px/1 'Petrona',Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:{{ barOp }}">{{ title }}</span>
+    <div style="flex:none;width:42px;height:42px;border-radius:50%;background:var(--glass);display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:var(--ink)"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></div>
+  </div>
+
+  <sc-if value="{{ navShow }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:{{ navTop }};z-index:12;display:flex;justify-content:center;pointer-events:none;opacity:{{ navOp }};transform:translateY({{ navTy }});transition:opacity 240ms ease, transform 240ms ease">
+      <div style="display:flex;gap:4px;padding:4px;border-radius:24px;background:var(--glass);box-shadow:0 10px 24px -12px rgba(0,0,0,.4), 0 0 0 1px var(--line);pointer-events:auto">
+        <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="2"><span onClick="{{ n.go }}" style="height:38px;padding:0 15px;border-radius:19px;display:flex;align-items:center;gap:7px;font:600 14.5px/1 'Figtree',system-ui;background:{{ n.bg }};color:{{ n.fg }};cursor:pointer;transition:background 200ms ease, color 200ms ease">{{ n.l }}<span style="font-weight:500;opacity:.7">{{ n.c }}</span></span></sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ isPhone }}"><div style="position:absolute;inset:0;z-index:20;background:var(--scrim)"></div></sc-if>
+    <div style="position:absolute;left:0;right:0;top:{{ edTop }};bottom:0;z-index:21;background:var(--bg);border-radius:{{ edRad }};box-shadow:0 -20px 50px -20px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden">
+      <sc-if value="{{ isPhone }}"><div style="flex:none;align-self:center;width:40px;height:5px;margin-top:8px;border-radius:3px;background:var(--line2)"></div></sc-if>
+      <div style="flex:none;display:flex;align-items:center;gap:10px;padding:{{ edHeadPad }}">
+        <span style="height:40px;padding:0 15px;border-radius:20px;background:var(--s2);display:grid;place-items:center;font:600 14.5px/1 'Figtree',system-ui">Abbrechen</span>
+        <span style="flex:1;text-align:center;font:500 20px/1 'Petrona',Georgia,serif">Rezept</span>
+        <span style="height:40px;padding:0 17px;border-radius:20px;background:var(--inv);color:var(--onInv);display:grid;place-items:center;font:600 14.5px/1 'Figtree',system-ui">Speichern</span>
+      </div>
+      <div ref="{{ setEd }}" style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:6px {{ edPadX }} 28px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ secs }}" as="sec" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:10px">
+            <div style="display:flex;align-items:baseline;gap:8px;padding:6px 4px 0"><span style="font:500 21px/1.15 'Petrona',Georgia,serif">{{ sec.name }}</span><span style="font:600 14px/1 'Figtree',system-ui;color:var(--ink2)">{{ sec.count }}</span></div>
+            <div style="display:flex;flex-direction:column;padding:6px 0;border-radius:24px 21px 25px 22px;background:var(--surface);box-shadow:var(--shadow)">
+              <sc-for list="{{ sec.rows }}" as="r" hint-placeholder-count="6">
+                <div data-ea="{{ r.ea }}" style="position:relative;z-index:{{ r.z }}">
+                  <sc-if value="{{ r.sepOn }}"><div style="height:1px;margin:0 16px 0 44px;background:var(--line)"></div></sc-if>
+                  <sc-if value="{{ r.isSlot }}">
+                    <div style="position:relative;margin:4px 6px;min-height:52px;border:2px dashed var(--line2);border-radius:18px 16px 19px 17px;box-sizing:border-box">
+                      <div style="position:absolute;left:-2px;right:-2px;top:-2px;display:flex;align-items:flex-start;border-radius:18px 16px 19px 17px;background:var(--surface);box-shadow:{{ r.liftSh }};transform:{{ r.liftTf }};animation:{{ r.liftAnim }}">
+                        <span style="flex:none;width:36px;height:52px;display:grid;place-items:center;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="9" cy="6" r="1.7"></circle><circle cx="15" cy="6" r="1.7"></circle><circle cx="9" cy="12" r="1.7"></circle><circle cx="15" cy="12" r="1.7"></circle><circle cx="9" cy="18" r="1.7"></circle><circle cx="15" cy="18" r="1.7"></circle></svg></span>
+                        <sc-if value="{{ r.isStep }}"><span style="flex:none;width:24px;padding-top:15px;font:500 17px/1 'Petrona',Georgia,serif;color:var(--ink2)">{{ r.num }}</span></sc-if>
+                        <span style="flex:1;min-width:0;padding:14px 12px 14px 0;font:500 17px/24px 'Figtree',system-ui">{{ r.t }}</span>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ r.isRow }}">
+                    <div style="display:flex;align-items:flex-start;margin:0 6px;border-radius:18px 16px 19px 17px;background:{{ r.bg }};box-shadow:{{ r.sh }};opacity:{{ r.op }};transform:{{ r.tf }}">
+                      <span style="flex:none;width:36px;height:52px;display:grid;place-items:center;color:var(--ink2);border-radius:14px;box-shadow:{{ r.gripRing }}"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:currentColor"><circle cx="9" cy="6" r="1.7"></circle><circle cx="15" cy="6" r="1.7"></circle><circle cx="9" cy="12" r="1.7"></circle><circle cx="15" cy="12" r="1.7"></circle><circle cx="9" cy="18" r="1.7"></circle><circle cx="15" cy="18" r="1.7"></circle></svg></span>
+                      <sc-if value="{{ r.isStep }}"><span style="flex:none;width:24px;padding-top:15px;font:500 17px/1 'Petrona',Georgia,serif;color:var(--ink2)">{{ r.num }}</span></sc-if>
+                      <span style="flex:1;min-width:0;padding:14px 0;font:500 17px/24px 'Figtree',system-ui;overflow-wrap:anywhere">{{ r.t }}<sc-if value="{{ r.focus }}"><span style="display:inline-block;width:2px;height:21px;margin:0 1px;vertical-align:-4px;border-radius:1px;background:#E8961E;animation:{{ caretAnim }}"></span></sc-if><span style="color:var(--ink2)">{{ r.ph }}</span></span>
+                      <span style="flex:none;width:42px;height:52px;display:grid;place-items:center;color:var(--ink2)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span>
+                    </div>
+                    <sc-if value="{{ r.helper }}">
+                      <div style="display:flex;gap:10px;padding:6px 18px 8px 50px;font:500 12.5px/16px 'Figtree',system-ui;color:var(--ink2)"><span style="flex:1;text-wrap:pretty">{{ r.helperT }}</span><span style="flex:none;font-variant-numeric:tabular-nums;color:{{ r.countInk }}">{{ r.counter }}</span></div>
+                    </sc-if>
+                    <sc-if value="{{ r.menu }}">
+                      <div style="position:absolute;left:12px;top:58px;z-index:6;width:200px;padding:6px;border-radius:20px 18px 21px 19px;background:var(--surface);box-shadow:var(--dialog), 0 0 0 1px var(--line);display:flex;flex-direction:column">
+                        <div style="height:44px;padding:0 12px;border-radius:14px;display:flex;align-items:center;gap:10px;font:600 15px/1 'Figtree',system-ui;background:var(--s2)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M12 19V5M6 11l6-6 6 6"></path></svg>Nach oben</div>
+                        <div style="height:44px;padding:0 12px;border-radius:14px;display:flex;align-items:center;gap:10px;font:600 15px/1 'Figtree',system-ui"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>Nach unten</div>
+                      </div>
+                    </sc-if>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ sec.canAdd }}"><div style="height:48px;border-radius:24px;border:2px dashed var(--line2);box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Figtree',system-ui;color:var(--ink)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round"><path d="M12 5v14M5 12h14"></path></svg>{{ sec.addT }}</div></sc-if>
+            <sc-if value="{{ sec.full }}"><div data-ea="{{ sec.fullEa }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:22px 19px 23px 20px;background:var(--butterSoft)"><img src="handoff/assets/topfbert/topfbert-happy.svg" alt="" style="flex:none;width:34px;height:36px"><span style="flex:1;font:500 14px/1.4 'Figtree',system-ui;text-wrap:pretty">{{ sec.fullT }}</span></div></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ kbOn }}">
+        <div style="flex:none;height:262px;padding:8px 4px 0;box-sizing:border-box;background:var(--kb);display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ kb }}" as="row" hint-placeholder-count="4">
+            <div style="display:flex;gap:5px;padding:0 {{ row.pad }}"><sc-for list="{{ row.keys }}" as="k" hint-placeholder-count="10"><div style="flex:{{ k.grow }};height:42px;border-radius:7px;display:grid;place-items:center;background:{{ k.bg }};color:{{ k.ink }};font:{{ k.font }};box-shadow:0 1px 0 rgba(0,0,0,.28)">{{ k.l }}</div></sc-for></div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:12px;right:12px;bottom:{{ toastB }};z-index:40;height:56px;border-radius:28px;background:var(--inv);color:var(--onInv);display:flex;align-items:center;padding:0 7px 0 20px;box-shadow:0 16px 32px -10px rgba(0,0,0,.5);overflow:hidden;animation:{{ toastAnim }}">
+      <span style="flex:1;font:600 15px/1.2 'Figtree',system-ui">{{ toastT }}</span>
+      <span style="height:42px;padding:0 14px;border-radius:21px;background:color-mix(in oklch, var(--onInv) 16%, transparent);display:grid;place-items:center;font:600 14px/1 'Figtree',system-ui">{{ toastA }}</span>
+      <div style="position:absolute;left:20px;right:20px;bottom:6px;height:2px;border-radius:1px;background:var(--onInv);opacity:.35;transform-origin:left;animation:{{ toastBar }}"></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ dialogOn }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:50;background:var(--scrim);display:grid;place-items:center;padding:0 22px">
+      <div style="width:100%;max-width:340px;box-sizing:border-box;padding:24px 20px 18px;border-radius:32px 28px 33px 29px;background:var(--surface);box-shadow:var(--dialog);display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 24px/1.15 'Petrona',Georgia,serif">Änderungen verwerfen?</span>
+        <span style="font:500 15px/1.45 'Figtree',system-ui;color:var(--ink2);text-wrap:pretty">Dein Rezept bleibt dann so, wie es vorher war.</span>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <span style="flex:1;height:50px;border-radius:25px;background:var(--s2);display:grid;place-items:center;font:600 15px/1 'Figtree',system-ui">Weiter bearbeiten</span>
+          <span style="flex:none;height:50px;padding:0 20px;border-radius:25px;background:color-mix(in oklch, var(--danger) 12%, transparent);color:var(--danger);display:grid;place-items:center;font:600 15px/1 'Figtree',system-ui">Verwerfen</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isPhone }}">
+    <div style="position:absolute;top:0;left:0;right:0;height:44px;z-index:60;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 14.5px/1 'Figtree',system-ui;color:{{ statusInk }};pointer-events:none">
+      <span>9:41</span>
+      <div style="display:flex;gap:6px;align-items:center"><div style="width:16px;height:10px;border-radius:2px;background:currentColor;opacity:.85"></div><div style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:4px;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;background:currentColor;border-radius:1.5px"></div></div></div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:760},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;r_full&quot;,&quot;r_long&quot;,&quot;r_longstep&quot;,&quot;r_ing&quot;,&quot;r_steps&quot;,&quot;r_none_edit&quot;,&quot;r_none_view&quot;,&quot;r_view&quot;,&quot;r_page&quot;,&quot;e_way&quot;,&quot;e_open&quot;,&quot;e_add&quot;,&quot;e_short&quot;,&quot;e_long&quot;,&quot;e_remove&quot;,&quot;e_drag&quot;,&quot;e_kbd&quot;,&quot;e_paste&quot;,&quot;e_limit&quot;,&quot;e_steplimit&quot;,&quot;e_discard&quot;,&quot;e_unsent&quot;,&quot;f_action&quot;,&quot;f_search&quot;,&quot;f_found&quot;,&quot;f_none&quot;,&quot;f_failed&quot;,&quot;f_quota&quot;,&quot;f_offline&quot;],&quot;default&quot;:&quot;r_full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;frame&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;panel&quot;],&quot;default&quot;:&quot;phone&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;still&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;spd&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.5,&quot;max&quot;:4,&quot;step&quot;:0.5,&quot;tsType&quot;:&quot;number&quot;}}">
+const ES = 'cubic-bezier(.3,1.3,.5,1)';
+const VARS = {
+  light: '--bg:#F7F6F2;--surface:#FFFFFF;--s2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--inv:#1F1E1C;--onInv:#FFFFFF;--glass:rgba(255,255,255,.82);--scrim:rgba(12,10,8,.42);--shadow:0 12px 28px -10px rgba(70,55,30,.18), 0 2px 6px rgba(70,55,30,.06);--lift:0 34px 50px -18px rgba(0,0,0,.40);--dialog:0 30px 60px -20px rgba(0,0,0,.55);--danger:#C23B22;--sageSoft:color-mix(in oklch, #A5C7AE 40%, #FFFFFF);--butterSoft:color-mix(in oklch, #F7B94A 30%, #FFFFFF);--kb:#D1CEC8;--key:#FFFFFF;--key2:#AFABA4',
+  dark: '--bg:#131211;--surface:#1E1C1A;--s2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--inv:#F3EFE8;--onInv:#131211;--glass:rgba(30,28,26,.78);--scrim:rgba(12,10,8,.5);--shadow:0 12px 28px -10px rgba(0,0,0,.60), 0 2px 6px rgba(0,0,0,.30);--lift:0 34px 50px -18px rgba(0,0,0,.70);--dialog:0 30px 60px -20px rgba(0,0,0,.80);--danger:#FF8A70;--sageSoft:color-mix(in oklch, #A5C7AE 28%, #1E1C1A);--butterSoft:color-mix(in oklch, #F7B94A 22%, #1E1C1A);--kb:#2B2926;--key:#4A4743;--key2:#36332F'
+};
+const PH = {
+  tofu: 'radial-gradient(9% 6% at 40% 44%, #C98A4E 0 55%, transparent 100%), radial-gradient(10% 6.5% at 58% 49%, #B8743C 0 55%, transparent 100%), radial-gradient(9% 6% at 47% 58%, #D09A5C 0 55%, transparent 100%), radial-gradient(5% 3.4% at 63% 60%, #E3C27A 0 60%, transparent 100%), radial-gradient(5% 3.4% at 34% 54%, #E3C27A 0 60%, transparent 100%), radial-gradient(2.4% 1.6% at 52% 41%, #8CC063 0 60%, transparent 100%), radial-gradient(2.4% 1.6% at 38% 61%, #7DB052 0 60%, transparent 100%), radial-gradient(2.4% 1.6% at 66% 53%, #8CC063 0 60%, transparent 100%), radial-gradient(32% 21% at 50% 52%, #F4F0E6 0 78%, #E4DCCB 88%, transparent 92%), radial-gradient(42% 28% at 50% 52%, #2E3D45 0 88%, transparent 93%), linear-gradient(165deg,#C7B79C,#8E7B60)',
+  brunch: 'radial-gradient(11% 7.5% at 36% 46%, #E3A857 0 60%, transparent 100%), radial-gradient(8% 5.5% at 60% 54%, #C9473F 0 55%, transparent 100%), radial-gradient(7% 5% at 54% 40%, #8DB596 0 55%, transparent 100%), radial-gradient(6% 4% at 66% 44%, #F2D37A 0 55%, transparent 100%), radial-gradient(34% 23% at 50% 50%, #F4EDE2 0 85%, #D7CDBE 92%, transparent 95%), linear-gradient(160deg,#6E7F6F,#2F3833)'
+};
+const ING = ['200 g Räuchertofu', '1 Dose Kichererbsen', '2 EL Sojasoße', '1 EL Ahornsirup', '1 Stück Ingwer, daumengroß', '2 Knoblauchzehen', '250 g Reis', 'Frühlingszwiebeln und Sesam zum Bestreuen'];
+const STEPS = ['Reis nach Packungsangabe kochen.', 'Tofu würfeln und in einer heißen Pfanne mit etwas Öl rundherum knusprig braten. Das dauert etwa 8 Minuten, nicht zu früh wenden, sonst bleibt er an der Pfanne kleben.', 'Kichererbsen abgießen, dazugeben und 3 Minuten mitbraten.', 'Sojasoße, Ahornsirup, geriebenen Ingwer und Knoblauch verrühren, in die Pfanne geben und kurz einkochen lassen.', 'Auf dem Reis anrichten, mit Frühlingszwiebeln und Sesam bestreuen.'];
+const LING = ['500 g Mehl', '1 Würfel frische Hefe', '300 ml Haferdrink', '2 EL Zucker', '1 TL Salz', '60 g vegane Butter', '400 g Räuchertofu', '2 EL Kala Namak', '1 TL Kurkuma', '3 Frühlingszwiebeln', '1 Bund Schnittlauch', '250 g Kirschtomaten', '2 Avocados', '1 Limette', '1 Glas Kichererbsen', '3 EL Tahin', '1 Zitrone', '2 Knoblauchzehen', '1 TL Kreuzkümmel', '1 Prise Paprikapulver, geräuchert', '500 g Sojajoghurt', '200 g Haferflocken', '100 g Walnüsse', '50 g Kürbiskerne', '3 EL Ahornsirup', '400 g Beeren, gemischt', '2 Bananen', '1 Mango', '250 g Champignons', '1 Zweig Thymian', '200 g Babyspinat', '1 Gurke', '1 Bund Radieschen', '200 g veganer Frischkäse', '1 Bund Dill', '2 rote Zwiebeln', '4 EL Apfelessig', '1 Glas Kapern', '300 g Kartoffeln, festkochend', '2 Paprika', '1 Dose weiße Bohnen', '400 g gehackte Tomaten', '1 TL Zimt', '1 Vanilleschote', '150 g Rohrzucker', '250 g Dinkelmehl', '1 Päckchen Backpulver', '400 ml Mineralwasser', 'Öl zum Ausbacken', '100 g Puderzucker', '1 Glas Erdnussmus', '200 g Erdbeeren', '1 Bund Minze', '1 l Orangensaft', '1 Stück Ingwer', '2 EL Leinsamen', '1 Bund Petersilie', 'Salz und Pfeffer', '1 Baguette', 'Kresse zum Bestreuen'];
+const LONG = 'Für die Bohnen in Tomatensoße die roten Zwiebeln fein würfeln und in einem breiten Topf mit zwei Esslöffeln Öl bei mittlerer Hitze glasig anschwitzen, das dauert etwa sechs bis acht Minuten. Dann den Knoblauch dazugeben und eine weitere Minute mitbraten, aber aufpassen, dass er nicht braun wird, sonst wird die Soße bitter. Einen Esslöffel Tomatenmark einrühren und so lange rösten, bis es am Topfboden leicht ansetzt und dunkler wird. Mit einem Schluck Wasser ablöschen und den Bodensatz mit einem Holzlöffel lösen. Die gehackten Tomaten, das geräucherte Paprikapulver, einen Teelöffel Ahornsirup und den Thymian dazugeben, alles einmal aufkochen und dann bei kleiner Hitze offen köcheln lassen. Zwischendurch immer wieder umrühren und bei Bedarf etwas Wasser nachgießen, falls die Soße zu dick wird. Nach etwa zwanzig Minuten den Thymian herausnehmen, die abgetropften weißen Bohnen unterheben, fünf Minuten mitziehen lassen und mit Salz, Pfeffer und Apfelessig abschmecken.';
+const LSTEPS = ['Hefe im lauwarmen Haferdrink auflösen und 10 Minuten stehen lassen.', 'Mehl, Zucker und Salz mischen, Hefemilch und weiche Butter dazugeben und 8 Minuten kneten.', 'Den Teig abgedeckt an einem warmen Ort eine Stunde gehen lassen.', 'Kichererbsen abgießen, die Flüssigkeit auffangen.', 'Kichererbsen mit Tahin, Zitronensaft, Knoblauch, Kreuzkümmel und etwas Flüssigkeit fein pürieren.', 'Hummus mit Salz abschmecken und mit Paprikapulver bestreuen.', 'Räuchertofu mit einer Gabel grob zerdrücken.', 'Frühlingszwiebeln in Ringe schneiden und in Öl kurz anbraten.', 'Tofu, Kurkuma und einen Schluck Haferdrink dazugeben und 5 Minuten braten.', 'Zum Schluss Kala Namak unterrühren, erst dann schmeckt es nach Rührei.', 'Schnittlauch fein schneiden und über das Tofu-Rührei streuen.', 'Haferflocken, Walnüsse und Kürbiskerne mit Ahornsirup mischen.', 'Auf einem Blech verteilen und bei 170 Grad 15 Minuten rösten, nach der Hälfte wenden.', 'Granola auf dem Blech abkühlen lassen, so wird es knusprig.', 'Beeren waschen, Erdbeeren halbieren.', 'Bananen und Mango in Würfel schneiden und mit Limettensaft beträufeln.', 'Sojajoghurt mit Vanillemark glatt rühren.', 'Gurke und Radieschen in feine Scheiben hobeln.', 'Eine rote Zwiebel in Ringe schneiden und mit Apfelessig und einer Prise Zucker 20 Minuten ziehen lassen.', 'Frischkäse mit gehacktem Dill und Kapern verrühren.', 'Kartoffeln schälen, würfeln und in Salzwasser 8 Minuten vorkochen.', 'Paprika würfeln, Champignons vierteln.', LONG, 'Kartoffeln abgießen und in einer großen Pfanne goldbraun braten.', 'Paprika und Champignons dazugeben und 6 Minuten weiterbraten, mit Salz und Pfeffer würzen.', 'Spinat unterheben, bis er zusammenfällt.', 'Für die Waffeln Dinkelmehl, Backpulver, Rohrzucker und Zimt mischen.', 'Mineralwasser und Öl unterrühren, bis ein glatter Teig entsteht.', 'Teig 10 Minuten quellen lassen.', 'Waffeleisen gut einfetten und die Waffeln nacheinander goldbraun backen.', 'Fertige Waffeln auf einem Gitter auskühlen lassen, nicht stapeln.', 'Erdnussmus mit etwas warmem Wasser glatt rühren.', 'Den Hefeteig in 12 Stücke teilen und zu Brötchen formen.', 'Brötchen auf ein Blech setzen und weitere 20 Minuten gehen lassen.', 'Bei 200 Grad etwa 18 Minuten backen.', 'Baguette in Scheiben schneiden und kurz rösten.', 'Avocados zerdrücken, mit Limettensaft, Salz und Pfeffer abschmecken.', 'Ingwer reiben, mit Orangensaft und Minze verrühren.', 'Alles auf Brettern und in Schüsseln anrichten.', 'Mit Kresse, Petersilie und Leinsamen bestreuen und sofort servieren.'];
+const DISH = {
+  tofu: { t: 'Knuspriger Räuchertofu mit Kichererbsen und Reis', src: ['Instagram', 'linear-gradient(135deg,#FEDA75,#D62976 55%,#4F5BD5)', 'in Instagram'], cr: ['K', '@kichererbsenliebe'], ph: 'tofu', cap: 'Unser Feierabendessen, wenn es schnell gehen muss 🌱 Knusprig, salzig, ein bisschen süß und in 25 Minuten auf dem Tisch. Das ganze Rezept steht auf dem Blog, der Link ist in meiner Bio: kichererbsenliebe.de/raeuchertofu-pfanne #vegan #feierabend' },
+  brunch: { t: 'Großer Sonntagsbrunch für die ganze Runde', src: ['YouTube', '#FF0033', 'in YouTube'], cr: ['S', 'Sonntagsküche'], ph: 'brunch', cap: 'Einmal alles für einen langen Sonntag: Brötchen, Hummus, Tofu-Rührei, Granola, Waffeln und Bohnen in Tomatensoße. Klingt nach viel, lässt sich aber gut aufteilen, wenn ihr zu mehreren kocht.' }
+};
+const HIST = [['L', '#F7C85C', '#2B1E04', 'Lisa hat gekocht', '8. Nov.'], ['J', '#A9C9B1', '#12291A', 'Jonas hat dafür gestimmt', '5. Nov.'], ['M', '#DDB0F6', '#2D0F3F', 'Mia: „Mit extra Ingwer richtig gut.“', '5. Nov.']];
+const E0 = { ing: ING, steps: STEPS };
+const SCR = {
+  r_full: { rec: 'full', edit: true, anchor: 'rec' },
+  r_long: { dish: 'brunch', rec: 'long', edit: true, anchor: 'ing:24', nav: 1 },
+  r_longstep: { dish: 'brunch', rec: 'long', edit: true, anchor: 'step:22', nav: 1 },
+  r_ing: { rec: 'ing', edit: true, anchor: 'rec' },
+  r_steps: { rec: 'steps', edit: true, anchor: 'rec' },
+  r_none_edit: { rec: null, edit: true, anchor: 'share' },
+  r_none_view: { rec: null, edit: false, anchor: 'share' },
+  r_view: { rec: 'full', edit: false, anchor: 'rec' },
+  r_page: { rec: 'full', edit: true, fromPage: true, anchor: 'step:2' },
+  e_way: { rec: 'full', edit: true, anchor: 'rec', ring: 1 },
+  e_open: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ...E0 } },
+  e_add: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ing: [...ING, ''], steps: STEPS, focus: ['ing', 8], ea: ['ing', 8], eaBottom: 1, kb: 1 } },
+  e_short: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ...E0, focus: ['ing', 4], ea: ['ing', 4], eaBottom: 1, kb: 1 } },
+  e_long: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ...E0, focus: ['steps', 1], ea: ['steps', 1], eaBottom: 1, kb: 1 } },
+  e_remove: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ...E0, removing: ['ing', 2], toast: ['Zutat entfernt', 'Rückgängig'] } },
+  e_drag: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ...E0, drag: ['ing', 1] } },
+  e_kbd: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ...E0, kbd: ['ing', 1] } },
+  e_paste: { rec: null, edit: true, anchor: 'share', mode: 'edit', ed: { ing: ING, steps: [''], pasted: ['ing', 0, 8], focus: ['ing', 7], ea: ['ing', 7], eaBottom: 1, kb: 1, toast: ['8 Zutaten eingefügt', 'Rückgängig'] } },
+  e_limit: { dish: 'brunch', rec: 'long', edit: true, anchor: 'rec', mode: 'edit', ed: { ing: LING, steps: LSTEPS.slice(0, 40), ea: ['ing', 59], eaBottom: 1, eaFull: 'ing' } },
+  e_steplimit: { dish: 'brunch', rec: 'long', edit: true, anchor: 'rec', mode: 'edit', ed: { ing: LING, steps: LSTEPS.slice(0, 24), focus: ['steps', 22], ea: ['steps', 22], eaBottom: 1, kb: 1, cut: 1 } },
+  e_discard: { rec: 'full', edit: true, anchor: 'rec', mode: 'edit', ed: { ...E0, dialog: 1 } },
+  e_unsent: { rec: 'full', edit: true, anchor: 'rec', unsent: 1 },
+  f_action: { rec: null, edit: true, finder: 'action', anchor: 'share' },
+  f_search: { rec: null, edit: true, finder: 'search', anchor: 'share' },
+  f_found: { rec: null, edit: true, finder: 'found', anchor: 'share' },
+  f_none: { rec: null, edit: true, finder: 'none', anchor: 'share' },
+  f_failed: { rec: null, edit: true, finder: 'failed', anchor: 'share' },
+  f_quota: { rec: null, edit: true, finder: 'quota', anchor: 'share' },
+  f_offline: { rec: null, edit: true, finder: 'offline', anchor: 'share' }
+};
+const KB = [['qwertzuiopü', '3px'], ['asdfghjklöä', '3px'], ['⇧yxcvbnm⌫', '3px']];
+class Component extends DCLogic {
+  scRef = React.createRef();
+  edRef = React.createRef();
+  state = { y: 0, navOn: false, navAct: 'ing', phase: 'search' };
+  cfg() { return SCR[this.props.screen] || SCR.r_full; }
+  isPhone() { return (this.props.frame ?? 'phone') !== 'panel'; }
+  spd() { return this.props.spd || 1; }
+  setSc = el => { this.scEl = el; if (el && !this.io && window.IntersectionObserver) { this.io = new IntersectionObserver(es => { const v = es[0].isIntersecting; if (v !== this.state.vis) this.setState({ vis: v }, () => this.startFound()); }, { rootMargin: '200px' }); this.io.observe(el); } };
+  setEd = el => { this.edEl = el; };
+  componentDidMount() { this.place(); if (document.fonts) document.fonts.ready.then(() => this.place()); this.startFound(); }
+  componentDidUpdate(p) {
+    if (p.screen !== this.props.screen || p.frame !== this.props.frame) { this.place(); this.startFound(); }
+    else if (p.still !== this.props.still) this.startFound();
+  }
+  componentWillUnmount() { clearTimeout(this.t1); clearTimeout(this.t2); clearTimeout(this.t3); if (this.io) this.io.disconnect(); }
+  relTop(sc, el) { return el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop; }
+  place() {
+    clearTimeout(this.t3);
+    let n = 0;
+    const tryIt = () => {
+      n++;
+      const c = this.cfg(), sc = this.scEl || this.scRef.current, ph = this.isPhone(), e = c.ed || {};
+      let ok = !!sc && sc.scrollHeight > sc.clientHeight;
+      if (ok) {
+        const el = sc.querySelector('[data-anchor="1"]');
+        if (el && this.relTop(sc, el) > 0) { sc.scrollTop = Math.max(0, this.relTop(sc, el) - (ph ? 112 : 80) - (c.nav ? 54 : 0)); this.measure(sc); }
+        else if (el) ok = false;
+      }
+      if (c.mode === 'edit') {
+        const ed = this.edEl || this.edRef.current;
+        const el = ed && ed.querySelector('[data-ea="1"]');
+        if (ed && el && ed.clientHeight > 0) { const top = this.relTop(ed, el); ed.scrollTop = e.eaBottom ? top + el.offsetHeight - ed.clientHeight + 30 : top - 12; }
+        else if (e.ea || e.eaFull) ok = false;
+      }
+      if (!ok && n < 40) this.t3 = setTimeout(tryIt, 100);
+      else if (n < 4) this.t3 = setTimeout(tryIt, 300);
+    };
+    this.t3 = setTimeout(tryIt, 30);
+  }
+  measure(sc) {
+    const y = sc.scrollTop, c = this.cfg(); let navOn = false, navAct = 'ing';
+    if (c.nav) {
+      const q = s => { const el = sc.querySelector(s); return el ? this.relTop(sc, el) : 1e9; };
+      const top = y + (this.isPhone() ? 104 : 72);
+      navOn = top > q('[data-sec="ing"]') && top < q('[data-sec="end"]');
+      navAct = top + 60 > q('[data-sec="steps"]') ? 'steps' : 'ing';
+    }
+    if (y !== this.state.y || navOn !== this.state.navOn || navAct !== this.state.navAct) this.setState({ y, navOn, navAct });
+  }
+  onScroll = e => { const sc = e.currentTarget; if (this.raf) return; this.raf = requestAnimationFrame(() => { this.raf = null; this.measure(sc); }); };
+  jump(k) { const sc = this.scRef.current, el = sc && sc.querySelector(`[data-sec="${k}"]`); if (el) sc.scrollTo({ top: this.relTop(sc, el) - (this.isPhone() ? 160 : 128), behavior: 'smooth' }); }
+  startFound() {
+    clearTimeout(this.t1); clearTimeout(this.t2);
+    if (this.cfg().finder !== 'found') return;
+    if (this.props.still || this.state.vis === false) { this.setState({ phase: 'in' }); return; }
+    const k = this.spd();
+    const run = () => {
+      this.setState({ phase: 'search' });
+      this.t1 = setTimeout(() => {
+        this.setState({ phase: 'out' });
+        this.t2 = setTimeout(() => { this.setState({ phase: 'in' }); this.t1 = setTimeout(run, 6000 * k); }, 320 * k);
+      }, 2800 * k);
+    };
+    run();
+  }
+  rows(kind, arr, e, rm) {
+    const isStep = kind === 'steps', lim = isStep ? 1000 : 200, out = [];
+    const order = arr.map((t, i) => ({ t, i }));
+    if (e.drag && e.drag[0] === kind) { const k = e.drag[1], it = order.splice(k, 1)[0]; order.splice(k + 1, 0, { ...it, slot: true }); }
+    const on = (x, i) => !!(x && x[0] === kind && x[1] === i);
+    order.forEach((o, j) => {
+      const i = o.i, foc = on(e.focus, i), rem = on(e.removing, i), kbd = on(e.kbd, i);
+      const pasted = !!(e.pasted && e.pasted[0] === kind && i >= e.pasted[1] && i < e.pasted[1] + e.pasted[2]);
+      const txt = foc && e.cut ? o.t.slice(0, lim) : o.t, len = txt.length;
+      const near = foc && len >= lim - (isStep ? 100 : 20);
+      out.push({
+        isRow: !o.slot, isSlot: !!o.slot, sepOn: j > 0, isStep, num: String(j + 1), t: txt,
+        ph: txt ? '' : (isStep ? 'Was ist zu tun?' : 'Zutat, z. B. 2 Knoblauchzehen'),
+        focus: foc, z: kbd ? '5' : o.slot ? '4' : '1',
+        bg: foc || kbd ? 'var(--surface)' : pasted ? 'var(--sageSoft)' : 'transparent',
+        sh: foc || kbd ? 'inset 0 0 0 2px var(--ink)' : 'none',
+        op: rem ? '.35' : '1', tf: rem ? 'translateX(44px)' : 'none',
+        helper: near, helperT: len >= lim ? (isStep ? 'Länger geht ein Schritt nicht. Mit Enter fängst du einen neuen an.' : 'Länger geht eine Zutat nicht.') : '',
+        counter: `${len} von ${lim}`, countInk: len >= lim ? 'var(--ink)' : 'var(--ink2)',
+        menu: kbd, gripRing: kbd ? '0 0 0 3px rgba(247,185,74,.75)' : 'none',
+        ea: on(e.ea, i) ? '1' : '0',
+        liftSh: rm ? 'var(--lift), inset 0 0 0 2px var(--ink)' : 'var(--lift)',
+        liftTf: rm ? 'translateY(-6px)' : 'translateY(-10px) rotate(-1.5deg) scale(1.03)',
+        liftAnim: rm ? 'none' : `r13-hold ${Math.round(1800 * this.spd())}ms ease-in-out infinite`
+      });
+    });
+    return out;
+  }
+  renderVals() {
+    const c = this.cfg(), th = this.props.theme === 'dark' ? 'dark' : 'light', phone = this.isPhone(), rm = !!this.props.still || this.state.vis === false, k = this.spd();
+    const T = ms => `${Math.round(ms * k)}ms`;
+    const A = (n, ms, ease, delay = 0, extra = 'both') => rm ? 'none' : `${n} ${T(ms)} ${ease} ${T(delay)} ${extra}`;
+    const d = DISH[c.dish || 'tofu'], phase = this.state.phase, found = c.finder === 'found';
+    const kind = found ? (phase === 'in' ? 'full' : null) : c.rec;
+    const ingAll = kind === 'long' ? LING : (kind === 'full' || kind === 'ing') ? ING : [];
+    const stAll = kind === 'long' ? LSTEPS : (kind === 'full' || kind === 'steps') ? STEPS : [];
+    const arrive = found && phase === 'in' && !rm;
+    const [ak, an] = (c.anchor || 'rec').split(':');
+    const ingDelay = 160 + Math.min(ingAll.length, 8) * 60 + 120;
+    const ing = ingAll.map((t, i) => ({ t, bt: i ? '1px solid var(--line)' : 'none', anc: ak === 'ing' && +an === i ? '1' : '0', anim: arrive ? A('r13-in', 420, ES, 160 + Math.min(i, 7) * 60) : 'none' }));
+    const steps = stAll.map((t, i) => ({ t, n: String(i + 1), bt: i ? '1px solid var(--line)' : 'none', anc: ak === 'step' && +an === i ? '1' : '0', anim: arrive ? A('r13-in', 420, ES, ingDelay + 120 + Math.min(i, 7) * 60) : 'none' }));
+    const showRecipe = ing.length + steps.length > 0;
+    const f = c.finder;
+    const fSearch = f === 'search' || (found && phase !== 'in');
+    const note = { none: ['Kein Rezept gefunden', 'In der Caption und auf der verlinkten Seite stand keins.', null, false], failed: ['Die Suche hat gerade nicht geklappt.', '', 'oops', true], quota: ['Für heute hat der Rezeptfinder genug gesucht. Morgen sucht er weiter.', '', 'sleep', false] }[f];
+    const addOnly = !showRecipe && !f && c.edit;
+    const recDisp = showRecipe || addOnly || f ? 'flex' : 'none';
+    const isEdit = c.mode === 'edit', e = c.ed || {};
+    const mkSec = (key, arr) => {
+      const n = arr.filter(Boolean).length, max = key === 'ing' ? 60 : 40, full = n >= max;
+      return { name: key === 'ing' ? 'Zutaten' : 'Schritte', count: n >= max - 10 ? `${n} von ${max}` : (n ? String(n) : ''), rows: this.rows(key, arr, e, rm), canAdd: !full, full, addT: key === 'ing' ? 'Zutat hinzufügen' : 'Schritt hinzufügen', fullT: key === 'ing' ? '60 Zutaten, mehr passen nicht in ein Rezept.' : '40 Schritte, mehr passen nicht in ein Rezept.', fullEa: e.eaFull === key ? '1' : '0' };
+    };
+    const kbOn = isEdit && !!e.kb && phone;
+    const kb = KB.map(([keys, pad]) => ({ pad, keys: [...keys].map(l => { const sp = l === '⇧' || l === '⌫'; return { l, grow: sp ? 1.5 : 1, bg: sp ? 'var(--key2)' : 'var(--key)', ink: 'var(--ink)', font: `400 ${sp ? 17 : 20}px/1 'Figtree',system-ui` }; }) }));
+    kb.push({ pad: '3px', keys: [['123', 1.4], ['Leerzeichen', 4.6], ['Weiter', 1.9]].map(([l, grow]) => ({ l, grow, bg: l === 'Weiter' ? '#F7B94A' : l === '123' ? 'var(--key2)' : 'var(--key)', ink: l === 'Weiter' ? '#1F1E1C' : 'var(--ink)', font: `${l === 'Weiter' ? 600 : 400} 15px/1 'Figtree',system-ui` })) });
+    const toast = isEdit ? e.toast : null;
+    const heroH = phone ? 300 : 250, y = this.state.y;
+    const barOp = isEdit && phone ? 1 : Math.max(0, Math.min(1, (y - (heroH - 150)) / 60));
+    const navShow = !!c.nav && !isEdit;
+    return {
+      setSc: this.setSc, setEd: this.setEd,
+      vars: VARS[th], fw: phone ? '360px' : '460px', frad: phone ? '36px' : '28px 0 0 28px',
+      isPhone: phone, heroH: heroH + 'px', ph: PH[d.ph], pad: phone ? '20px 16px 120px' : '22px 26px 120px', titleSize: phone ? '28px' : '30px',
+      title: d.t, srcName: d.src[0], srcDot: d.src[1], srcSub: d.src[2], creatorL: d.cr[0], creator: d.cr[1], caption: d.cap,
+      shareAnc: ak === 'share' ? '1' : '0', recAnc: ak === 'rec' ? '1' : '0', endAnc: ak === 'end' ? '1' : '0', recDisp,
+      addOnly, fAction: f === 'action' || f === 'offline', findOp: f === 'offline' ? '.35' : '1',
+      fSearch, searchAnim: found && phase === 'out' ? A('r13-out', 300, 'ease-in', 0, 'forwards') : (found && !rm ? A('r13-fade', 240, 'ease') : 'none'),
+      hopAnim: found && phase === 'out' ? A('r13-hop', 300, 'ease-out', 0, 'forwards') : 'none',
+      aBreathe: rm ? 'none' : `r13-breathe ${T(2400)} ease-in-out infinite`, aSpoon: rm ? 'none' : `r13-stir ${T(2400)} ease-in-out infinite`,
+      aHat: rm ? 'none' : `r13-hat ${T(4800)} ease-in-out infinite`,
+      aPeek1: rm ? 'none' : `r13-peek ${T(4800)} ease-in-out ${T(-600)} infinite`, aPeek2: rm ? 'none' : `r13-peek ${T(4800)} ease-in-out ${T(-2200)} infinite`, aPeek3: rm ? 'none' : `r13-peek ${T(4800)} ease-in-out ${T(-3800)} infinite`,
+      fNote: !!note, noteT: note ? note[0] : '', noteSub: note ? note[1] : '', noteHasSub: !!(note && note[1]), noteImg: !!(note && note[2]), noteSrc: note && note[2] ? `handoff/assets/topfbert/topfbert-${note[2]}.svg` : '',
+      retryOn: !!(note && note[3]), noteAdd: !!note && c.edit,
+      showRecipe, headAnim: arrive ? A('r13-fade', 240, 'ease', 0) : 'none',
+      unsent: !!c.unsent, canEdit: !!c.edit, editRing: c.ring ? '0 0 0 3px rgba(247,185,74,.75)' : 'none',
+      hasIng: ing.length > 0, hasSteps: steps.length > 0, ing, steps, ingCount: String(ing.length), stCount: String(steps.length),
+      ingCardAnim: arrive ? A('r13-card', 480, ES, 80) : 'none', stCardAnim: arrive ? A('r13-card', 480, ES, ingDelay) : 'none',
+      fromPage: !!c.fromPage,
+      hist: HIST.map(([a, bg, fg, t, dd]) => ({ a, bg, fg, t, d: dd })),
+      barH: phone ? '100px' : '68px', barOp: String(barOp), barX: phone ? '14px' : '16px', barTop: phone ? '50px' : '14px',
+      backIcon: phone ? 'M15 6l-6 6 6 6' : 'M6 6l12 12M18 6L6 18',
+      navShow, navTop: phone ? '106px' : '76px', navOp: this.state.navOn ? '1' : '0', navTy: this.state.navOn ? '0px' : '-8px',
+      navItems: [['ing', 'Zutaten', ingAll.length], ['steps', 'Schritte', stAll.length]].map(([key, l, n]) => { const on = this.state.navAct === key; return { l, c: String(n), bg: on ? 'var(--inv)' : 'transparent', fg: on ? 'var(--onInv)' : 'var(--ink)', go: () => this.jump(key) }; }),
+      isEdit, edTop: phone ? '50px' : '0px', edRad: phone ? '36px 36px 0 0' : '0', edHeadPad: phone ? '8px 14px 12px' : '16px 20px 14px', edPadX: phone ? '12px' : '20px',
+      secs: isEdit ? [mkSec('ing', e.ing || []), mkSec('steps', e.steps || [])] : [],
+      caretAnim: rm ? 'none' : 'r13-caret 1s steps(1) infinite',
+      kbOn, kb,
+      toastOn: !!toast, toastT: toast ? toast[0] : '', toastA: toast ? toast[1] : '', toastB: kbOn ? '276px' : '22px',
+      toastAnim: A('r13-toast', 380, ES), toastBar: rm ? 'none' : `r13-bar ${T(5000)} linear both`,
+      dialogOn: isEdit && !!e.dialog,
+      statusInk: barOp > .5 || isEdit ? 'var(--ink)' : '#FFFFFF'
+    };
+  }
+}
+</script>
+</body>
+</html>

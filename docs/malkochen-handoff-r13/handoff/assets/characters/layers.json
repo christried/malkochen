@@ -1,0 +1,125 @@
+{
+  "note": "Theme-independent: outline #1F1E1C and fills are character colours, identical in light and dark (same rule as Topfbert). viewBox units; layers stack by z at identical position.",
+  "characters": {
+    "pea": {
+      "name": "Erbse",
+      "viewBox": "0 0 48 48",
+      "full": "pea.svg (R10, unchanged)",
+      "colours": {
+        "body": "#8DB596"
+      },
+      "outline": "#1F1E1C · 2.5 (cap 2, mouth 1.8–2)",
+      "eyes": "r 2.2",
+      "idle": "none of its own; motion comes from the clip (roll, duck, pop)",
+      "layers": [
+        {
+          "z": 1,
+          "file": "pea/01-body.svg",
+          "name": "body"
+        },
+        {
+          "z": 2,
+          "file": "pea/02-eyes.svg",
+          "name": "eyes"
+        },
+        {
+          "z": 3,
+          "file": "pea/03-mouth.svg",
+          "name": "mouth"
+        }
+      ]
+    },
+    "knobi": {
+      "name": "Knobi",
+      "viewBox": "0 0 48 52",
+      "full": "knobi.svg",
+      "colours": {
+        "body": "#FBF3E6",
+        "cloves": "#D7B5E6",
+        "sprout": "#8DB596",
+        "cheeks": "#F4A9A0"
+      },
+      "outline": "#1F1E1C · 2.5 (cap 2, mouth 1.8–2)",
+      "eyes": "r 2.2",
+      "idle": "blink: eyes scaleY 1→.1→1 at 46–50% of 4.4s (pivot 24, 30.5) · sprout: rotate 0↔−12° 2.4s ease-in-out (pivot 24, 8)",
+      "layers": [
+        {
+          "z": 1,
+          "file": "knobi/01-sprout.svg",
+          "name": "sprout"
+        },
+        {
+          "z": 2,
+          "file": "knobi/02-roots.svg",
+          "name": "roots"
+        },
+        {
+          "z": 3,
+          "file": "knobi/03-body.svg",
+          "name": "body"
+        },
+        {
+          "z": 4,
+          "file": "knobi/04-cheeks.svg",
+          "name": "cheeks"
+        },
+        {
+          "z": 5,
+          "file": "knobi/05-eyes.svg",
+          "name": "eyes"
+        },
+        {
+          "z": 6,
+          "file": "knobi/06-mouth.svg",
+          "name": "mouth"
+        }
+      ]
+    },
+    "schoti": {
+      "name": "Schoti",
+      "viewBox": "0 0 48 52",
+      "full": "schoti.svg",
+      "colours": {
+        "body": "#F08A5D",
+        "cap": "#8DB596",
+        "stem": "#8DB596",
+        "cheeks": "#F4A9A0"
+      },
+      "outline": "#1F1E1C · 2.5 (cap 2, mouth 1.8–2)",
+      "eyes": "r 2.2",
+      "idle": "look: eyes translateX ±1.6 (keyframes r11-look, 4.4s) · stem pivot 24, 13.5 if animated",
+      "layers": [
+        {
+          "z": 1,
+          "file": "schoti/01-stem.svg",
+          "name": "stem"
+        },
+        {
+          "z": 2,
+          "file": "schoti/02-body.svg",
+          "name": "body"
+        },
+        {
+          "z": 3,
+          "file": "schoti/03-cap.svg",
+          "name": "cap"
+        },
+        {
+          "z": 4,
+          "file": "schoti/04-cheeks.svg",
+          "name": "cheeks"
+        },
+        {
+          "z": 5,
+          "file": "schoti/05-eyes.svg",
+          "name": "eyes"
+        },
+        {
+          "z": 6,
+          "file": "schoti/06-mouth.svg",
+          "name": "mouth"
+        }
+      ]
+    }
+  }
+}

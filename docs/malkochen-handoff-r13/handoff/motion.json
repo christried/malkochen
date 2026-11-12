@@ -1,0 +1,827 @@
+{
+  "tokens": {
+    "tap": {
+      "duration": "120ms",
+      "easing": "cubic-bezier(.2,0,0,1)",
+      "spring": "scale → .94",
+      "use": "Press feedback on every button and card"
+    },
+    "fade": {
+      "duration": "240ms",
+      "easing": "ease",
+      "spring": "—",
+      "use": "Scrims, captions, reduced-motion fallback"
+    },
+    "pop": {
+      "duration": "360–480ms",
+      "easing": "cubic-bezier(.34,1.56,.64,1)",
+      "spring": "spring k 380 · ζ 0.55",
+      "use": "Badges, chips, dialogs, check marks, Neu"
+    },
+    "settle": {
+      "duration": "480ms",
+      "easing": "cubic-bezier(.3,1.3,.5,1)",
+      "spring": "spring k 300 · ζ 0.7",
+      "use": "Swipe snap, drop, cards making room"
+    },
+    "sheet": {
+      "duration": "440ms",
+      "easing": "cubic-bezier(.3,1.15,.5,1)",
+      "spring": "spring k 260 · ζ 0.8",
+      "use": "Bottom sheets, side panel, keyboard"
+    },
+    "swoosh": {
+      "duration": "600ms",
+      "easing": "cubic-bezier(.45,0,.2,1)",
+      "spring": "—",
+      "use": "Shared-element morph, fly-to-tab, theme reveal"
+    },
+    "lift": {
+      "duration": "180ms",
+      "easing": "cubic-bezier(.3,1.3,.5,1)",
+      "spring": "scale 1.04 · −2° · shadow 34",
+      "use": "Long-press / drag pick-up"
+    },
+    "stagger": {
+      "duration": "50–80ms",
+      "easing": "—",
+      "spring": "—",
+      "use": "Offset between list items (max 8 items, then all at once)"
+    },
+    "type": {
+      "duration": "30ms / char",
+      "easing": "linear",
+      "spring": "—",
+      "use": "Suggested titles, demo typing"
+    },
+    "celebrate": {
+      "duration": "1.8–2.4s",
+      "easing": "gravity arc + pop",
+      "spring": "—",
+      "use": "Gekocht, 10×, Board created: one-shot only"
+    },
+    "idle": {
+      "duration": "2.4–8s",
+      "easing": "ease-in-out",
+      "spring": "seamless, frame 0 = still",
+      "use": "Illustration loops, Topfbert, add pebble breathe"
+    }
+  },
+  "surfaces": {
+    "board": {
+      "light": "#F7F6F2",
+      "dark": "#131211"
+    },
+    "card": {
+      "light": "#EFEDE8",
+      "dark": "#2A2825"
+    },
+    "sheet": {
+      "light": "#FFFFFF",
+      "dark": "#1E1C1A"
+    },
+    "butter": {
+      "light": "#FBE3B0",
+      "dark": "#3A2E1A"
+    },
+    "sage": {
+      "light": "#D5E4D8",
+      "dark": "#223027"
+    },
+    "sky": {
+      "light": "#DCE3F0",
+      "dark": "#1F2530"
+    }
+  },
+  "catalogue": [
+    {
+      "name": "Board load",
+      "round": "R1",
+      "trigger": "Board opens / column swipe-in",
+      "type": "ui-motion",
+      "duration": "640ms + 80ms/item",
+      "token": "settle",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Cards appear at once, 120ms fade",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Column swipe",
+      "round": "R1",
+      "trigger": "Horizontal swipe or tab tap",
+      "type": "ui-motion",
+      "duration": "480ms",
+      "token": "settle",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Instant switch + 150ms cross-fade; background colour cuts",
+      "background": "native",
+      "haptics": "SEGMENT_TICK on snap"
+    },
+    {
+      "name": "Headline parallax",
+      "round": "R1",
+      "trigger": "During swipe",
+      "type": "ui-motion",
+      "duration": "scroll-linked",
+      "token": "settle",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "No parallax; headline cross-fades",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Neu pebble",
+      "round": "R1",
+      "trigger": "New Dish first shown",
+      "type": "ui-motion",
+      "duration": "560ms pop + 3.2s ring",
+      "token": "pop",
+      "loop": true,
+      "storyboard": null,
+      "reducedMotion": "Pebble static, no ring",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Gekocht button",
+      "round": "R1",
+      "trigger": "Tap Gekocht",
+      "type": "ui-motion",
+      "duration": "480ms",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Colour change + check, no scale",
+      "background": "native",
+      "haptics": "CONFIRM"
+    },
+    {
+      "name": "Fly-to-tab pebble",
+      "round": "R1",
+      "trigger": "Gekocht outside Gekocht Column",
+      "type": "ui-motion",
+      "duration": "640ms",
+      "token": "swoosh",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Skipped; tab count updates",
+      "background": {
+        "transparent": true,
+        "reason": "Flies over live UI"
+      },
+      "haptics": "CLOCK_TICK on landing"
+    },
+    {
+      "name": "Tab count bump",
+      "round": "R1",
+      "trigger": "Count changes",
+      "type": "ui-motion",
+      "duration": "460ms",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Number swaps, no bump",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Skeleton shimmer",
+      "round": "R2",
+      "trigger": "Board loading",
+      "type": "ui-motion",
+      "duration": "1.4s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": null,
+      "reducedMotion": "Static skeleton at 60% opacity",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Empty Board: Topfbert + veggies",
+      "round": "R2",
+      "trigger": "Board with 0 Dishes",
+      "type": "motion-graphic",
+      "duration": "2.4s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  veggie in pot\n45% veggie at apex, spun 150°\n90% back in pot, next veggie starts",
+      "reducedMotion": "Still: Topfbert smiling, veggies resting on rim",
+      "background": {
+        "light": "#FBE3B0",
+        "dark": "#3A2E1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Empty Column: rolling pea",
+      "round": "R2",
+      "trigger": "Column with 0 Dishes",
+      "type": "motion-graphic",
+      "duration": "2.2s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  pea left on rim\n50% pea centre, eyes look ahead\n100% pea right (alternate)",
+      "reducedMotion": "Still: pea centred",
+      "background": {
+        "light": "#FFFFFF",
+        "dark": "#1E1C1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Search results re-stagger",
+      "round": "R2",
+      "trigger": "Each keystroke",
+      "type": "ui-motion",
+      "duration": "380ms + 50ms/item",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Results replace instantly",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Search empty: magnifier",
+      "round": "R2",
+      "trigger": "0 results",
+      "type": "motion-graphic",
+      "duration": "3.6s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  magnifier left, plate empty\n50% magnifier right, pea peeks up\n100% back",
+      "reducedMotion": "Still: magnifier over plate",
+      "background": {
+        "light": "#DCE3F0",
+        "dark": "#1F2530"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Card lift / reorder",
+      "round": "R2",
+      "trigger": "Long-press 300ms + drag",
+      "type": "ui-motion",
+      "duration": "180ms lift · 320ms make room",
+      "token": "lift",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Card outlines + shadow, no tilt or scale; neighbours jump",
+      "background": "native",
+      "haptics": "LONG_PRESS on lift\nSEGMENT_TICK per slot"
+    },
+    {
+      "name": "Tab as drop target",
+      "round": "R2",
+      "trigger": "Dragged card over tab",
+      "type": "ui-motion",
+      "duration": "240ms grow + 600ms wiggle",
+      "token": "pop",
+      "loop": true,
+      "storyboard": null,
+      "reducedMotion": "Tab highlights (colour + ring), no wiggle",
+      "background": "native",
+      "haptics": "GESTURE_THRESHOLD_ACTIVATE on enter"
+    },
+    {
+      "name": "Drop into tab",
+      "round": "R2",
+      "trigger": "Release over tab",
+      "type": "ui-motion",
+      "duration": "420ms swallow",
+      "token": "swoosh",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Card fades out, count updates",
+      "background": "native",
+      "haptics": "CONFIRM"
+    },
+    {
+      "name": "Drop burst",
+      "round": "R2",
+      "trigger": "Drop landed",
+      "type": "ui-motion",
+      "duration": "620ms",
+      "token": "celebrate",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "None",
+      "background": {
+        "transparent": true,
+        "reason": "Particles over the tabs"
+      },
+      "haptics": null
+    },
+    {
+      "name": "… menu / popover",
+      "round": "R2",
+      "trigger": "Tap …",
+      "type": "ui-motion",
+      "duration": "300ms",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "150ms fade",
+      "background": "native",
+      "haptics": "CONTEXT_CLICK"
+    },
+    {
+      "name": "Bottom sheets",
+      "round": "R2–R6",
+      "trigger": "Any sheet",
+      "type": "ui-motion",
+      "duration": "440ms",
+      "token": "sheet",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "200ms fade, no slide",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Gekocht celebration",
+      "round": "R2",
+      "trigger": "Tap Gekocht",
+      "type": "motion-graphic",
+      "duration": "~2.4s one-shot",
+      "token": "celebrate",
+      "loop": false,
+      "storyboard": "0%  button pops sage\n9%  6 veggie types burst up from button\n22% apex, veggies spin\n45% Topfbert pops behind toast: \"Mmh!\"\n52% veggies fall off-screen",
+      "reducedMotion": "Toast + check only; no confetti, Topfbert still",
+      "background": {
+        "transparent": true,
+        "reason": "Confetti falls over the live Board"
+      },
+      "haptics": "CONFIRM + 2 light ticks at burst"
+    },
+    {
+      "name": "Card leaves Column",
+      "round": "R2",
+      "trigger": "After Gekocht",
+      "type": "ui-motion",
+      "duration": "360ms",
+      "token": "swoosh",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Card fades; list closes up without spring",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Delete collapse + undo",
+      "round": "R2",
+      "trigger": "Löschen / Rückgängig",
+      "type": "ui-motion",
+      "duration": "260ms / 380ms",
+      "token": "settle",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Fade out / fade in",
+      "background": "native",
+      "haptics": "REJECT on delete"
+    },
+    {
+      "name": "Toast",
+      "round": "R2",
+      "trigger": "Any toast",
+      "type": "ui-motion",
+      "duration": "380ms in · 5s",
+      "token": "sheet",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Fade in; undo window unchanged",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "10× milestone",
+      "round": "R1",
+      "trigger": "10th cooking",
+      "type": "motion-graphic",
+      "duration": "~1.8s one-shot",
+      "token": "celebrate",
+      "loop": false,
+      "storyboard": "0%  sage wash fades in\n10% 10× pebble pops from −20°\n25% 7 pebbles burst\n40% headline ticks up\n100% auto-dismiss at 3.4s",
+      "reducedMotion": "Still card with \"10×\" and text; tap to close",
+      "background": {
+        "light": "#D5E4D8",
+        "dark": "#223027"
+      },
+      "haptics": "CONFIRM, strong, 3 pulses"
+    },
+    {
+      "name": "Add sheet + clipboard chip",
+      "round": "R3",
+      "trigger": "Tap +",
+      "type": "ui-motion",
+      "duration": "460ms + 520ms",
+      "token": "sheet",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Fade; chip appears without pop",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Lookup: Topfbert stirs",
+      "round": "R3",
+      "trigger": "Link being looked up",
+      "type": "motion-graphic",
+      "duration": "1.2s stir · 1.6s orbit",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  spoon −20°, veggies left\n50% spoon +20°, veggies orbit right\n100% back (alternate)",
+      "reducedMotion": "Still Topfbert + text \"Wird gesucht…\" + progress dots fade",
+      "background": {
+        "light": "#FBE3B0",
+        "dark": "#3A2E1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Image bloom",
+      "round": "R3",
+      "trigger": "Image found",
+      "type": "ui-motion",
+      "duration": "1.2s",
+      "token": "swoosh",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Image cross-fades in (200ms), no blur/scale",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Title types in",
+      "round": "R3",
+      "trigger": "Title found",
+      "type": "ui-motion",
+      "duration": "30ms / char",
+      "token": "type",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Title appears at once",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Title prompt glow",
+      "round": "R3",
+      "trigger": "Pinterest, no title",
+      "type": "ui-motion",
+      "duration": "2.4s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": null,
+      "reducedMotion": "Static butter ring, no pulse",
+      "background": "native",
+      "haptics": "—"
+    },
+    {
+      "name": "Placeholder picker unroll",
+      "round": "R3/R4",
+      "trigger": "Nothing found / Bild ändern",
+      "type": "ui-motion",
+      "duration": "520ms + 40ms/tile",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Grid fades in",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Failed: Topfbert oops",
+      "round": "R3",
+      "trigger": "Lookup failed",
+      "type": "motion-graphic",
+      "duration": "2.4s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  tilt −6°, sweat drop appears\n80% drop slides down\n100% drop gone, tilt back",
+      "reducedMotion": "Still Topfbert oops pose",
+      "background": {
+        "light": "#FFFFFF",
+        "dark": "#1E1C1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Saved → card flies to Board",
+      "round": "R3",
+      "trigger": "Speichern",
+      "type": "ui-motion",
+      "duration": "700ms sheet + 900ms flight",
+      "token": "swoosh",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Sheet fades; card appears at top of Ideen with 200ms fade",
+      "background": "native",
+      "haptics": "CONFIRM on landing"
+    },
+    {
+      "name": "Placeholder illustrations ×16",
+      "round": "R4",
+      "trigger": "Focus: long-press, detail, picker, hover; 1× on first view / scroll-stop",
+      "type": "motion-graphic",
+      "duration": "1.8–3.6s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "Per dish: only the hero part moves\n(steam, bubbles, fork twirl, lid…)\nFrame 0 = still",
+      "reducedMotion": "Always still frame",
+      "background": {
+        "light": "#EFEDE8",
+        "dark": "#2A2825"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Card → detail morph",
+      "round": "R5",
+      "trigger": "Tap card",
+      "type": "ui-motion",
+      "duration": "600ms",
+      "token": "swoosh",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Detail cross-fades in (200ms)",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Detail parallax + bar",
+      "round": "R5",
+      "trigger": "Scroll detail",
+      "type": "ui-motion",
+      "duration": "scroll-linked",
+      "token": "settle",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "No parallax; bar still appears",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Achievement counter",
+      "round": "R5",
+      "trigger": "Detail opens / Gekocht",
+      "type": "ui-motion",
+      "duration": "170ms/step · 460ms pop",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Final number shown, badge static",
+      "background": "native",
+      "haptics": "CLOCK_TICK per step (max 10)"
+    },
+    {
+      "name": "Never cooked: Topfbert + pea",
+      "round": "R5",
+      "trigger": "History empty",
+      "type": "motion-graphic",
+      "duration": "2.6s bob · 3s roll",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  Topfbert rests, pea left\n50% Topfbert up 4px, pea right\n100% back",
+      "reducedMotion": "Still pose",
+      "background": {
+        "light": "#D5E4D8",
+        "dark": "#223027"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Edit mode morph",
+      "round": "R5",
+      "trigger": "Bearbeiten",
+      "type": "ui-motion",
+      "duration": "380ms + 60ms/field",
+      "token": "settle",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Fields swap with 150ms fade",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Board switcher",
+      "round": "R6",
+      "trigger": "Tap Board pill",
+      "type": "ui-motion",
+      "duration": "420ms + 50ms/row",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "List fades in",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Board emojis idle",
+      "round": "R6",
+      "trigger": "Switcher open",
+      "type": "ui-motion",
+      "duration": "4s, offset",
+      "token": "idle",
+      "loop": true,
+      "storyboard": null,
+      "reducedMotion": "Static",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Board created build-in",
+      "round": "R6",
+      "trigger": "Board erstellen",
+      "type": "motion-graphic",
+      "duration": "~2.4s one-shot",
+      "token": "celebrate",
+      "loop": false,
+      "storyboard": "0%  emoji pops + pebble burst\n14% Ideen rises + overshoot\n24% Diese Woche\n34% Gekocht\n46% headline, 56% button",
+      "reducedMotion": "All elements shown, 200ms fade",
+      "background": {
+        "light": "#FBE3B0",
+        "dark": "#3A2E1A"
+      },
+      "haptics": "light tick per Column"
+    },
+    {
+      "name": "Copied!",
+      "round": "R6",
+      "trigger": "Tap Kopieren",
+      "type": "ui-motion",
+      "duration": "200ms flip · 620ms burst",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Label swaps to \"Kopiert ✓\", no burst",
+      "background": "native",
+      "haptics": "CONFIRM"
+    },
+    {
+      "name": "Column / delete dialogs",
+      "round": "R6",
+      "trigger": "Delete Column / Board",
+      "type": "ui-motion",
+      "duration": "420ms",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "150ms fade",
+      "background": "native",
+      "haptics": "REJECT on final delete"
+    },
+    {
+      "name": "Invite welcome",
+      "round": "R6",
+      "trigger": "Invite link opened",
+      "type": "motion-graphic",
+      "duration": "~1.5s intro · 14s orbit",
+      "token": "celebrate",
+      "loop": true,
+      "storyboard": "0%  Board emoji pops into pebble\n30% Topfbert pops up\n50% Member avatars pop, Lisa waves\n70% headline + text rise\n90% Google button\nthen: veggies orbit slowly",
+      "reducedMotion": "Everything shown statically",
+      "background": {
+        "light": "#FBE3B0",
+        "dark": "#3A2E1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Splash",
+      "round": "R7",
+      "trigger": "Every cold start",
+      "type": "motion-graphic",
+      "duration": "~1.1s",
+      "token": "celebrate",
+      "loop": false,
+      "storyboard": "0%  butter bloom from centre\n22% icon springs in\n38% lid pops\n52% wordmark + dot\n88% icon zooms out, Board fades in",
+      "reducedMotion": "Static icon on butter, then 200ms fade",
+      "background": {
+        "light": "#FBE3B0",
+        "dark": "#3A2E1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Sign-in orbit",
+      "round": "R7",
+      "trigger": "Sign-in screen",
+      "type": "motion-graphic",
+      "duration": "40s orbit · ~1.2s intro",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  tiles pop in around Topfbert (70ms each)\nthen: ring rotates 360° over 40s\nevery second tile plays its loop",
+      "reducedMotion": "Static ring, all tiles still",
+      "background": {
+        "light": "#FBE3B0",
+        "dark": "#3A2E1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Not unlocked sign",
+      "round": "R7",
+      "trigger": "Account not unlocked",
+      "type": "motion-graphic",
+      "duration": "2.8s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  sign −8°\n50% sign +8°\n100% back",
+      "reducedMotion": "Still, sign straight",
+      "background": {
+        "light": "#DCE3F0",
+        "dark": "#1F2530"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Theme reveal",
+      "round": "R7",
+      "trigger": "Change Darstellung",
+      "type": "ui-motion",
+      "duration": "600ms",
+      "token": "swoosh",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Instant switch + 200ms cross-fade",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Offline: sleepy Topfbert",
+      "round": "R7",
+      "trigger": "No connection",
+      "type": "motion-graphic",
+      "duration": "2.4s",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  Wi-Fi arcs full, z rises\n40% outer arc fades\n55% inner arc fades\n100% arcs back",
+      "reducedMotion": "Still, arcs at 30%",
+      "background": {
+        "light": "#DCE3F0",
+        "dark": "#1F2530"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Error: angebrannt",
+      "round": "R7",
+      "trigger": "Generic error",
+      "type": "motion-graphic",
+      "duration": "2.4s smoke · 2.6s spill",
+      "token": "idle",
+      "loop": true,
+      "storyboard": "0%  smoke puff at lid\n40% puff rises, grows\n100% gone; spill pulses",
+      "reducedMotion": "Still Topfbert oops + spill",
+      "background": {
+        "light": "#FFFFFF",
+        "dark": "#1E1C1A"
+      },
+      "haptics": null
+    },
+    {
+      "name": "Desktop hover",
+      "round": "R8",
+      "trigger": "Pointer over card / button",
+      "type": "ui-motion",
+      "duration": "280ms",
+      "token": "pop",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Shadow only, no lift, tilt or zoom; loops stay still",
+      "background": "native",
+      "haptics": null
+    },
+    {
+      "name": "Desktop lane drop target",
+      "round": "R8",
+      "trigger": "Card dragged over lane",
+      "type": "ui-motion",
+      "duration": "240ms + 1 wiggle",
+      "token": "settle",
+      "loop": false,
+      "storyboard": null,
+      "reducedMotion": "Lane ring highlight only",
+      "background": "native",
+      "haptics": "n/a (desktop)"
+    }
+  ],
+  "rules": {
+    "maxLoopsOnBoard": 1,
+    "pauseWhenVisibleBelow": 0.5,
+    "animateOnly": [
+      "translate",
+      "scale",
+      "rotate",
+      "alpha"
+    ],
+    "reducedMotion": "fade <=200ms or still frame 0",
+    "batterySaver": "reduced motion for loops and celebrations; UI motion at 50% duration"
+  }
+}
