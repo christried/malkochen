@@ -401,6 +401,18 @@ test('a Dish that is not on the Board cannot be planned', () => {
   expect(fake.sent).toEqual([])
 })
 
+test('a day that is no calendar date cannot be planned or moved to', () => {
+  const { module, fake } = phone()
+
+  for (const day of ['2026-99-99', '2026-02-30', '2026-13-01', '2026-00-10', '2026-11-31', 'Montag', '2026-1-1']) {
+    expect(module.planDish('d', day), day).toBeNull()
+    expect(module.movePlannedDish('p1', day), day).toBeNull()
+  }
+  expect(fake.sent).toEqual([])
+  // A leap day is one.
+  expect(module.planDish('d', '2028-02-29')).not.toBeNull()
+})
+
 // ---- Together ----
 
 test('another Member\'s change to the plan arrives with the Board sync', async () => {

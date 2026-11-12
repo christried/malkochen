@@ -9,8 +9,12 @@ import { berlinDay } from '../strings/intl'
 // place in the day. These are the small rules both the Board module and the
 // Unsent Changes lay it out with, as the server does.
 
-// Whether `day` is a calendar date, 'YYYY-MM-DD'.
-export const isDay = (day: string) => /^\d{4}-\d{2}-\d{2}$/.test(day)
+// Whether `day` is a calendar date, 'YYYY-MM-DD': 2026-02-30 is not.
+export function isDay(day: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false
+  const date = new Date(`${day}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(day)
+}
 
 // Where a Planned Dish lands among the day's others (`index`, else the end):
 // at `index`, or at the end if there are fewer.

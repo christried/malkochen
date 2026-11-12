@@ -58,6 +58,8 @@ const isEmpty = computed(() => days.value.every(day => (plan.value[day] ?? []).l
 const current = computed(() => isCurrentWeek(shownMonday.value, today.value))
 const pastWeek = computed(() => isPastDay(days.value.at(-1)!, today.value))
 const isPast = (day: string) => isPastDay(day, today.value)
+// A Planned Dish of the shown week as it is now, if it is still there.
+const entryById = (id: string) => Object.values(plan.value).flat().find(e => e.id === id)
 // The way the week slid in, for its animation.
 const direction = ref<'next' | 'previous'>('next')
 
@@ -174,18 +176,24 @@ function planFrom(dish: DishView, day: string) {
 
 // ---- The pickers ----
 
+// What a picker on a Planned Dish holds: whether it is open, its Planned Dish
+// and the button it opened from.
+const entryPicker = () => reactive({ open: false, entry: null as PlanEntry | null, anchor: null as HTMLElement | null })
 const dishPicker = reactive({ open: false, day: today.value, anchor: null as HTMLElement | null })
-const dayPicker = reactive({ open: false, entry: null as PlanEntry | null, anchor: null as HTMLElement | null })
-const menu = reactive({ open: false, entry: null as PlanEntry | null, anchor: null as HTMLElement | null })
-const cookPicker = reactive({ open: false, entry: null as PlanEntry | null, anchor: null as HTMLElement | null })
+const dayPicker = entryPicker()
+const menu = entryPicker()
+const cookPicker = entryPicker()
 
-function openDishPicker(day: string, anchor: HTMLElement | null) {
-  if (dishPicker.open && dishPicker.anchor === anchor) {
-    dishPicker.open = false
+// Opens the picker from `anchor` with `fields`; its own button again closes it.
+function toggleAt<T extends { open: boolean, anchor: HTMLElement | null }>(picker: T, anchor: HTMLElement | null, fields: Partial<T>) {
+  if (picker.open && picker.anchor === anchor) {
+    picker.open = false
     return
   }
-  Object.assign(dishPicker, { open: true, day, anchor })
+  Object.assign(picker, { open: true, anchor, ...fields })
 }
+
+const openDishPicker = (day: string, anchor: HTMLElement | null) => toggleAt(dishPicker, anchor, { day })
 function pickDish(dish: DishView) {
   const { day, anchor } = dishPicker
   dishPicker.open = false
@@ -197,16 +205,10 @@ function openEmptyPicker(anchor: HTMLElement) {
   openDishPicker(current.value ? today.value : shownMonday.value, anchor)
 }
 
-function openMenu(entry: PlanEntry, anchor: HTMLElement) {
-  if (menu.open && menu.anchor === anchor) {
-    menu.open = false
-    return
-  }
-  Object.assign(menu, { open: true, entry, anchor })
-}
+const openMenu = (entry: PlanEntry, anchor: HTMLElement) => toggleAt(menu, anchor, { entry })
 // A picker's or the menu's entry as it is now (it may have moved, or been
 // taken off).
-const entryNow = (entry: PlanEntry | null) => entry && Object.values(plan.value).flat().find(e => e.id === entry.id) || entry
+const entryNow = (entry: PlanEntry | null) => entry && entryById(entry.id) || entry
 const menuEntry = computed(() => entryNow(menu.entry))
 
 // After a move the focus stays on the Planned Dish's "⋯".
@@ -232,7 +234,7 @@ function menuMove() {
   if (entry) Object.assign(dayPicker, { open: true, entry, anchor })
 }
 function pickDayFor(day: string) {
-  const entry = dayPicker.entry && Object.values(plan.value).flat().find(e => e.id === dayPicker.entry!.id)
+  const entry = dayPicker.entry && entryById(dayPicker.entry.id)
   dayPicker.open = false
   if (entry) moveEntry(entry, day)
 }
@@ -242,13 +244,7 @@ function pickDayFor(day: string) {
 const cookEntry = computed(() => entryNow(cookPicker.entry))
 
 // The cook's Profile Picture on a Planned Dish opens the picker.
-function openCookPicker(entry: PlanEntry, anchor: HTMLElement) {
-  if (cookPicker.open && cookPicker.anchor === anchor) {
-    cookPicker.open = false
-    return
-  }
-  Object.assign(cookPicker, { open: true, entry, anchor })
-}
+const openCookPicker = (entry: PlanEntry, anchor: HTMLElement) => toggleAt(cookPicker, anchor, { entry })
 function menuCook() {
   const { entry, anchor } = menu
   menu.open = false
@@ -269,8 +265,6 @@ function pickCook(memberId: string | null) {
   void nextTick(() => (live.value = member ? t.week.cooksNow(member.name) : t.week.cooksNobody))
 }
 
-const dishesOn = (day: string) => boardModule.weekPlan([day])[day]?.map(e => e.dish) ?? []
-
 // ---- Dragging ----
 
 const quiet = ref(false)
@@ -279,7 +273,7 @@ const { drag, dragging, entries } = useWeekDrag(surface, {
   isPast,
   strip: () => (strip.value?.$el as HTMLElement | undefined) ?? null,
   drop: (plannedId, day, index) => {
-    const entry = Object.values(plan.value).flat().find(e => e.id === plannedId)
+    const entry = entryById(plannedId)
     if (!entry) return
     // The dragged card has settled into its slot: nothing arrives anew.
     quiet.value = true
@@ -317,7 +311,7 @@ function onKeydown(event: KeyboardEvent) {
   if (target.closest('input, textarea, select, dialog, [popover]')) return
   const card = target.closest<HTMLElement>('[data-planned-id]')
   if (event.altKey && card && props.canChange && !event.ctrlKey && !event.metaKey) {
-    const entry = Object.values(plan.value).flat().find(e => e.id === card.dataset.plannedId)
+    const entry = entryById(card.dataset.plannedId!)
     const arrow: Record<string, () => void> = {
       ArrowUp: () => step(entry!, -1),
       ArrowDown: () => step(entry!, 1),
@@ -590,7 +584,7 @@ function onSwipeEnd(event: PointerEvent) {
         :today="today"
         :from="shownMonday"
         :lies="dayPicker.entry.day"
-        :dishes-on="dishesOn"
+        :dishes-on="boardModule.dishesOn"
         @pick="pickDayFor"
       />
     </PickerSurface>

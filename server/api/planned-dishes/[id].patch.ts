@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { madeAtInput } from '../../utils/late-changes'
-import { movePlannedDish,plannedDishBoard, type PlannedDishView } from '../../utils/week-plan'
+import { movePlannedDish, plannedDishBoard, type PlannedDishView } from '../../utils/week-plan'
 
 // `madeAt`: when it was made, if offline (late-changes.ts). A move stores no
 // time: the last move to arrive wins, as a Dish move does (ADR 0012).
