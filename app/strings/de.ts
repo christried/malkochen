@@ -968,8 +968,9 @@ export const de = {
       askedColumn: 'Angefragt',
       searchesColumn: 'Suchen',
       switchColumn: 'Rezeptfinder',
-      // A request's day, from an ISO time.
-      askedOn: (at: string) => `Angefragt am ${addedDate(new Date(at))}`,
+      // A request's day, from an ISO time: alone, and in a sentence.
+      askedDay: (at: string) => addedDate(new Date(at)),
+      askedOn:(at: string) => `Angefragt am ${addedDate(new Date(at))}`,
       searchesToday: (today: number) => `${number(today)} heute`,
       searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'Suche', other: 'Suchen' })}, ${number(today)} heute`,
       noSearches: 'Noch keine Suchen',

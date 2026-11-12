@@ -43,7 +43,7 @@ test('a user asks for the Recipe Finder, the Operator switches it on, and the us
     const admin = operator.getByRole('region', { name: 'Rezeptfinder' })
     await expect(admin.getByRole('row', { name: /Blanche blanchard@example\.com/ })).toBeVisible()
     const row = admin.getByRole('row', { name: /Blanche/ })
-    await expect(row).toContainText('Angefragt am')
+    await expect(row).toContainText(/\d{1,2}\. \p{L}+/u)
     await expect(row).toContainText('0 heute')
 
     await operator.setViewportSize({ width: 360, height: 800 })

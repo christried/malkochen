@@ -117,7 +117,7 @@ async function turn(user: AdminRecipeFinderUser) {
                 </div>
               </td>
               <td class="text-small">
-                {{ user.askedAt ? t.recipeFinder.admin.askedOn(user.askedAt) : '' }}
+                {{ user.askedAt ? t.recipeFinder.admin.askedDay(user.askedAt) : '' }}
               </td>
               <td>
                 <div class="flex items-baseline gap-2">
