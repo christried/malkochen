@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session: a branch from `staging`, a PR into `staging`.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449, #456, #475, #492) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449, #456, #475, #492, #511) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -437,6 +437,21 @@ From the grilling session on 2026-11-11 (`CONTEXT.md` → Recipe, Ingredient, St
 | #498 | Recipe Finder in Your Settings and on the Admin Page | After #493 and #497 |
 | #504 | Finding in the Dish detail | After #493, #496 and #500 |
 | #505 | Changelog entry for this spec | Blocked by every other ticket of #492. Under `[Unreleased]`, no Version |
+
+### Phase 26: Week Plan (#511)
+
+From the grilling session on 2026-11-12 (`CONTEXT.md` → Week Plan, Planned Dish; ADR 0014). Each ticket is a sub-issue of #511, with GitHub blocking links as well as its `## Blocked by` section. The API tickets and the Board module come first and don't wait for the design; the screen tickets (#517, #518) wait for the handoff (#512).
+
+| # | Ticket | Note |
+|---|---|---|
+| #512 | Design handoff for the Week Plan screens | `ready-for-human`: skip, the user does it. Blocks #517 |
+| #513 | Planned Dishes on a Board | Migration. API only |
+| #514 | Who cooks a Planned Dish | After #513. API only |
+| #515 | Week Plan changes that arrive late | After #513 and #514. API only (ADR 0012) |
+| #516 | The Week Plan in the Board module | After #515. Cooked tick derived from Cookings; Unsent Changes |
+| #517 | The Week Plan view | After #512 and #516 |
+| #518 | Einplanen, who cooks and Gekocht ✓ from the Week Plan | After #517 |
+| #519 | Changelog entry for this spec | Blocked by every other ticket of #511. Under `[Unreleased]`, no Version |
 
 ## Keeping this file current
 

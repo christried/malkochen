@@ -11,7 +11,7 @@ A named space (with an emoji) of Columns holding Dishes. A user can belong to ma
 _Avoid_: List, workspace, personal board
 
 **Board Version**:
-A number every change to what a Board's Members see on it moves on: its Dishes, Cookings, Votes, Comments, Columns, Members, name, emoji and Invite Link. What one Member has read or opened never moves it. An open Board asks only for it, and loads the whole Board when it moved (ADR 0008). Never shown to users, and not malkochen's Version.
+A number every change to what a Board's Members see on it moves on: its Dishes, Cookings, Votes, Comments, Columns, Week Plan, Members, name, emoji and Invite Link. What one Member has read or opened never moves it. An open Board asks only for it, and loads the whole Board when it moved (ADR 0008). Never shown to users, and not malkochen's Version.
 _Avoid_: Revision, etag, board timestamp
 
 **Unsent Change**:
@@ -38,6 +38,14 @@ _Avoid_: Onboarding, walkthrough, coach marks, tutorial, intro
 A named, ordered stage on a Board (default: Ideen, Diese Woche, Gekocht, written in the language of whoever creates the Board, and the same for every Member after that). Members can rename, add, reorder and delete Columns.
 _Avoid_: Lane, list, status
 
+**Week Plan**:
+A Board's week, Monday to Sunday, on which its Members put Dishes for the days they want to cook them ("Wochenplan"). One per Board, the same for every Member, and a view of its own beside the Columns: planning a Dish never moves it between Columns, a day passing records no Cooking, and nothing about it shows on the Dish's card or detail. It opens on the current week; earlier and later weeks can be browsed, and past days stay as they were planned.
+_Avoid_: Calendar, schedule, meal plan, planner
+
+**Planned Dish**:
+One Dish on one day of a Week Plan, optionally with the Member who'll cook it ("Wer kocht"). A Dish can be planned on several days, and a day holds any number of Dishes in an order. It shows as cooked when its Dish has a Cooking dated that day, however that Cooking was recorded; "Gekocht ✓" on one of today's Planned Dishes records a Cooking just as it does on the card. It goes with its Dish when it's archived (and comes back on restore), is dropped when the Dish moves to another Board, and isn't part of a Copy; its cook is cleared when they leave the Board or delete their account. Planning, unplanning and moving it between days need the Permission to move Dishes, and aren't part of the Dish History.
+_Avoid_: Plan entry, slot, meal
+
 **Column Subtitle**:
 A short line under a Column's name saying what it's for (default: "Worauf hast du Lust?" for Ideen, "Das steht an." for Diese Woche). Members can set or clear it; the Gekocht Column's is fixed ("Schon geschafft!"), even when it's renamed, and shown in each viewer's language.
 _Avoid_: Description, tagline
@@ -47,7 +55,7 @@ A user who belongs to a Board. What each Member may do there is set by their Per
 _Avoid_: Collaborator, participant
 
 **Permissions**:
-What one Member may do on a Board, each switched on or off for them by the Owner ("Rechte"): add Dishes, edit them, move them (including into the Gekocht Column), archive them, edit Columns, share the Invite Link, comment and vote, and change the Board's name and emoji. The Owner always has all of them, and a Member can always edit and archive the Dishes they added themselves. An action a Member may not take isn't shown to them.
+What one Member may do on a Board, each switched on or off for them by the Owner ("Rechte"): add Dishes, edit them, move them (including into the Gekocht Column and on the Week Plan), archive them, edit Columns, share the Invite Link, comment and vote, and change the Board's name and emoji. The Owner always has all of them, and a Member can always edit and archive the Dishes they added themselves. An action a Member may not take isn't shown to them.
 _Avoid_: Roles, rights, access level
 
 **Default Permissions**:
@@ -229,7 +237,7 @@ The Operator's page on how malkochen is used, reached from their Your Settings: 
 _Avoid_: Dashboard, admin panel, admin console
 
 **Event Log**:
-Everything that happens in malkochen, one event each time: on Boards (Dishes added, edited, moved, copied, archived, restored or deleted for good; Cookings, Comments and Votes; Columns, Permissions and the Invite Link changed; Boards created, archived, restored or deleted for good; Members joining, leaving or removed) and around them (sign-ups, sign-ins, Username and Your Settings changed, accounts deleted, Push Notifications and Email Digests sent, the Operator switching Open Sign-up). Each says when, what kind and which Board, Dish and user, and is kept indefinitely. The Admin Page shows names, titles and Comments as they are now, so what's been deleted shows as deleted there, never as it was.
+Everything that happens in malkochen, one event each time: on Boards (Dishes added, edited, moved, copied, archived, restored or deleted for good; Dishes planned, unplanned or moved on the Week Plan; Cookings, Comments and Votes; Columns, Permissions and the Invite Link changed; Boards created, archived, restored or deleted for good; Members joining, leaving or removed) and around them (sign-ups, sign-ins, Username and Your Settings changed, accounts deleted, Push Notifications and Email Digests sent, the Operator switching Open Sign-up). Each says when, what kind and which Board, Dish and user, and is kept indefinitely. The Admin Page shows names, titles and Comments as they are now, so what's been deleted shows as deleted there, never as it was.
 _Avoid_: Activity feed, audit log, Dish History
 
 **Changelog**:
