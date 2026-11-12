@@ -4,6 +4,7 @@ import { computed, ref, shallowRef, toRaw } from 'vue'
 import type { BoardView } from '../../server/utils/boards'
 import type { AddedDish, CookingUndo, DishAdder, DishView } from '../../server/utils/dishes'
 import { dishOnBoard } from '../../shared/board'
+import { recipeAfterEdit } from '../../shared/recipe'
 import { guessKind, siteOf } from '../utils/link-guess'
 import { columnForNewDishes, landingIndex } from '../../shared/placement'
 import type { Placeholder } from '../../shared/placeholders'
@@ -57,6 +58,9 @@ export type UnsentKind =
   | { kind: 'vote', dishId: string, up: boolean | null, voter: DishAdder }
   // A Dish's title edited: the only field an edit can change offline.
   | { kind: 'title', dishId: string, title: string }
+  // A Dish's Recipe edited (#496), as the whole Recipe the Member saved, or
+  // null for none. The link it was found at stays with the Dish.
+  | { kind: 'recipe', dishId: string, recipe: { ingredients: string[], steps: string[] } | null }
   // A Dish added (#462): with the id the device made for it, the link as
   // pasted and the title typed, either of them none (not both), the
   // Placeholder Image chosen (`noImage`: over the Source's image, which the
@@ -264,6 +268,8 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
         return change.up === null ? transport.takeBackVote(change.dishId) : transport.setVote(change.dishId, change.up, { madeAt })
       case 'title':
         return transport.editDish(change.dishId, { title: change.title })
+      case 'recipe':
+        return transport.editDish(change.dishId, { recipe: change.recipe })
     }
   }
 
@@ -484,6 +490,11 @@ function apply(view: BoardView, change: UnsentChange) {
     case 'title': {
       const found = dishOnBoard(view, change.dishId)
       if (found) found.dish.title = change.title
+      return
+    }
+    case 'recipe': {
+      const found = dishOnBoard(view, change.dishId)
+      if (found) found.dish.recipe = recipeAfterEdit(found.dish.recipe, change.recipe)
       return
     }
     case 'vote': {

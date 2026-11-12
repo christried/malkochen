@@ -19,7 +19,7 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'add'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -29,6 +29,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `gelöschter Kommentar zu ${named}`
     case 'vote': return `Daumen bei ${named}`
     case 'title': return `neuer Titel für ${named}`
+    case 'recipe': return `geändertes Rezept für ${named}`
     case 'add': return `${named} hinzugefügt`
     case 'move': return `${named} verschoben`
     case 'cook':
@@ -430,6 +431,53 @@ export const de = {
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     notAllowed: 'Dieses Gericht darfst du nicht mehr bearbeiten. Das legt die Besitzer:in fest.',
     imageNotStored: (title: string) => `Das neue Bild ließ sich nicht speichern. „${title}“ behält sein bisheriges Bild.`,
+  },
+  // A Dish's Recipe (CONTEXT.md: Recipe; spec #492): read in the detail
+  // (RecipeSection), edited in its own mode (RecipeEditor).
+  recipe: {
+    heading: 'Rezept',
+    edit: 'Bearbeiten',
+    add: 'Rezept hinzufügen',
+    ingredients: 'Zutaten',
+    steps: 'Schritte',
+    // Under the lists of a Recipe found at another page than the Source.
+    from: (site: string) => `Rezept von ${site}`,
+    // The editor's header and its add buttons.
+    cancel: 'Abbrechen',
+    save: 'Speichern',
+    addIngredient: 'Zutat hinzufügen',
+    addStep: 'Schritt hinzufügen',
+    ingredientPlaceholder: 'Zutat, z. B. 2 Knoblauchzehen',
+    stepPlaceholder: 'Was ist zu tun?',
+    // What a screen reader calls a line's field, and its grip and remove button.
+    ingredientField: (n: number) => `Zutat ${number(n)}`,
+    stepField: (n: number) => `Schritt ${number(n)}`,
+    moveLine: (line: string) => `${line} verschieben`,
+    removeLine: (line: string) => `${line} entfernen`,
+    moveUp: 'Nach oben',
+    moveDown: 'Nach unten',
+    // Said politely once a line has been moved.
+    moved: (line: string, place: number, total: number) => `${line}, jetzt an Stelle ${number(place)} von ${number(total)}.`,
+    // Toasts: a line removed, lines pasted, and pasted lines that did not fit.
+    ingredientRemoved: 'Zutat entfernt',
+    stepRemoved: 'Schritt entfernt',
+    ingredientsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'Zutat', other: 'Zutaten' })} eingefügt`,
+    stepsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'Schritt', other: 'Schritte' })} eingefügt`,
+    didNotFit: (count: number) => plural(count, { one: `${number(count)} Zeile hat nicht mehr reingepasst.`, other: `${number(count)} Zeilen haben nicht mehr reingepasst.` }),
+    // Near and at the limits: the counter, the note in place of the add
+    // button of a full list, and the sentence under a line at its limit.
+    count: (count: number, limit: number) => `${number(count)} von ${number(limit)}`,
+    ingredientsFull: (limit: number) => `${number(limit)} Zutaten, mehr passen nicht in ein Rezept.`,
+    stepsFull: (limit: number) => `${number(limit)} Schritte, mehr passen nicht in ein Rezept.`,
+    ingredientTooLong: 'Länger geht eine Zutat nicht.',
+    stepTooLong: 'Länger geht ein Schritt nicht. Mit Enter fängst du einen neuen an.',
+    // The question when a changed Recipe is left without saving.
+    discardTitle: 'Änderungen verwerfen?',
+    discardText: 'Dein Rezept bleibt dann so, wie es vorher war.',
+    keepEditing: 'Weiter bearbeiten',
+    discard: 'Verwerfen',
+    // The switch of a long Recipe (RecipeSwitch): its name for screen readers.
+    switchLabel: 'Zu Zutaten oder Schritten springen',
   },
   // The Source pill on a Dish's image: short, so it fits on a card's.
   sources: {

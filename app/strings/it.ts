@@ -23,6 +23,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `commento eliminato su ${named}`
     case 'vote': return `pollice su ${named}`
     case 'title': return `nuovo titolo per ${named}`
+    case 'recipe': return `ricetta modificata per ${named}`
     case 'add': return `${named} aggiunto`
     case 'move': return `${named} spostato`
     case 'cook':
@@ -376,6 +377,42 @@ export const it: Strings = {
     failed,
     notAllowed: 'Non puoi più modificare questo piatto. Lo decide chi ne è titolare.',
     imageNotStored: (title: string) => `Non è stato possibile salvare la nuova immagine. “${title}” tiene quella di prima.`,
+  },
+  recipe: {
+    heading: 'Ricetta',
+    edit: 'Modifica',
+    add: 'Aggiungi ricetta',
+    ingredients: 'Ingredienti',
+    steps: 'Passaggi',
+    from: (site: string) => `Ricetta da ${site}`,
+    cancel: 'Annulla',
+    save: 'Salva',
+    addIngredient: 'Aggiungi ingrediente',
+    addStep: 'Aggiungi passaggio',
+    ingredientPlaceholder: 'Ingrediente, ad es. 2 spicchi d’aglio',
+    stepPlaceholder: 'Cosa c’è da fare?',
+    ingredientField: (n: number) => `Ingrediente ${number(n)}`,
+    stepField: (n: number) => `Passaggio ${number(n)}`,
+    moveLine: (line: string) => `Sposta ${line}`,
+    removeLine: (line: string) => `Rimuovi ${line}`,
+    moveUp: 'Sposta su',
+    moveDown: 'Sposta giù',
+    moved: (line: string, place: number, total: number) => `${line}, ora alla posizione ${number(place)} di ${number(total)}.`,
+    ingredientRemoved: 'Ingrediente rimosso',
+    stepRemoved: 'Passaggio rimosso',
+    ingredientsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'ingrediente incollato', other: 'ingredienti incollati' })}`,
+    stepsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'passaggio incollato', other: 'passaggi incollati' })}`,
+    didNotFit: (count: number) => plural(count, { one: `${number(count)} riga non ci stava più.`, other: `${number(count)} righe non ci stavano più.` }),
+    count: (count: number, limit: number) => `${number(count)} di ${number(limit)}`,
+    ingredientsFull: (limit: number) => `${number(limit)} ingredienti, in una ricetta non ne entrano di più.`,
+    stepsFull: (limit: number) => `${number(limit)} passaggi, in una ricetta non ne entrano di più.`,
+    ingredientTooLong: 'Un ingrediente non può essere più lungo.',
+    stepTooLong: 'Un passaggio non può essere più lungo. Con Invio ne inizi uno nuovo.',
+    discardTitle: 'Scartare le modifiche?',
+    discardText: 'La tua ricetta resta com’era prima.',
+    keepEditing: 'Continua a modificare',
+    discard: 'Scarta',
+    switchLabel: 'Vai agli ingredienti o ai passaggi',
   },
   sources: {
     tiktok: 'TikTok',
