@@ -519,6 +519,78 @@
           "motion": "tip: r12-tip 6s ease-in-out, pivot 18,36 (replaces the sway; hat authored −8° and 3 px up)"
         }
       ]
+    },
+    "search": {
+      "added": "R13",
+      "whole": "r13-breathe 2.4s ease-in-out (2× per 4.8s loop), pivot 70,123",
+      "layers": [
+        {
+          "z": 1,
+          "file": "topfbert-search-01-spoon.svg",
+          "name": "spoon",
+          "motion": "stir: rotate 0 → −10° → +10° → 0, r13-stir 2.4s ease-in-out, pivot 71.5,54.4"
+        },
+        {
+          "z": 2,
+          "file": "topfbert-search-02-piece_1.svg",
+          "name": "piece_1",
+          "motion": "peek: y +13 (behind rim) → −3 → 0 → +13 at 0–30% of 4.8s, r13-peek, delay −0.6s; static x −28 (stir orbit_1)"
+        },
+        {
+          "z": 3,
+          "file": "topfbert-search-03-piece_2.svg",
+          "name": "piece_2",
+          "motion": "same, delay −2.2s; static x +27 (stir orbit_2)"
+        },
+        {
+          "z": 4,
+          "file": "topfbert-search-04-piece_3.svg",
+          "name": "piece_3",
+          "motion": "same, delay −3.8s; static x +10 (stir orbit_3); peeking (y −1) in the still"
+        },
+        {
+          "z": 5,
+          "file": "topfbert-search-05-handles.svg",
+          "name": "handles",
+          "motion": null
+        },
+        {
+          "z": 6,
+          "file": "topfbert-search-06-body.svg",
+          "name": "body",
+          "motion": null
+        },
+        {
+          "z": 7,
+          "file": "topfbert-search-07-eyes.svg",
+          "name": "eyes",
+          "motion": null
+        },
+        {
+          "z": 8,
+          "file": "topfbert-search-08-cheeks.svg",
+          "name": "cheeks",
+          "motion": null
+        },
+        {
+          "z": 9,
+          "file": "topfbert-search-09-mouth.svg",
+          "name": "mouth",
+          "motion": null
+        },
+        {
+          "z": 10,
+          "file": "topfbert-search-10-rim.svg",
+          "name": "rim",
+          "motion": null
+        },
+        {
+          "z": 11,
+          "file": "topfbert-search-11-hat.svg",
+          "name": "hat",
+          "motion": "sway: r13-hat (= r11-ihat) 4.8s ease-in-out, pivot 36,46"
+        }
+      ]
     }
   },
   "idle": {
@@ -581,7 +653,8 @@
       "stir": "unchanged (already animated)",
       "waving": "all R11 idle + arm wave (r12-wave); see tour.poses.waving",
       "pointing": "breathe + blink + hat sway + arm nudge (r12-nudge); no steam; see tour.poses.pointing",
-      "wink": "breathe + steam + blink on the left eye only + hat tip (r12-tip, replaces sway); see tour.poses.wink"
+      "wink": "breathe + steam + blink on the left eye only + hat tip (r12-tip, replaces sway); see tour.poses.wink",
+      "search": "own loop, see search block (eyes are closed arcs, no blink)"
     },
     "small": "Rendered below 48px: breathe + blink only (no steam, no hat sway).",
     "reducedMotion": "No loop and no blink. Show frame 0. Pause when < 50% visible, under a sheet/dialog, or in the background.",
@@ -766,5 +839,89 @@
       "noTarget": "waving / wink: full scrim, no hole, no tail; group bottom 40 px above the safe area (clear of the FAB)",
       "bubble": "light surface #FFFFFF, dark surface-muted #2A2825, radius 24 22 26 22, shadow-dialog; title Petrona 500 21/1.15, text Figtree 500 15/1.4 (text-muted)"
     }
+  },
+  "search": {
+    "added": "R13",
+    "use": "RecipeFinderState \"Rezept wird gesucht\": 56 × 60 px inside a 66px search-tint pebble. Shown to every Member while the Recipe Finder searches (a few seconds up to 30 s).",
+    "drawing": "No new art. The stir mood with orbit_1..3 renamed piece_1..3 and moved into the pot (static x offsets), so they can sink behind the rim. Same 140 × 150 canvas.",
+    "loop": "4.8s seamless. Half the tempo of stir (1.2s), so it never pulls the eye from the lists around it.",
+    "keyframes": "assets/r13-keyframes.css: r13-breathe, r13-stir, r13-peek, r13-hat",
+    "layers": [
+      {
+        "name": "whole (all layers)",
+        "motion": "scale 1 → .985 / 1.025 → 1",
+        "timing": "2.4s ease-in-out, 2× per loop",
+        "pivot": [
+          70,
+          123
+        ]
+      },
+      {
+        "name": "spoon",
+        "motion": "rotate 0 → −10° (25%) → +10° (75%) → 0",
+        "timing": "2.4s ease-in-out, 2× per loop",
+        "pivot": [
+          71.5,
+          54.4
+        ]
+      },
+      {
+        "name": "piece_1",
+        "motion": "translateY +13 → −3 (10%) → 0 (17%) → +13 (30%), hidden behind rim otherwise",
+        "timing": "4.8s ease-in-out, delay −0.6s"
+      },
+      {
+        "name": "piece_2",
+        "motion": "same",
+        "timing": "4.8s ease-in-out, delay −2.2s"
+      },
+      {
+        "name": "piece_3",
+        "motion": "same",
+        "timing": "4.8s ease-in-out, delay −3.8s"
+      },
+      {
+        "name": "hat",
+        "motion": "rotate 0 → +3°, y −1 on top of the authored −14°",
+        "timing": "4.8s ease-in-out",
+        "pivot": [
+          36,
+          46
+        ]
+      },
+      {
+        "name": "eyes",
+        "motion": "none (happy arcs)",
+        "timing": "—"
+      }
+    ],
+    "small": "Below 48px: breathe + spoon only; pieces stay hidden; hat still.",
+    "reducedMotion": "No loop. Show topfbert-search.svg as exported: spoon upright, piece_3 peeking, pieces 1 and 2 hidden.",
+    "pause": "Pause when < 50% visible, under a sheet/dialog, or in the background (as the R11 idle).",
+    "exit": "On result: whole hops y −7 then scale .7 + fade (r13-hop 300ms ease-out), together with the card fading out.",
+    "theme": "One drawing for light and dark (outline #1F1E1C). The pebble behind him takes color.search-tint."
+  },
+  "weekEmpty": {
+    "added": "R14",
+    "use": "EmptyWeek card (\"Die Woche ist noch frei.\")",
+    "pose": "pointing",
+    "file": "topfbert-pointing.svg",
+    "layers": "tour.poses.pointing (no new files)",
+    "mirror": false,
+    "size": {
+      "phone": [
+        78,
+        84
+      ],
+      "desktop": [
+        100,
+        107
+      ]
+    },
+    "viewBox": "0 -20 140 150",
+    "loop": "tour idle for pointing on the shared 6 s clock: r11-breathe (whole, ×2), r11-ieo / r11-iec (blink), r11-ihat (hat), r12-nudge (arm)",
+    "reducedMotion": "frame 0, no blink",
+    "pause": "off screen, under a sheet or dialog, app in background",
+    "theme": "one drawing for light and dark"
   }
 }
