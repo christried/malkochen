@@ -90,7 +90,7 @@ _Avoid_: Public registration, beta
 
 **Dish**:
 One piece of food someone wants to cook, saved to a Board, usually from a Source. It has a title and an image, and records who added it and when.
-_Avoid_: Recipe, post, entry, card
+_Avoid_: Recipe (that's what a Dish holds), post, entry, card
 
 **Source**:
 The link a Dish came from. Optional: a Dish can also be added from memory or a cookbook without one.
@@ -112,12 +112,28 @@ _Avoid_: Inferred title, auto title
 The text a Source shows with its post (a TikTok or Instagram caption, a YouTube or Pinterest description, a food blog's summary), found when the Dish is added and shown in the Dish's detail, folded to a few lines. It's the Source's text, so no Member edits it; search finds Dishes by it.
 _Avoid_: Description (that's a Column Subtitle), note, post text
 
+**Recipe**:
+What a Dish says about how it's made ("Rezept"): its Ingredients and its Steps, shown in the Dish's detail. A Dish can have none. Unlike the Caption it's the Dish's own, so Members who may edit the Dish change it. A Copy takes it along, through a Dish Link too, though the Dish Link's own page doesn't show it. Changing it is an edit to the Dish, so it isn't part of the Dish History.
+_Avoid_: Recipe for the Dish itself, instructions, method
+
+**Ingredient**:
+One line of a Recipe saying what goes in, as plain text the way it was written ("200 g Mehl", "1 Dose Kichererbsen"). malkochen doesn't know its amount or unit. Members add, change, remove and reorder them; search finds Dishes by them.
+_Avoid_: Item, product, component
+
+**Step**:
+One thing to do in a Recipe, as plain text, in a numbered order ("Schritt"). Members add, change, remove and reorder them.
+_Avoid_: Instruction, direction, stage
+
+**Recipe Finder**:
+malkochen finding a Dish's Recipe by itself ("Rezeptfinder"): in the recipe a food blog's page carries, in the Caption, on a page the Caption links to, whichever has it first. Only for the few users the Operator switched it on for, after they asked for it in Your Settings; everyone else types a Recipe by hand. It looks when such a user adds a Dish, a little after the Dish is there, and on "Rezept finden" for a Dish that has a Source and no Recipe yet. It takes what's written, in its language, adds nothing of its own, and never replaces a Recipe that has anything in it. When it finds nothing it says so ("Kein Rezept gefunden") and looks again only once the Source changed. Every Member of the Board sees what it found.
+_Avoid_: Allowlist (that's for signing up), AI recipe, auto recipe, import
+
 **Dish Link**:
 A link to one Dish that anyone can open, signed in or not, to see its image, title, Creator and Source, and copy it to a Board of their own. Like an Invite Link it ends in a secret, so it can't be guessed from the Dish's Address. It stops working once the Dish is archived.
 _Avoid_: Share link (that's an Invite Link), public link, permalink
 
 **Copy**:
-A new Dish made from another one ("Kopieren"), through its Dish Link or into another of one's own Boards. It takes the title, image (an Own Photo too, with its Focus Point), Source, Creator and Caption, but none of the Cookings, Comments or Votes, and counts as added by whoever copied it. From then on the two Dishes are unrelated.
+A new Dish made from another one ("Kopieren"), through its Dish Link or into another of one's own Boards. It takes the title, image (an Own Photo too, with its Focus Point), Source, Creator, Caption and Recipe, but none of the Cookings, Comments or Votes, and counts as added by whoever copied it. From then on the two Dishes are unrelated.
 _Avoid_: Duplicate, clone
 
 **New Dish**:
