@@ -102,14 +102,19 @@ test('"Rezept finden" ends in a Recipe in the open detail, which is edited like 
   expect((await find.boundingBox())!.height).toBe((await add.boundingBox())!.height)
   expect((await find.boundingBox())!.width).toBe((await add.boundingBox())!.width)
 
-  await find.click()
+  // The detail scrolled to its very end, where a search card shorter than the
+  // buttons it replaces would pull the scroll up (the browser keeps it within
+  // the content). The click is dispatched, not made: Playwright scrolls the
+  // button into view by itself, and where it ends up differs from run to run
+  // (a slow machine, the detail still opening).
+  await detail.evaluate(el => el.scrollTo(0, el.scrollHeight))
+  await find.dispatchEvent('click')
 
   // The search card is there for as long as it runs; "Rezept hinzufügen" waits.
   const searching = detail.locator('[data-recipe-searching]')
   await expect(searching).toBeVisible()
-  // Where the detail is scrolled while it searches: the click scrolls the
-  // button into view first where it starts below the fold (CI's fonts), so
-  // only from here on must nothing move it.
+  // Where the detail is scrolled while it searches; from here on nothing may
+  // move it.
   const scrolled = await detail.evaluate(el => el.scrollTop)
   await expect(searching).toHaveAttribute('role', 'status')
   await expect(searching).toContainText('Rezept wird gesucht')
