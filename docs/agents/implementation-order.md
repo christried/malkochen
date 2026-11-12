@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session: a branch from `staging`, a PR into `staging`.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449, #456, #475, #492, #511) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449, #456, #475, #492, #511, #526) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -452,6 +452,22 @@ From the grilling session on 2026-11-12 (`CONTEXT.md` → Week Plan, Planned Dis
 | #517 | The Week Plan view | After #512 and #516 |
 | #518 | Einplanen, who cooks and Gekocht ✓ from the Week Plan | After #517 |
 | #519 | Changelog entry for this spec | Blocked by every other ticket of #511. Under `[Unreleased]`, no Version |
+
+### Phase 27: Shopping List (#526)
+
+From the grilling session on 2026-11-12 ( → Shopping List, Shopping Item; ADR 0015). Each ticket is a sub-issue of #526, with GitHub blocking links as well as its  section. The API tickets and the Board module come first and don't wait for the design; the screen tickets (#536, #537) wait for the handoff (#527).
+
+| # | Ticket | Note |
+|---|---|---|
+| #527 | Design handoff for the Shopping List screens | : skip, the user does it. Holds the Claude Design prompt. Blocks #536 |
+| #530 | Shopping Items on a Board | Migration. API only. Datenschutz wording OKed by the user before merge |
+| #531 | Putting a Dish on the Shopping List | After #530. API only |
+| #532 | Putting a week on the Shopping List | After #531. API only |
+| #533 | Shopping List changes that arrive late | After #530, #531 and #532. API only (ADR 0012) |
+| #534 | The Shopping List in the Board module | After #533. Unsent Changes |
+| #536 | The Shopping List view | After #527 and #534 |
+| #537 | Auf die Einkaufsliste and Woche auf die Einkaufsliste | After #536 |
+| #538 | Changelog entry for this spec | Blocked by every other ticket of #526. Under , no Version |
 
 ## Keeping this file current
 
