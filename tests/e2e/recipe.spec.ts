@@ -260,6 +260,48 @@ test('on a touch screen a line is lifted by a long press on its grip, not by a t
   await expect(lifted).toHaveCount(0)
 })
 
+test('a Recipe taller than two screens gets a sticky switch between its lists, which jumps to the other one', async ({ page, browser }) => {
+  test.slow()
+  await page.setViewportSize({ width: 390, height: 320 })
+  const { boardId, dishes } = await sharedBoard(page, browser, 'Langes Rezept', ['Festtagsmenü', 'Kurzes Rezept'])
+  const long = { ingredients: Array.from({ length: 40 }, (_, i) => `${i + 1} Zutat für das Menü`), steps: Array.from({ length: 25 }, (_, i) => `Schritt ${i + 1}: alles gut verrühren, ziehen lassen und dann weitermachen.`) }
+  expect((await page.request.patch(`/api/dishes/${dishes['Festtagsmenü']}`, { data: { recipe: long } })).status()).toBe(200)
+  expect((await page.request.patch(`/api/dishes/${dishes['Kurzes Rezept']}`, { data: { recipe: { ingredients: ['Salz'], steps: ['Streuen.'] } } })).status()).toBe(200)
+  const detail = await openDish(page, boardId, 'Festtagsmenü')
+  const switcher = detail.locator('[data-recipe-switch]')
+  const shown = detail.locator('[data-recipe-switch][data-shown]')
+  const scrollTo = (selector: string, offset = 0) => detail.evaluate((el, [target, extra]) => {
+    const section = el.querySelector(target as string) as HTMLElement
+    el.scrollTop += section.getBoundingClientRect().top - el.getBoundingClientRect().top + (extra as number)
+  }, [selector, offset] as const)
+
+  // Not while the Recipe starts; once its first list is under the top bar.
+  await expect(shown).toHaveCount(0)
+  await scrollTo('[data-recipe-list="ingredients"]', 300)
+  await expect(shown).toHaveCount(1)
+  await expect(switcher.getByRole('button', { name: /^Zutaten/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(switcher).toContainText('Schritte 25')
+
+  // Tapping Schritte scrolls there, 12px under the switch, and it is the active one.
+  await switcher.getByRole('button', { name: /^Schritte/ }).click()
+  await expect(switcher.getByRole('button', { name: /^Schritte/ })).toHaveAttribute('aria-pressed', 'true')
+  const stepsTop = () => detail.locator('[data-recipe-list="steps"]').evaluate(el => Math.round(el.getBoundingClientRect().top))
+  await expect.poll(stepsTop, { timeout: 5000 }).toBeLessThan(140)
+  expect(await stepsTop()).toBeGreaterThan(90)
+  await switcher.getByRole('button', { name: /^Zutaten/ }).click()
+  await expect(switcher.getByRole('button', { name: /^Zutaten/ })).toHaveAttribute('aria-pressed', 'true')
+
+  // Gone with the end of the Recipe (a short screen, so the Verlauf under it is enough to scroll it past the switch).
+  await scrollTo('[data-dish-history]', 0)
+  await expect(shown).toHaveCount(0)
+
+  // A short Recipe has none.
+  await detail.getByRole('button', { name: 'Schließen' }).first().click()
+  await page.getByRole('link', { name: 'Kurzes Rezept', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Kurzes Rezept' }).locator('[data-recipe-list="steps"]')).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Kurzes Rezept' }).locator('[data-recipe-switch][data-shown]')).toHaveCount(0)
+})
+
 test('a Member who may not edit Dishes reads the Recipe and has no way to change it', async ({ page, browser }) => {
   test.slow()
   await page.setViewportSize({ width: 390, height: 844 })

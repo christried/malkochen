@@ -23,8 +23,9 @@ import { UNDO_WINDOW_MS, type Toast } from '~/utils/toast'
 // whole (the last one wins). `variant`: in a sheet on phones, or as the
 // contents of the Dish detail's side panel from 768px. Leaving with changes
 // asks first (`requestCancel`: Abbrechen, Escape, a swipe down, Back).
-// Its Toasts (a line removed, lines pasted) are its own. The page does the saving: `save` carries the Recipe as to be stored (null
-// for none), `saving` and `failed` say how that is going.
+// Its Toasts (a line removed, lines pasted) are its own. The page does the
+// saving: `save` carries the Recipe as to be stored (null for none), `saving`
+// and `failed` say how that is going.
 const props = defineProps<{
   dish: DishView
   variant: 'sheet' | 'panel'
@@ -208,6 +209,17 @@ async function moveBy(kind: RecipeKind, index: number, delta: -1 | 1) {
   announcement.value = t.recipe.moved(lineName(kind, line, to), to + 1, lines.length)
 }
 const lineName = (kind: RecipeKind, line: DraftLine, index: number) => line.text.trim() || names.value[kind].field(index + 1)
+
+// The on-screen keyboard covers the bottom of the sheet without resizing it
+// (the page keeps its height, the visual viewport shrinks): the lines get
+// room to be scrolled up above it.
+const keyboard = ref(0)
+function measureKeyboard() {
+  const viewport = window.visualViewport
+  keyboard.value = viewport ? Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop)) : 0
+}
+onMounted(() => window.visualViewport?.addEventListener('resize', measureKeyboard))
+onBeforeUnmount(() => window.visualViewport?.removeEventListener('resize', measureKeyboard))
 
 // The grip's menu closes on a press anywhere else.
 function closeMenuOutside(event: PointerEvent) {
@@ -482,8 +494,9 @@ const headingCount = (kind: RecipeKind) => countShown('list', kind, draft[kind].
 
     <div
       ref="body"
-      class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pb-7 pt-1.5"
+      class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pt-1.5"
       :class="variant === 'sheet' ? 'px-3' : 'px-5'"
+      :style="{ paddingBottom: `calc(1.75rem + ${keyboard}px)` }"
       data-recipe-editor-body
     >
       <section
