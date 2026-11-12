@@ -4,17 +4,19 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { addDays, weekDays, weekStart } from '../../app/board/week-days'
 import { de } from '../../app/strings/de'
 import { signIn } from './auth'
-import { titles } from './board'
+import { column, titles } from './board'
+import { confetti, gekochtPill } from './celebration'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { inviteToken } from './invite'
 import { removeUsers } from './seed'
-import { addDish, dayList, mouseDrag, newBoard, nextMonday, planOn, plannedTitles, today } from './week'
+import { addDish, boardMembers, dayList, mouseDrag, newBoard, nextMonday, planOn, plannedTitles, seedCookingDaysAgo, setCook, today } from './week'
 
 // The Week Plan view (#517; CONTEXT.md: Week Plan, Planned Dish): the switch
 // to it, the week and browsing it, planning with "+", moving, reordering and
 // taking off the plan, and what a Member without the Permission to move
-// Dishes sees. The owner owns the Boards, the Member joins one. Both are used by this
-// file only.
+// Dishes sees; then (#518) "Einplanen" in the Dish detail, who cooks, and
+// "Gekocht ✓" with the tick. The owner owns the Boards, the Member joins one.
+// Both are used by this file only.
 test.describe.configure({ mode: 'serial' })
 
 const OWNER = ALLOWLISTED[232]
@@ -334,4 +336,275 @@ test('on a phone the switch has its own row, the week opens on today with "+" in
   await floating.click()
   await expect(page.getByTestId('week-title')).toHaveText(de.week.title(weekStart(today())))
   await expect(floating).toHaveCount(0)
+})
+
+// "Einplanen" in the Dish detail (#518).
+test('"Einplanen" in the Dish detail plans the Dish on the chosen day, today or in a later week, with "Rückgängig"', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Wocheneinplaner')
+  await addDish(page, boardId, 'Linsensuppe')
+  await gotoHydrated(page, `/b/${boardId}`)
+
+  await page.getByRole('link', { name: 'Linsensuppe' }).first().click()
+  const detail = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(detail).toBeVisible()
+  // First in the share row.
+  await expect(detail.locator('[data-share-actions]').getByRole('button')).toHaveText([/Einplanen/, /Link teilen/, /Kopieren/])
+
+  await detail.getByRole('button', { name: 'Einplanen' }).click()
+  const picker = page.getByRole('dialog', { name: 'An welchem Tag?' })
+  await expect(picker).toBeVisible()
+  // From today on: past days of the week are not offered.
+  await expect(picker.locator('[data-pick-day]')).toHaveCount(weekDays(today()).filter(day => day >= today()).length)
+  await expect(picker.locator(`[data-pick-day="${today()}"]`)).toContainText('Heute')
+  await picker.locator(`[data-pick-day="${today()}"]`).click()
+  await expect(picker).toBeHidden()
+  await expect(page.getByText('Für heute eingeplant.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
+  // The detail shows nothing of the plan.
+  await expect(detail.getByText(/eingeplant/)).toHaveCount(0)
+
+  // A day of a later week: ‹ is off on this week, › reaches the next.
+  await detail.getByRole('button', { name: 'Einplanen' }).click()
+  await expect(picker.getByRole('button', { name: 'Vorherige Woche' })).toBeDisabled()
+  await picker.getByRole('button', { name: 'Nächste Woche' }).click()
+  await expect(picker.locator('[data-pick-day]')).toHaveCount(7)
+  const monday = nextMonday()
+  await picker.locator(`[data-pick-day="${monday}"]`).click()
+  const later = `Für ${de.week.dayName(monday)} eingeplant.`
+  await expect(page.getByText(later)).toBeVisible()
+  await page.getByRole('button', { name: 'Rückgängig' }).click()
+  await expect(page.getByText(later)).toBeHidden()
+
+  // On the Week Plan: today's plan stayed, the undone one is gone.
+  await page.keyboard.press('Escape')
+  await expect(detail).toBeHidden()
+  await radio(page, 'Woche').click()
+  await expect(plannedTitles(dayOf(page, today()))).toHaveText(['Linsensuppe'])
+  await page.getByRole('button', { name: 'Nächste Woche' }).click()
+  await expect(plannedTitles(dayOf(page, monday))).toHaveCount(0)
+  // The Dish stays in its Column.
+  await radio(page, 'Spalten').click()
+  await expect(titles(page, 'Ideen')).toHaveText(['Linsensuppe'])
+})
+
+test('a Member who may not move Dishes has no "Einplanen", no way to set who cooks and no "Gekocht ✓"; one who may, has them', async ({ page, browser }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Wochenrechte')
+  const token = await inviteToken(page, boardId)
+  const dishId = await addDish(page, boardId, 'Erbseneintopf')
+  const plannedId = await planOn(page, boardId, dishId, today())
+
+  const radia = await newTab(browser)
+  await radia.setViewportSize(DESKTOP)
+  await signIn(radia, MEMBER)
+  expect((await radia.request.post(`/api/invites/${token}/join`)).status()).toBe(200)
+  const radiaId = (await boardMembers(page, boardId)).find(m => !m.isYou)!.id
+  await setCook(page, plannedId, radiaId)
+  const permit = async (moveDishes: boolean) =>
+    expect((await page.request.patch(`/api/boards/${boardId}/members/${radiaId}/permissions`, { data: { moveDishes } })).status()).toBe(200)
+
+  await permit(false)
+  await openWeek(radia, boardId)
+  const card = radia.locator('[data-planned-card]').filter({ hasText: 'Erbseneintopf' })
+  // The cook shows, and opens nothing; no "Gekocht ✓", no "⋯".
+  await expect(card.locator('[data-planned-cook]')).toBeVisible()
+  await expect(card.locator('button[data-planned-cook]')).toHaveCount(0)
+  await card.locator('[data-planned-cook]').click({ force: true })
+  await expect(radia.getByRole('dialog', { name: 'Wer kocht?' })).toHaveCount(0)
+  await expect(card.getByRole('button', { name: 'Gekocht ✓' })).toHaveCount(0)
+  await expect(card.getByRole('button', { name: /^Mehr zu / })).toHaveCount(0)
+  await card.getByRole('link').click()
+  const detail = radia.getByRole('dialog', { name: 'Erbseneintopf' })
+  await expect(detail.getByRole('button', { name: 'Link teilen' })).toBeVisible()
+  await expect(detail.getByRole('button', { name: 'Einplanen' })).toHaveCount(0)
+
+  await permit(true)
+  await reloadHydrated(radia)
+  await expect(detail.getByRole('button', { name: 'Einplanen' })).toBeVisible()
+  await radia.keyboard.press('Escape')
+  const allowed = radia.locator('[data-planned-card]').filter({ hasText: 'Erbseneintopf' })
+  await expect(allowed.locator('button[data-planned-cook]')).toBeVisible()
+  await expect(allowed.getByRole('button', { name: 'Gekocht ✓' })).toBeVisible()
+})
+
+// Who cooks (#518).
+test('who cooks is set, changed and cleared from the Board\'s Members, shows as their Profile Picture, and another Member sees it', async ({ page, browser }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Wochenkoch')
+  const token = await inviteToken(page, boardId)
+  const dishId = await addDish(page, boardId, 'Linsensuppe')
+  await planOn(page, boardId, dishId, today())
+
+  const radia = await newTab(browser)
+  await radia.setViewportSize(DESKTOP)
+  await signIn(radia, MEMBER)
+  expect((await radia.request.post(`/api/invites/${token}/join`)).status()).toBe(200)
+  const members = await boardMembers(page, boardId)
+  const me = members.find(m => m.isYou)!
+  const other = members.find(m => !m.isYou)!
+
+  await openWeek(page, boardId)
+  const card = page.locator('[data-planned-card]').filter({ hasText: 'Linsensuppe' })
+  // Nobody by default, and that looks fine.
+  await expect(card.locator('[data-planned-cook]')).toHaveCount(0)
+
+  // Set, from the menu.
+  await card.getByRole('button', { name: 'Mehr zu Linsensuppe' }).click()
+  await page.getByRole('dialog', { name: 'Linsensuppe' }).getByRole('menuitem', { name: 'Wer kocht?' }).click()
+  const picker = page.getByRole('dialog', { name: 'Wer kocht?' })
+  await expect(picker).toContainText(`Linsensuppe am ${de.week.weekday(today())}`)
+  await expect(picker.getByRole('radio')).toHaveCount(3)
+  await expect(picker.getByRole('radio', { name: 'Offen lassen' })).toBeChecked()
+  await expect(picker.getByRole('radio', { name: new RegExp(`${me.name}.*du`) })).toBeVisible()
+  await picker.getByRole('radio', { name: other.name }).click()
+  await expect(picker).toBeHidden()
+  await expect(card.getByRole('button', { name: `Kocht: ${other.name}. Ändern` })).toBeVisible()
+  await expect(card.getByRole('link')).toHaveAttribute('aria-label', `Linsensuppe, ${de.week.weekday(today())}, kocht ${other.name}`)
+  await expect(page.getByTestId('week-live')).toHaveText(`${other.name} kocht jetzt.`)
+  // No toast for it.
+  await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveCount(0)
+
+  // Another Member sees it, after a reload.
+  await openWeek(radia, boardId)
+  await expect(radia.locator('[data-planned-card]').filter({ hasText: 'Linsensuppe' }).getByRole('button', { name: `Kocht: ${other.name}. Ändern` })).toBeVisible()
+  await reloadHydrated(page)
+  await expect(weekPlan(page)).toBeVisible()
+  await expect(card.getByRole('button', { name: `Kocht: ${other.name}. Ändern` })).toBeVisible()
+
+  // Changed, from the picture itself.
+  await card.getByRole('button', { name: `Kocht: ${other.name}. Ändern` }).click()
+  await expect(picker.getByRole('radio', { name: other.name })).toBeChecked()
+  await picker.getByRole('radio', { name: new RegExp(`${me.name}.*du`) }).click()
+  await expect(card.getByRole('button', { name: `Kocht: ${me.name}. Ändern` })).toBeVisible()
+  await expect(card.locator('[data-planned-cook]')).toHaveCount(1)
+
+  // Cleared.
+  await card.getByRole('button', { name: `Kocht: ${me.name}. Ändern` }).click()
+  await picker.getByRole('radio', { name: 'Offen lassen' }).click()
+  await expect(card.locator('[data-planned-cook]')).toHaveCount(0)
+  await expect(page.getByTestId('week-live')).toHaveText('Niemand kocht mehr fest.')
+  await reloadHydrated(page)
+  await expect(weekPlan(page)).toBeVisible()
+  await expect(card.locator('[data-planned-cook]')).toHaveCount(0)
+})
+
+// "Gekocht ✓" from the plan, and the tick (#518).
+test('"Gekocht ✓" on today\'s Planned Dish records the Cooking, moves the Dish into Gekocht, celebrates and ticks; undo unticks', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Wochenkochen')
+  const soup = await addDish(page, boardId, 'Linsensuppe')
+  const salad = await addDish(page, boardId, 'Fenchelsalat')
+  await planOn(page, boardId, soup, today())
+  await planOn(page, boardId, salad, nextMonday())
+  await openWeek(page, boardId)
+
+  const card = page.locator('[data-planned-card]').filter({ hasText: 'Linsensuppe' })
+  const cookButton = card.getByRole('button', { name: 'Gekocht ✓' })
+  await expect(cookButton).toBeVisible()
+  await expect(card.locator('[data-cooked-tick]')).toHaveCount(0)
+
+  // Not on another day's.
+  await page.getByRole('button', { name: 'Nächste Woche' }).click()
+  const later = page.locator('[data-planned-card]').filter({ hasText: 'Fenchelsalat' })
+  await expect(later).toBeVisible()
+  await expect(later.getByRole('button', { name: 'Gekocht ✓' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Heute' }).first().click()
+  await expect(card).toBeVisible()
+
+  await cookButton.click()
+  // The celebration: confetti, the pill with Topfbert, the toast with its actions.
+  await expect(confetti(page).first()).toBeAttached()
+  await expect(gekochtPill(page)).toBeVisible()
+  const toast = page.getByRole('status').filter({ hasText: 'Gekocht ✓' })
+  await expect(toast.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
+  await expect(toast.getByRole('button', { name: 'Kommentieren' })).toBeVisible()
+  // The tick, and the Planned Dish stays on its day.
+  await expect(card.locator('[data-cooked-tick]')).toBeVisible()
+  await expect(card.getByRole('link')).toHaveAttribute('aria-label', `Linsensuppe, ${de.week.weekday(today())}, gekocht`)
+  await expect(plannedTitles(dayOf(page, today()))).toHaveText(['Linsensuppe'])
+  // No second Cooking from the button while it lingers.
+  await expect(card.locator('[data-cook-action]')).toHaveAttribute('inert', '')
+  // The Dish went into Gekocht.
+  await radio(page, 'Spalten').click()
+  await expect(titles(page, 'Gekocht')).toHaveText(['Linsensuppe'])
+  await expect(column(page, 'Gekocht').getByText('1× gekocht')).toBeVisible()
+  await radio(page, 'Woche').click()
+
+  // Undo: the Cooking goes, the tick fades, the button comes back.
+  await toast.getByRole('button', { name: 'Rückgängig' }).click()
+  await expect(card.locator('[data-cooked-tick]')).toHaveCount(0)
+  await expect(cookButton).toBeVisible()
+  await radio(page, 'Spalten').click()
+  await expect(titles(page, 'Ideen')).toContainText(['Linsensuppe'])
+  await expect(titles(page, 'Gekocht')).toHaveCount(0)
+  await radio(page, 'Woche').click()
+
+  // Again: once cooked, the button goes after a moment; the tick stays, also after a reload.
+  await cookButton.click()
+  await expect(card.locator('[data-cooked-tick]')).toBeVisible()
+  await expect(cookButton).toHaveCount(0, { timeout: 8000 })
+  await expect(card.locator('[data-cooked-tick]')).toBeVisible()
+  await reloadHydrated(page)
+  await expect(weekPlan(page)).toBeVisible()
+  await expect(card.locator('[data-cooked-tick]')).toBeVisible()
+  await expect(cookButton).toHaveCount(0)
+})
+
+test('a Cooking recorded anywhere ticks the Planned Dish of that day: from the card today, and a past day\'s too', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Wochentick')
+  const stew = await addDish(page, boardId, 'Bohneneintopf')
+  const rice = await addDish(page, boardId, 'Reispfanne')
+  await planOn(page, boardId, stew, today())
+  const past = addDays(today(), -2)
+  await planOn(page, boardId, rice, past)
+  await seedCookingDaysAgo(boardId, 'Reispfanne', 2)
+  await gotoHydrated(page, `/b/${boardId}`)
+
+  // From the card in the Columns.
+  await page.getByRole('button', { name: 'Gekocht ✓: „Bohneneintopf“' }).click()
+  await expect(titles(page, 'Gekocht')).toHaveText(['Bohneneintopf'])
+  await radio(page, 'Woche').click()
+  const todays = page.locator('[data-planned-card]').filter({ hasText: 'Bohneneintopf' })
+  await expect(todays.locator('[data-cooked-tick]')).toBeVisible()
+  await expect(todays.getByRole('button', { name: 'Gekocht ✓' })).toHaveCount(0, { timeout: 8000 })
+
+  // A Cooking two days ago ticks the Planned Dish on that day, and it has no button.
+  if (weekStart(past) !== weekStart(today())) await page.getByRole('button', { name: 'Vorherige Woche' }).click()
+  const earlier = page.locator('[data-planned-card]').filter({ hasText: 'Reispfanne' })
+  await expect(plannedTitles(dayOf(page, past))).toHaveText(['Reispfanne'])
+  await expect(earlier.locator('[data-cooked-tick]')).toBeVisible()
+  await expect(earlier.getByRole('button', { name: 'Gekocht ✓' })).toHaveCount(0)
+})
+
+test('on a phone, today\'s Planned Dish is taller with "Gekocht ✓" and shortens once cooked; the cook is set from the cook picker sheet', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Wochentelefonkochen')
+  const dishId = await addDish(page, boardId, 'Gemüsepfanne')
+  await planOn(page, boardId, dishId, today())
+  const me = (await boardMembers(page, boardId)).find(m => m.isYou)!
+  await openWeek(page, boardId)
+
+  const card = page.locator('[data-planned-card]').filter({ hasText: 'Gemüsepfanne' })
+  await expect(card).toBeVisible()
+  expect((await card.boundingBox())!.height).toBeGreaterThan(90)
+
+  await card.getByRole('button', { name: 'Mehr zu Gemüsepfanne' }).click()
+  await page.getByRole('dialog', { name: 'Gemüsepfanne' }).getByRole('menuitem', { name: 'Wer kocht?' }).click()
+  await page.getByRole('dialog', { name: 'Wer kocht?' }).getByRole('radio', { name: new RegExp(me.name) }).click()
+  await expect(card.getByRole('button', { name: `Kocht: ${me.name}. Ändern` })).toBeVisible()
+
+  await card.getByRole('button', { name: 'Gekocht ✓' }).click()
+  await expect(card.locator('[data-cooked-tick]')).toBeVisible()
+  await expect(card.getByRole('button', { name: 'Gekocht ✓' })).toHaveCount(0, { timeout: 8000 })
+  await expect.poll(async () => (await card.boundingBox())!.height, { timeout: 5000 }).toBeLessThan(75)
+  // The cook stays.
+  await expect(card.getByRole('button', { name: `Kocht: ${me.name}. Ändern` })).toBeVisible()
 })

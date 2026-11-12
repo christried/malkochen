@@ -798,7 +798,7 @@ export const de = {
     // "+" on a day.
     planOn: (day: string) => `Gericht für ${weekday(day)} einplanen`,
     // A Planned Dish's link to its Dish detail, and its menu button.
-    plannedDish: (title: string, day: string) => `${title}, ${weekday(day)}`,
+    plannedDish: (title: string, day: string, cook?: string | null, cooked?: boolean) => `${title}, ${weekday(day)}${cook ? `, kocht ${cook}` : ''}${cooked ? ', gekocht' : ''}`,
     more: (title: string) => `Mehr zu ${title}`,
     // An empty week; a past one offers nothing to plan.
     emptyTitle: 'Die Woche ist noch frei.',
@@ -823,6 +823,18 @@ export const de = {
     removed: 'Aus dem Plan genommen.',
     // Said to screen readers after a Planned Dish was moved.
     nowAt: (title: string, day: string, place: number, total: number) => `${title}, jetzt am ${weekday(day)} an Stelle ${place} von ${total}.`,
+    // "Einplanen" in the Dish detail, and the toast after it (with "Rückgängig").
+    plan: 'Einplanen',
+    planned: (day: string, today: string) => `Für ${dayPhrase(day, today)} eingeplant.`,
+    // Who cooks a Planned Dish: the picker (a title, and the line under it),
+    // the cook's picture as a button, and what is said to screen readers.
+    whoCooks: 'Wer kocht?',
+    whoCooksOn: (title: string, day: string) => `${title} am ${weekday(day)}`,
+    leaveOpen: 'Offen lassen',
+    you: 'du',
+    cookButton: (name: string) => `Kocht: ${name}. Ändern`,
+    cooksNow: (name: string) => `${name} kocht jetzt.`,
+    cooksNobody: 'Niemand kocht mehr fest.',
   },
   // public/offline.html repeats the first three, for the service worker,
   // and has its own copy of "malkochen ist gerade nicht erreichbar". The

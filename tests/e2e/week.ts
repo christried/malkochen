@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Locator, Page } from '@playwright/test'
+import pg from 'pg'
 import { addDays, weekStart } from '../../app/board/week-days'
 import { berlinDay } from '../../app/strings/intl'
 import { expect } from './fixtures'
@@ -52,4 +53,32 @@ export async function mouseDrag(page: Page, from: Locator, to: { x: number, y: n
   await page.mouse.move(to.x, to.y, { steps: 14 })
   await page.mouse.up()
   await expect(page.getByTestId('drag-planned')).toHaveCount(0)
+}
+
+// Who cooks a Planned Dish, set through the API (null clears it).
+export async function setCook(page: Page, plannedId: string, cookId: string | null) {
+  const res = await page.request.put(`/api/planned-dishes/${plannedId}/cook`, { data: { cookId } })
+  expect(res.status()).toBe(200)
+}
+
+// The Board's Members, as the signed-in user reads them.
+export async function boardMembers(page: Page, boardId: string): Promise<{ id: string, name: string, isYou: boolean }[]> {
+  return ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { members: { id: string, name: string, isYou: boolean }[] }).members
+}
+
+// A Cooking of the Dish `daysAgo` days back, put straight into the test
+// database: the UI only records one dated now.
+export async function seedCookingDaysAgo(boardId: string, title: string, daysAgo: number) {
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+  try {
+    await client.query(
+      `insert into cooking (dish_id, cooked_at)
+       select d.id, now() - make_interval(days => $3::int) from dish d where d.board_id = $1 and d.title = $2`,
+      [boardId, title, daysAgo],
+    )
+  }
+  finally {
+    await client.end()
+  }
 }

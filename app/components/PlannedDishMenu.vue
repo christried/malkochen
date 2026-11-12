@@ -3,8 +3,8 @@
 // it to another day, up or down within its day, or take it off the plan. The
 // Dish stays on the Board, so taking it off asks nothing; the toast offers
 // "Rückgängig". "Nach oben" is off on the day's first, "Nach unten" on its
-// last; both still work on a past day. "Wer kocht?" comes first (the
-// `before` slot) with the next ticket (#518).
+// last; both still work on a past day. "Wer kocht?" comes first and opens
+// the CookPicker.
 //
 // A menu (WAI-ARIA APG): the arrows go round the rows, Home and End jump,
 // Enter or Space choose.
@@ -15,6 +15,7 @@ defineProps<{
   last: boolean
 }>()
 const emit = defineEmits<{
+  cook: []
   move: []
   up: []
   down: []
@@ -52,7 +53,32 @@ defineExpose({ focusFirst })
       class="mt-3 flex flex-col"
       @keydown="onKeydown"
     >
-      <slot name="before" />
+      <button
+        type="button"
+        role="menuitem"
+        class="item"
+        data-menu-cook
+        @click="emit('cook')"
+      >
+        <span class="icon">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          ><circle
+            cx="12"
+            cy="8.5"
+            r="3.5"
+          /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
+        </span>
+        {{ t.week.whoCooks }}
+      </button>
       <button
         type="button"
         role="menuitem"

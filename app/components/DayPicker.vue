@@ -8,7 +8,7 @@ import { addWeeks, isCurrentWeek, isPastDay, weekDays, weekStart } from '~/board
 // (never earlier than today's), past days aren't offered, and ‹ › browse the
 // weeks to come (‹ is off on the current week). A Planned Dish being moved
 // shows its day as "Liegt hier". "Auf anderen Tag legen" opens it for a
-// Planned Dish; "Einplanen" in the Dish detail will (#518).
+// Planned Dish; "Einplanen" in the Dish detail opens it from today's week.
 const props = defineProps<{
   // Whether the picker is showing: it starts afresh each time.
   open: boolean

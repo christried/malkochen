@@ -159,6 +159,34 @@ watch(moving, async (isMoving) => {
   dialog.value?.querySelector<HTMLElement>('[data-move]')?.focus()
 })
 
+// "Einplanen" (#518): the day picker, from today on and reaching the weeks to
+// come. A day picked plans the Dish at the end of it, with a toast offering
+// "Rückgängig"; the detail itself shows nothing of the plan.
+const today = useToday()
+const planning = reactive({ open: false, anchor: null as HTMLElement | null })
+const { showPlanResult } = usePlanResult(shown => (toast.value = shown))
+function onPlan(anchor: HTMLElement) {
+  Object.assign(planning, { open: true, anchor })
+}
+function planOn(day: string) {
+  const dishId = located.value?.dish.id
+  planning.open = false
+  if (!dishId) return
+  hapticConfirm()
+  const result = boardModule.planDish(dishId, day)
+  if (!result) return
+  showPlanResult(result, {
+    text: t.week.planned(day, today.value),
+    undo: () => boardModule.unplanDish(result.plannedDish.id),
+  })
+}
+const dishesOn = (day: string) => boardModule.weekPlan([day])[day]?.map(entry => entry.dish) ?? []
+watch(() => planning.open, async (isOpen) => {
+  if (isOpen) return
+  await nextTick()
+  dialog.value?.querySelector<HTMLElement>('[data-plan-dish]')?.focus()
+})
+
 // "Kopieren" (#402): a sheet over the detail with the Boards to copy the Dish
 // to. The Copy is made there; this Board doesn't change. The toast offers
 // "Öffnen", which goes to the Copy on that Board.
@@ -383,6 +411,7 @@ watch(editing, async (isEditing) => {
           @move="moving = true"
           @delete="onDelete"
           @cook="origin => actOnDish(boardModule.cookDish, { origin })"
+          @plan="onPlan"
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
           @comment="showComment"
           @vote="showVote"
@@ -426,6 +455,23 @@ watch(editing, async (isEditing) => {
           />
         </NeedsNet>
       </AppSheet>
+      <PickerSurface
+        v-model:open="planning.open"
+        :title="t.week.pickDay"
+        :close-label="t.dish.closeMenu"
+        :anchor="planning.anchor"
+        :width="370"
+      >
+        <DayPicker
+          v-if="located"
+          :open="planning.open"
+          :subtitle="located.dish.title"
+          :today="today"
+          :from="today"
+          :dishes-on="dishesOn"
+          @pick="planOn"
+        />
+      </PickerSurface>
       <AppSheet
         v-model:open="copying"
         :title="t.detail.copyTo"
