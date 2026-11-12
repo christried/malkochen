@@ -102,12 +102,15 @@ test('"Rezept finden" ends in a Recipe in the open detail, which is edited like 
   expect((await find.boundingBox())!.height).toBe((await add.boundingBox())!.height)
   expect((await find.boundingBox())!.width).toBe((await add.boundingBox())!.width)
 
-  const scrolled = await detail.evaluate(el => el.scrollTop)
   await find.click()
 
   // The search card is there for as long as it runs; "Rezept hinzufügen" waits.
   const searching = detail.locator('[data-recipe-searching]')
   await expect(searching).toBeVisible()
+  // Where the detail is scrolled while it searches: the click scrolls the
+  // button into view first where it starts below the fold (CI's fonts), so
+  // only from here on must nothing move it.
+  const scrolled = await detail.evaluate(el => el.scrollTop)
   await expect(searching).toHaveAttribute('role', 'status')
   await expect(searching).toContainText('Rezept wird gesucht')
   await expect(searching).toContainText('Das dauert meist ein paar Sekunden, manchmal auch eine halbe Minute.')
