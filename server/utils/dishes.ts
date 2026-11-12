@@ -99,6 +99,9 @@ export interface NewDish {
   // image, always the centre.
   imageFocus?: ImageFocus
   placeholder: Placeholder
+  // The Recipe a Copy takes along (copies.ts), with the link it was found
+  // at. Any other new Dish starts without one.
+  recipe?: Recipe | null
 }
 
 // Board order within a Column: by position, and a tie (two Dishes added at
@@ -150,10 +153,15 @@ function selectDishes() {
 
 type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
 
+// The Recipe of these lines, found at `link`; null if there are none.
+export function recipeOf(ingredients: string[], steps: string[], link: string | null): Recipe | null {
+  return ingredients.length > 0 || steps.length > 0 ? { ingredients, steps, link } : null
+}
+
 function toView({ columnId: _, sourceLink, sourceKind, recipeIngredients, recipeSteps, recipeLink, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
   return {
     ...row,
-    recipe: recipeIngredients.length > 0 || recipeSteps.length > 0 ? { ingredients: recipeIngredients, steps: recipeSteps, link: recipeLink } : null,
+    recipe: recipeOf(recipeIngredients, recipeSteps, recipeLink),
     imageFocus: { x: imageFocusX, y: imageFocusY },
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
@@ -980,9 +988,10 @@ export async function dishWithSource(boardId: string, canonicalLink: string, ear
   return found ?? null
 }
 
-// The Board's Dishes whose title, Creator or Caption contains the query,
-// ignoring case (PRD story 36), in Board order: Column by Column, each in its
-// own order. Deleted Dishes don't count.
+// The Board's Dishes whose title, Creator, Caption or one of whose
+// Ingredients contains the query, ignoring case (PRD story 36), in Board
+// order: Column by Column, each in its own order. Steps aren't searched
+// (#495). Deleted Dishes don't count.
 export async function searchDishes(boardId: string, query: string): Promise<DishView[]> {
   const pattern = `%${escapeLike(query)}%`
   const rows = await selectDishes()
@@ -990,7 +999,12 @@ export async function searchDishes(boardId: string, query: string): Promise<Dish
     .where(and(
       eq(dish.boardId, boardId),
       isNull(dish.deletedAt),
-      or(ilike(dish.title, pattern), ilike(dish.creator, pattern), ilike(dish.caption, pattern)),
+      or(
+        ilike(dish.title, pattern),
+        ilike(dish.creator, pattern),
+        ilike(dish.caption, pattern),
+        sql`exists (select 1 from unnest(${dish.recipeIngredients}) as ingredient where ingredient ilike ${pattern})`,
+      ),
     ))
     .orderBy(asc(boardColumn.position), asc(dish.position), desc(dish.createdAt), desc(dish.id))
   return toViews(rows)
@@ -1038,6 +1052,7 @@ export async function addDish(
       imageFocusX: focus.x,
       imageFocusY: focus.y,
       placeholder: input.placeholder,
+      ...input.recipe && { recipeIngredients: input.recipe.ingredients, recipeSteps: input.recipe.steps, recipeLink: input.recipe.link },
       addedBy: adder.id,
     }),
     // Recorded whatever happens: a Dish not added fails the whole step.
@@ -1068,7 +1083,7 @@ export async function addDish(
     creator: input.creator,
     caption: input.caption,
     playableVideo: input.playableVideo,
-    recipe: null,
+    recipe: input.recipe ?? null,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

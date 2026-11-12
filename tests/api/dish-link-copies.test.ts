@@ -5,6 +5,7 @@ import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, browser, signIn, type Caller } from './client'
 import { watchEvents } from './event-log'
 import { startPushService, type PushService } from './push-service'
+import { foundRecipeAt } from './time-travel'
 
 // Copy from a Dish Link (#403; CONTEXT.md: Dish Link, Copy). A signed-in user
 // with the link copies the Dish to one of their Boards where they may add
@@ -43,6 +44,7 @@ interface Dish {
   source: { link: string, kind: string } | null
   placement?: { boardId: string, columnId: string, index: number }
   addedBy: { id: string } | null
+  recipe: { ingredients: string[], steps: string[], link: string | null } | null
 }
 
 const getBoard = (caller: Caller, id: string): Promise<Board> => caller.fetch(`/api/boards/${id}`).then(res => res.json())
@@ -224,4 +226,18 @@ test('a Member of the Dish’s Board gets its id as ownBoard; a non-Member and a
   expect(await view(ada)).toMatchObject({ ownBoard: source.id })
   expect(await view(grace)).not.toHaveProperty('ownBoard')
   expect(await view(anonymous())).not.toHaveProperty('ownBoard')
+})
+
+test('a Copy from a Dish Link takes the Recipe along, in its order, with the link it was found at (#495)', async () => {
+  const { source, target, ada, grace } = await boards('Rezept')
+  const ingredients = ['250 g rote Linsen', '1 Zwiebel', '1 l Gemüsebrühe']
+  const steps = ['Zwiebel würfeln und anbraten.', 'Linsen und Brühe dazu.', 'Zwanzig Minuten köcheln.']
+  const original = await addDish(ada, source.id, { title: 'Linsensuppe mit Rezept' })
+  expect((await patch(ada, `/api/dishes/${original.id}`, { recipe: { ingredients, steps } })).status).toBe(200)
+  await foundRecipeAt(original.id, 'https://omas-kueche.example/linsensuppe')
+
+  const res = await copyFromLink(grace, await linkOf(ada, original.id), target.id)
+
+  expect(res.status).toBe(201)
+  expect((await res.json() as { dish: Dish }).dish.recipe).toEqual({ ingredients, steps, link: 'https://omas-kueche.example/linsensuppe' })
 })

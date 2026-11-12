@@ -98,3 +98,25 @@ test('an empty query is refused', async () => {
   for (const q of ['', '   ']) expect((await search(caller, board.id, q)).status).toBe(400)
   expect((await caller.fetch(`/api/boards/${board.id}/dishes`)).status).toBe(400)
 })
+
+function setRecipe(caller: Caller, dishId: string, recipe: { ingredients: string[], steps: string[] }) {
+  return caller.fetch(`/api/dishes/${dishId}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ recipe }),
+  })
+}
+
+test('finds Dishes by a word in their Ingredients, ignoring case; not by their Steps (#495)', async () => {
+  const caller = await margaret()
+  const board = await landingBoard(caller)
+  const hummus = await addDish(caller, 'Hummus wie in Tel Aviv')
+  const salad = await addDish(caller, 'Bunter Salat')
+  expect((await setRecipe(caller, hummus.id, { ingredients: ['2 EL Tahini', '1 Dose Augenbohnen'], steps: ['Alles fein pürieren.'] })).status).toBe(200)
+  expect((await setRecipe(caller, salad.id, { ingredients: ['1 Gurke'], steps: ['Augenbohnen wären hier falsch.', 'Schnippeln.'] })).status).toBe(200)
+
+  expect((await found(caller, board.id, 'augenBOHNEN')).map(d => d.id)).toEqual([hummus.id])
+  expect(await found(caller, board.id, 'pürieren')).toEqual([])
+  // One Ingredient is matched at a time, as a title is: no match across two.
+  expect(await found(caller, board.id, 'Tahini 1 Dose')).toEqual([])
+})
