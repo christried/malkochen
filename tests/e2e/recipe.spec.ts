@@ -290,9 +290,12 @@ test('a Recipe taller than two screens gets a sticky switch between its lists, w
   expect(await stepsTop()).toBeGreaterThan(90)
   await switcher.getByRole('button', { name: /^Zutaten/ }).click()
   await expect(switcher.getByRole('button', { name: /^Zutaten/ })).toHaveAttribute('aria-pressed', 'true')
+  // The jump is a smooth scroll: once it has landed, so it can't carry on over the scroll below.
+  const ingredientsTop = () => detail.locator('[data-recipe-list="ingredients"]').evaluate(el => Math.round(el.getBoundingClientRect().top))
+  await expect.poll(ingredientsTop, { timeout: 5000 }).toBeLessThan(140)
 
-  // Gone with the end of the Recipe (a short screen, so the Verlauf under it is enough to scroll it past the switch).
-  await scrollTo('[data-dish-history]', 0)
+  // Gone with the end of the Recipe: at the bottom of the detail, the end of Schritte is far above the switch.
+  await detail.evaluate((el) => { el.scrollTop = el.scrollHeight })
   await expect(shown).toHaveCount(0)
 
   // A short Recipe has none.
