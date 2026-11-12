@@ -26,6 +26,10 @@ module.exports = {
         'sage-ink': 'var(--color-sage-ink)',
         'paste-tint': 'var(--color-paste-tint)',
         'search-tint': 'var(--color-search-tint)',
+        'today-tint': 'var(--color-today-tint)',
+        'day-fill': 'var(--color-day-fill)',
+        'view-track': 'var(--color-view-track)',
+        'match-tint': 'var(--color-match-tint)',
       },
       fontFamily: { display: ['Petrona', 'Georgia', 'serif'], ui: ['Figtree', 'system-ui', 'sans-serif'], mono: ['ui-monospace', 'Menlo', 'monospace'] },
       fontSize: {
@@ -60,6 +64,8 @@ module.exports = {
         'tab-1': 'var(--radius-tab-1)',
         'tab-2': 'var(--radius-tab-2)',
         'tab-3': 'var(--radius-tab-3)',
+        'planned': 'var(--radius-planned)',
+        'planned-thumb': 'var(--radius-planned-thumb)',
       },
       boxShadow: {
         'card': 'var(--shadow-card)',
@@ -68,6 +74,7 @@ module.exports = {
         'dialog': 'var(--shadow-dialog)',
         'fab': 'var(--shadow-fab)',
         'neu': 'var(--shadow-neu)',
+        'small': 'var(--shadow-small)',
       },
       transitionDuration: {
         'tap': 'var(--dur-tap)',
@@ -95,8 +102,10 @@ module.exports = {
         'idle': 'var(--ease-idle)',
         'search': 'var(--ease-search)',
       },
+      height: { 'pd': 'var(--size-pd)', 'pd-today': 'var(--size-pd-today)', 'pd-desktop': 'var(--size-pd-desktop)' },
+      gridTemplateColumns: { 'week': 'repeat(7, minmax(0, 1fr))' },
       screens: { tablet: '768px', desktop: '1200px' },
-      zIndex: { 'board': '0', 'tabs': '2', 'fab': '6', 'drag': '20', 'scrim': '30', 'sheet': '31', 'dialog': '40', 'toast': '50' }
+      zIndex: { 'board': '0', 'tabs': '2', 'fab': '6', 'drag': '20', 'scrim': '30', 'sheet': '31', 'dialog': '40', 'toast': '50', 'strip': '19' }
     }
   },
   // Not in the handoff's copy: tokens.json → type.overline is
