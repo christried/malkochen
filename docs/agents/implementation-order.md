@@ -455,11 +455,11 @@ From the grilling session on 2026-11-12 (`CONTEXT.md` → Week Plan, Planned Dis
 
 ### Phase 27: Shopping List (#526)
 
-From the grilling session on 2026-11-12 ( → Shopping List, Shopping Item; ADR 0015). Each ticket is a sub-issue of #526, with GitHub blocking links as well as its  section. The API tickets and the Board module come first and don't wait for the design; the screen tickets (#536, #537) wait for the handoff (#527).
+From the grilling session on 2026-11-12 (`CONTEXT.md` → Shopping List, Shopping Item; ADR 0015). Each ticket is a sub-issue of #526, with GitHub blocking links as well as its `## Blocked by` section. The API tickets and the Board module come first and don't wait for the design; the screen tickets (#536, #537) wait for the handoff (#527).
 
 | # | Ticket | Note |
 |---|---|---|
-| #527 | Design handoff for the Shopping List screens | : skip, the user does it. Holds the Claude Design prompt. Blocks #536 |
+| #527 | Design handoff for the Shopping List screens | `ready-for-human`: skip, the user does it. Holds the Claude Design prompt. Blocks #536 |
 | #530 | Shopping Items on a Board | Migration. API only. Datenschutz wording OKed by the user before merge |
 | #531 | Putting a Dish on the Shopping List | After #530. API only |
 | #532 | Putting a week on the Shopping List | After #531. API only |
@@ -467,7 +467,7 @@ From the grilling session on 2026-11-12 ( → Shopping List, Shopping Item; ADR 
 | #534 | The Shopping List in the Board module | After #533. Unsent Changes |
 | #536 | The Shopping List view | After #527 and #534 |
 | #537 | Auf die Einkaufsliste and Woche auf die Einkaufsliste | After #536 |
-| #538 | Changelog entry for this spec | Blocked by every other ticket of #526. Under , no Version |
+| #538 | Changelog entry for this spec | Blocked by every other ticket of #526. Under `[Unreleased]`, no Version |
 
 ## Keeping this file current
 
