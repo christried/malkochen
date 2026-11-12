@@ -12,8 +12,9 @@ import {
   RECIPE_CAPTION,
   RECIPE_TIKTOK,
 } from '../support/source-lookup-fixtures'
-import { OPERATOR, TEST_ANTHROPIC_API_KEY } from '../support/test-auth-env'
+import { TEST_ANTHROPIC_API_KEY } from '../support/test-auth-env'
 import { postDish } from './boards'
+import { switchRecipeFinder, withoutSearchAfterAdding } from './recipe-finder-switch'
 import { signIn, type Caller } from './client'
 import { everyEventAsText, watchEvents } from './event-log'
 import { startApiServer, type RunningServer } from './server-boot'
@@ -76,9 +77,7 @@ beforeEach(async () => {
 // Signs in, with the Recipe Finder switched on by the Operator.
 async function finderUser(email: string, profile?: { name: string }): Promise<Caller> {
   const caller = await signIn(email, profile)
-  const { id } = await (await caller.fetch('/api/me')).json() as { id: string }
-  const operator = await signIn(OPERATOR)
-  expect((await send(operator, 'PUT', `/api/admin/recipe-finder/${id}`, { on: true })).status).toBe(200)
+  await switchRecipeFinder(caller, true)
   return caller
 }
 
@@ -100,20 +99,23 @@ async function sharedBoard(owner: Caller, name: string, others: Caller[] = []): 
 // A Dish added the way the app adds one: Source Lookup reads the link, and
 // its Source Ticket vouches for the Caption it read, which the Dish keeps.
 async function addDish(caller: Caller, boardId: string, title: string, link: string, { captioned = true }: { captioned?: boolean } = {}): Promise<Dish> {
-  const lookedUp = await caller.fetch(`/api/source-lookup?link=${encodeURIComponent(link)}`)
-  expect(lookedUp.status).toBe(200)
-  const read = await lookedUp.json() as { canonicalLink: string, kind: string, caption: string | null, sourceTicket: string }
-  const res = await postDish(caller, boardId, {
-    title,
-    placeholder: 'bowl',
-    source: { link: read.canonicalLink, kind: read.kind },
-    caption: read.caption,
-    sourceTicket: read.sourceTicket,
+  // So no search starts by itself after adding (#503): "Rezept finden" is what is tested.
+  return withoutSearchAfterAdding(caller, async () => {
+    const lookedUp = await caller.fetch(`/api/source-lookup?link=${encodeURIComponent(link)}`)
+    expect(lookedUp.status).toBe(200)
+    const read = await lookedUp.json() as { canonicalLink: string, kind: string, caption: string | null, sourceTicket: string }
+    const res = await postDish(caller, boardId, {
+      title,
+      placeholder: 'bowl',
+      source: { link: read.canonicalLink, kind: read.kind },
+      caption: read.caption,
+      sourceTicket: read.sourceTicket,
+    })
+    expect(res.status, await res.clone().text()).toBe(201)
+    const dish = await res.json() as Dish
+    expect(dish.caption !== null, 'the Dish keeps the Caption Source Lookup read').toBe(captioned)
+    return dish
   })
-  expect(res.status, await res.clone().text()).toBe(201)
-  const dish = await res.json() as Dish
-  expect(dish.caption !== null, 'the Dish keeps the Caption Source Lookup read').toBe(captioned)
-  return dish
 }
 
 const findRecipe = (caller: Caller, dish: Dish) => send(caller, 'POST', `/api/dishes/${dish.id}/find-recipe`)

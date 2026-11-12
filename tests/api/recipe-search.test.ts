@@ -1,6 +1,7 @@
 import { beforeEach, expect, test } from 'vitest'
 import type { AdminRecipeFinderUser } from '../../shared/recipe-finder'
 import { postDish } from './boards'
+import { switchRecipeFinder, withoutSearchAfterAdding } from './recipe-finder-switch'
 import { anonymous, signIn, type Caller } from './client'
 import { everyEventAsText, watchEvents } from './event-log'
 import { backdateRecipeSearch, endLimitWindow, endLimitWindows, useUpLimit } from './time-travel'
@@ -57,9 +58,7 @@ beforeEach(() => endLimitWindows('recipe-search'))
 // Signs in, with the Recipe Finder switched on by the Operator.
 async function finderUser(email: string): Promise<Caller> {
   const caller = await signIn(email)
-  const { id } = await (await caller.fetch('/api/me')).json() as { id: string }
-  const operator = await signIn(OPERATOR)
-  expect((await send(operator, 'PUT', `/api/admin/recipe-finder/${id}`, { on: true })).status).toBe(200)
+  await switchRecipeFinder(caller, true)
   return caller
 }
 
@@ -79,9 +78,12 @@ async function sharedBoard(owner: Caller, name: string, others: Caller[] = []): 
 }
 
 async function addDish(caller: Caller, boardId: string, title: string, source: string | null = RECIPE_BLOG): Promise<Dish> {
-  const res = await postDish(caller, boardId, { title, placeholder: 'bowl', ...source && { source: { link: source, kind: 'blog' } } })
-  expect(res.status, await res.clone().text()).toBe(201)
-  return res.json()
+  // So no search starts by itself after adding (#503): "Rezept finden" is what is tested.
+  return withoutSearchAfterAdding(caller, async () => {
+    const res = await postDish(caller, boardId, { title, placeholder: 'bowl', ...source && { source: { link: source, kind: 'blog' } } })
+    expect(res.status, await res.clone().text()).toBe(201)
+    return res.json()
+  })
 }
 
 const findRecipe = (caller: Caller, dish: Dish) => send(caller, 'POST', `/api/dishes/${dish.id}/find-recipe`)

@@ -15,3 +15,19 @@ export async function switchRecipeFinder(caller: Caller, on: boolean): Promise<v
   })
   expect(res.status).toBe(200)
 }
+
+// Runs `add` (a Dish added by the caller) with the Recipe Finder switched off
+// for them if it was on, and on again after. A Dish a Recipe Finder user adds
+// with a Source is searched by itself after adding (#503), which the tests of
+// "Rezept finden" and the Recipe Finder's reading don't want to start.
+export async function withoutSearchAfterAdding<T>(caller: Caller, add: () => Promise<T>): Promise<T> {
+  const { state } = await (await caller.fetch('/api/me/recipe-finder')).json() as { state: string }
+  if (state !== 'on') return add()
+  await switchRecipeFinder(caller, false)
+  try {
+    return await add()
+  }
+  finally {
+    await switchRecipeFinder(caller, true)
+  }
+}
