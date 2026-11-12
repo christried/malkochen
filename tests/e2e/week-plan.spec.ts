@@ -362,8 +362,10 @@ test('"Einplanen" in the Dish detail plans the Dish on the chosen day, today or 
   await expect(picker).toBeHidden()
   await expect(page.getByText('Für heute eingeplant.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Rückgängig' })).toBeVisible()
-  // The detail shows nothing of the plan.
-  await expect(detail.getByText(/eingeplant/)).toHaveCount(0)
+  // The detail shows nothing of the plan: the toast, which lies in the
+  // dialog to show above it, is the only "eingeplant".
+  await expect(detail.getByText(/eingeplant/)).toHaveCount(1)
+  await expect(detail.locator('[data-toast]').getByText(/eingeplant/)).toHaveCount(1)
 
   // A day of a later week: ‹ is off on this week, › reaches the next.
   await detail.getByRole('button', { name: 'Einplanen' }).click()
