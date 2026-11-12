@@ -330,6 +330,41 @@
       "when": 1794252901621,
       "tag": "0046_tiny_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1794424858148,
+      "tag": "0047_bitter_mauler",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1794426758112,
+      "tag": "0048_wild_wilson_fisk",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794467240286,
+      "tag": "0049_heavy_baron_strucker",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794502657949,
+      "tag": "0050_planned_dish",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1794504365080,
+      "tag": "0051_planned_dish_cook",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { ALL_PERMISSIONS, type Permissions } from '../../shared/permissions'
 import type { Placeholder } from '../../shared/placeholders'
+import type { RecipeSearch } from '../../shared/recipe'
 import type { SourceKind } from '../source-lookup'
 import type { EventDetails, EventKind } from '../utils/events'
 import type { UsageKind } from '../utils/usage'
@@ -149,6 +150,17 @@ export const snackbert = pgTable('snackbert', {
   // Snackbert's last answer to whether their email address has an account, and when it was asked.
   hasAccount: boolean('has_account').notNull(),
   checkedAt: timestamp('checked_at', { withTimezone: true }).notNull(),
+})
+
+// The Recipe Finder (CONTEXT.md, #497, ADR 0013): one row per user who asked
+// for it or has it (server/utils/recipe-finder.ts). Off is no row, as for
+// every new user.
+export const recipeFinder = pgTable('recipe_finder', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  // Switched on by the Operator; until then, asked.
+  switchedOn: boolean('switched_on').notNull().default(false),
+  // When they asked; null when the Operator switched it on unasked.
+  askedAt: timestamp('asked_at', { withTimezone: true }),
 })
 
 // ---------------------------------------------------------------------------
@@ -323,6 +335,21 @@ export const dish = pgTable('dish', {
   // else. Null when not known yet (every Dish from before #394 until #395
   // fills it in), or there is no Source.
   playableVideo: boolean('playable_video'),
+  // The Recipe (CONTEXT.md): its Ingredients and its Steps, each a plain line
+  // of text, in their order. Both empty for a Dish without one.
+  recipeIngredients: text('recipe_ingredients').array().notNull().default(sql`'{}'::text[]`),
+  recipeSteps: text('recipe_steps').array().notNull().default(sql`'{}'::text[]`),
+  // The link the Recipe was found at when that isn't the Source itself
+  // (CONTEXT.md: Recipe Finder). Null for one a Member typed, and without a
+  // Recipe.
+  recipeLink: text('recipe_link'),
+  // Where the Recipe Finder's search for the Recipe stands (#500;
+  // shared/recipe.ts RecipeSearch): 'looking' while one runs, 'none' once it
+  // found nothing for the current Source. A change of the Source clears it.
+  recipeSearch: text('recipe_search').$type<RecipeSearch>(),
+  // When the current search was claimed: one still 'looking' long after
+  // counts as over (server/utils/recipe-search.ts).
+  recipeSearchAt: timestamp('recipe_search_at', { withTimezone: true }),
   // The image: a copy in the Image Store if there is one, else the
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),
@@ -379,6 +406,32 @@ export const cooking = pgTable('cooking', {
   // recorded it removes it for good instead.
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, t => [index('cooking_dish_id_idx').on(t.dishId, t.cookedAt)])
+
+// ---------------------------------------------------------------------------
+// Planned Dish (CONTEXT.md: Week Plan, Planned Dish; ADR 0014): one Dish on
+// one day of its Board's Week Plan. It belongs to a Board through its Dish,
+// as a Cooking does, so it has no board_id: a Dish moved to another Board
+// takes none of them along (a trigger, migration 0050), and archiving the
+// Dish hides them while the rows stay. A Dish may be planned on several days,
+// and twice on one day, so nothing is unique on Dish and day.
+
+export const plannedDish = pgTable('planned_dish', {
+  // Made on the device (ADR 0012), like other offline-made rows.
+  id: uuid('id').primaryKey().defaultRandom(),
+  dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
+  // The day, a calendar date in Europe/Berlin as 'YYYY-MM-DD'.
+  day: date('day', { mode: 'string' }).notNull(),
+  // Its place among the Board's Planned Dishes of that day (0, 1, 2…, or
+  // gaps after a Dish was archived: those keep theirs).
+  position: integer('position').notNull(),
+  // Who planned it; kept (as unknown) if their account is ever deleted.
+  plannedBy: text('planned_by').references(() => user.id, { onDelete: 'set null' }),
+  // Who cooks it, "Wer kocht": a Member of the Board, or nobody (null, the
+  // default). Cleared when they leave the Board, are removed from it or delete
+  // their account (this on delete set null).
+  cookId: text('cook_id').references(() => user.id, { onDelete: 'set null' }),
+  plannedAt: timestamp('planned_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [index('planned_dish_dish_id_idx').on(t.dishId)])
 
 // ---------------------------------------------------------------------------
 // Snackbert Reports (CONTEXT.md: Snackbert Report, #424): one row per Report a

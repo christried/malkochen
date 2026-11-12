@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,100..900;1,100..900&amp;family=Figtree:ital,wght@0,300..900;1,300..900&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#F7F6F2}a{color:#1F1E1C;text-decoration:none}a:hover{color:#9B32D8}</style></helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#F7B94A"></rect><rect x="24" y="28" width="52" height="46" rx="12" fill="#FFFFFF" stroke="#1F1E1C" stroke-width="3"></rect><rect x="24" y="28" width="52" height="13" rx="6" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="3"></rect><circle cx="50" cy="58" r="7" fill="#F7B94A" stroke="#1F1E1C" stroke-width="3"></circle></svg></template>
+<div style="max-width:1320px;margin:0 auto;padding:56px 36px 110px;font-family:'Figtree',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:72px">
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:28px">
+    <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:16px;font:600 12px ui-monospace,monospace"><a href="Malkochen.dc.html" style="color:#8A857D">← Übersicht</a><a href="Malkochen Recipes.dc.html" style="color:#8A857D">← R13 · Rezepte</a></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:4px 8px;border-radius:6px;background:#1F1E1C;color:#fff">R14</span><span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">WOCHENPLAN</span></div>
+      <span style="font:500 52px/1.02 'Petrona',Georgia,serif;letter-spacing:-.025em;text-wrap:balance;max-width:900px">Sieben Tage, eine Liste pro Tag, und wer heute kocht.</span>
+      <span style="font:italic 400 21px/1.35 'Petrona',Georgia,serif;color:#6F6B65;max-width:820px;text-wrap:pretty">Every screen and state of the brief, phone (360) and desktop (1280), light and dark. Switch the frame at the top. The frames are live: phone lists scroll, loops play.</span>
+    </div>
+    <div style="width:120px;height:129px"><dc-import name="Pose" pose="pointing" still="{{ rm }}" style="width:100%;height:100%" hint-size="120px,129px"></dc-import></div>
+  </div>
+
+  <div style="position:sticky;top:12px;z-index:20;align-self:flex-start;display:flex;flex-wrap:wrap;gap:10px;padding:8px;border-radius:24px;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);box-shadow:0 12px 28px -14px rgba(70,55,30,.3), 0 0 0 1px rgba(31,30,28,.08)">
+    <sc-for list="{{ ctrls }}" as="g" hint-placeholder-count="4">
+      <div style="display:flex;gap:2px;padding:3px;border-radius:18px;background:#EFEDE8">
+        <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="2"><span onClick="{{ o.go }}" style="height:32px;padding:0 13px;border-radius:15px;display:flex;align-items:center;font:600 13px/1 'Figtree',system-ui;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.l }}</span></sc-for>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="6">
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ sec.n }}</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">{{ sec.t }}</span></div>
+        <span style="font:15px/1.55 'Figtree',system-ui;color:#55524C;max-width:900px;text-wrap:pretty">{{ sec.d }}</span>
+      </div>
+      <sc-for list="{{ sec.states }}" as="s" hint-placeholder-count="3">
+        <div id="{{ s.id }}" data-card="1" style="display:flex;flex-wrap:wrap;gap:24px;padding:20px;border-radius:30px 26px 31px 27px;background:#fff;box-shadow:0 12px 28px -10px rgba(70,55,30,.14), 0 2px 6px rgba(70,55,30,.05)">
+          <div style="display:flex;flex-wrap:wrap;gap:18px">
+            <sc-for list="{{ s.frames }}" as="f" hint-placeholder-count="2">
+              <div data-screen-label="{{ f.label }}" style="display:flex;flex-direction:column;gap:8px">
+                <div style="position:relative;width:{{ s.bw }};height:{{ s.bh }};overflow:hidden;border-radius:{{ s.br }};background:#EFEDE8">
+                  <sc-if value="{{ s.on }}"><div style="position:absolute;left:0;top:0;width:{{ s.fw }};height:{{ s.fh }};transform:scale({{ s.z }});transform-origin:0 0"><dc-import name="WeekScreen" screen="{{ s.k }}" theme="{{ f.th }}" frame="{{ frame }}" still="{{ rm }}" spd="{{ spd }}" style="width:100%;height:100%" hint-size="100%,100%"></dc-import></div></sc-if>
+                </div>
+                <span style="font:500 11px ui-monospace,monospace;color:#8A857D">{{ f.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;min-width:280px;max-width:560px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:baseline;gap:10px"><a href="#{{ s.id }}" style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#EFEDE8">{{ s.id }}</a><span style="font:500 25px/1.1 'Petrona',Georgia,serif;letter-spacing:-.01em;text-wrap:balance">{{ s.t }}</span></div>
+            <span style="font:14.5px/1.55 'Figtree',system-ui;color:#3F3C37;text-wrap:pretty">{{ s.d }}</span>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:18px;background:#FBFAF6;border:1px solid rgba(31,30,28,.07)">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:600 10.5px/1 ui-monospace,monospace;letter-spacing:.06em;padding:4px 7px;border-radius:6px;background:{{ s.kindBg }};color:#1F1E1C">{{ s.kind }}</span></div>
+              <span style="font:13.5px/1.5 'Figtree',system-ui;color:#1F1E1C;text-wrap:pretty">{{ s.m }}</span>
+              <span style="font:13px/1.5 'Figtree',system-ui;color:#3F3C37;padding:8px 10px;border-radius:12px;background:#E9E4F7;text-wrap:pretty">Reduced motion: {{ s.r }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+  </sc-for>
+
+  <section style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">08</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">The empty week: Topfbert, no new art</span></div>
+      <span style="font:15px/1.55 'Figtree',system-ui;color:#55524C;max-width:900px;text-wrap:pretty">The empty week needs a quiet nudge towards one action, which is exactly what the R12 pointing pose was drawn for. So no new drawing: topfbert-pointing and its numbered layers, unmirrored (he points right, at the sentence and the button), with the Tour idle on the shared 6 s clock. Built in Vue from the layers, no video. layers.json gets a weekEmpty block with size and placement only.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px">
+      <div style="display:flex;align-items:flex-end;gap:22px;padding:22px;border-radius:26px;background:#fff">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:150px;height:150px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:color-mix(in oklch, #F7B94A 22%, #FFFFFF);display:grid;place-items:center"><div style="width:120px;height:129px"><dc-import name="Pose" pose="pointing" still="{{ rm }}" style="width:100%;height:100%" hint-size="120px,129px"></dc-import></div></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">loop · 6 s</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100px;height:107px"><dc-import name="Pose" pose="pointing" still="{{ rm }}" style="width:100%;height:100%" hint-size="100px,107px"></dc-import></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">desktop 100</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:78px;height:84px"><dc-import name="Pose" pose="pointing" still="{{ rm }}" style="width:100%;height:100%" hint-size="78px,84px"></dc-import></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">phone 78</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:78px;height:84px"><dc-import name="Pose" pose="pointing" still="{{ true }}" style="width:100%;height:100%" hint-size="78px,84px"></dc-import></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">still</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;border-radius:22px;background:#fff;overflow:hidden;align-self:start">
+        <sc-for list="{{ layers }}" as="l" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;padding:11px 16px;border-top:1px solid rgba(31,30,28,.06)">
+            <span style="font:600 12px/1.4 ui-monospace,monospace">{{ l.l }}</span>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:13.5px/1.45 'Figtree',system-ui">{{ l.m }}</span><span style="font:500 11.5px/1.4 ui-monospace,monospace;color:#8A857D">{{ l.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">09</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">Final wording</span></div>
+    <div style="display:flex;flex-direction:column;border-radius:22px;background:#fff;overflow:hidden">
+      <sc-for list="{{ copy }}" as="c" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 24px;padding:16px 20px;border-top:1px solid rgba(31,30,28,.07)">
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 11px ui-monospace,monospace;letter-spacing:.06em;color:#8A857D">{{ c.where }}</span><span style="font:14px/1.5 'Figtree',system-ui;color:#8A857D;text-wrap:pretty">„{{ c.draft }}“</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 11px ui-monospace,monospace;letter-spacing:.06em;color:#3E7B52">FINAL</span><span style="font:500 15px/1.5 'Figtree',system-ui;text-wrap:pretty">{{ c.final }}</span><span style="font:13px/1.45 'Figtree',system-ui;color:#55524C;text-wrap:pretty">{{ c.why }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D;margin-top:8px">NEW STRINGS</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">
+      <sc-for list="{{ strings }}" as="x" hint-placeholder-count="12">
+        <div style="display:flex;flex-direction:column;gap:4px;padding:11px 14px;border-radius:16px;background:#fff"><span style="font:500 10.5px/1.2 ui-monospace,monospace;color:#8A857D">{{ x.k }}</span><span style="font:500 14px/1.4 'Figtree',system-ui;text-wrap:pretty">„{{ x.v }}“</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">10</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">Where I decided differently</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+      <sc-for list="{{ decisions }}" as="x" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;gap:5px;padding:15px 17px;border-radius:20px;background:{{ x.bg }}"><span style="font:600 14px/1.35 'Figtree',system-ui">{{ x.t }}</span><span style="font:13.5px/1.5 'Figtree',system-ui;color:#3F3C37;text-wrap:pretty">{{ x.d }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">11</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">Handoff</span><a href="handoff/README.md" style="font:600 12px ui-monospace,monospace;color:#8A857D">README §10 →</a></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+      <sc-for list="{{ files }}" as="f" hint-placeholder-count="8">
+        <a href="{{ f.href }}" style="display:flex;flex-direction:column;gap:5px;padding:14px 16px;border-radius:20px;background:#fff" style-hover="box-shadow:0 0 0 2px #EFEDE8"><span style="font:600 12px/1.4 ui-monospace,monospace;word-break:break-all">{{ f.p }}</span><span style="font:13px/1.5 'Figtree',system-ui;color:#55524C;text-wrap:pretty">{{ f.d }}</span></a>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;frame&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;desktop&quot;],&quot;default&quot;:&quot;phone&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;both&quot;,&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;both&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;zoom&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[0.5,0.75,1],&quot;default&quot;:0.5,&quot;tsType&quot;:&quot;number&quot;},&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;slowMo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const UI = ['UI MOTION', '#FBE3B0'], MG = ['MOTION GRAPHIC', '#F2D2F9'], NO = ['NO OWN MOTION', '#EFEDE8'];
+const S = (id, k, t, d, kind, m, r) => ({ id, k, t, d, kind: kind[0], kindBg: kind[1], m, r });
+const BROWSE = 'Browse (Interaction "Browse weeks"): ‹ › or a horizontal swipe on the list. The days leave towards the swipe (x ∓40, fade 160) and the new week comes in from the other side (x ±40 → 0, settle 480, days staggered 30ms); the title crossfades (fade 240). "Heute" pops in when you are away (pop 460) and fades out when you are back (150).';
+const SW = [
+  S('1a', 'cols', 'The switch, in Spalten', 'Phone: its own row under the Board Switcher pill, left-aligned, 212 × 40 with "Spalten" and "Woche". The top row stays as it is (pill, search, cogwheel): a third item there would squeeze long Board names, and the switch belongs to the content below it, not to the Board. Desktop: right after the pill in the top bar, 232 × 44, so "which Board" and "which view" read together; search and the cogwheel stay on the right. The choice is stored on the device, one setting for all Boards, so a Member who plans by day always opens into Woche.', UI, 'Press on a segment: tap. The view change is 1b.', 'Nothing to reduce here.'),
+  S('1b', 'switch', 'Spalten to Woche and back', 'The frame loops the transition. The thumb slides, the Column colour gives way to the plain background, the Columns step aside and the days come in one after the other. Woche always opens on today; on the phone the list scrolls so today sits at the top.', UI, 'See Interaction "Switch views". Thumb: left, settle 480. Phone background: Column tint → bg, 600 ease. Columns: fade 240 + x 0 → −28 (settle 480). Week: x +28 → 0 (settle 480); days opacity 0 → 1 and y 14 → 0, staggered 40ms from +140ms. Back: the days drop out together (160), Columns return from −28.', 'The thumb jumps and the two views crossfade in 200ms. No shift, no stagger.')
+];
+const WEEK = [
+  S('2a', 'week', 'A current week, today in the middle', 'Mi 18. is today: butter date pebble, the "Heute" chip and a today-tint card around the whole day. Mo and Di are past, Do and So are empty, so they are one row with their "+" (desktop: a dashed "+" row). Sa holds three. Omas Linsensuppe is on Mo with Jonas and on Sa with Mia. Day label: the date in a pebble plus the weekday, written out on the phone ("16" "Montag"), short on desktop ("16" "Mo"); the month lives in the week title. A Planned Dish: 48px image, the title in Petrona 17 (two lines at most), the cook\'s Profile Picture when one is set, and "⋯". A tap opens the Dish detail.', NO, 'Arrives with the view (1b). Press: scale .98 (tap), then the card to detail morph with the Planned Dish image as the shared element.', 'Press without scale, the detail crossfades in 200ms.'),
+  S('2b', 'past', 'Past days, cooked ones ticked', 'Mo and Di stay as they were planned. Cooked ones carry the tick, uncooked ones look exactly like every other Planned Dish: no grey, no strike-through, no "verpasst", no prompt to move them. The tick is derived: a Planned Dish is ticked when its Dish has a Cooking on that day, wherever the Cooking was recorded. Past days have no "+" and take no drops; their Planned Dishes can still be dragged to a coming day or taken off the plan.', NO, 'Static.', 'Nothing to reduce.'),
+  S('2c', 'empty', 'An empty week', 'One quiet card above the seven days: Topfbert points at "Die Woche ist noch frei." and "Such dir ein Gericht vom Board aus und leg es auf einen Tag." "Gericht aussuchen" opens the Dish picker for today (in a week to come: for its Monday). Every day keeps its "+". Desktop: the card sits over the empty grid.', MG, 'Topfbert pointing, built in Vue from the R12 layers: breathe, blink, hat sway and arm nudge on the shared 6 s clock (section 08). The card pops in once (pop 460, +200ms). Paused off screen and under sheets.', 'Topfbert as the still (frame 0); the card fades in 200ms.'),
+  S('2d', 'future', 'A week to come', '23. bis 29. November. As soon as you browse away, "Heute" appears: on the phone as a floating pill at the bottom centre (in thumb reach, and the 328px header already holds title and arrows), on desktop beside the arrows. Every day of a future week has its "+".', UI, BROWSE, 'The week swaps with a 200ms crossfade, no slide; "Heute" appears without the pop.'),
+  S('2e', 'pastweek', 'A week in the past', '9. bis 15. November. It reads as a record: a tick where the Dish was cooked, nothing where it wasn\'t. No "+", since every day is past. "Heute" brings you back.', UI, BROWSE, 'Crossfade 200ms, no slide.'),
+  S('2f', 'readonly', 'Seen by a Member who may not move Dishes', 'The same plan at the same sizes. No "+", no "⋯", no "Gekocht" on today, no long-press, no drag. The Planned Dish only opens the detail, where the same rights apply. The switch stays, since looking is allowed.', NO, 'Press feedback only.', 'Nothing to reduce.'),
+  S('2g', 'offline', 'Without a connection', 'Changes are kept on the device and sent when the connection is back. Every Planned Dish with a pending change shows the Dish card\'s quiet mark, the cloud and "Noch nicht gesendet"; its title then holds one line so the row keeps 64px. Here Shakshuka was planned on Do and Jonas was set as cook on Fr, both offline.', UI, 'The mark fades in and out (fade 240) and leaves by itself once sent.', 'Appears and disappears instantly.')
+];
+const PLAN = [
+  S('3a', 'pick', 'The Dish picker, with a long list', '"+" on a day opens it. Phone: a tall sheet (top 58). Desktop: a 400px popover under that day\'s "+", so the week stays in view. The title names the day: "Was gibt es am Donnerstag?". Search on top is our Input with the label in the border ("Gericht suchen"). Below it every Dish on the Board, grouped by Column in Board order, with the Column dot and a count; Gekocht is there too, for the favourite you want again. Rows: image and title only. Nothing marks a Dish as already planned, since the same Dish may go on two days.', UI, 'Phone: Sheet open (Interaction "Sheet open / close"). Desktop: pop 360 from the "+" (scale .96 → 1, y −8 → 0). Rows rise 14px with a 40ms stagger, max 8.', 'Fade 200ms, no slide, no stagger.'),
+  S('3b', 'pick_search', 'Search typed in', '"tofu" filters as you type, across all Columns and inside words (Räuchertofu, Seidentofu), and the match gets a butter tint. Groups without a hit disappear. The keyboard\'s "Suchen" only closes the keyboard.', UI, 'Rows that leave fade out (fade 150), the list closes up (settle 480). Focus outline 180ms (Input).', 'The list updates without motion.'),
+  S('3c', 'pick_add', 'Picking puts it at the end of the day', 'The frame loops it: Shakshuka from Gekocht is tapped, the sheet closes and the Planned Dish settles in at the end of Donnerstag. No toast: you watch it land, and "⋯" has "Aus dem Plan nehmen" if it was a slip.', UI, 'See Interaction "Plan from +". Row press scale .98. Sheet close 320 ease-in. The day opens a slot of the Planned Dish\'s height (380 settle) and the Planned Dish drops in from y −14 and .96 (520 settle, +120ms). Haptic CONFIRM.', 'The sheet fades out and the Planned Dish appears in place.'),
+  S('3d', 'detail', '"Einplanen" in the Dish detail', 'First in the share row, which now reads "Einplanen", "Link teilen", "Kopieren" (it fits 328px at 14px). The action row stays "Original öffnen" and "Gekocht" untouched, so "Gekocht" remains the only filled action and nothing moves for people who know the detail. The detail shows nothing else about the plan.', UI, 'Press: tap. Opens 3e.', 'Press without scale.'),
+  S('3e', 'daypick', 'The day picker', 'Phone: content-height sheet over the detail. Desktop: popover from the button inside the panel. "An welchem Tag?", the Dish under it, then the week with ‹ ›. This week starts at today; past days are not listed and ‹ is off. Each day shows tiny images of what is already on it, so a free day is easy to spot without reading.', UI, 'Sheet open / pop 360 as in 3a.', 'Fade 200ms.'),
+  S('3f', 'daypick_next', 'The following weeks', '› goes on week by week; from next week on all seven days are offered. ‹ comes back as far as this week.', UI, 'Rows leave x −24 + fade 160 and arrive from x +24 (settle 480); the week line crossfades (fade 240).', 'Rows swap with a 200ms crossfade.'),
+  S('3g', 'planned', 'The confirmation', 'A tap on a day plans the Dish at the end of that day and closes the sheet. Toast: "Für Donnerstag eingeplant." with "Rückgängig". For today and tomorrow it says "Für heute eingeplant." and "Für morgen eingeplant."; after this week, "Für Donnerstag, 26. November eingeplant."', UI, 'See Interaction "Plan from Einplanen": sheet close 320, toast in (settle 400), bar = the 5 s undo window. Haptic CONFIRM.', 'The sheet fades out, the toast fades in.')
+];
+const CHANGE = [
+  S('4a', 'reorder', 'Reordering within a day', 'Long-press (touch, 300ms) or mouse-down and 4px (pointer: fine). The same lift as a Dish card between Columns: 1.04×, −2°, the lift shadow. A neighbour springs to its new slot when the centre crosses its midpoint. The frame loops Linsensuppe down past the Gyoza and back.', UI, 'See Interaction "Drag a Planned Dish within a day". Lift 180, neighbours settle 320 (+4px overshoot), drop settle 260. Haptic LONG_PRESS, SEGMENT_TICK per swap.', 'No scale or tilt: a 2px text outline and the lift shadow; neighbours jump to their slots.'),
+  S('4b', 'drag_day', 'To a day that is off screen', 'Phone: when a Planned Dish lifts, a strip of the seven days drops in under the week title, the same pebbles as the Column tabs. Drag up onto it: the Planned Dish shrinks to .56 so the strip stays visible, the day under it grows 1.16 and fills butter, the others dim. Past days are dimmed further and take nothing. Release and it flies into the pebble and lands at the end of that day. Dragging along the list works too: within 64px of an edge the list autoscrolls. Desktop: every day column is a drop target like a lane; a butter slot opens at the insert index.', UI, 'See Interaction "Drag a Planned Dish to another day". Strip: y −10 → 0 + fade (300 settle). Target: pop 240, ring 6px butter 35%, wiggle ±3° every 1.2 s. Drop on a pebble: card scales to .05 and rotates −40° into it (420 swoosh), pebble squash 1.32/.84 → 1, the strip leaves (fade 200). Haptic GESTURE_THRESHOLD_ACTIVATE, CONFIRM.', 'Strip appears without the slide; target fill and ring only; the drop fades.'),
+  S('4c', 'menu', 'The way without dragging', '"⋯" on every Planned Dish (phone: always; desktop: on hover and keyboard focus) opens a small menu: "Wer kocht?", "Auf anderen Tag legen", "Nach oben", "Nach unten", "Aus dem Plan nehmen". Phone: content sheet; desktop: popover. Screen readers get the same as accessibility actions on the Planned Dish. Desktop keys: Alt+↑ and Alt+↓ within a day, Alt+← and Alt+→ to the day before or after. A polite live region says "Gyoza mit Gemüsefüllung, jetzt am Samstag an Stelle 1 von 3."', UI, 'Phone: Sheet open. Desktop: pop 360 from "⋯" (origin top right). A moved Planned Dish travels to its slot (settle 480), focus stays on its "⋯".', 'Menu fades in; moves jump.'),
+  S('4d', 'move', '"Auf anderen Tag legen"', 'The day picker in this week, with "Liegt hier" on the current day. Pick a day and the Planned Dish goes to its end. Toast: "Auf Freitag gelegt." with "Rückgängig".', UI, 'As 3e; the Planned Dish leaves its day (x +44, fade 260) and settles in at the new one (settle 480) once the sheet is closed.', 'Fade 200ms; the Planned Dish swaps without motion.'),
+  S('4e', 'removed', 'Taking it off the plan', 'No question first: the Dish stays on the Board, only the plan changes. The Planned Dish slides out, the day closes up, and a toast offers undo: "Aus dem Plan genommen." with "Rückgängig" (5 s).', UI, 'x +44 and fade (260 ease-in), then the slot collapses (settle 420, +260ms). Toast in (settle 400). Undo: the Planned Dish drops back into its old place (settle 480).', 'It fades out in 200ms and the gap closes at once; the toast fades in.')
+];
+const COOK = [
+  S('5a', 'cook', 'The cook picker', 'From "Wer kocht?" in the menu, or a tap on the cook\'s Profile Picture on a Planned Dish. The Board\'s Members with their Profile Picture and Username, you marked with "du", and "Offen lassen" last, checked while nobody is set. Picking closes the sheet and the Profile Picture pops onto the Planned Dish; "Offen lassen" clears it again.', UI, 'Sheet / popover as 4c. On the Planned Dish the Profile Picture pops in (scale 0 → 1, pop 460) or fades out (150).', 'Swap without pop.'),
+  S('5b', 'cooks', 'With a cook and without', 'Nobody is set by default, and that shows nothing at all: no grey circle, no "?", no hint on the Planned Dish, so a plan without cooks looks finished. Sa: Linsensuppe with Mia, Gyoza without, Tacos with Lea; Fr: Pad Thai with Jonas. The same Linsensuppe on Mo has Jonas. The cook belongs to the Planned Dish, not to the Dish.', NO, 'Static.', 'Nothing to reduce.')
+];
+const DONE = [
+  S('6a', 'today', 'Today, before', 'Only today\'s Planned Dishes get "Gekocht", as a second row under the title; the Planned Dish grows to 100px and its image to 64px, so today stands out once more. Past and future days never show it.', UI, 'Press: scale .94 (tap). The highlighted ring marks the button about to be tapped.', 'Press without scale.'),
+  S('6b', 'cooking', 'Today, during', 'Exactly what the card does: the button springs and fills sage, the check draws, the veggie confetti, the Dish moves into the Gekocht Column (out of sight here; the plan itself stays as it is), and the toast "Gekocht" with "Notiz hinzufügen" and "Rückgängig", with Topfbert popping up behind it. The tick then pops onto the image, and once the toast is in the button leaves and the Planned Dish settles back to 64px.', UI, 'See Interaction "Tick after Gekocht". Button 1.12 → 1 and sage (pop 480), check draws 260 from +120, confetti 640 (Vue particles, no video), tick scale 0 → 1.25 → 1 from −30° (pop 460, +380), toast +520 (settle 400), Topfbert +640 (pop 460), then button fade 240 and row height 100 → 64 (settle 480). Haptic CONFIRM.', 'The button turns sage with its check, the tick appears, the toast fades in. No confetti, Topfbert as the still, the row shortens without motion.'),
+  S('6c', 'cooked', 'Today, after', 'A quiet tick on the image, like every cooked day. "Rückgängig" in the toast removes the Cooking, and with it the tick, and brings the button back.', NO, 'Static.', 'Nothing to reduce.')
+];
+const PARTS = [
+  { ...S('7a', 'parts', 'Planned Dish in its states', 'Standard, with a cook, cooked (tick), today (with "Gekocht"), not sent yet, read-only (no "⋯"), lifted while dragging. Phone 64px (today 100px) as a row; desktop 166px as a small card in the 165px day column, image 72px on top, title in two lines, then a row for the cook, the unsent mark and "Gekocht". On the phone the last item is an empty day: its header and "+".', UI, 'Per state as listed in components.json → PlannedDish.', 'As listed there.'), parts: 1 }
+];
+const LAYERS = [
+  ['whole', 'breathe: scale 1 → .985 / 1.025, twice per loop', 'r11-breathe 3s ease-in-out · pivot 70 123'],
+  ['eyes / eyes_closed', 'shared blink and double blink, eyes look +3 towards the text', 'r11-ieo / r11-iec 6s linear'],
+  ['arm', 'nudges x +2 twice, at 8–22% and 56–70%', 'r12-nudge 6s ease-in-out'],
+  ['hat', 'sway, pivot moved with the 2° lean', 'r11-ihat 6s ease-in-out · pivot 38.7 44.9'],
+  ['handles, body, cheeks, mouth, rim', 'static', '—'],
+  ['mirror', 'not mirrored: the text and button are on his right', 'layers.json → weekEmpty.mirror false'],
+  ['size', 'phone 78 × 84, desktop 100 × 107 (viewBox 0 -20 140 150)', 'layers.json → weekEmpty.size'],
+  ['reduced', 'no loop, no blink: frame 0', 'topfbert-pointing.svg = the still'],
+  ['pause', 'off screen, under a sheet or dialog, app in background', 'shared clock keeps time']
+];
+const COPY = [
+  ['WEEK TITLE', '16. bis 22. November', '„16. bis 22. November“. Across a month: „27. Oktober bis 2. November“. Across a year, or any year other than the current one: „29. Dezember 2026 bis 4. Januar 2027“.', 'Kept. It is the plainest way to say which week, and "bis" keeps it free of dashes. The year only appears when it is needed.'],
+  ['EMPTY WEEK', 'Für diese Woche ist noch nichts geplant.', '„Die Woche ist noch frei.“ and below it „Such dir ein Gericht vom Board aus und leg es auf einen Tag.“, button „Gericht aussuchen“. A past week: „In dieser Woche war nichts geplant.“ without the button.', '"diese Woche" sits too close to the Column name, and "noch nichts geplant" reads like a missed task. "Frei" sounds like room, and the second line says what to do.'],
+  ['TOAST AFTER EINPLANEN', 'Für Donnerstag eingeplant.', '„Für Donnerstag eingeplant.“ with „Rückgängig“. Also „Für heute eingeplant.“, „Für morgen eingeplant.“ and, after this week, „Für Donnerstag, 26. November eingeplant.“', 'Kept, and given an undo like every other change. "heute" and "morgen" are what people say.'],
+  ['REMOVE', 'Aus dem Plan nehmen', '„Aus dem Plan nehmen“, toast „Aus dem Plan genommen.“ with „Rückgängig“.', 'Kept. It says exactly what happens and nothing about the Dish, which stays on the Board.'],
+  ['MOVE (EXAMPLE)', 'Auf anderen Tag', '„Auf anderen Tag legen“, toast „Auf Freitag gelegt.“ with „Rückgängig“.', 'A verb makes it an action in a menu of actions, and "legen" matches the picture of putting a Dish on a day.'],
+  ['WHO COOKS', 'Wer kocht', '„Wer kocht?“ as menu item and picker title; clearing: „Offen lassen“.', 'As a question it works in both places. "Offen lassen" sounds like a fine choice, not like deleting someone.']
+];
+const STRINGS = [
+  ['Switch', 'Spalten'], ['', 'Woche'], ['Week', 'Heute'], ['Week · aria', 'Vorherige Woche'], ['', 'Nächste Woche'], ['Day · aria', 'Gericht für Donnerstag einplanen'],
+  ['Planned Dish · aria', 'Mehr zu Gyoza mit Gemüsefüllung'], ['Planned Dish · cook label', 'Mia kocht'], ['Planned Dish', 'Gekocht'], ['Planned Dish · unsent', 'Noch nicht gesendet'],
+  ['Empty week', 'Die Woche ist noch frei.'], ['', 'Such dir ein Gericht vom Board aus und leg es auf einen Tag.'], ['', 'Gericht aussuchen'], ['Empty past week', 'In dieser Woche war nichts geplant.'],
+  ['Dish picker', 'Was gibt es am Donnerstag?'], ['', 'Was gibt es heute?'], ['', 'Gericht suchen'], ['', 'Kein Gericht mit „{Suche}“ auf diesem Board.'],
+  ['Detail', 'Einplanen'], ['Day picker', 'An welchem Tag?'], ['', 'Liegt hier'], ['Toast', 'Für Donnerstag eingeplant.'], ['', 'Für heute eingeplant.'], ['', 'Für morgen eingeplant.'], ['', 'Für Donnerstag, 26. November eingeplant.'],
+  ['Menu', 'Wer kocht?'], ['', 'Auf anderen Tag legen'], ['', 'Nach oben'], ['', 'Nach unten'], ['', 'Aus dem Plan nehmen'], ['Toast', 'Auf Freitag gelegt.'], ['', 'Aus dem Plan genommen.'], ['', 'Rückgängig'],
+  ['Cook picker', 'Offen lassen'], ['', 'du'], ['', 'Gyoza mit Gemüsefüllung am Samstag'],
+  ['Live region', 'Gyoza mit Gemüsefüllung, jetzt am Samstag an Stelle 1 von 3.'], ['', 'Mia kocht jetzt.'], ['', 'Niemand kocht mehr fest.']
+];
+const DEC = [
+  ['Phone: the switch gets its own row', 'Not in the top row: pill, search and cogwheel already fill 328px with a long Board name. One 40px row above the content costs less than a squeezed pill.'],
+  ['Desktop: the switch sits next to the pill', 'Left with the Board, not right with the tools, so "which Board" and "which view" read as one.'],
+  ['Remembered once per device', 'One setting for all Boards on that device, not per Board. Whoever plans by day does so on every Board.'],
+  ['Phone: the vertical week', 'Recommended over a day at a time: the plan is read as a whole, empty days stay one row, and moving between days stays one axis (plus the day strip).'],
+  ['"+" placement differs', 'Phone: in the day header, so an empty day is a single row. Desktop: a dashed row at the end of the day, which is where the picked Dish lands; the 165px header has no room left beside "Heute".'],
+  ['"Heute" floats on the phone', 'At the bottom centre instead of in the header, which already holds a two-line title at worst and the arrows.'],
+  ['Past days take nothing new', 'Not in the brief: past days have no "+" and accept no drops, the same rule as the day picker. Their Planned Dishes can still move forward or come off the plan. A past week therefore has no "+" at all.'],
+  ['No toast after "+"', 'Planning from "+" happens in view, so you see it land. Only "Einplanen" in the detail confirms with a toast, because the plan is not on screen there.'],
+  ['Everything is undoable', 'Planning, moving and removing all get "Rückgängig" in their toast, also "Für Donnerstag eingeplant.".'],
+  ['"⋯" on every Planned Dish', 'Needed for the cook, the keyboard path and removing. Phone: always visible; desktop: on hover and focus. A tap on the cook\'s Profile Picture is a shortcut to the cook picker.'],
+  ['Today\'s Planned Dish is taller', '"Gekocht" needs its own row at 328px; the extra height also marks today a second time.'],
+  ['No new art for the empty week', 'Topfbert pointing from R12, with its existing layers and idle. layers.json only gets placement and size.'],
+  ['Picker in Board order', 'Columns in the Board\'s order, Gekocht included and not pulled to the top, so the list looks like the Board you know.'],
+  ['The FAB steps aside in Woche', 'On the phone the "+" Dish button is hidden in Woche: there the day "+" is the add action, and new Dishes come in from Spalten or the share sheet.'],
+  ['Desktop pickers are popovers', 'Our rule turns sheets into centred dialogs at 768px+. The Dish, day and cook pickers stay anchored to their trigger instead, so the day or the detail stays visible beside them.'],
+  ['Wording', 'Final wording differs from the drafts in four places, see 09.'],
+  ['Open, not designed', 'What happens to Planned Dishes when their Dish is archived. Suggestion: they leave the plan with it, and Archivieren\'s own undo brings them back.']
+];
+const FILES = [
+  ['../Malkochen Week Plan.dc.html', 'This page. Frames: WeekScreen.dc.html (every phone and desktop state, light and dark, with props screen, frame, theme, still, spd).', 'Malkochen Week Plan.dc.html'],
+  ['handoff/components.json', '11 new components with variants, states, UI motion and tokens: ViewSwitch, WeekHeader, WeekView, WeekDay, PlannedDish, DayStrip, DishPicker, DayPicker, CookPicker, PlannedDishMenu, EmptyWeek. DishCard, Toast, BottomSheet and Button get an r14 note.', 'handoff/components.json'],
+  ['handoff/interactions.json', '10 new: Switch views, Browse weeks, Drag a Planned Dish within a day, Drag a Planned Dish to another day, Plan from +, Plan from Einplanen, Move or reorder without dragging, Take off the plan, Set the cook, Tick after Gekocht ✓. Each with a ms timeline and reduced motion.', 'handoff/interactions.json'],
+  ['handoff/tokens.json · tokens.css · tailwind.preset.js', 'Additions only: color.derived.today-tint, day-fill, view-track, match-tint (light + dark), shadow.small, radius.planned and planned-thumb, size.planned-dish, layout.week, z.strip. CSS variables and Tailwind keys to match.', 'handoff/tokens.json'],
+  ['handoff/assets/r14-keyframes.css', 'Every r14-* keyframe used above: reorder, hold, grow, arrive, shrink, gone, tick, strip, pop.', 'handoff/assets/r14-keyframes.css'],
+  ['handoff/assets/topfbert/layers.json → weekEmpty', 'Placement, size and loop for Topfbert pointing in the empty week. Additions only, no new SVG.', 'handoff/assets/topfbert/layers.json'],
+  ['handoff/README.md → §10 R14', 'What is new, what each file is for, every decision that differs from the brief.', 'handoff/README.md']
+];
+class Component extends DCLogic {
+  state = {};
+  componentDidMount() {
+    const poll = () => {
+      const vh = window.innerHeight || 800; let dirty = false;
+      const S = window.__r14set || (window.__r14set = {});
+      document.querySelectorAll('[data-card]').forEach(el => { const r = el.getBoundingClientRect(), on = r.bottom > -vh * 1.5 && r.top < vh * 2.5; if (!!S[el.id] !== on) { S[el.id] = on ? 1 : 0; dirty = true; } });
+      if (dirty && window.__r14inst) window.__r14inst.forceUpdate();
+    };
+    if (window.__r14poll) { document.removeEventListener('scroll', window.__r14poll, true); window.removeEventListener('scroll', window.__r14poll); }
+    window.__r14poll = poll;
+    document.addEventListener('scroll', poll, true); window.addEventListener('scroll', poll); window.addEventListener('resize', poll);
+    clearInterval(window.__r14iv); window.__r14iv = setInterval(poll, 500);
+    poll();
+  }
+  renderVals() {
+    window.__r14inst = this;
+    const frame = this.state.frame ?? this.props.frame ?? 'phone', theme = this.state.theme ?? this.props.theme ?? 'both';
+    const rm = this.state.rm ?? !!this.props.reducedMotion, spd = (this.state.slow ?? !!this.props.slowMo) ? 2 : 1;
+    const z = this.state.zoom ?? this.props.zoom ?? 0.5;
+    const ths = theme === 'both' ? ['light', 'dark'] : [theme];
+    const N = window.__r14set || (window.__r14set = { '1a': 1 });
+    const desk = frame === 'desktop';
+    const gate = s => {
+      const ph = !desk, fh = s.parts ? (ph ? 760 : 380) : (ph ? 760 : 800), fw = ph ? 360 : 1280, zz = ph ? 1 : z;
+      return { ...s, on: !!N[s.id], z: String(zz), fw: fw + 'px', fh: fh + 'px', bw: Math.round(fw * zz) + 'px', bh: Math.round(fh * zz) + 'px', br: ph ? '36px' : '12px',
+        frames: ths.map(th => ({ th, label: `${s.id} · ${th === 'light' ? 'Light' : 'Dark'} · ${ph ? 'Phone 360' : 'Desktop 1280 at ' + Math.round(zz * 100) + '%'}` })) };
+    };
+    const seg = (key, cur, opts) => ({ opts: opts.map(([v, l]) => ({ l, bg: cur === v ? '#1F1E1C' : 'transparent', fg: cur === v ? '#fff' : '#1F1E1C', go: () => this.setState({ [key]: v }) })) });
+    const ctrls = [seg('frame', frame, [['phone', 'Phone 360'], ['desktop', 'Desktop 1280']])];
+    if (desk) ctrls.push(seg('zoom', z, [[0.5, '50%'], [0.75, '75%'], [1, '100%']]));
+    ctrls.push(seg('theme', theme, [['both', 'Hell + Dunkel'], ['light', 'Hell'], ['dark', 'Dunkel']]), seg('rm', rm, [[false, 'Bewegung'], [true, 'Reduziert']]), seg('slow', spd === 2, [[false, '1×'], [true, '½×']]));
+    return {
+      rm, spd, frame, ctrls,
+      sections: [
+        { n: '01', t: 'Spalten and Woche', d: 'One switch at the top of every Board. The Week Plan is a view of its own: putting a Dish on a day never moves it between Columns, and nothing about the plan appears on the Dish card.', states: SW },
+        { n: '02', t: 'The week', d: 'Monday to Sunday, one week at a time, one ordered list per day. Phone: all seven days in one vertical scroll, opened on today. Recommended over a day at a time with a strip: a week plan is read as a whole ("what is coming, where is a gap"), empty days stay one row tall so a full week fits in about two screens, and every move between days stays a drag along one axis. A day at a time would hide six days behind a strip and make "is Friday free?" a tap away. Desktop: seven day columns side by side, 165px each at 1280, like the lanes; four Planned Dishes fit before a day scrolls.', states: WEEK },
+        { n: '03', t: 'Planning a Dish', d: 'Two ways in: "+" on a day picks a Dish, "Einplanen" in the Dish detail picks a day. Either way the Planned Dish goes to the end of that day.', states: PLAN },
+        { n: '04', t: 'Changing the plan', d: 'Drag with the Dish card\'s lift and drop look, or use "⋯" on the Planned Dish. Removing only touches the plan, so it needs no warning, only an undo.', states: CHANGE },
+        { n: '05', t: 'Who cooks', d: 'Optional per Planned Dish, from the Board\'s Members. Empty by default and quiet when empty.', states: COOK },
+        { n: '06', t: 'Gekocht from the plan', d: 'Only on today\'s Planned Dishes, and it does exactly what it does on the card.', states: DONE },
+        { n: '07', t: 'Parts', d: 'The Planned Dish in each state, phone and desktop. The view switch is in every frame above (Spalten in 1a, Woche everywhere else).', states: PARTS }
+      ].map(x => ({ ...x, states: x.states.map(gate) })),
+      layers: LAYERS.map(([l, m, t]) => ({ l, m, t })),
+      copy: COPY.map(([where, draft, final, why]) => ({ where: where + ' · DRAFT', draft, final, why })),
+      strings: STRINGS.map(([k, v]) => ({ k: k || '·', v })),
+      decisions: DEC.map(([t, d], i) => ({ t, d, bg: ['#FBE3B0', '#D5E4D8', '#DCE3F0', '#E9E4F7', '#F7DCCB'][i % 5] })),
+      files: FILES.map(([p, d, href]) => ({ p, d, href }))
+    };
+  }
+}
+</script>
+</body>
+</html>

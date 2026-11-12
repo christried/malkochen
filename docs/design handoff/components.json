@@ -31,7 +31,8 @@
       "shadow.card",
       "type.title-s",
       "type.caption"
-    ]
+    ],
+    "r14": "Unchanged. Nothing about the plan appears on the card."
   },
   {
     "name": "SourceBadge",
@@ -137,7 +138,8 @@
       "shadow.sheet",
       "color.scrim",
       "motion.sheet"
-    ]
+    ],
+    "r14": "New contents: DishPicker (tall), DayPicker, CookPicker, PlannedDishMenu (content-height). On desktop these four are popovers anchored to their trigger, not centred dialogs."
   },
   {
     "name": "Dialog",
@@ -160,7 +162,8 @@
     "tokens": [
       "radius.dialog",
       "shadow.dialog"
-    ]
+    ],
+    "r13": "confirm: \"Änderungen verwerfen?\" / \"Dein Rezept bleibt dann so, wie es vorher war.\" / Weiter bearbeiten / Verwerfen (danger)."
   },
   {
     "name": "Toast",
@@ -185,7 +188,9 @@
       "radius.pill",
       "color.inverse",
       "shadow.fab"
-    ]
+    ],
+    "r13": "New messages: \"Zutat entfernt\" / \"Schritt entfernt\" + Rückgängig, \"8 Zutaten eingefügt\" + Rückgängig, \"Rezept gefunden\" + Zeigen.",
+    "r14": "New: \"Für Donnerstag eingeplant.\" / \"Für heute eingeplant.\" / \"Für morgen eingeplant.\" / \"Für Donnerstag, 26. November eingeplant.\" + Rückgängig; \"Auf Freitag gelegt.\" + Rückgängig; \"Aus dem Plan genommen.\" + Rückgängig; \"Gekocht\" from the plan uses the existing 2-action variant with Topfbert above. Desktop: bottom left, 28px from the edges."
   },
   {
     "name": "Button",
@@ -217,7 +222,9 @@
       "radius.pill",
       "type.button",
       "type.button-l"
-    ]
+    ],
+    "r13": "Used as is: secondary (Rezept finden, Bearbeiten), dashed (Rezept hinzufügen, Zutat/Schritt hinzufügen), disabled 35% (offline).",
+    "r14": "Dish detail share row gets \"Einplanen\" first (ghost, calendar-plus icon 16, 600 14, padding 0 9): \"Einplanen\", \"Link teilen\", \"Kopieren\". The action row is unchanged."
   },
   {
     "name": "Input",
@@ -336,7 +343,7 @@
       "Ausprobiert 58px",
       "Wird Liebling 66px (3×)",
       "Stammgericht 74px (5×)",
-      "Klassiker 84px (10×)"
+      "WG-Klassiker 84px (10×)"
     ],
     "states": [
       "counting",
@@ -350,6 +357,612 @@
     "tokens": [
       "radius.blob",
       "color.gradient.neu"
+    ]
+  },
+  {
+    "name": "RecipeSection",
+    "added": "R13",
+    "placement": "Dish detail (phone + desktop panel): image, chips, title, Creator, Caption, action row, share row, RecipeSection, Verlauf, Verschieben nach…, Archivieren. Everything above it is short and fixed-height, so the actions never move and the Recipe always starts in the same place.",
+    "variants": [
+      "full: header + Zutaten list + Schritte list",
+      "Zutaten only / Schritte only (the missing list renders nothing, no heading)",
+      "long: taller than 2 viewports → adds RecipeSwitch",
+      "with source line: \"Rezept von <host>\" under the lists, links to recipeSourceUrl; absent when the Recipe came from the Source itself",
+      "with unsent mark: \"Noch nicht gesendet\" on the header (same mark as the Dish card)"
+    ],
+    "states": [
+      "read, may edit: header shows \"Bearbeiten\" (Button secondary, 38px, pencil)",
+      "read-only: no \"Bearbeiten\", lines inert",
+      "no Recipe, may edit: only \"Rezept hinzufügen\" (Button dashed, 52px), no header",
+      "no Recipe, may not edit: renders nothing (no gap)",
+      "Finder states: see RecipeFinderState",
+      "arriving: see Interaction \"A found Recipe arrives\""
+    ],
+    "motion": [
+      "header + lists: static in read mode",
+      "unsent mark: fade 240 in/out",
+      "arriving: Interaction \"A found Recipe arrives\" · settle + stagger"
+    ],
+    "tokens": [
+      "type.title-m (25px \"Rezept\")",
+      "type.title-s (21px list headings)",
+      "type.recipe",
+      "type.recipe-num",
+      "radius.card",
+      "shadow.card",
+      "color.surface",
+      "color.text-muted"
+    ]
+  },
+  {
+    "name": "RecipeList",
+    "added": "R13",
+    "variants": [
+      "ingredients: 8px butter pebble bullet (radius.blob) + text, rows 10/11px padding, hairline color.line between rows",
+      "steps: 34px pebble (surface-muted, radius.blob) with the number in type.recipe-num + text, rows 13/14px padding, hairline between",
+      "heading: \"Zutaten\" / \"Schritte\" (Petrona 500 21) + count in text-muted 600 14"
+    ],
+    "states": [
+      "default",
+      "long (60 / 40 lines): never folds, Steps never clamp"
+    ],
+    "motion": [
+      "none in read mode"
+    ],
+    "tokens": [
+      "type.recipe",
+      "type.recipe-num",
+      "radius.card (Zutaten) / 30 26 28 24 (Schritte, mirrored pebble)",
+      "shadow.card",
+      "color.butter",
+      "color.surface-muted",
+      "color.line"
+    ]
+  },
+  {
+    "name": "RecipeLine",
+    "added": "R13",
+    "note": "One plain line of text. No amounts, units, checkboxes, timers or images.",
+    "variants": [
+      "read: ingredient | step",
+      "edit: grip (36×52 button) · step number (Petrona 17, text-muted) · auto-growing textarea (Figtree 500 17/24) · remove (42×52, ×)"
+    ],
+    "states": [
+      "read",
+      "edit default (transparent, hairline above)",
+      "edit focus (surface fill + inset 2px text outline, radius.field, caret)",
+      "edit near limit (counter \"n von 200|1000\" under the line, text-muted, from 180 / 900)",
+      "edit at limit (typing stops, counter text colour, helper sentence; never danger colour)",
+      "edit pasted (paste-tint, fades 1.6s)",
+      "edit removing (x +44, opacity 0)",
+      "edit lifted (drag) / picked (keyboard: 2px text outline, grip focus ring, move menu)"
+    ],
+    "motion": [
+      "focus outline: 180ms (Input focus)",
+      "add: height 0 → auto + fade · settle",
+      "remove: x +44 + fade 260 ease-in, collapse · settle",
+      "lift: 1.03×, −1.5°, shadow.lift · lift (same as Columns in Board Settings)",
+      "pasted tint: paste-tint → transparent 1.6s ease-out"
+    ],
+    "a11y": [
+      "grip: <button aria-label=\"{line} verschieben\" aria-haspopup=\"menu\">",
+      "remove: <button aria-label=\"{line} entfernen\">",
+      "textarea: aria-label \"Zutat {n}\" / \"Schritt {n}\", enterkeyhint=\"next\"",
+      "accessibility actions \"Nach oben\" / \"Nach unten\"; desktop Alt+↑/↓",
+      "live region (polite): \"{line}, jetzt an Stelle {n} von {total}.\""
+    ],
+    "tokens": [
+      "radius.field",
+      "type.recipe-num",
+      "color.text",
+      "color.paste-tint",
+      "shadow.lift",
+      "color.focus"
+    ]
+  },
+  {
+    "name": "RecipeEditor",
+    "added": "R13",
+    "variants": [
+      "phone: tall BottomSheet (top 50px), header Abbrechen / \"Rezept\" / Speichern, keyboard pushes the sheet body",
+      "desktop panel (440–480px): the panel content becomes the editor (no dialog)"
+    ],
+    "states": [
+      "open",
+      "dirty (Abbrechen, swipe down, Esc, Back ask with Dialog \"Änderungen verwerfen?\")",
+      "clean (closes without asking)",
+      "list full: add button replaced by note \"60 Zutaten, mehr passen nicht in ein Rezept.\" with Topfbert happy 34px on color.search-tint",
+      "saving offline: closes, RecipeSection shows unsent mark"
+    ],
+    "rules": [
+      "Enter ends the line and inserts a new focused line below; Enter on an empty last line closes the keyboard",
+      "Backspace on an empty line removes it, caret to end of the line above",
+      "paste with line breaks: one line per non-empty line at the caret; strip leading \"•\", \"-\", \"*\", \"1.\", \"1)\"; fill up to the limit, toast tells how many did not fit",
+      "save: trim lines, drop empty ones; both lists empty = no Recipe",
+      "counts: from 50 / 35 show \"n von 60|40\"",
+      "Recipe saves as one document (Zutaten + Schritte together)"
+    ],
+    "motion": [
+      "open/close: Interaction \"Sheet open / close\" (phone); desktop: content crossfade fade 240 + rise 14px settle",
+      "toasts: Toast component"
+    ],
+    "tokens": [
+      "radius.sheet",
+      "shadow.sheet",
+      "color.scrim",
+      "motion.sheet"
+    ]
+  },
+  {
+    "name": "RecipeSwitch",
+    "added": "R13",
+    "variants": [
+      "sticky pill under the top bar (phone top 106, panel top 76): \"Zutaten {n}\" | \"Schritte {n}\""
+    ],
+    "states": [
+      "hidden (Recipe shorter than 2 viewports, or Recipe not on screen)",
+      "Zutaten active",
+      "Schritte active"
+    ],
+    "motion": [
+      "show/hide: fade 240 + y −8 → 0",
+      "active: background swap 200ms",
+      "tap: smooth scroll to the list (swoosh 600), 12px under the switch"
+    ],
+    "tokens": [
+      "color.glass",
+      "color.inverse",
+      "radius.pill",
+      "type.label"
+    ]
+  },
+  {
+    "name": "RecipeFinderState",
+    "added": "R13",
+    "note": "Lives in the RecipeSection slot. Action only for Finder users; states and result for every Member.",
+    "variants": [
+      "action: \"Rezept finden\" (Button secondary, magnifier) + \"Rezept hinzufügen\" (Button dashed); equal size, flex-wrap (stack on phone, row ≥ 400px)",
+      "searching: card (surface, radius.card, shadow.card): Topfbert search 56px in a 66px search-tint pebble + \"Rezept wird gesucht\" + \"Das dauert meist ein paar Sekunden, manchmal auch eine halbe Minute.\"",
+      "none: \"Kein Rezept gefunden\" + \"In der Caption und auf der verlinkten Seite stand keins.\" + Rezept hinzufügen (editors)",
+      "failed: Topfbert oops still 46px + \"Die Suche hat gerade nicht geklappt.\" + \"Noch mal suchen\" (Finder users) + Rezept hinzufügen",
+      "quota: Topfbert sleep still 46px + \"Für heute hat der Rezeptfinder genug gesucht. Morgen sucht er weiter.\" + Rezept hinzufügen",
+      "offline: action with \"Rezept finden\" disabled (35%)"
+    ],
+    "states": [
+      "action",
+      "searching (Rezept hinzufügen hidden)",
+      "found → RecipeSection",
+      "none (persists until a Recipe exists, Rezept finden gone for this Dish)",
+      "failed",
+      "quota",
+      "offline"
+    ],
+    "motion": [
+      "state swap: fade 240",
+      "searching: Topfbert search loop (motion.search, layers.json → search) · motion graphic in Vue",
+      "found: Interaction \"A found Recipe arrives\"",
+      "off screen when found: Toast \"Rezept gefunden\" + \"Zeigen\""
+    ],
+    "tokens": [
+      "radius.card",
+      "shadow.card",
+      "color.search-tint",
+      "radius.blob",
+      "type.title-s",
+      "type.small",
+      "motion.search"
+    ]
+  },
+  {
+    "name": "RecipeFinderSettings",
+    "added": "R13",
+    "placement": "Your Settings, after Snackbert, before \"Konto löschen\". Shown to every user.",
+    "variants": [
+      "phone bottom sheet",
+      "desktop 420px sheet from the right"
+    ],
+    "states": [
+      "off: text + \"Zugang anfragen\" (Button primary, 44px)",
+      "angefragt: chip \"Angefragt\" (surface, check) + \"Deine Anfrage vom {Datum} ist angekommen. Mehr musst du nicht tun.\" Static, no loader",
+      "on: chip \"Eingeschaltet\" (sage / sage-ink) + consent sentence; no switch (the Operator decides)"
+    ],
+    "motion": [
+      "request: button folds (height + fade, settle 480), chip pops (pop 460)",
+      "Operator switches on while open: chip crossfade 240"
+    ],
+    "tokens": [
+      "radius.chip",
+      "color.sage",
+      "color.sage-ink",
+      "color.surface-muted",
+      "type.overline",
+      "type.body"
+    ]
+  },
+  {
+    "name": "AdminRecipeFinder",
+    "added": "R13",
+    "placement": "Admin Page, a section like the others (after Boards, before the Event Log).",
+    "variants": [
+      "table ≥ 768px: Person (avatar 34 + name + email) | Angefragt | Suchen (total + \"n heute\") | switch",
+      "list < 768px: avatar, name, \"Angefragt am {d}\", \"{n} Suchen, {k} heute\", switch right",
+      "empty: \"Noch hat niemand nach dem Rezeptfinder gefragt.\""
+    ],
+    "states": [
+      "requested (switch off)",
+      "on",
+      "switched off again (keeps count)"
+    ],
+    "sort": "Requested and off first (newest first), then on (newest request first).",
+    "motion": [
+      "switch thumb 200ms tap ease"
+    ],
+    "tokens": [
+      "color.sage",
+      "color.line",
+      "color.avatar.*"
+    ]
+  },
+  {
+    "name": "ViewSwitch",
+    "added": "R14",
+    "placement": "Phone: own row under the top bar (left 16, top 104), 212 × 40. Desktop: in the top bar right after the BoardSwitcher pill, 232 × 44. Search and the cogwheel keep their place.",
+    "variants": [
+      "segmented, 2 segments: icon + \"Spalten\" | icon + \"Woche\"",
+      "phone 40px / desktop 44px"
+    ],
+    "states": [
+      "Spalten active",
+      "Woche active",
+      "focus (2px focus ring on the track)"
+    ],
+    "motion": [
+      "thumb: left 3px ↔ 50%, settle 480",
+      "labels: color 200ms",
+      "the view change itself: Interaction \"Switch views\""
+    ],
+    "persistence": "localStorage \"malkochen:view\" = \"columns\" | \"week\", one value per device for all Boards. Read before the first paint so Woche opens without a flash of Columns.",
+    "a11y": [
+      "role=\"radiogroup\" aria-label=\"Ansicht\"",
+      "segments role=\"radio\" aria-checked",
+      "←/→ moves between the two"
+    ],
+    "tokens": [
+      "color.derived.view-track",
+      "color.surface",
+      "radius.pill",
+      "type.label",
+      "motion.settle"
+    ]
+  },
+  {
+    "name": "WeekHeader",
+    "added": "R14",
+    "variants": [
+      "phone: title (Petrona 500 23/1.12, balance) + ‹ › (40px surface circles, shadow.small), height 48",
+      "desktop: title (Petrona 500 30) + \"Heute\" + ‹ ›, height 60"
+    ],
+    "states": [
+      "current week (no \"Heute\")",
+      "browsed away: phone shows a floating \"Heute\" pill (inverse, 46px, bottom 26 centre); desktop shows \"Heute\" (inverse, 40px) before the arrows"
+    ],
+    "copy": [
+      "\"{d}. bis {d}. {Monat}\"",
+      "across months: \"{d}. {Monat} bis {d}. {Monat}\"",
+      "across years or not the current year: with the year on both dates"
+    ],
+    "motion": [
+      "title: crossfade fade 240 on week change",
+      "\"Heute\": pop 460 in, fade 150 out"
+    ],
+    "a11y": [
+      "arrows: aria-label \"Vorherige Woche\" / \"Nächste Woche\"",
+      "title is the h2 of the view"
+    ],
+    "tokens": [
+      "type.title-m (phone, 23)",
+      "type.display-m (desktop, 30)",
+      "color.inverse",
+      "shadow.small"
+    ]
+  },
+  {
+    "name": "WeekView",
+    "added": "R14",
+    "variants": [
+      "phone: one vertical scroll of 7 WeekDay blocks, gap 16, padding 6 16 130; opens scrolled to today",
+      "desktop: grid repeat(7, minmax(0,1fr)), gap 12, gutter 28, top 140; each WeekDay a column to the bottom like a lane"
+    ],
+    "states": [
+      "current week",
+      "future week",
+      "past week",
+      "empty week (EmptyWeek above / over the days)",
+      "read-only (no \"+\", no \"⋯\", no Gekocht, no drag)",
+      "dragging (phone: DayStrip shown)"
+    ],
+    "rules": [
+      "Monday first, one week at a time",
+      "background is color.bg (Columns use the Column tint)",
+      "phone: the Dish FAB is hidden in this view",
+      "swipe left/right on the list browses weeks (phone); ‹ › everywhere"
+    ],
+    "motion": [
+      "enter: Interaction \"Switch views\"",
+      "browse: Interaction \"Browse weeks\""
+    ],
+    "tokens": [
+      "layout.week",
+      "color.bg"
+    ]
+  },
+  {
+    "name": "WeekDay",
+    "added": "R14",
+    "variants": [
+      "phone block: header (date pebble 40×38 radius.blob + weekday, Figtree 600 16) + \"+\" (40px surface circle) on the right, then its Planned Dishes, gap 8",
+      "desktop column: header (pebble 38×36 + short weekday \"Mo\"), Planned Dishes gap 10, then a dashed \"+\" row (40px, radius.field, line-strong 2px dashed); radius 26 22 0 0; fill color.day-fill"
+    ],
+    "states": [
+      "default (pebble surface-muted)",
+      "today: pebble butter + \"Heute\" chip (butter, 700 12) + block / column fill color.today-tint (phone: radius.card, padding 8 10 12)",
+      "past: no \"+\", takes no drops; looks the same otherwise (no muting)",
+      "empty: header only (phone one row) / header + \"+\" row (desktop)",
+      "drop target (desktop): fill butter 16% over bg + ring 3px butter 55%, butter dashed slot at the insert index",
+      "read-only: no \"+\""
+    ],
+    "motion": [
+      "enter: opacity 0 → 1, y 14 → 0, stagger 40ms from +140ms (Interaction \"Switch views\")",
+      "drop target: pop 240"
+    ],
+    "a11y": [
+      "\"+\": aria-label \"Gericht für {Wochentag} einplanen\"",
+      "list: role=\"list\" aria-label \"{Wochentag}, {Datum}\""
+    ],
+    "tokens": [
+      "radius.blob",
+      "color.today-tint",
+      "color.day-fill",
+      "color.butter",
+      "radius.card",
+      "radius.field"
+    ]
+  },
+  {
+    "name": "PlannedDish",
+    "added": "R14",
+    "note": "Smaller than a DishCard: image, title, the cook's Profile Picture when set. Never shows Votes, Comments, Creator or Column.",
+    "variants": [
+      "phone row: height 64, padding 8 4 8 8, thumb 48 (radius.planned-thumb), title Petrona 500 17/1.18 two lines, cook avatar 28, \"⋯\" 36×44",
+      "phone today: height 100, thumb 64, \"Gekocht ✓\" (36px, radius 18 16 19 17, surface-muted) as a second row under the title",
+      "desktop card: height 166, padding 6 6 8, image 72 (radius 17 14 18 15), title Petrona 500 15.5/1.2 two lines (37px), bottom row: cook avatar 22, unsent mark, \"Gekocht ✓\" (28px) on today",
+      "all: radius.planned, color.surface, shadow.small"
+    ],
+    "states": [
+      "default",
+      "with cook (avatar)",
+      "without cook: nothing in its place",
+      "cooked: tick 22px sage circle with sage-ink check and a 2.5px surface ring at the image's bottom right (phone −5/−5, desktop −4/−6). Ticked when the Dish has a Cooking dated that day, however it was recorded",
+      "today, not cooked: \"Gekocht ✓\"",
+      "today, cooking: button sage + check draw + confetti, tick pops",
+      "unsent: cloud + \"Noch nicht gesendet\" (text-muted 12.5 / 11.5); title clamps to 1 line on the phone",
+      "read-only: no \"⋯\", no \"Gekocht\", no long-press",
+      "pressed (scale .98)",
+      "hover (desktop): \"⋯\" appears as a 30px glass circle on the image",
+      "focused (keyboard): focus ring + \"⋯\" visible",
+      "lifted (drag)",
+      "slot (origin while dragging: 2px dashed line-strong)",
+      "arriving",
+      "removing"
+    ],
+    "motion": [
+      "press: scale .98 · tap",
+      "tap: Card → detail morph, the Planned Dish image is the shared element",
+      "lift: 1.04×, −2°, shadow.lift · lift 180 (same as DishCard)",
+      "arrive: slot height 0 → h (settle 380), card y −14 + scale .96 → 1 (settle 520, +120)",
+      "remove: x +44 + fade (260 ease-in), slot collapses (settle 420, +260)",
+      "tick: scale 0 → 1.25 → 1 from −30° · pop 460",
+      "Gekocht: see Interaction \"Tick after Gekocht ✓\"",
+      "cook avatar: pop 460 in, fade 150 out",
+      "unsent mark: fade 240"
+    ],
+    "a11y": [
+      "the whole card is a link to the Dish detail: aria-label \"{Titel}, {Wochentag}{, kocht {Name}}{, gekocht}\"",
+      "\"⋯\": <button aria-label=\"Mehr zu {Titel}\" aria-haspopup=\"menu\">",
+      "accessibility actions: Wer kocht?, Auf anderen Tag legen, Nach oben, Nach unten, Aus dem Plan nehmen",
+      "desktop keys on focus: Alt+↑/↓ within the day, Alt+←/→ to the day before/after (past days skipped)"
+    ],
+    "tokens": [
+      "size.planned-dish",
+      "radius.planned",
+      "radius.planned-thumb",
+      "shadow.small",
+      "shadow.lift",
+      "type.title-s (17 phone / 15.5 desktop)",
+      "color.sage",
+      "color.sage-ink",
+      "color.avatar.*",
+      "motion.tap",
+      "motion.lift",
+      "motion.pop",
+      "motion.settle"
+    ]
+  },
+  {
+    "name": "DayStrip",
+    "added": "R14",
+    "placement": "Phone only, while a Planned Dish is lifted: under the week title (left/right 12, top of the list), glass, radius 26 22 27 23.",
+    "variants": [
+      "7 day pebbles 38×50 (short weekday 700 11 + date Petrona 17), tab radii 1..3 cycling"
+    ],
+    "states": [
+      "hidden",
+      "shown (others .6)",
+      "target (butter fill, scale 1.16, ring 6px butter 35%)",
+      "past day (.3, not a target)",
+      "origin day (default look)"
+    ],
+    "motion": [
+      "show: y −10 → 0 + fade (settle 300) at lift",
+      "hide: fade 200 at drop",
+      "target: pop 240, wiggle ±3° every 1.2 s",
+      "drop: Interaction \"Drag a Planned Dish to another day\""
+    ],
+    "tokens": [
+      "color.glass",
+      "radius.tab-1..3",
+      "color.butter",
+      "z.strip"
+    ]
+  },
+  {
+    "name": "DishPicker",
+    "added": "R14",
+    "placement": "From \"+\" on a WeekDay and from \"Gericht aussuchen\" in EmptyWeek.",
+    "variants": [
+      "phone: tall BottomSheet (top 58)",
+      "desktop: popover 400 × 560 under the day's \"+\" (radius 28 24 29 25, shadow.dialog + 1px line), no scrim"
+    ],
+    "parts": [
+      "title \"Was gibt es am {Wochentag}?\" / \"Was gibt es heute?\" (Petrona 500 22) + close",
+      "Input 5b with label in the border \"Gericht suchen\", magnifier, clear button when filled",
+      "groups per Column in Board order: dot (Column accent) + name + count (Figtree 600 13.5 text-muted), rows in a surface card (radius 24 21 25 22, shadow.small)",
+      "row: thumb 44 + title (Petrona 500 16.5, two lines), min-height 60, hairline between rows"
+    ],
+    "states": [
+      "long list (scrolls)",
+      "search typed: filters case-insensitive inside words, match tinted color.match-tint, empty groups hidden",
+      "no result: \"Kein Gericht mit „{Suche}“ auf diesem Board.\"",
+      "row pressed (surface-muted, scale .98)"
+    ],
+    "rules": [
+      "every Dish on the Board, the Gekocht Column included; archived Dishes not",
+      "nothing marks a Dish as already planned",
+      "pick = add at the end of that day, close; no toast"
+    ],
+    "motion": [
+      "open: Interaction \"Sheet open / close\" (phone), pop 360 from the \"+\" (desktop)",
+      "rows: rise 14px, stagger 40ms, max 8",
+      "filter: leaving rows fade 150, list closes up (settle 480)",
+      "pick: Interaction \"Plan from +\""
+    ],
+    "tokens": [
+      "radius.sheet",
+      "radius.dialog",
+      "shadow.small",
+      "color.match-tint",
+      "field.*"
+    ]
+  },
+  {
+    "name": "DayPicker",
+    "added": "R14",
+    "placement": "From \"Einplanen\" in the Dish detail (share row, first item) and \"Auf anderen Tag legen\" in PlannedDishMenu.",
+    "variants": [
+      "phone: content-height BottomSheet",
+      "desktop: popover 370 wide, above the button inside the side panel"
+    ],
+    "parts": [
+      "title \"An welchem Tag?\" (or \"Auf anderen Tag legen\") + the Dish title (text-muted, one line)",
+      "week line: ‹ \"{Woche}\" › (38px circles); only from Einplanen",
+      "rows 56: date pebble 36×34 + weekday (600 15.5) + \"Heute\" chip + up to 3 tiny images (24px, radius 9 8 10 8, ring 2px surface) of what is already planned; hairlines"
+    ],
+    "states": [
+      "this week: from today on, past days not listed, ‹ disabled (.3)",
+      "following weeks: all 7 days, ‹ enabled",
+      "move: the current day shows \"Liegt hier\" on surface-muted"
+    ],
+    "rules": [
+      "pick = add at the end of that day, close, Toast (see Toast r14)"
+    ],
+    "motion": [
+      "open as DishPicker",
+      "week change: rows leave x −24 + fade 160, arrive from x +24 (settle 480), week line crossfades (fade 240)"
+    ],
+    "tokens": [
+      "radius.blob",
+      "color.butter",
+      "shadow.small",
+      "radius.sheet"
+    ]
+  },
+  {
+    "name": "CookPicker",
+    "added": "R14",
+    "placement": "From \"Wer kocht?\" in PlannedDishMenu, or a tap on the cook avatar on a PlannedDish.",
+    "variants": [
+      "phone: content-height BottomSheet",
+      "desktop: popover 320"
+    ],
+    "parts": [
+      "title \"Wer kocht?\" + \"{Titel} am {Wochentag}\"",
+      "one row per Board Member: Avatar 36 + Username (600 15.5), own row adds \"du\" (500, text-muted)",
+      "last row: \"Offen lassen\" with a 36px dashed circle",
+      "selected: 26px sage check on the right"
+    ],
+    "states": [
+      "nobody set (\"Offen lassen\" checked)",
+      "someone set",
+      "change",
+      "clear"
+    ],
+    "motion": [
+      "open as DishPicker; pick closes it; the avatar on the PlannedDish pops (pop 460) or fades out (150)"
+    ],
+    "a11y": [
+      "role=\"radiogroup\" aria-label \"Wer kocht?\"",
+      "live region: \"{Name} kocht jetzt.\" / \"Niemand kocht mehr fest.\""
+    ],
+    "tokens": [
+      "color.avatar.*",
+      "color.sage",
+      "color.line-strong"
+    ]
+  },
+  {
+    "name": "PlannedDishMenu",
+    "added": "R14",
+    "variants": [
+      "phone: content-height BottomSheet with the Planned Dish (thumb 46 + title + \"{Wochentag}, {Datum}\") as header",
+      "desktop: popover 320 from \"⋯\", origin top right"
+    ],
+    "parts": [
+      "rows 54: 36px icon circle (surface-muted) + label: \"Wer kocht?\", \"Auf anderen Tag legen\", \"Nach oben\", \"Nach unten\", \"Aus dem Plan nehmen\""
+    ],
+    "states": [
+      "\"Nach oben\" disabled (.35) on the first, \"Nach unten\" on the last of a day",
+      "past day: \"Nach oben\"/\"Nach unten\" still work within the day"
+    ],
+    "motion": [
+      "open as DishPicker; moves: the Planned Dish travels to its slot (settle 480), focus stays on its \"⋯\""
+    ],
+    "tokens": [
+      "radius.sheet",
+      "shadow.dialog",
+      "color.surface-muted"
+    ]
+  },
+  {
+    "name": "EmptyWeek",
+    "added": "R14",
+    "variants": [
+      "phone: card above the 7 days (surface, radius.card, shadow.card, padding 14 16 16 10): Topfbert pointing 78×84 + title (Petrona 500 21) + text (500 14) + \"Gericht aussuchen\" (Button primary, 42px)",
+      "desktop: same card 480 wide over the empty grid (top 250, centred, shadow.dialog), Topfbert 100×107"
+    ],
+    "states": [
+      "current or future week: with the button (opens DishPicker for today / that week's Monday)",
+      "past week: \"In dieser Woche war nichts geplant.\" without button"
+    ],
+    "motion": [
+      "card: pop 460 once, +200ms",
+      "Topfbert: pointing idle from layers (layers.json → weekEmpty), motion graphic in Vue, paused off screen / under sheets"
+    ],
+    "tokens": [
+      "radius.card",
+      "shadow.card",
+      "type.title-s",
+      "motion.pop",
+      "motion.idle"
     ]
   }
 ]

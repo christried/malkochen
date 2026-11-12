@@ -19,7 +19,7 @@ const ben = { id: 'ben', name: 'Ben', image: null } as unknown as Me
 const adder = { id: 'anna', name: 'Anna', image: null }
 
 function dish(id: string, extra: Partial<DishView> = {}): DishView {
-  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: at, cookings: [], votes: [], commentCount: 0, ...extra }
+  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, recipe: null, recipeSearch: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: at, cookings: [], votes: [], commentCount: 0, ...extra }
 }
 
 function boardFixture(): BoardView {
@@ -35,6 +35,7 @@ function boardFixture(): BoardView {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    plannedDishes: [],
     asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a', { commentCount: 3 }), dish('b'), dish('c')] },

@@ -9,7 +9,10 @@ import { guessKind, siteOf } from '../../app/utils/link-guess'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
+import type { RecipeSearchAnswer, RecipeSearchOutcome } from '../../shared/recipe'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
+import type { PlannedDishView } from '../../server/utils/week-plan'
+import { putOnDay } from '../../app/board/week-plan'
 
 // The in-memory transport for the client Board module's tests: a small fake
 // of the server, holding its own copy of the Board, and of the Member's
@@ -44,6 +47,11 @@ export interface MemoryTransport {
   // What the server finds when it looks a link up for a Dish added offline,
   // by link: the Source's title, Creator and image.
   lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }>
+  // How the Recipe Finder's search ends from now on (#504): `found` by default.
+  searchEnds: (outcome: RecipeSearchOutcome) => void
+  // When each Week Plan write sent late was made: its `madeAt`, in order
+  // (undefined for one sent online).
+  plannedMadeAt: (string | undefined)[]
   // Another Member deletes a Dish, or a Column (its deleted Dishes go to
   // the top of the Column that takes new Dishes, as on the real server).
   deleteDishElsewhere: (dishId: string) => void
@@ -72,7 +80,11 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   let added = 0
   let addedColumns = 0
   const lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }> = {}
+  // The Planned Dishes of a deleted Dish, hidden with it and back with it.
+  const hiddenPlans = new Map<string, { planned: PlannedDishView, index: number }[]>()
+  const plannedMadeAt: (string | undefined)[] = []
   let answers: 'answering' | 'none' | 'lost' = 'answering'
+  let searchEnd: RecipeSearchOutcome = 'found'
 
   // The Dish on the server that `matches`, and its Column: on this Board, or
   // on another of the Member's Boards it was moved to.
@@ -141,6 +153,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       // As the server does, with the ticket only checked for being sent.
       caption: input.source && input.sourceTicket ? input.caption?.trim() || null : null,
       playableVideo: input.source && input.sourceTicket ? input.playableVideo ?? null : null,
+      recipe: null,
+      recipeSearch: null,
       imageUrl: input.photo
         ? (input.photo.ticket ? input.photo.url : null)
         : input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
@@ -182,6 +196,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       creator: found?.creator ?? null,
       caption: null,
       playableVideo: null,
+      recipe: null,
+      recipeSearch: null,
       imageUrl: found?.imageUrl ?? null,
       imageFocus: { x: 50, y: 50 },
       placeholder: body.placeholder,
@@ -204,7 +220,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    const { title, source, creator, caption, playableVideo, sourceTicket, placeholder, imageUrl, imageTicket, imageFocus } = changes
+    const { title, source, creator, caption, playableVideo, sourceTicket, placeholder, imageUrl, imageTicket, imageFocus, recipe } = changes
     if (title !== undefined) dish.title = title.trim()
     if (source !== undefined) {
       const linkChanged = source?.link !== dish.source?.link
@@ -221,6 +237,14 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       }
     }
     if (creator !== undefined) dish.creator = creator?.trim() || null
+    // The Recipe is replaced as a whole, its lines trimmed and the empty ones
+    // dropped; the link it was found at stays until nothing is left.
+    if (recipe !== undefined) {
+      const kept = (list: string[]) => list.map(line => line.trim()).filter(line => line !== '')
+      const ingredients = kept(recipe?.ingredients ?? [])
+      const steps = kept(recipe?.steps ?? [])
+      dish.recipe = ingredients.length + steps.length === 0 ? null : { ingredients, steps, link: dish.recipe?.link ?? null }
+    }
     if (placeholder !== undefined) dish.placeholder = placeholder
     const refused = Boolean(imageUrl && !imageTicket)
     if (imageUrl === null || (imageUrl && imageTicket)) {
@@ -232,12 +256,26 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return refused ? { ...saved, imageNotStored: true } : saved
   }
 
+  // "Rezept finden" (#504), ended as `searchEnd` says: a Recipe written into
+  // the Dish, "nothing found" remembered on it, or neither (the page didn't
+  // answer). 409 for a Dish without a Source or with a Recipe, as the server.
+  function findRecipeOnServer(dishId: string): RecipeSearchAnswer | null {
+    const dish = located(d => d.id === dishId)?.dish
+    if (!dish) return null
+    if (!dish.source || dish.recipe || dish.recipeSearch) throw new WriteFailed(409)
+    if (searchEnd === 'found') dish.recipe = { ingredients: ['2 Eier', '200 g Mehl'], steps: ['Alles verrühren.'], link: null }
+    dish.recipeSearch = searchEnd === 'none' ? 'none' : null
+    return { outcome: searchEnd, dish: structuredClone(dish) }
+  }
+
   function deleteOnServer(dishId: string): boolean {
     for (const column of server.columns) {
       const index = column.dishes.findIndex(d => d.id === dishId)
       if (index === -1) continue
       const [dish] = column.dishes.splice(index, 1)
       deleted.set(dishId, { dish: dish!, columnId: column.id, index })
+      hiddenPlans.set(dishId, server.plannedDishes.filter(p => p.dishId === dishId).map(planned => ({ planned, index: server.plannedDishes.filter(p => p.day === planned.day).indexOf(planned) })))
+      server.plannedDishes = server.plannedDishes.filter(p => p.dishId !== dishId)
       return true
     }
     return false
@@ -250,6 +288,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const column = server.columns.find(c => c.id === gone.columnId)!
     const index = Math.min(gone.index, column.dishes.length)
     column.dishes.splice(index, 0, gone.dish)
+    for (const { planned, index } of hiddenPlans.get(dishId) ?? []) putOnDay(server.plannedDishes, planned, index)
+    hiddenPlans.delete(dishId)
     return { ...structuredClone(gone.dish), placement: { boardId: server.id, columnId: column.id, index } }
   }
 
@@ -497,6 +537,42 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return true
   }
 
+  // The Week Plan as the server keeps it (server/utils/week-plan.ts): a Planned
+  // Dish is on a Dish of the Board (404 otherwise), lands at its index among
+  // the day's others or at the end, and a cook must be a Member (400). A
+  // repeat of the id the device made answers the Planned Dish as it is.
+  function planOnServer(boardId: string, body: { id: string, dishId: string, day: string, index?: number }): PlannedDishView | null {
+    const there = server.plannedDishes.find(p => p.id === body.id)
+    if (there) return structuredClone(there)
+    if (boardId !== server.id || !server.columns.some(c => c.dishes.some(d => d.id === body.dishId))) return null
+    const planned = { id: body.id, dishId: body.dishId, day: body.day, cookId: null }
+    putOnDay(server.plannedDishes, planned, body.index)
+    return structuredClone(planned)
+  }
+
+  function movePlannedOnServer(id: string, to: { day: string, index?: number }): PlannedDishView | null {
+    const planned = server.plannedDishes.find(p => p.id === id)
+    if (!planned) return null
+    planned.day = to.day
+    putOnDay(server.plannedDishes, planned, to.index)
+    return structuredClone(planned)
+  }
+
+  function unplanOnServer(id: string): true | null {
+    const at = server.plannedDishes.findIndex(p => p.id === id)
+    if (at === -1) return null
+    server.plannedDishes.splice(at, 1)
+    return true
+  }
+
+  function setCookOnServer(id: string, cookId: string | null): PlannedDishView | null {
+    const planned = server.plannedDishes.find(p => p.id === id)
+    if (!planned) return null
+    if (cookId !== null && !server.members.some(m => m.id === cookId)) throw new WriteFailed(400)
+    planned.cookId = cookId
+    return structuredClone(planned)
+  }
+
   // Answers a write as scripted, else runs it on the server: `run` answers
   // null for a Dish the server doesn't have (404), or throws WriteFailed.
   function answer<T>(write: Write, args: string, run: () => T | null): Promise<T> {
@@ -549,7 +625,12 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     uncookDishes: cookings => answer('uncookDishes', cookings.map(c => c.back ? `${c.cookingId}:${c.back.columnId}:${c.back.index}` : c.cookingId).join(), () => uncookManyOnServer(cookings)),
     deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),
     restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
+    planDish: (boardId, body, late) => answer('planDish', `${body.dishId} ${body.day} ${body.index ?? ''}`, () => (plannedMadeAt.push(late?.madeAt), planOnServer(boardId, body))),
+    movePlannedDish: (id, to, late) => answer('movePlannedDish', `${id} ${to.day} ${to.index ?? ''}`, () => (plannedMadeAt.push(late?.madeAt), movePlannedOnServer(id, to))),
+    unplanDish: (id, late) => answer('unplanDish', id, () => (plannedMadeAt.push(late?.madeAt), unplanOnServer(id))).then(() => undefined),
+    setPlannedDishCook: (id, cookId, late) => answer('setPlannedDishCook', `${id} ${cookId}`, () => (plannedMadeAt.push(late?.madeAt), setCookOnServer(id, cookId))),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
+    findRecipe: dishId => answer('findRecipe', dishId, () => findRecipeOnServer(dishId)),
     openDish: dishId => answer('openDish', dishId, () => openOnServer(dishId)),
     writeComment: (dishId, text, late) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text, late)),
     editComment: (commentId, text) => answer('editComment', `${commentId} ${text}`, () => editCommentOnServer(commentId, text)),
@@ -563,6 +644,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     transport,
     server,
     sent,
+    plannedMadeAt,
     setAnswers: (mode) => { answers = mode },
     lookups,
     failNext: (write, status) => script(write, { fail: status }),
@@ -571,6 +653,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       script(write, { hold: h => (held = h) })
       return { succeed: () => held!.succeed() }
     },
+    searchEnds: (outcome) => { searchEnd = outcome },
     deleteDishElsewhere: dishId => void deleteOnServer(dishId),
     deleteColumnElsewhere(columnId) {
       server.columns = server.columns.filter(c => c.id !== columnId)

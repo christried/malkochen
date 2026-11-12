@@ -3,6 +3,7 @@ import { and, asc, desc, eq, exists, ilike, inArray, isNotNull, isNull, lte, ne,
 import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
+import type { Recipe, RecipeSearch } from '../../shared/recipe'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, user } from '../db/schema'
@@ -42,6 +43,11 @@ export interface DishView {
   // Whether its Source has a video that plays in malkochen (#394); null when
   // not known yet.
   playableVideo: boolean | null
+  // Its Recipe (CONTEXT.md): Ingredients and Steps; null if it has neither.
+  recipe: Recipe | null
+  // Where the Recipe Finder's search for its Recipe stands (#500); null for
+  // none under way and nothing found for its current Source.
+  recipeSearch: RecipeSearch | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -96,6 +102,9 @@ export interface NewDish {
   // image, always the centre.
   imageFocus?: ImageFocus
   placeholder: Placeholder
+  // The Recipe a Copy takes along (copies.ts), with the link it was found
+  // at. Any other new Dish starts without one.
+  recipe?: Recipe | null
 }
 
 // Board order within a Column: by position, and a tie (two Dishes added at
@@ -127,6 +136,11 @@ function selectDishes() {
       creator: dish.creator,
       caption: dish.caption,
       playableVideo: dish.playableVideo,
+      recipeIngredients: dish.recipeIngredients,
+      recipeSteps: dish.recipeSteps,
+      recipeLink: dish.recipeLink,
+      recipeSearch: dish.recipeSearch,
+      recipeSearchAt: dish.recipeSearchAt,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -144,9 +158,21 @@ function selectDishes() {
 
 type DishRow = Awaited<ReturnType<typeof selectDishes>>[number]
 
-function toView({ columnId: _, sourceLink, sourceKind, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
+// The Recipe of these lines, found at `link`; null if there are none.
+export function recipeOf(ingredients: string[], steps: string[], link: string | null): Recipe | null {
+  return ingredients.length > 0 || steps.length > 0 ? { ingredients, steps, link } : null
+}
+
+// How long a search is 'looking' before it counts as over (#500): one that
+// crashed never leaves its Dish stuck.
+export const SEARCH_LOOKS_FOR = '5 minutes'
+const SEARCH_LOOKS_FOR_MS = 5 * 60_000
+
+function toView({ columnId: _, sourceLink, sourceKind, recipeIngredients, recipeSteps, recipeLink, recipeSearch, recipeSearchAt, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
   return {
     ...row,
+    recipe: recipeOf(recipeIngredients, recipeSteps, recipeLink),
+    recipeSearch: recipeSearch === 'looking' && (!recipeSearchAt || Date.now() - recipeSearchAt.getTime() >= SEARCH_LOOKS_FOR_MS) ? null : recipeSearch,
     imageFocus: { x: imageFocusX, y: imageFocusY },
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
@@ -189,7 +215,10 @@ async function withPlacement(view: DishView | null): Promise<PlacedDish | null> 
 // link. A new image starts in the centre unless `imageFocus` comes with it;
 // none (the Placeholder) always does.
 // `imageIsOwnPhoto` comes with `imageUrl` whenever that is changed.
+// `recipe` replaces the Recipe as a whole, its lines already trimmed and
+// within the limits (dish-input.ts); null, or no line in it, clears it.
 export type DishChanges = Partial<Pick<NewDish, 'title' | 'source' | 'creator' | 'caption' | 'playableVideo' | 'imageUrl' | 'imageIsOwnPhoto' | 'imageFocus' | 'placeholder'>>
+  & { recipe?: Pick<Recipe, 'ingredients' | 'steps'> | null }
 
 // The Dish, if it is on a Board the user is a Member of, deleted or not.
 function onMembersBoardIncludingDeleted(dishId: string, userId: string) {
@@ -261,7 +290,9 @@ export async function boardOfDish(dishId: string): Promise<string | null> {
 
 // Edits a Dish. Null unless it exists and the user is a Member of its Board.
 export async function editDish(dishId: string, userId: string, changes: DishChanges): Promise<DishView | null> {
-  const { source, imageFocus, ...rest } = changes
+  const { source, imageFocus, recipe, ...rest } = changes
+  const ingredients = recipe?.ingredients ?? []
+  const steps = recipe?.steps ?? []
   const focus = rest.imageUrl === undefined ? imageFocus : focusOf(rest.imageUrl, imageFocus)
   const values = {
     ...rest,
@@ -270,10 +301,22 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
     ...focus && (rest.imageUrl === undefined
       ? { imageFocusX: unlessPlaceholder(focus.x, FOCUS_CENTRE.x), imageFocusY: unlessPlaceholder(focus.y, FOCUS_CENTRE.y) }
       : { imageFocusX: focus.x, imageFocusY: focus.y }),
+    // A new Source has nothing found or looked for yet (#500).
+    ...source !== undefined && {
+      recipeSearch: sql`case when ${dish.sourceLink} is not distinct from ${source?.link ?? null}::text then ${dish.recipeSearch} end`,
+      recipeSearchAt: sql`case when ${dish.sourceLink} is not distinct from ${source?.link ?? null}::text then ${dish.recipeSearchAt} end`,
+    },
+    ...recipe !== undefined && {
+      recipeIngredients: ingredients,
+      recipeSteps: steps,
+      // The link it was found at stays with it until nothing is left of it.
+      ...ingredients.length === 0 && steps.length === 0 && { recipeLink: null },
+    },
   }
   const target = onMembersBoard(dishId, userId)
   if (Object.keys(values).length > 0) {
-    // Recorded only if a field changed, with which (never their values).
+    // Recorded only if a field changed, with which (never their values); a
+    // changed Recipe is an event of its own, the Recipe Finder's kinds beside it.
     const { rows } = await withEvents(
       db,
       db
@@ -291,11 +334,18 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
           sourceLink: dish.sourceLink,
           sourceKind: dish.sourceKind,
           creator: dish.creator,
+          recipeIngredients: dish.recipeIngredients,
+          recipeSteps: dish.recipeSteps,
         }),
-      dishEvent('dish_edited', userId, sql`jsonb_build_object('fields', ${changedFields()})`),
+      [
+        { ...dishEvent('dish_edited', userId, sql`jsonb_build_object('fields', ${changedFields()})`), when: sql`${changedFields()} <> '[]'::jsonb` },
+        {
+          ...dishEvent('recipe_edited', userId),
+          when: sql`changed.recipe_ingredients is distinct from earlier.recipe_ingredients or changed.recipe_steps is distinct from earlier.recipe_steps`,
+        },
+      ],
       {
-        earlier: sql`select ${dish.id}, ${dish.title}, ${dish.imageUrl}, ${dish.placeholder}, ${dish.imageFocusX}, ${dish.imageFocusY}, ${dish.sourceLink}, ${dish.sourceKind}, ${dish.creator} from ${dish} where ${target}`,
-        where: sql`${changedFields()} <> '[]'::jsonb`,
+        earlier: sql`select ${dish.id}, ${dish.title}, ${dish.imageUrl}, ${dish.placeholder}, ${dish.imageFocusX}, ${dish.imageFocusY}, ${dish.sourceLink}, ${dish.sourceKind}, ${dish.creator}, ${dish.recipeIngredients}, ${dish.recipeSteps} from ${dish} where ${target}`,
       },
     )
     if (rows.length === 0) return null
@@ -954,9 +1004,10 @@ export async function dishWithSource(boardId: string, canonicalLink: string, ear
   return found ?? null
 }
 
-// The Board's Dishes whose title, Creator or Caption contains the query,
-// ignoring case (PRD story 36), in Board order: Column by Column, each in its
-// own order. Deleted Dishes don't count.
+// The Board's Dishes whose title, Creator, Caption or one of whose
+// Ingredients contains the query, ignoring case (PRD story 36), in Board
+// order: Column by Column, each in its own order. Steps aren't searched
+// (#495). Deleted Dishes don't count.
 export async function searchDishes(boardId: string, query: string): Promise<DishView[]> {
   const pattern = `%${escapeLike(query)}%`
   const rows = await selectDishes()
@@ -964,7 +1015,12 @@ export async function searchDishes(boardId: string, query: string): Promise<Dish
     .where(and(
       eq(dish.boardId, boardId),
       isNull(dish.deletedAt),
-      or(ilike(dish.title, pattern), ilike(dish.creator, pattern), ilike(dish.caption, pattern)),
+      or(
+        ilike(dish.title, pattern),
+        ilike(dish.creator, pattern),
+        ilike(dish.caption, pattern),
+        sql`exists (select 1 from unnest(${dish.recipeIngredients}) as ingredient where ingredient ilike ${pattern})`,
+      ),
     ))
     .orderBy(asc(boardColumn.position), asc(dish.position), desc(dish.createdAt), desc(dish.id))
   return toViews(rows)
@@ -978,12 +1034,13 @@ export async function searchDishes(boardId: string, query: string): Promise<Dish
 // "Dish copied" instead of "Dish added". `id`: the one the device made for
 // it (late-changes.ts); a repeat of it is the caller's to check first
 // (dishIdStanding), as two arriving at once fail here with a unique
-// violation.
+// violation. `lookingSince`: the Recipe Finder searches for its Recipe after
+// adding (#503), claimed at that time, so it is answered as looking.
 export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
-  { tour = false, copiedFrom, viaLink = false, id: deviceId }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean, id?: string } = {},
+  { tour = false, copiedFrom, viaLink = false, id: deviceId, lookingSince }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean, id?: string, lookingSince?: Date } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
@@ -1012,6 +1069,8 @@ export async function addDish(
       imageFocusX: focus.x,
       imageFocusY: focus.y,
       placeholder: input.placeholder,
+      ...input.recipe && { recipeIngredients: input.recipe.ingredients, recipeSteps: input.recipe.steps, recipeLink: input.recipe.link },
+      ...lookingSince && { recipeSearch: 'looking' as const, recipeSearchAt: lookingSince },
       addedBy: adder.id,
     }),
     // Recorded whatever happens: a Dish not added fails the whole step.
@@ -1042,6 +1101,8 @@ export async function addDish(
     creator: input.creator,
     caption: input.caption,
     playableVideo: input.playableVideo,
+    recipe: input.recipe ?? null,
+    recipeSearch: lookingSince ? 'looking' : null,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

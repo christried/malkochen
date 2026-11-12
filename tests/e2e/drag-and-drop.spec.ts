@@ -138,7 +138,9 @@ test('phone: a Dish dropped on a Column tab goes to the top of that Column', asy
 })
 
 test('phone: a Dish dropped on its own Column’s tab goes to the top', async ({ page }) => {
-  await page.setViewportSize(PHONE)
+  // Taller than the others: with the view switch's row under the header, the
+  // fourth card would lie in the bottom edge, where holding it scrolls the page.
+  await page.setViewportSize({ ...PHONE, height: 940 })
   await signIn(page, ALLOWLISTED[5])
   await gotoHydrated(page, '/')
   await tab(page, 'Diese Woche 4').click()

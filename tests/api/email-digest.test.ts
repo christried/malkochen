@@ -3,7 +3,8 @@ import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
 import { startResendService, type ResendService, type SentEmail } from '../support/resend-service'
 import { CRON_SECRET } from './server-env'
-import { TEST_RESEND_API_KEY } from '../support/test-auth-env'
+import { RECIPE_BLOG } from '../support/source-lookup-fixtures'
+import { OPERATOR, TEST_RESEND_API_KEY } from '../support/test-auth-env'
 
 // The Email Digest (#220): a Member switches it on in their settings (PUT
 // /api/me/email-digest, DELETE switches it off), for all their Boards. Once a
@@ -193,6 +194,42 @@ test('no email for a Member who switched it off, whose only new Dishes are their
   expect(emailsTo(CONWAY)).toEqual([])
   // Perey: nothing new at all.
   expect(emailsTo(PEREY)).toEqual([])
+})
+
+test('a Recipe change is no news: it brings no email (#494)', async () => {
+  const wu = await switchedOnFor(await signIn(WU))
+  const conway = await signIn(CONWAY)
+  const board = await sharedBoard(wu, [conway], 'Rezeptpost')
+  const dish = await addDish(conway, board.id, 'Hummus')
+  await run()
+  expect(emailsTo(WU)).toHaveLength(1)
+  resend.forget()
+
+  const res = await conway.fetch(`/api/dishes/${dish.id}`, json('PATCH', { recipe: { ingredients: ['1 Dose Kichererbsen'], steps: ['Pürieren.'] } }))
+  expect(res.status).toBe(200)
+  await run()
+
+  expect(emailsTo(WU)).toEqual([])
+})
+
+test('a Recipe the Recipe Finder found is no news: it brings no email (#500)', async () => {
+  const wu = await switchedOnFor(await signIn(WU))
+  const conway = await signIn(CONWAY)
+  const board = await sharedBoard(wu, [conway], 'Rezeptfund')
+  const added = await postDish(conway, board.id, { title: 'Linsenlasagne', placeholder: 'bowl', source: { link: RECIPE_BLOG, kind: 'blog' } })
+  expect(added.status).toBe(201)
+  const dish = await added.json() as Dish
+  await run()
+  expect(emailsTo(WU)).toHaveLength(1)
+  resend.forget()
+  const { id } = await (await conway.fetch('/api/me')).json() as { id: string }
+  expect((await (await signIn(OPERATOR)).fetch(`/api/admin/recipe-finder/${id}`, json('PUT', { on: true }))).status).toBe(200)
+
+  const res = await conway.fetch(`/api/dishes/${dish.id}/find-recipe`, { method: 'POST' })
+  expect(res.status).toBe(200)
+  await run()
+
+  expect(emailsTo(WU)).toEqual([])
 })
 
 test('a Dish is listed once: the next day\'s digest has only what was added since', async () => {

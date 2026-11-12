@@ -22,6 +22,8 @@ function dish(id: string): DishView {
     creator: null,
     caption: null,
     playableVideo: null,
+    recipe: null,
+    recipeSearch: null,
     imageUrl: null,
     imageFocus: { x: 50, y: 50 },
     placeholder: 'bowl',
@@ -48,6 +50,7 @@ function setup() {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: ['a'],
+    plannedDishes: [],
     asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a'), dish('b')] },

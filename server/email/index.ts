@@ -7,7 +7,8 @@ import type { BoardNews, Talk } from '../push'
 // `fetch`): the Email Digest (#220), which a Member who switched it on gets
 // in the evening, listing the Dishes others added to their Boards since the
 // last one and the Comments and Votes they gave (#353), the sign-in code
-// (#345) and the confirmation of a deleted account (#346). Pure apart from
+// (#345), the confirmation of a deleted account (#346) and the Operator's
+// note of a request for the Recipe Finder (#497). Pure apart from
 // that request; who gets a digest, with what, is server/utils/email-digest.ts.
 
 export type { BoardNews }
@@ -181,6 +182,20 @@ export function accountDeletedEmail(to: { email: string, name: string, language:
 <p style="margin:0 0 16px">${escapeHtml(t.again)}</p>
 <p style="color:${MUTED};font-size:13px;margin:24px 0 0">${escapeHtml(t.notYou)}</p>`)
   return { to: to.email, subject: t.subject, html, text }
+}
+
+// The email to the Operator (`to`) that `name` asked for the Recipe Finder
+// (#497), with a link to the Admin Page at `origin`, where they decide.
+export function recipeFinderAskedEmail(to: { email: string, language: Language }, name: string, origin: string): Email {
+  const t = stringsFor(to.language).recipeFinderAskedEmail
+  const subject = t.subject(name)
+  const link = `${origin}/admin`
+  const text = [t.headline, '', t.asked(name), '', t.decide, '', `${t.openAdmin}: ${link}`].join('\n')
+  const html = emailPage(to.language, subject, `<h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 4px">${escapeHtml(t.headline)}</h1>
+<p style="margin:0 0 16px">${escapeHtml(t.asked(name))}</p>
+<p style="margin:0 0 16px">${escapeHtml(t.decide)}</p>
+<a href="${escapeHtml(link)}" style="display:inline-block;background:${INK};color:#F7F6F2;border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:600">${escapeHtml(t.openAdmin)}</a>`)
+  return { to: to.email, subject, html, text }
 }
 
 // Who each email reached, and who it didn't (Resend refused the batch or

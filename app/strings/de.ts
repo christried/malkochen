@@ -13,13 +13,14 @@ import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
 import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { addDays, weekStart } from '../board/week-days'
 import { intlFor } from './intl'
 
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'add'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -29,7 +30,12 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `gelöschter Kommentar zu ${named}`
     case 'vote': return `Daumen bei ${named}`
     case 'title': return `neuer Titel für ${named}`
+    case 'recipe': return `geändertes Rezept für ${named}`
     case 'add': return `${named} hinzugefügt`
+    case 'plan': return `${named} eingeplant`
+    case 'planMove': return `${named} im Wochenplan verschoben`
+    case 'unplan': return `${named} aus dem Wochenplan genommen`
+    case 'planCook': return `Wer kocht ${named}`
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`
@@ -38,7 +44,20 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('de')
+
+// A day by its name, and after the current week with its date: "Samstag",
+// "Donnerstag, 26. November".
+function dayNamed(day: string, today: string): string {
+  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "heute", "morgen", then dayNamed.
+function dayPhrase(day: string, today: string): string {
+  if (day === today) return 'heute'
+  if (day === addDays(today, 1)) return 'morgen'
+  return dayNamed(day, today)
+}
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -255,6 +274,9 @@ export const de = {
     moveFailed: (title: string) => `„${title}“ ließ sich nicht verschieben. Versuch es gleich noch mal.`,
     // A move or archive refused as the Owner just took the Permission away.
     notAllowed: (title: string) => `Mit „${title}“ darfst du das auf diesem Board nicht mehr. Das legt die Besitzer:in fest.`,
+    // A Week Plan write the server refused (CONTEXT.md: Planned Dish).
+    planFailed: (title: string) => `„${title}“ ließ sich nicht einplanen. Versuch es gleich noch mal.`,
+    planCookFailed: (title: string) => `Wer „${title}“ kocht, ließ sich nicht ändern. Versuch es gleich noch mal.`,
     cook: 'Gekocht ✓',
     // Under "Gekocht ✓" in the celebration's pill, for a Dish moved into
     // another Board's Gekocht Column: that Board, with its emoji.
@@ -430,6 +452,69 @@ export const de = {
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     notAllowed: 'Dieses Gericht darfst du nicht mehr bearbeiten. Das legt die Besitzer:in fest.',
     imageNotStored: (title: string) => `Das neue Bild ließ sich nicht speichern. „${title}“ behält sein bisheriges Bild.`,
+  },
+  // A Dish's Recipe (CONTEXT.md: Recipe; spec #492): read in the detail
+  // (RecipeSection), edited in its own mode (RecipeEditor).
+  recipe: {
+    heading: 'Rezept',
+    edit: 'Bearbeiten',
+    add: 'Rezept hinzufügen',
+    ingredients: 'Zutaten',
+    steps: 'Schritte',
+    // Under the lists of a Recipe found at another page than the Source.
+    from: (site: string) => `Rezept von ${site}`,
+    // The editor's header and its add buttons.
+    cancel: 'Abbrechen',
+    save: 'Speichern',
+    addIngredient: 'Zutat hinzufügen',
+    addStep: 'Schritt hinzufügen',
+    ingredientPlaceholder: 'Zutat, z. B. 2 Knoblauchzehen',
+    stepPlaceholder: 'Was ist zu tun?',
+    // What a screen reader calls a line's field, and its grip and remove button.
+    ingredientField: (n: number) => `Zutat ${number(n)}`,
+    stepField: (n: number) => `Schritt ${number(n)}`,
+    moveLine: (line: string) => `${line} verschieben`,
+    removeLine: (line: string) => `${line} entfernen`,
+    moveUp: 'Nach oben',
+    moveDown: 'Nach unten',
+    // Said politely once a line has been moved.
+    moved: (line: string, place: number, total: number) => `${line}, jetzt an Stelle ${number(place)} von ${number(total)}.`,
+    // Toasts: a line removed, lines pasted, and pasted lines that did not fit.
+    ingredientRemoved: 'Zutat entfernt',
+    stepRemoved: 'Schritt entfernt',
+    ingredientsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'Zutat', other: 'Zutaten' })} eingefügt`,
+    stepsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'Schritt', other: 'Schritte' })} eingefügt`,
+    didNotFit: (count: number) => plural(count, { one: `${number(count)} Zeile hat nicht mehr reingepasst.`, other: `${number(count)} Zeilen haben nicht mehr reingepasst.` }),
+    // Near and at the limits: the counter, the note in place of the add
+    // button of a full list, and the sentence under a line at its limit.
+    count: (count: number, limit: number) => `${number(count)} von ${number(limit)}`,
+    ingredientsFull: (limit: number) => `${number(limit)} Zutaten, mehr passen nicht in ein Rezept.`,
+    stepsFull: (limit: number) => `${number(limit)} Schritte, mehr passen nicht in ein Rezept.`,
+    ingredientTooLong: 'Länger geht eine Zutat nicht.',
+    stepTooLong: 'Länger geht ein Schritt nicht. Mit Enter fängst du einen neuen an.',
+    // The question when a changed Recipe is left without saving.
+    discardTitle: 'Änderungen verwerfen?',
+    discardText: 'Dein Rezept bleibt dann so, wie es vorher war.',
+    keepEditing: 'Weiter bearbeiten',
+    discard: 'Verwerfen',
+    // The switch of a long Recipe (RecipeSwitch): its name for screen readers.
+    switchLabel: 'Zu Zutaten oder Schritten springen',
+    // The Recipe Finder in the Dish detail (#504): "Rezept finden" beside
+    // "Rezept hinzufügen", the card while it searches (to every Member), and
+    // what a search ended in. `found` and `show`: the Toast when a Recipe
+    // arrives while it is out of sight.
+    finder: {
+      find: 'Rezept finden',
+      searching: 'Rezept wird gesucht',
+      searchingAbout: 'Das dauert meist ein paar Sekunden, manchmal auch eine halbe Minute.',
+      none: 'Kein Rezept gefunden',
+      noneAbout: 'In der Caption und auf der verlinkten Seite stand keins.',
+      failed: 'Die Suche hat gerade nicht geklappt.',
+      again: 'Noch mal suchen',
+      quota: 'Für heute hat der Rezeptfinder genug gesucht. Morgen sucht er weiter.',
+      found: 'Rezept gefunden',
+      show: 'Zeigen',
+    },
   },
   // The Source pill on a Dish's image: short, so it fits on a card's.
   sources: {
@@ -648,7 +733,7 @@ export const de = {
     permission: {
       addDishes: { label: 'Gerichte hinzufügen', hint: 'Neue Gerichte aufs Board legen, auch über Teilen.' },
       editDishes: { label: 'Gerichte bearbeiten', hint: 'Titel, Bild, Creator und Link ändern. Eigene Gerichte immer.' },
-      moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen und als gekocht markieren.' },
+      moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen, als gekocht markieren und im Wochenplan einplanen.' },
       archiveDishes: { label: 'Gerichte archivieren', hint: 'Gerichte archivieren und aus dem Archiv zurückholen. Eigene Gerichte immer.' },
       editColumns: { label: 'Spalten bearbeiten', hint: 'Spalten hinzufügen, umbenennen, umsortieren und löschen.' },
       shareInvite: { label: 'Einladungslink teilen', hint: 'Den Link sehen, kopieren und weitergeben.' },
@@ -694,6 +779,67 @@ export const de = {
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     // A change refused as the Owner just switched the Permission off.
     notAllowed: 'Das darfst du auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
+  },
+  // The Week Plan (CONTEXT.md: Week Plan, Planned Dish), a view beside the
+  // Columns: the switch, the week, a day, a Planned Dish and the pickers.
+  week: {
+    // The switch at the top of the Board, and its name for screen readers.
+    view: 'Ansicht',
+    columns: 'Spalten',
+    week: 'Woche',
+    // "16. bis 22. November": which week, from its Monday; with the year
+    // when it isn't this year's.
+    title: (monday: string, now = new Date()) => weekRange(monday, addDays(monday, 6), 'bis', now),
+    today: 'Heute',
+    previous: 'Vorherige Woche',
+    next: 'Nächste Woche',
+    // A day: "Donnerstag" or "Do", the number of its day in the month, and
+    // "Donnerstag, 26. November" as a list's name.
+    weekday,
+    weekdayShort,
+    dayOfMonth: (day: string) => `${dayNumber(day)}.`,
+    dayName: (day: string) => `${weekday(day)}, ${dayMonth(day)}`,
+    dayPhrase,
+    // "+" on a day.
+    planOn: (day: string) => `Gericht für ${weekday(day)} einplanen`,
+    // A Planned Dish's link to its Dish detail, and its menu button.
+    plannedDish: (title: string, day: string, cook?: string | null, cooked?: boolean) => `${title}, ${weekday(day)}${cook ? `, kocht ${cook}` : ''}${cooked ? ', gekocht' : ''}`,
+    more: (title: string) => `Mehr zu ${title}`,
+    // An empty week; a past one offers nothing to plan.
+    emptyTitle: 'Die Woche ist noch frei.',
+    emptyText: 'Such dir ein Gericht vom Board aus und leg es auf einen Tag.',
+    emptyButton: 'Gericht aussuchen',
+    emptyPast: 'In dieser Woche war nichts geplant.',
+    // The Dish picker, from "+" or the empty week.
+    pickTitle: (day: string, today: string) => day === today ? 'Was gibt es heute?' : `Was gibt es am ${dayNamed(day, today)}?`,
+    search: 'Gericht suchen',
+    clearSearch: 'Suche leeren',
+    noMatch: (query: string) => `Kein Gericht mit „${query}“ auf diesem Board.`,
+    // The day picker for moving a Planned Dish; the day it lies on says so.
+    pickDay: 'An welchem Tag?',
+    moveToDay: 'Auf anderen Tag legen',
+    liesHere: 'Liegt hier',
+    // The menu on a Planned Dish.
+    moveUp: 'Nach oben',
+    moveDown: 'Nach unten',
+    remove: 'Aus dem Plan nehmen',
+    // Toasts, each with "Rückgängig".
+    moved: (day: string, today: string) => `Auf ${dayPhrase(day, today)} gelegt.`,
+    removed: 'Aus dem Plan genommen.',
+    // Said to screen readers after a Planned Dish was moved.
+    nowAt: (title: string, day: string, place: number, total: number) => `${title}, jetzt am ${weekday(day)} an Stelle ${place} von ${total}.`,
+    // "Einplanen" in the Dish detail, and the toast after it (with "Rückgängig").
+    plan: 'Einplanen',
+    planned: (day: string, today: string) => `Für ${dayPhrase(day, today)} eingeplant.`,
+    // Who cooks a Planned Dish: the picker (a title, and the line under it),
+    // the cook's picture as a button, and what is said to screen readers.
+    whoCooks: 'Wer kocht?',
+    whoCooksOn: (title: string, day: string) => `${title} am ${weekday(day)}`,
+    leaveOpen: 'Offen lassen',
+    you: 'du',
+    cookButton: (name: string) => `Kocht: ${name}. Ändern`,
+    cooksNow: (name: string) => `${name} kocht jetzt.`,
+    cooksNobody: 'Niemand kocht mehr fest.',
   },
   // public/offline.html repeats the first three, for the service worker,
   // and has its own copy of "malkochen ist gerade nicht erreichbar". The
@@ -900,6 +1046,36 @@ export const de = {
     unreachable: 'Snackbert ist gerade nicht erreichbar. Versuch es später noch mal.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
   },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Rezeptfinder',
+    about: 'Der Rezeptfinder sucht dir Zutaten und Schritte zu einem Gericht heraus, aus der Caption oder aus dem Foodblog, auf den sie verlinkt. Gerade ist er nur für ein paar Leute freigeschaltet.',
+    ask: 'Zugang anfragen',
+    asked: 'Angefragt',
+    // From an ISO time.
+    askedLine: (at: string) => `Deine Anfrage vom ${dayInFull(new Date(at))} ist angekommen. Mehr musst du nicht tun.`,
+    on: 'Eingeschaltet',
+    onLine: 'Der Rezeptfinder ist für dich eingeschaltet. Wenn er ein Rezept sucht, gehen die Caption und der Text der verlinkten Seite an Anthropic.',
+    privacyLink: 'Mehr dazu im Datenschutz',
+    askFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} angefragt, ${number(on)} eingeschaltet. Neue Anfragen stehen oben.`,
+      nobody: 'Niemand hat angefragt.',
+      empty: 'Noch hat niemand nach dem Rezeptfinder gefragt.',
+      person: 'Person',
+      askedColumn: 'Angefragt',
+      searchesColumn: 'Suchen',
+      switchColumn: 'Rezeptfinder',
+      // A request's day, from an ISO time: alone, and in a sentence.
+      askedDay: (at: string) => addedDate(new Date(at)),
+      askedOn: (at: string) => `Angefragt am ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} heute`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'Suche', other: 'Suchen' })}, ${number(today)} heute`,
+      noSearches: 'Noch keine Suchen',
+      switchFor: (name: string) => `Rezeptfinder für ${name}`,
+      failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    },
+  },
   // The Snackbert Question after a Cooking (#425; the wording decided on
   // #422, never judgemental): the Question naming the Dish, "Ja" and
   // "Nein", and his last word after "Nein". `label`: his bubble's name for
@@ -1085,6 +1261,7 @@ export const de = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Gerichte',
+      weekPlan: 'Wochenplan',
       cookings: 'Kochen',
       talk: 'Kommentare und Daumen',
       columns: 'Spalten',
@@ -1093,6 +1270,7 @@ export const de = {
       notifications: 'Benachrichtigungen',
       links: 'Links und Kopien',
       snackbert: 'Snackbert',
+      recipeFinder: 'Rezeptfinder',
       operator: 'Betrieb',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -1110,6 +1288,10 @@ export const de = {
       dish_archived: 'Gericht archiviert',
       dish_restored: 'Gericht wiederhergestellt',
       dish_deleted: 'Gericht endgültig gelöscht',
+      dish_planned: 'Gericht eingeplant',
+      planned_dish_moved: 'Eingeplantes Gericht verschoben',
+      dish_unplanned: 'Aus dem Wochenplan genommen',
+      planned_dish_cook_set: 'Wer kocht geändert',
       cooking_recorded: 'Gekocht',
       cooking_deleted: 'Kochen gelöscht',
       cooking_restored: 'Kochen wiederhergestellt',
@@ -1122,6 +1304,7 @@ export const de = {
       vote_taken_back: 'Daumen zurückgenommen',
       open_sign_up_switched: 'Anmeldung offen umgeschaltet',
       dish_edited: 'Gericht bearbeitet',
+      recipe_edited: 'Rezept bearbeitet',
       column_added: 'Spalte hinzugefügt',
       column_renamed: 'Spalte umbenannt',
       column_subtitle_changed: 'Spaltenuntertitel geändert',
@@ -1142,6 +1325,11 @@ export const de = {
       digest_switched: 'Tägliche E-Mail umgeschaltet',
       snackbert_switched: 'Snackbert umgeschaltet',
       snackbert_report_sent: 'Snackbert Report gesendet',
+      recipe_finder_asked: 'Rezeptfinder angefragt',
+      recipe_finder_switched: 'Rezeptfinder umgeschaltet',
+      recipe_found: 'Rezept gefunden',
+      recipe_not_found: 'Kein Rezept gefunden',
+      recipe_search_failed: 'Rezeptsuche fehlgeschlagen',
       account_deleted: 'Konto gelöscht',
       push_sent: 'Push gesendet',
       digest_sent: 'Tägliche E-Mail gesendet',
@@ -1149,6 +1337,15 @@ export const de = {
       prompt_answered: 'Hinweis beantwortet',
       dish_link_opened: 'Gericht-Link geöffnet',
     } satisfies Record<EventKind, string>,
+  },
+  // The email to the Operator when someone asks for the Recipe Finder
+  // (#497), in the Operator's language.
+  recipeFinderAskedEmail: {
+    subject: (name: string) => `${name} fragt nach dem Rezeptfinder`,
+    headline: 'Anfrage für den Rezeptfinder',
+    asked: (name: string) => `${name} möchte den Rezeptfinder benutzen.`,
+    decide: 'Ob du ihn einschaltest, entscheidest du auf der Admin-Seite. Lässt du die Anfrage liegen, bleibt sie einfach angefragt.',
+    openAdmin: 'Admin-Seite öffnen',
   },
   // The email confirming it (#346), in the language of whoever deleted it.
   accountDeletedEmail: {

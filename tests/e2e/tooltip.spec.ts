@@ -121,6 +121,10 @@ test('keyboard focus shows a control’s Tooltip at once, focus moving on moves 
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: /Board wechseln/ })).toBeFocused()
   await expect(tooltip(page)).toHaveText('Board wechseln')
+  // The view switch comes next, and says what it is itself: no Tooltip.
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('radio', { name: 'Spalten' })).toBeFocused()
+  await expect(tooltip(page)).toBeHidden()
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: 'Gerichte suchen' })).toBeFocused()
   await expect(tooltip(page)).toHaveText('Gerichte suchen')
@@ -130,6 +134,9 @@ test('keyboard focus shows a control’s Tooltip at once, focus moving on moves 
   await expect(page.getByRole('button', { name: 'Gerichte suchen' })).toBeFocused()
 
   // Focus going to something without one closes it too.
+  await page.keyboard.press('Shift+Tab')
+  await expect(page.getByRole('radio', { name: 'Spalten' })).toBeFocused()
+  await expect(tooltip(page)).toBeHidden()
   await page.keyboard.press('Shift+Tab')
   await expect(tooltip(page)).toHaveText('Board wechseln')
   await page.getByRole('link', { name: 'Miso-Ramen', exact: true }).focus()

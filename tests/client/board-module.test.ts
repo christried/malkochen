@@ -11,7 +11,7 @@ import { memoryTransport, type MemoryTransport } from './memory-transport'
 // the tests look at the Board and at what each operation answers.
 
 function dish(id: string): DishView {
-  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 }
+  return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, recipe: null, recipeSearch: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 }
 }
 
 // A Board with Ideen (a, b, c), Diese Woche (d) and Gekocht (empty).
@@ -28,6 +28,7 @@ function boardFixture(): BoardView {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    plannedDishes: [],
     asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: 'Worauf hast du Lust?', isGekocht: false, dishes: [dish('a'), dish('b'), dish('c')] },
@@ -1214,4 +1215,130 @@ test('without "move Dishes" a cook of several is refused at once', () => {
   expect(module.cookDishes(['a', 'd'])).toBeNull()
   expect(shown()).toMatchObject({ ideen: ['a', 'b', 'c'], woche: ['d'], gekocht: [] })
   expect(fake.sent).toEqual([])
+})
+
+// "Rezept finden" (#504): the Recipe Finder searches for a Dish's Recipe.
+// The Dish shows "looking" at once, and settles to what the server answers.
+const withSource = (board: BoardView) => {
+  board.columns[0]!.dishes[0]!.source = { link: 'https://www.tiktok.com/@koch/video/1', kind: 'tiktok' }
+}
+const dishA = (board: { value?: BoardView }) => board.value!.columns[0]!.dishes[0]!
+
+test('a search shows "looking" at once, and a Recipe found takes its place', async () => {
+  const { board, fake, module } = setup(withSource)
+  const held = fake.holdNext('findRecipe')
+
+  const search = module.findRecipe('a')
+  expect(dishA(board).recipeSearch).toBe('looking')
+  held.succeed()
+
+  expect(await search).toBe('found')
+  expect(dishA(board)).toMatchObject({ recipe: { ingredients: ['2 Eier', '200 g Mehl'], steps: ['Alles verrühren.'] }, recipeSearch: null })
+  expect(fake.sent).toEqual(['findRecipe a'])
+})
+
+test('a search that finds nothing leaves the Dish remembering it', async () => {
+  const { board, fake, module } = setup(withSource)
+  fake.searchEnds('none')
+
+  expect(await module.findRecipe('a')).toBe('none')
+  expect(dishA(board)).toMatchObject({ recipe: null, recipeSearch: 'none' })
+})
+
+test('a search that failed puts the Dish back to not searching', async () => {
+  const { board, fake, module } = setup(withSource)
+  fake.searchEnds('failed')
+
+  expect(await module.findRecipe('a')).toBe('failed')
+  expect(dishA(board)).toMatchObject({ recipe: null, recipeSearch: null })
+})
+
+test('a request that fails for another reason counts as a failed search and puts the Dish back', async () => {
+  const { board, fake, module } = setup(withSource)
+  fake.failNext('findRecipe', 500)
+
+  expect(await module.findRecipe('a')).toBe('failed')
+  expect(dishA(board).recipeSearch).toBeNull()
+
+  fake.setAnswers('none')
+  expect(await module.findRecipe('a')).toBe('failed')
+  expect(dishA(board).recipeSearch).toBeNull()
+})
+
+test('the day’s cap answers quota and puts the Dish back', async () => {
+  const { board, fake, module } = setup(withSource)
+  fake.failNext('findRecipe', 429)
+
+  expect(await module.findRecipe('a')).toBe('quota')
+  expect(dishA(board).recipeSearch).toBeNull()
+})
+
+test('a search the server turns down because the Dish moved on asks the page to look again', async () => {
+  const { board, fake, module } = setup(withSource)
+  fake.failNext('findRecipe', 409)
+
+  expect(await module.findRecipe('a')).toBe('conflict')
+  expect(dishA(board).recipeSearch).toBeNull()
+})
+
+test('a search the Recipe Finder refuses (off, no key) is refused and puts the Dish back', async () => {
+  const { board, fake, module } = setup(withSource)
+  fake.failNext('findRecipe', 503)
+
+  expect(await module.findRecipe('a')).toBe('refused')
+  expect(dishA(board).recipeSearch).toBeNull()
+})
+
+test('a Dish that is searched already, or has a Recipe, or the user may not edit, is refused without asking the server', async () => {
+  const looking = setup((board) => {
+    withSource(board)
+    board.columns[0]!.dishes[0]!.recipeSearch = 'looking'
+  })
+  expect(await looking.module.findRecipe('a')).toBe('refused')
+
+  const hasRecipe = setup((board) => {
+    withSource(board)
+    board.columns[0]!.dishes[0]!.recipe = { ingredients: ['Salz'], steps: [], link: null }
+  })
+  expect(await hasRecipe.module.findRecipe('a')).toBe('refused')
+
+  const mayNot = setup((board) => {
+    withSource(board)
+    asMemberWithout('editDishes')(board)
+  })
+  expect(await mayNot.module.findRecipe('a')).toBe('refused')
+
+  expect([looking, hasRecipe, mayNot].flatMap(({ fake }) => fake.sent)).toEqual([])
+})
+
+test('without a connection a search is refused without asking the server, and is not kept as an Unsent Change', async () => {
+  const fixture = boardFixture()
+  withSource(fixture)
+  const board = ref<BoardView | undefined>(structuredClone(fixture))
+  const fake = memoryTransport(fixture)
+  const module = createBoardModule(board, fake.transport, { offline: () => true })
+
+  expect(await module.findRecipe('a')).toBe('refused')
+  expect(dishA(board).recipeSearch).toBeNull()
+  expect(fake.sent).toEqual([])
+})
+
+test('a search for a Dish that is not on the Board is refused', async () => {
+  const { fake, module } = setup(withSource)
+
+  expect(await module.findRecipe('nope')).toBe('refused')
+  expect(fake.sent).toEqual([])
+})
+
+test('a poll while the search runs carries the Recipe over to a shown Dish, as for others’ searches', async () => {
+  const { board, fake, module } = setup(withSource)
+  const asking = askServer(fake)
+
+  fake.server.columns[0]!.dishes[0]!.recipeSearch = 'looking'
+  await module.sync(asking)
+  expect(dishA(board).recipeSearch).toBe('looking')
+
+  Object.assign(fake.server.columns[0]!.dishes[0]!, { recipeSearch: null, recipe: { ingredients: ['Salz'], steps: ['Kochen.'], link: null } })
+  await module.sync(asking)
+  expect(dishA(board)).toMatchObject({ recipeSearch: null, recipe: { ingredients: ['Salz'], steps: ['Kochen.'] } })
 })

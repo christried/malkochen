@@ -96,7 +96,8 @@ export interface AdminBoard {
 // kind is in exactly one: EveryKindGrouped fails typecheck for a kind that is
 // in none, and the client test for one that is in two.
 export const EVENT_GROUPS = {
-  dishes: ['dish_added', 'dish_edited', 'dish_moved', 'dish_archived', 'dish_restored', 'dish_deleted'],
+  dishes: ['dish_added', 'dish_edited', 'recipe_edited', 'dish_moved', 'dish_archived', 'dish_restored', 'dish_deleted'],
+  weekPlan: ['dish_planned', 'planned_dish_moved', 'dish_unplanned', 'planned_dish_cook_set'],
   cookings: ['cooking_recorded', 'cooking_deleted', 'cooking_restored'],
   talk: ['comment_written', 'comment_edited', 'comment_deleted', 'comment_restored', 'vote_set', 'vote_changed', 'vote_taken_back'],
   columns: ['column_added', 'column_renamed', 'column_subtitle_changed', 'column_reordered', 'column_deleted'],
@@ -119,6 +120,7 @@ export const EVENT_GROUPS = {
   notifications: ['push_switched', 'digest_switched', 'push_sent', 'digest_sent', 'prompt_shown', 'prompt_answered'],
   links: ['dish_link_opened', 'dish_copied'],
   snackbert: ['snackbert_switched', 'snackbert_report_sent'],
+  recipeFinder: ['recipe_finder_asked', 'recipe_finder_switched', 'recipe_found', 'recipe_not_found', 'recipe_search_failed'],
   operator: ['open_sign_up_switched'],
 } as const satisfies Record<string, readonly EventKind[]>
 

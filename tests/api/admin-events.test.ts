@@ -128,6 +128,18 @@ test('the Board filter leaves out other Boards, and the kinds filter takes a gro
   expect(dishes.events.map(e => e.kind)).toEqual(['dish_added'])
 })
 
+test('a Recipe change shows as "Recipe edited" among the Dish kinds, with its Dish and who did it (#494)', async () => {
+  const ada = await owner()
+  const board = await boardWith('Rezeptprotokoll')
+  const dish = await addDish(ada, board.id, 'Mit Rezept')
+  expect((await patch(ada, `/api/dishes/${dish.id}`, { recipe: { ingredients: ['Mehl'], steps: ['Kneten.'] } })).status).toBe(200)
+
+  const { events: shown } = await events({ board: board.id, kinds: EVENT_GROUPS.dishes.join(',') })
+
+  expect(shown.map(e => e.kind)).toEqual(['recipe_edited', 'dish_added'])
+  expect(shown[0]).toMatchObject({ user: { name: await nameOf(ada) }, dish: { id: dish.id, title: 'Mit Rezept' }, details: {} })
+})
+
 test('the time range counts whole days in UTC, both ends included', async () => {
   const ada = await owner()
   const board = await boardWith('Alt und neu')

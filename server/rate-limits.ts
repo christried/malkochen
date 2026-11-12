@@ -21,6 +21,10 @@ export const RATE_LIMITS = {
   // Each Snackbert Report is a Gemini analysis on the Operator's bill. Snackbert
   // itself takes 20 a day per account, so this only stops a client stuck in a loop.
   'snackbert-report': { calls: 30, window: '1 day' },
+  // Each "Rezept finden" (#500) reads the Source's page and, from #501 on,
+  // costs a call to the language model on the Operator's bill. A search that
+  // failed is given back (refundRateLimit), so only answers count.
+  'recipe-search': { calls: 30, window: '1 day' },
 } as const
 
 export type RateLimited = keyof typeof RATE_LIMITS

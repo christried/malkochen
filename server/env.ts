@@ -67,6 +67,13 @@ const serverEnvSchema = databaseEnvSchema.extend({
   // environment. Both or none: without them Snackbert is off everywhere.
   SNACKBERT_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
   SNACKBERT_SECRET: z.union([z.literal(''), z.string().min(16)]).default(''),
+  // The Recipe Finder's model (CONTEXT.md, #501, server/recipe-finder/model.ts):
+  // the Anthropic API key it reads Captions with, one per environment.
+  // Empty: the Recipe Finder does nothing and "Rezept finden" is not offered.
+  ANTHROPIC_API_KEY: z.union([z.literal(''), z.string().regex(/^sk-ant-/, 'must be an Anthropic API key (sk-ant-…)')]).default(''),
+  // Tests only: where Anthropic's API is instead (a stand-in that keeps what
+  // is asked). Empty: Anthropic itself.
+  ANTHROPIC_BASE_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
   // Tests only: the Version the server runs as (server/version.ts), in
   // place of package.json's, so the tests see the same one whatever the
   // newest Version is. Empty: package.json's.
@@ -85,6 +92,9 @@ const serverEnvSchema = databaseEnvSchema.extend({
 ).refine(
   env => !(env.RESEND_BASE_URL !== '' && isDeployed(env.VERCEL_ENV)),
   { path: ['RESEND_BASE_URL'], message: 'must never be set in Vercel production or preview' },
+).refine(
+  env => !(env.ANTHROPIC_BASE_URL !== '' && isDeployed(env.VERCEL_ENV)),
+  { path: ['ANTHROPIC_BASE_URL'], message: 'must never be set in Vercel production or preview' },
 ).refine(
   env => !(env.MALKOCHEN_VERSION !== '' && isDeployed(env.VERCEL_ENV)),
   { path: ['MALKOCHEN_VERSION'], message: 'must never be set in Vercel production or preview' },

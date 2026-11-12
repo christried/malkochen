@@ -4,6 +4,18 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-12
+
+### Added
+
+- Dishes can hold a recipe now. Open a dish and tap Add recipe to write down the ingredients and steps line by line, even without a connection. A pasted list becomes one line per row, and search finds a dish by what goes in it.
+- Want malkochen to look up a dish’s recipe for you? You can ask for the Recipe Finder in your settings.
+- Every board has a week plan now, beside its columns: a switch at the top moves between Columns and Week. Put dishes on the days you want to cook them, the same dish on several days or several on one day, and say who cooks. On the day, tick a dish off as Cooked ✓ straight from the plan, even without a connection.
+
+### Changed
+
+- The privacy policy now has a section on the Recipe Finder: when it looks for a recipe for you, the caption and the text of the linked page go to Anthropic.
+
 ## [1.2.1] - 2026-11-11
 
 ### Changed
@@ -75,7 +87,8 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - Open to everyone: anyone can sign up, with Google or a code we email you, and delete your account yourself whenever you like.
 - What’s new: this page, linked at the end of your settings and marked New after every update.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/christried/malkochen/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2

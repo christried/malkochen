@@ -1,3 +1,5 @@
+import { endsSentence, EXCLAIMS_OR_ASKS, SENTENCE_PUNCTUATION } from './sentence'
+
 // Turns a caption or page title into a Suggested Title that reads well on a
 // Board: its opening words up to the first emoji, line break or sentence end
 // (skipping parts with nothing but hashtags and emojis), out of capitals if
@@ -14,15 +16,6 @@ const EMOJI = /\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicato
 // out, keycaps like 1️⃣ included, but not ©, ® or ™, which belong to the name
 // before them.
 const EMOJI_BREAK = /(?:[#*0-9]\uFE0F?\u20E3|(?![©®™])\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|\u200D|\uFE0F)+/u
-// Punctuation that may end a sentence, when a space follows.
-const SENTENCE_PUNCTUATION = /[.!?]+(?=\s)/gu
-const EXCLAIMS_OR_ASKS = /[!?]/
-// Abbreviations a full stop follows mid-sentence, in recipes and around them.
-const ABBREVIATIONS = new Set([
-  'ca', 'nr', 'dr', 'st', 'mr', 'ms', 'mrs', 'jr', 'sr', 'prof', 'vs', 'etc', 'vgl', 'bzw', 'usw', 'inkl', 'exkl', 'evtl', 'ggf', 'zzgl',
-  'el', 'tl', 'gr', 'kg', 'mg', 'ml', 'cl', 'dl', 'msp', 'stk', 'pck', 'pkg', 'pers', 'min', 'std', 'sek', 'max', 'tsp', 'tbsp', 'oz', 'lb', 'lbs',
-])
-
 // Instagram captions pad with the blank Braille pattern, which isn't \s.
 const BLANK = /\u2800/g
 
@@ -36,17 +29,6 @@ function cleanLine(line: string): string {
     // Separators left dangling once a hashtag or emoji after them is gone.
     .replace(/[\s,;:|·•–—-]+$/u, '')
     .replace(/^[\s,;:|·•–—-]+/u, '')
-}
-
-// "!" and "?" end a sentence; so does a lone full stop after a word (or a
-// bracket or quote closing one) of two letters or more that isn't an
-// abbreviation. "ca. 500 g", "z.B.", "Nr. 1", "30 Min. fertig", "2.0" and
-// "Warte kurz..." go on.
-function endsSentence(text: string, punctuation: string, index: number): boolean {
-  if (EXCLAIMS_OR_ASKS.test(punctuation)) return true
-  if (punctuation !== '.') return false
-  const before = /(?:^|[^\p{L}\p{N}.])(\p{L}+)[)\]"'“”’»«]*$/u.exec(text.slice(0, index))?.[1]
-  return !!before && before.length >= 2 && !ABBREVIATIONS.has(before.toLowerCase())
 }
 
 interface Part { text: string, rest: string }

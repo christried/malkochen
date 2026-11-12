@@ -5,6 +5,8 @@ import type { BulkBody } from '~~/server/utils/dish-input'
 import type { DishHistory } from '~~/server/utils/dish-history'
 import type { AddedDish, CookedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import type { VoteView } from '~~/server/utils/votes'
+import type { PlannedDishView } from '~~/server/utils/week-plan'
+import type { RecipeSearchAnswer } from '~~/shared/recipe'
 import type { BoardTransport } from './board-module'
 import { gotNoAnswer, WriteFailed } from './write-failed'
 
@@ -15,6 +17,7 @@ export function httpTransport(): BoardTransport {
     addDish: (boardId, dish) => asWrite($fetch<AddedDish>(`/api/boards/${boardId}/dishes`, { method: 'POST', body: dish })),
     addDishLate: (boardId, dish) => asWrite($fetch<AddedDish>(`/api/boards/${boardId}/dishes`, { method: 'POST', body: dish })),
     editDish: (dishId, changes) => asWrite($fetch<SavedDish>(`/api/dishes/${dishId}`, { method: 'PATCH', body: changes })),
+    findRecipe: dishId => asWrite($fetch<RecipeSearchAnswer>(`/api/dishes/${dishId}/find-recipe`, { method: 'POST' })),
     deleteDish: dishId => asWrite($fetch<unknown>(`/api/dishes/${dishId}`, { method: 'DELETE' })).then(() => undefined),
     restoreDish: dishId => asWrite($fetch<PlacedDish>(`/api/dishes/${dishId}/restore`, { method: 'POST' })),
     moveDish: (dishId, to, late) => asWrite($fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: { ...to, ...late } })),
@@ -29,6 +32,10 @@ export function httpTransport(): BoardTransport {
     restoreDishes: dishIds => asWrite(bulk({ action: 'restore', dishIds })),
     cookDishes: (dishIds, late) => asWrite(bulk({ action: 'cook', dishIds, ...late }) as Promise<CookedDish[]>),
     uncookDishes: cookings => asWrite(bulk({ action: 'uncook', cookings })),
+    planDish: (boardId, plan, late) => asWrite($fetch<PlannedDishView>(`/api/boards/${boardId}/planned-dishes`, { method: 'POST', body: { ...plan, ...late } })),
+    movePlannedDish: (plannedId, to, late) => asWrite($fetch<PlannedDishView>(`/api/planned-dishes/${plannedId}`, { method: 'PATCH', body: { ...to, ...late } })),
+    unplanDish: (plannedId, late) => asWrite($fetch<unknown>(`/api/planned-dishes/${plannedId}`, { method: 'DELETE', body: { ...late } })).then(() => undefined),
+    setPlannedDishCook: (plannedId, cookId, late) => asWrite($fetch<PlannedDishView>(`/api/planned-dishes/${plannedId}/cook`, { method: 'PUT', body: { cookId, ...late } })),
     openDish: dishId => asWrite($fetch<DishHistory>(`/api/dishes/${dishId}/open`, { method: 'POST' })),
     writeComment: (dishId, text, late) => asWrite($fetch<CommentView>(`/api/dishes/${dishId}/comments`, { method: 'POST', body: { text, ...late } })),
     editComment: (commentId, text) => asWrite($fetch<CommentView>(`/api/comments/${commentId}`, { method: 'PATCH', body: { text } })),

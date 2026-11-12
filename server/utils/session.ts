@@ -74,6 +74,19 @@ export function columnIdParam(event: H3Event): string {
   return id
 }
 
+// Same for a Planned Dish (CONTEXT.md: Planned Dish): one that doesn't exist,
+// one whose Dish is archived and one on someone else's Board look alike.
+export function plannedDishNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Planned Dish not found' })
+}
+
+// A Planned Dish id from the route. Anything that isn't a UUID can't be one.
+export function plannedDishIdParam(event: H3Event): string {
+  const id = getRouterParam(event, 'id') ?? ''
+  if (!UUID.test(id)) throw plannedDishNotFound()
+  return id
+}
+
 // Same for a Cooking: one that doesn't exist and one on someone else's Board look alike.
 export function cookingNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Cooking not found' })

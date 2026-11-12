@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import { offlinePagePolicy } from './server/offline-page-policy'
 import { isStaging, stagingHeaders } from './shared/staging'
+
+// shared/, as the build's module ids write it (forward slashes, drive letter).
+const SHARED_DIR = fileURLToPath(new URL('shared/', import.meta.url)).replaceAll('\\', '/')
 
 const EVERYWHERE = {
   'X-Content-Type-Options': 'nosniff',
@@ -142,7 +146,28 @@ export default defineNuxtConfig({
     '/api/**': { headers: { 'Cache-Control': 'private, no-store' } },
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+      // The production build leaves shared/ to Nitro (Nuxt marks it external
+      // for the server bundle). A module the app reaches only by relative
+      // imports (app/board/*, which runs in plain Node under test and so
+      // can't use `~~`) is written into the chunk as a relative path that is
+      // one `../` too many from where the chunks end up (the Nitro step then
+      // fails with "Could not resolve"), while one reached through `~~` is
+      // written as an absolute path. Marking every shared/ import absolute
+      // makes both the same.
+      {
+        name: 'malkochen:shared-externals',
+        apply: 'build',
+        enforce: 'pre',
+        applyToEnvironment: environment => environment.name === 'ssr',
+        async resolveId(id, importer, options) {
+          const resolved = await this.resolve(id, importer, { ...options, skipSelf: true })
+          if (resolved?.external === true && resolved.id.startsWith(SHARED_DIR)) return { ...resolved, external: 'absolute' }
+          return null
+        },
+      },
+    ],
   },
   hooks: {
     // Nuxt 4.6's dev error overlay (#243) shows a client error on every page

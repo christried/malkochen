@@ -72,6 +72,25 @@
   --field-label-size: 12.5px;
   --field-label-line: 14px;
   --field-outline: rgba(31,30,28,.24);
+  /* R13: Recipes */
+  --color-paste-tint: color-mix(in oklch, #A5C7AE 40%, var(--color-surface));
+  --color-search-tint: color-mix(in oklch, #F7B94A 30%, var(--color-surface));
+  --font-recipe: 500 18px/1.5 var(--font-ui);
+  --font-recipe-num: 500 18px/1 var(--font-display);
+  --dur-search: 4800ms;
+  --ease-search: ease-in-out;
+  /* R14: Week Plan */
+  --color-today-tint: color-mix(in oklch, #F7B94A 22%, var(--color-bg));
+  --color-day-fill: rgba(31,30,28,.035);
+  --color-view-track: rgba(31,30,28,.08);
+  --color-match-tint: color-mix(in oklch, #F7B94A 45%, transparent);
+  --shadow-small: 0 8px 18px -10px rgba(70,55,30,.24), 0 1px 3px rgba(70,55,30,.07);
+  --radius-planned: 22px 19px 23px 20px;
+  --radius-planned-thumb: 16px 13px 17px 14px;
+  --size-pd: 64px;
+  --size-pd-today: 100px;
+  --size-pd-desktop: 166px;
+  --z-strip: 19;
 }
 .dark, [data-theme="dark"] {
   --color-bg: #131211;
@@ -95,6 +114,13 @@
   --shadow-fab: 0 16px 32px -10px rgba(0,0,0,.70);
   --shadow-neu: 0 8px 18px -6px rgba(0,0,0,.6);
   --field-outline: rgba(255,255,255,.24);
+  --color-paste-tint: color-mix(in oklch, #A5C7AE 28%, var(--color-surface));
+  --color-search-tint: color-mix(in oklch, #F7B94A 22%, var(--color-surface));
+  --color-today-tint: color-mix(in oklch, #F7B94A 13%, var(--color-bg));
+  --color-day-fill: rgba(255,255,255,.03);
+  --color-view-track: rgba(255,255,255,.09);
+  --color-match-tint: color-mix(in oklch, #F7B94A 38%, transparent);
+  --shadow-small: 0 8px 18px -10px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.3);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --color-bg: #131211;
@@ -118,6 +144,13 @@
   --shadow-fab: 0 16px 32px -10px rgba(0,0,0,.70);
   --shadow-neu: 0 8px 18px -6px rgba(0,0,0,.6);
   --field-outline: rgba(255,255,255,.24);
+  --color-paste-tint: color-mix(in oklch, #A5C7AE 28%, var(--color-surface));
+  --color-search-tint: color-mix(in oklch, #F7B94A 22%, var(--color-surface));
+  --color-today-tint: color-mix(in oklch, #F7B94A 13%, var(--color-bg));
+  --color-day-fill: rgba(255,255,255,.03);
+  --color-view-track: rgba(255,255,255,.09);
+  --color-match-tint: color-mix(in oklch, #F7B94A 38%, transparent);
+  --shadow-small: 0 8px 18px -10px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.3);
 } }
 @media (prefers-reduced-motion: reduce) { :root {
   --dur-tap: 0ms;
@@ -131,4 +164,5 @@
   --dur-type: 0ms;
   --dur-celebrate: 0ms;
   --dur-idle: 0ms;
+  --dur-search: 0ms;
 } }

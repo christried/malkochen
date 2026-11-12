@@ -1,19 +1,20 @@
 import { and, eq, isNull, type SQL } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { ImageFocus } from '../../shared/image-focus'
+import type { Recipe } from '../../shared/recipe'
 import { db } from '../db'
 import { board, dish } from '../db/schema'
 import { accessOn } from './board-access'
 import { slugOf } from './addresses'
-import { addDish, type DishSource, type PlacedDish } from './dishes'
+import { addDish, recipeOf, type DishSource, type PlacedDish } from './dishes'
 import type { shownAs } from './people'
 import { storage } from './image-store'
 
 // A Copy (CONTEXT.md: Copy, #402): a new Dish on another of the user's Boards,
 // made from one they can see. It takes the Dish's title, Source, Creator,
-// Caption, image, Focus Point and Placeholder; not its Cookings, Comments or
-// Votes. The copier adds it, so it is theirs and New Dish for the target's
-// Members, like any added Dish.
+// Caption, Recipe (with the link it was found at), image, Focus Point and
+// Placeholder; not its Cookings, Comments or Votes. The copier adds it, so
+// it is theirs and New Dish for the target's Members, like any added Dish.
 
 type Copier = Parameters<typeof shownAs>[0]
 
@@ -25,6 +26,7 @@ export interface CopySource {
   creator: string | null
   caption: string | null
   playableVideo: boolean | null
+  recipe: Recipe | null
   imageUrl: string | null
   imageIsOwnPhoto: boolean
   imageFocus: ImageFocus
@@ -44,6 +46,9 @@ async function liveSourceWhere(where: SQL): Promise<CopySource | null> {
       creator: dish.creator,
       caption: dish.caption,
       playableVideo: dish.playableVideo,
+      recipeIngredients: dish.recipeIngredients,
+      recipeSteps: dish.recipeSteps,
+      recipeLink: dish.recipeLink,
       imageUrl: dish.imageUrl,
       imageIsOwnPhoto: dish.imageIsOwnPhoto,
       imageFocusX: dish.imageFocusX,
@@ -54,9 +59,10 @@ async function liveSourceWhere(where: SQL): Promise<CopySource | null> {
     .innerJoin(board, eq(board.id, dish.boardId))
     .where(and(where, isNull(dish.deletedAt), isNull(board.deletedAt)))
   if (!found) return null
-  const { sourceLink, sourceKind, imageFocusX, imageFocusY, ...rest } = found
+  const { sourceLink, sourceKind, recipeIngredients, recipeSteps, recipeLink, imageFocusX, imageFocusY, ...rest } = found
   return {
     ...rest,
+    recipe: recipeOf(recipeIngredients, recipeSteps, recipeLink),
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     imageFocus: { x: imageFocusX, y: imageFocusY },
   }
@@ -123,6 +129,7 @@ export async function copyFrom(source: CopySource, copier: Copier, toBoardId: st
     creator: source.creator,
     caption: source.caption,
     playableVideo: source.playableVideo,
+    recipe: source.recipe,
     imageUrl,
     // Only a Copy that got the image has the photo flag; a failed copy has its Placeholder.
     imageIsOwnPhoto: imageUrl !== null && source.imageIsOwnPhoto,

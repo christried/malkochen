@@ -10,22 +10,27 @@ import type { VoteResult } from '~/board/dish-votes'
 // The Dish detail's contents, in the handoff's order (#476): a large image,
 // two chips (the Source, and where the Dish is: Board and Column), the
 // title with the Creator and Caption under it, "Original öffnen" beside
-// "Gekocht ✓", "Link teilen" beside "Kopieren", its Dish History ("Verlauf":
+// "Gekocht ✓", "Einplanen" (Week Plan, #518), "Link teilen" and "Kopieren"
+// on one row, its Dish History ("Verlauf":
 // who added it and when, its Cookings, Votes and Comments, the comment
 // field), "Verschieben nach…" and "Löschen". Scrolled past its image, a compact bar
 // at the top keeps close, the title and "Bearbeiten" at hand
 // (useDetailScroll). Each action only for a Member it is allowed to
 // (their Permissions): "Bearbeiten" with "edit Dishes", "Verschieben
-// nach…" and "Gekocht ✓" with "move Dishes", "Löschen" with "archive
+// nach…", "Einplanen" and "Gekocht ✓" with "move Dishes", "Löschen" with "archive
 // Dishes"; the last and the first also for a Dish they added themselves.
 // "Link teilen" (Dish Link, #401) is for every Member who sees the Dish.
 const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: string }>()
 const emit = defineEmits<{
   close: []
   edit: []
+  // The Recipe's own edit mode (RecipeEditor), which the page opens.
+  editRecipe: []
   move: []
   delete: []
   cook: [origin: Point]
+  // "Einplanen": the page opens the day picker at the button.
+  plan: [anchor: HTMLElement]
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
   vote: [result: VoteResult]
@@ -33,12 +38,17 @@ const emit = defineEmits<{
   copy: []
   // Something to tell the Member, as a Toast.
   notice: [text: string]
+  // A Recipe arrived by itself while the Recipe was out of sight (#504): the
+  // page says so in a Toast that scrolls to it.
+  recipeFound: []
 }>()
 const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
 const mayMove = computed(() => boardModule.may('moveDishes'))
-const quietButton = 'flex min-w-0 items-center justify-center gap-2 rounded-pill bg-surface-muted px-3 py-3.5 text-center text-button text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus'
+const quietButton = 'flex min-w-0 items-center justify-center rounded-pill bg-surface-muted py-3.5 text-center text-button text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus'
+// With "Einplanen" the row has three, so each gives up a little room.
+const shareButton = computed(() => `${quietButton} ${mayMove.value ? 'gap-1.5 px-2' : 'gap-2 px-3'}`)
 // Added offline and not sent yet (#462): sharing, copying and deleting wait
 // for the server to have the Dish; they are greyed out like what needs a
 // connection.
@@ -283,18 +293,55 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
 
       <!-- Under the action row, on a phone and in the desktop panel alike:
            "Link teilen" and "Kopieren" (#402, a Copy on another of the
-           user's Boards), two equal, quiet buttons on one row (#476). -->
+           user's Boards), two equal, quiet buttons on one row (#476). With
+           "move Dishes", "Einplanen" (#518) comes first: it opens the day
+           picker, and the detail itself shows nothing of the plan. It works
+           offline (an Unsent Change) once the Dish has been sent. -->
       <div
-        class="grid grid-cols-2 gap-2"
+        class="grid gap-2"
+        :class="mayMove ? 'grid-cols-3' : 'grid-cols-2'"
         data-share-actions
       >
+        <NeedsNet
+          v-if="mayMove"
+          :note="false"
+          :allowed="!boardModule.isUnsentAdd(dish.id)"
+        >
+          <button
+            type="button"
+            :class="shareButton"
+            aria-haspopup="dialog"
+            data-plan-dish
+            @click="emit('plan', $event.currentTarget as HTMLElement)"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              class="shrink-0"
+            ><rect
+              x="4"
+              y="5"
+              width="16"
+              height="15"
+              rx="3"
+            /><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5" /></svg>
+            {{ t.week.plan }}
+          </button>
+        </NeedsNet>
         <NeedsNet
           :note="false"
           :allowed="onlyIfSent"
         >
           <button
             type="button"
-            :class="quietButton"
+            :class="shareButton"
             :disabled="sharing"
             data-share-link
             @click="shareLink"
@@ -307,7 +354,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           </button>
           <button
             type="button"
-            :class="quietButton"
+            :class="shareButton"
             data-copy-dish
             @click="emit('copy')"
           >
@@ -319,6 +366,16 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           </button>
         </NeedsNet>
       </div>
+
+      <!-- The Recipe (#496), after the share row, so the actions above it
+           never move and it starts in the same place on every Dish. -->
+      <RecipeSection
+        :dish="dish"
+        :may-edit="mayEdit"
+        :unsent="boardModule.hasUnsentRecipe(dish.id)"
+        @edit="emit('editRecipe')"
+        @found="emit('recipeFound')"
+      />
 
       <DishHistory
         :dish="dish"

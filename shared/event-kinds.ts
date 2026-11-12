@@ -25,6 +25,15 @@ export const EVENT_KINDS = [
   'dish_restored',
   // An Archived Dish the Owner deleted for good.
   'dish_deleted',
+  // The Week Plan (CONTEXT.md: Week Plan, Planned Dish): a Dish put on a day,
+  // a Planned Dish moved to another day or place, and one taken off the plan
+  // (the Dish itself stays), and who cooks one set or cleared ("Wer kocht";
+  // `details.member` is the cook, absent when cleared). `details.plannedDish`
+  // is the Planned Dish.
+  'dish_planned',
+  'planned_dish_moved',
+  'dish_unplanned',
+  'planned_dish_cook_set',
   'cooking_recorded',
   'cooking_deleted',
   'cooking_restored',
@@ -44,6 +53,8 @@ export const EVENT_KINDS = [
   'open_sign_up_switched',
   // "Bearbeiten" on a Dish: which of its fields changed (EventDetails).
   'dish_edited',
+  // A Dish's Recipe (CONTEXT.md) changed by a Member, never what it says.
+  'recipe_edited',
   // Board settings: Columns added, renamed, given or without a Column
   // Subtitle, put in a new order, and deleted.
   'column_added',
@@ -79,6 +90,18 @@ export const EVENT_KINDS = [
   // A Snackbert Report (#424) sent for a Cooking: its Board, Dish and user,
   // never what it said or what it showed.
   'snackbert_report_sent',
+  // The Recipe Finder's search for a Dish's Recipe (#500, "Rezept finden")
+  // ended: it found a Recipe (Dish and Board, by the user who searched), found
+  // none for the Dish's Source, or failed because the page didn't answer.
+  // Never what it found. Together they count a user's searches.
+  'recipe_found',
+  'recipe_not_found',
+  'recipe_search_failed',
+  // A user asked for the Recipe Finder (CONTEXT.md, #497) in Your Settings.
+  'recipe_finder_asked',
+  // The Operator switched the Recipe Finder on or off for a user (the
+  // event's `member`).
+  'recipe_finder_switched',
   // A Deleted Account: no user (its others' events lose theirs too).
   'account_deleted',
   // A Push Notification sent to one of a Member's devices, for the Board

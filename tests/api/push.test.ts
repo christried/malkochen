@@ -2,6 +2,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } fr
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, speaking, type Caller } from './client'
 import { startPushService, type Device, type PushService } from './push-service'
+import { RECIPE_BLOG } from '../support/source-lookup-fixtures'
+import { OPERATOR } from '../support/test-auth-env'
 
 const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
 
@@ -262,6 +264,12 @@ test('moving, editing, cooking or deleting a Dish notifies nobody', async () => 
   const gekocht = board.columns.find(c => c.isGekocht)!
 
   expect((await katalin.fetch(`/api/dishes/${dish.id}`, json('PATCH', { title: 'Leise Suppe' }))).status).toBe(200)
+  // What the Recipe Finder finds for it (#500) is one too, and a Recipe typed after it is an edit like any other (#494).
+  const { id } = await (await katalin.fetch('/api/me')).json() as { id: string }
+  expect((await (await signIn(OPERATOR)).fetch(`/api/admin/recipe-finder/${id}`, json('PUT', { on: true }))).status).toBe(200)
+  expect((await katalin.fetch(`/api/dishes/${dish.id}`, json('PATCH', { source: { link: RECIPE_BLOG, kind: 'blog' } }))).status).toBe(200)
+  expect((await katalin.fetch(`/api/dishes/${dish.id}/find-recipe`, { method: 'POST' })).status).toBe(200)
+  expect((await katalin.fetch(`/api/dishes/${dish.id}`, json('PATCH', { recipe: { ingredients: ['Linsen'], steps: ['Köcheln.'] } }))).status).toBe(200)
   expect((await katalin.fetch(`/api/dishes/${dish.id}/move`, json('POST', { columnId: gekocht.id }))).status).toBe(200)
   expect((await katalin.fetch(`/api/dishes/${dish.id}/cook`, { method: 'POST' })).status).toBe(200)
   expect((await katalin.fetch(`/api/dishes/${dish.id}`, { method: 'DELETE' })).status).toBe(204)

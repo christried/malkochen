@@ -4,6 +4,18 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-12
+
+### Added
+
+- Ora i piatti possono avere una ricetta. Apri un piatto e tocca Aggiungi ricetta per scrivere ingredienti e passaggi riga per riga, anche senza connessione. Una lista incollata diventa una riga per voce, e la ricerca trova un piatto anche dai suoi ingredienti.
+- Vuoi che malkochen cerchi per te la ricetta di un piatto? Puoi chiedere il Trova ricette nelle tue impostazioni.
+- Ogni bacheca ha ora un piano settimanale accanto alle sue colonne: in alto passi da Colonne a Settimana. Metti i piatti nei giorni in cui vuoi cucinarli, lo stesso piatto su più giorni o più piatti in un giorno, e indica chi cucina. Quel giorno tocchi Cucinato ✓ direttamente dal piano, anche senza connessione.
+
+### Changed
+
+- L’informativa sulla privacy ora ha una sezione su Trova ricette: quando cerca una ricetta per te, la caption e il testo della pagina collegata vanno ad Anthropic.
+
 ## [1.2.1] - 2026-11-11
 
 ### Changed
@@ -75,7 +87,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Aperto a tutti: chiunque può iscriversi, con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
 - Novità: questa pagina, in fondo alle tue impostazioni e segnata come Nuovo dopo ogni aggiornamento.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/christried/malkochen/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2

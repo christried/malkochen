@@ -9,6 +9,7 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 import { watchEvents } from './event-log'
 import { startPushService, type PushService } from './push-service'
 import { IMAGE_DIR, storedImages } from './server-env'
+import { foundRecipeAt } from './time-travel'
 
 // Copies (#402; CONTEXT.md: Copy). "Kopieren" makes a new Dish on another
 // of the user's Boards from one they can see: POST /api/dishes/:id/copy
@@ -55,6 +56,7 @@ interface Dish {
   commentCount: number
   addedBy: { id: string } | null
   source: { link: string, kind: string } | null
+  recipe: { ingredients: string[], steps: string[], link: string | null } | null
 }
 interface Board { id: string, slug: string, name: string, emoji: string, inviteToken: string, version: number, newDishIds: string[], columns: Column[] }
 
@@ -239,4 +241,26 @@ test('the event log records a Dish copied with both Dishes, and no Dish added', 
     userId: await idOf(grace),
     details: { from: original.id, source: 'tiktok' },
   }])
+})
+
+test('a Copy takes the Recipe along, in its order, with the link it was found at; a Dish without one copies without (#495)', async () => {
+  const { source, target, ada, grace } = await sharedBoards('Rezept')
+  const ingredients = ['250 g rote Linsen', '1 Zwiebel', '1 l Gemüsebrühe']
+  const steps = ['Zwiebel würfeln und anbraten.', 'Linsen und Brühe dazu.', 'Zwanzig Minuten köcheln.']
+  const withRecipe = await addDish(ada, source.id, { title: 'Linsensuppe mit Rezept' })
+  const without = await addDish(ada, source.id, { title: 'Linsensuppe ohne Rezept' })
+  expect((await patch(ada, `/api/dishes/${withRecipe.id}`, { recipe: { ingredients, steps } })).status).toBe(200)
+  await foundRecipeAt(withRecipe.id, 'https://omas-kueche.example/linsensuppe')
+
+  const copied = await copy(grace, withRecipe.id, target.id)
+  const plain = await copy(grace, without.id, target.id)
+  expect(copied.status).toBe(201)
+  expect(plain.status).toBe(201)
+  const { dish } = await copied.json() as { dish: Dish }
+
+  const recipe = { ingredients, steps, link: 'https://omas-kueche.example/linsensuppe' }
+  expect(dish.recipe).toEqual(recipe)
+  expect((await plain.json() as { dish: Dish }).dish.recipe).toBeNull()
+  // As the target Board reads it, too.
+  expect((await getBoard(grace, target.id)).columns.flatMap(c => c.dishes).find(d => d.id === dish.id)!.recipe).toEqual(recipe)
 })

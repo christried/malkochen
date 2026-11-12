@@ -44,7 +44,7 @@ export function isUniqueViolation(err: unknown): boolean {
 // stands (`standing`), and writes only a free one. When a repeat arriving at
 // the same moment wrote it first (unique violation), asks again. Answers how
 // it stood: 'free' once written. Without an id (no `standing`), just writes.
-export async function writeOnce(standing: (() => Promise<DeviceIdStanding>) | undefined, write: () => Promise<void>): Promise<DeviceIdStanding> {
+export async function writeOnce(standing: (() => Promise<DeviceIdStanding>) | undefined, write: () => Promise<unknown>): Promise<DeviceIdStanding> {
   if (!standing) {
     await write()
     return 'free'

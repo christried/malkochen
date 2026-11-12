@@ -7,6 +7,7 @@ import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings, UnsentKindName } from './de'
 import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { addDays, weekStart } from '../board/week-days'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
@@ -20,7 +21,12 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `deleted comment on ${named}`
     case 'vote': return `thumb on ${named}`
     case 'title': return `new title for ${named}`
+    case 'recipe': return `changed recipe for ${named}`
     case 'add': return `${named} added`
+    case 'plan': return `${named} planned`
+    case 'planMove': return `${named} moved in the week plan`
+    case 'unplan': return `${named} taken off the week plan`
+    case 'planCook': return `who cooks ${named}`
     case 'move': return `${named} moved`
     case 'cook':
     case 'cookMany': return `${named} cooked`
@@ -29,7 +35,20 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('en-GB')
+
+// A day by its name, and after the current week with its date: "Saturday",
+// "Thursday, 26 November".
+function dayNamed(day: string, today: string): string {
+  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "today", "tomorrow", then dayNamed.
+function dayPhrase(day: string, today: string): string {
+  if (day === today) return 'today'
+  if (day === addDays(today, 1)) return 'tomorrow'
+  return dayNamed(day, today)
+}
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -207,6 +226,8 @@ export const en: Strings = {
     thisBoard: 'This board',
     moveFailed: (title: string) => `“${title}” couldn’t be moved. ${tryAgain}`,
     notAllowed: (title: string) => `You can’t do that with “${title}” on this board any more. The owner decides that.`,
+    planFailed: (title: string) => `“${title}” couldn’t be planned. Try again in a moment.`,
+    planCookFailed: (title: string) => `Who cooks “${title}” couldn’t be changed. Try again in a moment.`,
     cook: 'Cooked ✓',
     cookedOn: (board: string) => `on ${board}`,
     cookWord: 'Cooked',
@@ -363,6 +384,54 @@ export const en: Strings = {
     failed,
     notAllowed: 'You can’t edit this dish any more. The owner decides that.',
     imageNotStored: (title: string) => `The new image couldn’t be saved. “${title}” keeps its old one.`,
+  },
+  recipe: {
+    heading: 'Recipe',
+    edit: 'Edit',
+    add: 'Add recipe',
+    ingredients: 'Ingredients',
+    steps: 'Steps',
+    from: (site: string) => `Recipe from ${site}`,
+    cancel: 'Cancel',
+    save: 'Save',
+    addIngredient: 'Add ingredient',
+    addStep: 'Add step',
+    ingredientPlaceholder: 'Ingredient, e.g. 2 garlic cloves',
+    stepPlaceholder: 'What needs doing?',
+    ingredientField: (n: number) => `Ingredient ${number(n)}`,
+    stepField: (n: number) => `Step ${number(n)}`,
+    moveLine: (line: string) => `Move ${line}`,
+    removeLine: (line: string) => `Remove ${line}`,
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    moved: (line: string, place: number, total: number) => `${line}, now at position ${number(place)} of ${number(total)}.`,
+    ingredientRemoved: 'Ingredient removed',
+    stepRemoved: 'Step removed',
+    ingredientsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'ingredient', other: 'ingredients' })} pasted`,
+    stepsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'step', other: 'steps' })} pasted`,
+    didNotFit: (count: number) => plural(count, { one: `${number(count)} line didn’t fit.`, other: `${number(count)} lines didn’t fit.` }),
+    count: (count: number, limit: number) => `${number(count)} of ${number(limit)}`,
+    ingredientsFull: (limit: number) => `${number(limit)} ingredients, a recipe holds no more.`,
+    stepsFull: (limit: number) => `${number(limit)} steps, a recipe holds no more.`,
+    ingredientTooLong: 'An ingredient can’t be longer.',
+    stepTooLong: 'A step can’t be longer. Press Enter to start a new one.',
+    discardTitle: 'Discard changes?',
+    discardText: 'Your recipe stays as it was before.',
+    keepEditing: 'Keep editing',
+    discard: 'Discard',
+    switchLabel: 'Jump to ingredients or steps',
+    finder: {
+      find: 'Find recipe',
+      searching: 'Looking for the recipe',
+      searchingAbout: 'This usually takes a few seconds, sometimes half a minute.',
+      none: 'No recipe found',
+      noneAbout: 'There was none in the caption or on the linked page.',
+      failed: 'The search didn’t work just now.',
+      again: 'Search again',
+      quota: 'The Recipe Finder has searched enough for today. It will search again tomorrow.',
+      found: 'Recipe found',
+      show: 'Show',
+    },
   },
   sources: {
     tiktok: 'TikTok',
@@ -551,7 +620,7 @@ export const en: Strings = {
     permission: {
       addDishes: { label: 'Add dishes', hint: 'Put new dishes on the board, by sharing too.' },
       editDishes: { label: 'Edit dishes', hint: 'Change the title, image, creator and link. Always for your own dishes.' },
-      moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns and mark them as cooked.' },
+      moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns, mark them as cooked and plan them in the week plan.' },
       archiveDishes: { label: 'Archive dishes', hint: 'Archive dishes and bring them back from the archive. Always for your own dishes.' },
       editColumns: { label: 'Edit columns', hint: 'Add, rename, reorder and delete columns.' },
       shareInvite: { label: 'Share the invite link', hint: 'See, copy and pass on the link.' },
@@ -591,6 +660,50 @@ export const en: Strings = {
     purged: (title: string) => `“${title}” is deleted for good.`,
     failed,
     notAllowed: 'You can’t do that on this board any more. The owner decides that.',
+  },
+  week: {
+    view: 'View',
+    columns: 'Columns',
+    week: 'Week',
+    title: (monday: string, now = new Date()) => weekRange(monday, addDays(monday, 6), 'to', now),
+    today: 'Today',
+    previous: 'Previous week',
+    next: 'Next week',
+    weekday,
+    weekdayShort,
+    dayOfMonth: (day: string) => dayNumber(day),
+    dayName: (day: string) => `${weekday(day)}, ${dayMonth(day)}`,
+    dayPhrase,
+    planOn: (day: string) => `Plan a dish for ${weekday(day)}`,
+    plannedDish: (title: string, day: string, cook?: string | null, cooked?: boolean) => `${title}, ${weekday(day)}${cook ? `, ${cook} is cooking` : ''}${cooked ? ', cooked' : ''}`,
+    more: (title: string) => `More about ${title}`,
+    emptyTitle: 'The week is still free.',
+    emptyText: 'Pick a dish from the board and put it on a day.',
+    emptyButton: 'Pick a dish',
+    emptyPast: 'Nothing was planned this week.',
+    pickTitle: (day: string, today: string) => day === today ? 'What’s on today?' : `What’s on ${dayNamed(day, today)}?`,
+    search: 'Search dishes',
+    clearSearch: 'Clear search',
+    noMatch: (query: string) => `No dish matching “${query}” on this board.`,
+    pickDay: 'Which day?',
+    moveToDay: 'Move to another day',
+    liesHere: 'Already here',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    remove: 'Take off the plan',
+    moved: (day: string, today: string) => `Moved to ${dayPhrase(day, today)}.`,
+    removed: 'Taken off the plan.',
+    nowAt: (title: string, day: string, place: number, total: number) => `${title}, now on ${weekday(day)} at place ${place} of ${total}.`,
+    // "Plan it" in the Dish detail, and the toast after it (with "Undo").
+    plan: 'Plan it',
+    planned: (day: string, today: string) => `Planned for ${dayPhrase(day, today)}.`,
+    whoCooks: 'Who’s cooking?',
+    whoCooksOn: (title: string, day: string) => `${title} on ${weekday(day)}`,
+    leaveOpen: 'Leave open',
+    you: 'you',
+    cookButton: (name: string) => `Cooking: ${name}. Change`,
+    cooksNow: (name: string) => `${name} is cooking now.`,
+    cooksNobody: 'Nobody is set to cook any more.',
   },
   offline: {
     headline: 'You’re offline.',
@@ -743,6 +856,36 @@ export const en: Strings = {
     noAccount: 'Snackbert can’t find an account for your email address.',
     unreachable: 'Snackbert can’t be reached right now. Try again later.',
     failed,
+  },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Recipe Finder',
+    about: 'The Recipe Finder picks out the ingredients and steps for a dish, from the caption or from the food blog it links to. Right now it is switched on for only a few people.',
+    ask: 'Ask for access',
+    asked: 'Asked',
+    // From an ISO time.
+    askedLine: (at: string) => `Your request from ${dayInFull(new Date(at))} has arrived. There is nothing more you need to do.`,
+    on: 'Switched on',
+    onLine: 'The Recipe Finder is switched on for you. When it looks for a recipe, the caption and the text of the linked page go to Anthropic.',
+    privacyLink: 'More in the privacy policy',
+    askFailed: failed,
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} asked, ${number(on)} switched on. New requests are at the top.`,
+      nobody: 'Nobody has asked.',
+      empty: 'Nobody has asked for the Recipe Finder yet.',
+      person: 'Person',
+      askedColumn: 'Asked',
+      searchesColumn: 'Searches',
+      switchColumn: 'Recipe Finder',
+      // A request's day, from an ISO time: alone, and in a sentence.
+      askedDay: (at: string) => addedDate(new Date(at)),
+      askedOn: (at: string) => `Asked on ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} today`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'search', other: 'searches' })}, ${number(today)} today`,
+      noSearches: 'No searches yet',
+      switchFor: (name: string) => `Recipe Finder for ${name}`,
+      failed,
+    },
   },
   snackbertQuestion: {
     label: 'Snackbert',
@@ -916,6 +1059,7 @@ export const en: Strings = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Dishes',
+      weekPlan: 'Week plan',
       cookings: 'Cooking',
       talk: 'Comments and thumbs',
       columns: 'Columns',
@@ -924,6 +1068,7 @@ export const en: Strings = {
       notifications: 'Notifications',
       links: 'Links and copies',
       snackbert: 'Snackbert',
+      recipeFinder: 'Recipe Finder',
       operator: 'Operation',
     } satisfies Record<EventGroup, string>,
     // Every kind of event, past tense.
@@ -941,6 +1086,10 @@ export const en: Strings = {
       dish_archived: 'Dish archived',
       dish_restored: 'Dish restored',
       dish_deleted: 'Dish deleted for good',
+      dish_planned: 'Dish planned',
+      planned_dish_moved: 'Planned dish moved',
+      dish_unplanned: 'Taken off the week plan',
+      planned_dish_cook_set: 'Cook changed',
       cooking_recorded: 'Cooked',
       cooking_deleted: 'Cooking deleted',
       cooking_restored: 'Cooking restored',
@@ -953,6 +1102,7 @@ export const en: Strings = {
       vote_taken_back: 'Thumb taken back',
       open_sign_up_switched: 'Open sign-up switched',
       dish_edited: 'Dish edited',
+      recipe_edited: 'Recipe edited',
       column_added: 'Column added',
       column_renamed: 'Column renamed',
       column_subtitle_changed: 'Column subtitle changed',
@@ -973,6 +1123,11 @@ export const en: Strings = {
       digest_switched: 'Daily email switched',
       snackbert_switched: 'Snackbert switched',
       snackbert_report_sent: 'Snackbert Report sent',
+      recipe_finder_asked: 'Recipe Finder asked for',
+      recipe_finder_switched: 'Recipe Finder switched',
+      recipe_found: 'Recipe found',
+      recipe_not_found: 'No Recipe found',
+      recipe_search_failed: 'Recipe search failed',
       account_deleted: 'Account deleted',
       push_sent: 'Push sent',
       digest_sent: 'Daily email sent',
@@ -980,6 +1135,13 @@ export const en: Strings = {
       prompt_answered: 'Prompt answered',
       dish_link_opened: 'Dish link opened',
     } satisfies Record<EventKind, string>,
+  },
+  recipeFinderAskedEmail: {
+    subject: (name: string) => `${name} is asking for the Recipe Finder`,
+    headline: 'A request for the Recipe Finder',
+    asked: (name: string) => `${name} would like to use the Recipe Finder.`,
+    decide: 'Whether you switch it on is up to you, on the Admin Page. If you leave the request, it simply stays asked.',
+    openAdmin: 'Open the Admin Page',
   },
   accountDeletedEmail: {
     subject: 'Your malkochen account is deleted',

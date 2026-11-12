@@ -715,3 +715,11 @@ html[data-theme-reveal="fade"] *::after {
     color: var(--color-text-muted);
   }
 }
+
+/* Recipes (handoff assets/r13-keyframes.css): lines pasted into the Recipe
+   editor start tinted and fade out over 1.6s (RecipeLine). Reduced motion:
+   the tint holds for the same time instead (the editor takes it off). */
+@keyframes r13-tint {
+  from { background-color: var(--color-paste-tint); }
+  to { background-color: transparent; }
+}

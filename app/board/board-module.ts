@@ -1,7 +1,7 @@
 import { computed, reactive, type InjectionKey, type Ref } from 'vue'
 // Relative imports, not `~~`: the module's tests run in plain Node (the
 // "client" Vitest project), which knows no Nuxt aliases.
-import type { BoardView } from '../../server/utils/boards'
+import type { BoardMemberView, BoardView } from '../../server/utils/boards'
 import type { ColumnView } from '../../server/utils/columns'
 import type { CookingView } from '../../server/utils/cookings'
 import type { DishEditBody, AddDishBody, OfflineAddBody } from '../../server/utils/dish-input'
@@ -9,11 +9,15 @@ import type { AddedDish, CookedDish, CookingUndo, DishAdder, DishPlace, DishPlac
 import { MILESTONE_COOKINGS } from '../utils/achievement'
 import { dishOnBoard } from '../../shared/board'
 import { viewerMay, type Permission } from '../../shared/permissions'
+import { recipeAfterEdit, type RecipeSearchAnswer, type RecipeSearchOutcome } from '../../shared/recipe'
+import { recipeToSave } from '../utils/recipe-lines'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 import type { Late } from './late'
 import { sendOrKeep } from './send-or-keep'
 import { WriteFailed, isUnanswered } from './write-failed'
 import { dishOfAdd, layOver, type UnsentChange, type UnsentChanges, type UnsentKind } from './unsent-changes'
+import type { PlannedDishView } from '../../server/utils/week-plan'
+import { cookedOn, indexInDay, isDay, landingInDay, putOnDay, takeOffPlan } from './week-plan'
 import { createDishHistories, type HistoryTransport } from './dish-histories'
 import type { KeptBoards } from './kept-boards'
 import { createDishVotes, type VoteTransport } from './dish-votes'
@@ -88,6 +92,38 @@ export interface BulkResult {
   klassiker?: { dish: DishView, cooking: CookingView }[]
 }
 
+// What the page tells the Member when a Week Plan write failed (#516), as a
+// key for the page to look up: `planFailed` for planning, moving and
+// unplanning; `planCookFailed` for setting who cooks; `notAllowed` in place of
+// either, as for any write.
+export type PlanNotice = 'planFailed' | 'planCookFailed' | 'notAllowed'
+
+// What a Week Plan operation answers: the Planned Dish as the Board shows it
+// and its Dish, a notice if the write failed, and, for a write that may still
+// fail after the Board changed, what it ended in once settled.
+export interface PlanResult {
+  plannedDish: PlannedDishView
+  dish: DishView
+  notice?: PlanNotice
+  settled?: Promise<PlanResult>
+  // The write got no answer, so the change stays on screen as an Unsent
+  // Change; set on what it settled in.
+  unsent?: true
+}
+
+// A Planned Dish of the Week Plan as a screen draws it (weekPlan): with its
+// Dish, who cooks it (`cook`: the Member, when the Board lists them) and
+// whether it is cooked; `unsent` while its change waits to be sent.
+export interface PlanEntry {
+  id: string
+  day: string
+  dish: DishView
+  cookId: string | null
+  cook: BoardMemberView | null
+  cooked: boolean
+  unsent: boolean
+}
+
 // A write the server refused or never answered (write-failed.ts).
 export { WriteFailed }
 
@@ -126,6 +162,9 @@ export interface BoardTransport extends HistoryTransport, VoteTransport {
   // the server looks its link up then (#462).
   addDishLate: (boardId: string, dish: OfflineAddBody) => Promise<AddedDish>
   editDish: (dishId: string, changes: DishEditBody) => Promise<SavedDish>
+  // "Rezept finden" (#504): answers once the search is over, which can take
+  // half a minute.
+  findRecipe: (dishId: string) => Promise<RecipeSearchAnswer>
   deleteDish: (dishId: string) => Promise<void>
   restoreDish: (dishId: string) => Promise<PlacedDish>
   // `late`, only from the Unsent Changes (unsent-changes.ts): when the change
@@ -146,9 +185,29 @@ export interface BoardTransport extends HistoryTransport, VoteTransport {
   // order sent; and its undo, answering the Dishes placed, in that order.
   cookDishes: (dishIds: string[], late?: Late) => Promise<CookedDish[]>
   uncookDishes: (cookings: CookingUndo[]) => Promise<PlacedDish[]>
+  // The Week Plan (#516): a Dish planned on a day with the id the device made
+  // for the Planned Dish (a repeat of it answers it, not an error), a Planned
+  // Dish moved to a day, taken off the plan, and who cooks it set or cleared.
+  // `late.madeAt`, only from the Unsent Changes.
+  planDish: (boardId: string, plan: PlanBody, late?: Late) => Promise<PlannedDishView>
+  movePlannedDish: (plannedId: string, to: { day: string, index?: number }, late?: Late) => Promise<PlannedDishView>
+  unplanDish: (plannedId: string, late?: Late) => Promise<void>
+  setPlannedDishCook: (plannedId: string, cookId: string | null, late?: Late) => Promise<PlannedDishView>
+}
+
+// A Dish planned: the Planned Dish's id, its Dish and its day, at `index`
+// among the day's others, else at the end.
+export interface PlanBody {
+  id: string
+  dishId: string
+  day: string
+  index?: number
 }
 
 export type { Late }
+
+// How "Rezept finden" ended (findRecipe).
+export type FindRecipeResult = RecipeSearchOutcome | 'quota' | 'conflict' | 'refused'
 
 type BoardColumn = BoardView['columns'][number]
 
@@ -439,18 +498,23 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     return !!unsent?.changes.value.some(c => c.kind === 'add' && c.dishId === dishId)
   }
 
+  // Whether a Recipe edit of the Dish waits to be sent (#496).
+  function hasUnsentRecipe(dishId: string): boolean {
+    return !!unsent?.changes.value.some(c => c.kind === 'recipe' && c.dishId === dishId)
+  }
+
   // The Dishes added offline that have arrived since: the Board's card takes
   // the Dish as the server made it (its code, title, image, Creator), keeping
   // its Cookings, Votes and Comment count, which others unsent still change.
   function takeArrivals() {
     if (!unsent || !board.value) return
     for (const { dish } of unsent.takeArrivals(board.value.id)) {
-      const { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt } = dish
+      const { id, code, title, source, creator, caption, playableVideo, recipe, imageUrl, imageFocus, placeholder, addedBy, createdAt } = dish
       const shown = find(id)?.dish
       if (!shown) continue
       // The code it was shown with still leads to it (an open detail).
       arrivedCodes.set(shown.code, shown.id)
-      Object.assign(shown, { id, code, title, source, creator, caption, playableVideo, imageUrl, imageFocus, placeholder, addedBy, createdAt })
+      Object.assign(shown, { id, code, title, source, creator, caption, playableVideo, recipe, imageUrl, imageFocus, placeholder, addedBy, createdAt })
     }
   }
   const arrivedCodes = reactive(new Map<string, string>())
@@ -464,6 +528,9 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   function droppedChanges(dropped: readonly UnsentChange[]) {
     for (const change of dropped) {
       if (change.kind === 'add' && board.value?.id === change.boardId) takeOut(change.dishId)
+      // A Dish planned offline that couldn't be goes from the Plan; the others
+      // are put right by the Board load that follows.
+      if (change.kind === 'plan' && board.value?.id === change.boardId) takeOffPlan(planned(), change.plannedId)
     }
     return histories.droppedChanges(dropped)
   }
@@ -477,29 +544,40 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // write rejects with WriteFailed, for the form to say so; without "edit
   // Dishes" for it, at once with 403, as the server would.
   //
-  // An edit of the title alone (the only field that works offline) whose
-  // write gets no answer, or that is made while Unsent Changes wait, shows
-  // at once and is kept as an Unsent Change instead; it wins over what
-  // others changed meanwhile.
+  // An edit of the title alone, or of the Recipe alone (#496; the only
+  // fields that work offline), whose write gets no answer, or that is made
+  // while Unsent Changes wait, shows at once and is kept as an Unsent Change
+  // instead; it wins over what others changed meanwhile.
   async function editDish(dishId: string, changes: DishEditBody): Promise<BoardResult> {
     if (!may('editDishes', dishId)) throw new WriteFailed(403)
     const title = changes.title?.trim()
-    const titleOnly = !!title && Object.keys(changes).length === 1
-    // The server has nothing to change yet but the title, which is sent after the add.
-    if (isUnsentAdd(dishId) && !titleOnly) throw new WriteFailed()
-    const titleKept = Symbol('title kept as an Unsent Change')
+    const onlyKey = Object.keys(changes).length === 1
+    const titleOnly = !!title && onlyKey
+    const recipeOnly = changes.recipe !== undefined && onlyKey
+    const keepable = titleOnly || recipeOnly
+    // The server has nothing to change yet but the title and the Recipe, which are sent after the add.
+    if (isUnsentAdd(dishId) && !keepable) throw new WriteFailed()
+    const kept = Symbol('kept as an Unsent Change')
     const madeAt = new Date().toISOString()
     const answer = await queued(dishId, () => sendOrKeep({
-      canKeep: titleOnly && !!unsent,
+      canKeep: keepable && !!unsent,
       waiting: anyUnsent(),
       send: () => transport.editDish(dishId, changes),
-      keep: (): typeof titleKept => titleKept,
+      keep: (): typeof kept => kept,
     }), { moves: false })
-    if (answer === titleKept) {
+    if (answer === kept) {
       const dish = find(dishId)?.dish
       if (!dish) throw new WriteFailed(404)
-      queueUnsent({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
-      dish.title = title!
+      if (recipeOnly) {
+        // As the server will keep it: the lines trimmed, the empty ones gone.
+        const recipe = changes.recipe ? recipeToSave(changes.recipe) : null
+        queueUnsent({ kind: 'recipe', dishId, recipe }, madeAt, dish.title)
+        dish.recipe = recipeAfterEdit(dish.recipe, recipe)
+      }
+      else {
+        queueUnsent({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
+        dish.title = title!
+      }
       return { dish, unsent: true }
     }
     const { imageNotStored, ...saved } = answer
@@ -509,6 +587,47 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       Object.assign(shown, fields)
     }
     return { dish: shown ?? saved, ...imageNotStored && { notice: 'imageNotReplaced' } }
+  }
+
+  // "Rezept finden" (#504): the Recipe Finder searches for the Recipe of a
+  // Dish with a Source and no Recipe. The Dish shows "looking" at once, so
+  // the detail has its search card the moment it is tapped, and settles to
+  // the Dish the server answers with: the Recipe found, "none" for nothing
+  // found, or neither when the search failed. It needs a connection and is
+  // never kept as an Unsent Change, so offline it is refused (as it is for a
+  // Dish the Member may not edit, one that has a Recipe or a search already,
+  // and one added offline and not sent yet). Not queued with the Dish's other
+  // writes: it takes long, and an edit made meanwhile must not wait for it.
+  // The result, for the page: how the search ended (`found`, `none`,
+  // `failed`, which includes a request that went wrong); `quota`, the day's
+  // cap (429); `conflict`, the Dish isn't searchable any more as the server
+  // has it (409, or gone: 404), which a sync clears up; `refused`, the Recipe
+  // Finder is off for the Member or has no key (403, 503), or nothing was
+  // asked.
+  async function findRecipe(dishId: string): Promise<FindRecipeResult> {
+    const shown = find(dishId)?.dish
+    if (!shown || !may('editDishes', dishId) || offline?.() || isUnsentAdd(dishId) || shown.recipe || shown.recipeSearch) return 'refused'
+    const before = shown.recipeSearch
+    shown.recipeSearch = 'looking'
+    try {
+      const answer = await transport.findRecipe(dishId)
+      const now = find(dishId)?.dish
+      if (now) {
+        const { cookings: _, votes: __, ...fields } = answer.dish
+        Object.assign(now, fields)
+      }
+      return answer.outcome
+    }
+    catch (error) {
+      const now = find(dishId)?.dish
+      // Only if nothing else has changed it: a poll may have brought the Recipe.
+      if (now?.recipeSearch === 'looking') now.recipeSearch = before
+      const status = error instanceof WriteFailed ? error.status : undefined
+      if (status === 429) return 'quota'
+      if (status === 409 || status === 404) return 'conflict'
+      if (status === 403 || status === 503) return 'refused'
+      return 'failed'
+    }
   }
 
   // Deleting a Dish (PRD story 47): its card goes at once. If the delete
@@ -1134,6 +1253,187 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     return { dishes, notice: 'deletedMany', undo, focus, settled }
   }
 
+  // The Week Plan (#516; CONTEXT.md: Week Plan, Planned Dish; ADR 0014) sits
+  // beside the Columns: planning never moves a Dish. It is the Board's
+  // Planned Dishes, in order (by day, then place in the day), and four
+  // writes on it, which need "move Dishes" like moves do.
+  const planned = () => board.value?.plannedDishes ?? []
+
+  // The Week Plan of the given days (YYYY-MM-DD), each day's Planned Dishes
+  // in order with their Dish, who cooks and whether it is cooked: the Dish
+  // has a Cooking dated that day in Europe/Berlin, whoever recorded it and
+  // from wherever (the card, a batch, the plan), so it follows the Dish's
+  // Cooking History and its undo. Planned Dishes of a Dish that isn't on the
+  // Board (archived) are left out. Every given day is in the answer, empty
+  // if nothing is planned. Reads what the module holds, so a computed or a
+  // template calling it follows every change.
+  function weekPlan(days: string[]): Record<string, PlanEntry[]> {
+    const plan: Record<string, PlanEntry[]> = Object.fromEntries(days.map(day => [day, []]))
+    if (!board.value) return plan
+    const dishes = new Map(board.value.columns.flatMap(c => c.dishes).map(d => [d.id, d]))
+    const members = new Map(board.value.members.map(m => [m.id, m]))
+    const waiting = new Set(unsent?.changes.value.flatMap(c => 'plannedId' in c ? [c.plannedId] : []))
+    for (const p of planned()) {
+      const dish = dishes.get(p.dishId)
+      const day = plan[p.day]
+      if (!dish || !day) continue
+      day.push({ id: p.id, day: p.day, dish, cookId: p.cookId, cook: p.cookId ? members.get(p.cookId) ?? null : null, cooked: cookedOn(dish.cookings, p.day), unsent: waiting.has(p.id) })
+    }
+    return plan
+  }
+
+  // The Dishes planned on a day (YYYY-MM-DD), in order: weekPlan's, without
+  // the rest of each entry.
+  const dishesOn = (day: string): DishView[] => weekPlan([day])[day]?.map(entry => entry.dish) ?? []
+
+  // What the Week Plan offers to plan: the Board's Dishes, the Gekocht
+  // Column's included, in Board order. Archived Dishes aren't on the Board.
+  const plannableDishes = computed(() => board.value?.columns.flatMap(c => c.dishes) ?? [])
+
+  // The notice for a Week Plan write that failed with `error`.
+  const failedPlanAs = (error: unknown, notice: PlanNotice): PlanNotice => isRefused(error) ? 'notAllowed' : notice
+
+  // One Week Plan write. The Board shows its change already; it is sent
+  // after the Board's earlier Week Plan writes. Without an answer from
+  // malkochen it stays and is kept as an Unsent Change (`unsentKind`), so is
+  // one made while Unsent Changes wait. If it fails, `rollBack` puts the
+  // Board back (told whether the server no longer has what it was about:
+  // 404) and answers whether the Member is told, with `failed`; the
+  // Planned Dish a gone one was about is not told about.
+  function planWrite(item: PlannedDishView, dish: DishView, { unsentKind, send, rollBack, failed }: {
+    unsentKind: UnsentKind
+    send: () => Promise<unknown>
+    rollBack: (gone: boolean) => boolean
+    failed: PlanNotice
+  }): PlanResult {
+    const madeAt = new Date().toISOString()
+    // The Planned Dish as the Board shows it now; `item` if it isn't there.
+    const shown = (): PlannedDishView => planned().find(p => p.id === item.id) ?? item
+    const settled = queued(`plan:${board.value!.id}`, async (): Promise<PlanResult> => {
+      try {
+        return await sendOrKeep({
+          canKeep: !!unsent,
+          waiting: anyUnsent(),
+          keep: (): PlanResult => {
+            queueUnsent(unsentKind, madeAt, dish.title)
+            return { plannedDish: shown(), dish, unsent: true }
+          },
+          send: async (): Promise<PlanResult> => {
+            await send()
+            return { plannedDish: shown(), dish }
+          },
+        })
+      }
+      catch (error) {
+        const told = rollBack(isGone(error))
+        return { plannedDish: shown(), dish, ...told && { notice: failedPlanAs(error, failed) } }
+      }
+    }, { moves: false })
+    return { plannedDish: shown(), dish, settled }
+  }
+
+  // Plans a Dish of the Board on a day (YYYY-MM-DD), at `index` among the
+  // day's other Planned Dishes or at its end. The same Dish can be planned
+  // many times, on one day too. Null without "move Dishes", for a Dish that
+  // isn't on the Board, or a day that isn't a date. Rolled back with a notice
+  // if the server refuses it (the Dish was archived meanwhile, say).
+  function planDish(dishId: string, day: string, index?: number): PlanResult | null {
+    const dish = find(dishId)?.dish
+    if (!dish || !board.value || !may('moveDishes') || !isDay(day)) return null
+    const id = crypto.randomUUID()
+    const item: PlannedDishView = { id, dishId, day, cookId: null }
+    putOnDay(board.value.plannedDishes, item, index)
+    return planWrite(item, dish, {
+      unsentKind: { kind: 'plan', plannedId: id, dishId, day, ...index !== undefined && { index } },
+      send: () => transport.planDish(board.value!.id, { id, dishId, day, ...index !== undefined && { index } }),
+      rollBack: () => {
+        takeOffPlan(planned(), id)
+        return true
+      },
+      failed: 'planFailed',
+    })
+  }
+
+  // Moves a Planned Dish to a day, at `index` among that day's others or at
+  // its end (within its own day too: that reorders it). Null if it isn't on
+  // the Plan, without "move Dishes", or if it would stay where it is. Back
+  // where it was, with a notice, if the server refuses it; one the server no
+  // longer has just goes.
+  function movePlannedDish(plannedId: string, day: string, index?: number): PlanResult | null {
+    const item = planned().find(p => p.id === plannedId)
+    const dish = item && find(item.dishId)?.dish
+    if (!item || !dish || !board.value || !may('moveDishes') || !isDay(day)) return null
+    const list = board.value.plannedDishes
+    const was = { day: item.day, index: indexInDay(list, item) }
+    const landing = landingInDay(list, plannedId, day, index)
+    if (was.day === day && was.index === landing) return null
+    item.day = day
+    putOnDay(list, item, landing)
+    return planWrite(item, dish, {
+      unsentKind: { kind: 'planMove', plannedId, dishId: item.dishId, day, ...index !== undefined && { index } },
+      send: () => transport.movePlannedDish(plannedId, { day, ...index !== undefined && { index } }),
+      rollBack: (gone) => {
+        const now = planned().find(p => p.id === plannedId)
+        if (!now) return false
+        if (gone) takeOffPlan(planned(), plannedId)
+        else {
+          now.day = was.day
+          putOnDay(planned(), now, was.index)
+        }
+        return !gone
+      },
+      failed: 'planFailed',
+    })
+  }
+
+  // Takes a Planned Dish off the Plan; its Dish stays where it is. Null if it
+  // isn't on the Plan, or without "move Dishes". Back where it was, with a
+  // notice, if the server refuses it; one the server no longer has counts as
+  // taken off.
+  function unplanDish(plannedId: string): PlanResult | null {
+    const item = planned().find(p => p.id === plannedId)
+    const dish = item && find(item.dishId)?.dish
+    if (!item || !dish || !board.value || !may('moveDishes')) return null
+    const was = { ...item }
+    const at = indexInDay(board.value.plannedDishes, item)
+    takeOffPlan(board.value.plannedDishes, plannedId)
+    return planWrite(was, dish, {
+      unsentKind: { kind: 'unplan', plannedId, dishId: item.dishId },
+      send: () => transport.unplanDish(plannedId),
+      rollBack: (gone) => {
+        if (gone) return false
+        if (!planned().some(p => p.id === plannedId)) putOnDay(planned(), was, at)
+        return true
+      },
+      failed: 'planFailed',
+    })
+  }
+
+  // Sets who cooks a Planned Dish ("Wer kocht"), a Member's id, or clears it
+  // (null). Null if it isn't on the Plan, without "move Dishes", or if that
+  // is the cook already. Back to who cooked before, with a notice, if the
+  // server refuses it (the cook is no Member of the Board); one the server
+  // no longer has just goes.
+  function setPlannedDishCook(plannedId: string, cookId: string | null): PlanResult | null {
+    const item = planned().find(p => p.id === plannedId)
+    const dish = item && find(item.dishId)?.dish
+    if (!item || !dish || !may('moveDishes') || item.cookId === cookId) return null
+    const was = item.cookId
+    item.cookId = cookId
+    return planWrite(item, dish, {
+      unsentKind: { kind: 'planCook', plannedId, dishId: item.dishId, cookId },
+      send: () => transport.setPlannedDishCook(plannedId, cookId),
+      rollBack: (gone) => {
+        const now = planned().find(p => p.id === plannedId)
+        if (!now) return false
+        if (gone) takeOffPlan(planned(), plannedId)
+        else now.cookId = was
+        return !gone
+      },
+      failed: 'planCookFailed',
+    })
+  }
+
   // Others' changes (PRD story 38), from polling (useBoardSync), which asks
   // the server for the Board with `ask`: what it answers is merged into the
   // Board. Dropped if one of the module's writes was under way when it
@@ -1194,7 +1494,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
+  return { addDish, editDish, findRecipe, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, weekPlan, dishesOn, plannableDishes, planDish, movePlannedDish, unplanDish, setPlannedDishCook, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, hasUnsentRecipe, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for
@@ -1227,8 +1527,16 @@ function counted(uncounted: BoardTransport) {
 // written, so nothing re-renders for nothing; and what is gone goes.
 // Whatever the server has wins, as the last write did there.
 function merge(shown: BoardView, fresh: BoardView) {
-  const { columns, ...board } = fresh
+  const { columns, plannedDishes, ...board } = fresh
   assignChanged(shown, board)
+  // The Week Plan: Planned Dishes still there stay the same objects.
+  const shownPlanned = new Map(shown.plannedDishes.map(p => [p.id, p]))
+  replaceChanged(shown.plannedDishes, plannedDishes.map((p) => {
+    const known = shownPlanned.get(p.id)
+    if (!known) return p
+    assignChanged(known, p)
+    return known
+  }))
 
   const shownColumns = new Map(shown.columns.map(c => [c.id, c]))
   // By id across all Columns: a Dish may have moved to another one.
