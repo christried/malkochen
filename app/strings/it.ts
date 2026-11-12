@@ -33,7 +33,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -796,6 +796,35 @@ export const it: Strings = {
     noAccount: 'Snackbert non trova un account per il tuo indirizzo email.',
     unreachable: 'Snackbert al momento non è raggiungibile. Riprova più tardi.',
     failed,
+  },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Trova ricette',
+    about: 'Il Trova ricette cerca per te gli ingredienti e i passaggi di un piatto, nella caption o nel blog di cucina a cui rimanda. Per ora è attivo solo per poche persone.',
+    ask: 'Chiedi l’accesso',
+    asked: 'Richiesto',
+    // From an ISO time.
+    askedLine: (at: string) => `La tua richiesta del ${dayInFull(new Date(at))} è arrivata. Non devi fare altro.`,
+    on: 'Attivo',
+    onLine: 'Il Trova ricette è attivo per te. Quando cerca una ricetta, la caption e il testo della pagina collegata vanno ad Anthropic.',
+    privacyLink: 'Di più nell’informativa sulla privacy',
+    askFailed: failed,
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} ${plural(asked, { one: 'richiesta', other: 'richieste' })}, ${number(on)} ${plural(on, { one: 'attivo', other: 'attivi' })}. Le nuove richieste sono in alto.`,
+      nobody: 'Nessuno ha chiesto.',
+      empty: 'Nessuno ha ancora chiesto il Trova ricette.',
+      person: 'Persona',
+      askedColumn: 'Richiesto',
+      searchesColumn: 'Ricerche',
+      switchColumn: 'Trova ricette',
+      // A request's day, from an ISO time.
+      askedOn: (at: string) => `Richiesto il ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} oggi`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'ricerca', other: 'ricerche' })}, ${number(today)} oggi`,
+      noSearches: 'Ancora nessuna ricerca',
+      switchFor: (name: string) => `Trova ricette per ${name}`,
+      failed,
+    },
   },
   snackbertQuestion: {
     label: 'Snackbert',

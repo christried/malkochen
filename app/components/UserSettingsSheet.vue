@@ -7,7 +7,7 @@ import { photoUploadTo, type PhotoProblem, type UploadedPhoto } from '~/composab
 // from 768px on its right edge (#283):
 // your Username, the Google account you're signed in with and your Profile
 // Picture, Darstellung, Sprache (LanguagePicker), Snackbert for those with a
-// Snackbert account (#423), the
+// Snackbert account (#423), the Recipe Finder for everyone (#498), the
 // Board's keyboard shortcuts (where there's a keyboard and mouse),
 // "Rundgang starten", which starts the Tour again (`startTour`: the Board
 // closes the sheet and starts it), signing out and "Konto löschen"; then,
@@ -372,6 +372,10 @@ async function deleteAccount() {
             >{{ snackbertMessage }}</p>
           </div>
         </section>
+
+        <!-- The Recipe Finder (#498) sits with Snackbert: both send text to
+             Anthropic or Google, so people find them together. -->
+        <RecipeFinderSettings :open="open" />
 
         <section
           class="flex flex-col gap-3"

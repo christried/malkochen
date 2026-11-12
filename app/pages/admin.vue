@@ -597,6 +597,8 @@ const DASHBOARDS = [
         </div>
       </section>
 
+      <AdminRecipeFinder />
+
       <section
         class="flex flex-col gap-3"
         aria-labelledby="admin-events"

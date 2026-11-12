@@ -30,7 +30,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -780,6 +780,35 @@ export const en: Strings = {
     noAccount: 'Snackbert can’t find an account for your email address.',
     unreachable: 'Snackbert can’t be reached right now. Try again later.',
     failed,
+  },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Recipe Finder',
+    about: 'The Recipe Finder picks out the ingredients and steps for a dish, from the caption or from the food blog it links to. Right now it is switched on for only a few people.',
+    ask: 'Ask for access',
+    asked: 'Asked',
+    // From an ISO time.
+    askedLine: (at: string) => `Your request from ${dayInFull(new Date(at))} has arrived. There is nothing more you need to do.`,
+    on: 'Switched on',
+    onLine: 'The Recipe Finder is switched on for you. When it looks for a recipe, the caption and the text of the linked page go to Anthropic.',
+    privacyLink: 'More in the privacy policy',
+    askFailed: failed,
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} asked, ${number(on)} switched on. New requests are at the top.`,
+      nobody: 'Nobody has asked.',
+      empty: 'Nobody has asked for the Recipe Finder yet.',
+      person: 'Person',
+      askedColumn: 'Asked',
+      searchesColumn: 'Searches',
+      switchColumn: 'Recipe Finder',
+      // A request's day, from an ISO time.
+      askedOn: (at: string) => `Asked on ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} today`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'search', other: 'searches' })}, ${number(today)} today`,
+      noSearches: 'No searches yet',
+      switchFor: (name: string) => `Recipe Finder for ${name}`,
+      failed,
+    },
   },
   snackbertQuestion: {
     label: 'Snackbert',
