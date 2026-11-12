@@ -20,6 +20,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `deleted comment on ${named}`
     case 'vote': return `thumb on ${named}`
     case 'title': return `new title for ${named}`
+    case 'recipe': return `changed recipe for ${named}`
     case 'add': return `${named} added`
     case 'move': return `${named} moved`
     case 'cook':

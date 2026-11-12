@@ -208,7 +208,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    const { title, source, creator, caption, playableVideo, sourceTicket, placeholder, imageUrl, imageTicket, imageFocus } = changes
+    const { title, source, creator, caption, playableVideo, sourceTicket, placeholder, imageUrl, imageTicket, imageFocus, recipe } = changes
     if (title !== undefined) dish.title = title.trim()
     if (source !== undefined) {
       const linkChanged = source?.link !== dish.source?.link
@@ -225,6 +225,14 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       }
     }
     if (creator !== undefined) dish.creator = creator?.trim() || null
+    // The Recipe is replaced as a whole, its lines trimmed and the empty ones
+    // dropped; the link it was found at stays until nothing is left.
+    if (recipe !== undefined) {
+      const kept = (list: string[]) => list.map(line => line.trim()).filter(line => line !== '')
+      const ingredients = kept(recipe?.ingredients ?? [])
+      const steps = kept(recipe?.steps ?? [])
+      dish.recipe = ingredients.length + steps.length === 0 ? null : { ingredients, steps, link: dish.recipe?.link ?? null }
+    }
     if (placeholder !== undefined) dish.placeholder = placeholder
     const refused = Boolean(imageUrl && !imageTicket)
     if (imageUrl === null || (imageUrl && imageTicket)) {
