@@ -18,8 +18,8 @@ const state = computed(() => status.value?.state ?? 'off')
 const askedAt = computed(() => status.value?.state === 'asked' ? status.value.askedAt : null)
 
 // The state first read just appears; only changes after that move: the
-// button folds and the chip pops on asking, the chip crossfades when the
-// Operator switches it on while the settings are open.
+// button folds and the chip pops on asking, and what changes while the
+// settings are open crossfades (the Operator switched it on).
 const known = ref(false)
 watch(status, async (now) => {
   if (!now || known.value) return
@@ -42,64 +42,72 @@ const headingId = useId()
       {{ t.recipeFinder.heading }}
     </h3>
     <div
-      class="finder rounded-card bg-surface-muted p-4"
+      class="rounded-card bg-surface-muted p-4"
       :class="{ animated: known }"
       :aria-busy="status === null"
     >
       <div class="flex min-h-8 items-center gap-2.5">
         <span class="flex-1 text-button-l">{{ t.recipeFinder.heading }}</span>
-        <Transition
-          name="finder-chip"
-          mode="out-in"
-          :css="known"
-        >
-          <span
-            v-if="state === 'asked'"
-            key="asked"
-            class="flex h-7 items-center gap-1.5 rounded-chip bg-surface pl-2 pr-2.5 text-caption font-semibold text-text"
-          >
-            <AppIcon
-              name="check"
-              :size="13"
-            />{{ t.recipeFinder.asked }}
-          </span>
-          <span
-            v-else-if="state === 'on'"
-            key="on"
-            class="flex h-7 items-center gap-1.5 rounded-chip bg-sage pl-2 pr-2.5 text-caption font-semibold text-sage-ink"
+        <div class="stack justify-items-end">
+          <Transition
+            name="finder-pop"
+            :css="known"
           >
             <span
-              aria-hidden="true"
-              class="size-2 rounded-full bg-sage-ink"
-            />{{ t.recipeFinder.on }}
-          </span>
-        </Transition>
+              v-if="state === 'asked'"
+              class="flex h-7 items-center gap-1.5 rounded-chip bg-surface pl-2 pr-2.5 text-caption font-semibold text-text"
+            >
+              <AppIcon
+                name="check"
+                :size="13"
+              />{{ t.recipeFinder.asked }}
+            </span>
+          </Transition>
+          <Transition
+            name="finder-fade"
+            :css="known"
+          >
+            <span
+              v-if="state === 'on'"
+              class="flex h-7 items-center gap-1.5 rounded-chip bg-sage pl-2 pr-2.5 text-caption font-semibold text-sage-ink"
+            >
+              <span
+                aria-hidden="true"
+                class="size-2 rounded-full bg-sage-ink"
+              />{{ t.recipeFinder.on }}
+            </span>
+          </Transition>
+        </div>
       </div>
 
-      <Transition
-        name="finder-text"
-        mode="out-in"
-        :css="known"
-      >
-        <p
-          v-if="state === 'on'"
-          key="on"
-          class="mt-3 text-body text-text"
+      <div class="stack mt-3">
+        <Transition
+          name="finder-fade"
+          :css="known"
         >
-          {{ t.recipeFinder.onLine }}
-          <NuxtLink
-            to="/datenschutz"
-            class="text-small text-text-muted underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
-          >{{ t.recipeFinder.privacyLink }}</NuxtLink>
-        </p>
-        <p
-          v-else
-          key="about"
-          class="mt-3 text-body text-text"
+          <p
+            v-if="state === 'on'"
+            class="text-body text-text"
+          >
+            {{ t.recipeFinder.onLine }}
+            <NuxtLink
+              to="/datenschutz"
+              class="text-small text-text-muted underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-focus"
+            >{{ t.recipeFinder.privacyLink }}</NuxtLink>
+          </p>
+        </Transition>
+        <Transition
+          name="finder-fade"
+          :css="known"
         >
-          {{ t.recipeFinder.about }}
-        </p>
-      </Transition>
+          <p
+            v-if="state !== 'on'"
+            class="text-body text-text"
+          >
+            {{ t.recipeFinder.about }}
+          </p>
+        </Transition>
+      </div>
 
       <!-- The button folds away once asked (height and fade); folded, it is
            out of reach for keyboard and screen readers too. -->
@@ -121,7 +129,7 @@ const headingId = useId()
       </div>
 
       <Transition
-        name="finder-text"
+        name="finder-fade"
         :css="known"
       >
         <p
@@ -156,7 +164,6 @@ const headingId = useId()
   padding: 4px;
 }
 .fold-inner > button {
-  /* Left-aligned at its own width. */
   display: block;
 }
 .fold.folded {
@@ -171,28 +178,32 @@ const headingId = useId()
   transition: grid-template-rows var(--dur-settle) var(--ease-settle), opacity var(--dur-settle) var(--ease-settle), visibility 0s linear var(--dur-settle);
 }
 
-/* The chip pops in; one that goes fades out. */
-.finder-chip-enter-active {
+/* Chips and texts that change stack in one grid cell, so one fading out and
+   one fading in cross over without moving the layout. */
+.stack {
+  display: grid;
+}
+.stack > * {
+  grid-area: 1 / 1;
+}
+
+/* After the state was first read: the chip for a request pops in; other chips
+   and texts fade in, and what goes fades out. */
+.finder-pop-enter-active {
   transition: opacity var(--dur-fade) var(--ease-fade), scale var(--dur-pop) var(--ease-pop);
 }
-.finder-chip-leave-active {
+.finder-pop-leave-active,
+.finder-fade-enter-active,
+.finder-fade-leave-active {
   transition: opacity var(--dur-fade) var(--ease-fade);
 }
-.finder-chip-enter-from {
+.finder-pop-enter-from {
   opacity: 0;
   scale: 0.7;
 }
-.finder-chip-leave-to {
-  opacity: 0;
-}
-
-/* Text that changes crossfades. */
-.finder-text-enter-active,
-.finder-text-leave-active {
-  transition: opacity var(--dur-fade) var(--ease-fade);
-}
-.finder-text-enter-from,
-.finder-text-leave-to {
+.finder-pop-leave-to,
+.finder-fade-enter-from,
+.finder-fade-leave-to {
   opacity: 0;
 }
 </style>
