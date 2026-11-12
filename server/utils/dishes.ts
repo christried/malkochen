@@ -1034,12 +1034,13 @@ export async function searchDishes(boardId: string, query: string): Promise<Dish
 // "Dish copied" instead of "Dish added". `id`: the one the device made for
 // it (late-changes.ts); a repeat of it is the caller's to check first
 // (dishIdStanding), as two arriving at once fail here with a unique
-// violation.
+// violation. `lookingSince`: the Recipe Finder searches for its Recipe after
+// adding (#503), claimed at that time, so it is answered as looking.
 export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
-  { tour = false, copiedFrom, viaLink = false, id: deviceId }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean, id?: string } = {},
+  { tour = false, copiedFrom, viaLink = false, id: deviceId, lookingSince }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean, id?: string, lookingSince?: Date } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
@@ -1069,6 +1070,7 @@ export async function addDish(
       imageFocusY: focus.y,
       placeholder: input.placeholder,
       ...input.recipe && { recipeIngredients: input.recipe.ingredients, recipeSteps: input.recipe.steps, recipeLink: input.recipe.link },
+      ...lookingSince && { recipeSearch: 'looking' as const, recipeSearchAt: lookingSince },
       addedBy: adder.id,
     }),
     // Recorded whatever happens: a Dish not added fails the whole step.
@@ -1100,7 +1102,7 @@ export async function addDish(
     caption: input.caption,
     playableVideo: input.playableVideo,
     recipe: input.recipe ?? null,
-    recipeSearch: null,
+    recipeSearch: lookingSince ? 'looking' : null,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,
