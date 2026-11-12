@@ -413,6 +413,18 @@ export const it: Strings = {
     keepEditing: 'Continua a modificare',
     discard: 'Scarta',
     switchLabel: 'Vai agli ingredienti o ai passaggi',
+    finder: {
+      find: 'Trova ricetta',
+      searching: 'Sto cercando la ricetta',
+      searchingAbout: 'Di solito ci vuole qualche secondo, a volte mezzo minuto.',
+      none: 'Nessuna ricetta trovata',
+      noneAbout: 'Non ce n’era nella didascalia né nella pagina collegata.',
+      failed: 'La ricerca non ha funzionato.',
+      again: 'Cerca di nuovo',
+      quota: 'Per oggi il Trova ricette ha cercato abbastanza. Domani cercherà di nuovo.',
+      found: 'Ricetta trovata',
+      show: 'Mostra',
+    },
   },
   sources: {
     tiktok: 'TikTok',

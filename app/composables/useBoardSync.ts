@@ -1,3 +1,4 @@
+import type { InjectionKey } from 'vue'
 import type { BoardModule } from '~/board/board-module'
 import type { UnsentChanges } from '~/board/unsent-changes'
 import { createBoardPoll, POLL_CADENCE, type BoardPoll, type PollCadence } from '~/board/board-poll'
@@ -6,6 +7,11 @@ import type { BoardView } from '~~/server/utils/boards'
 // Coming back to the app after this long counts as opening the Board again,
 // which moves on what is marked "Neu".
 const REOPEN_AFTER_MS = 30 * 60_000
+
+// How the page under a Board asks it to load now (the Dish detail does, when
+// "Rezept finden" finds the Dish changed meanwhile, #504): provided by the
+// Board page, which owns the poll.
+export const boardSyncNowKey: InjectionKey<() => void> = Symbol('board sync now')
 
 // Sync between Members (PRD story 38, ADR 0008): while the Board is
 // visible, it asks every few seconds whether its Board Version moved

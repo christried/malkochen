@@ -50,6 +50,10 @@ export interface AnthropicService {
   // From now on, every request is answered like this, or by what it asks to
   // read.
   answer: (next: AnthropicAnswer | AnthropicAnswers) => void
+  // From now on, every request waits this long (ms) before it is answered,
+  // for the browser tests that look at a search while it runs. Cleared by
+  // forget.
+  slowBy: (ms: number) => void
   forget: () => void
   close: () => Promise<void>
 }
@@ -70,6 +74,7 @@ function message(model: unknown, content: unknown[], stopReason: string) {
 export async function startAnthropicService(): Promise<AnthropicService> {
   const requests: AnthropicRequest[] = []
   let told: AnthropicAnswer | AnthropicAnswers = 'empty'
+  let slowness = 0
 
   // How a request is answered: as it is told, or as it is told for what the request asks to read.
   const answeredWith = (request: AnthropicRequest): AnthropicAnswer =>
@@ -110,13 +115,15 @@ export async function startAnthropicService(): Promise<AnthropicService> {
     const chunks: Buffer[] = []
     req.on('data', (chunk: Buffer) => chunks.push(chunk))
     req.on('end', () => {
-      try {
-        respond(req, res, Buffer.concat(chunks))
-      }
-      catch {
-        res.statusCode = 500
-        res.end()
-      }
+      setTimeout(() => {
+        try {
+          respond(req, res, Buffer.concat(chunks))
+        }
+        catch {
+          res.statusCode = 500
+          res.end()
+        }
+      }, slowness)
     })
   })
   await new Promise<void>(resolve => server.listen(ANTHROPIC_PORT, '127.0.0.1', resolve))
@@ -126,9 +133,13 @@ export async function startAnthropicService(): Promise<AnthropicService> {
     answer: (next) => {
       told = next
     },
+    slowBy: (ms) => {
+      slowness = ms
+    },
     forget: () => {
       requests.splice(0)
       told = 'empty'
+      slowness = 0
     },
     close: () => new Promise((resolve) => {
       server.close(() => resolve())

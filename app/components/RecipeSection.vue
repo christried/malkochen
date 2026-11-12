@@ -1,25 +1,38 @@
 <script setup lang="ts">
 import type { DishView } from '~~/server/utils/dishes'
 import { siteOf } from '~/utils/link-guess'
-import { prefersReducedMotion } from '~/utils/motion'
+import { prefersReducedMotion, wait } from '~/utils/motion'
 
 // A Dish's Recipe in its detail (handoff RecipeSection; CONTEXT.md: Recipe),
 // after the share row and before the Dish History: "Rezept" with
 // "Bearbeiten" (for a Member who may edit the Dish) and the Recipe's
 // Ingredients and Steps as two lists, each only if it has lines. Under them,
 // "Rezept von <site>" for a Recipe found at another page than the Source.
-// Without a Recipe a Member who may edit sees only the dashed "Rezept
-// hinzufügen", and anyone else nothing at all, not even a gap. A Recipe
+// Without a Recipe a Member who may edit sees the dashed "Rezept hinzufügen"
+// (beside "Rezept finden" for a user with the Recipe Finder, and not while
+// it searches; RecipeFinderState, #504), and anyone else nothing at all, not
+// even a gap, but for a search that runs or found nothing, which every Member
+// sees. A Recipe
 // edited while malkochen didn't answer carries "Noch nicht gesendet" on its
 // header (`unsent`). Editing is its own mode, which the page opens (`edit`).
 // A Recipe taller than two screens with both lists gets the sticky switch
 // between them (RecipeSwitch).
 const props = defineProps<{ dish: DishView, mayEdit: boolean, unsent: boolean }>()
-const emit = defineEmits<{ edit: [] }>()
+// `found`: a Recipe arrived by itself (from the search) while this section is
+// out of sight, so nothing was seen; the page says so in a Toast.
+const emit = defineEmits<{ edit: [], found: [] }>()
 const t = useStrings()
 const headingId = useId()
 
-const recipe = computed(() => props.dish.recipe)
+// A Recipe found while the Member watched arrives with a show (handoff: A
+// found Recipe arrives): the search card goes first (`leaving`, 300ms) and
+// the Recipe is held back until then; then it rises (`rising`), card by card
+// and line by line. Only for a Dish that went from searching to a Recipe with
+// this section open: one opened with its Recipe already there just shows it.
+// Reduced motion: the search and the Recipe fade into each other instead.
+const arrival = ref<'leaving' | 'rising' | null>(null)
+const reduced = ref(false)
+const recipe = computed(() => arrival.value === 'leaving' ? null : props.dish.recipe)
 const source = computed(() => recipe.value?.link ? siteOf(recipe.value.link) : '')
 // "Rezept von " and what follows the site in the language's sentence, so the
 // site alone can be the link.
@@ -63,15 +76,23 @@ function follow() {
 }
 
 let observer: ResizeObserver | undefined
-onMounted(() => {
-  scroller = root.value?.closest('dialog') ?? null
+// The section itself comes and goes: a Member who may not edit sees it once a
+// search starts, or a Recipe arrives.
+function watchScroll(el: HTMLElement | null) {
+  scroller?.removeEventListener('scroll', follow)
+  observer?.disconnect()
+  scroller = el?.closest('dialog') ?? null
   scroller?.addEventListener('scroll', follow, { passive: true })
-  if (root.value && typeof ResizeObserver !== 'undefined') {
+  if (el && typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(follow)
-    observer.observe(root.value)
+    observer.observe(el)
   }
   follow()
+}
+onMounted(() => {
+  reduced.value = prefersReducedMotion()
 })
+watch(root, el => watchScroll(el), { flush: 'post' })
 onBeforeUnmount(() => {
   scroller?.removeEventListener('scroll', follow)
   observer?.disconnect()
@@ -79,6 +100,53 @@ onBeforeUnmount(() => {
 watch(recipe, async () => {
   await nextTick()
   follow()
+})
+
+// How long the lists take to rise, all in: the Steps' last line starts at
+// 1300ms at the latest and takes 420.
+const RISING_MS = 2000
+let arrivalRun = 0
+async function arrive() {
+  const run = ++arrivalRun
+  const section = root.value
+  if (!section) return
+  const view = scroller?.getBoundingClientRect()
+  const at = section.getBoundingClientRect()
+  if (view && (at.bottom < view.top || at.top > view.bottom)) {
+    emit('found')
+    return
+  }
+  // Reduced motion: the Transition's crossfade is all there is.
+  if (reduced.value) return
+  arrival.value = 'leaving'
+  await wait(300)
+  if (run !== arrivalRun) return
+  arrival.value = 'rising'
+  await wait(RISING_MS)
+  if (run === arrivalRun) arrival.value = null
+}
+// Another Dish taking this one's place in the detail is not an arrival.
+watch(() => [props.dish.id, props.dish.recipe, props.dish.recipeSearch] as const, ([id, now, search], [was, before, searched]) => {
+  if (id !== was) {
+    arrivalRun++
+    arrival.value = null
+    return
+  }
+  if (now && !before && searched === 'looking' && search !== 'looking') void arrive()
+})
+onBeforeUnmount(() => arrivalRun++)
+
+// When each list rises, in ms from the start of the rise: the Ingredients'
+// card after 80 and its lines from 160; the Steps' once the Ingredients'
+// lines (eight at most) are in.
+const rise = computed(() => {
+  if (arrival.value !== 'rising' || !recipe.value) return null
+  const ingredients = recipe.value.ingredients.length
+  const after = ingredients ? 160 + Math.min(ingredients, 8) * 60 + 120 : 80
+  return {
+    ingredients: { card: 80, lines: 160 },
+    steps: { card: after, lines: after + (ingredients ? 120 : 80) },
+  }
 })
 
 // A tap scrolls to the list's card, 12px under the switch.
@@ -94,36 +162,38 @@ const quietButton = 'transition-transform duration-tap ease-tap active:scale-95 
 
 <template>
   <section
-    v-if="recipe || mayEdit"
+    v-if="dish.recipe || mayEdit || dish.recipeSearch || arrival"
     ref="root"
     :aria-labelledby="recipe ? headingId : undefined"
     :aria-label="recipe ? undefined : t.recipe.heading"
-    class="flex flex-col gap-3.5 pt-1"
+    class="flex flex-col pt-1"
     data-recipe-section
   >
-    <!-- Where the Recipe Finder's states go (#504): "Rezept finden" beside
-         "Rezept hinzufügen", the search card, none found, failed, quota.
-         Nothing fills it yet. -->
-    <slot name="finder" />
-
-    <button
-      v-if="!recipe"
-      type="button"
-      class="flex h-[52px] items-center justify-center gap-2 rounded-pill border-2 border-dashed border-line-strong text-button-l text-text"
-      :class="quietButton"
-      data-edit-recipe
-      @click="emit('edit')"
+    <!-- Reduced motion: the search and the Recipe fade into each other,
+         one after the other. Otherwise the Recipe arrives as `arrive` has it. -->
+    <Transition
+      :name="reduced ? 'crossfade' : undefined"
+      mode="out-in"
     >
-      <AppIcon
-        name="plus"
-        :size="18"
+      <RecipeFinderState
+        v-if="!recipe"
+        key="finder"
+        :dish="dish"
+        :may-edit="mayEdit"
+        :leaving="arrival === 'leaving'"
+        @edit="emit('edit')"
       />
-      {{ t.recipe.add }}
-    </button>
 
-    <template v-else>
-      <div class="flex min-h-10 items-center gap-2.5">
-        <h2
+      <div
+        v-else
+        key="recipe"
+        class="flex flex-col gap-3.5"
+      >
+        <div
+          class="flex min-h-10 items-center gap-2.5"
+          :style="rise ? { animation: 'r13-fade 240ms ease both' } : undefined"
+        >
+          <h2
           :id="headingId"
           class="min-w-0 flex-1 font-display text-title-m"
         >
@@ -175,6 +245,7 @@ const quietButton = 'transition-transform duration-tap ease-tap active:scale-95 
         <RecipeList
           kind="ingredients"
           :lines="recipe.ingredients"
+          :arriving="rise?.ingredients"
         />
       </div>
       <div
@@ -184,6 +255,7 @@ const quietButton = 'transition-transform duration-tap ease-tap active:scale-95 
         <RecipeList
           kind="steps"
           :lines="recipe.steps"
+          :arriving="rise?.steps"
         />
       </div>
       <div
@@ -205,11 +277,22 @@ const quietButton = 'transition-transform duration-tap ease-tap active:scale-95 
           >{{ source }}</a>{{ sourceLine.after }}</span>
         </template>
       </div>
-    </template>
+      </div>
+    </Transition>
   </section>
 </template>
 
 <style scoped>
+/* Reduced motion: the search and the Recipe fade (the token holds 200ms). */
+.crossfade-enter-active,
+.crossfade-leave-active {
+  transition: opacity var(--dur-fade) var(--ease-fade);
+}
+.crossfade-enter-from,
+.crossfade-leave-to {
+  opacity: 0;
+}
+
 /* The unsent mark fades in and out (240ms). */
 .mark-enter-active,
 .mark-leave-active {

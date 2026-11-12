@@ -3,11 +3,16 @@
 // Ingredient, Step): "Zutaten" with a butter pebble before each line, or
 // "Schritte" with each numbered in a pebble of its own. A card with its
 // heading and how many lines it holds. Static: no hover, no press, never
-// folded or clamped, however long. Lines are plain text.
-const props = defineProps<{ kind: 'ingredients' | 'steps', lines: readonly string[] }>()
+// folded or clamped, however long. Lines are plain text. `arriving`: a Recipe
+// just found while the Member watched (RecipeSection): the card rises after
+// `card` ms and its lines after `lines` ms, 60ms apart, the ninth and later
+// with the eighth (handoff: A found Recipe arrives).
+const props = defineProps<{ kind: 'ingredients' | 'steps', lines: readonly string[], arriving?: { card: number, lines: number } | null }>()
 const t = useStrings()
 const headingId = useId()
 const ingredients = computed(() => props.kind === 'ingredients')
+const cardArrival = computed(() => props.arriving ? { animation: `r13-card 480ms var(--ease-settle) ${props.arriving.card}ms both` } : undefined)
+const lineArrival = (i: number) => props.arriving ? { animation: `r13-in 420ms var(--ease-settle) ${props.arriving.lines + Math.min(i, 7) * 60}ms both` } : undefined
 </script>
 
 <template>
@@ -15,6 +20,7 @@ const ingredients = computed(() => props.kind === 'ingredients')
     :aria-labelledby="headingId"
     class="bg-surface px-[18px] pb-1.5 pt-4 shadow-card"
     :class="ingredients ? 'rounded-card' : 'steps-card pb-2'"
+    :style="cardArrival"
     :data-recipe-list="kind"
   >
     <div class="flex items-baseline gap-2 pb-1.5">
@@ -38,6 +44,7 @@ const ingredients = computed(() => props.kind === 'ingredients')
         :key="i"
         class="flex gap-3 pb-[11px] pt-2.5"
         :class="{ 'border-t border-line': i > 0 }"
+        :style="lineArrival(i)"
         data-recipe-line
       >
         <i
@@ -56,6 +63,7 @@ const ingredients = computed(() => props.kind === 'ingredients')
         :key="i"
         class="flex gap-3.5 pb-3.5 pt-[13px]"
         :class="{ 'border-t border-line': i > 0 }"
+        :style="lineArrival(i)"
         data-recipe-line
       >
         <span

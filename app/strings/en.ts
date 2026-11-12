@@ -400,6 +400,18 @@ export const en: Strings = {
     keepEditing: 'Keep editing',
     discard: 'Discard',
     switchLabel: 'Jump to ingredients or steps',
+    finder: {
+      find: 'Find recipe',
+      searching: 'Looking for the recipe',
+      searchingAbout: 'This usually takes a few seconds, sometimes half a minute.',
+      none: 'No recipe found',
+      noneAbout: 'There was none in the caption or on the linked page.',
+      failed: 'The search didn’t work just now.',
+      again: 'Search again',
+      quota: 'The Recipe Finder has searched enough for today. It will search again tomorrow.',
+      found: 'Recipe found',
+      show: 'Show',
+    },
   },
   sources: {
     tiktok: 'TikTok',
