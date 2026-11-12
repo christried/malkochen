@@ -4,6 +4,11 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+### Added
+
+- Dishes can hold a recipe now. Open a dish and tap Add recipe to write down the ingredients and steps line by line, even without a connection. A pasted list becomes one line per row, and search finds a dish by what goes in it.
+- Want malkochen to look up a dish’s recipe for you? You can ask for the Recipe Finder in your settings.
+
 ## [1.2.1] - 2026-11-11
 
 ### Changed
