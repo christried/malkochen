@@ -445,7 +445,7 @@ From the grilling session on 2026-11-12 (`CONTEXT.md` → Week Plan, Planned Dis
 | # | Ticket | Note |
 |---|---|---|
 | #512 | Design handoff for the Week Plan screens | `ready-for-human`: skip, the user does it. Blocks #517 |
-| #513 | Planned Dishes on a Board | Migration. API only. Also commits the grilling's `CONTEXT.md` and ADR 0014 |
+| #513 | Planned Dishes on a Board | Migration. API only |
 | #514 | Who cooks a Planned Dish | After #513. API only |
 | #515 | Week Plan changes that arrive late | After #513 and #514. API only (ADR 0012) |
 | #516 | The Week Plan in the Board module | After #515. Cooked tick derived from Cookings; Unsent Changes |
