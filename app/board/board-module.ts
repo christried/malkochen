@@ -510,7 +510,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       if (!dish) throw new WriteFailed(404)
       if (recipeOnly) {
         // As the server will keep it: the lines trimmed, the empty ones gone.
-        const recipe = changes.recipe && recipeToSave(changes.recipe)
+        const recipe = changes.recipe ? recipeToSave(changes.recipe) : null
         queueUnsent({ kind: 'recipe', dishId, recipe }, madeAt, dish.title)
         dish.recipe = recipeAfterEdit(dish.recipe, recipe)
       }

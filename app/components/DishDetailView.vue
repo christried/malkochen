@@ -23,6 +23,8 @@ const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: str
 const emit = defineEmits<{
   close: []
   edit: []
+  // The Recipe's own edit mode (RecipeEditor), which the page opens.
+  editRecipe: []
   move: []
   delete: []
   cook: [origin: Point]
@@ -319,6 +321,15 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           </button>
         </NeedsNet>
       </div>
+
+      <!-- The Recipe (#496), after the share row, so the actions above it
+           never move and it starts in the same place on every Dish. -->
+      <RecipeSection
+        :dish="dish"
+        :may-edit="mayEdit"
+        :unsent="boardModule.hasUnsentRecipe(dish.id)"
+        @edit="emit('editRecipe')"
+      />
 
       <DishHistory
         :dish="dish"

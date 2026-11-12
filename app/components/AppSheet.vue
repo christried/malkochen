@@ -7,9 +7,13 @@
 // destructive, type-to-confirm, picker), it is a Dialog on phones too:
 // `variant="dialog"`. Your Settings (#283) are a sheet on phones and a side
 // sheet from 768px: full height on the right edge, moving in from it
-// (`variant="side"`). Another modal opened over it, it steps back.
+// (`variant="side"`). `tall`, on phones: a sheet up to 50px below the top of
+// the screen that doesn't scroll itself and has no header of its own, its
+// contents bring theirs and fill it (the Recipe editor, #496); the title
+// then only names it for screen readers. Another modal opened over it, it
+// steps back.
 const open = defineModel<boolean>('open', { required: true })
-const props = withDefaults(defineProps<{ title: string, closeLabel: string, variant?: 'sheet' | 'dialog' | 'side' }>(), { variant: 'sheet' })
+const props = withDefaults(defineProps<{ title: string, closeLabel: string, variant?: 'sheet' | 'dialog' | 'side', tall?: boolean }>(), { variant: 'sheet', tall: false })
 const covered = useModalStack(open)
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
@@ -72,7 +76,7 @@ function onHandleUp(event: PointerEvent) {
   <dialog
     ref="dialog"
     class="sheet overflow-y-auto bg-surface p-0 text-text shadow-sheet tablet:shadow-dialog"
-    :class="{ 'is-dialog': variant === 'dialog', 'is-side': variant === 'side' }"
+    :class="{ 'is-dialog': variant === 'dialog', 'is-side': variant === 'side', 'is-tall': tall }"
     :data-covered="covered || undefined"
     :aria-labelledby="titleId"
     :aria-hidden="!open || undefined"
@@ -84,13 +88,13 @@ function onHandleUp(event: PointerEvent) {
     @click.self="backdrop.onBackdropClick"
   >
     <div
-      class="px-5 pb-[calc(1.5rem+var(--offline-bar,0px))] tablet:px-7 tablet:pt-6"
-      :class="variant === 'dialog' ? 'pt-6' : 'pt-3'"
+      :class="tall ? 'flex h-full flex-col' : ['px-5 pb-[calc(1.5rem+var(--offline-bar,0px))] tablet:px-7 tablet:pt-6', variant === 'dialog' ? 'pt-6' : 'pt-3']"
     >
       <div
         v-if="variant !== 'dialog'"
         aria-hidden="true"
-        class="handle -mx-5 -mt-3 mb-0 flex justify-center pb-3 pt-3 tablet:hidden"
+        class="handle flex justify-center tablet:hidden"
+        :class="tall ? 'shrink-0 pb-1 pt-2' : '-mx-5 -mt-3 mb-0 pb-3 pt-3'"
         @pointerdown="onHandleDown"
         @pointermove="onHandleMove"
         @pointerup="onHandleUp"
@@ -98,7 +102,17 @@ function onHandleUp(event: PointerEvent) {
       >
         <div class="h-1.5 w-10 rounded-pill bg-line-strong" />
       </div>
-      <div class="flex items-center justify-between gap-4">
+      <h2
+        v-if="tall"
+        :id="titleId"
+        class="sr-only"
+      >
+        {{ shownTitle }}
+      </h2>
+      <div
+        v-else
+        class="flex items-center justify-between gap-4"
+      >
         <h2
           :id="titleId"
           class="font-display text-title-m"
@@ -118,7 +132,10 @@ function onHandleUp(event: PointerEvent) {
           />
         </button>
       </div>
-      <div class="sheet-body">
+      <div
+        class="sheet-body"
+        :class="{ 'min-h-0 flex-1': tall }"
+      >
         <slot />
       </div>
     </div>
@@ -126,7 +143,15 @@ function onHandleUp(event: PointerEvent) {
 </template>
 
 <style scoped>
-/* Phone: a tall sheet from the bottom edge (handoff: top at 58px). */
+/* Phone: a tall sheet from the bottom edge (handoff: top at 58px). With `tall`,
+   from 50px and as high as that leaves, its contents filling it. */
+@media (max-width: 767.98px) {
+  .sheet.is-tall {
+    height: calc(100dvh - 50px);
+    max-height: calc(100dvh - 50px);
+    overflow: hidden;
+  }
+}
 .sheet {
   margin: auto 0 0;
   width: 100%;

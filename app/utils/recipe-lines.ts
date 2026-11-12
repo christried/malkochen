@@ -92,7 +92,7 @@ export function backspaceOnEmpty(lines: readonly string[], index: number): { lin
 
 // The lines with the one at `from` moved to `to`; the same lines if either
 // is outside them.
-export function moveLine(lines: readonly string[], from: number, to: number): string[] {
+export function moveLine<T>(lines: readonly T[], from: number, to: number): T[] {
   const next = [...lines]
   if (from === to || from < 0 || to < 0 || from >= lines.length || to >= lines.length) return next
   const [moved] = next.splice(from, 1)
