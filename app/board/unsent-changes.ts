@@ -419,6 +419,7 @@ export function dishOfAdd(change: Extract<UnsentChange, { kind: 'add' }>): DishV
     caption: null,
     playableVideo: null,
     recipe: null,
+    recipeSearch: null,
     imageUrl: null,
     imageFocus: { x: 50, y: 50 },
     placeholder: change.placeholder,
