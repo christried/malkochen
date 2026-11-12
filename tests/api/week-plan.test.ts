@@ -586,14 +586,15 @@ test('planning adds nothing to "Neues im Verlauf" and sends no Push Notification
   }
 })
 
-test('the same id planned twice is refused with 409 and plans nothing more', async () => {
+test('an id another user\'s or another Dish\'s Planned Dish has is refused with 409 and plans nothing more', async () => {
   const [MONDAY, TUESDAY] = freshDays()
   const { board, ada, grace } = await plain()
   const [a, b] = await Promise.all(['A', 'B'].map(t => addDish(ada, board.id, t)))
   const id = randomUUID()
   expect((await planRaw(ada, board.id, { id, dishId: a!.id, day: MONDAY })).status).toBe(201)
 
-  expect((await planRaw(ada, board.id, { id, dishId: a!.id, day: MONDAY })).status).toBe(409)
+  expect((await planRaw(ada, board.id, { id, dishId: b!.id, day: MONDAY })).status).toBe(409)
+  expect((await planRaw(grace, board.id, { id, dishId: a!.id, day: TUESDAY })).status).toBe(409)
   expect((await planRaw(grace, board.id, { id, dishId: b!.id, day: TUESDAY })).status).toBe(409)
 
   expect(onTestDays((await getBoard(ada, board.id)).plannedDishes)).toEqual([{ id, dishId: a!.id, day: MONDAY, cookId: null }])
@@ -918,3 +919,258 @@ test('a cook who deletes their account is no cook any more, and the event of set
     { kind: 'planned_dish_cook_set', boardId: board.id, dishId: ramen.id, userId: await idOf(ada), details: { plannedDish: planned.id } },
   ])
 })
+
+// Week Plan changes that arrive late (#515; CONTEXT.md: Unsent Change; ADR
+// 0012): each write can carry `madeAt`, the time it was made offline, and is
+// applied to the Board as it is by then. The plan's own made-at time is not
+// exposed by the API (nor is it in the Event Log, which goes by arrival), so
+// no test reads it back; a move, an unplan and a cook change store no time,
+// the last one to arrive wins.
+
+const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString()
+
+test('each of the four writes applies when it arrives late, with the time it was made', async () => {
+  const [MONDAY, TUESDAY] = freshDays()
+  const { board, ada, grace } = await plain()
+  const [a, b] = await Promise.all(['A', 'B'].map(t => addDish(ada, board.id, t)))
+  const graceId = await idOf(grace)
+
+  const res = await planRaw(grace, board.id, { id: randomUUID(), dishId: a!.id, day: MONDAY, madeAt: minutesAgo(90) })
+  expect(res.status, await res.clone().text()).toBe(201)
+  const planned = await res.json() as Planned
+  expect(planned).toMatchObject({ dishId: a!.id, day: MONDAY, cookId: null })
+  // A made-at time in the future (a wrong clock) is no reason to refuse.
+  const later = await planRaw(grace, board.id, { id: randomUUID(), dishId: b!.id, day: MONDAY, madeAt: new Date(Date.now() + 3600_000).toISOString() })
+  expect(later.status).toBe(201)
+  const watch = await watchEvents()
+
+  const moved = await send(grace, 'PATCH', `/api/planned-dishes/${planned.id}`, { day: TUESDAY, madeAt: minutesAgo(60) })
+  expect(moved.status, await moved.clone().text()).toBe(200)
+  expect(await moved.json()).toMatchObject({ id: planned.id, day: TUESDAY })
+
+  const cooked = await send(grace, 'PUT', `/api/planned-dishes/${planned.id}/cook`, { cookId: graceId, madeAt: minutesAgo(45) })
+  expect(cooked.status, await cooked.clone().text()).toBe(200)
+  expect(await cooked.json()).toMatchObject({ id: planned.id, cookId: graceId })
+
+  const unplanned = await send(grace, 'DELETE', `/api/planned-dishes/${planned.id}`, { madeAt: minutesAgo(30) })
+  expect(unplanned.status, await unplanned.clone().text()).toBe(204)
+
+  expect(onTestDays((await getBoard(ada, board.id)).plannedDishes).map(p => p.dishId)).toEqual([b!.id])
+  // The Event Log goes by arrival, as for other late changes.
+  expect((await watch.recorded()).map(e => e.kind)).toEqual(['planned_dish_moved', 'planned_dish_cook_set', 'dish_unplanned'])
+})
+
+test('a made-at time that isn\'t a time is a bad request for all four writes', async () => {
+  const [MONDAY, TUESDAY] = freshDays()
+  const { board, ada } = await plain()
+  const ramen = await addDish(ada, board.id, 'Ramen')
+  const planned = await plan(ada, board.id, ramen, MONDAY)
+  const before = await versionOf(ada, board.id)
+
+  for (const madeAt of ['yesterday', '2031-01-01', 20310101]) {
+    expect((await planRaw(ada, board.id, { id: randomUUID(), dishId: ramen.id, day: TUESDAY, madeAt })).status).toBe(400)
+    expect((await moveRaw(ada, planned.id, { day: TUESDAY, madeAt })).status).toBe(400)
+    expect((await send(ada, 'PUT', `/api/planned-dishes/${planned.id}/cook`, { cookId: null, madeAt })).status).toBe(400)
+    expect((await send(ada, 'DELETE', `/api/planned-dishes/${planned.id}`, { madeAt })).status).toBe(400)
+  }
+
+  expect(await planOf(ada, board.id)).toEqual([[MONDAY, planned.id]])
+  expect(await versionOf(ada, board.id)).toBe(before)
+})
+
+test('a move that arrives late wins over the moves made meanwhile', async () => {
+  const [MONDAY, TUESDAY, WEDNESDAY] = freshDays()
+  const { board, ada, grace } = await plain()
+  const ramen = await addDish(ada, board.id, 'Ramen')
+  const planned = await plan(ada, board.id, ramen, MONDAY)
+
+  // Ada moves it to Tuesday offline; Grace moves it to Wednesday meanwhile.
+  expect((await moveRaw(grace, planned.id, { day: WEDNESDAY })).status).toBe(200)
+  expect(await planOf(grace, board.id)).toEqual([[WEDNESDAY, planned.id]])
+
+  // Ada's move, made before Grace's, arrives after it: it is applied to the plan as it is by then.
+  expect((await moveRaw(ada, planned.id, { day: TUESDAY, madeAt: minutesAgo(120) })).status).toBe(200)
+
+  expect(await planOf(grace, board.id)).toEqual([[TUESDAY, planned.id]])
+})
+
+test('a late move is placed at its index among the day\'s Planned Dishes as they are by then', async () => {
+  const [MONDAY, TUESDAY] = freshDays()
+  const { board, ada, grace } = await plain()
+  const [a, b, c] = await Promise.all(['A', 'B', 'C'].map(t => addDish(ada, board.id, t)))
+  const [first, second] = [await plan(ada, board.id, a!, TUESDAY), await plan(ada, board.id, b!, TUESDAY)]
+  const moving = await plan(ada, board.id, c!, MONDAY)
+  // Grace adds one at the top of Tuesday meanwhile.
+  const meanwhile = await plan(grace, board.id, c!, TUESDAY, 0)
+
+  expect((await moveRaw(ada, moving.id, { day: TUESDAY, index: 1, madeAt: minutesAgo(60) })).status).toBe(200)
+
+  expect(await dayOf(ada, board.id, TUESDAY)).toEqual([meanwhile.id, moving.id, first.id, second.id])
+})
+
+test('two late plans on one day both land, each at its index or at the end, in the order they arrive', async () => {
+  const [MONDAY, TUESDAY] = freshDays()
+  const { board, ada, grace } = await plain()
+  const [a, b, c] = await Promise.all(['A', 'B', 'C'].map(t => addDish(ada, board.id, t)))
+  const early = await plan(ada, board.id, a!, MONDAY)
+  const planLate = (caller: Caller, dish: Dish, day: string, minutes: number, index?: number) =>
+    planRaw(caller, board.id, { id: randomUUID(), dishId: dish.id, day, index, madeAt: minutesAgo(minutes) }).then(async (res) => {
+      expect(res.status, await res.clone().text()).toBe(201)
+      return res.json() as Promise<Planned>
+    })
+
+  // At the end: the one that arrives first is first, whoever made it first.
+  const second = await planLate(grace, b!, MONDAY, 10)
+  const third = await planLate(ada, c!, MONDAY, 50)
+  expect(await dayOf(ada, board.id, MONDAY)).toEqual([early.id, second.id, third.id])
+
+  // At the same index: each is placed where it says, the later arrival in front.
+  const x = await planLate(ada, a!, TUESDAY, 50, 0)
+  const y = await planLate(grace, b!, TUESDAY, 10, 0)
+  const z = await planLate(grace, c!, TUESDAY, 30, 1)
+  expect(await dayOf(ada, board.id, TUESDAY)).toEqual([y.id, z.id, x.id])
+})
+
+test('a plan for a Dish that was archived, deleted for good or moved to another Board meanwhile is dropped, with "Dish not found"', async () => {
+  const [MONDAY] = freshDays()
+  const { board, ada, grace } = await plain()
+  const target = await targetBoard()
+  const [archived, purged, moved] = await Promise.all(['Archiviert', 'Gelöscht', 'Verschoben'].map(t => addDish(ada, board.id, t)))
+  expect((await send(ada, 'DELETE', `/api/dishes/${archived!.id}`)).status).toBe(204)
+  expect((await send(ada, 'DELETE', `/api/dishes/${purged!.id}`)).status).toBe(204)
+  expect((await send(ada, 'POST', `/api/dishes/${purged!.id}/purge`)).status).toBe(204)
+  expect((await send(ada, 'POST', `/api/dishes/${moved!.id}/move`, { columnId: target.columns[0]!.id })).status).toBe(200)
+  const before = await versionOf(grace, board.id)
+  const watch = await watchEvents()
+
+  for (const dish of [archived!, purged!, moved!]) {
+    const res = await planRaw(grace, board.id, { id: randomUUID(), dishId: dish.id, day: MONDAY, madeAt: minutesAgo(60) })
+    expect(res.status).toBe(404)
+    expect((await res.json()).statusMessage).toBe('Dish not found')
+  }
+
+  expect(onTestDays((await getBoard(ada, board.id)).plannedDishes)).toEqual([])
+  expect(await versionOf(grace, board.id)).toBe(before)
+  expect(await watch.recorded()).toEqual([])
+})
+
+test('a move, unplan or cook change for a Planned Dish that was unplanned, deleted with its Dish or whose Dish is archived is dropped, with "Planned Dish not found"', async () => {
+  const [MONDAY, TUESDAY] = freshDays()
+  const { board, ada, grace } = await plain()
+  const [unplanned, purged, archived] = await Promise.all(['Ausgeplant', 'Gelöscht', 'Archiviert'].map(t => addDish(ada, board.id, t)))
+  const gone = await plan(ada, board.id, unplanned!, MONDAY)
+  const withPurged = await plan(ada, board.id, purged!, MONDAY)
+  const hidden = await plan(ada, board.id, archived!, MONDAY)
+  expect((await unplanRaw(ada, gone.id)).status).toBe(204)
+  expect((await send(ada, 'DELETE', `/api/dishes/${purged!.id}`)).status).toBe(204)
+  expect((await send(ada, 'POST', `/api/dishes/${purged!.id}/purge`)).status).toBe(204)
+  expect((await send(ada, 'DELETE', `/api/dishes/${archived!.id}`)).status).toBe(204)
+  const before = await versionOf(grace, board.id)
+  const watch = await watchEvents()
+  const madeAt = minutesAgo(60)
+
+  for (const planned of [gone, withPurged, hidden]) {
+    for (const res of [
+      await moveRaw(grace, planned.id, { day: TUESDAY, madeAt }),
+      await unplanRaw(grace, planned.id),
+      await send(grace, 'DELETE', `/api/planned-dishes/${planned.id}`, { madeAt }),
+      await send(grace, 'PUT', `/api/planned-dishes/${planned.id}/cook`, { cookId: await idOf(grace), madeAt }),
+    ]) {
+      expect(res.status).toBe(404)
+      expect((await res.json()).statusMessage).toBe('Planned Dish not found')
+    }
+  }
+
+  expect(await versionOf(grace, board.id)).toBe(before)
+  expect(await watch.recorded()).toEqual([])
+  // The one of the archived Dish is only hidden: restored, it is where it was.
+  expect((await send(ada, 'POST', `/api/dishes/${archived!.id}/restore`)).status).toBe(200)
+  expect(await planOf(ada, board.id)).toEqual([[MONDAY, hidden.id]])
+})
+
+test('a cook change for a cook who left the Board meanwhile is dropped, with "Cook not a Member of this Board"', async () => {
+  const [MONDAY] = freshDays()
+  const cook = await leaver()
+  const { board, ada } = await boardWith('Kein Mitglied mehr', cook)
+  const cookId = await idOf(cook)
+  const ramen = await addDish(ada, board.id, 'Ramen')
+  const planned = await plan(ada, board.id, ramen, MONDAY)
+  expect((await send(cook, 'DELETE', `/api/boards/${board.id}/members/${cookId}`)).status).toBe(204)
+  const before = await versionOf(ada, board.id)
+
+  const res = await send(ada, 'PUT', `/api/planned-dishes/${planned.id}/cook`, { cookId, madeAt: minutesAgo(60) })
+
+  expect(res.status).toBe(400)
+  expect((await res.json()).statusMessage).toBe('Cook not a Member of this Board')
+  expect(await cookOf(ada, board.id, planned.id)).toBeNull()
+  expect(await versionOf(ada, board.id)).toBe(before)
+})
+
+test('all four writes made while the Permission to move Dishes was on are dropped once it is off, with its name', async () => {
+  const [MONDAY, TUESDAY] = freshDays()
+  const { board, ada, grace } = await quiet()
+  const ramen = await addDish(ada, board.id, 'Ramen')
+  const planned = await plan(ada, board.id, ramen, MONDAY)
+  const graceId = await idOf(grace)
+  const before = await versionOf(ada, board.id)
+  const watch = await watchEvents()
+  const madeAt = minutesAgo(60)
+
+  for (const res of [
+    await planRaw(grace, board.id, { id: randomUUID(), dishId: ramen.id, day: TUESDAY, madeAt }),
+    await moveRaw(grace, planned.id, { day: TUESDAY, madeAt }),
+    await send(grace, 'PUT', `/api/planned-dishes/${planned.id}/cook`, { cookId: graceId, madeAt }),
+    await send(grace, 'DELETE', `/api/planned-dishes/${planned.id}`, { madeAt }),
+  ]) {
+    expect(res.status).toBe(403)
+    expect((await res.json()).data).toEqual({ permission: 'moveDishes' })
+  }
+
+  expect(await planOf(ada, board.id)).toEqual([[MONDAY, planned.id]])
+  expect(await cookOf(ada, board.id, planned.id)).toBeNull()
+  expect(await versionOf(ada, board.id)).toBe(before)
+  expect(await watch.recorded()).toEqual([])
+})
+
+test('the same plan sent twice plans once: both answer 201 with the same Planned Dish, one event, one move of the Board Version', async () => {
+  const [MONDAY] = freshDays()
+  const { board, ada, grace } = await plain()
+  const ramen = await addDish(ada, board.id, 'Ramen')
+  const other = await addDish(ada, board.id, 'Gnocchi')
+  const sent = { id: randomUUID(), dishId: ramen.id, day: MONDAY, madeAt: minutesAgo(60) }
+  const watch = await watchEvents()
+  const start = await versionOf(grace, board.id)
+
+  const first = await planRaw(grace, board.id, sent)
+  const afterFirst = await versionOf(grace, board.id)
+  expect(first.status).toBe(201)
+  // Another Planned Dish went in front meanwhile, and its cook was set: the repeat answers it as it is now.
+  const front = await plan(ada, board.id, other, MONDAY, 0)
+  const planned = await first.json() as Planned
+  expect((await cookRaw(ada, planned.id, await idOf(grace))).status).toBe(200)
+  const afterOthers = await versionOf(grace, board.id)
+  const again = await planRaw(grace, board.id, sent)
+
+  expect(again.status).toBe(201)
+  expect(await again.json()).toEqual({ ...planned, cookId: await idOf(grace) })
+  expect(afterFirst).toBeGreaterThan(start)
+  expect(await versionOf(grace, board.id)).toBe(afterOthers)
+  expect(await dayOf(ada, board.id, MONDAY)).toEqual([front.id, planned.id])
+  expect((await watch.recorded()).filter(e => e.kind === 'dish_planned' && e.dishId === ramen.id)).toHaveLength(1)
+})
+
+test('a repeat of a plan whose Dish was archived since is dropped, "Dish not found", and plans nothing again', async () => {
+  const [MONDAY] = freshDays()
+  const { board, ada } = await plain()
+  const ramen = await addDish(ada, board.id, 'Ramen')
+  const sent = { id: randomUUID(), dishId: ramen.id, day: MONDAY }
+  expect((await planRaw(ada, board.id, sent)).status).toBe(201)
+  expect((await send(ada, 'DELETE', `/api/dishes/${ramen.id}`)).status).toBe(204)
+
+  expect((await planRaw(ada, board.id, sent)).status).toBe(404)
+
+  expect(onTestDays((await getBoard(ada, board.id)).plannedDishes)).toEqual([])
+  expect((await send(ada, 'POST', `/api/dishes/${ramen.id}/restore`)).status).toBe(200)
+  expect(await planOf(ada, board.id)).toEqual([[MONDAY, sent.id]])
+})
+
