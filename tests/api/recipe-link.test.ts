@@ -37,11 +37,11 @@ import { endLimitWindows, useUpLimit } from './time-travel'
 // address is never fetched, and that a search follows one page and asks twice
 // at most. The users below are used by this file only.
 
-const OWNER = 'ptolemy@example.com'
-const MEMBER = 'euclid@example.com'
-const CAPPED = 'hipparchus@example.com'
-const SENDER = 'archimedes@example.com'
-const COPIER = 'eratosthenes@example.com'
+const OWNER = 'escoffier@example.com'
+const MEMBER = 'child@example.com'
+const CAPPED = 'beard@example.com'
+const SENDER = 'ottolenghi@example.com'
+const COPIER = 'oliver@example.com'
 
 const LASAGNE_PAGE_RECIPE = { ...RECIPE_BLOG_RECIPE, link: LINKED_RECIPE_PAGE }
 const TOFU = {
@@ -146,30 +146,30 @@ function userMessage(n: number): string {
 }
 
 test('a Caption that links to a page with recipe data gives that page\'s Recipe with the page\'s link, for every Member: one model call', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const euclid = await signIn(MEMBER)
-  const board = await sharedBoard(ptolemy, 'Rezept vom Blog', [euclid])
-  const dish = await addDish(ptolemy, board.id, 'Linsenlasagne', LINKING_TIKTOK)
+  const escoffier = await finderUser(OWNER)
+  const child = await signIn(MEMBER)
+  const board = await sharedBoard(escoffier, 'Rezept vom Blog', [child])
+  const dish = await addDish(escoffier, board.id, 'Linsenlasagne', LINKING_TIKTOK)
   anthropic.answer(NAMES_LASAGNE)
 
-  const answer = await found(ptolemy, dish)
+  const answer = await found(escoffier, dish)
 
   expect(answer.outcome).toBe('found')
   expect(answer.dish.recipe).toEqual(LASAGNE_PAGE_RECIPE)
   expect(answer.dish.recipeSearch).toBeNull()
   expect(anthropic.requests).toHaveLength(1)
-  for (const reader of [ptolemy, euclid]) {
+  for (const reader of [escoffier, child]) {
     expect(await onBoard(reader, board.id, dish)).toEqual(answer.dish)
   }
 })
 
 test('a linked page without recipe data has its text read by the model: two calls, the second one the page\'s text between <page> tags under the page instructions', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const board = await sharedBoard(ptolemy, 'Seite ohne Rezeptdaten')
-  const dish = await addDish(ptolemy, board.id, 'Ofentofu', TEXT_TIKTOK)
+  const escoffier = await finderUser(OWNER)
+  const board = await sharedBoard(escoffier, 'Seite ohne Rezeptdaten')
+  const dish = await addDish(escoffier, board.id, 'Ofentofu', TEXT_TIKTOK)
   anthropic.answer({ caption: { ...NOTHING, link: TEXT_PAGE }, page: TOFU })
 
-  const answer = await found(ptolemy, dish)
+  const answer = await found(escoffier, dish)
 
   expect(answer.dish.recipe).toEqual({ ...TOFU, link: TEXT_PAGE })
   expect(anthropic.requests).toHaveLength(2)
@@ -183,12 +183,12 @@ test('a linked page without recipe data has its text read by the model: two call
 })
 
 test('a page longer than the limit is sent cut to it: 20 000 characters', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const board = await sharedBoard(ptolemy, 'Langer Text')
-  const dish = await addDish(ptolemy, board.id, 'Langes Rezept', LONG_TIKTOK)
+  const escoffier = await finderUser(OWNER)
+  const board = await sharedBoard(escoffier, 'Langer Text')
+  const dish = await addDish(escoffier, board.id, 'Langes Rezept', LONG_TIKTOK)
   anthropic.answer({ caption: { ...NOTHING, link: 'https://langer-text.example/mega-rezept' }, page: TOFU })
 
-  expect((await found(ptolemy, dish)).outcome).toBe('found')
+  expect((await found(escoffier, dish)).outcome).toBe('found')
 
   const sent = userMessage(1)
   expect(sent.startsWith('<page>\nLanges Rezept\n\naaaa')).toBe(true)
@@ -197,91 +197,91 @@ test('a page longer than the limit is sent cut to it: 20 000 characters', async 
 })
 
 test('a Pinterest Dish gets the Recipe of the Pin\'s destination page, with that page\'s link', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const euclid = await signIn(MEMBER)
-  const board = await sharedBoard(ptolemy, 'Pinterest', [euclid])
-  const toRecipe = await addDish(ptolemy, board.id, 'Lasagne vom Pin', PIN_TO_RECIPE)
-  const toText = await addDish(ptolemy, board.id, 'Tofu vom Pin', PIN_TO_TEXT)
+  const escoffier = await finderUser(OWNER)
+  const child = await signIn(MEMBER)
+  const board = await sharedBoard(escoffier, 'Pinterest', [child])
+  const toRecipe = await addDish(escoffier, board.id, 'Lasagne vom Pin', PIN_TO_RECIPE)
+  const toText = await addDish(escoffier, board.id, 'Tofu vom Pin', PIN_TO_TEXT)
 
-  const recipeData = await found(ptolemy, toRecipe)
+  const recipeData = await found(escoffier, toRecipe)
 
   expect(recipeData.dish.recipe).toEqual(LASAGNE_PAGE_RECIPE)
   expect(anthropic.requests).toHaveLength(0)
-  expect(await onBoard(euclid, board.id, toRecipe)).toEqual(recipeData.dish)
+  expect(await onBoard(child, board.id, toRecipe)).toEqual(recipeData.dish)
 
   // The Caption is read first (and names no link); the page's text then.
   anthropic.answer({ caption: 'empty', page: TOFU })
-  const text = await found(ptolemy, toText)
+  const text = await found(escoffier, toText)
 
   expect(text.dish.recipe).toEqual({ ...TOFU, link: TEXT_PAGE })
   expect(anthropic.requests.map(askedToRead)).toEqual(['caption', 'page'])
 })
 
 test('a Recipe from the Source\'s own page, and one from the Caption itself, keep no link', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const board = await sharedBoard(ptolemy, 'Ohne Link')
-  const ownPage = await addDish(ptolemy, board.id, 'Seite mit Rezept', RECIPE_BLOG_WITH_CAPTION)
-  const caption = await addDish(ptolemy, board.id, 'Beschreibung mit Rezept', RECIPE_TIKTOK)
+  const escoffier = await finderUser(OWNER)
+  const board = await sharedBoard(escoffier, 'Ohne Link')
+  const ownPage = await addDish(escoffier, board.id, 'Seite mit Rezept', RECIPE_BLOG_WITH_CAPTION)
+  const caption = await addDish(escoffier, board.id, 'Beschreibung mit Rezept', RECIPE_TIKTOK)
   // The model names a page the Caption doesn't hold, which is never looked at.
   anthropic.answer({ ingredients: ['250 g rote Linsen', '1 Zwiebel'], steps: ['Alles kochen.'], link: LINKED_RECIPE_PAGE })
 
-  expect((await found(ptolemy, ownPage)).dish.recipe).toEqual({ ...RECIPE_BLOG_RECIPE, link: null })
+  expect((await found(escoffier, ownPage)).dish.recipe).toEqual({ ...RECIPE_BLOG_RECIPE, link: null })
   expect(anthropic.requests).toHaveLength(0)
-  expect((await found(ptolemy, caption)).dish.recipe).toEqual({ ingredients: ['250 g rote Linsen', '1 Zwiebel'], steps: ['Alles kochen.'], link: null })
+  expect((await found(escoffier, caption)).dish.recipe).toEqual({ ingredients: ['250 g rote Linsen', '1 Zwiebel'], steps: ['Alles kochen.'], link: null })
   expect(anthropic.requests).toHaveLength(1)
 })
 
 test('a link the model names that is not in the Caption is never fetched: the page would have given a Recipe, and the search ends as nothing found', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const board = await sharedBoard(ptolemy, 'Erfundener Link')
-  const dish = await addDish(ptolemy, board.id, 'Neues Video', CHATTER_TIKTOK)
+  const escoffier = await finderUser(OWNER)
+  const board = await sharedBoard(escoffier, 'Erfundener Link')
+  const dish = await addDish(escoffier, board.id, 'Neues Video', CHATTER_TIKTOK)
   anthropic.answer({ ...NOTHING, link: LINKED_RECIPE_PAGE })
 
-  const answer = await found(ptolemy, dish)
+  const answer = await found(escoffier, dish)
 
   expect(answer).toMatchObject({ outcome: 'none', dish: { recipe: null, recipeSearch: 'none' } })
   expect(anthropic.requests).toHaveLength(1)
 })
 
 test('a link to a non-public address is never fetched: the stand-in sees no request for its path, and the search ends as failed', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const board = await sharedBoard(ptolemy, 'Interner Link')
-  const dish = await addDish(ptolemy, board.id, 'Rezept zu Hause', PRIVATE_TIKTOK)
+  const escoffier = await finderUser(OWNER)
+  const board = await sharedBoard(escoffier, 'Interner Link')
+  const dish = await addDish(escoffier, board.id, 'Rezept zu Hause', PRIVATE_TIKTOK)
   anthropic.answer({ ...NOTHING, link: `http://127.0.0.1:${ANTHROPIC_PORT}${PRIVATE_PATH}` })
 
-  const answer = await found(ptolemy, dish)
+  const answer = await found(escoffier, dish)
 
   expect(answer).toMatchObject({ outcome: 'failed', dish: { recipe: null, recipeSearch: null } })
   expect(anthropic.requests.map(r => r.path)).toEqual(['/v1/messages'])
 })
 
 test('a followed page that can\'t be read is a failed search: no Recipe, repeatable, and no search of the day spent', async () => {
-  const hipparchus = await finderUser(CAPPED)
-  const board = await sharedBoard(hipparchus, 'Seite nicht da')
-  const dish = await addDish(hipparchus, board.id, 'Kaputter Link', DOWN_LINK_TIKTOK)
-  const other = await addDish(hipparchus, board.id, 'Linsenlasagne', LINKING_TIKTOK)
-  const third = await addDish(hipparchus, board.id, 'Noch eine', LINKING_TIKTOK)
+  const beard = await finderUser(CAPPED)
+  const board = await sharedBoard(beard, 'Seite nicht da')
+  const dish = await addDish(beard, board.id, 'Kaputter Link', DOWN_LINK_TIKTOK)
+  const other = await addDish(beard, board.id, 'Linsenlasagne', LINKING_TIKTOK)
+  const third = await addDish(beard, board.id, 'Noch eine', LINKING_TIKTOK)
   await useUpLimit(CAPPED, 'recipe-search', 29)
   anthropic.answer({ ...NOTHING, link: DOWN_LINKED_PAGE })
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    expect(await found(hipparchus, dish)).toMatchObject({ outcome: 'failed', dish: { recipe: null, recipeSearch: null } })
-    expect(await onBoard(hipparchus, board.id, dish)).toMatchObject({ recipe: null, recipeSearch: null })
+    expect(await found(beard, dish)).toMatchObject({ outcome: 'failed', dish: { recipe: null, recipeSearch: null } })
+    expect(await onBoard(beard, board.id, dish)).toMatchObject({ recipe: null, recipeSearch: null })
   }
   // 29 used: the failed ones gave theirs back, so there is one left.
   anthropic.answer(NAMES_LASAGNE)
-  expect((await found(hipparchus, other)).outcome).toBe('found')
-  expect((await findRecipe(hipparchus, third)).status).toBe(429)
+  expect((await found(beard, other)).outcome).toBe('found')
+  expect((await findRecipe(beard, third)).status).toBe(429)
 }, 30_000)
 
 test('a search follows one page and asks the model twice at most: a link in the page\'s text, or one the model names reading it, is never followed', async () => {
-  const ptolemy = await finderUser(OWNER)
-  const board = await sharedBoard(ptolemy, 'Nur eine Seite')
-  const dish = await addDish(ptolemy, board.id, 'Rezeptsammlung', FURTHER_TIKTOK)
+  const escoffier = await finderUser(OWNER)
+  const board = await sharedBoard(escoffier, 'Nur eine Seite')
+  const dish = await addDish(escoffier, board.id, 'Rezeptsammlung', FURTHER_TIKTOK)
   // The page's text holds a link to a page with a Recipe, and the model's answer for the page names it too.
   anthropic.answer({ caption: { ...NOTHING, link: FURTHER_PAGE }, page: { ...NOTHING, link: LINKED_RECIPE_PAGE } })
 
-  const answer = await found(ptolemy, dish)
+  const answer = await found(escoffier, dish)
 
   expect(answer).toMatchObject({ outcome: 'none', dish: { recipe: null, recipeSearch: 'none' } })
   expect(anthropic.requests.map(askedToRead)).toEqual(['caption', 'page'])
@@ -290,29 +290,29 @@ test('a search follows one page and asks the model twice at most: a link in the 
 })
 
 test('a Copy of a Dish whose Recipe was found at a link takes the link along', async () => {
-  const eratosthenes = await finderUser(COPIER)
-  const board = await sharedBoard(eratosthenes, 'Original')
-  const target = await sharedBoard(eratosthenes, 'Kopie')
-  const dish = await addDish(eratosthenes, board.id, 'Linsenlasagne', LINKING_TIKTOK)
+  const oliver = await finderUser(COPIER)
+  const board = await sharedBoard(oliver, 'Original')
+  const target = await sharedBoard(oliver, 'Kopie')
+  const dish = await addDish(oliver, board.id, 'Linsenlasagne', LINKING_TIKTOK)
   anthropic.answer(NAMES_LASAGNE)
-  expect((await found(eratosthenes, dish)).dish.recipe).toEqual(LASAGNE_PAGE_RECIPE)
+  expect((await found(oliver, dish)).dish.recipe).toEqual(LASAGNE_PAGE_RECIPE)
 
-  const copied = await send(eratosthenes, 'POST', `/api/dishes/${dish.id}/copy`, { boardId: target.id })
+  const copied = await send(oliver, 'POST', `/api/dishes/${dish.id}/copy`, { boardId: target.id })
   expect(copied.status).toBe(201)
   const { dish: copy } = await copied.json() as { dish: Dish }
 
   expect(copy.recipe).toEqual(LASAGNE_PAGE_RECIPE)
-  expect(await onBoard(eratosthenes, target.id, copy)).toMatchObject({ recipe: LASAGNE_PAGE_RECIPE })
+  expect(await onBoard(oliver, target.id, copy)).toMatchObject({ recipe: LASAGNE_PAGE_RECIPE })
 })
 
 test('nothing is sent about the user, the Board or the Dish in either request', async () => {
-  const archimedes = await finderUser(SENDER, { name: 'Zelda Zucchini' })
-  const { id: userId } = await (await archimedes.fetch('/api/me')).json() as { id: string }
-  const board = await sharedBoard(archimedes, 'Geheimes Familienbuch')
-  const dish = await addDish(archimedes, board.id, 'Titel-Zebra', TEXT_TIKTOK)
+  const ottolenghi = await finderUser(SENDER, { name: 'Zelda Zucchini' })
+  const { id: userId } = await (await ottolenghi.fetch('/api/me')).json() as { id: string }
+  const board = await sharedBoard(ottolenghi, 'Geheimes Familienbuch')
+  const dish = await addDish(ottolenghi, board.id, 'Titel-Zebra', TEXT_TIKTOK)
   anthropic.answer({ caption: { ...NOTHING, link: TEXT_PAGE }, page: TOFU })
 
-  await found(archimedes, dish)
+  await found(ottolenghi, dish)
 
   expect(anthropic.requests).toHaveLength(2)
   for (const { body } of anthropic.requests) {
