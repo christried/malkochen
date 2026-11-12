@@ -9,6 +9,8 @@ import type { AddedDish, CookedDish, CookingUndo, DishAdder, DishPlace, DishPlac
 import { MILESTONE_COOKINGS } from '../utils/achievement'
 import { dishOnBoard } from '../../shared/board'
 import { viewerMay, type Permission } from '../../shared/permissions'
+import { recipeAfterEdit, type RecipeSearchAnswer, type RecipeSearchOutcome } from '../../shared/recipe'
+import { recipeToSave } from '../utils/recipe-lines'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 import type { Late } from './late'
 import { sendOrKeep } from './send-or-keep'
@@ -126,6 +128,9 @@ export interface BoardTransport extends HistoryTransport, VoteTransport {
   // the server looks its link up then (#462).
   addDishLate: (boardId: string, dish: OfflineAddBody) => Promise<AddedDish>
   editDish: (dishId: string, changes: DishEditBody) => Promise<SavedDish>
+  // "Rezept finden" (#504): answers once the search is over, which can take
+  // half a minute.
+  findRecipe: (dishId: string) => Promise<RecipeSearchAnswer>
   deleteDish: (dishId: string) => Promise<void>
   restoreDish: (dishId: string) => Promise<PlacedDish>
   // `late`, only from the Unsent Changes (unsent-changes.ts): when the change
@@ -149,6 +154,9 @@ export interface BoardTransport extends HistoryTransport, VoteTransport {
 }
 
 export type { Late }
+
+// How "Rezept finden" ended (findRecipe).
+export type FindRecipeResult = RecipeSearchOutcome | 'quota' | 'conflict' | 'refused'
 
 type BoardColumn = BoardView['columns'][number]
 
@@ -439,6 +447,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     return !!unsent?.changes.value.some(c => c.kind === 'add' && c.dishId === dishId)
   }
 
+  // Whether a Recipe edit of the Dish waits to be sent (#496).
+  function hasUnsentRecipe(dishId: string): boolean {
+    return !!unsent?.changes.value.some(c => c.kind === 'recipe' && c.dishId === dishId)
+  }
+
   // The Dishes added offline that have arrived since: the Board's card takes
   // the Dish as the server made it (its code, title, image, Creator), keeping
   // its Cookings, Votes and Comment count, which others unsent still change.
@@ -477,29 +490,40 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // write rejects with WriteFailed, for the form to say so; without "edit
   // Dishes" for it, at once with 403, as the server would.
   //
-  // An edit of the title alone (the only field that works offline) whose
-  // write gets no answer, or that is made while Unsent Changes wait, shows
-  // at once and is kept as an Unsent Change instead; it wins over what
-  // others changed meanwhile.
+  // An edit of the title alone, or of the Recipe alone (#496; the only
+  // fields that work offline), whose write gets no answer, or that is made
+  // while Unsent Changes wait, shows at once and is kept as an Unsent Change
+  // instead; it wins over what others changed meanwhile.
   async function editDish(dishId: string, changes: DishEditBody): Promise<BoardResult> {
     if (!may('editDishes', dishId)) throw new WriteFailed(403)
     const title = changes.title?.trim()
-    const titleOnly = !!title && Object.keys(changes).length === 1
-    // The server has nothing to change yet but the title, which is sent after the add.
-    if (isUnsentAdd(dishId) && !titleOnly) throw new WriteFailed()
-    const titleKept = Symbol('title kept as an Unsent Change')
+    const onlyKey = Object.keys(changes).length === 1
+    const titleOnly = !!title && onlyKey
+    const recipeOnly = changes.recipe !== undefined && onlyKey
+    const keepable = titleOnly || recipeOnly
+    // The server has nothing to change yet but the title and the Recipe, which are sent after the add.
+    if (isUnsentAdd(dishId) && !keepable) throw new WriteFailed()
+    const kept = Symbol('kept as an Unsent Change')
     const madeAt = new Date().toISOString()
     const answer = await queued(dishId, () => sendOrKeep({
-      canKeep: titleOnly && !!unsent,
+      canKeep: keepable && !!unsent,
       waiting: anyUnsent(),
       send: () => transport.editDish(dishId, changes),
-      keep: (): typeof titleKept => titleKept,
+      keep: (): typeof kept => kept,
     }), { moves: false })
-    if (answer === titleKept) {
+    if (answer === kept) {
       const dish = find(dishId)?.dish
       if (!dish) throw new WriteFailed(404)
-      queueUnsent({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
-      dish.title = title!
+      if (recipeOnly) {
+        // As the server will keep it: the lines trimmed, the empty ones gone.
+        const recipe = changes.recipe ? recipeToSave(changes.recipe) : null
+        queueUnsent({ kind: 'recipe', dishId, recipe }, madeAt, dish.title)
+        dish.recipe = recipeAfterEdit(dish.recipe, recipe)
+      }
+      else {
+        queueUnsent({ kind: 'title', dishId, title: title! }, madeAt, dish.title)
+        dish.title = title!
+      }
       return { dish, unsent: true }
     }
     const { imageNotStored, ...saved } = answer
@@ -509,6 +533,47 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       Object.assign(shown, fields)
     }
     return { dish: shown ?? saved, ...imageNotStored && { notice: 'imageNotReplaced' } }
+  }
+
+  // "Rezept finden" (#504): the Recipe Finder searches for the Recipe of a
+  // Dish with a Source and no Recipe. The Dish shows "looking" at once, so
+  // the detail has its search card the moment it is tapped, and settles to
+  // the Dish the server answers with: the Recipe found, "none" for nothing
+  // found, or neither when the search failed. It needs a connection and is
+  // never kept as an Unsent Change, so offline it is refused (as it is for a
+  // Dish the Member may not edit, one that has a Recipe or a search already,
+  // and one added offline and not sent yet). Not queued with the Dish's other
+  // writes: it takes long, and an edit made meanwhile must not wait for it.
+  // The result, for the page: how the search ended (`found`, `none`,
+  // `failed`, which includes a request that went wrong); `quota`, the day's
+  // cap (429); `conflict`, the Dish isn't searchable any more as the server
+  // has it (409, or gone: 404), which a sync clears up; `refused`, the Recipe
+  // Finder is off for the Member or has no key (403, 503), or nothing was
+  // asked.
+  async function findRecipe(dishId: string): Promise<FindRecipeResult> {
+    const shown = find(dishId)?.dish
+    if (!shown || !may('editDishes', dishId) || offline?.() || isUnsentAdd(dishId) || shown.recipe || shown.recipeSearch) return 'refused'
+    const before = shown.recipeSearch
+    shown.recipeSearch = 'looking'
+    try {
+      const answer = await transport.findRecipe(dishId)
+      const now = find(dishId)?.dish
+      if (now) {
+        const { cookings: _, votes: __, ...fields } = answer.dish
+        Object.assign(now, fields)
+      }
+      return answer.outcome
+    }
+    catch (error) {
+      const now = find(dishId)?.dish
+      // Only if nothing else has changed it: a poll may have brought the Recipe.
+      if (now?.recipeSearch === 'looking') now.recipeSearch = before
+      const status = error instanceof WriteFailed ? error.status : undefined
+      if (status === 429) return 'quota'
+      if (status === 409 || status === 404) return 'conflict'
+      if (status === 403 || status === 503) return 'refused'
+      return 'failed'
+    }
   }
 
   // Deleting a Dish (PRD story 47): its card goes at once. If the delete
@@ -1194,7 +1259,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
+  return { addDish, editDish, findRecipe, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, hasUnsentRecipe, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

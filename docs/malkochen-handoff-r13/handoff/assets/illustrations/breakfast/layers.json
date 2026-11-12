@@ -1,0 +1,171 @@
+{
+  "dish": "breakfast",
+  "viewBox": "0 0 120 120",
+  "note": "R11. Every layer is a full-canvas SVG in the shared viewBox: stack by z (1 = back). Transform origin = data-pivot (viewBox units). Keyframes: assets/r11-keyframes.css (prefix r11-). Inline style on animated elements = frame-0 state.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-plate.svg",
+      "name": "plate",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 4,
+      "file": "layers/light/04-stack.svg",
+      "name": "stack",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/light/05-syrup.svg",
+      "name": "syrup",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/light/06-drip.svg",
+      "name": "drip",
+      "animated": true,
+      "loop": "drip 3s ease-in-out infinite",
+      "pivot": [
+        36,
+        58
+      ]
+    },
+    {
+      "z": 7,
+      "file": "layers/light/07-drop.svg",
+      "name": "drop",
+      "animated": true,
+      "loop": "drop 3s ease-in infinite",
+      "pivot": [
+        36.2,
+        79
+      ]
+    },
+    {
+      "z": 8,
+      "file": "layers/light/08-toppings.svg",
+      "name": "toppings",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 9,
+      "file": "layers/light/09-berry.svg",
+      "name": "berry",
+      "animated": true,
+      "loop": "berry 3s ease-in-out infinite",
+      "pivot": [
+        63,
+        55
+      ]
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-ground_tint.svg",
+      "name": "ground_tint",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-ground_shadow.svg",
+      "name": "ground_shadow",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-plate.svg",
+      "name": "plate",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 4,
+      "file": "layers/dark/04-stack.svg",
+      "name": "stack",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 5,
+      "file": "layers/dark/05-syrup.svg",
+      "name": "syrup",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 6,
+      "file": "layers/dark/06-drip.svg",
+      "name": "drip",
+      "animated": true,
+      "loop": "drip 3s ease-in-out infinite",
+      "pivot": [
+        36,
+        58
+      ]
+    },
+    {
+      "z": 7,
+      "file": "layers/dark/07-drop.svg",
+      "name": "drop",
+      "animated": true,
+      "loop": "drop 3s ease-in infinite",
+      "pivot": [
+        36.2,
+        79
+      ]
+    },
+    {
+      "z": 8,
+      "file": "layers/dark/08-toppings.svg",
+      "name": "toppings",
+      "animated": false,
+      "loop": null,
+      "pivot": null
+    },
+    {
+      "z": 9,
+      "file": "layers/dark/09-berry.svg",
+      "name": "berry",
+      "animated": true,
+      "loop": "berry 3s ease-in-out infinite",
+      "pivot": [
+        63,
+        55
+      ]
+    }
+  ]
+}

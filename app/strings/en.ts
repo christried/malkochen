@@ -20,6 +20,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `deleted comment on ${named}`
     case 'vote': return `thumb on ${named}`
     case 'title': return `new title for ${named}`
+    case 'recipe': return `changed recipe for ${named}`
     case 'add': return `${named} added`
     case 'move': return `${named} moved`
     case 'cook':
@@ -29,7 +30,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -363,6 +364,54 @@ export const en: Strings = {
     failed,
     notAllowed: 'You can’t edit this dish any more. The owner decides that.',
     imageNotStored: (title: string) => `The new image couldn’t be saved. “${title}” keeps its old one.`,
+  },
+  recipe: {
+    heading: 'Recipe',
+    edit: 'Edit',
+    add: 'Add recipe',
+    ingredients: 'Ingredients',
+    steps: 'Steps',
+    from: (site: string) => `Recipe from ${site}`,
+    cancel: 'Cancel',
+    save: 'Save',
+    addIngredient: 'Add ingredient',
+    addStep: 'Add step',
+    ingredientPlaceholder: 'Ingredient, e.g. 2 garlic cloves',
+    stepPlaceholder: 'What needs doing?',
+    ingredientField: (n: number) => `Ingredient ${number(n)}`,
+    stepField: (n: number) => `Step ${number(n)}`,
+    moveLine: (line: string) => `Move ${line}`,
+    removeLine: (line: string) => `Remove ${line}`,
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    moved: (line: string, place: number, total: number) => `${line}, now at position ${number(place)} of ${number(total)}.`,
+    ingredientRemoved: 'Ingredient removed',
+    stepRemoved: 'Step removed',
+    ingredientsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'ingredient', other: 'ingredients' })} pasted`,
+    stepsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'step', other: 'steps' })} pasted`,
+    didNotFit: (count: number) => plural(count, { one: `${number(count)} line didn’t fit.`, other: `${number(count)} lines didn’t fit.` }),
+    count: (count: number, limit: number) => `${number(count)} of ${number(limit)}`,
+    ingredientsFull: (limit: number) => `${number(limit)} ingredients, a recipe holds no more.`,
+    stepsFull: (limit: number) => `${number(limit)} steps, a recipe holds no more.`,
+    ingredientTooLong: 'An ingredient can’t be longer.',
+    stepTooLong: 'A step can’t be longer. Press Enter to start a new one.',
+    discardTitle: 'Discard changes?',
+    discardText: 'Your recipe stays as it was before.',
+    keepEditing: 'Keep editing',
+    discard: 'Discard',
+    switchLabel: 'Jump to ingredients or steps',
+    finder: {
+      find: 'Find recipe',
+      searching: 'Looking for the recipe',
+      searchingAbout: 'This usually takes a few seconds, sometimes half a minute.',
+      none: 'No recipe found',
+      noneAbout: 'There was none in the caption or on the linked page.',
+      failed: 'The search didn’t work just now.',
+      again: 'Search again',
+      quota: 'The Recipe Finder has searched enough for today. It will search again tomorrow.',
+      found: 'Recipe found',
+      show: 'Show',
+    },
   },
   sources: {
     tiktok: 'TikTok',
@@ -744,6 +793,36 @@ export const en: Strings = {
     unreachable: 'Snackbert can’t be reached right now. Try again later.',
     failed,
   },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Recipe Finder',
+    about: 'The Recipe Finder picks out the ingredients and steps for a dish, from the caption or from the food blog it links to. Right now it is switched on for only a few people.',
+    ask: 'Ask for access',
+    asked: 'Asked',
+    // From an ISO time.
+    askedLine: (at: string) => `Your request from ${dayInFull(new Date(at))} has arrived. There is nothing more you need to do.`,
+    on: 'Switched on',
+    onLine: 'The Recipe Finder is switched on for you. When it looks for a recipe, the caption and the text of the linked page go to Anthropic.',
+    privacyLink: 'More in the privacy policy',
+    askFailed: failed,
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} asked, ${number(on)} switched on. New requests are at the top.`,
+      nobody: 'Nobody has asked.',
+      empty: 'Nobody has asked for the Recipe Finder yet.',
+      person: 'Person',
+      askedColumn: 'Asked',
+      searchesColumn: 'Searches',
+      switchColumn: 'Recipe Finder',
+      // A request's day, from an ISO time: alone, and in a sentence.
+      askedDay: (at: string) => addedDate(new Date(at)),
+      askedOn: (at: string) => `Asked on ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} today`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'search', other: 'searches' })}, ${number(today)} today`,
+      noSearches: 'No searches yet',
+      switchFor: (name: string) => `Recipe Finder for ${name}`,
+      failed,
+    },
+  },
   snackbertQuestion: {
     label: 'Snackbert',
     ask: (dish: string) => `Mmm, ${dish}! Want to tell me how much you had?`,
@@ -977,6 +1056,9 @@ export const en: Strings = {
       snackbert_report_sent: 'Snackbert Report sent',
       recipe_finder_asked: 'Recipe Finder asked for',
       recipe_finder_switched: 'Recipe Finder switched',
+      recipe_found: 'Recipe found',
+      recipe_not_found: 'No Recipe found',
+      recipe_search_failed: 'Recipe search failed',
       account_deleted: 'Account deleted',
       push_sent: 'Push sent',
       digest_sent: 'Daily email sent',

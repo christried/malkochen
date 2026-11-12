@@ -9,6 +9,7 @@ import { guessKind, siteOf } from '../../app/utils/link-guess'
 import type { DishHistory } from '../../server/utils/dish-history'
 import type { AddedDish, CookedDish, CookingUndo, DishPlace, DishView, MovedDish, PlacedDish, SavedDish } from '../../server/utils/dishes'
 import type { VoteView } from '../../server/utils/votes'
+import type { RecipeSearchAnswer, RecipeSearchOutcome } from '../../shared/recipe'
 import { columnForNewDishes, landingIndex, recordsCooking } from '../../shared/placement'
 
 // The in-memory transport for the client Board module's tests: a small fake
@@ -44,6 +45,8 @@ export interface MemoryTransport {
   // What the server finds when it looks a link up for a Dish added offline,
   // by link: the Source's title, Creator and image.
   lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }>
+  // How the Recipe Finder's search ends from now on (#504): `found` by default.
+  searchEnds: (outcome: RecipeSearchOutcome) => void
   // Another Member deletes a Dish, or a Column (its deleted Dishes go to
   // the top of the Column that takes new Dishes, as on the real server).
   deleteDishElsewhere: (dishId: string) => void
@@ -73,6 +76,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   let addedColumns = 0
   const lookups: Record<string, { title?: string, creator?: string, imageUrl?: string }> = {}
   let answers: 'answering' | 'none' | 'lost' = 'answering'
+  let searchEnd: RecipeSearchOutcome = 'found'
 
   // The Dish on the server that `matches`, and its Column: on this Board, or
   // on another of the Member's Boards it was moved to.
@@ -142,6 +146,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       caption: input.source && input.sourceTicket ? input.caption?.trim() || null : null,
       playableVideo: input.source && input.sourceTicket ? input.playableVideo ?? null : null,
       recipe: null,
+      recipeSearch: null,
       imageUrl: input.photo
         ? (input.photo.ticket ? input.photo.url : null)
         : input.imageUrl && input.imageTicket ? `/images/added-${added}.jpg` : null,
@@ -184,6 +189,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       caption: null,
       playableVideo: null,
       recipe: null,
+      recipeSearch: null,
       imageUrl: found?.imageUrl ?? null,
       imageFocus: { x: 50, y: 50 },
       placeholder: body.placeholder,
@@ -206,7 +212,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
   function editOnServer(dishId: string, changes: DishEditBody): SavedDish | null {
     const dish = located(d => d.id === dishId)?.dish
     if (!dish) return null
-    const { title, source, creator, caption, playableVideo, sourceTicket, placeholder, imageUrl, imageTicket, imageFocus } = changes
+    const { title, source, creator, caption, playableVideo, sourceTicket, placeholder, imageUrl, imageTicket, imageFocus, recipe } = changes
     if (title !== undefined) dish.title = title.trim()
     if (source !== undefined) {
       const linkChanged = source?.link !== dish.source?.link
@@ -223,6 +229,14 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       }
     }
     if (creator !== undefined) dish.creator = creator?.trim() || null
+    // The Recipe is replaced as a whole, its lines trimmed and the empty ones
+    // dropped; the link it was found at stays until nothing is left.
+    if (recipe !== undefined) {
+      const kept = (list: string[]) => list.map(line => line.trim()).filter(line => line !== '')
+      const ingredients = kept(recipe?.ingredients ?? [])
+      const steps = kept(recipe?.steps ?? [])
+      dish.recipe = ingredients.length + steps.length === 0 ? null : { ingredients, steps, link: dish.recipe?.link ?? null }
+    }
     if (placeholder !== undefined) dish.placeholder = placeholder
     const refused = Boolean(imageUrl && !imageTicket)
     if (imageUrl === null || (imageUrl && imageTicket)) {
@@ -232,6 +246,18 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     if (imageFocus && dish.imageUrl && !refused) dish.imageFocus = { ...imageFocus }
     const saved = structuredClone(dish)
     return refused ? { ...saved, imageNotStored: true } : saved
+  }
+
+  // "Rezept finden" (#504), ended as `searchEnd` says: a Recipe written into
+  // the Dish, "nothing found" remembered on it, or neither (the page didn't
+  // answer). 409 for a Dish without a Source or with a Recipe, as the server.
+  function findRecipeOnServer(dishId: string): RecipeSearchAnswer | null {
+    const dish = located(d => d.id === dishId)?.dish
+    if (!dish) return null
+    if (!dish.source || dish.recipe || dish.recipeSearch) throw new WriteFailed(409)
+    if (searchEnd === 'found') dish.recipe = { ingredients: ['2 Eier', '200 g Mehl'], steps: ['Alles verrühren.'], link: null }
+    dish.recipeSearch = searchEnd === 'none' ? 'none' : null
+    return { outcome: searchEnd, dish: structuredClone(dish) }
   }
 
   function deleteOnServer(dishId: string): boolean {
@@ -552,6 +578,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     deleteDishes: ids => answer('deleteDishes', ids.join(), () => deleteManyOnServer(ids)).then(() => undefined),
     restoreDishes: ids => answer('restoreDishes', ids.join(), () => restoreManyOnServer(ids)),
     addColumn: (boardId, name) => answer('addColumn', `${boardId} ${name}`, () => addColumnOnServer(boardId, name)),
+    findRecipe: dishId => answer('findRecipe', dishId, () => findRecipeOnServer(dishId)),
     openDish: dishId => answer('openDish', dishId, () => openOnServer(dishId)),
     writeComment: (dishId, text, late) => answer('writeComment', `${dishId} ${text}`, () => writeCommentOnServer(dishId, text, late)),
     editComment: (commentId, text) => answer('editComment', `${commentId} ${text}`, () => editCommentOnServer(commentId, text)),
@@ -573,6 +600,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
       script(write, { hold: h => (held = h) })
       return { succeed: () => held!.succeed() }
     },
+    searchEnds: (outcome) => { searchEnd = outcome },
     deleteDishElsewhere: dishId => void deleteOnServer(dishId),
     deleteColumnElsewhere(columnId) {
       server.columns = server.columns.filter(c => c.id !== columnId)

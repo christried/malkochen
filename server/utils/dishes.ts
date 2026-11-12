@@ -3,7 +3,7 @@ import { and, asc, desc, eq, exists, ilike, inArray, isNotNull, isNull, lte, ne,
 import { FOCUS_CENTRE, type ImageFocus } from '../../shared/image-focus'
 import type { Placeholder } from '../../shared/placeholders'
 import { columnForNewDishes } from '../../shared/placement'
-import type { Recipe } from '../../shared/recipe'
+import type { Recipe, RecipeSearch } from '../../shared/recipe'
 import type { SourceKind } from '../source-lookup'
 import { db, runAtomic, type Db } from '../db'
 import { boardColumn, cooking, dish, user } from '../db/schema'
@@ -45,6 +45,9 @@ export interface DishView {
   playableVideo: boolean | null
   // Its Recipe (CONTEXT.md): Ingredients and Steps; null if it has neither.
   recipe: Recipe | null
+  // Where the Recipe Finder's search for its Recipe stands (#500); null for
+  // none under way and nothing found for its current Source.
+  recipeSearch: RecipeSearch | null
   // The stored copy of the Source image; null shows the Placeholder.
   imageUrl: string | null
   // The part of that image a frame cropping it shows (shared/image-focus.ts).
@@ -136,6 +139,8 @@ function selectDishes() {
       recipeIngredients: dish.recipeIngredients,
       recipeSteps: dish.recipeSteps,
       recipeLink: dish.recipeLink,
+      recipeSearch: dish.recipeSearch,
+      recipeSearchAt: dish.recipeSearchAt,
       imageUrl: dish.imageUrl,
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
@@ -158,10 +163,16 @@ export function recipeOf(ingredients: string[], steps: string[], link: string | 
   return ingredients.length > 0 || steps.length > 0 ? { ingredients, steps, link } : null
 }
 
-function toView({ columnId: _, sourceLink, sourceKind, recipeIngredients, recipeSteps, recipeLink, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
+// How long a search is 'looking' before it counts as over (#500): one that
+// crashed never leaves its Dish stuck.
+export const SEARCH_LOOKS_FOR = '5 minutes'
+const SEARCH_LOOKS_FOR_MS = 5 * 60_000
+
+function toView({ columnId: _, sourceLink, sourceKind, recipeIngredients, recipeSteps, recipeLink, recipeSearch, recipeSearchAt, imageFocusX, imageFocusY, adderId, adderName, adderImage, ...row }: DishRow, cookings: CookingView[], votes: VoteView[], commentCount: number): DishView {
   return {
     ...row,
     recipe: recipeOf(recipeIngredients, recipeSteps, recipeLink),
+    recipeSearch: recipeSearch === 'looking' && (!recipeSearchAt || Date.now() - recipeSearchAt.getTime() >= SEARCH_LOOKS_FOR_MS) ? null : recipeSearch,
     imageFocus: { x: imageFocusX, y: imageFocusY },
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     addedBy: adderId ? { id: adderId, name: adderName ?? '', image: adderImage } : null,
@@ -290,6 +301,11 @@ export async function editDish(dishId: string, userId: string, changes: DishChan
     ...focus && (rest.imageUrl === undefined
       ? { imageFocusX: unlessPlaceholder(focus.x, FOCUS_CENTRE.x), imageFocusY: unlessPlaceholder(focus.y, FOCUS_CENTRE.y) }
       : { imageFocusX: focus.x, imageFocusY: focus.y }),
+    // A new Source has nothing found or looked for yet (#500).
+    ...source !== undefined && {
+      recipeSearch: sql`case when ${dish.sourceLink} is not distinct from ${source?.link ?? null}::text then ${dish.recipeSearch} end`,
+      recipeSearchAt: sql`case when ${dish.sourceLink} is not distinct from ${source?.link ?? null}::text then ${dish.recipeSearchAt} end`,
+    },
     ...recipe !== undefined && {
       recipeIngredients: ingredients,
       recipeSteps: steps,
@@ -1018,12 +1034,13 @@ export async function searchDishes(boardId: string, query: string): Promise<Dish
 // "Dish copied" instead of "Dish added". `id`: the one the device made for
 // it (late-changes.ts); a repeat of it is the caller's to check first
 // (dishIdStanding), as two arriving at once fail here with a unique
-// violation.
+// violation. `lookingSince`: the Recipe Finder searches for its Recipe after
+// adding (#503), claimed at that time, so it is answered as looking.
 export async function addDish(
   boardId: string,
   adder: Parameters<typeof shownAs>[0],
   input: NewDish,
-  { tour = false, copiedFrom, viaLink = false, id: deviceId }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean, id?: string } = {},
+  { tour = false, copiedFrom, viaLink = false, id: deviceId, lookingSince }: { tour?: boolean, copiedFrom?: string, viaLink?: boolean, id?: string, lookingSince?: Date } = {},
 ): Promise<PlacedDish | null> {
   const columns = await db
     .select({ id: boardColumn.id, isGekocht: boardColumn.isGekocht })
@@ -1053,6 +1070,7 @@ export async function addDish(
       imageFocusY: focus.y,
       placeholder: input.placeholder,
       ...input.recipe && { recipeIngredients: input.recipe.ingredients, recipeSteps: input.recipe.steps, recipeLink: input.recipe.link },
+      ...lookingSince && { recipeSearch: 'looking' as const, recipeSearchAt: lookingSince },
       addedBy: adder.id,
     }),
     // Recorded whatever happens: a Dish not added fails the whole step.
@@ -1084,6 +1102,7 @@ export async function addDish(
     caption: input.caption,
     playableVideo: input.playableVideo,
     recipe: input.recipe ?? null,
+    recipeSearch: lookingSince ? 'looking' : null,
     imageUrl: input.imageUrl,
     imageFocus: focus,
     placeholder: input.placeholder,

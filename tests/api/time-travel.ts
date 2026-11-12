@@ -121,3 +121,10 @@ export async function databaseRows<Row = Record<string, unknown>>(text: string, 
     await client.end()
   }
 }
+
+// Makes the Recipe Finder's search of a Dish (#500) `minutes` older, as if it
+// had been claimed that long before: a search that is still looking after a
+// few minutes counts as over.
+export async function backdateRecipeSearch(dishId: string, minutes: number): Promise<void> {
+  await query(`update dish set recipe_search_at = recipe_search_at - make_interval(mins => $2) where id = $1`, [dishId, minutes])
+}

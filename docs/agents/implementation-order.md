@@ -9,7 +9,7 @@ The order to implement the open tickets in. When `/implement` is called without 
 3. Skip tickets labelled `ready-for-human` (the user's) or `needs-info` (waiting for the user's answer).
 4. Implement **one** ticket per session: a branch from `staging`, a PR into `staging`.
 
-GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449, #456, #475) as part of a ticket. Tell the user once all of a spec's tickets are closed.
+GitHub is the source of truth. A closed issue counts as done, so this file doesn't need ticking off. A ticket merged into `staging` closes and counts as done: it is Staged, and its Release comes later. Don't close the parent specs (#1, #61, #62, #103, #201, #277, #278, #296, #388, #413, #421, #449, #456, #475, #492) as part of a ticket. Tell the user once all of a spec's tickets are closed.
 
 ## Why this order and not just the blocking edges
 
@@ -417,6 +417,26 @@ From the design check on 2026-11-11: the current app against the design handoff,
 | #477 | Dish card: buttons on the bottom row, neutral Gekocht ✓ | Every width. Departs from the handoff's filled cooked button on purpose |
 | #478 | Phone Board: cards on the Column colour, white tabs, quieter pill in dark mode | Under 768px only. After #477. Narrows #285 for dark mode |
 | #479 | Changelog entry for this spec | Blocked by #476, #477 and #478. Under `[Unreleased]`, no Version |
+
+### Phase 25: Recipes on a Dish (#492)
+
+From the grilling session on 2026-11-11 (`CONTEXT.md` → Recipe, Ingredient, Step, Recipe Finder; ADR 0013). Each ticket is a sub-issue of #492, with GitHub blocking links as well as its `## Blocked by` section. The server tickets come first and don't wait for the design; the screen tickets (#496, #498, #504) wait for the handoff (#493).
+
+| # | Ticket | Note |
+|---|---|---|
+| #493 | Design handoff for the Recipe screens | `ready-for-human`: skip, the user does it. Blocks #496, #498 and #504 |
+| #494 | A Dish holds a Recipe | Migration. API only. Written through the Dish edit, as a whole |
+| #497 | The Recipe Finder switch | Migration. API only. One email to the Operator per request |
+| #499 | Read a food blog's recipe data | Source Lookup only; nothing uses it yet |
+| #495 | Search by Ingredients, and a Copy takes the Recipe | After #494. The Dish Link page never serves a Recipe |
+| #500 | "Rezept finden" from a blog's recipe data | After #494, #497 and #499. The Recipe Finder module, the cap, no model yet |
+| #501 | Find a Recipe in the Caption with Haiku | After #500. New env var for the Anthropic API key (production and Staging), the Anthropic stand-in. The user OKs the Datenschutz wording before merge |
+| #502 | Follow a link from the Caption | After #501 |
+| #503 | A Recipe found by itself after adding | After #500. Background work after the add answers |
+| #496 | The Recipe in the Dish detail | After #493 and #494. Unsent Change for Recipe edits |
+| #498 | Recipe Finder in Your Settings and on the Admin Page | After #493 and #497 |
+| #504 | Finding in the Dish detail | After #493, #496 and #500 |
+| #505 | Changelog entry for this spec | Blocked by every other ticket of #492. Under `[Unreleased]`, no Version |
 
 ## Keeping this file current
 

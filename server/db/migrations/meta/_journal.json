@@ -344,6 +344,13 @@
       "when": 1794426758112,
       "tag": "0048_wild_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794467240286,
+      "tag": "0049_heavy_baron_strucker",
+      "breakpoints": true
     }
   ]
 }

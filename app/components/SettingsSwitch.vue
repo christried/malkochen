@@ -2,7 +2,10 @@
 // A switch row in your settings (push notifications, the Email Digest): the
 // whole row is the switch, its name and what it does are its text. Under a
 // mouse its track takes a tint of its own (main.css: everything clickable
-// reacts), with reduced motion too; disabled, it doesn't.
+// reacts), with reduced motion too; disabled, it doesn't. `compact`: for a
+// switch in a list row (the Recipe Finder on the Admin Page, #498): the track
+// alone, sage when on, with a 44px hit area; its name and what it does are
+// there for screen readers only.
 defineProps<{
   label: string
   hint: string
@@ -10,6 +13,7 @@ defineProps<{
   // Being checked or turned: announced, and not pressable meanwhile.
   busy: boolean
   disabled: boolean
+  compact?: boolean
 }>()
 defineEmits<{ toggle: [] }>()
 
@@ -22,6 +26,7 @@ const hintId = useId()
     type="button"
     role="switch"
     class="group flex items-center justify-between gap-4 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-default"
+    :class="compact ? 'min-h-11 min-w-11 justify-end' : ''"
     :aria-checked="checked"
     :aria-labelledby="labelId"
     :aria-describedby="hintId"
@@ -29,7 +34,10 @@ const hintId = useId()
     :disabled="disabled"
     @click="$emit('toggle')"
   >
-    <span class="flex min-w-0 flex-col gap-1">
+    <span
+      class="flex min-w-0 flex-col gap-1"
+      :class="{ 'sr-only': compact }"
+    >
       <span
         :id="labelId"
         class="text-body text-text"
@@ -42,7 +50,7 @@ const hintId = useId()
     <span
       aria-hidden="true"
       class="relative h-7 w-12 shrink-0 rounded-pill transition-colors duration-fade ease-fade group-disabled:opacity-60"
-      :class="checked ? 'bg-inverse group-enabled:group-hover:bg-inverse/85' : 'bg-line group-enabled:group-hover:bg-line-strong'"
+      :class="checked ? (compact ? 'bg-sage group-enabled:group-hover:bg-sage/85' : 'bg-inverse group-enabled:group-hover:bg-inverse/85') : 'bg-line group-enabled:group-hover:bg-line-strong'"
     >
       <span
         class="knob absolute top-1 left-1 size-5 rounded-full bg-surface shadow-sm"

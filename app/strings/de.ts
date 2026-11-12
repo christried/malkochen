@@ -19,7 +19,7 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'add'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -29,6 +29,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `gelöschter Kommentar zu ${named}`
     case 'vote': return `Daumen bei ${named}`
     case 'title': return `neuer Titel für ${named}`
+    case 'recipe': return `geändertes Rezept für ${named}`
     case 'add': return `${named} hinzugefügt`
     case 'move': return `${named} verschoben`
     case 'cook':
@@ -38,7 +39,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -430,6 +431,69 @@ export const de = {
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     notAllowed: 'Dieses Gericht darfst du nicht mehr bearbeiten. Das legt die Besitzer:in fest.',
     imageNotStored: (title: string) => `Das neue Bild ließ sich nicht speichern. „${title}“ behält sein bisheriges Bild.`,
+  },
+  // A Dish's Recipe (CONTEXT.md: Recipe; spec #492): read in the detail
+  // (RecipeSection), edited in its own mode (RecipeEditor).
+  recipe: {
+    heading: 'Rezept',
+    edit: 'Bearbeiten',
+    add: 'Rezept hinzufügen',
+    ingredients: 'Zutaten',
+    steps: 'Schritte',
+    // Under the lists of a Recipe found at another page than the Source.
+    from: (site: string) => `Rezept von ${site}`,
+    // The editor's header and its add buttons.
+    cancel: 'Abbrechen',
+    save: 'Speichern',
+    addIngredient: 'Zutat hinzufügen',
+    addStep: 'Schritt hinzufügen',
+    ingredientPlaceholder: 'Zutat, z. B. 2 Knoblauchzehen',
+    stepPlaceholder: 'Was ist zu tun?',
+    // What a screen reader calls a line's field, and its grip and remove button.
+    ingredientField: (n: number) => `Zutat ${number(n)}`,
+    stepField: (n: number) => `Schritt ${number(n)}`,
+    moveLine: (line: string) => `${line} verschieben`,
+    removeLine: (line: string) => `${line} entfernen`,
+    moveUp: 'Nach oben',
+    moveDown: 'Nach unten',
+    // Said politely once a line has been moved.
+    moved: (line: string, place: number, total: number) => `${line}, jetzt an Stelle ${number(place)} von ${number(total)}.`,
+    // Toasts: a line removed, lines pasted, and pasted lines that did not fit.
+    ingredientRemoved: 'Zutat entfernt',
+    stepRemoved: 'Schritt entfernt',
+    ingredientsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'Zutat', other: 'Zutaten' })} eingefügt`,
+    stepsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'Schritt', other: 'Schritte' })} eingefügt`,
+    didNotFit: (count: number) => plural(count, { one: `${number(count)} Zeile hat nicht mehr reingepasst.`, other: `${number(count)} Zeilen haben nicht mehr reingepasst.` }),
+    // Near and at the limits: the counter, the note in place of the add
+    // button of a full list, and the sentence under a line at its limit.
+    count: (count: number, limit: number) => `${number(count)} von ${number(limit)}`,
+    ingredientsFull: (limit: number) => `${number(limit)} Zutaten, mehr passen nicht in ein Rezept.`,
+    stepsFull: (limit: number) => `${number(limit)} Schritte, mehr passen nicht in ein Rezept.`,
+    ingredientTooLong: 'Länger geht eine Zutat nicht.',
+    stepTooLong: 'Länger geht ein Schritt nicht. Mit Enter fängst du einen neuen an.',
+    // The question when a changed Recipe is left without saving.
+    discardTitle: 'Änderungen verwerfen?',
+    discardText: 'Dein Rezept bleibt dann so, wie es vorher war.',
+    keepEditing: 'Weiter bearbeiten',
+    discard: 'Verwerfen',
+    // The switch of a long Recipe (RecipeSwitch): its name for screen readers.
+    switchLabel: 'Zu Zutaten oder Schritten springen',
+    // The Recipe Finder in the Dish detail (#504): "Rezept finden" beside
+    // "Rezept hinzufügen", the card while it searches (to every Member), and
+    // what a search ended in. `found` and `show`: the Toast when a Recipe
+    // arrives while it is out of sight.
+    finder: {
+      find: 'Rezept finden',
+      searching: 'Rezept wird gesucht',
+      searchingAbout: 'Das dauert meist ein paar Sekunden, manchmal auch eine halbe Minute.',
+      none: 'Kein Rezept gefunden',
+      noneAbout: 'In der Caption und auf der verlinkten Seite stand keins.',
+      failed: 'Die Suche hat gerade nicht geklappt.',
+      again: 'Noch mal suchen',
+      quota: 'Für heute hat der Rezeptfinder genug gesucht. Morgen sucht er weiter.',
+      found: 'Rezept gefunden',
+      show: 'Zeigen',
+    },
   },
   // The Source pill on a Dish's image: short, so it fits on a card's.
   sources: {
@@ -900,6 +964,36 @@ export const de = {
     unreachable: 'Snackbert ist gerade nicht erreichbar. Versuch es später noch mal.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
   },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Rezeptfinder',
+    about: 'Der Rezeptfinder sucht dir Zutaten und Schritte zu einem Gericht heraus, aus der Caption oder aus dem Foodblog, auf den sie verlinkt. Gerade ist er nur für ein paar Leute freigeschaltet.',
+    ask: 'Zugang anfragen',
+    asked: 'Angefragt',
+    // From an ISO time.
+    askedLine: (at: string) => `Deine Anfrage vom ${dayInFull(new Date(at))} ist angekommen. Mehr musst du nicht tun.`,
+    on: 'Eingeschaltet',
+    onLine: 'Der Rezeptfinder ist für dich eingeschaltet. Wenn er ein Rezept sucht, gehen die Caption und der Text der verlinkten Seite an Anthropic.',
+    privacyLink: 'Mehr dazu im Datenschutz',
+    askFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} angefragt, ${number(on)} eingeschaltet. Neue Anfragen stehen oben.`,
+      nobody: 'Niemand hat angefragt.',
+      empty: 'Noch hat niemand nach dem Rezeptfinder gefragt.',
+      person: 'Person',
+      askedColumn: 'Angefragt',
+      searchesColumn: 'Suchen',
+      switchColumn: 'Rezeptfinder',
+      // A request's day, from an ISO time: alone, and in a sentence.
+      askedDay: (at: string) => addedDate(new Date(at)),
+      askedOn: (at: string) => `Angefragt am ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} heute`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'Suche', other: 'Suchen' })}, ${number(today)} heute`,
+      noSearches: 'Noch keine Suchen',
+      switchFor: (name: string) => `Rezeptfinder für ${name}`,
+      failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    },
+  },
   // The Snackbert Question after a Cooking (#425; the wording decided on
   // #422, never judgemental): the Question naming the Dish, "Ja" and
   // "Nein", and his last word after "Nein". `label`: his bubble's name for
@@ -1146,6 +1240,9 @@ export const de = {
       snackbert_report_sent: 'Snackbert Report gesendet',
       recipe_finder_asked: 'Rezeptfinder angefragt',
       recipe_finder_switched: 'Rezeptfinder umgeschaltet',
+      recipe_found: 'Rezept gefunden',
+      recipe_not_found: 'Kein Rezept gefunden',
+      recipe_search_failed: 'Rezeptsuche fehlgeschlagen',
       account_deleted: 'Konto gelöscht',
       push_sent: 'Push gesendet',
       digest_sent: 'Tägliche E-Mail gesendet',

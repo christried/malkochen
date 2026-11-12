@@ -66,6 +66,28 @@ export type RecipeLookupResult
 // Given a link, return the recipe its page carries. Never rejects.
 export type RecipeLookup = (link: string) => Promise<RecipeLookupResult>
 
+// A page read for its recipe (#502): the recipe data it carries, else its
+// readable text, cut to a fixed size (page-text.ts). `link` is where the page
+// was finally served from, without tracking parameters: the link a Recipe
+// found there keeps. The text may be empty, for a page with nothing to read.
+// Unreadable: the page couldn't be read, or isn't a public one.
+export type PageLookupResult
+  = | { outcome: 'recipe', link: string, recipe: PageRecipe }
+    | { outcome: 'text', link: string, text: string }
+    | { outcome: 'unreadable' }
+
+// Given a link, read the page it leads to, whatever the host, in one request.
+// Never rejects.
+export type PageLookup = (link: string) => Promise<PageLookupResult>
+
+// The page a Source points at as where its recipe is: a Pin's destination.
+// Other kinds of Source have none.
+export type DestinationLookupResult = { outcome: 'found', link: string } | { outcome: 'none' } | { outcome: 'unreadable' }
+
+// Given a link, return the page its Source says the recipe is at. Never
+// rejects.
+export type DestinationLookup = (link: string) => Promise<DestinationLookupResult>
+
 interface StrategyContext {
   http: Http
   // The time budget for the whole lookup, shared by all of `http`'s requests.
@@ -80,4 +102,7 @@ export interface Strategy {
   // The recipe the link's page carries, for the kinds of Source whose pages
   // carry one.
   recipe?: (url: URL, context: StrategyContext) => Promise<RecipeLookupResult>
+  // The page the Source says its recipe is at, for the kinds of Source that
+  // say so.
+  destination?: (url: URL, context: StrategyContext) => Promise<DestinationLookupResult>
 }

@@ -24,6 +24,7 @@ function dish(id: string, cookedAt: string[] = []): DishView {
     caption: null,
     playableVideo: null,
     recipe: null,
+    recipeSearch: null,
     imageUrl: null,
     imageFocus: { x: 50, y: 50 },
     placeholder: 'bowl',

@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { ALL_PERMISSIONS, type Permissions } from '../../shared/permissions'
 import type { Placeholder } from '../../shared/placeholders'
+import type { RecipeSearch } from '../../shared/recipe'
 import type { SourceKind } from '../source-lookup'
 import type { EventDetails, EventKind } from '../utils/events'
 import type { UsageKind } from '../utils/usage'
@@ -342,6 +343,13 @@ export const dish = pgTable('dish', {
   // (CONTEXT.md: Recipe Finder). Null for one a Member typed, and without a
   // Recipe.
   recipeLink: text('recipe_link'),
+  // Where the Recipe Finder's search for the Recipe stands (#500;
+  // shared/recipe.ts RecipeSearch): 'looking' while one runs, 'none' once it
+  // found nothing for the current Source. A change of the Source clears it.
+  recipeSearch: text('recipe_search').$type<RecipeSearch>(),
+  // When the current search was claimed: one still 'looking' long after
+  // counts as over (server/utils/recipe-search.ts).
+  recipeSearchAt: timestamp('recipe_search_at', { withTimezone: true }),
   // The image: a copy in the Image Store if there is one, else the
   // Placeholder (a key from shared/placeholders.ts). Never a third-party link.
   imageUrl: text('image_url'),

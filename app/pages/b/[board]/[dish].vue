@@ -50,6 +50,12 @@ useHead({ title: () => located.value ? `${located.value.dish.title} · ${t.app.n
 
 const dialog = useTemplateRef<HTMLDialogElement>('dialog')
 const editing = ref(false)
+// The Recipe's own edit mode (#496): from 768px the panel's contents become
+// the editor, on a phone it is a tall sheet over the detail. Which, is
+// decided as it opens.
+const editingRecipe = ref(false)
+const recipeVariant = ref<'sheet' | 'panel'>('panel')
+const recipeEditor = useTemplateRef<{ focusStart: () => void, requestCancel: () => void }>('recipeEditor')
 // Opened from its card, the card morphs into it (utils/dish-morph.ts): it
 // doesn't move in itself then.
 const morphed = !!morphArrival()
@@ -107,13 +113,25 @@ async function leave() {
 // Chrome may skip the dialog's cancel event on a repeated Escape. One meant
 // for the Placeholder picker's own sheet is left to it.
 function onEscape(event: KeyboardEvent) {
-  if (!editing.value || (event.target as Element).closest('dialog') !== dialog.value) return
+  if ((event.target as Element).closest('dialog') !== dialog.value) return
+  if (editingRecipe.value && recipeVariant.value === 'panel') {
+    event.preventDefault()
+    recipeEditor.value?.requestCancel()
+    return
+  }
+  if (!editing.value) return
   event.preventDefault()
   editing.value = false
 }
+// Back (the dialog's cancel) while the Recipe is edited asks about the
+// changes instead of leaving the detail.
+function onCancel() {
+  if (editingRecipe.value && recipeVariant.value === 'panel') recipeEditor.value?.requestCancel()
+  else void close()
+}
 // A click on the backdrop closes it, unless it is being edited, and only
 // when the press started there too (#390).
-const backdrop = useBackdropClose(dialog, close, () => !editing.value)
+const backdrop = useBackdropClose(dialog, close, () => !editing.value && !editingRecipe.value)
 
 // The Dish's actions, through the Board module.
 function actOnDish(operation: (dishId: string) => BoardResult | null, context?: ResultContext) {
@@ -183,6 +201,97 @@ function onSaved(result: BoardResult) {
   editing.value = false
 }
 
+// Editing the Recipe (#496). Opened from "Bearbeiten" or "Rezept hinzufügen":
+// where it was scrolled to is remembered for the way back. Saving goes
+// through the Board module; a Recipe saved while malkochen doesn't answer is
+// kept as an Unsent Change and closes the editor all the same (the section
+// then says "Noch nicht gesendet"). A save that fails keeps the editor open
+// and says why.
+const recipeSaving = ref(false)
+const recipeFailed = ref<'notAllowed' | 'failed' | null>(null)
+// A sheet keeps its contents while it moves out; each opening is a new
+// editor, with a draft of its own.
+const recipeSheetKept = ref(false)
+const recipeEditorKey = ref(0)
+let scrolledTo = 0
+let keepTimer: ReturnType<typeof setTimeout> | undefined
+function editRecipe() {
+  clearTimeout(keepTimer)
+  recipeVariant.value = isPhoneLayout() ? 'sheet' : 'panel'
+  scrolledTo = dialog.value?.scrollTop ?? 0
+  recipeFailed.value = null
+  recipeEditorKey.value++
+  recipeSheetKept.value = true
+  editingRecipe.value = true
+}
+// The sheet's own closing (the handle, the scrim, Escape, Back) is a request
+// to leave, which the editor answers.
+const recipeSheetOpen = computed({
+  get: () => editingRecipe.value && recipeVariant.value === 'sheet',
+  set: (open) => {
+    if (!open) recipeEditor.value?.requestCancel()
+  },
+})
+async function saveRecipe(recipe: { ingredients: string[], steps: string[] } | null) {
+  const dishId = located.value?.dish.id
+  if (!dishId || recipeSaving.value) return
+  recipeSaving.value = true
+  recipeFailed.value = null
+  try {
+    emit('result', await boardModule.editDish(dishId, { recipe }))
+    editingRecipe.value = false
+  }
+  catch (error) {
+    recipeFailed.value = isRefused(error) ? 'notAllowed' : 'failed'
+  }
+  finally {
+    recipeSaving.value = false
+  }
+}
+// The editor opens with its first line focused (the sheet only once it is
+// open). Closed, the detail is where it was and focus goes back to the
+// button that opened it, which saving may have replaced.
+const cameBackFromRecipe = ref(false)
+watch(editingRecipe, async (isEditing) => {
+  await nextTick()
+  if (isEditing) {
+    recipeEditor.value?.focusStart()
+    return
+  }
+  keepTimer = setTimeout(() => (recipeSheetKept.value = false), 600)
+  const el = dialog.value
+  if (recipeVariant.value === 'panel') {
+    // The detail comes back fading in, at the scroll it was left at.
+    cameBackFromRecipe.value = true
+    setTimeout(() => (cameBackFromRecipe.value = false), 600)
+    el?.scrollTo({ top: scrolledTo })
+  }
+  el?.querySelector<HTMLElement>('[data-edit-recipe]')?.focus({ preventScroll: true })
+})
+onBeforeUnmount(() => clearTimeout(keepTimer))
+
+// A Recipe the Recipe Finder found while the Recipe was out of sight (#504):
+// nothing was seen arrive, so the Toast says so and "Zeigen" scrolls to it
+// (smooth; reduced motion jumps). It only scrolls, so it works offline too.
+function showFoundRecipe() {
+  toast.value = {
+    text: t.recipe.finder.found,
+    duration: NOTICE_MS,
+    actions: [{
+      label: t.recipe.finder.show,
+      navigates: true,
+      run: () => {
+        const el = dialog.value
+        const section = el?.querySelector<HTMLElement>('[data-recipe-section]')
+        if (!el || !section) return
+        // Clear of the compact bar at the top.
+        const top = section.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 80
+        el.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+      },
+    }],
+  }
+}
+
 // What a Comment write answered (from the Dish History): haptics for one
 // deleted, and its notice in the Toast, offering "Rückgängig" if it comes
 // with an undo (whose result shows the same way); then what the write ended
@@ -232,7 +341,7 @@ watch(editing, async (isEditing) => {
       :data-edited="editedOnce || undefined"
       :aria-label="located?.dish.title"
       @keydown.esc="onEscape"
-      @cancel.prevent="close"
+      @cancel.prevent="onCancel"
       @pointerdown="backdrop.onPointerdown"
       @input="backdrop.onInput"
       @close="close(); backdrop.onClosed()"
@@ -246,13 +355,27 @@ watch(editing, async (isEditing) => {
           @saved="onSaved"
           @cancel="editing = false"
         />
+        <RecipeEditor
+          v-else-if="editingRecipe && recipeVariant === 'panel'"
+          ref="recipeEditor"
+          :key="recipeEditorKey"
+          class="recipe-in"
+          :dish="located.dish"
+          variant="panel"
+          :saving="recipeSaving"
+          :failed="recipeFailed"
+          @save="saveRecipe"
+          @cancel="editingRecipe = false"
+        />
         <DishDetailView
           v-else
+          :class="{ 'recipe-in': cameBackFromRecipe }"
           :dish="located.dish"
           :board="board"
           :column-name="located.column.name"
           @close="close"
           @edit="editing = true"
+          @edit-recipe="editRecipe"
           @move="moving = true"
           @delete="onDelete"
           @cook="origin => actOnDish(boardModule.cookDish, { origin })"
@@ -260,9 +383,29 @@ watch(editing, async (isEditing) => {
           @comment="showComment"
           @vote="showVote"
           @notice="text => toast = { text, duration: NOTICE_MS }"
+          @recipe-found="showFoundRecipe"
           @copy="copying = true"
         />
       </template>
+      <!-- The Recipe editor on a phone: a tall sheet over the detail. -->
+      <AppSheet
+        v-model:open="recipeSheetOpen"
+        tall
+        :title="t.recipe.heading"
+        :close-label="t.recipe.cancel"
+      >
+        <RecipeEditor
+          v-if="recipeSheetKept && recipeVariant === 'sheet' && located"
+          ref="recipeEditor"
+          :key="recipeEditorKey"
+          :dish="located.dish"
+          variant="sheet"
+          :saving="recipeSaving"
+          :failed="recipeFailed"
+          @save="saveRecipe"
+          @cancel="editingRecipe = false"
+        />
+      </AppSheet>
       <AppSheet
         v-model:open="moving"
         :title="t.dish.moveTo"
@@ -421,6 +564,24 @@ watch(editing, async (isEditing) => {
 .detail[data-morph-closing] :deep([data-detail-image] ~ *) {
   opacity: 0;
   transition: opacity var(--dur-fade) var(--ease-fade);
+}
+/* The Recipe editor taking the panel's place, and the detail coming back
+   (handoff RecipeEditor: content crossfade, fade 240 and a rise of 14px,
+   settle). Reduced motion: it only fades. */
+.recipe-in {
+  animation: recipe-in var(--dur-settle) var(--ease-settle);
+}
+@keyframes recipe-in {
+  from { opacity: 0; translate: 0 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-in {
+    animation-name: recipe-fade;
+    animation-duration: var(--dur-fade);
+  }
+}
+@keyframes recipe-fade {
+  from { opacity: 0; }
 }
 @keyframes detail-slide {
   from { transform: translateX(100%); }

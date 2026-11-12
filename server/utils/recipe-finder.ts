@@ -1,13 +1,14 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { AdminRecipeFinderUser, RecipeFinderState } from '../../shared/recipe-finder'
 import { db } from '../db'
-import { recipeFinder, user } from '../db/schema'
+import { eventLog, rateLimitUse, recipeFinder, user } from '../db/schema'
 import { recipeFinderAskedEmail } from '../email'
 import { parseServerEnv } from '../env'
+import { RATE_LIMITS } from '../rate-limits'
 import { detailsOf, userEvent, withEvents } from './events'
 import { mailSender } from './mail'
 import { operatorEmail } from './operator'
-import { recipientLanguage } from './people'
+import { pictureOf, recipientLanguage } from './people'
 
 // The Recipe Finder switch (CONTEXT.md, #497, ADR 0013): off for every new
 // user (no row), asked once they asked in Your Settings, on once the
@@ -80,14 +81,32 @@ export async function switchRecipeFinder(userId: string, on: boolean, operatorId
 // newest first, then those who have it.
 export async function recipeFinderUsers(): Promise<AdminRecipeFinderUser[]> {
   const rows = await db
-    .select({ id: user.id, name: user.username, switchedOn: recipeFinder.switchedOn, askedAt: recipeFinder.askedAt })
+    .select({
+      id: user.id,
+      name: user.username,
+      email: user.email,
+      image: pictureOf,
+      switchedOn: recipeFinder.switchedOn,
+      askedAt: recipeFinder.askedAt,
+      // The counter is kept per window (server/utils/rate-limit.ts): a window
+      // that is over has not been reset yet, so it counts for nothing.
+      searchesToday: sql<number>`case when ${rateLimitUse.windowStart} > now() - ${RATE_LIMITS['recipe-search'].window}::interval then ${rateLimitUse.calls} else 0 end`,
+      searches: sql<number>`(select count(*)::int from ${eventLog} where ${eventLog.userId} = ${user.id} and ${eventLog.kind} in ('recipe_found', 'recipe_not_found', 'recipe_search_failed'))`,
+    })
     .from(recipeFinder)
     .innerJoin(user, eq(user.id, recipeFinder.userId))
-    .orderBy(recipeFinder.switchedOn, desc(recipeFinder.askedAt), user.username)
+    .leftJoin(rateLimitUse, and(eq(rateLimitUse.userId, user.id), eq(rateLimitUse.limited, 'recipe-search')))
+    // Nulls last: a user switched on without asking has no request date, and
+    // Postgres would put them first under desc, above those who did ask.
+    .orderBy(recipeFinder.switchedOn, sql`${recipeFinder.askedAt} desc nulls last`, user.username)
   return rows.map(row => ({
     id: row.id,
     name: row.name ?? '',
+    email: row.email,
+    image: row.image,
     state: row.switchedOn ? 'on' : 'asked',
     askedAt: row.askedAt?.toISOString() ?? null,
+    searches: row.searches,
+    searchesToday: row.searchesToday,
   }))
 }

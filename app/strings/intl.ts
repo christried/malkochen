@@ -14,6 +14,8 @@ export function intlFor(locale: string) {
   const year = new Intl.DateTimeFormat(locale, { year: 'numeric', timeZone: ZONE })
   const dayThisYear = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: ZONE })
   const day = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: ZONE })
+  const longDayThisYear = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: ZONE })
+  const longDay = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONE })
   const month = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: ZONE })
   // The calendar day in German time, to tell today from other days.
   const calendarDay = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: ZONE })
@@ -25,6 +27,9 @@ export function intlFor(locale: string) {
     number: (count: number) => numbers.format(count),
     plural: (count: number, forms: PluralForms) => forms[plurals.select(count)] ?? forms.other,
     day: dayOf,
+    // "12. November" / "12 November": a day with its month written out, for a
+    // sentence; with the year only when it isn't this year.
+    dayInFull: (at: Date) => (year.format(at) === year.format(new Date()) ? longDayThisYear : longDay).format(at),
     // "30. Okt. 2026": a calendar day from YYYY-MM-DD, such as a Version's,
     // with its year always. Noon UTC is that day in German time too.
     dayWithYear: (date: string) => day.format(new Date(`${date}T12:00:00Z`)),

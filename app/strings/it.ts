@@ -23,6 +23,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'commentDelete': return `commento eliminato su ${named}`
     case 'vote': return `pollice su ${named}`
     case 'title': return `nuovo titolo per ${named}`
+    case 'recipe': return `ricetta modificata per ${named}`
     case 'add': return `${named} aggiunto`
     case 'move': return `${named} spostato`
     case 'cook':
@@ -32,7 +33,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -376,6 +377,54 @@ export const it: Strings = {
     failed,
     notAllowed: 'Non puoi più modificare questo piatto. Lo decide chi ne è titolare.',
     imageNotStored: (title: string) => `Non è stato possibile salvare la nuova immagine. “${title}” tiene quella di prima.`,
+  },
+  recipe: {
+    heading: 'Ricetta',
+    edit: 'Modifica',
+    add: 'Aggiungi ricetta',
+    ingredients: 'Ingredienti',
+    steps: 'Passaggi',
+    from: (site: string) => `Ricetta da ${site}`,
+    cancel: 'Annulla',
+    save: 'Salva',
+    addIngredient: 'Aggiungi ingrediente',
+    addStep: 'Aggiungi passaggio',
+    ingredientPlaceholder: 'Ingrediente, ad es. 2 spicchi d’aglio',
+    stepPlaceholder: 'Cosa c’è da fare?',
+    ingredientField: (n: number) => `Ingrediente ${number(n)}`,
+    stepField: (n: number) => `Passaggio ${number(n)}`,
+    moveLine: (line: string) => `Sposta ${line}`,
+    removeLine: (line: string) => `Rimuovi ${line}`,
+    moveUp: 'Sposta su',
+    moveDown: 'Sposta giù',
+    moved: (line: string, place: number, total: number) => `${line}, ora alla posizione ${number(place)} di ${number(total)}.`,
+    ingredientRemoved: 'Ingrediente rimosso',
+    stepRemoved: 'Passaggio rimosso',
+    ingredientsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'ingrediente incollato', other: 'ingredienti incollati' })}`,
+    stepsPasted: (count: number) => `${number(count)} ${plural(count, { one: 'passaggio incollato', other: 'passaggi incollati' })}`,
+    didNotFit: (count: number) => plural(count, { one: `${number(count)} riga non ci stava più.`, other: `${number(count)} righe non ci stavano più.` }),
+    count: (count: number, limit: number) => `${number(count)} di ${number(limit)}`,
+    ingredientsFull: (limit: number) => `${number(limit)} ingredienti, in una ricetta non ne entrano di più.`,
+    stepsFull: (limit: number) => `${number(limit)} passaggi, in una ricetta non ne entrano di più.`,
+    ingredientTooLong: 'Un ingrediente non può essere più lungo.',
+    stepTooLong: 'Un passaggio non può essere più lungo. Con Invio ne inizi uno nuovo.',
+    discardTitle: 'Scartare le modifiche?',
+    discardText: 'La tua ricetta resta com’era prima.',
+    keepEditing: 'Continua a modificare',
+    discard: 'Scarta',
+    switchLabel: 'Vai agli ingredienti o ai passaggi',
+    finder: {
+      find: 'Trova ricetta',
+      searching: 'Sto cercando la ricetta',
+      searchingAbout: 'Di solito ci vuole qualche secondo, a volte mezzo minuto.',
+      none: 'Nessuna ricetta trovata',
+      noneAbout: 'Non ce n’era nella didascalia né nella pagina collegata.',
+      failed: 'La ricerca non ha funzionato.',
+      again: 'Cerca di nuovo',
+      quota: 'Per oggi il Trova ricette ha cercato abbastanza. Domani cercherà di nuovo.',
+      found: 'Ricetta trovata',
+      show: 'Mostra',
+    },
   },
   sources: {
     tiktok: 'TikTok',
@@ -760,6 +809,36 @@ export const it: Strings = {
     unreachable: 'Snackbert al momento non è raggiungibile. Riprova più tardi.',
     failed,
   },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Trova ricette',
+    about: 'Il Trova ricette cerca per te gli ingredienti e i passaggi di un piatto, nella caption o nel blog di cucina a cui rimanda. Per ora è attivo solo per poche persone.',
+    ask: 'Chiedi l’accesso',
+    asked: 'Richiesto',
+    // From an ISO time.
+    askedLine: (at: string) => `La tua richiesta del ${dayInFull(new Date(at))} è arrivata. Non devi fare altro.`,
+    on: 'Attivo',
+    onLine: 'Il Trova ricette è attivo per te. Quando cerca una ricetta, la caption e il testo della pagina collegata vanno ad Anthropic.',
+    privacyLink: 'Di più nell’informativa sulla privacy',
+    askFailed: failed,
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} ${plural(asked, { one: 'richiesta', other: 'richieste' })}, ${number(on)} ${plural(on, { one: 'attivo', other: 'attivi' })}. Le nuove richieste sono in alto.`,
+      nobody: 'Nessuno ha chiesto.',
+      empty: 'Nessuno ha ancora chiesto il Trova ricette.',
+      person: 'Persona',
+      askedColumn: 'Richiesto',
+      searchesColumn: 'Ricerche',
+      switchColumn: 'Trova ricette',
+      // A request's day, from an ISO time: alone, and in a sentence.
+      askedDay: (at: string) => addedDate(new Date(at)),
+      askedOn: (at: string) => `Richiesto il ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} oggi`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'ricerca', other: 'ricerche' })}, ${number(today)} oggi`,
+      noSearches: 'Ancora nessuna ricerca',
+      switchFor: (name: string) => `Trova ricette per ${name}`,
+      failed,
+    },
+  },
   snackbertQuestion: {
     label: 'Snackbert',
     ask: (dish: string) => `Mmh, ${dish}! Mi racconti quanto ne hai mangiato?`,
@@ -993,6 +1072,9 @@ export const it: Strings = {
       snackbert_report_sent: 'Snackbert Report inviato',
       recipe_finder_asked: 'Trova ricette richiesto',
       recipe_finder_switched: 'Trova ricette attivato o disattivato',
+      recipe_found: 'Ricetta trovata',
+      recipe_not_found: 'Nessuna ricetta trovata',
+      recipe_search_failed: 'Ricerca della ricetta non riuscita',
       account_deleted: 'Account eliminato',
       push_sent: 'Push inviato',
       digest_sent: 'Email giornaliera inviata',

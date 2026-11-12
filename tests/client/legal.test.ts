@@ -51,8 +51,8 @@ test.each(datenschutz.map(text => [text.language, text] as const))('the %s Daten
   expect(sectionOf(text, '9.')).toContain('malkochen.dish-link')
 })
 
-test('the German Datenschutz lets the operator open every Board in section 20', () => {
-  const section = sectionOf(datenschutz[0]!, '20.')
+test('the German Datenschutz lets the operator open every Board in section 21', () => {
+  const section = sectionOf(datenschutz[0]!, '21.')
   expect(section).toContain('jedes Board öffnen')
   expect(section).not.toContain('nur **Zählwerte**')
 })
@@ -67,4 +67,12 @@ test('the German Datenschutz describes 1.0.0: Open Sign-up, the Email Digest, Co
   expect(german).toContain('Resend')
   // The old, pre-1.0.0 wording is gone.
   expect(german).not.toContain('Notiz')
+})
+
+// #501: what goes to Anthropic when the Recipe Finder reads a Caption.
+test.each(datenschutz.map(text => [text.language, text] as const))('the %s Datenschutz names Anthropic in section 20, and among the transfers to the USA in section 24', (_, text) => {
+  const recipeFinder = sectionOf(text, '20.')
+  expect(recipeFinder).toContain('Anthropic, PBC, San Francisco')
+  expect(recipeFinder).toContain('Claude')
+  expect(sectionOf(text, '24.')).toContain('Anthropic')
 })

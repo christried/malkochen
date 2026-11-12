@@ -5,6 +5,7 @@ import type { BulkBody } from '~~/server/utils/dish-input'
 import type { DishHistory } from '~~/server/utils/dish-history'
 import type { AddedDish, CookedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import type { VoteView } from '~~/server/utils/votes'
+import type { RecipeSearchAnswer } from '~~/shared/recipe'
 import type { BoardTransport } from './board-module'
 import { gotNoAnswer, WriteFailed } from './write-failed'
 
@@ -15,6 +16,7 @@ export function httpTransport(): BoardTransport {
     addDish: (boardId, dish) => asWrite($fetch<AddedDish>(`/api/boards/${boardId}/dishes`, { method: 'POST', body: dish })),
     addDishLate: (boardId, dish) => asWrite($fetch<AddedDish>(`/api/boards/${boardId}/dishes`, { method: 'POST', body: dish })),
     editDish: (dishId, changes) => asWrite($fetch<SavedDish>(`/api/dishes/${dishId}`, { method: 'PATCH', body: changes })),
+    findRecipe: dishId => asWrite($fetch<RecipeSearchAnswer>(`/api/dishes/${dishId}/find-recipe`, { method: 'POST' })),
     deleteDish: dishId => asWrite($fetch<unknown>(`/api/dishes/${dishId}`, { method: 'DELETE' })).then(() => undefined),
     restoreDish: dishId => asWrite($fetch<PlacedDish>(`/api/dishes/${dishId}/restore`, { method: 'POST' })),
     moveDish: (dishId, to, late) => asWrite($fetch<MovedDish>(`/api/dishes/${dishId}/move`, { method: 'POST', body: { ...to, ...late } })),

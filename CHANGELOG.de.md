@@ -4,6 +4,15 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+### Added
+
+- Gerichte können jetzt ein Rezept haben. Öffne ein Gericht und tippe auf Rezept hinzufügen, um Zutaten und Schritte Zeile für Zeile festzuhalten, auch ohne Verbindung. Eine eingefügte Liste wird zu einer Zeile pro Eintrag, und die Suche findet ein Gericht auch über seine Zutaten.
+- Soll malkochen dir das Rezept zu einem Gericht heraussuchen? Den Rezeptfinder kannst du in deinen Einstellungen anfragen.
+
+### Changed
+
+- Die Datenschutzerklärung hat jetzt einen Abschnitt zum Rezeptfinder: Wenn er ein Rezept für dich heraussucht, gehen die Caption und der Text der verlinkten Seite an Anthropic.
+
 ## [1.2.1] - 2026-11-11
 
 ### Changed

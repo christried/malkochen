@@ -23,6 +23,8 @@ const props = defineProps<{ dish: DishView, board: BoardSummary, columnName: str
 const emit = defineEmits<{
   close: []
   edit: []
+  // The Recipe's own edit mode (RecipeEditor), which the page opens.
+  editRecipe: []
   move: []
   delete: []
   cook: [origin: Point]
@@ -33,6 +35,9 @@ const emit = defineEmits<{
   copy: []
   // Something to tell the Member, as a Toast.
   notice: [text: string]
+  // A Recipe arrived by itself while the Recipe was out of sight (#504): the
+  // page says so in a Toast that scrolls to it.
+  recipeFound: []
 }>()
 const t = useStrings()
 const boardModule = useBoardModule()
@@ -319,6 +324,16 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
           </button>
         </NeedsNet>
       </div>
+
+      <!-- The Recipe (#496), after the share row, so the actions above it
+           never move and it starts in the same place on every Dish. -->
+      <RecipeSection
+        :dish="dish"
+        :may-edit="mayEdit"
+        :unsent="boardModule.hasUnsentRecipe(dish.id)"
+        @edit="emit('editRecipe')"
+        @found="emit('recipeFound')"
+      />
 
       <DishHistory
         :dish="dish"

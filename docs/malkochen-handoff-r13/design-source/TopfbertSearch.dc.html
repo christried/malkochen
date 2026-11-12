@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes r13-stir{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+@keyframes r13-peek{0%,100%{transform:translateY(13px)}10%{transform:translateY(-3px)}17%{transform:translateY(0)}30%{transform:translateY(13px)}}
+@keyframes r13-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.985,1.025)}}
+@keyframes r13-hat{0%,100%{transform:none}50%{transform:translateY(-1px) rotate(3deg)}}
+</style></helmet>
+<svg width="100%" height="100%" viewBox="0 -20 140 150" style="display:block;overflow:visible">
+  <g style="transform-box:view-box;transform-origin:70px 123px;animation:{{ aBreathe }}">
+    <g style="transform-box:view-box;transform-origin:71.5px 54.4px;animation:{{ aSpoon }}"><rect x="68.25" y="-12.75" width="6.5" height="73.5" rx="4" fill="#D9A86C" stroke="#1F1E1C" stroke-width="2.5"></rect></g>
+    <g transform="translate(-28 0)"><g style="transform:translateY(13px);animation:{{ aPeek1 }}"><rect x="63.25" y="31.25" width="15.5" height="15.5" rx="5.5" fill="#F08A5D" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g>
+    <g transform="translate(27 0)"><g style="transform:translateY(13px);animation:{{ aPeek2 }}"><circle cx="69.5" cy="37.5" r="6.25" fill="#8DB596" stroke="#1F1E1C" stroke-width="2.5"></circle></g></g>
+    <g transform="translate(10 0)"><g style="transform:translateY(-1px);animation:{{ aPeek3 }}"><rect x="63.25" y="31.25" width="14.5" height="14.5" rx="7" fill="#F7D58A" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g>
+    <rect x="9.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect><rect x="111.25" y="59.25" width="19.5" height="10.5" rx="5.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect>
+    <path d="M21.25 48V88A38.75 34.75 0 0 0 60 122.75H80A38.75 34.75 0 0 0 118.75 88V48Z" fill="#A5C7AE" stroke="#1F1E1C" stroke-width="2.5"></path>
+    <path d="M45.5 76A5 5 0 0 1 55.5 76M84.5 76A5 5 0 0 1 94.5 76" fill="none" stroke="#1F1E1C" stroke-width="3" stroke-linecap="round"></path>
+    <ellipse cx="41.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse><ellipse cx="98.5" cy="86" rx="7.5" ry="4" fill="#F4A9A0" opacity=".85"></ellipse>
+    <path d="M59.5 82H78.5A9.5 8.5 0 0 1 59.5 82Z" fill="#1F1E1C"></path><ellipse cx="66" cy="87" rx="4.5" ry="3" fill="#F08A8A"></ellipse>
+    <rect x="13.25" y="41.25" width="113.5" height="12.5" rx="6.5" fill="#C7E0CD" stroke="#1F1E1C" stroke-width="2.5"></rect>
+    <g style="transform-box:view-box;transform-origin:36px 46px;animation:{{ aHat }}"><g transform="rotate(-14 36 46)"><circle cx="22" cy="6" r="10.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="39" cy="1" r="11.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><circle cx="50" cy="8" r="8.75" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></circle><rect x="16" y="8" width="40" height="22" fill="#fff"></rect><rect x="16.25" y="23.25" width="39.5" height="13.5" rx="3" fill="#fff" stroke="#1F1E1C" stroke-width="2.5"></rect></g></g>
+  </g>
+</svg>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:140,&quot;height&quot;:150},&quot;still&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;small&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;spd&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.5,&quot;max&quot;:4,&quot;step&quot;:0.5,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const rm = !!this.props.still, k = this.props.spd || 1, T = ms => `${Math.round(ms * k)}ms`;
+    const small = !!this.props.small;
+    return {
+      aBreathe: rm ? 'none' : `r13-breathe ${T(2400)} ease-in-out infinite`,
+      aSpoon: rm ? 'none' : `r13-stir ${T(2400)} ease-in-out infinite`,
+      aHat: rm || small ? 'none' : `r13-hat ${T(4800)} ease-in-out infinite`,
+      aPeek1: rm || small ? 'none' : `r13-peek ${T(4800)} ease-in-out ${T(-600)} infinite`,
+      aPeek2: rm || small ? 'none' : `r13-peek ${T(4800)} ease-in-out ${T(-2200)} infinite`,
+      aPeek3: rm || small ? 'none' : `r13-peek ${T(4800)} ease-in-out ${T(-3800)} infinite`
+    };
+  }
+}
+</script>
+</body>
+</html>
