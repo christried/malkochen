@@ -11,7 +11,7 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ### Changed
 
-- L’informativa sulla privacy ora ha una sezione su Trova ricette: quando cerca una ricetta per te, la descrizione e il testo della pagina collegata vanno ad Anthropic.
+- L’informativa sulla privacy ora ha una sezione su Trova ricette: quando cerca una ricetta per te, la caption e il testo della pagina collegata vanno ad Anthropic.
 
 ## [1.2.1] - 2026-11-11
 

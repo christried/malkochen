@@ -11,7 +11,7 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ### Changed
 
-- Die Datenschutzerklärung hat jetzt einen Abschnitt zum Rezeptfinder: Wenn er ein Rezept für dich heraussucht, gehen die Beschreibung und der Text der verlinkten Seite an Anthropic.
+- Die Datenschutzerklärung hat jetzt einen Abschnitt zum Rezeptfinder: Wenn er ein Rezept für dich heraussucht, gehen die Caption und der Text der verlinkten Seite an Anthropic.
 
 ## [1.2.1] - 2026-11-11
 
