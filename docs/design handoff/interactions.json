@@ -81,5 +81,207 @@
       "desktop ≥768px: sheet renders as Dialog (scale .92 → 1, 360ms)"
     ],
     "reduced": "Fade 200ms, no slide."
+  },
+  {
+    "name": "Reorder a Recipe line",
+    "added": "R13",
+    "where": "RecipeEditor, Zutaten and Schritte (each list on its own; no dragging between lists)",
+    "steps": [
+      "t0: long-press grip 300ms (touch) or mouse-down on grip + 4px (pointer: fine) → haptic LONG_PRESS",
+      "0–180ms: line scale 1 → 1.03, rotate 0 → −1.5°, shadow → shadow.lift, surface fill (lift), same as Columns in Board Settings",
+      "origin: dashed slot 2px line-strong, radius.field, height = line height",
+      "while dragging: line follows the pointer on y only; neighbours spring to their new slot when the line centre crosses their midpoint (settle 320ms, +4px overshoot) · haptic SEGMENT_TICK; Step numbers update with each swap (number rolls 12px, 200ms)",
+      "near sheet edge (48px): autoscroll up to 12px/frame",
+      "drop: line settles into the slot (settle 260), scale 1, rotate 0, shadow none",
+      "keyboard / screen reader: grip button opens menu \"Nach oben\" / \"Nach unten\" (pop 460); Alt+↑/↓ on desktop; line moves to its slot (settle 480), focus stays on its grip; live region: \"{line}, jetzt an Stelle {n} von {total}.\""
+    ],
+    "reduced": "No scale or tilt: 2px text outline + shadow.lift. Neighbours and keyboard moves jump to their slot. Numbers swap."
+  },
+  {
+    "name": "Paste lines",
+    "added": "R13",
+    "where": "Any RecipeLine textarea in the editor",
+    "steps": [
+      "paste event with \\n in the text → preventDefault",
+      "split on line breaks; trim; drop empty lines; strip a leading \"•\", \"-\", \"*\", \"–\", \"1.\", \"1)\"",
+      "first piece replaces the selection in the current line (text before the caret stays), the rest become new lines below it; the text after the caret goes to the end of the last new line",
+      "cap at 60 Zutaten / 40 Schritte and 200 / 1000 characters per line (longer pieces are cut at the limit)",
+      "0ms: new lines insert at full height; each fades 0 → 1 with 30ms stagger (max 8, rest together)",
+      "0–1600ms: new lines tinted color.paste-tint, ease-out to transparent",
+      "+120ms: Toast \"{n} Zutaten eingefügt\" / \"{n} Schritte eingefügt\" + Rückgängig (5s); over the limit: \"{k} Zeilen haben nicht mehr reingepasst.\"",
+      "caret to the end of the last new line; scroll it 24px above the keyboard"
+    ],
+    "reduced": "Lines appear at once; tint holds 1.6s then switches off; toast fades in."
+  },
+  {
+    "name": "A found Recipe arrives",
+    "added": "R13",
+    "where": "Dish detail, RecipeSection slot, for every Member watching the Dish (realtime)",
+    "steps": [
+      "result arrives (realtime) while \"Rezept wird gesucht\" is shown",
+      "0–300ms: Topfbert search hops (y −7) and shrinks to .7 + fades; the card scales .97 + fades (ease-in)",
+      "300ms: card removed; RecipeSection mounts. Content above is unchanged, so scroll position never moves",
+      "300–540ms: \"Rezept\" header fades in (fade 240)",
+      "380–860ms: Zutaten card rises 14px + fades (settle 480)",
+      "460ms+: Zutaten lines rise 10px + fade (420 settle), stagger 60ms, max 8, the rest with the 8th",
+      "Zutaten start + 8×60 + 120ms: Schritte card rises, its lines stagger the same way",
+      "if the slot is not in the viewport: no animation is seen; Toast \"Rezept gefunden\" + \"Zeigen\" (scrolls to the Recipe, swoosh 600)",
+      "haptic: none (it is not the user's own action)"
+    ],
+    "reduced": "Search card crossfades to the finished lists in 200ms. No hop, no rise, no stagger."
+  },
+  {
+    "name": "Recipe switch (long Recipes)",
+    "added": "R13",
+    "where": "Dish detail, when RecipeSection is taller than 2 viewports and both lists exist",
+    "steps": [
+      "show when the Zutaten card top passes under the top bar; hide when the source line / end of Schritte passes",
+      "show: fade 240 + y −8 → 0; hide: reverse",
+      "active = Schritte once the Schritte card top is within 60px under the switch",
+      "tap: smooth scroll (swoosh 600) to the list heading, 12px under the switch; active swaps on arrival"
+    ],
+    "reduced": "Switch fades only; scroll jumps."
+  },
+  {
+    "name": "Switch views",
+    "added": "R14",
+    "where": "ViewSwitch on every Board (Spalten ↔ Woche)",
+    "steps": [
+      "t0: tap a segment; haptic SEGMENT_TICK; write localStorage \"malkochen:view\"",
+      "0–480ms: thumb slides (settle 480); labels swap colour (200)",
+      "to Woche: Columns fade 240 + x 0 → −28 (settle 480); phone background Column tint → bg (600 ease); FAB fades (200)",
+      "to Woche: WeekView x +28 → 0 (settle 480); WeekDays opacity 0 → 1, y 14 → 0, stagger 40ms from +140ms; phone list is already scrolled to today before it appears",
+      "to Spalten: WeekDays fade together (160), WeekView x → +28; Columns come back from −28 (settle 480); background bg → Column tint (600)",
+      "Column swipe position and week position are kept per Board while the app is open"
+    ],
+    "reduced": "Thumb jumps, views crossfade 200ms, no shift, no stagger."
+  },
+  {
+    "name": "Browse weeks",
+    "added": "R14",
+    "where": "WeekHeader ‹ ›, phone horizontal swipe on the list, \"Heute\"",
+    "steps": [
+      "phone swipe: horizontal pan > 8px and |dx| > 1.2|dy| → capture; the list follows 1:1 with rubber-band 0.3 beyond 25% width; release > 18% width or velocity > 0.5px/ms → next / previous week; haptic SEGMENT_TICK",
+      "out: days x ∓40 + fade 160",
+      "in: days from x ±40 → 0 (settle 480), stagger 30ms; title crossfades (fade 240)",
+      "phone: after a browse the list starts at Monday (current week: at today)",
+      "\"Heute\" appears when the shown week is not the current one (pop 460) and leaves when it is (fade 150); tap = browse back in one step (the same slide, from the side of the current week)",
+      "desktop: ← / → (with the WeekView focused) browse, T jumps to Heute"
+    ],
+    "reduced": "Week swaps with a 200ms crossfade; no slide, no stagger."
+  },
+  {
+    "name": "Drag a Planned Dish within a day",
+    "added": "R14",
+    "where": "WeekDay list (phone + desktop)",
+    "steps": [
+      "t0: long-press 300ms (touch) or mouse-down + 4px (pointer: fine) → haptic LONG_PRESS",
+      "0–180ms: scale 1 → 1.04, rotate 0 → −2°, shadow.small → shadow.lift (lift), as Interaction \"Drag lift\"",
+      "origin: dashed slot 2px line-strong, radius.planned, Planned Dish height",
+      "while dragging: follows the pointer; a neighbour springs to its new slot when the centre crosses its midpoint (settle 320, +4px overshoot) · haptic SEGMENT_TICK",
+      "drop: settles into the slot (settle 260), scale 1, rotate 0, shadow.small",
+      "tap without movement after the long-press: nothing (no detail)"
+    ],
+    "reduced": "No scale or tilt: 2px text outline + shadow.lift; neighbours jump."
+  },
+  {
+    "name": "Drag a Planned Dish to another day",
+    "added": "R14",
+    "where": "Phone: DayStrip + list autoscroll. Desktop: WeekDay columns as targets.",
+    "steps": [
+      "lift as \"within a day\"; phone: DayStrip drops in under the title (y −10 → 0 + fade, settle 300)",
+      "phone, list: within 64px of the top or bottom edge the list autoscrolls up to 12px/frame; entering a day block highlights it (fill butter 12%) and opens a slot at the index",
+      "phone, strip: pointer above strip bottom + 40px → card scales to .56 (280) so the strip stays visible; the day under it: scale 1.16, butter fill, ring 6px butter 35%, others dim to .6 · pop 240 · haptic GESTURE_THRESHOLD_ACTIVATE; wiggle ±3° every 1.2 s",
+      "phone, drop on a pebble: card scales to .05 and rotates −40° into it (420 swoosh); pebble squash 1.32/.84 → .9/1.1 → 1; strip fades (200); the Planned Dish is added at the end of that day; origin slot collapses (settle 420) · haptic CONFIRM",
+      "past days: dimmed to .3 in the strip, never targets; dropping there snaps back",
+      "desktop: entering a column → fill butter 16%, ring 3px butter 55%, butter dashed slot (Planned Dish height) at the insert index (pop 240); drop settles into it (settle 260)",
+      "live region after the drop: \"{Titel}, jetzt am {Wochentag} an Stelle {n} von {total}.\""
+    ],
+    "reduced": "Strip appears without slide; target fill + ring only, no scale or wiggle; drop fades the card into place."
+  },
+  {
+    "name": "Plan from +",
+    "added": "R14",
+    "where": "WeekDay \"+\" → DishPicker",
+    "steps": [
+      "tap \"+\": press scale .9 (tap); DishPicker opens (Sheet open / desktop pop 360)",
+      "type: filters per keystroke (no debounce up to 500 Dishes)",
+      "tap a row: press scale .98; haptic CONFIRM",
+      "0–320ms: picker closes (sheet translateY 100% ease-in / popover fade + scale .97 200)",
+      "+0ms: the day opens a slot at its end, height 0 → Planned Dish height (settle 380)",
+      "+120ms: the Planned Dish drops in from y −14, scale .96 (settle 520)",
+      "phone: if the day's end is off screen, the list scrolls it into view first (swoosh 600)",
+      "no toast"
+    ],
+    "reduced": "Picker fades out (200), the Planned Dish appears in place."
+  },
+  {
+    "name": "Plan from Einplanen",
+    "added": "R14",
+    "where": "Dish detail share row \"Einplanen\" → DayPicker",
+    "steps": [
+      "tap \"Einplanen\": press tap; DayPicker opens on this week (from today)",
+      "› / ‹: week change as in DayPicker motion; ‹ disabled on this week",
+      "tap a day: haptic CONFIRM; picker closes (320)",
+      "+120ms: Toast \"Für {Wochentag} eingeplant.\" (heute / morgen / \"{Wochentag}, {d}. {Monat}\" after this week) + \"Rückgängig\" (settle 400, 5 s bar)",
+      "the detail itself does not change",
+      "Rückgängig: removes that Planned Dish again"
+    ],
+    "reduced": "Picker fades out, toast fades in."
+  },
+  {
+    "name": "Move or reorder without dragging",
+    "added": "R14",
+    "where": "PlannedDish \"⋯\" → PlannedDishMenu; accessibility actions; desktop keys",
+    "steps": [
+      "\"⋯\" opens PlannedDishMenu (phone sheet / desktop pop 360, origin top right)",
+      "\"Nach oben\" / \"Nach unten\": menu closes, the Planned Dish travels to its new slot (settle 480), focus returns to its \"⋯\"",
+      "\"Auf anderen Tag legen\": DayPicker (this week, \"Liegt hier\"); pick → the Planned Dish leaves (x +44, fade 260) and settles in at the end of the new day (settle 480); Toast \"Auf {Wochentag} gelegt.\" + Rückgängig",
+      "desktop: Alt+↑/↓, Alt+←/→ do the same without a menu",
+      "live region (polite): \"{Titel}, jetzt am {Wochentag} an Stelle {n} von {total}.\""
+    ],
+    "reduced": "Menu fades in; moves jump into place."
+  },
+  {
+    "name": "Take off the plan",
+    "added": "R14",
+    "where": "PlannedDishMenu \"Aus dem Plan nehmen\"",
+    "steps": [
+      "tap: menu closes; no Dialog (the Dish stays on the Board)",
+      "0–260ms: Planned Dish x +44 + fade (ease-in)",
+      "260–680ms: slot collapses (settle 420), the day closes up",
+      "+200ms: Toast \"Aus dem Plan genommen.\" + Rückgängig (5 s)",
+      "Rückgängig: slot reopens and the Planned Dish drops back at its old index (settle 480)"
+    ],
+    "reduced": "Fades out 200ms, gap closes at once; toast fades in."
+  },
+  {
+    "name": "Set the cook",
+    "added": "R14",
+    "where": "CookPicker",
+    "steps": [
+      "tap a Member: haptic SELECTION; picker closes (320)",
+      "the avatar pops onto the Planned Dish (scale 0 → 1.12 → 1, pop 460), replacing a previous one (old fades 150)",
+      "\"Offen lassen\": avatar fades out (150); nothing replaces it",
+      "no toast; live region \"{Name} kocht jetzt.\" / \"Niemand kocht mehr fest.\""
+    ],
+    "reduced": "Avatar swaps without pop."
+  },
+  {
+    "name": "Tick after Gekocht ✓",
+    "added": "R14",
+    "where": "Today's PlannedDish \"Gekocht ✓\"",
+    "steps": [
+      "0ms: press scale .94 (tap); haptic CONFIRM on release; records a Cooking (same API as the card)",
+      "0–480ms: button springs .9 → 1.12 → 1 and fills sage, check draws (stroke-dashoffset 20 → 0, 260 from +120)",
+      "20–660ms: veggie confetti from the button (Vue/SVG particles, 6 phone / 5 desktop, not video)",
+      "the Dish moves into the Gekocht Column (not visible in Woche); the Planned Dish stays on its day",
+      "+380ms: tick pops onto the image: scale 0 → 1.25 → 1, rotate −30° → 8° → 0 (pop 460)",
+      "+520ms: Toast \"Gekocht\" + \"Notiz hinzufügen\" + \"Rückgängig\" (settle 400); +640ms Topfbert pops up behind it (pop 460) as on the card",
+      "once the toast is in (+2.2 s): button fades (240) and the Planned Dish shortens 100 → 64 (settle 480)",
+      "any Cooking of this Dish dated today (card, detail) ticks the Planned Dish the same way, without the confetti if it happened elsewhere",
+      "Rückgängig: removes the Cooking; tick fades (150), button and height come back (settle 480)"
+    ],
+    "reduced": "Button colour + check, tick appears, toast fades in; no confetti, Topfbert as the still; row shortens without motion."
   }
 ]
