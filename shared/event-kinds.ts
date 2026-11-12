@@ -81,6 +81,13 @@ export const EVENT_KINDS = [
   // A Snackbert Report (#424) sent for a Cooking: its Board, Dish and user,
   // never what it said or what it showed.
   'snackbert_report_sent',
+  // The Recipe Finder's search for a Dish's Recipe (#500, "Rezept finden")
+  // ended: it found a Recipe (Dish and Board, by the user who searched), found
+  // none for the Dish's Source, or failed because the page didn't answer.
+  // Never what it found. Together they count a user's searches.
+  'recipe_found',
+  'recipe_not_found',
+  'recipe_search_failed',
   // A user asked for the Recipe Finder (CONTEXT.md, #497) in Your Settings.
   'recipe_finder_asked',
   // The Operator switched the Recipe Finder on or off for a user (the

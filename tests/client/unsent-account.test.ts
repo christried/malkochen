@@ -11,7 +11,7 @@ import type { BoardView } from '../../server/utils/boards'
 
 const cook = (id: string): UnsentChange => ({ id, boardId: 'board', madeAt: '2026-10-01T12:00:00.000Z', label: id, kind: 'cook', dishId: id, cookingId: `cooking-${id}` })
 
-const dish = (id: string) => ({ id, code: `c${id}`, title: id, source: null, creator: null, caption: null, playableVideo: null, recipe: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 })
+const dish = (id: string) => ({ id, code: `c${id}`, title: id, source: null, creator: null, caption: null, playableVideo: null, recipe: null, recipeSearch: null, imageUrl: null, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 })
 const emptyBoard = { id: 'board', slug: 'b', name: 'B', emoji: 'x', isOwner: true, permissions: [], version: 0, inviteToken: 't', members: [], newDishIds: [], newInHistoryDishIds: [], asOperator: false, columns: [{ id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a'), dish('b')] }, { id: 'gekocht', name: 'Gekocht', subtitle: null, isGekocht: true, dishes: [] }] } as unknown as BoardView
 
 async function keep(store: ReturnType<typeof memoryStore>, userId: string, ...ids: string[]) {

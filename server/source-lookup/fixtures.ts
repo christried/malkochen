@@ -8,7 +8,18 @@ import { nothingFound, type SourceLookup, type SourceLookupResult } from './type
 // browser test or API test can stand in for the lookup, so the server itself
 // answers a link it has a fixture for. Any other link is looked up as ever.
 
-export type LookupFixtures = Record<string, Partial<SourceLookupResult>>
+// The page a link serves, for the Recipe Finder to read: what it answers with
+// (a page that holds a recipe, one that doesn't, a status that is no page),
+// and how long it takes to.
+export interface PageFixture {
+  html?: string
+  // An answer that is no page (503): the page can't be read.
+  status?: number
+  delayMs?: number
+}
+
+export type LookupFixture = Partial<SourceLookupResult> & { page?: PageFixture }
+export type LookupFixtures = Record<string, LookupFixture>
 
 // The fixture for `link` (as sent or as its canonical form), laid over what
 // the link says about itself.
@@ -16,7 +27,22 @@ export function withFixtures(lookup: SourceLookup, fixtures: LookupFixtures): So
   return async (link) => {
     const guess = guessSource(link)
     const fixture = fixtures[link] ?? fixtures[guess.canonicalLink]
-    return fixture ? { ...nothingFound(guess), ...fixture } : lookup(link)
+    if (!fixture) return lookup(link)
+    const { page: _, ...facts } = fixture
+    return { ...nothingFound(guess), ...facts }
+  }
+}
+
+// The pages of the fixtures, standing in for the fetching a recipe lookup
+// does: a link with a `page` fixture answers with it, any other goes to
+// `fetchPage`.
+export function fixturePages(fixtures: LookupFixtures, fetchPage: typeof fetch): typeof fetch {
+  return async (input, init) => {
+    const url = input instanceof URL ? input.href : typeof input === 'string' ? input : input.url
+    const page = fixtures[url]?.page
+    if (!page) return fetchPage(input, init)
+    if (page.delayMs) await new Promise(resolve => setTimeout(resolve, page.delayMs))
+    return new Response(page.html ?? '', { status: page.status ?? 200, headers: { 'content-type': 'text/html; charset=utf-8' } })
   }
 }
 
