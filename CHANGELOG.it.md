@@ -9,6 +9,10 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Ora i piatti possono avere una ricetta. Apri un piatto e tocca Aggiungi ricetta per scrivere ingredienti e passaggi riga per riga, anche senza connessione. Una lista incollata diventa una riga per voce, e la ricerca trova un piatto anche dai suoi ingredienti.
 - Vuoi che malkochen cerchi per te la ricetta di un piatto? Puoi chiedere il Trova ricette nelle tue impostazioni.
 
+### Changed
+
+- L’informativa sulla privacy ora ha una sezione su Trova ricette: quando cerca una ricetta per te, la descrizione e il testo della pagina collegata vanno ad Anthropic.
+
 ## [1.2.1] - 2026-11-11
 
 ### Changed
