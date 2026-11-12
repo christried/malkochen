@@ -62,6 +62,15 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
       />
     </header>
 
+    <!-- The view switch's room: below 1200px it has a row of its own, as on
+         the Board (ViewSwitch); from there it sits in the header. -->
+    <div
+      aria-hidden="true"
+      class="mt-3 desktop:hidden"
+    >
+      <span class="block h-10 w-[212px] rounded-pill bg-view-track" />
+    </div>
+
     <ColumnHeadline
       v-if="listing"
       class="-mx-4 mt-5 px-4"

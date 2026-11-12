@@ -325,6 +325,10 @@ const editedOnce = ref(false)
 watch(editing, async (isEditing) => {
   editedOnce.value = true
   const places = measureFields(dialog.value)
+  // Back to the top before the read-only Dish mounts: scrolled down in the
+  // editor, it would count the image as scrolled away and show its compact
+  // bar (a second "Schließen") until focusing "Bearbeiten" scrolled back.
+  if (!isEditing && dialog.value) dialog.value.scrollTop = 0
   await nextTick()
   if (!isEditing) dialog.value?.querySelector<HTMLElement>('[data-edit]')?.focus()
   morphFields(dialog.value, places)
