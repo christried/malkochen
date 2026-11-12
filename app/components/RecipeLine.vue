@@ -165,7 +165,7 @@ const iconButton = 'flex shrink-0 items-center justify-center text-text-muted tr
         ref="field"
         v-model="text"
         rows="1"
-        class="field min-w-0 flex-1 resize-none bg-transparent py-[14px] text-[17px] font-medium leading-6 text-text outline-none placeholder:text-text-muted"
+        class="line-text min-w-0 flex-1 resize-none bg-transparent py-[14px] text-[17px] font-medium leading-6 text-text outline-none placeholder:text-text-muted"
         :aria-label="label"
         :aria-describedby="counted ? helperId : undefined"
         :placeholder="placeholder"
@@ -248,7 +248,7 @@ const iconButton = 'flex shrink-0 items-center justify-center text-text-muted tr
 </template>
 
 <style scoped>
-.field {
+.line-text {
   field-sizing: content;
   min-height: 52px;
   overflow-wrap: anywhere;

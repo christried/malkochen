@@ -184,6 +184,82 @@ test('on a wide screen the panel becomes the editor, and leaving it with changes
   await expect(detail.locator('[data-recipe-list="ingredients"] [data-recipe-line]')).toHaveText(['Bohnen', 'Lorbeer'])
 })
 
+test('a line is dragged by its grip with the mouse, and moved with Alt+↑/↓ from its field', async ({ page, browser }) => {
+  test.slow()
+  await page.setViewportSize({ width: 1100, height: 900 })
+  const { boardId, dishes } = await sharedBoard(page, browser, 'Rezept sortieren', ['Mohnkuchen'])
+  expect((await page.request.patch(`/api/dishes/${dishes['Mohnkuchen']}`, { data: { recipe: { ingredients: ['Mohn', 'Mehl', 'Zucker', 'Butter'], steps: [] } } })).status()).toBe(200)
+  const detail = await openDish(page, boardId, 'Mohnkuchen')
+  await detail.getByRole('button', { name: 'Bearbeiten' }).last().click()
+  const editor = detail.locator('[data-recipe-editor]')
+  await expect(editor.getByRole('textbox', { name: 'Zutat 4' })).toBeVisible()
+
+  // Grabbed at the first line's grip and let go below the third.
+  const grip = await editor.getByRole('button', { name: 'Mohn verschieben' }).boundingBox()
+  const third = await editor.getByRole('textbox', { name: 'Zutat 3' }).boundingBox()
+  expect(grip && third).toBeTruthy()
+  const x = grip!.x + grip!.width / 2
+  const y = grip!.y + grip!.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y + 10, { steps: 3 })
+  // While it is held, it is lifted and its slot is dashed.
+  await expect(editor.locator('[data-recipe-edit-line].lifted')).toHaveCount(1)
+  await page.mouse.move(x, third!.y + third!.height - 4, { steps: 8 })
+  await page.mouse.up()
+  await expect.poll(() => fieldValues(editor, 'Zutat')).toEqual(['Mehl', 'Zucker', 'Mohn', 'Butter'])
+  await expect(editor.locator('[data-recipe-edit-line].lifted')).toHaveCount(0)
+  await expect(editor.getByText('Mohn, jetzt an Stelle 3 von 4.')).toBeAttached()
+
+  // A click on the grip, not a drag, opens its menu instead.
+  await editor.getByRole('button', { name: 'Butter verschieben' }).click()
+  await expect(editor.getByRole('menuitem', { name: 'Nach unten' })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(editor.getByRole('menu')).toHaveCount(0)
+
+  // From the field, Alt+↑/↓ moves the line and the cursor stays in it.
+  const field = editor.getByRole('textbox', { name: 'Zutat 1' })
+  await field.focus()
+  await page.keyboard.press('Alt+ArrowDown')
+  await expect.poll(() => fieldValues(editor, 'Zutat')).toEqual(['Zucker', 'Mehl', 'Mohn', 'Butter'])
+  await expect(editor.getByRole('textbox', { name: 'Zutat 2' })).toBeFocused()
+  await expect(editor.getByRole('textbox', { name: 'Zutat 2' })).toHaveValue('Mehl')
+})
+
+test('on a touch screen a line is lifted by a long press on its grip, not by a touch that moves first', async ({ page, browser }) => {
+  test.slow()
+  await page.setViewportSize({ width: 390, height: 844 })
+  const { boardId, dishes } = await sharedBoard(page, browser, 'Rezept berühren', ['Apfelkuchen'])
+  expect((await page.request.patch(`/api/dishes/${dishes['Apfelkuchen']}`, { data: { recipe: { ingredients: ['Äpfel', 'Mehl', 'Zimt'], steps: [] } } })).status()).toBe(200)
+  const detail = await openDish(page, boardId, 'Apfelkuchen')
+  await detail.getByRole('button', { name: 'Bearbeiten' }).last().click()
+  const editor = page.getByRole('dialog', { name: 'Rezept' })
+  const grip = editor.getByRole('button', { name: 'Äpfel verschieben' })
+  const box = (await grip.boundingBox())!
+  const at = { clientX: box.x + box.width / 2, clientY: box.y + box.height / 2 }
+  // A pointer event as a finger makes it.
+  const touch = (target: string, type: string, extra: Record<string, number>) => page.evaluate(([selector, kind, init]) => {
+    const el = selector === 'window' ? window : document.querySelector(selector as string)!
+    el.dispatchEvent(new PointerEvent(kind as string, { pointerType: 'touch', pointerId: 7, isPrimary: true, button: 0, buttons: 1, bubbles: true, cancelable: true, ...init as object }))
+  }, [target, type, extra] as const)
+  const lifted = editor.locator('[data-recipe-edit-line].lifted')
+
+  // Scrolling: moves before the 300ms are up, and nothing is lifted.
+  await touch('[data-recipe-grip]', 'pointerdown', at)
+  await touch('window', 'pointermove', { clientX: at.clientX, clientY: at.clientY + 40 })
+  await page.waitForTimeout(450)
+  await expect(lifted).toHaveCount(0)
+  await touch('window', 'pointerup', at)
+
+  // Held still, it is lifted, follows the finger and drops below the second.
+  await touch('[data-recipe-grip]', 'pointerdown', at)
+  await expect(lifted).toHaveCount(1)
+  await touch('window', 'pointermove', { clientX: at.clientX, clientY: at.clientY + 90 })
+  await touch('window', 'pointerup', { clientX: at.clientX, clientY: at.clientY + 90 })
+  await expect.poll(() => fieldValues(editor, 'Zutat')).toEqual(['Mehl', 'Äpfel', 'Zimt'])
+  await expect(lifted).toHaveCount(0)
+})
+
 test('a Member who may not edit Dishes reads the Recipe and has no way to change it', async ({ page, browser }) => {
   test.slow()
   await page.setViewportSize({ width: 390, height: 844 })
