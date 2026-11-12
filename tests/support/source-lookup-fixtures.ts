@@ -47,7 +47,24 @@ export const OTHER_RECIPE_BLOG_RECIPE = { ingredients: ['400 g Tofu', '2 EL Spei
 export const NO_RECIPE_BLOG = 'https://salt-and-pan.example/weekend-shakshuka'
 export const DOWN_BLOG = 'https://kochblog.example/rezepte/gerade-nicht-da'
 
+// The Captions the Recipe Finder reads when a page has no recipe data (#501).
+// A TikTok whose Caption holds a recipe ...
+export const RECIPE_TIKTOK = 'https://www.tiktok.com/@mara.kocht/video/7300000000000000005'
+export const RECIPE_CAPTION = 'Cremige Linsensuppe in 20 Minuten 🍲\n\nZutaten:\n250 g rote Linsen\n1 Zwiebel\n800 ml Brühe\n\nErst die Zwiebel anbraten, dann Linsen und Brühe dazu und 15 Min. köcheln lassen.\n\nFolgt mir für mehr! #linsensuppe #fyp'
+// ... one whose Caption holds none ...
+export const CHATTER_TIKTOK = 'https://www.tiktok.com/@mara.kocht/video/7300000000000000006'
+// ... a blog with recipe data on its page and a Caption besides ...
+export const RECIPE_BLOG_WITH_CAPTION = 'https://ofenliebe.example/linsenlasagne-mit-text/'
+// ... and one whose page has no recipe data, or can't be read, with a Caption.
+export const NO_RECIPE_BLOG_WITH_CAPTION = 'https://salt-and-pan.example/weekend-shakshuka-mit-text'
+export const DOWN_BLOG_WITH_CAPTION = 'https://kochblog.example/rezepte/gerade-nicht-da-mit-text'
+
 export const LOOKUP_FIXTURES: LookupFixtures = {
+  [RECIPE_TIKTOK]: { kind: 'tiktok', canonicalLink: RECIPE_TIKTOK, suggestedTitle: 'Linsensuppe', creator: '@mara.kocht', caption: RECIPE_CAPTION },
+  [CHATTER_TIKTOK]: { kind: 'tiktok', canonicalLink: CHATTER_TIKTOK, suggestedTitle: 'Neues Video', creator: '@mara.kocht', caption: 'Heute gibt es etwas ganz Besonderes! Wer errät, was es wird? #foodtok #fyp' },
+  [RECIPE_BLOG_WITH_CAPTION]: { kind: 'blog', canonicalLink: RECIPE_BLOG_WITH_CAPTION, caption: RECIPE_CAPTION, page: sourcePage('blog-recipe-sections.html') },
+  [NO_RECIPE_BLOG_WITH_CAPTION]: { kind: 'blog', canonicalLink: NO_RECIPE_BLOG_WITH_CAPTION, caption: RECIPE_CAPTION, page: sourcePage('blog-og-only.html') },
+  [DOWN_BLOG_WITH_CAPTION]: { kind: 'blog', canonicalLink: DOWN_BLOG_WITH_CAPTION, caption: RECIPE_CAPTION, page: { status: 500 } },
   [RECIPE_BLOG]: { page: sourcePage('blog-recipe-sections.html') },
   [SLOW_RECIPE_BLOG]: { page: sourcePage('blog-recipe-text.html', { delayMs: 1500 }) },
   [OTHER_RECIPE_BLOG]: { page: sourcePage('blog-recipe-string.html') },
