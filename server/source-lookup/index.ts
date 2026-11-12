@@ -111,3 +111,24 @@ export function createPageLookup(options: SourceLookupOptions = {}): PageLookup 
     }
   }
 }
+
+// The page a link's Source says its recipe is at (#502): for a Pin, the
+// destination it leads to. A link whose kind of Source has none is answered
+// without a request. Under the same time budget and through the same fetching
+// as a lookup.
+export function createDestinationLookup(options: SourceLookupOptions = {}): DestinationLookup {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+
+  return async (link) => {
+    const { url, strategy } = matchStrategy(link)
+    if (!url || !strategy.destination) return { outcome: 'none' }
+
+    const http = createHttp(AbortSignal.timeout(timeoutMs), options.fetch)
+    try {
+      return await strategy.destination(url, { http, timeoutMs })
+    }
+    catch {
+      return { outcome: 'unreadable' }
+    }
+  }
+}
