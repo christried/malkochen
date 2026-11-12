@@ -1,0 +1,138 @@
+{
+  "clip": "never-cooked-dampf",
+  "viewBox": "0 0 170 118",
+  "canvas": [
+    510,
+    354
+  ],
+  "seconds": 4.8,
+  "note": "Layers stack by z. Animated elements carry id + data-loop (r11-keyframes.css name, duration, easing, delay) + data-pivot (viewBox units of their own <svg>; nested character/Topfbert <svg>s have their own viewBox). Inline style = frame-0 state.",
+  "light": [
+    {
+      "z": 1,
+      "file": "layers/light/01-background.svg",
+      "name": "background",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 2,
+      "file": "layers/light/02-blob.svg",
+      "name": "blob",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 3,
+      "file": "layers/light/03-topfbert_stack.svg",
+      "name": "topfbert_stack",
+      "animated": true,
+      "elements": [
+        {
+          "id": "topfbert",
+          "loop": "breathe 2.4s ease-in-out infinite",
+          "pivot": "70 123"
+        },
+        {
+          "id": "gaze",
+          "loop": "gazedampf 4.8s ease-in-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "puff_1",
+          "loop": "puff 4.8s ease-out infinite",
+          "pivot": "86 38"
+        },
+        {
+          "id": "puff_2",
+          "loop": "puff 4.8s ease-out -0.1s infinite",
+          "pivot": "104 39"
+        },
+        {
+          "id": "puff_3",
+          "loop": "puff 4.8s ease-out -0.2s infinite",
+          "pivot": "95 33"
+        },
+        {
+          "id": "knobi",
+          "loop": "ride 4.8s ease-in-out infinite",
+          "pivot": "96 41"
+        },
+        {
+          "id": "knobi_sprout",
+          "loop": "wiggle 2.4s ease-in-out infinite",
+          "pivot": "24 8"
+        },
+        {
+          "id": "knobi_eyes",
+          "loop": "blink48 4.8s ease-in-out infinite",
+          "pivot": "24 30.5"
+        }
+      ]
+    }
+  ],
+  "dark": [
+    {
+      "z": 1,
+      "file": "layers/dark/01-background.svg",
+      "name": "background",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 2,
+      "file": "layers/dark/02-blob.svg",
+      "name": "blob",
+      "animated": false,
+      "elements": []
+    },
+    {
+      "z": 3,
+      "file": "layers/dark/03-topfbert_stack.svg",
+      "name": "topfbert_stack",
+      "animated": true,
+      "elements": [
+        {
+          "id": "topfbert",
+          "loop": "breathe 2.4s ease-in-out infinite",
+          "pivot": "70 123"
+        },
+        {
+          "id": "gaze",
+          "loop": "gazedampf 4.8s ease-in-out infinite",
+          "pivot": "center"
+        },
+        {
+          "id": "puff_1",
+          "loop": "puff 4.8s ease-out infinite",
+          "pivot": "86 38"
+        },
+        {
+          "id": "puff_2",
+          "loop": "puff 4.8s ease-out -0.1s infinite",
+          "pivot": "104 39"
+        },
+        {
+          "id": "puff_3",
+          "loop": "puff 4.8s ease-out -0.2s infinite",
+          "pivot": "95 33"
+        },
+        {
+          "id": "knobi",
+          "loop": "ride 4.8s ease-in-out infinite",
+          "pivot": "96 41"
+        },
+        {
+          "id": "knobi_sprout",
+          "loop": "wiggle 2.4s ease-in-out infinite",
+          "pivot": "24 8"
+        },
+        {
+          "id": "knobi_eyes",
+          "loop": "blink48 4.8s ease-in-out infinite",
+          "pivot": "24 30.5"
+        }
+      ]
+    }
+  ]
+}

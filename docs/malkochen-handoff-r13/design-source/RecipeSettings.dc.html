@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,100..900;1,100..900&amp;family=Figtree:ital,wght@0,300..900;1,300..900&amp;display=swap" rel="stylesheet"></helmet>
+<div style="position:relative;width:{{ fw }};height:760px;border-radius:{{ frad }};overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Figtree',system-ui,sans-serif;box-shadow:0 30px 60px -30px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.08);{{ vars }}">
+  <sc-if value="{{ isPhone }}"><div style="position:absolute;inset:0;background:var(--scrim)"></div></sc-if>
+  <div style="position:absolute;left:0;right:0;top:{{ sTop }};bottom:0;background:var(--surface);border-radius:{{ sRad }};box-shadow:0 -20px 50px -20px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden">
+    <sc-if value="{{ isPhone }}"><div style="flex:none;align-self:center;width:40px;height:5px;margin-top:8px;border-radius:3px;background:var(--line2)"></div></sc-if>
+    <div style="flex:none;display:flex;align-items:center;gap:10px;padding:{{ headPad }}">
+      <span style="flex:1;font:500 26px/1 'Petrona',Georgia,serif;letter-spacing:-.01em">Einstellungen</span>
+      <span style="width:38px;height:38px;border-radius:50%;background:var(--s2);display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+    </div>
+    <div ref="{{ setSc }}" style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:4px {{ padX }} 40px;display:flex;flex-direction:column;gap:22px">
+      <sc-for list="{{ ctx }}" as="s" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="padding-left:4px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)">{{ s.h }}</span>
+          <div style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:22px 19px 23px 20px;background:var(--s2)">
+            <div style="display:flex;align-items:center;gap:10px;min-height:28px"><span style="flex:1;font:600 15.5px/1.2 'Figtree',system-ui">{{ s.t }}</span><span style="font:500 14px/1 'Figtree',system-ui;color:var(--ink2)">{{ s.v }}</span><sc-if value="{{ s.sw }}"><span style="width:46px;height:28px;border-radius:14px;background:#A5C7AE;position:relative"><i style="position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.25)"></i></span></sc-if></div>
+            <sc-if value="{{ s.bars }}"><div style="display:flex;flex-direction:column;gap:7px;padding-bottom:2px"><i style="height:8px;width:92%;border-radius:4px;background:var(--line2)"></i><i style="height:8px;width:70%;border-radius:4px;background:var(--line2)"></i></div></sc-if>
+          </div>
+        </div>
+      </sc-for>
+
+      <div data-anchor="1" style="display:flex;flex-direction:column;gap:8px">
+        <span style="padding-left:4px;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)">Rezeptfinder</span>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:16px 16px 18px;border-radius:22px 19px 23px 20px;background:var(--s2)">
+          <div style="display:flex;align-items:center;gap:10px;min-height:30px">
+            <span style="flex:1;font:600 16.5px/1.2 'Figtree',system-ui">Rezeptfinder</span>
+            <sc-if value="{{ isReq }}"><span style="height:28px;padding:0 11px 0 9px;border-radius:14px;background:var(--surface);display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Figtree',system-ui"><svg width="13" height="13" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="5 12.5 10 17 19 7.5"></polyline></svg>Angefragt</span></sc-if>
+            <sc-if value="{{ isOn }}"><span style="height:28px;padding:0 11px 0 9px;border-radius:14px;background:#A5C7AE;color:#10261A;display:flex;align-items:center;gap:6px;font:600 12.5px/1 'Figtree',system-ui"><i style="width:8px;height:8px;border-radius:50%;background:#10261A"></i>Eingeschaltet</span></sc-if>
+          </div>
+          <span style="font:500 14.5px/1.45 'Figtree',system-ui;color:var(--ink);text-wrap:pretty">{{ body }}</span>
+          <sc-if value="{{ isOff }}"><span style="align-self:flex-start;height:44px;padding:0 18px;border-radius:22px;background:var(--inv);color:var(--onInv);display:flex;align-items:center;gap:8px;font:600 15px/1 'Figtree',system-ui">Zugang anfragen</span></sc-if>
+          <sc-if value="{{ isReq }}"><span style="font:500 13.5px/1.4 'Figtree',system-ui;color:var(--ink2);text-wrap:pretty">Deine Anfrage vom 12. November ist angekommen. Mehr musst du nicht tun.</span></sc-if>
+        </div>
+      </div>
+
+      <div style="height:52px;border-radius:26px;background:color-mix(in oklch, var(--danger) 10%, transparent);color:var(--danger);display:flex;align-items:center;justify-content:center;gap:8px;font:600 15px/1 'Figtree',system-ui"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"></path></svg>Konto löschen</div>
+    </div>
+  </div>
+  <sc-if value="{{ isPhone }}">
+    <div style="position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 14.5px/1 'Figtree',system-ui;color:#FFFFFF;pointer-events:none">
+      <span>9:41</span>
+      <div style="display:flex;gap:6px;align-items:center"><div style="width:16px;height:10px;border-radius:2px;background:currentColor;opacity:.85"></div><div style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:4px;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;background:currentColor;border-radius:1.5px"></div></div></div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:760},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;off&quot;,&quot;requested&quot;,&quot;on&quot;],&quot;default&quot;:&quot;off&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;frame&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;panel&quot;],&quot;default&quot;:&quot;phone&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const VARS = {
+  light: '--bg:#E9E6E0;--surface:#FFFFFF;--s2:#EFEDE8;--ink:#1F1E1C;--ink2:#6F6B65;--line:rgba(31,30,28,.09);--line2:rgba(31,30,28,.16);--inv:#1F1E1C;--onInv:#FFFFFF;--scrim:rgba(12,10,8,.42);--danger:#C23B22',
+  dark: '--bg:#0E0D0C;--surface:#1E1C1A;--s2:#2A2825;--ink:#F3EFE8;--ink2:#A8A298;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--inv:#F3EFE8;--onInv:#131211;--scrim:rgba(12,10,8,.5);--danger:#FF8A70'
+};
+const BODY = {
+  off: 'Der Rezeptfinder sucht dir Zutaten und Schritte zu einem Gericht heraus, aus der Caption oder aus dem Foodblog, auf den sie verlinkt. Gerade ist er nur für ein paar Leute freigeschaltet.',
+  requested: 'Der Rezeptfinder sucht dir Zutaten und Schritte zu einem Gericht heraus, aus der Caption oder aus dem Foodblog, auf den sie verlinkt. Gerade ist er nur für ein paar Leute freigeschaltet.',
+  on: 'Der Rezeptfinder ist für dich eingeschaltet. Wenn er ein Rezept sucht, gehen die Caption und der Text der verlinkten Seite an Anthropic.'
+};
+class Component extends DCLogic {
+  scRef = React.createRef();
+  componentDidMount() { this.place(); if (document.fonts) document.fonts.ready.then(() => this.place()); }
+  componentDidUpdate(p) { if (p.frame !== this.props.frame || p.state !== this.props.state) this.place(); }
+  setSc = el => { this.scEl = el; };
+  componentWillUnmount() { clearTimeout(this.t); }
+  place() {
+    clearTimeout(this.t); let n = 0;
+    const go = () => { n++; const sc = this.scEl; const el = sc && sc.querySelector('[data-anchor="1"]'); const top = el ? el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop : 0; if (el && top > 0 && sc.scrollHeight > sc.clientHeight) { sc.scrollTop = top - 150; if (n < 4) this.t = setTimeout(go, 300); } else if (n < 40) this.t = setTimeout(go, 100); };
+    this.t = setTimeout(go, 30);
+  }
+  renderVals() {
+    const st = this.props.state ?? 'off', phone = (this.props.frame ?? 'phone') !== 'panel';
+    const ctx = [['Konto', 'Lisa Berger', 'Bearbeiten'], ['Darstellung', 'Farbschema', 'System'], ['Sprache', 'Sprache', 'Deutsch']];
+    if (!phone) ctx.push(['Tastenkürzel', 'Alle Tastenkürzel', 'Taste ?']);
+    ctx.push(['Rundgang', 'Rundgang noch mal ansehen', ''], ['Snackbert', 'Snackbert', '', 1]);
+    return {
+      setSc: this.setSc, vars: VARS[this.props.theme === 'dark' ? 'dark' : 'light'], isPhone: phone,
+      fw: phone ? '360px' : '420px', frad: phone ? '36px' : '28px 0 0 28px', sTop: phone ? '64px' : '0px', sRad: phone ? '36px 36px 0 0' : '0',
+      headPad: phone ? '10px 16px 14px 20px' : '22px 20px 16px 24px', padX: phone ? '14px' : '20px',
+      ctx: ctx.map(([h, t, v, sw]) => ({ h, t, v, sw: !!sw, bars: !!sw })),
+      isOff: st === 'off', isReq: st === 'requested', isOn: st === 'on', body: BODY[st] || BODY.off
+    };
+  }
+}
+</script>
+</body>
+</html>
