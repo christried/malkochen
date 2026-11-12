@@ -39,7 +39,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -947,6 +947,36 @@ export const de = {
     noAccount: 'Snackbert findet kein Konto zu deiner E-Mail-Adresse.',
     unreachable: 'Snackbert ist gerade nicht erreichbar. Versuch es später noch mal.',
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+  },
+  // The Recipe Finder in Your Settings and on the Admin Page (#498): asking for access, and the Operator's switch. In Your Settings it names the Anthropic transfer once it is on.
+  recipeFinder: {
+    heading: 'Rezeptfinder',
+    about: 'Der Rezeptfinder sucht dir Zutaten und Schritte zu einem Gericht heraus, aus der Caption oder aus dem Foodblog, auf den sie verlinkt. Gerade ist er nur für ein paar Leute freigeschaltet.',
+    ask: 'Zugang anfragen',
+    asked: 'Angefragt',
+    // From an ISO time.
+    askedLine: (at: string) => `Deine Anfrage vom ${dayInFull(new Date(at))} ist angekommen. Mehr musst du nicht tun.`,
+    on: 'Eingeschaltet',
+    onLine: 'Der Rezeptfinder ist für dich eingeschaltet. Wenn er ein Rezept sucht, gehen die Caption und der Text der verlinkten Seite an Anthropic.',
+    privacyLink: 'Mehr dazu im Datenschutz',
+    askFailed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    admin: {
+      summary: (asked: number, on: number) => `${number(asked)} angefragt, ${number(on)} eingeschaltet. Neue Anfragen stehen oben.`,
+      nobody: 'Niemand hat angefragt.',
+      empty: 'Noch hat niemand nach dem Rezeptfinder gefragt.',
+      person: 'Person',
+      askedColumn: 'Angefragt',
+      searchesColumn: 'Suchen',
+      switchColumn: 'Rezeptfinder',
+      // A request's day, from an ISO time: alone, and in a sentence.
+      askedDay: (at: string) => addedDate(new Date(at)),
+      askedOn: (at: string) => `Angefragt am ${addedDate(new Date(at))}`,
+      searchesToday: (today: number) => `${number(today)} heute`,
+      searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'Suche', other: 'Suchen' })}, ${number(today)} heute`,
+      noSearches: 'Noch keine Suchen',
+      switchFor: (name: string) => `Rezeptfinder für ${name}`,
+      failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
+    },
   },
   // The Snackbert Question after a Cooking (#425; the wording decided on
   // #422, never judgemental): the Question naming the Dish, "Ja" and

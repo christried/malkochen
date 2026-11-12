@@ -5,6 +5,7 @@ import { startResendService, type ResendService } from '../support/resend-servic
 import { OPERATOR } from '../support/test-auth-env'
 import { ALLOWLISTED, signIn, type Caller } from './client'
 import { watchEvents } from './event-log'
+import { endLimitWindow, useUpLimit } from './time-travel'
 
 // The Recipe Finder switch (#497, ADR 0013): off for every new user; a user
 // asks once in Your Settings, which emails the Operator; only the Operator
@@ -19,6 +20,9 @@ const MCCARTHY = user('mccarthy')
 const WIRTH = user('wirth')
 const KAY = user('kay')
 const IVERSON = user('iverson')
+const HAZELHURST = user('hazelhurst')
+const AMBROSE = user('ambrose')
+const THIBAULT = user('thibault')
 
 let resend: ResendService
 
@@ -196,4 +200,46 @@ test('deleting an account removes the state', async () => {
   expect((await listed(operator)).some(u => u.id === lamportId)).toBe(false)
   // Back with a new account: off, like any new user.
   expect(await stateOf(await signIn(LAMPORT))).toEqual({ state: 'off', available: true })
+})
+
+test('the Admin list shows each user\'s email, picture and the searches counting against their cap now', async () => {
+  const operator = await signIn(OPERATOR)
+  const hazelhurst = await signIn(HAZELHURST, { name: 'Hazel', image: 'https://example.com/hazel.png' })
+  const hazelhurstId = await idOf(hazelhurst)
+  await ask(hazelhurst)
+
+  const own = async () => (await listed(operator)).find(u => u.id === hazelhurstId)!
+  expect(await own()).toMatchObject({ name: 'Hazel', email: HAZELHURST, image: 'https://example.com/hazel.png', searchesToday: 0 })
+
+  // The window is running: its calls count.
+  await useUpLimit(HAZELHURST, 'recipe-search', 7)
+  expect((await own()).searchesToday).toBe(7)
+  // Another limit's calls don't.
+  await useUpLimit(HAZELHURST, 'username', 3)
+  expect((await own()).searchesToday).toBe(7)
+
+  // The window is over: they may search anew, so none count.
+  await endLimitWindow(HAZELHURST, 'recipe-search')
+  expect((await own()).searchesToday).toBe(0)
+
+  await switchFor(operator, hazelhurstId, false)
+})
+
+test('the Admin list puts who asked before who was switched on unasked, within each group', async () => {
+  const operator = await signIn(OPERATOR)
+  const ambroseId = await idOf(await signIn(AMBROSE, { name: 'Ambrose' }))
+  const thibault = await signIn(THIBAULT, { name: 'Thibault' })
+  const thibaultId = await idOf(thibault)
+
+  // Thibault never asked, so he has no request date, which must not float him up.
+  await switchFor(operator, thibaultId, true)
+  await ask(await signIn(AMBROSE))
+  await switchFor(operator, ambroseId, true)
+
+  const ids = (await listed(operator)).map(u => u.id)
+  expect(ids).toContain(ambroseId)
+  expect(ids.indexOf(ambroseId)).toBeLessThan(ids.indexOf(thibaultId))
+
+  await switchFor(operator, ambroseId, false)
+  await switchFor(operator, thibaultId, false)
 })
