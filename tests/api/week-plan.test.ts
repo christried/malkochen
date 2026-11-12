@@ -227,6 +227,25 @@ test('an index past the end puts the Dish at the end', async () => {
   expect(await dayOf(ada, board.id, MONDAY)).toEqual([first.id, second.id, last.id, after.id])
 })
 
+test('the end of a day is after its last Dish, also where archived Dishes left gaps in the numbering', async () => {
+  const [MONDAY, TUESDAY] = freshDays()
+  const { board, ada } = await plain()
+  const [a, b, c, d, e, f] = await Promise.all(['A', 'B', 'C', 'D', 'E', 'F'].map(t => addDish(ada, board.id, t)))
+  await plan(ada, board.id, a!, MONDAY)
+  await plan(ada, board.id, b!, MONDAY)
+  const third = await plan(ada, board.id, c!, MONDAY)
+  const fourth = await plan(ada, board.id, d!, MONDAY)
+  // The first two are archived: the day's numbering now starts at 2.
+  for (const dish of [a!, b!]) expect((await send(ada, 'DELETE', `/api/dishes/${dish.id}`)).status).toBe(204)
+
+  const planned = await plan(ada, board.id, e!, MONDAY)
+  expect(await dayOf(ada, board.id, MONDAY)).toEqual([third.id, fourth.id, planned.id])
+
+  const onTuesday = await plan(ada, board.id, f!, TUESDAY)
+  await move(ada, onTuesday, MONDAY)
+  expect(await dayOf(ada, board.id, MONDAY)).toEqual([third.id, fourth.id, planned.id, onTuesday.id])
+})
+
 test('an index counts among the day\'s own Dishes, not the other days\'', async () => {
   const [MONDAY, TUESDAY] = freshDays()
   const { board, ada } = await plain()

@@ -6,10 +6,11 @@ import { madeAtOrNow, writeOnce, type DeviceIdStanding } from './late-changes'
 
 // The Week Plan (CONTEXT.md: Week Plan, Planned Dish; ADR 0014): the Dishes
 // a Board's Members put on days, and who cooks them. Planning, moving,
-// unplanning and setting the cook are four small writes, each one atomic with its Event Log event and each checking
-// what it needs in the same statement, so nothing races between check and
-// write. They write nothing to the Dish History and notify nobody. The
-// Permission to move Dishes is checked by the caller (permission-checks.ts).
+// unplanning and setting the cook are four small writes, each one atomic with
+// its Event Log event and each checking what it needs in the same statement,
+// so nothing races between check and write. They write nothing to the Dish
+// History and notify nobody. The Permission to move Dishes is checked by the
+// caller (permission-checks.ts).
 
 // A Planned Dish as the Board load carries it: its Dish and its day, a
 // calendar date in Europe/Berlin as 'YYYY-MM-DD'; and who cooks it, a Member
@@ -64,11 +65,22 @@ function daysOthers(boardId: string, day: string, exceptId: string) {
     where ${and(onBoard(boardId), sql`${plannedDish.day} = ${day}::date`, sql`${plannedDish.id} <> ${exceptId}`)}`
 }
 
+// The place after the day's last Planned Dish other than `exceptId`, as an
+// expression: one past the highest number, which an archived Dish leaving a
+// gap doesn't change (a count of them would land mid-day), or 0 for an empty
+// day.
+function endOfDay(boardId: string, day: string, exceptId: string) {
+  return sql`coalesce((select max(p.position) + 1
+    from ${plannedDish} p join ${dish} on ${dish.id} = p.dish_id
+    where ${and(onBoard(boardId), sql`p.day = ${day}::date`, sql`p.id <> ${exceptId}`)}), 0)`
+}
+
 // Where a Planned Dish lands among the day's others: at `index`, or at the
 // end if there are fewer; without one, at the end.
 function landingPosition(boardId: string, day: string, exceptId: string, index: number | undefined) {
+  if (index === undefined) return endOfDay(boardId, day, exceptId)
   const others = sql`(select count(*) from (${daysOthers(boardId, day, exceptId)}) others)`
-  return index === undefined ? others : sql`least(${index}::int, ${others})`
+  return sql`least(${index}::int, ${others})`
 }
 
 // How the id a device made for a new Planned Dish stands (late-changes.ts):
@@ -149,9 +161,7 @@ export async function movePlannedDish(
       d,
       index === undefined
         // To the end of the day: it alone changes.
-        ? sql`update ${plannedDish} set day = ${day}::date, position = ${sql`coalesce((select max(p.position) + 1
-              from ${plannedDish} p join ${dish} on ${dish.id} = p.dish_id
-              where ${and(onBoard(boardId), sql`p.day = ${day}::date`, sql`p.id <> ${id}`)}), 0)`}
+        ? sql`update ${plannedDish} set day = ${day}::date, position = ${endOfDay(boardId, day, id)}
           where ${and(eq(plannedDish.id, id), movable)}
           returning id, dish_id, day, position`
         // Numbers the day afresh, leaving the place free for it.
@@ -171,11 +181,10 @@ export async function movePlannedDish(
 }
 
 // Takes the Planned Dish off the plan; its Dish stays where it is. False
-// unless it was on the Board with its Dish not archived.
+// unless this took it off: it was on the Board with its Dish not archived,
+// and nothing else took it off first.
 export async function unplanDish(boardId: string, userId: string, id: string): Promise<boolean> {
-  const before = await plannedDishBoard(id)
-  if (before?.boardId !== boardId) return false
-  await runAtomic(d => [
+  const [deleted] = await runAtomic(d => [
     withEvents(
       d,
       sql`delete from ${plannedDish}
@@ -184,7 +193,7 @@ export async function unplanDish(boardId: string, userId: string, id: string): P
       plannedDishEvent('dish_unplanned', userId),
     ),
   ])
-  return true
+  return (deleted?.rows.length ?? 0) > 0
 }
 
 // Sets who cooks the Planned Dish, or clears the cook (null). The cook must be
@@ -192,19 +201,18 @@ export async function unplanDish(boardId: string, userId: string, id: string): P
 // one), which the statement itself checks, so a Member leaving at the same
 // moment can't slip in. Setting the cook it already has changes nothing: no
 // Board Version move, no event. Null unless the Planned Dish is on the Board
-// with its Dish not archived; 'not-member' if the cook isn't a Member.
+// with its Dish not archived; 'not-member' if the cook isn't a Member (what
+// the statement found, not what the Planned Dish looks like afterwards).
 export async function setPlannedDishCook(
   boardId: string,
   userId: string,
   id: string,
   cookId: string | null,
 ): Promise<PlannedDishView | 'not-member' | null> {
-  const before = await plannedDishBoard(id)
-  if (before?.boardId !== boardId) return null
   const isMember = cookId === null
     ? sql`true`
     : sql`exists (select 1 from ${membership} where ${and(eq(membership.boardId, boardId), eq(membership.userId, cookId))})`
-  await runAtomic(d => [
+  const [updated] = await runAtomic(d => [
     withEvents(
       d,
       sql`update ${plannedDish} set cook_id = ${cookId}
@@ -218,7 +226,10 @@ export async function setPlannedDishCook(
       plannedDishEvent('planned_dish_cook_set', userId),
     ),
   ])
-  const now = await viewOf(id)
+  if ((updated?.rows.length ?? 0) > 0) return viewOf(id)
+  // It changed nothing: the Planned Dish isn't there for this Board, or it has
+  // this cook already, or the cook isn't a Member.
+  const now = await visibleView(boardId, id)
   if (!now) return null
   return now.cookId === cookId ? now : 'not-member'
 }

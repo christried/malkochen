@@ -37,12 +37,17 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
 
 const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('en-GB')
 
-// A day inside a sentence on the Week Plan: "today", "tomorrow", "Saturday",
-// and after the current week with its date, "Thursday, 26 November".
+// A day by its name, and after the current week with its date: "Saturday",
+// "Thursday, 26 November".
+function dayNamed(day: string, today: string): string {
+  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "today", "tomorrow", then dayNamed.
 function dayPhrase(day: string, today: string): string {
   if (day === today) return 'today'
   if (day === addDays(today, 1)) return 'tomorrow'
-  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+  return dayNamed(day, today)
 }
 
 // "1 dish", "4 dishes".
@@ -676,7 +681,7 @@ export const en: Strings = {
     emptyText: 'Pick a dish from the board and put it on a day.',
     emptyButton: 'Pick a dish',
     emptyPast: 'Nothing was planned this week.',
-    pickTitle: (day: string, today: string) => day === today ? 'What’s on today?' : `What’s on ${weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`}?`,
+    pickTitle: (day: string, today: string) => day === today ? 'What’s on today?' : `What’s on ${dayNamed(day, today)}?`,
     search: 'Search dishes',
     clearSearch: 'Clear search',
     noMatch: (query: string) => `No dish matching “${query}” on this board.`,

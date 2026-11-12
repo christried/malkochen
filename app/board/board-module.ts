@@ -1282,6 +1282,10 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
     return plan
   }
 
+  // The Dishes planned on a day (YYYY-MM-DD), in order: weekPlan's, without
+  // the rest of each entry.
+  const dishesOn = (day: string): DishView[] => weekPlan([day])[day]?.map(entry => entry.dish) ?? []
+
   // What the Week Plan offers to plan: the Board's Dishes, the Gekocht
   // Column's included, in Board order. Archived Dishes aren't on the Board.
   const plannableDishes = computed(() => board.value?.columns.flatMap(c => c.dishes) ?? [])
@@ -1490,7 +1494,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, findRecipe, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, weekPlan, plannableDishes, planDish, movePlannedDish, unplanDish, setPlannedDishCook, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, hasUnsentRecipe, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
+  return { addDish, editDish, findRecipe, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, weekPlan, dishesOn, plannableDishes, planDish, movePlannedDish, unplanDish, setPlannedDishCook, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, hasUnsentRecipe, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for

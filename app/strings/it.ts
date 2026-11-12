@@ -40,13 +40,18 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
 
 const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('it-IT')
 
-// A day inside a sentence on the Week Plan: "oggi", "domani", "sabato", and
-// after the current week with its date, "giovedì 26 novembre".
+// A day by its name, and after the current week with its date: "sabato",
+// "giovedì 26 novembre".
+function dayNamed(day: string, today: string): string {
+  const name = weekday(day).toLowerCase()
+  return weekStart(day) === weekStart(today) ? name : `${name} ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "oggi", "domani", then dayNamed.
 function dayPhrase(day: string, today: string): string {
   if (day === today) return 'oggi'
   if (day === addDays(today, 1)) return 'domani'
-  const name = weekday(day).toLowerCase()
-  return weekStart(day) === weekStart(today) ? name : `${name} ${dayMonth(day)}`
+  return dayNamed(day, today)
 }
 
 // "1 piatto", "4 piatti".
@@ -692,7 +697,7 @@ export const it: Strings = {
     emptyText: 'Scegli un piatto dalla bacheca e mettilo su un giorno.',
     emptyButton: 'Scegli un piatto',
     emptyPast: 'In questa settimana non era previsto niente.',
-    pickTitle: (day: string, today: string) => day === today ? 'Cosa si mangia oggi?' : `Cosa si mangia ${weekStart(day) === weekStart(today) ? weekday(day).toLowerCase() : `${weekday(day).toLowerCase()} ${dayMonth(day)}`}?`,
+    pickTitle: (day: string, today: string) => day === today ? 'Cosa si mangia oggi?' : `Cosa si mangia ${dayNamed(day, today)}?`,
     search: 'Cerca un piatto',
     clearSearch: 'Cancella la ricerca',
     noMatch: (query: string) => `Nessun piatto con “${query}” su questa bacheca.`,

@@ -180,7 +180,6 @@ function planOn(day: string) {
     undo: () => boardModule.unplanDish(result.plannedDish.id),
   })
 }
-const dishesOn = (day: string) => boardModule.weekPlan([day])[day]?.map(entry => entry.dish) ?? []
 watch(() => planning.open, async (isOpen) => {
   if (isOpen) return
   await nextTick()
@@ -468,7 +467,7 @@ watch(editing, async (isEditing) => {
           :subtitle="located.dish.title"
           :today="today"
           :from="today"
-          :dishes-on="dishesOn"
+          :dishes-on="boardModule.dishesOn"
           @pick="planOn"
         />
       </PickerSurface>

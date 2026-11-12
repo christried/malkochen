@@ -27,14 +27,17 @@ export const db: Db = pgDb
 // All-or-nothing writes: one transaction on either driver (neon-http runs a
 // batch as one). Statements run in order, each seeing the ones before it.
 // `build` gets the handle to build them on -- on node-postgres that must be
-// the transaction, not the pool.
-export async function runAtomic(build: (d: Db) => BatchItem<'pg'>[]): Promise<void> {
+// the transaction, not the pool. Answers what each statement returned, in
+// order: for a `returning` or a withEvents write, the rows it changed.
+export interface Written { rows: Record<string, unknown>[] }
+export async function runAtomic(build: (d: Db) => BatchItem<'pg'>[]): Promise<Written[]> {
   if (pgDb) {
-    await pgDb.transaction(async (tx) => {
-      for (const statement of build(tx as unknown as Db)) await statement
+    return pgDb.transaction(async (tx) => {
+      const written: Written[] = []
+      for (const statement of build(tx as unknown as Db)) written.push(await statement as unknown as Written)
+      return written
     })
-    return
   }
   const [first, ...rest] = build(db)
-  if (first) await db.batch([first, ...rest])
+  return first ? await db.batch([first, ...rest]) as unknown as Written[] : []
 }

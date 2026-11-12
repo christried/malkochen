@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { madeAtInput } from '../../../utils/late-changes'
-import { planDish,type PlannedDishView } from '../../../utils/week-plan'
+import { planDish, type PlannedDishView } from '../../../utils/week-plan'
 
 // `id`: made on the device (ADR 0012). `day`: a calendar date in
 // Europe/Berlin. `index`: its place among the day's other Dishes. `madeAt`:

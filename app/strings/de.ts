@@ -46,12 +46,17 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
 
 const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('de')
 
-// A day inside a sentence on the Week Plan: "heute", "morgen", "Samstag",
-// and after the current week with its date, "Donnerstag, 26. November".
+// A day by its name, and after the current week with its date: "Samstag",
+// "Donnerstag, 26. November".
+function dayNamed(day: string, today: string): string {
+  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "heute", "morgen", then dayNamed.
 function dayPhrase(day: string, today: string): string {
   if (day === today) return 'heute'
   if (day === addDays(today, 1)) return 'morgen'
-  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+  return dayNamed(day, today)
 }
 
 // "1 Gericht", "4 Gerichte".
@@ -806,7 +811,7 @@ export const de = {
     emptyButton: 'Gericht aussuchen',
     emptyPast: 'In dieser Woche war nichts geplant.',
     // The Dish picker, from "+" or the empty week.
-    pickTitle: (day: string, today: string) => day === today ? 'Was gibt es heute?' : `Was gibt es am ${weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`}?`,
+    pickTitle: (day: string, today: string) => day === today ? 'Was gibt es heute?' : `Was gibt es am ${dayNamed(day, today)}?`,
     search: 'Gericht suchen',
     clearSearch: 'Suche leeren',
     noMatch: (query: string) => `Kein Gericht mit „${query}“ auf diesem Board.`,
