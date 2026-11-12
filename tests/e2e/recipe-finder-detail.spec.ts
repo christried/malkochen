@@ -92,7 +92,7 @@ test('"Rezept finden" ends in a Recipe in the open detail, which is edited like 
   const boardId = await boardWithDishes(page, browser, ['Linsensuppe'])
   anthropic.answer(RECIPE)
   anthropic.slowBy(2500)
-  const detail = await openDish(page, boardId, 'Linsensuppe')
+  let detail = await openDish(page, boardId, 'Linsensuppe')
 
   // Both buttons, side by side or stacked, of one size.
   const find = detail.getByRole('button', { name: 'Rezept finden' })
@@ -115,12 +115,22 @@ test('"Rezept finden" ends in a Recipe in the open detail, which is edited like 
   await expect(detail.getByRole('button', { name: 'Rezept finden' })).toHaveCount(0)
 
   // Then the Recipe, in the detail that stayed open, and the scroll where it was.
-  await expect(detail.getByRole('heading', { name: 'Rezept', level: 2 })).toBeVisible({ timeout: 20_000 })
+  // It rises into place (the Ingredients' card carries its animation for a
+  // moment, A found Recipe arrives); opened later, it just shows.
+  const ingredientsCard = detail.locator('[data-recipe-list="ingredients"]')
+  await expect(ingredientsCard).toHaveAttribute('style', /r13-card/, { timeout: 20_000 })
+  await expect(detail.getByRole('heading', { name: 'Rezept', level: 2 })).toBeVisible()
   await expect(detail.locator('[data-recipe-list="ingredients"] [data-recipe-line]')).toHaveText(RECIPE.ingredients)
   await expect(detail.locator('[data-recipe-list="steps"] [data-recipe-line]')).toHaveText(RECIPE.steps.map((step, i) => `${i + 1}${step}`))
   await expect(searching).toHaveCount(0)
   await expect(detail.getByRole('button', { name: 'Rezept finden' })).toHaveCount(0)
   expect(await detail.evaluate(el => el.scrollTop)).toBe(scrolled)
+
+  await expect(ingredientsCard).not.toHaveAttribute('style', /r13-card/, { timeout: 5000 })
+  await reloadHydrated(page)
+  detail = page.getByRole('dialog', { name: 'Linsensuppe' })
+  await expect(detail.locator('[data-recipe-list="ingredients"]')).toBeVisible()
+  await expect(detail.locator('[data-recipe-list="ingredients"]')).not.toHaveAttribute('style', /r13-card/)
 
   // A found Recipe edits like any other: its lines are in the editor.
   await detail.locator('[data-recipe-section] [data-edit-recipe]').click()
@@ -158,7 +168,8 @@ test('another Member with the Dish open sees "Rezept wird gesucht" and then the 
   await page.setViewportSize({ width: 360, height: 800 })
   const boardId = await boardWithDishes(page, browser, ['Linsensuppe'])
   const token = await inviteToken(page, boardId)
-  const member = await newTab(browser, { viewport: { width: 360, height: 800 }, colorScheme: 'light' })
+  // A short screen: the Recipe's place is below the fold when it arrives.
+  const member = await newTab(browser, { viewport: { width: 360, height: 560 }, colorScheme: 'light' })
   try {
     await fastPolls(member)
     await signIn(member, MEMBER)
@@ -179,6 +190,14 @@ test('another Member with the Dish open sees "Rezept wird gesucht" and then the 
     await expect(memberDetail.locator('[data-recipe-list="ingredients"] [data-recipe-line]')).toHaveText(RECIPE.ingredients, { timeout: 30_000 })
     await expect(memberDetail.locator('[data-recipe-searching]')).toHaveCount(0)
     await expect(memberDetail.getByRole('heading', { name: 'Rezept', level: 2 })).toBeVisible()
+
+    // Nothing was seen arrive, so a Toast says so, and "Zeigen" scrolls to it.
+    const toast = member.locator('[data-toast]')
+    await expect(toast).toContainText('Rezept gefunden')
+    await expect(memberDetail.locator('[data-recipe-list="ingredients"]')).not.toHaveAttribute('style', /r13-card/)
+    await toast.getByRole('button', { name: 'Zeigen' }).click()
+    await expect.poll(() => memberDetail.evaluate(el => el.scrollTop)).toBeGreaterThan(0)
+    await expect(memberDetail.getByRole('heading', { name: 'Rezept', level: 2 })).toBeInViewport()
   }
   finally {
     await member.context().close()

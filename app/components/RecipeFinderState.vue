@@ -63,7 +63,7 @@ async function find() {
 }
 
 const quietButton = 'transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus'
-const buttonShape = 'flex h-[52px] min-w-0 flex-[1_1_150px] items-center justify-center gap-2 whitespace-nowrap rounded-pill px-[18px] text-button-l text-text'
+const buttonShape = 'flex h-[52px] min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-pill px-3.5 text-button-l text-text'
 </script>
 
 <template>
@@ -123,7 +123,7 @@ const buttonShape = 'flex h-[52px] min-w-0 flex-[1_1_150px] items-center justify
 
         <div
           v-if="shown.find || shown.add"
-          class="flex flex-wrap gap-2.5"
+          class="buttons grid gap-2.5"
         >
           <button
             v-if="shown.find"
@@ -137,6 +137,7 @@ const buttonShape = 'flex h-[52px] min-w-0 flex-[1_1_150px] items-center justify
             <svg
               v-if="shown.view === 'action'"
               viewBox="0 0 24 24"
+              class="shrink-0"
               width="18"
               height="18"
               fill="none"
@@ -152,6 +153,7 @@ const buttonShape = 'flex h-[52px] min-w-0 flex-[1_1_150px] items-center justify
             <svg
               v-else
               viewBox="0 0 24 24"
+              class="shrink-0"
               width="17"
               height="17"
               fill="none"
@@ -166,7 +168,7 @@ const buttonShape = 'flex h-[52px] min-w-0 flex-[1_1_150px] items-center justify
           <button
             v-if="shown.add"
             type="button"
-            :class="[buttonShape, quietButton, 'box-border border-2 border-dashed border-line-strong']"
+            :class="[buttonShape, quietButton, 'border-2 border-dashed border-line-strong']"
             data-edit-recipe
             @click="emit('edit')"
           >
@@ -183,6 +185,11 @@ const buttonShape = 'flex h-[52px] min-w-0 flex-[1_1_150px] items-center justify
 </template>
 
 <style scoped>
+/* The buttons are equal in size and stack on a phone: a row only where two of
+   them fit, from about 400px of screen (handoff: flex-wrap, 150px each). */
+.buttons {
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+}
 /* One view giving way to another: a fade (240ms). */
 .swap-enter-active,
 .swap-leave-active {
