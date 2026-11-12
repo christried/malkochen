@@ -10,6 +10,7 @@ import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings, UnsentKindName } from './de'
 import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { addDays, weekStart } from '../board/week-days'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
@@ -25,6 +26,10 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'title': return `nuovo titolo per ${named}`
     case 'recipe': return `ricetta modificata per ${named}`
     case 'add': return `${named} aggiunto`
+    case 'plan': return `${named} pianificato`
+    case 'planMove': return `${named} spostato nel piano settimanale`
+    case 'unplan': return `${named} tolto dal piano settimanale`
+    case 'planCook': return `chi cucina ${named}`
     case 'move': return `${named} spostato`
     case 'cook':
     case 'cookMany': return `${named} cucinato`
@@ -33,7 +38,21 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('it-IT')
+
+// A day by its name, and after the current week with its date: "sabato",
+// "giovedì 26 novembre".
+function dayNamed(day: string, today: string): string {
+  const name = weekday(day).toLowerCase()
+  return weekStart(day) === weekStart(today) ? name : `${name} ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "oggi", "domani", then dayNamed.
+function dayPhrase(day: string, today: string): string {
+  if (day === today) return 'oggi'
+  if (day === addDays(today, 1)) return 'domani'
+  return dayNamed(day, today)
+}
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -220,6 +239,8 @@ export const it: Strings = {
     thisBoard: 'Questa bacheca',
     moveFailed: (title: string) => `Non è stato possibile spostare “${title}”. ${tryAgain}`,
     notAllowed: (title: string) => `Con “${title}” non puoi più farlo su questa bacheca. Lo decide chi ne è titolare.`,
+    planFailed: (title: string) => `“${title}” non è stato pianificato. Riprova tra un attimo.`,
+    planCookFailed: (title: string) => `Non è stato possibile cambiare chi cucina “${title}”. Riprova tra un attimo.`,
     cook: 'Cucinato ✓',
     cookedOn: (board: string) => `su ${board}`,
     cookWord: 'Cucinato',
@@ -614,7 +635,7 @@ export const it: Strings = {
     permission: {
       addDishes: { label: 'Aggiungere piatti', hint: 'Mettere nuovi piatti sulla bacheca, anche condividendoli.' },
       editDishes: { label: 'Modificare piatti', hint: 'Cambiare titolo, immagine, autore e link. Sempre per i propri piatti.' },
-      moveDishes: { label: 'Spostare piatti', hint: 'Portare i piatti in altre colonne e segnarli come cucinati.' },
+      moveDishes: { label: 'Spostare piatti', hint: 'Portare i piatti in altre colonne, segnarli come cucinati e pianificarli nel piano settimanale.' },
       archiveDishes: { label: 'Archiviare piatti', hint: 'Archiviare i piatti e recuperarli dall’archivio. Sempre per i propri piatti.' },
       editColumns: { label: 'Modificare colonne', hint: 'Aggiungere, rinominare, riordinare ed eliminare colonne.' },
       shareInvite: { label: 'Condividere il link d’invito', hint: 'Vedere, copiare e passare il link.' },
@@ -655,6 +676,50 @@ export const it: Strings = {
     purged: (title: string) => `Hai eliminato “${title}” per sempre.`,
     failed,
     notAllowed: 'Su questa bacheca non puoi più farlo. Lo decide chi ne è titolare.',
+  },
+  week: {
+    view: 'Vista',
+    columns: 'Colonne',
+    week: 'Settimana',
+    title: (monday: string, now = new Date()) => weekRange(monday, addDays(monday, 6), 'al', now),
+    today: 'Oggi',
+    previous: 'Settimana precedente',
+    next: 'Settimana successiva',
+    weekday,
+    weekdayShort,
+    dayOfMonth: (day: string) => dayNumber(day),
+    dayName: (day: string) => `${weekday(day)} ${dayMonth(day)}`,
+    dayPhrase,
+    planOn: (day: string) => `Pianifica un piatto per ${weekday(day).toLowerCase()}`,
+    plannedDish: (title: string, day: string, cook?: string | null, cooked?: boolean) => `${title}, ${weekday(day).toLowerCase()}${cook ? `, cucina ${cook}` : ''}${cooked ? ', cucinato' : ''}`,
+    more: (title: string) => `Altro su ${title}`,
+    emptyTitle: 'La settimana è ancora libera.',
+    emptyText: 'Scegli un piatto dalla bacheca e mettilo su un giorno.',
+    emptyButton: 'Scegli un piatto',
+    emptyPast: 'In questa settimana non era previsto niente.',
+    pickTitle: (day: string, today: string) => day === today ? 'Cosa si mangia oggi?' : `Cosa si mangia ${dayNamed(day, today)}?`,
+    search: 'Cerca un piatto',
+    clearSearch: 'Cancella la ricerca',
+    noMatch: (query: string) => `Nessun piatto con “${query}” su questa bacheca.`,
+    pickDay: 'Che giorno?',
+    moveToDay: 'Sposta su un altro giorno',
+    liesHere: 'È già qui',
+    moveUp: 'Sposta su',
+    moveDown: 'Sposta giù',
+    remove: 'Togli dal piano',
+    moved: (day: string, today: string) => `Spostato a ${dayPhrase(day, today)}.`,
+    removed: 'Tolto dal piano.',
+    nowAt: (title: string, day: string, place: number, total: number) => `${title}, ora di ${weekday(day).toLowerCase()} al posto ${place} di ${total}.`,
+    // "Pianifica" nel dettaglio del piatto, e il messaggio dopo (con "Annulla").
+    plan: 'Pianifica',
+    planned: (day: string, today: string) => `Pianificato per ${dayPhrase(day, today)}.`,
+    whoCooks: 'Chi cucina?',
+    whoCooksOn: (title: string, day: string) => `${title}, ${weekday(day).toLowerCase()}`,
+    leaveOpen: 'Lascia libero',
+    you: 'tu',
+    cookButton: (name: string) => `Cucina: ${name}. Cambia`,
+    cooksNow: (name: string) => `Ora cucina ${name}.`,
+    cooksNobody: 'Non cucina più nessuno.',
   },
   offline: {
     headline: 'Sei offline.',
@@ -1011,6 +1076,7 @@ export const it: Strings = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Piatti',
+      weekPlan: 'Piano settimanale',
       cookings: 'Cucinato',
       talk: 'Commenti e pollici',
       columns: 'Colonne',
@@ -1037,6 +1103,10 @@ export const it: Strings = {
       dish_archived: 'Piatto archiviato',
       dish_restored: 'Piatto ripristinato',
       dish_deleted: 'Piatto eliminato per sempre',
+      dish_planned: 'Piatto pianificato',
+      planned_dish_moved: 'Piatto pianificato spostato',
+      dish_unplanned: 'Tolto dal piano settimanale',
+      planned_dish_cook_set: 'Chi cucina cambiato',
       cooking_recorded: 'Cucinato',
       cooking_deleted: 'Cottura eliminata',
       cooking_restored: 'Cottura ripristinata',

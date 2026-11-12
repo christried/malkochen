@@ -1,7 +1,7 @@
 import { and, eq, exists, not, or, sql, type SQL } from 'drizzle-orm'
 import { ALL_PERMISSIONS } from '../../shared/permissions'
 import { db, runAtomic } from '../db'
-import { membership } from '../db/schema'
+import { dish, membership, plannedDish } from '../db/schema'
 import { accessOn, ownerOf } from './board-access'
 import { isOperatorUser } from './operator'
 import { boardEvent, detailsOf, recordEvents, withEvents, type EventValues } from './events'
@@ -96,7 +96,11 @@ export async function handOver(boardId: string, userId: string, memberId: string
 }
 
 // Deletes a membership that isn't the Owner's, only `where` that holds,
-// and records it as `event` says. Whether there was one.
+// and records it as `event` says. Whoever it was, they cook nothing on the
+// Board any more: their Planned Dishes there (archived Dishes' too) are left
+// without a cook, in the same statement and only if the membership went. That
+// is here and not a trigger on membership, as archiving a Board deletes its
+// memberships too and must keep its cooks. Whether there was one.
 async function deleteMembership(boardId: string, memberId: string, event: EventValues, where?: SQL): Promise<boolean> {
   const { rows } = await withEvents(
     db,
@@ -104,6 +108,14 @@ async function deleteMembership(boardId: string, memberId: string, event: EventV
       .where(and(eq(membership.boardId, boardId), eq(membership.userId, memberId), not(membership.isOwner), where))
       .returning({ boardId: membership.boardId }),
     event,
+    {
+      alongside: sql`update ${plannedDish} set cook_id = null
+        where ${and(
+          eq(plannedDish.cookId, memberId),
+          sql`${plannedDish.dishId} in (select ${dish.id} from ${dish} where ${eq(dish.boardId, boardId)})`,
+          sql`exists (select 1 from changed)`,
+        )}`,
+    },
   )
   return rows.length > 0
 }

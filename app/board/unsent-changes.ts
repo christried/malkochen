@@ -7,6 +7,7 @@ import { dishOnBoard } from '../../shared/board'
 import { recipeAfterEdit } from '../../shared/recipe'
 import { guessKind, siteOf } from '../utils/link-guess'
 import { columnForNewDishes, landingIndex } from '../../shared/placement'
+import { putOnDay, takeOffPlan } from './week-plan'
 import type { Placeholder } from '../../shared/placeholders'
 import type { BoardTransport } from './board-module'
 import type { DeviceStore } from './device-store'
@@ -67,9 +68,19 @@ export type UnsentKind =
   // form had looked up before the save got no answer), and who added it (to show it before the server
   // has it). The server looks the link up when it arrives.
   | { kind: 'add', dishId: string, link: string | null, title: string | null, placeholder: Placeholder, adder: DishAdder, noImage?: true }
+  // The Week Plan (#516; ADR 0014). A Dish planned on a day, with the id the
+  // device made for the Planned Dish (`plannedId`), at `index` among the
+  // day's others or at the end.
+  | { kind: 'plan', plannedId: string, dishId: string, day: string, index?: number }
+  // A Planned Dish moved to a day, at `index` or the end of the day.
+  | { kind: 'planMove', plannedId: string, dishId: string, day: string, index?: number }
+  // A Planned Dish taken off the plan; its Dish stays on the Board.
+  | { kind: 'unplan', plannedId: string, dishId: string }
+  // Who cooks a Planned Dish set (a Member's id) or cleared (null).
+  | { kind: 'planCook', plannedId: string, dishId: string, cookId: string | null }
 
 // The writes the Unsent Changes are sent with.
-export type UnsentTransport = Pick<BoardTransport, 'addDishLate' | 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish'>
+export type UnsentTransport = Pick<BoardTransport, 'addDishLate' | 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish' | 'planDish' | 'movePlannedDish' | 'unplanDish' | 'setPlannedDishCook'>
 
 // A Dish added offline, as the server answered once it had it: the Board
 // module puts it in place of the unsent one (takeArrivals).
@@ -270,6 +281,23 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
         return transport.editDish(change.dishId, { title: change.title })
       case 'recipe':
         return transport.editDish(change.dishId, { recipe: change.recipe })
+      case 'plan':
+        return transport.planDish(change.boardId, { id: change.plannedId, dishId: change.dishId, day: change.day, ...change.index !== undefined && { index: change.index } }, { madeAt })
+      case 'planMove':
+        return transport.movePlannedDish(change.plannedId, { day: change.day, ...change.index !== undefined && { index: change.index } }, { madeAt })
+      case 'unplan':
+        return transport.unplanDish(change.plannedId, { madeAt })
+      case 'planCook':
+        return transport.setPlannedDishCook(change.plannedId, change.cookId, { madeAt })
+    }
+  }
+
+  // A plan dropped on arrival (its Dish archived or gone): what was done to
+  // that Planned Dish since can't be applied either. Those go with it,
+  // unnamed, so the Member is told once.
+  function dropPlanDependants(plannedId: string) {
+    for (const c of [...changes.value]) {
+      if ('plannedId' in c && c.plannedId === plannedId && c.kind !== 'plan') remove(c.id)
     }
   }
 
@@ -313,6 +341,7 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
         else {
           dropped.push(change)
           if (change.kind === 'add') dropDependants(change.dishId)
+          if (change.kind === 'plan') dropPlanDependants(change.plannedId)
         }
       }
       underWay--
@@ -502,6 +531,27 @@ function apply(view: BoardView, change: UnsentChange) {
       if (!found) return
       const others = found.dish.votes.filter(v => v.voter?.id !== change.voter.id)
       found.dish.votes = change.up === null ? others : [...others, { voter: change.voter, up: change.up, votedAt: change.madeAt }]
+      return
+    }
+    case 'plan': {
+      // On the Week Plan unless it is there already (the server has it, or it
+      // was laid over before), and only while its Dish is on the Board.
+      if (!dishOnBoard(view, change.dishId) || view.plannedDishes.some(p => p.id === change.plannedId)) return
+      putOnDay(view.plannedDishes, { id: change.plannedId, dishId: change.dishId, day: change.day, cookId: null }, change.index)
+      return
+    }
+    case 'planMove': {
+      const planned = view.plannedDishes.find(p => p.id === change.plannedId)
+      if (planned) putOnDay(view.plannedDishes, { ...planned, day: change.day }, change.index)
+      return
+    }
+    case 'unplan': {
+      takeOffPlan(view.plannedDishes, change.plannedId)
+      return
+    }
+    case 'planCook': {
+      const planned = view.plannedDishes.find(p => p.id === change.plannedId)
+      if (planned) planned.cookId = change.cookId
       return
     }
     // The card's Comment count follows the Comments written and deleted. The

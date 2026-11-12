@@ -8,6 +8,7 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 - Gerichte können jetzt ein Rezept haben. Öffne ein Gericht und tippe auf Rezept hinzufügen, um Zutaten und Schritte Zeile für Zeile festzuhalten, auch ohne Verbindung. Eine eingefügte Liste wird zu einer Zeile pro Eintrag, und die Suche findet ein Gericht auch über seine Zutaten.
 - Soll malkochen dir das Rezept zu einem Gericht heraussuchen? Den Rezeptfinder kannst du in deinen Einstellungen anfragen.
+- Jedes Board hat jetzt einen Wochenplan neben seinen Spalten: Oben wechselst du zwischen Spalten und Woche. Setz Gerichte auf die Tage, an denen du sie kochen willst, dasselbe Gericht an mehreren Tagen oder mehrere an einem Tag, und sag, wer kocht. Am Tag selbst tippst du im Plan auf Gekocht ✓, auch ohne Verbindung.
 
 ### Changed
 

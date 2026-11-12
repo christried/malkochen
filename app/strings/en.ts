@@ -7,6 +7,7 @@ import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings, UnsentKindName } from './de'
 import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { addDays, weekStart } from '../board/week-days'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
@@ -22,6 +23,10 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'title': return `new title for ${named}`
     case 'recipe': return `changed recipe for ${named}`
     case 'add': return `${named} added`
+    case 'plan': return `${named} planned`
+    case 'planMove': return `${named} moved in the week plan`
+    case 'unplan': return `${named} taken off the week plan`
+    case 'planCook': return `who cooks ${named}`
     case 'move': return `${named} moved`
     case 'cook':
     case 'cookMany': return `${named} cooked`
@@ -30,7 +35,20 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('en-GB')
+
+// A day by its name, and after the current week with its date: "Saturday",
+// "Thursday, 26 November".
+function dayNamed(day: string, today: string): string {
+  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "today", "tomorrow", then dayNamed.
+function dayPhrase(day: string, today: string): string {
+  if (day === today) return 'today'
+  if (day === addDays(today, 1)) return 'tomorrow'
+  return dayNamed(day, today)
+}
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -208,6 +226,8 @@ export const en: Strings = {
     thisBoard: 'This board',
     moveFailed: (title: string) => `“${title}” couldn’t be moved. ${tryAgain}`,
     notAllowed: (title: string) => `You can’t do that with “${title}” on this board any more. The owner decides that.`,
+    planFailed: (title: string) => `“${title}” couldn’t be planned. Try again in a moment.`,
+    planCookFailed: (title: string) => `Who cooks “${title}” couldn’t be changed. Try again in a moment.`,
     cook: 'Cooked ✓',
     cookedOn: (board: string) => `on ${board}`,
     cookWord: 'Cooked',
@@ -600,7 +620,7 @@ export const en: Strings = {
     permission: {
       addDishes: { label: 'Add dishes', hint: 'Put new dishes on the board, by sharing too.' },
       editDishes: { label: 'Edit dishes', hint: 'Change the title, image, creator and link. Always for your own dishes.' },
-      moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns and mark them as cooked.' },
+      moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns, mark them as cooked and plan them in the week plan.' },
       archiveDishes: { label: 'Archive dishes', hint: 'Archive dishes and bring them back from the archive. Always for your own dishes.' },
       editColumns: { label: 'Edit columns', hint: 'Add, rename, reorder and delete columns.' },
       shareInvite: { label: 'Share the invite link', hint: 'See, copy and pass on the link.' },
@@ -640,6 +660,50 @@ export const en: Strings = {
     purged: (title: string) => `“${title}” is deleted for good.`,
     failed,
     notAllowed: 'You can’t do that on this board any more. The owner decides that.',
+  },
+  week: {
+    view: 'View',
+    columns: 'Columns',
+    week: 'Week',
+    title: (monday: string, now = new Date()) => weekRange(monday, addDays(monday, 6), 'to', now),
+    today: 'Today',
+    previous: 'Previous week',
+    next: 'Next week',
+    weekday,
+    weekdayShort,
+    dayOfMonth: (day: string) => dayNumber(day),
+    dayName: (day: string) => `${weekday(day)}, ${dayMonth(day)}`,
+    dayPhrase,
+    planOn: (day: string) => `Plan a dish for ${weekday(day)}`,
+    plannedDish: (title: string, day: string, cook?: string | null, cooked?: boolean) => `${title}, ${weekday(day)}${cook ? `, ${cook} is cooking` : ''}${cooked ? ', cooked' : ''}`,
+    more: (title: string) => `More about ${title}`,
+    emptyTitle: 'The week is still free.',
+    emptyText: 'Pick a dish from the board and put it on a day.',
+    emptyButton: 'Pick a dish',
+    emptyPast: 'Nothing was planned this week.',
+    pickTitle: (day: string, today: string) => day === today ? 'What’s on today?' : `What’s on ${dayNamed(day, today)}?`,
+    search: 'Search dishes',
+    clearSearch: 'Clear search',
+    noMatch: (query: string) => `No dish matching “${query}” on this board.`,
+    pickDay: 'Which day?',
+    moveToDay: 'Move to another day',
+    liesHere: 'Already here',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    remove: 'Take off the plan',
+    moved: (day: string, today: string) => `Moved to ${dayPhrase(day, today)}.`,
+    removed: 'Taken off the plan.',
+    nowAt: (title: string, day: string, place: number, total: number) => `${title}, now on ${weekday(day)} at place ${place} of ${total}.`,
+    // "Plan it" in the Dish detail, and the toast after it (with "Undo").
+    plan: 'Plan it',
+    planned: (day: string, today: string) => `Planned for ${dayPhrase(day, today)}.`,
+    whoCooks: 'Who’s cooking?',
+    whoCooksOn: (title: string, day: string) => `${title} on ${weekday(day)}`,
+    leaveOpen: 'Leave open',
+    you: 'you',
+    cookButton: (name: string) => `Cooking: ${name}. Change`,
+    cooksNow: (name: string) => `${name} is cooking now.`,
+    cooksNobody: 'Nobody is set to cook any more.',
   },
   offline: {
     headline: 'You’re offline.',
@@ -995,6 +1059,7 @@ export const en: Strings = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Dishes',
+      weekPlan: 'Week plan',
       cookings: 'Cooking',
       talk: 'Comments and thumbs',
       columns: 'Columns',
@@ -1021,6 +1086,10 @@ export const en: Strings = {
       dish_archived: 'Dish archived',
       dish_restored: 'Dish restored',
       dish_deleted: 'Dish deleted for good',
+      dish_planned: 'Dish planned',
+      planned_dish_moved: 'Planned dish moved',
+      dish_unplanned: 'Taken off the week plan',
+      planned_dish_cook_set: 'Cook changed',
       cooking_recorded: 'Cooked',
       cooking_deleted: 'Cooking deleted',
       cooking_restored: 'Cooking restored',

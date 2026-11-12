@@ -13,13 +13,14 @@ import type { Placeholder } from '../../shared/placeholders'
 import type { SourceBadgeKind } from '../../shared/source-badge'
 import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { addDays, weekStart } from '../board/week-days'
 import { intlFor } from './intl'
 
 // The video platforms' names in full, as a player's title says them.
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -31,6 +32,10 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'title': return `neuer Titel für ${named}`
     case 'recipe': return `geändertes Rezept für ${named}`
     case 'add': return `${named} hinzugefügt`
+    case 'plan': return `${named} eingeplant`
+    case 'planMove': return `${named} im Wochenplan verschoben`
+    case 'unplan': return `${named} aus dem Wochenplan genommen`
+    case 'planCook': return `Wer kocht ${named}`
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`
@@ -39,7 +44,20 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('de')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('de')
+
+// A day by its name, and after the current week with its date: "Samstag",
+// "Donnerstag, 26. November".
+function dayNamed(day: string, today: string): string {
+  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+}
+
+// A day inside a sentence on the Week Plan: "heute", "morgen", then dayNamed.
+function dayPhrase(day: string, today: string): string {
+  if (day === today) return 'heute'
+  if (day === addDays(today, 1)) return 'morgen'
+  return dayNamed(day, today)
+}
 
 // "1 Gericht", "4 Gerichte".
 function dishCount(count: number): string {
@@ -256,6 +274,9 @@ export const de = {
     moveFailed: (title: string) => `„${title}“ ließ sich nicht verschieben. Versuch es gleich noch mal.`,
     // A move or archive refused as the Owner just took the Permission away.
     notAllowed: (title: string) => `Mit „${title}“ darfst du das auf diesem Board nicht mehr. Das legt die Besitzer:in fest.`,
+    // A Week Plan write the server refused (CONTEXT.md: Planned Dish).
+    planFailed: (title: string) => `„${title}“ ließ sich nicht einplanen. Versuch es gleich noch mal.`,
+    planCookFailed: (title: string) => `Wer „${title}“ kocht, ließ sich nicht ändern. Versuch es gleich noch mal.`,
     cook: 'Gekocht ✓',
     // Under "Gekocht ✓" in the celebration's pill, for a Dish moved into
     // another Board's Gekocht Column: that Board, with its emoji.
@@ -712,7 +733,7 @@ export const de = {
     permission: {
       addDishes: { label: 'Gerichte hinzufügen', hint: 'Neue Gerichte aufs Board legen, auch über Teilen.' },
       editDishes: { label: 'Gerichte bearbeiten', hint: 'Titel, Bild, Creator und Link ändern. Eigene Gerichte immer.' },
-      moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen und als gekocht markieren.' },
+      moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen, als gekocht markieren und im Wochenplan einplanen.' },
       archiveDishes: { label: 'Gerichte archivieren', hint: 'Gerichte archivieren und aus dem Archiv zurückholen. Eigene Gerichte immer.' },
       editColumns: { label: 'Spalten bearbeiten', hint: 'Spalten hinzufügen, umbenennen, umsortieren und löschen.' },
       shareInvite: { label: 'Einladungslink teilen', hint: 'Den Link sehen, kopieren und weitergeben.' },
@@ -758,6 +779,67 @@ export const de = {
     failed: 'Das hat nicht geklappt. Versuch es gleich noch mal.',
     // A change refused as the Owner just switched the Permission off.
     notAllowed: 'Das darfst du auf diesem Board nicht mehr. Das legt die Besitzer:in fest.',
+  },
+  // The Week Plan (CONTEXT.md: Week Plan, Planned Dish), a view beside the
+  // Columns: the switch, the week, a day, a Planned Dish and the pickers.
+  week: {
+    // The switch at the top of the Board, and its name for screen readers.
+    view: 'Ansicht',
+    columns: 'Spalten',
+    week: 'Woche',
+    // "16. bis 22. November": which week, from its Monday; with the year
+    // when it isn't this year's.
+    title: (monday: string, now = new Date()) => weekRange(monday, addDays(monday, 6), 'bis', now),
+    today: 'Heute',
+    previous: 'Vorherige Woche',
+    next: 'Nächste Woche',
+    // A day: "Donnerstag" or "Do", the number of its day in the month, and
+    // "Donnerstag, 26. November" as a list's name.
+    weekday,
+    weekdayShort,
+    dayOfMonth: (day: string) => `${dayNumber(day)}.`,
+    dayName: (day: string) => `${weekday(day)}, ${dayMonth(day)}`,
+    dayPhrase,
+    // "+" on a day.
+    planOn: (day: string) => `Gericht für ${weekday(day)} einplanen`,
+    // A Planned Dish's link to its Dish detail, and its menu button.
+    plannedDish: (title: string, day: string, cook?: string | null, cooked?: boolean) => `${title}, ${weekday(day)}${cook ? `, kocht ${cook}` : ''}${cooked ? ', gekocht' : ''}`,
+    more: (title: string) => `Mehr zu ${title}`,
+    // An empty week; a past one offers nothing to plan.
+    emptyTitle: 'Die Woche ist noch frei.',
+    emptyText: 'Such dir ein Gericht vom Board aus und leg es auf einen Tag.',
+    emptyButton: 'Gericht aussuchen',
+    emptyPast: 'In dieser Woche war nichts geplant.',
+    // The Dish picker, from "+" or the empty week.
+    pickTitle: (day: string, today: string) => day === today ? 'Was gibt es heute?' : `Was gibt es am ${dayNamed(day, today)}?`,
+    search: 'Gericht suchen',
+    clearSearch: 'Suche leeren',
+    noMatch: (query: string) => `Kein Gericht mit „${query}“ auf diesem Board.`,
+    // The day picker for moving a Planned Dish; the day it lies on says so.
+    pickDay: 'An welchem Tag?',
+    moveToDay: 'Auf anderen Tag legen',
+    liesHere: 'Liegt hier',
+    // The menu on a Planned Dish.
+    moveUp: 'Nach oben',
+    moveDown: 'Nach unten',
+    remove: 'Aus dem Plan nehmen',
+    // Toasts, each with "Rückgängig".
+    moved: (day: string, today: string) => `Auf ${dayPhrase(day, today)} gelegt.`,
+    removed: 'Aus dem Plan genommen.',
+    // Said to screen readers after a Planned Dish was moved.
+    nowAt: (title: string, day: string, place: number, total: number) => `${title}, jetzt am ${weekday(day)} an Stelle ${place} von ${total}.`,
+    // "Einplanen" in the Dish detail, and the toast after it (with "Rückgängig").
+    plan: 'Einplanen',
+    planned: (day: string, today: string) => `Für ${dayPhrase(day, today)} eingeplant.`,
+    // Who cooks a Planned Dish: the picker (a title, and the line under it),
+    // the cook's picture as a button, and what is said to screen readers.
+    whoCooks: 'Wer kocht?',
+    whoCooksOn: (title: string, day: string) => `${title} am ${weekday(day)}`,
+    leaveOpen: 'Offen lassen',
+    you: 'du',
+    cookButton: (name: string) => `Kocht: ${name}. Ändern`,
+    cooksNow: (name: string) => `${name} kocht jetzt.`,
+    cooksNobody: 'Niemand kocht mehr fest.',
   },
   // public/offline.html repeats the first three, for the service worker,
   // and has its own copy of "malkochen ist gerade nicht erreichbar". The
@@ -1179,6 +1261,7 @@ export const de = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Gerichte',
+      weekPlan: 'Wochenplan',
       cookings: 'Kochen',
       talk: 'Kommentare und Daumen',
       columns: 'Spalten',
@@ -1205,6 +1288,10 @@ export const de = {
       dish_archived: 'Gericht archiviert',
       dish_restored: 'Gericht wiederhergestellt',
       dish_deleted: 'Gericht endgültig gelöscht',
+      dish_planned: 'Gericht eingeplant',
+      planned_dish_moved: 'Eingeplantes Gericht verschoben',
+      dish_unplanned: 'Aus dem Wochenplan genommen',
+      planned_dish_cook_set: 'Wer kocht geändert',
       cooking_recorded: 'Gekocht',
       cooking_deleted: 'Kochen gelöscht',
       cooking_restored: 'Kochen wiederhergestellt',

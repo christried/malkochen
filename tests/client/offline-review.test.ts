@@ -35,6 +35,7 @@ function boardFixture(): BoardView {
     members: [],
     newDishIds: [],
     newInHistoryDishIds: [],
+    plannedDishes: [],
     asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a', { commentCount: 3 }), dish('b'), dish('c')] },
