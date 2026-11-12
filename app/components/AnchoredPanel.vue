@@ -13,10 +13,9 @@ const props = withDefaults(defineProps<{
   anchor: HTMLElement | null
   label: string
   width?: number
-  height?: number
   // Which edge of the anchor it lines up with.
   align?: 'start' | 'end'
-}>(), { width: 320, height: 0, align: 'start' })
+}>(), { width: 320, align: 'start' })
 
 const panel = useTemplateRef<HTMLElement>('panel')
 const GAP = 8
@@ -105,7 +104,7 @@ onBeforeUnmount(() => {
     role="dialog"
     :aria-label="label"
     class="panel fixed m-0 overflow-hidden border border-line bg-surface p-0 text-text shadow-dialog"
-    :style="{ width: `${width}px`, ...height && { height: `${height}px` } }"
+    :style="{ width: `${width}px` }"
   >
     <slot />
   </div>
@@ -114,7 +113,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .panel {
   border-radius: 28px 24px 29px 25px;
-  max-height: calc(100dvh - 24px);
+  max-height: min(560px, calc(100dvh - 24px));
   inset: auto;
 }
 .panel:popover-open {

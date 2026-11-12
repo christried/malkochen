@@ -11,9 +11,8 @@ const props = withDefaults(defineProps<{
   anchor: HTMLElement | null
   tall?: boolean
   width?: number
-  height?: number
   align?: 'start' | 'end'
-}>(), { tall: false, width: 320, height: 0, align: 'start' })
+}>(), { tall: false, width: 320, align: 'start' })
 
 const wide = useMediaQuery('(min-width: 1200px)')
 const popover = computed(() => wide.value && !!props.anchor)
@@ -26,12 +25,10 @@ const popover = computed(() => wide.value && !!props.anchor)
     :anchor="anchor"
     :label="title"
     :width="width"
-    :height="height"
     :align="align"
   >
     <div
       class="flex max-h-[inherit] min-h-0 flex-col"
-      :class="{ 'h-full': height }"
     >
       <div
         v-if="!tall"
@@ -52,7 +49,9 @@ const popover = computed(() => wide.value && !!props.anchor)
           />
         </button>
       </div>
-      <slot :popover="true" />
+      <div :class="tall ? 'flex min-h-0 flex-1 flex-col' : 'px-5 pb-5'">
+        <slot :popover="true" />
+      </div>
     </div>
   </AnchoredPanel>
   <AppSheet

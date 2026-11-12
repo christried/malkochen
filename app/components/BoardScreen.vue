@@ -29,7 +29,7 @@ import { boardLabel, dishOnBoard } from '~~/shared/board'
 const t = useStrings()
 const route = useRoute()
 // Asked before the first await below: afterwards the app says it is hydrated.
-const hydrating = useNuxtApp().isHydrating
+const hydrating = useNuxtApp().isHydrating ?? false
 
 // The Board at this address; an outdated address forwards first, and the
 // Board isn't opened there (useBoardAddress). Opening the Board first
@@ -1071,6 +1071,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <!-- From the desktop breakpoint the switch sits right after the pill
              (a phone has it on its own row below). -->
         <ViewSwitch
+          v-show="!searchInHeader"
           class="hidden desktop:flex"
           :model-value="view"
           @update:model-value="showView"

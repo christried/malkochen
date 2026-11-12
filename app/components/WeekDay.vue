@@ -28,7 +28,7 @@ const t = useStrings()
     :data-today="day === today || undefined"
     :data-past="past || undefined"
   >
-    <header class="flex min-h-[40px] items-center gap-2.5 desktop:min-h-[38px] desktop:gap-2">
+    <div class="flex min-h-[40px] items-center gap-2.5 desktop:min-h-[38px] desktop:gap-2">
       <span
         class="pebble flex h-[38px] w-10 shrink-0 items-center justify-center font-display text-[18px] font-medium [border-radius:var(--radius-blob)] desktop:h-9 desktop:w-[38px]"
         :class="day === today ? 'bg-butter text-on-accent' : 'bg-surface-muted'"
@@ -57,7 +57,7 @@ const t = useStrings()
           :size="18"
         />
       </button>
-    </header>
+    </div>
     <TransitionGroup
       tag="ol"
       role="list"

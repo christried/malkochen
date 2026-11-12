@@ -173,7 +173,8 @@ const dish = computed(() => props.entry.dish)
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 /* An unsent Planned Dish gives the mark a line: the title keeps one. */
 .planned:has(.mark) .title {

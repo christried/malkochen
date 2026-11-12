@@ -68,11 +68,12 @@ function goToday() {
 }
 
 // A phone shows the whole week in one scroll: it opens on today (the current
-// week) or on Monday (any other).
+// week) or at the top of the week (any other).
 async function settleScroll(smooth = false) {
   if (wide.value || !props.visible) return
   await nextTick()
-  const target = surface.value?.querySelector<HTMLElement>(current.value ? '[data-today]' : '[data-day]')
+  // Another week starts with its title and arrows, so browsing on is at hand.
+  const target = current.value ? surface.value?.querySelector<HTMLElement>('[data-today]') : surface.value
   target?.scrollIntoView({ block: 'start', behavior: smooth && !prefersReducedMotion() ? 'smooth' : 'instant' })
 }
 
@@ -349,7 +350,7 @@ function onSwipeEnd(event: PointerEvent) {
     @pointerup="onSwipeEnd"
     @pointercancel="swipe = null"
   >
-    <header class="flex min-h-12 items-center gap-2 desktop:min-h-[60px] desktop:gap-3">
+    <div class="flex min-h-12 items-center gap-2 desktop:min-h-[60px] desktop:gap-3">
       <Transition
         name="title"
         mode="out-in"
@@ -400,7 +401,7 @@ function onSwipeEnd(event: PointerEvent) {
           class="rotate-180"
         />
       </button>
-    </header>
+    </div>
 
     <div
       class="relative"
@@ -488,7 +489,6 @@ function onSwipeEnd(event: PointerEvent) {
       :anchor="dishPicker.anchor"
       tall
       :width="400"
-      :height="560"
     >
       <template #default="{ popover }">
         <DishPicker
