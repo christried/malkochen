@@ -28,6 +28,8 @@ import { boardLabel, dishOnBoard } from '~~/shared/board'
 
 const t = useStrings()
 const route = useRoute()
+// Asked before the first await below: afterwards the app says it is hydrated.
+const hydrating = useNuxtApp().isHydrating
 
 // The Board at this address; an outdated address forwards first, and the
 // Board isn't opened there (useBoardAddress). Opening the Board first
@@ -75,7 +77,7 @@ useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name
 // The Columns or the Week Plan (useBoardView): the Week Plan is a view beside
 // the Columns, which stay mounted underneath so their drags, swipe position
 // and scroll are as they were. The Tour needs the Columns.
-const { view, show: showView } = useBoardView()
+const { view, show: showView } = useBoardView(hydrating)
 const inWeek = computed(() => view.value === 'week')
 const weekDragging = ref(false)
 // Which view just came in, for its pane to move over (styles below).
@@ -1372,16 +1374,20 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       />
     </div>
 
-    <WeekPlan
-      v-show="!searching && inWeek"
-      class="week-pane mt-5"
-      :class="{ 'pane-in': switched === 'week' }"
-      :board="board"
-      :visible="inWeek && !searching"
-      :can-change="mayMove"
-      @toast="showToast"
-      @dragging="weekDragging = $event"
-    />
+    <!-- Client only: the server renders the Columns, and the Week Plan comes
+         with the first render in the browser. -->
+    <ClientOnly>
+      <WeekPlan
+        v-show="!searching && inWeek"
+        class="week-pane mt-5"
+        :class="{ 'pane-in': switched === 'week' }"
+        :board="board"
+        :visible="inWeek && !searching"
+        :can-change="mayMove"
+        @toast="showToast"
+        @dragging="weekDragging = $event"
+      />
+    </ClientOnly>
 
     <!-- What malkochen is and the legal pages, after the last Dish (#405):
          not fixed, so the FAB's room below (main's pb-32) keeps it clear. -->

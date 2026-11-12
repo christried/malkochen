@@ -19,9 +19,11 @@ function stored(): BoardViewChoice {
 // Columns (it can't know the device's choice) under the splash; once
 // mounted, the choice is read, so what hydrates is what was rendered. A Board
 // opened by navigating, with nothing to hydrate, reads it at once.
-export function useBoardView() {
+// `hydrating`: the page is being hydrated, asked before the Board's setup
+// awaited anything (by then the app says it no longer is).
+export function useBoardView(hydrating: boolean) {
   const view = useState<BoardViewChoice>('board-view', () => 'columns')
-  if (import.meta.client && !useNuxtApp().isHydrating) view.value = stored()
+  if (import.meta.client && !hydrating) view.value = stored()
   onMounted(() => {
     if (view.value === 'columns') view.value = stored()
   })
