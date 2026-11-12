@@ -594,7 +594,7 @@ const headingCount = (kind: RecipeKind) => countShown('list', kind, draft[kind].
       v-model:open="asking"
       variant="dialog"
       :title="t.recipe.discardTitle"
-      :close-label="t.recipe.keepEditing"
+      :close-label="t.detail.close"
     >
       <p class="mt-3 text-body text-text-muted">
         {{ t.recipe.discardText }}
