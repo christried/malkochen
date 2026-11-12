@@ -1,6 +1,7 @@
 import { and, eq, isNull, type SQL } from 'drizzle-orm'
 import type { Placeholder } from '../../shared/placeholders'
 import type { ImageFocus } from '../../shared/image-focus'
+import type { Recipe } from '../../shared/recipe'
 import { db } from '../db'
 import { board, dish } from '../db/schema'
 import { accessOn } from './board-access'
@@ -11,9 +12,9 @@ import { storage } from './image-store'
 
 // A Copy (CONTEXT.md: Copy, #402): a new Dish on another of the user's Boards,
 // made from one they can see. It takes the Dish's title, Source, Creator,
-// Caption, image, Focus Point and Placeholder; not its Cookings, Comments or
-// Votes. The copier adds it, so it is theirs and New Dish for the target's
-// Members, like any added Dish.
+// Caption, Recipe (with the link it was found at), image, Focus Point and
+// Placeholder; not its Cookings, Comments or Votes. The copier adds it, so it
+// is theirs and New Dish for the target's Members, like any added Dish.
 
 type Copier = Parameters<typeof shownAs>[0]
 
@@ -29,6 +30,8 @@ export interface CopySource {
   imageIsOwnPhoto: boolean
   imageFocus: ImageFocus
   placeholder: Placeholder
+  // Its Recipe, with the link it was found at; null without one.
+  recipe: Recipe | null
 }
 
 // The live Dish matching `where`: not archived, on a Board that isn't
@@ -49,16 +52,20 @@ async function liveSourceWhere(where: SQL): Promise<CopySource | null> {
       imageFocusX: dish.imageFocusX,
       imageFocusY: dish.imageFocusY,
       placeholder: dish.placeholder,
+      recipeIngredients: dish.recipeIngredients,
+      recipeSteps: dish.recipeSteps,
+      recipeLink: dish.recipeLink,
     })
     .from(dish)
     .innerJoin(board, eq(board.id, dish.boardId))
     .where(and(where, isNull(dish.deletedAt), isNull(board.deletedAt)))
   if (!found) return null
-  const { sourceLink, sourceKind, imageFocusX, imageFocusY, ...rest } = found
+  const { sourceLink, sourceKind, imageFocusX, imageFocusY, recipeIngredients, recipeSteps, recipeLink, ...rest } = found
   return {
     ...rest,
     source: sourceLink && sourceKind ? { link: sourceLink, kind: sourceKind } : null,
     imageFocus: { x: imageFocusX, y: imageFocusY },
+    recipe: recipeIngredients.length > 0 || recipeSteps.length > 0 ? { ingredients: recipeIngredients, steps: recipeSteps, link: recipeLink } : null,
   }
 }
 
@@ -128,6 +135,7 @@ export async function copyFrom(source: CopySource, copier: Copier, toBoardId: st
     imageIsOwnPhoto: imageUrl !== null && source.imageIsOwnPhoto,
     imageFocus: source.imageFocus,
     placeholder: source.placeholder,
+    recipe: source.recipe,
   }, { copiedFrom: source.id, viaLink })
   if (!added) return null
 
