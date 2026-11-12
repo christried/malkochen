@@ -7,6 +7,7 @@ import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings, UnsentKindName } from './de'
 import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { addDays, weekStart } from '../board/week-days'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
@@ -34,7 +35,15 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('en-GB')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('en-GB')
+
+// A day inside a sentence on the Week Plan: "today", "tomorrow", "Saturday",
+// and after the current week with its date, "Thursday, 26 November".
+function dayPhrase(day: string, today: string): string {
+  if (day === today) return 'today'
+  if (day === addDays(today, 1)) return 'tomorrow'
+  return weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`
+}
 
 // "1 dish", "4 dishes".
 function dishCount(count: number): string {
@@ -212,6 +221,8 @@ export const en: Strings = {
     thisBoard: 'This board',
     moveFailed: (title: string) => `“${title}” couldn’t be moved. ${tryAgain}`,
     notAllowed: (title: string) => `You can’t do that with “${title}” on this board any more. The owner decides that.`,
+    planFailed: (title: string) => `“${title}” couldn’t be planned. Try again in a moment.`,
+    planCookFailed: (title: string) => `Who cooks “${title}” couldn’t be changed. Try again in a moment.`,
     cook: 'Cooked ✓',
     cookedOn: (board: string) => `on ${board}`,
     cookWord: 'Cooked',
@@ -644,6 +655,40 @@ export const en: Strings = {
     purged: (title: string) => `“${title}” is deleted for good.`,
     failed,
     notAllowed: 'You can’t do that on this board any more. The owner decides that.',
+  },
+  week: {
+    view: 'View',
+    columns: 'Columns',
+    week: 'Week',
+    title: (monday: string, now = new Date()) => weekRange(monday, addDays(monday, 6), 'to', now),
+    today: 'Today',
+    previous: 'Previous week',
+    next: 'Next week',
+    weekday,
+    weekdayShort,
+    dayOfMonth: (day: string) => dayNumber(day),
+    dayName: (day: string) => `${weekday(day)}, ${dayMonth(day)}`,
+    dayPhrase,
+    planOn: (day: string) => `Plan a dish for ${weekday(day)}`,
+    plannedDish: (title: string, day: string) => `${title}, ${weekday(day)}`,
+    more: (title: string) => `More about ${title}`,
+    emptyTitle: 'The week is still free.',
+    emptyText: 'Pick a dish from the board and put it on a day.',
+    emptyButton: 'Pick a dish',
+    emptyPast: 'Nothing was planned this week.',
+    pickTitle: (day: string, today: string) => day === today ? 'What’s on today?' : `What’s on ${weekStart(day) === weekStart(today) ? weekday(day) : `${weekday(day)}, ${dayMonth(day)}`}?`,
+    search: 'Search dishes',
+    clearSearch: 'Clear search',
+    noMatch: (query: string) => `No dish matching “${query}” on this board.`,
+    pickDay: 'Which day?',
+    moveToDay: 'Move to another day',
+    liesHere: 'Already here',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    remove: 'Take off the plan',
+    moved: (day: string, today: string) => `Moved to ${dayPhrase(day, today)}.`,
+    removed: 'Taken off the plan.',
+    nowAt: (title: string, day: string, place: number, total: number) => `${title}, now on ${weekday(day)} at place ${place} of ${total}.`,
   },
   offline: {
     headline: 'You’re offline.',

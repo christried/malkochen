@@ -20,9 +20,13 @@ function canMorph(): boolean {
   return !prefersReducedMotion()
 }
 
-// The card's thumbnail of Dish `dishId` on the Board.
+// The card's thumbnail of Dish `dishId` on the Board: on the Columns, or on
+// the Week Plan (where the Dish may be planned several times: the first one
+// shown), whichever view is showing.
 export function cardThumb(dishId: string): HTMLElement | null {
-  return document.querySelector<HTMLElement>(`#dish-${CSS.escape(dishId)} [data-thumb]`)
+  const id = CSS.escape(dishId)
+  const thumbs = document.querySelectorAll<HTMLElement>(`#dish-${id} [data-thumb], [data-week-dish="${id}"] [data-thumb]`)
+  return [...thumbs].find(thumb => thumb.getClientRects().length > 0) ?? null
 }
 
 // Opens the detail from `thumb`: `go` navigates to it, at `path`, and the
