@@ -8,6 +8,7 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 - Ora i piatti possono avere una ricetta. Apri un piatto e tocca Aggiungi ricetta per scrivere ingredienti e passaggi riga per riga, anche senza connessione. Una lista incollata diventa una riga per voce, e la ricerca trova un piatto anche dai suoi ingredienti.
 - Vuoi che malkochen cerchi per te la ricetta di un piatto? Puoi chiedere il Trova ricette nelle tue impostazioni.
+- Ogni bacheca ha ora un piano settimanale accanto alle sue colonne: in alto passi da Colonne a Settimana. Metti i piatti nei giorni in cui vuoi cucinarli, lo stesso piatto su più giorni o più piatti in un giorno, e indica chi cucina. Quel giorno tocchi Cucinato ✓ direttamente dal piano, anche senza connessione.
 
 ### Changed
 
