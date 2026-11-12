@@ -72,6 +72,22 @@ const splashUp = useSplashUp()
 
 useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name}` : t.app.name })
 
+// The Columns or the Week Plan (useBoardView): the Week Plan is a view beside
+// the Columns, which stay mounted underneath so their drags, swipe position
+// and scroll are as they were. The Tour needs the Columns.
+const { view, show: showView } = useBoardView()
+const inWeek = computed(() => view.value === 'week')
+const weekDragging = ref(false)
+// Which view just came in, for its pane to move over (styles below).
+const switched = ref<'columns' | 'week' | null>(null)
+let switchedTimer: ReturnType<typeof setTimeout> | undefined
+watch(view, (now) => {
+  switched.value = now
+  clearTimeout(switchedTimer)
+  switchedTimer = setTimeout(() => (switched.value = null), 900)
+})
+onBeforeUnmount(() => clearTimeout(switchedTimer))
+
 const activeColumnId = ref(board.value?.columns[0]?.id)
 const activeIndex = computed(() => Math.max(0, board.value?.columns.findIndex(c => c.id === activeColumnId.value) ?? 0))
 const tabs = computed(() => board.value?.columns.map(c => ({ id: c.id, name: c.name, count: c.dishes.length })) ?? [])
@@ -254,7 +270,7 @@ const boardLoop = useBoardLoop(columnsEl, {
 // Others' changes, while the Board is open; not mid-drag.
 // A Board opened from the device wasn't opened on the server: the first
 // answer from it does that.
-const { syncNow } = useBoardSync(() => id, boardModule, () => dragging.value, unsent, fromDevice)
+const { syncNow } = useBoardSync(() => id, boardModule, () => dragging.value || weekDragging.value, unsent, fromDevice)
 provide(boardSyncNowKey, () => void syncNow())
 
 // Unsent Changes (#459): once the app is up, those left from last time show
@@ -676,6 +692,7 @@ async function promptTurnOn() {
 
 async function startTour() {
   showingSettings.value = false
+  showView('columns')
   await nextTick()
   boardTour.value?.start()
 }
@@ -1035,7 +1052,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   <main
     v-if="board"
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
-    :class="{ following, dragging, 'drop-tinted': dropTint }"
+    :class="{ following, dragging, 'drop-tinted': dropTint, 'in-week': inWeek }"
     :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, ...colours }"
   >
     <header
@@ -1048,6 +1065,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         <BoardSwitcher
           :board="board"
           :dish-count="boardModule.dishCount.value"
+        />
+        <!-- From the desktop breakpoint the switch sits right after the pill
+             (a phone has it on its own row below). -->
+        <ViewSwitch
+          class="hidden desktop:flex"
+          :model-value="view"
+          @update:model-value="showView"
         />
         <RoundButton
           v-if="!searchOpen"
@@ -1093,6 +1117,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       />
     </header>
 
+    <div class="mt-3 desktop:hidden">
+      <ViewSwitch
+        :model-value="view"
+        @update:model-value="showView"
+      />
+    </div>
+
     <p
       v-if="board?.asOperator"
       data-testid="operator-note"
@@ -1119,7 +1150,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 
     <!-- Phones: the active Column's name and subtitle, large. -->
     <ColumnHeadline
-      v-show="!searching"
+      v-show="!searching && !inWeek"
       data-tour="columns"
       class="-mx-4 mt-5 px-4"
       :columns="board.columns"
@@ -1129,7 +1160,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     />
 
     <ColumnTabs
-      v-show="!searching"
+      v-show="!searching && !inWeek"
       ref="tabBar"
       data-tour="columns"
       class="tabs-bar sticky top-0 z-tabs -mx-4 mt-4 px-4 tablet:hidden"
@@ -1145,8 +1176,9 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <!-- Around the Columns, so the edge indicators stay at the window's
          edges while the Columns scroll under them. -->
     <div
-      v-show="!searching"
-      class="relative -mx-4"
+      v-show="!searching && !inWeek"
+      class="columns-pane relative -mx-4"
+      :class="{ 'pane-in': switched === 'columns' }"
     >
       <div
         ref="columns"
@@ -1340,6 +1372,17 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       />
     </div>
 
+    <WeekPlan
+      v-show="!searching && inWeek"
+      class="week-pane mt-5"
+      :class="{ 'pane-in': switched === 'week' }"
+      :board="board"
+      :visible="inWeek && !searching"
+      :can-change="mayMove"
+      @toast="showToast"
+      @dragging="weekDragging = $event"
+    />
+
     <!-- What malkochen is and the legal pages, after the last Dish (#405):
          not fixed, so the FAB's room below (main's pb-32) keeps it clear. -->
     <footer
@@ -1371,7 +1414,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 
     <button
       v-if="mayAdd"
-      v-show="!selecting"
+      v-show="!selecting && !inWeek"
       type="button"
       class="fab fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
       :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt }"
@@ -1527,7 +1570,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-model:adding="adding"
       :board="board"
       :idle="boardIdle"
-      :auto-start="!openedToAdd"
+      :auto-start="!openedToAdd && !inWeek"
       :menu="menuDish && { dishId: menuDish.id, choosing: choosingColumn }"
       @close-menu="menuDish = null"
       @started="visit.shown()"
@@ -1588,6 +1631,10 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     background-color: color-mix(in oklch, var(--tint) 24%, var(--color-bg));
     transition: background-color var(--dur-swoosh) var(--ease-fade);
   }
+  /* The Week Plan lies on the page's own background, not a Column's tint. */
+  .board.in-week {
+    background-color: var(--color-bg);
+  }
   .board.following {
     transition: none;
   }
@@ -1618,6 +1665,38 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     transition: opacity var(--dur-fade) var(--ease-fade);
   }
   .column.parked {
+    opacity: 0;
+  }
+}
+/* Switching between the Columns and the Week Plan: the view coming in moves
+   over 28px from its side and fades in (settle, 480ms). Reduced motion: it
+   fades. */
+.columns-pane.pane-in {
+  animation: pane-from-left var(--dur-settle) var(--ease-settle) backwards;
+}
+.week-pane.pane-in {
+  animation: pane-from-right var(--dur-settle) var(--ease-settle) backwards;
+}
+@keyframes pane-from-left {
+  from {
+    opacity: 0;
+    translate: -28px 0;
+  }
+}
+@keyframes pane-from-right {
+  from {
+    opacity: 0;
+    translate: 28px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .columns-pane.pane-in,
+  .week-pane.pane-in {
+    animation: pane-fade var(--dur-fade) var(--ease-fade) backwards;
+  }
+}
+@keyframes pane-fade {
+  from {
     opacity: 0;
   }
 }
