@@ -2,10 +2,10 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { BoardView } from '~~/server/utils/boards'
 import type { DishView } from '~~/server/utils/dishes'
-import type { PlanEntry, PlanNotice, PlanResult } from '~/board/board-module'
+import type { PlanEntry } from '~/board/board-module'
 import { addWeeks, isCurrentWeek, isPastDay, weekDays, weekStart } from '~/board/week-days'
 import { dishPath } from '~~/shared/address'
-import { NOTICE_MS, UNDO_WINDOW_MS, type Toast } from '~/utils/toast'
+import type { Toast } from '~/utils/toast'
 
 // The Week Plan (CONTEXT.md: Week Plan, Planned Dish; ADR 0014; handoff R14):
 // the Board's week, Monday to Sunday, one week at a time, a view beside the
@@ -18,8 +18,12 @@ import { NOTICE_MS, UNDO_WINDOW_MS, type Toast } from '~/utils/toast'
 // nothing to change. The week to browse is this component's own; the choice
 // of view is the Board's (useBoardView).
 //
-// Who cooks a Planned Dish, "Einplanen" in the Dish detail and "Gekocht ✓"
-// are the next ticket's (#518): PlannedDish has their places.
+// Who cooks a Planned Dish is set from its cook's Profile Picture or "Wer
+// kocht?" in its menu (CookPicker). "Gekocht ✓" is on today's only, for a
+// Member who may move Dishes, and goes up to the Board page (`cook`), which
+// does what a card's "Gekocht ✓" does. A Planned Dish is ticked when its Dish
+// has a Cooking that day, from wherever it was recorded. "Einplanen" is in
+// the Dish detail.
 const props = defineProps<{
   board: BoardView
   // The Week Plan is the view showing (and not covered by the search).
@@ -30,6 +34,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   toast: [Toast]
   dragging: [boolean]
+  // "Gekocht ✓" on today's Planned Dish: the Board page cooks the Dish as it
+  // does for a card, with the confetti bursting from `origin`.
+  cook: [dishId: string, origin: Point]
 }>()
 
 const t = useStrings()
@@ -93,31 +100,7 @@ onBeforeUnmount(() => clearTimeout(enteringTimer))
 
 // ---- Showing what a write answered ----
 
-function noticeText(notice: PlanNotice, dish: DishView): string {
-  return notice === 'notAllowed' ? t.dish.notAllowed(dish.title) : t.dish[notice](dish.title)
-}
-
-// A write's notice as a toast, then what it ended in once settled. With
-// `done`, the toast says what was done and offers "Rückgängig", whose own
-// result shows the same way.
-function showPlanResult(result: PlanResult, done?: { text: string, undo: () => PlanResult | null }) {
-  if (result.notice) {
-    hapticReject()
-    emit('toast', { text: noticeText(result.notice, result.dish), duration: NOTICE_MS })
-    return
-  }
-  if (done) {
-    emit('toast', {
-      text: done.text,
-      duration: UNDO_WINDOW_MS,
-      actions: [{ label: t.dish.undo, offline: true, run: () => {
-        const undone = done.undo()
-        if (undone) showPlanResult(undone)
-      } }],
-    })
-  }
-  void result.settled?.then(ended => ended.notice && showPlanResult(ended))
-}
+const { showPlanResult } = usePlanResult(toast => emit('toast', toast))
 
 // Said to screen readers: where a Planned Dish is now.
 const live = ref('')
@@ -194,6 +177,7 @@ function planFrom(dish: DishView, day: string) {
 const dishPicker = reactive({ open: false, day: today.value, anchor: null as HTMLElement | null })
 const dayPicker = reactive({ open: false, entry: null as PlanEntry | null, anchor: null as HTMLElement | null })
 const menu = reactive({ open: false, entry: null as PlanEntry | null, anchor: null as HTMLElement | null })
+const cookPicker = reactive({ open: false, entry: null as PlanEntry | null, anchor: null as HTMLElement | null })
 
 function openDishPicker(day: string, anchor: HTMLElement | null) {
   if (dishPicker.open && dishPicker.anchor === anchor) {
@@ -220,8 +204,10 @@ function openMenu(entry: PlanEntry, anchor: HTMLElement) {
   }
   Object.assign(menu, { open: true, entry, anchor })
 }
-// The menu's entry as it is now (it may have moved, or been taken off).
-const menuEntry = computed(() => menu.entry && Object.values(plan.value).flat().find(e => e.id === menu.entry!.id) || menu.entry)
+// A picker's or the menu's entry as it is now (it may have moved, or been
+// taken off).
+const entryNow = (entry: PlanEntry | null) => entry && Object.values(plan.value).flat().find(e => e.id === entry.id) || entry
+const menuEntry = computed(() => entryNow(menu.entry))
 
 // After a move the focus stays on the Planned Dish's "⋯".
 async function focusMore(entry: PlanEntry) {
@@ -250,6 +236,39 @@ function pickDayFor(day: string) {
   dayPicker.open = false
   if (entry) moveEntry(entry, day)
 }
+
+// ---- Who cooks ----
+
+const cookEntry = computed(() => entryNow(cookPicker.entry))
+
+// The cook's Profile Picture on a Planned Dish opens the picker.
+function openCookPicker(entry: PlanEntry, anchor: HTMLElement) {
+  if (cookPicker.open && cookPicker.anchor === anchor) {
+    cookPicker.open = false
+    return
+  }
+  Object.assign(cookPicker, { open: true, entry, anchor })
+}
+function menuCook() {
+  const { entry, anchor } = menu
+  menu.open = false
+  if (entry) Object.assign(cookPicker, { open: true, entry, anchor })
+}
+// A Member picked, or "Offen lassen" (null). The picture on the Planned Dish
+// pops in or fades out; no toast, but a screen reader is told.
+function pickCook(memberId: string | null) {
+  const entry = cookEntry.value
+  cookPicker.open = false
+  if (!entry) return
+  const member = props.board.members.find(m => m.id === memberId)
+  const result = boardModule.setPlannedDishCook(entry.id, memberId)
+  if (!result) return
+  showPlanResult(result)
+  if (result.notice) return
+  live.value = ''
+  void nextTick(() => (live.value = member ? t.week.cooksNow(member.name) : t.week.cooksNobody))
+}
+
 const dishesOn = (day: string) => boardModule.weekPlan([day])[day]?.map(e => e.dish) ?? []
 
 // ---- Dragging ----
@@ -447,8 +466,25 @@ function onSwipeEnd(event: PointerEvent) {
                 :entry="item.entry"
                 :to="dishPath(address, item.entry.dish)"
                 :can-change="canChange"
+                :cookable="canChange && item.entry.day === today"
                 @menu="anchor => openMenu(item.entry!, anchor)"
-              />
+              >
+                <template #cook>
+                  <PlannedCook
+                    v-if="item.entry.cook"
+                    :key="item.entry.cook.id"
+                    :member="item.entry.cook"
+                    :can-change="canChange"
+                    @open="anchor => openCookPicker(item.entry!, anchor)"
+                  />
+                </template>
+                <template #action>
+                  <CookButton
+                    :filled="item.entry.cooked"
+                    @cook="origin => emit('cook', item.entry!.dish.id, origin)"
+                  />
+                </template>
+              </PlannedDish>
             </li>
           </WeekDay>
         </div>
@@ -480,6 +516,7 @@ function onSwipeEnd(event: PointerEvent) {
       v-if="drag"
       :drag="drag"
       :to="dishPath(address, drag.entry.dish)"
+      :tall="!wide && canChange && drag.entry.day === today && !drag.entry.cooked"
     />
 
     <PickerSurface
@@ -515,10 +552,26 @@ function onSwipeEnd(event: PointerEvent) {
         :subtitle="t.week.dayName(menuEntry.day)"
         :first="placeIn(menuEntry) === 0"
         :last="placeIn(menuEntry) === (plan[menuEntry.day]?.length ?? 1) - 1"
+        @cook="menuCook"
         @move="menuMove"
         @up="menuStep(-1)"
         @down="menuStep(1)"
         @remove="menuRemove"
+      />
+    </PickerSurface>
+
+    <PickerSurface
+      v-model:open="cookPicker.open"
+      :title="t.week.whoCooks"
+      :close-label="t.dish.closeMenu"
+      :anchor="cookPicker.anchor"
+    >
+      <CookPicker
+        v-if="cookEntry"
+        :subtitle="t.week.whoCooksOn(cookEntry.dish.title, cookEntry.day)"
+        :members="board.members"
+        :cook-id="cookEntry.cookId"
+        @pick="pickCook"
       />
     </PickerSurface>
 

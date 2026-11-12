@@ -186,12 +186,16 @@ onBeforeUnmount(() => {
 const { shot: columnCue, fire: cueColumn } = useOneShot<ColumnCue>()
 
 // "Gekocht ✓" on a card: the celebration, timed (useGekochtCelebration).
-// The Gekocht Column's count shows on its tab on phones, else by its name.
+// The Gekocht Column's count shows on its tab on phones, else by its name. In
+// the Week Plan (its "Gekocht ✓" is this same path) the Columns are out of
+// sight: the pebble has nowhere to fly to.
 const { cookFromCard, onCardLeave, flight, onFlightLanded } = useGekochtCelebration(board, {
   cookDish,
-  target: columnId => isPhoneLayout()
-    ? tabBar.value?.$el.querySelector(`[data-tab-column-id="${columnId}"]`) ?? null
-    : document.querySelector<HTMLElement>(`#column-${CSS.escape(columnId)} .column-name`),
+  target: columnId => inWeek.value
+    ? null
+    : isPhoneLayout()
+      ? tabBar.value?.$el.querySelector(`[data-tab-column-id="${columnId}"]`) ?? null
+      : document.querySelector<HTMLElement>(`#column-${CSS.escape(columnId)} .column-name`),
   cue: cueColumn,
 })
 
@@ -244,7 +248,8 @@ function openDish(event: MouseEvent, dish: DishView) {
 // already).
 function cookDish(dishId: string) {
   const result = boardModule.cookDish(dishId)
-  if (result) void showResult(result, { origin: null })
+  // In the Week Plan the Columns are out of sight: focus has nowhere to go.
+  if (result) void showResult(result, { origin: null, moveFocus: !inWeek.value })
 }
 
 const { drag, dragging, entries } = useDishDrag(columnsEl, {
@@ -1387,6 +1392,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         :can-change="mayMove"
         @toast="showToast"
         @dragging="weekDragging = $event"
+        @cook="(dishId, origin) => void cookFromCard(dishId, origin)"
       />
     </ClientOnly>
 

@@ -8,12 +8,17 @@ import type { PlanEntry } from '~/board/board-module'
 // their own). On a phone it is a row 64px high; from 1200px a small card
 // 166px high with the image on top.
 //
-// Who cooks it, "Gekocht ✓" and the tick belong to the next ticket (#518) and
-// have their places here: the `cook` slot (the cook's Profile Picture,
-// beside "⋯" on a phone, at the start of the bottom row on desktop), the
-// `action` slot ("Gekocht ✓", a row of its own under the title when the card
-// is `tall`, today's on a phone, at the end of the bottom row on desktop) and
-// the `badge` slot (the tick on the image's corner).
+// Who cooks it, "Gekocht ✓" and the tick (#518): the `cook` slot (the cook's
+// Profile Picture, beside "⋯" on a phone, at the start of the bottom row on
+// desktop; it pops in and fades out), the `action` slot ("Gekocht ✓", a row
+// of its own under the title on a phone, at the end of the bottom row on
+// desktop) and the tick on the image's corner, which pops onto the image when
+// the Dish has a Cooking that day (`entry.cooked`) and fades when it goes.
+// "Gekocht ✓" is for `cookable` ones (today's, for a Member who may move
+// Dishes) and only while not cooked: the card is taller for it on a phone
+// (100px). Once cooked, the button stays 2.2s, sage, so the celebration is
+// seen with it, then fades and the card shortens (settle 480ms); an undone
+// Cooking brings it back.
 //
 // "⋯" opens its menu: on a phone always there, on desktop it comes with the
 // pointer or the keyboard. The card is a lifted copy (`lifted`) while being
@@ -24,7 +29,9 @@ const props = defineProps<{
   to: string
   // The Member may change the plan: "⋯" is there.
   canChange?: boolean
-  // Today's, with the room for "Gekocht ✓" under the title (phones).
+  // Today's for a Member who may move Dishes: "Gekocht ✓" until it is cooked.
+  cookable?: boolean
+  // The room for "Gekocht ✓" under the title (phones), for the lifted copy.
   tall?: boolean
   // The dragged copy: lifted, with nothing to press.
   lifted?: boolean
@@ -35,18 +42,31 @@ const emit = defineEmits<{
 }>()
 const t = useStrings()
 const dish = computed(() => props.entry.dish)
+const wide = useMediaQuery('(min-width: 1200px)')
+
+// "Gekocht ✓" shows until the Dish is cooked today, and 2.2s after.
+const lingering = ref(false)
+let lingerTimer: ReturnType<typeof setTimeout> | undefined
+watch(() => props.entry.cooked, (cooked) => {
+  clearTimeout(lingerTimer)
+  lingering.value = cooked && !!props.cookable
+  if (lingering.value) lingerTimer = setTimeout(() => (lingering.value = false), 2200)
+})
+onBeforeUnmount(() => clearTimeout(lingerTimer))
+const showAction = computed(() => !!props.cookable && (!props.entry.cooked || lingering.value))
+const isTall = computed(() => props.tall || showAction.value)
 </script>
 
 <template>
   <div
     class="planned relative grid rounded-planned bg-surface text-text shadow-small"
-    :class="{ tall, lifted }"
+    :class="{ tall: isTall, lifted }"
     :data-planned-card="entry.id"
     :data-week-dish="dish.id"
   >
     <NuxtLink
       :to="to"
-      :aria-label="t.week.plannedDish(dish.title, entry.day)"
+      :aria-label="t.week.plannedDish(dish.title, entry.day, entry.cook?.name, entry.cooked)"
       :tabindex="lifted ? -1 : undefined"
       class="planned-link title font-display"
       @click="emit('open', $event)"
@@ -54,16 +74,36 @@ const dish = computed(() => props.entry.dish)
       {{ dish.title }}
     </NuxtLink>
     <span
-      class="thumb relative overflow-hidden rounded-planned-thumb bg-surface-muted"
+      class="thumb relative rounded-planned-thumb"
       data-thumb
     >
-      <DishImage
-        :image-url="dish.imageUrl"
-        :focus="dish.imageFocus"
-        :placeholder="dish.placeholder"
-        lazy
-      />
-      <slot name="badge" />
+      <span class="block h-full w-full overflow-hidden bg-surface-muted [border-radius:inherit]">
+        <DishImage
+          :image-url="dish.imageUrl"
+          :focus="dish.imageFocus"
+          :placeholder="dish.placeholder"
+          lazy
+        />
+      </span>
+      <Transition name="tick">
+        <span
+          v-if="entry.cooked"
+          class="tick"
+          aria-hidden="true"
+          data-cooked-tick
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ><path d="M3 8.5l3.2 3L13 4.5" /></svg>
+        </span>
+      </Transition>
     </span>
     <span
       v-if="entry.unsent"
@@ -85,10 +125,32 @@ const dish = computed(() => props.entry.dish)
       <span class="truncate">{{ t.unsent.notSent }}</span>
     </span>
     <span class="cook relative z-[2] flex items-center">
-      <slot name="cook" />
+      <Transition
+        name="cook"
+        mode="out-in"
+      >
+        <slot name="cook">
+          <!-- The lifted copy has no slots: the cook's picture, plain. -->
+          <UserAvatar
+            v-if="lifted && entry.cook"
+            :name="entry.cook.name"
+            :image="entry.cook.image"
+            :size="wide ? 22 : 28"
+          />
+        </slot>
+      </Transition>
     </span>
     <span class="action relative z-[2] flex items-center">
-      <slot name="action" />
+      <Transition name="action">
+        <span
+          v-if="showAction"
+          class="flex items-center"
+          :inert="entry.cooked || undefined"
+          data-cook-action
+        >
+          <slot name="action" />
+        </span>
+      </Transition>
     </span>
     <button
       v-if="canChange && !lifted"
@@ -125,7 +187,7 @@ const dish = computed(() => props.entry.dish)
 <style scoped>
 /* Phones: a row, 64px (100px with room for "Gekocht ✓"): the image 48px,
    the title (two lines, one with the unsent mark under it), then the cook
-   and "⋯". The areas keep what #518 adds in place. */
+   and "⋯". The cook and "Gekocht ✓" have their areas. */
 .planned {
   isolation: isolate;
   height: var(--size-pd);
@@ -138,7 +200,7 @@ const dish = computed(() => props.entry.dish)
   align-items: center;
   column-gap: 12px;
   padding: 8px 4px 8px 8px;
-  transition: scale var(--dur-tap) var(--ease-tap);
+  transition: scale var(--dur-tap) var(--ease-tap), height var(--dur-settle) var(--ease-settle);
 }
 .planned.tall {
   height: var(--size-pd-today);
@@ -227,6 +289,45 @@ const dish = computed(() => props.entry.dish)
   box-shadow: var(--shadow-lift);
 }
 
+/* The tick: 22px sage with a check, ringed in the card's colour, on the
+   image's bottom right corner. It pops on (scale 0 to 1.25 to 1, turning
+   from -30 degrees, 460ms) and fades when the Cooking is undone (150ms). */
+.tick {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-sage);
+  color: var(--color-sage-ink);
+  box-shadow: 0 0 0 2.5px var(--color-surface);
+  pointer-events: none;
+}
+.tick-enter-active {
+  animation: r14-tick var(--dur-pop) var(--ease-pop);
+}
+.tick-leave-active {
+  transition: opacity 150ms var(--ease-fade);
+}
+.tick-leave-to {
+  opacity: 0;
+}
+/* "Gekocht ✓" fades out once it has done its job (240ms), and comes back
+   with an undone Cooking. */
+.action-enter-active,
+.action-leave-active {
+  transition: opacity var(--dur-fade) var(--ease-fade);
+}
+.action-enter-from,
+.action-leave-to {
+  opacity: 0;
+}
+
 /* From 1200px a small card: the image on top (72px), the title in two lines,
    then a row for the cook, the unsent mark and "Gekocht ✓". "⋯" is a glass
    circle on the image, there with the pointer or the keyboard. */
@@ -267,6 +368,10 @@ const dish = computed(() => props.entry.dish)
     font-size: 11.5px;
     justify-self: start;
   }
+  .tick {
+    right: -4px;
+    bottom: -6px;
+  }
   .more {
     position: absolute;
     top: 12px;
@@ -293,6 +398,14 @@ const dish = computed(() => props.entry.dish)
 }
 @media (prefers-reduced-motion: reduce) {
   .planned {
+    transition: none;
+  }
+  .tick-enter-active {
+    animation: none;
+  }
+  .tick-leave-active,
+  .action-enter-active,
+  .action-leave-active {
     transition: none;
   }
   .planned:not(.lifted):active {
