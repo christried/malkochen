@@ -4,11 +4,12 @@ import { db } from '../db'
 import { dish } from '../db/schema'
 import { parseServerEnv } from '../env'
 import { createRecipeFinder, type RecipeFinderResult } from '../recipe-finder'
+import type { SourceKind } from '../source-lookup'
 import { createRecipeReader } from '../recipe-finder/model'
 import { SEARCH_LOOKS_FOR, membersDish, onMembersBoard } from './dishes'
 import { dishEvent, withEvents } from './events'
 import { requireDishPermission } from './permission-checks'
-import { refundRateLimit, spendRateLimit } from './rate-limit'
+import { refundRateLimit, spendRateLimit, spendRateLimitIfWithin } from './rate-limit'
 import { recipeFinderStateOf } from './recipe-finder'
 import { dishNotFound } from './session'
 import { lookupDestination, lookupPage, lookupRecipe } from './source-lookup'
@@ -16,7 +17,8 @@ import { lookupDestination, lookupPage, lookupRecipe } from './source-lookup'
 // "Rezept finden" (CONTEXT.md: Recipe Finder, #500): the Dish side of the
 // Recipe Finder. Whether the user may search, which Dish is looked at, the
 // daily cap, the search state the Dish records and what the Board then shows
-// are decided here; how a Recipe is found is the Recipe Finder's alone.
+// are decided here; how a Recipe is found is the Recipe Finder's alone. It
+// also covers the search after adding a Dish (#503), which starts by itself.
 
 const env = parseServerEnv(process.env)
 
@@ -123,11 +125,54 @@ export async function findRecipeFor(dishId: string, userId: string): Promise<Rec
     throw error
   }
 
-  const result = await findRecipe({ link: claimed.link, kind: claimed.kind, caption: claimed.caption })
-  await finish(dishId, startedAt, userId, result)
-  if (result.outcome === 'failed') await refundRateLimit(userId, 'recipe-search')
+  const result = await searchClaimed(dishId, startedAt, userId, { link: claimed.link, kind: claimed.kind, caption: claimed.caption })
 
   const searched = await membersDish(dishId, userId)
   if (!searched) throw dishNotFound()
   return { outcome: result.outcome, dish: searched }
+}
+
+// The search of a Dish already claimed as looking at `startedAt` and paid
+// for: finds, writes how it ended (finish) and gives the day's search back if
+// it failed. A finder that throws, which it isn't meant to, is a failed
+// search, so the Dish is never left looking.
+async function searchClaimed(
+  dishId: string,
+  startedAt: Date,
+  userId: string,
+  source: { link: string, kind: SourceKind, caption: string | null },
+): Promise<RecipeFinderResult> {
+  const result = await findRecipe(source).catch((): RecipeFinderResult => ({ outcome: 'failed' }))
+  await finish(dishId, startedAt, userId, result)
+  if (result.outcome === 'failed') await refundRateLimit(userId, 'recipe-search')
+  return result
+}
+
+// Whether a Dish being added is searched for its Recipe after adding (#503),
+// and if so the time the search starts, which the Dish is added as looking
+// since. Null, and nothing spent, unless there is an Anthropic API key, the
+// Dish has a Source and the adder has the Recipe Finder on; and null at the
+// day's cap, where the add itself is unaffected. Otherwise one of the
+// adder's day's searches is spent, which the caller gives back
+// (refundRateLimit) if the Dish is then not added. The adder may always
+// edit their own Dish, so there is no permission to check.
+export async function searchOnAdding(adderId: string, source: { link: string } | null): Promise<Date | null> {
+  if (!recipeFinderAvailable) return null
+  if (!source) return null
+  if ((await recipeFinderStateOf(adderId)).state !== 'on') return null
+  if (!await spendRateLimitIfWithin(adderId, 'recipe-search')) return null
+  return new Date()
+}
+
+// The search after adding, run once the add was answered: for the Dish added
+// as looking at `startedAt`, if it still is that (the Source changed
+// meanwhile, or a stale search was claimed again by "Rezept finden", and then
+// nothing is looked for).
+export async function searchAfterAdding(dishId: string, startedAt: Date, userId: string): Promise<void> {
+  const [claimed] = await db
+    .select({ link: dish.sourceLink, kind: dish.sourceKind, caption: dish.caption })
+    .from(dish)
+    .where(and(eq(dish.id, dishId), eq(dish.recipeSearch, 'looking'), eq(dish.recipeSearchAt, startedAt)))
+  if (!claimed?.link || !claimed.kind) return
+  await searchClaimed(dishId, startedAt, userId, { link: claimed.link, kind: claimed.kind, caption: claimed.caption })
 }

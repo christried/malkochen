@@ -1,10 +1,13 @@
 import type { H3Event } from 'h3'
 import { addDishBody, offlineAddBody, sourceOf } from '../../../utils/dish-input'
+import { afterAnswering } from '../../../utils/after-answering'
 import { addDish, dishIdStanding, dishWithSource, placedDish, type AddedDish } from '../../../utils/dishes'
 import { storeDishImage } from '../../../utils/image-store'
 import { dishFromLateAdd } from '../../../utils/late-add'
 import { isUniqueViolation } from '../../../utils/late-changes'
 import { notifyNewDish } from '../../../utils/push'
+import { refundRateLimit } from '../../../utils/rate-limit'
+import { searchAfterAdding, searchOnAdding } from '../../../utils/recipe-search'
 import { storedSourceFacts } from '../../../utils/source-ticket'
 
 // POST /api/boards/:id/dishes — adds a Dish at the top of the Board's first
@@ -25,6 +28,8 @@ import { storedSourceFacts } from '../../../utils/source-ticket'
 // A Dish added offline (`offline: true`, #462) comes with its link and maybe
 // a title only; the Source is looked up here, now (late-add.ts), and the
 // answer says which Dish with that Source was on the Board already.
+// The Dish of a Recipe Finder user that has a Source is answered as looking,
+// and its Recipe is searched for after the answer (#503), not for a Tour Dish.
 export default defineEventHandler(async (event): Promise<AddedDish> => {
   const boardId = boardIdParam(event)
   const raw = await readBody(event).catch(() => null)
@@ -43,6 +48,8 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
   // Not copied for a non-Member, whom addDish then refuses.
   const { stored, refused } = await storeDishImage(user.id, async () => boardId, { photo, imageUrl, imageTicket })
   const storedSource = source ? sourceOf(source) : null
+  // A Tour Dish may be deleted seconds later (ADR 0006), as with push: no search.
+  const lookingSince = tour ? null : await searchOnAdding(user.id, storedSource)
   let created: AddedDish | null
   try {
     created = await addDish(boardId, user, {
@@ -55,15 +62,20 @@ export default defineEventHandler(async (event): Promise<AddedDish> => {
       ...storedSourceFacts(user.id, storedSource, { caption: caption ?? null, playableVideo, ticket: sourceTicket }),
       imageUrl: stored,
       imageIsOwnPhoto: Boolean(photo) && stored !== null,
-    }, { tour, id })
+    }, { tour, id, lookingSince: lookingSince ?? undefined })
   }
   catch (err) {
     // A repeat that arrived at the same moment added it first.
+    if (lookingSince) await refundRateLimit(user.id, 'recipe-search')
     const first = isUniqueViolation(err) ? await alreadyAdded(id, boardId, user.id) : null
     if (!first) throw err
     return first
   }
-  if (!created) throw boardNotFound()
+  if (!created) {
+    if (lookingSince) await refundRateLimit(user.id, 'recipe-search')
+    throw boardNotFound()
+  }
+  if (lookingSince) startSearch(event, created.id, lookingSince, user.id)
   if (!tour) await notifyNewDish(boardId, created.id, user.id)
   return refused ? { ...created, imageNotStored: true } : created
 })
@@ -81,18 +93,31 @@ async function addLate(event: H3Event, boardId: string, raw: unknown): Promise<A
   const repeat = await alreadyAdded(id, boardId, user.id)
   if (repeat) return withDuplicate(repeat)
   const { dish, duplicate } = await dishFromLateAdd(user.id, boardId, callerLanguage(event), parsed.data)
+  // A Dish with a link the lookup skipped is searched all the same: the
+  // search has a limit of its own.
+  const lookingSince = await searchOnAdding(user.id, dish.source)
   let created: AddedDish | null
   try {
-    created = await addDish(boardId, user, dish, { id })
+    created = await addDish(boardId, user, dish, { id, lookingSince: lookingSince ?? undefined })
   }
   catch (err) {
+    if (lookingSince) await refundRateLimit(user.id, 'recipe-search')
     const first = isUniqueViolation(err) ? await alreadyAdded(id, boardId, user.id) : null
     if (!first) throw err
     return withDuplicate(first)
   }
-  if (!created) throw boardNotFound()
+  if (!created) {
+    if (lookingSince) await refundRateLimit(user.id, 'recipe-search')
+    throw boardNotFound()
+  }
+  if (lookingSince) startSearch(event, created.id, lookingSince, user.id)
   await notifyNewDish(boardId, created.id, user.id)
   return duplicate ? { ...created, duplicateOf: duplicate } : created
+}
+
+// The Recipe Finder's search of the Dish just added, started after the answer.
+function startSearch(event: H3Event, dishId: string, lookingSince: Date, userId: string) {
+  afterAnswering(event, () => searchAfterAdding(dishId, lookingSince, userId), 'recipe-search')
 }
 
 // A repeat of a Dish added offline (its first answer was lost) names the Dish
