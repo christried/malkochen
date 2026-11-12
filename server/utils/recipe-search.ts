@@ -2,7 +2,9 @@ import { and, eq, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm'
 import type { RecipeSearchAnswer } from '../../shared/recipe'
 import { db } from '../db'
 import { dish } from '../db/schema'
+import { parseServerEnv } from '../env'
 import { createRecipeFinder, type RecipeFinderResult } from '../recipe-finder'
+import { createRecipeReader } from '../recipe-finder/model'
 import { SEARCH_LOOKS_FOR, membersDish, onMembersBoard } from './dishes'
 import { dishEvent, withEvents } from './events'
 import { requireDishPermission } from './permission-checks'
@@ -16,8 +18,17 @@ import { lookupRecipe } from './source-lookup'
 // daily cap, the search state the Dish records and what the Board then shows
 // are decided here; how a Recipe is found is the Recipe Finder's alone.
 
-// The app's one Recipe Finder.
-const findRecipe = createRecipeFinder({ lookupRecipe })
+const env = parseServerEnv(process.env)
+
+// The app's one Recipe Finder, which reads Captions with Claude Haiku when
+// there is an Anthropic API key. Without one it does nothing at all
+// (`recipeFinderAvailable`): no search starts, and the server says so in what
+// it serves, so "Rezept finden" isn't offered.
+export const recipeFinderAvailable = env.ANTHROPIC_API_KEY !== ''
+const findRecipe = createRecipeFinder({
+  lookupRecipe,
+  readRecipe: recipeFinderAvailable ? createRecipeReader({ apiKey: env.ANTHROPIC_API_KEY, baseURL: env.ANTHROPIC_BASE_URL || undefined }) : null,
+})
 
 // No Recipe in the Dish yet: neither Ingredients nor Steps.
 const hasNoRecipe = sql`cardinality(${dish.recipeIngredients}) = 0 and cardinality(${dish.recipeSteps}) = 0`
@@ -73,13 +84,16 @@ function finish(dishId: string, startedAt: Date, userId: string, found: RecipeFi
 }
 
 // The user looks for the Recipe of a Dish ("Rezept finden"). Refused (403)
-// unless the Recipe Finder is on for them and they may edit the Dish, 404 for
-// a Dish they can't see, and 409 unless the Dish has a Source, no Recipe and
-// no search under way or nothing found for its Source; 429 once they used up
+// unless the Recipe Finder is on for them and they may edit the Dish, 503
+// without an Anthropic API key, 404 for a Dish they can't see, and 409 unless
+// the Dish has a Source, no Recipe and no search under way or nothing found
+// for its Source; 429 once they used up
 // the day's searches. Answers how the search ended and the Dish as it is
 // then: a failed search (the page didn't answer) is an answer, and costs no
 // search of the day.
 export async function findRecipeFor(dishId: string, userId: string): Promise<RecipeSearchAnswer> {
+  // Before anything is claimed, spent or fetched.
+  if (!recipeFinderAvailable) throw refused(503, 'Recipe Finder is not set up')
   await requireDishPermission(dishId, userId, 'editDishes')
   if ((await recipeFinderStateOf(userId)).state !== 'on') throw refused(403, 'Recipe Finder is off')
 

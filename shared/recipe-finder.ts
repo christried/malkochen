@@ -7,6 +7,11 @@ export type RecipeFinderState =
   | { state: 'asked', askedAt: string }
   | { state: 'on' }
 
+// What `/api/me/recipe-finder` answers: the user's state, and whether the
+// server can search at all (#501): without an Anthropic API key it can't, and
+// "Rezept finden" isn't offered whatever the state.
+export type RecipeFinderStatus = RecipeFinderState & { available: boolean }
+
 // A user as the Admin Page lists them for the Recipe Finder: everyone who
 // asked or has it, by their Username now (empty before they picked one).
 export interface AdminRecipeFinderUser {

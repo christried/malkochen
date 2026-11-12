@@ -1,13 +1,11 @@
 import 'dotenv/config'
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import type { TestProject } from 'vitest/node'
 import { createThrowawayDatabase, readAdminUrl } from '../support/throwaway-db'
-import { testAuthEnv } from '../support/test-auth-env'
-import { TEST_VERSION } from '../support/test-version'
-import { CRON_SECRET, IMAGE_DIR, SERVER_LOG } from './server-env'
+import { IMAGE_DIR, SERVER_LOG } from './server-env'
+import { startApiServer } from './server-boot'
 
 // Seam 1 (the server API): builds the app once, boots the production server
 // against a throwaway local Postgres, and hands its base URL to the tests.
@@ -21,21 +19,6 @@ declare module 'vitest' {
     apiBaseUrl: string
     databaseUrl: string
   }
-}
-
-async function waitForServer(url: string, server: ChildProcess) {
-  const deadline = Date.now() + 30_000
-  while (Date.now() < deadline) {
-    if (server.exitCode !== null) throw new Error(`API server exited with code ${server.exitCode}`)
-    try {
-      await fetch(url)
-      return
-    }
-    catch {
-      await new Promise(r => setTimeout(r, 200))
-    }
-  }
-  throw new Error(`API server did not start at ${url}`)
 }
 
 export default async function setup(project: TestProject) {
@@ -52,35 +35,20 @@ export default async function setup(project: TestProject) {
   await mkdir(dirname(SERVER_LOG), { recursive: true })
   await writeFile(SERVER_LOG, '')
 
-  const baseUrl = `http://127.0.0.1:${PORT}`
-  // Node itself, not a shell: on Windows killing a `shell: true` child only
-  // kills cmd.exe and leaves the server running, which hangs teardown.
-  // NODE_ENV as on Vercel, so what runs in production only runs here too:
-  // Better Auth's rate limit.
-  const server = spawn(process.execPath, ['.output/server/index.mjs'], {
-    // stderr is shown as before and kept in SERVER_LOG as well.
-    stdio: ['inherit', 'inherit', 'pipe'],
-    env: { ...process.env, ...testAuthEnv(baseUrl), IMAGE_DIR, CRON_SECRET, MALKOCHEN_VERSION: TEST_VERSION, NODE_ENV: 'production', DATABASE_URL: database.url, PORT: String(PORT), HOST: '127.0.0.1' },
-  })
-  server.stderr!.on('data', (chunk: Buffer) => {
-    process.stderr.write(chunk)
-    appendFileSync(SERVER_LOG, chunk)
-  })
+  let server
   try {
-    await waitForServer(baseUrl, server)
+    server = await startApiServer({ port: PORT, databaseUrl: database.url })
   }
   catch (err) {
-    server.kill()
     await database.drop()
     throw err
   }
 
-  project.provide('apiBaseUrl', baseUrl)
+  project.provide('apiBaseUrl', server.baseUrl)
   project.provide('databaseUrl', database.url)
 
   return async () => {
-    server.kill()
-    await new Promise(r => server.exitCode !== null ? r(null) : server.once('exit', r))
+    await server.stop()
     await database.drop()
   }
 }
