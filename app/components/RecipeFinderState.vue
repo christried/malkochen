@@ -81,11 +81,13 @@ const buttonShape = 'flex h-[52px] min-w-0 items-center justify-center gap-2 whi
         :key="shown.view"
         class="flex flex-col gap-3.5"
       >
-        <!-- Searching: for every Member. -->
+        <!-- Searching: for every Member. At least as tall as the two stacked
+             buttons it replaces (52 + 10 + 52), so a detail scrolled to its end
+             isn't pulled up by the swap. -->
         <div
           v-if="shown.view === 'searching'"
           role="status"
-          class="flex items-center gap-3.5 rounded-card bg-surface py-3 pl-3 pr-[18px] shadow-card"
+          class="flex min-h-[114px] items-center gap-3.5 rounded-card bg-surface py-3 pl-3 pr-[18px] shadow-card"
           :class="{ 'search-out': leaving }"
           data-recipe-searching
         >
