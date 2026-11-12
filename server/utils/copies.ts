@@ -13,8 +13,8 @@ import { storage } from './image-store'
 // A Copy (CONTEXT.md: Copy, #402): a new Dish on another of the user's Boards,
 // made from one they can see. It takes the Dish's title, Source, Creator,
 // Caption, Recipe (with the link it was found at), image, Focus Point and
-// Placeholder; not its Cookings, Comments or Votes. The copier adds it, so it is theirs and New Dish for the target's
-// Members, like any added Dish.
+// Placeholder; not its Cookings, Comments or Votes. The copier adds it, so
+// it is theirs and New Dish for the target's Members, like any added Dish.
 
 type Copier = Parameters<typeof shownAs>[0]
 
