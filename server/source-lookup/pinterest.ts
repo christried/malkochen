@@ -66,7 +66,7 @@ async function pinPage(http: Http, found: SourceGuess, timeoutMs: number): Promi
 
 // Where the Pin leads to, which the Pin page names as og:see_also and again as
 // pinterestapp:source (both checked 2026-11-12 on Pins whose destination is a
-// blog, a short link and an Instagram Reel); og:see_also first. Only an
+// photo page, a short link and an Instagram Reel); og:see_also first. Only an
 // absolute http(s) link that is not Pinterest's own counts: a Pin of one's own
 // would only name itself or another Pin. The page's embedded JSON holds a
 // "link" for every related Pin too, so it is not read.
