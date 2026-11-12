@@ -72,6 +72,13 @@
   --field-label-size: 12.5px;
   --field-label-line: 14px;
   --field-outline: rgba(31,30,28,.24);
+  /* R13: Recipes */
+  --color-paste-tint: color-mix(in oklch, #A5C7AE 40%, var(--color-surface));
+  --color-search-tint: color-mix(in oklch, #F7B94A 30%, var(--color-surface));
+  --font-recipe: 500 18px/1.5 var(--font-ui);
+  --font-recipe-num: 500 18px/1 var(--font-display);
+  --dur-search: 4800ms;
+  --ease-search: ease-in-out;
 }
 .dark, [data-theme="dark"] {
   --color-bg: #131211;
@@ -95,6 +102,8 @@
   --shadow-fab: 0 16px 32px -10px rgba(0,0,0,.70);
   --shadow-neu: 0 8px 18px -6px rgba(0,0,0,.6);
   --field-outline: rgba(255,255,255,.24);
+  --color-paste-tint: color-mix(in oklch, #A5C7AE 28%, var(--color-surface));
+  --color-search-tint: color-mix(in oklch, #F7B94A 22%, var(--color-surface));
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --color-bg: #131211;
@@ -118,6 +127,8 @@
   --shadow-fab: 0 16px 32px -10px rgba(0,0,0,.70);
   --shadow-neu: 0 8px 18px -6px rgba(0,0,0,.6);
   --field-outline: rgba(255,255,255,.24);
+  --color-paste-tint: color-mix(in oklch, #A5C7AE 28%, var(--color-surface));
+  --color-search-tint: color-mix(in oklch, #F7B94A 22%, var(--color-surface));
 } }
 @media (prefers-reduced-motion: reduce) { :root {
   --dur-tap: 0ms;
@@ -131,4 +142,5 @@
   --dur-type: 0ms;
   --dur-celebrate: 0ms;
   --dur-idle: 0ms;
+  --dur-search: 0ms;
 } }

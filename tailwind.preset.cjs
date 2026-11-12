@@ -24,6 +24,8 @@ module.exports = {
         'sky': 'var(--color-sky)',
         'on-accent': 'var(--color-on-accent)',
         'sage-ink': 'var(--color-sage-ink)',
+        'paste-tint': 'var(--color-paste-tint)',
+        'search-tint': 'var(--color-search-tint)',
       },
       fontFamily: { display: ['Petrona', 'Georgia', 'serif'], ui: ['Figtree', 'system-ui', 'sans-serif'], mono: ['ui-monospace', 'Menlo', 'monospace'] },
       fontSize: {
@@ -42,6 +44,8 @@ module.exports = {
         'small': ['13.5px', { lineHeight: '1.3', fontWeight: '500', letterSpacing: '0' }],
         'caption': ['12.5px', { lineHeight: '1.4', fontWeight: '500', letterSpacing: '0' }],
         'overline': ['11px', { lineHeight: '1', fontWeight: '600', letterSpacing: '0.08em' }],
+        'recipe': ['18px', { lineHeight: '1.5', fontWeight: '500', letterSpacing: '0' }],
+        'recipe-num': ['18px', { lineHeight: '1', fontWeight: '500', letterSpacing: '0' }],
       },
       borderRadius: {
         'pill': 'var(--radius-pill)',
@@ -77,6 +81,7 @@ module.exports = {
         'type': 'var(--dur-type)',
         'celebrate': 'var(--dur-celebrate)',
         'idle': 'var(--dur-idle)',
+        'search': 'var(--dur-search)',
       },
       transitionTimingFunction: {
         'tap': 'var(--ease-tap)',
@@ -88,6 +93,7 @@ module.exports = {
         'lift': 'var(--ease-lift)',
         'type': 'var(--ease-type)',
         'idle': 'var(--ease-idle)',
+        'search': 'var(--ease-search)',
       },
       screens: { tablet: '768px', desktop: '1200px' },
       zIndex: { 'board': '0', 'tabs': '2', 'fab': '6', 'drag': '20', 'scrim': '30', 'sheet': '31', 'dialog': '40', 'toast': '50' }
