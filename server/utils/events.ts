@@ -36,10 +36,11 @@ export type EventDetails =
   | { from: string, to: string, fromBoard?: string, undo?: true }
   // dish_planned: which Planned Dish, on which day (a Berlin date,
   // 'YYYY-MM-DD'); planned_dish_moved: and from which day to which;
-  // dish_unplanned: which one.
+  // dish_unplanned: which one; planned_dish_cook_set: which one, and the
+  // Member who cooks it now (none when cleared).
   | { plannedDish: string, day: string }
   | { plannedDish: string, from: string, to: string }
-  | { plannedDish: string }
+  | { plannedDish: string, member?: string }
   // cooking_recorded, cooking_deleted, cooking_restored, and
   // snackbert_report_sent (#424, which Cooking was reported).
   | { cooking: string, undo?: true }
@@ -129,19 +130,21 @@ export function recordEvents(d: Db, event: EventValues, from: SQL) {
 // `changed`, and, when `earlier` selects them by `id`, as they were before
 // as `earlier`: only the rows in both get one then, and only those `where`
 // holds for (and each event's own `when`). With `once`, one event per
-// statement, however many rows it changed. Answers the changed rows, every
+// statement, however many rows it changed. `alongside` is another write of
+// the same statement (a data-modifying query, which may read `changed`): what
+// else must change exactly when this does. Answers the changed rows, every
 // one. (`getSQL()`, as a query builder put in SQL as is would be wrapped in
 // parentheses, which a `with` query that writes may not be.)
 export function withEvents(
   d: Db,
   write: SQLWrapper,
   event: EventValues | EventValues[],
-  { earlier, where, once = false }: { earlier?: SQL, where?: SQL, once?: boolean } = {},
+  { earlier, where, once = false, alongside }: { earlier?: SQL, where?: SQL, once?: boolean, alongside?: SQL } = {},
 ) {
   const events = Array.isArray(event) ? event : [event]
   return d.execute<Record<string, unknown>>(sql`
     with ${earlier ? sql`earlier as (${earlier}), ` : sql``}changed as (${write.getSQL()}),
-    ${sql.join(events.map((e, i) => sql`recorded${sql.raw(String(i))} as (${insertEvents(e, eventRows(e, { earlier, where, once }))})`), sql`, `)}
+    ${sql.join(events.map((e, i) => sql`recorded${sql.raw(String(i))} as (${insertEvents(e, eventRows(e, { earlier, where, once }))})`), sql`, `)}${alongside ? sql`, alongside as (${alongside})` : sql``}
     select * from changed
   `)
 }
@@ -187,13 +190,17 @@ export function cookingEvent(kind: EventKind, user: string, { undo = false } = {
 // Board its Dish is on. A move's (`movedId`) reads the day it was on from
 // `earlier` and is recorded for the moved Planned Dish alone, not for the
 // others the placement renumbered.
-export function plannedDishEvent(kind: 'dish_planned' | 'dish_unplanned', user: string): EventValues
+export function plannedDishEvent(kind: 'dish_planned' | 'dish_unplanned' | 'planned_dish_cook_set', user: string): EventValues
 export function plannedDishEvent(kind: 'planned_dish_moved', user: string, movedId: string): EventValues
 export function plannedDishEvent(kind: EventKind, user: string, movedId?: string): EventValues {
   const details = {
     dish_planned: sql`jsonb_build_object('plannedDish', changed.id, 'day', changed.day)`,
     planned_dish_moved: sql`jsonb_build_object('plannedDish', changed.id, 'from', earlier.day, 'to', changed.day)`,
     dish_unplanned: sql`jsonb_build_object('plannedDish', changed.id)`,
+    // No `member` when the cook was cleared, so that an account deletion has
+    // nothing to empty out of it.
+    planned_dish_cook_set: sql`case when changed.cook_id is null then jsonb_build_object('plannedDish', changed.id)
+      else jsonb_build_object('plannedDish', changed.id, 'member', changed.cook_id) end`,
   }[kind as 'dish_planned']
   return {
     kind,

@@ -1,22 +1,24 @@
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
-import { dish, plannedDish } from '../db/schema'
+import { dish, membership, plannedDish } from '../db/schema'
 import { plannedDishEvent, withEvents } from './events'
 import { isUniqueViolation } from './late-changes'
 
 // The Week Plan (CONTEXT.md: Week Plan, Planned Dish; ADR 0014): the Dishes
-// a Board's Members put on days. Planning, moving and unplanning are three
-// small writes, each one atomic with its Event Log event and each checking
+// a Board's Members put on days, and who cooks them. Planning, moving,
+// unplanning and setting the cook are four small writes, each one atomic with its Event Log event and each checking
 // what it needs in the same statement, so nothing races between check and
 // write. They write nothing to the Dish History and notify nobody. The
 // Permission to move Dishes is checked by the caller (permission-checks.ts).
 
 // A Planned Dish as the Board load carries it: its Dish and its day, a
-// calendar date in Europe/Berlin as 'YYYY-MM-DD'.
+// calendar date in Europe/Berlin as 'YYYY-MM-DD'; and who cooks it, a Member
+// of the Board, or null for nobody.
 export interface PlannedDishView {
   id: string
   dishId: string
   day: string
+  cookId: string | null
 }
 
 // A Planned Dish is on a Board through its Dish, and counts only while that
@@ -25,7 +27,7 @@ function onBoard(boardId: string) {
   return and(eq(dish.boardId, boardId), isNull(dish.deletedAt))
 }
 
-const VIEW = { id: plannedDish.id, dishId: plannedDish.dishId, day: plannedDish.day }
+const VIEW = { id: plannedDish.id, dishId: plannedDish.dishId, day: plannedDish.day, cookId: plannedDish.cookId }
 
 // The Board's Week Plan, past weeks too, in order: by day, then place in the
 // day. Those of an Archived Dish aren't in it.
@@ -162,4 +164,40 @@ export async function unplanDish(boardId: string, userId: string, id: string): P
     ),
   ])
   return true
+}
+
+// Sets who cooks the Planned Dish, or clears the cook (null). The cook must be
+// a Member of the Board (a row in membership: the Operator visiting is not
+// one), which the statement itself checks, so a Member leaving at the same
+// moment can't slip in. Setting the cook it already has changes nothing: no
+// Board Version move, no event. Null unless the Planned Dish is on the Board
+// with its Dish not archived; 'not-member' if the cook isn't a Member.
+export async function setPlannedDishCook(
+  boardId: string,
+  userId: string,
+  id: string,
+  cookId: string | null,
+): Promise<PlannedDishView | 'not-member' | null> {
+  const before = await plannedDishBoard(id)
+  if (before?.boardId !== boardId) return null
+  const isMember = cookId === null
+    ? sql`true`
+    : sql`exists (select 1 from ${membership} where ${and(eq(membership.boardId, boardId), eq(membership.userId, cookId))})`
+  await runAtomic(d => [
+    withEvents(
+      d,
+      sql`update ${plannedDish} set cook_id = ${cookId}
+        where ${and(
+          eq(plannedDish.id, id),
+          sql`${plannedDish.dishId} in (select ${dish.id} from ${dish} where ${onBoard(boardId)})`,
+          sql`${plannedDish.cookId} is distinct from ${cookId}::text`,
+          isMember,
+        )}
+        returning id, dish_id, cook_id`,
+      plannedDishEvent('planned_dish_cook_set', userId),
+    ),
+  ])
+  const now = await viewOf(id)
+  if (!now) return null
+  return now.cookId === cookId ? now : 'not-member'
 }

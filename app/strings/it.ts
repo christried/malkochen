@@ -1041,6 +1041,7 @@ export const it: Strings = {
       dish_planned: 'Piatto pianificato',
       planned_dish_moved: 'Piatto pianificato spostato',
       dish_unplanned: 'Tolto dal piano settimanale',
+      planned_dish_cook_set: 'Chi cucina cambiato',
       cooking_recorded: 'Cucinato',
       cooking_deleted: 'Cottura eliminata',
       cooking_restored: 'Cottura ripristinata',

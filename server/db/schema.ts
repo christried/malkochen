@@ -426,6 +426,10 @@ export const plannedDish = pgTable('planned_dish', {
   position: integer('position').notNull(),
   // Who planned it; kept (as unknown) if their account is ever deleted.
   plannedBy: text('planned_by').references(() => user.id, { onDelete: 'set null' }),
+  // Who cooks it, "Wer kocht": a Member of the Board, or nobody (null, the
+  // default). Cleared when they leave the Board, are removed from it or delete
+  // their account (this on delete set null).
+  cookId: text('cook_id').references(() => user.id, { onDelete: 'set null' }),
   plannedAt: timestamp('planned_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => [index('planned_dish_dish_id_idx').on(t.dishId)])
 

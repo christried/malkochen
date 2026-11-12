@@ -1025,6 +1025,7 @@ export const en: Strings = {
       dish_planned: 'Dish planned',
       planned_dish_moved: 'Planned dish moved',
       dish_unplanned: 'Taken off the week plan',
+      planned_dish_cook_set: 'Cook changed',
       cooking_recorded: 'Cooked',
       cooking_deleted: 'Cooking deleted',
       cooking_restored: 'Cooking restored',
