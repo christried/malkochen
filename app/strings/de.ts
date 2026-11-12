@@ -1209,6 +1209,7 @@ export const de = {
       dish_planned: 'Gericht eingeplant',
       planned_dish_moved: 'Eingeplantes Gericht verschoben',
       dish_unplanned: 'Aus dem Wochenplan genommen',
+      planned_dish_cook_set: 'Wer kocht geändert',
       cooking_recorded: 'Gekocht',
       cooking_deleted: 'Kochen gelöscht',
       cooking_restored: 'Kochen wiederhergestellt',

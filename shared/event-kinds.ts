@@ -27,10 +27,13 @@ export const EVENT_KINDS = [
   'dish_deleted',
   // The Week Plan (CONTEXT.md: Week Plan, Planned Dish): a Dish put on a day,
   // a Planned Dish moved to another day or place, and one taken off the plan
-  // (the Dish itself stays). `details.plannedDish` is the Planned Dish.
+  // (the Dish itself stays), and who cooks one set or cleared ("Wer kocht";
+  // `details.member` is the cook, absent when cleared). `details.plannedDish`
+  // is the Planned Dish.
   'dish_planned',
   'planned_dish_moved',
   'dish_unplanned',
+  'planned_dish_cook_set',
   'cooking_recorded',
   'cooking_deleted',
   'cooking_restored',
