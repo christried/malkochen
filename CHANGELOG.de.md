@@ -4,6 +4,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-12
+
 ### Added
 
 - Gerichte können jetzt ein Rezept haben. Öffne ein Gericht und tippe auf Rezept hinzufügen, um Zutaten und Schritte Zeile für Zeile festzuhalten, auch ohne Verbindung. Eine eingefügte Liste wird zu einer Zeile pro Eintrag, und die Suche findet ein Gericht auch über seine Zutaten.
@@ -85,7 +87,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/christried/malkochen/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/christried/malkochen/compare/v1.1.1...v1.1.2
