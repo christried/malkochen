@@ -1,13 +1,14 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import type { AdminRecipeFinderUser, RecipeFinderState } from '../../shared/recipe-finder'
 import { db } from '../db'
-import { eventLog, recipeFinder, user } from '../db/schema'
+import { eventLog, rateLimitUse, recipeFinder, user } from '../db/schema'
 import { recipeFinderAskedEmail } from '../email'
 import { parseServerEnv } from '../env'
+import { RATE_LIMITS } from '../rate-limits'
 import { detailsOf, userEvent, withEvents } from './events'
 import { mailSender } from './mail'
 import { operatorEmail } from './operator'
-import { recipientLanguage } from './people'
+import { pictureOf, recipientLanguage } from './people'
 
 // The Recipe Finder switch (CONTEXT.md, #497, ADR 0013): off for every new
 // user (no row), asked once they asked in Your Settings, on once the
@@ -83,18 +84,27 @@ export async function recipeFinderUsers(): Promise<AdminRecipeFinderUser[]> {
     .select({
       id: user.id,
       name: user.username,
+      email: user.email,
+      image: pictureOf,
       switchedOn: recipeFinder.switchedOn,
       askedAt: recipeFinder.askedAt,
+      // The counter is kept per window (server/utils/rate-limit.ts): a window
+      // that is over has not been reset yet, so it counts for nothing.
+      searchesToday: sql<number>`case when ${rateLimitUse.windowStart} > now() - ${RATE_LIMITS['recipe-search'].window}::interval then ${rateLimitUse.calls} else 0 end`,
       searches: sql<number>`(select count(*)::int from ${eventLog} where ${eventLog.userId} = ${user.id} and ${eventLog.kind} in ('recipe_found', 'recipe_not_found', 'recipe_search_failed'))`,
     })
     .from(recipeFinder)
     .innerJoin(user, eq(user.id, recipeFinder.userId))
+    .leftJoin(rateLimitUse, and(eq(rateLimitUse.userId, user.id), eq(rateLimitUse.limited, 'recipe-search')))
     .orderBy(recipeFinder.switchedOn, desc(recipeFinder.askedAt), user.username)
   return rows.map(row => ({
     id: row.id,
     name: row.name ?? '',
+    email: row.email,
+    image: row.image,
     state: row.switchedOn ? 'on' : 'asked',
     askedAt: row.askedAt?.toISOString() ?? null,
     searches: row.searches,
+    searchesToday: row.searchesToday,
   }))
 }
