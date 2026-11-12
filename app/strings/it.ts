@@ -10,6 +10,7 @@ import type { DishField, EventKind } from '../../shared/event-kinds'
 import type { Strings, UnsentKindName } from './de'
 import type { SourceKind } from '../../server/source-lookup'
 import type { VideoPlatform } from '../../shared/video-embed'
+import { addDays, weekStart } from '../board/week-days'
 import { intlFor } from './intl'
 
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
@@ -37,7 +38,16 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
   }
 }
 
-const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday } = intlFor('it-IT')
+const { number, plural, day: addedDate, dayInFull, dateTime: eventTime, dayWithYear, month: monthAndYear, moment, time, isToday, weekday, weekdayShort, dayNumber, dayMonth, weekRange } = intlFor('it-IT')
+
+// A day inside a sentence on the Week Plan: "oggi", "domani", "sabato", and
+// after the current week with its date, "giovedì 26 novembre".
+function dayPhrase(day: string, today: string): string {
+  if (day === today) return 'oggi'
+  if (day === addDays(today, 1)) return 'domani'
+  const name = weekday(day).toLowerCase()
+  return weekStart(day) === weekStart(today) ? name : `${name} ${dayMonth(day)}`
+}
 
 // "1 piatto", "4 piatti".
 function dishCount(count: number): string {
@@ -224,6 +234,8 @@ export const it: Strings = {
     thisBoard: 'Questa bacheca',
     moveFailed: (title: string) => `Non è stato possibile spostare “${title}”. ${tryAgain}`,
     notAllowed: (title: string) => `Con “${title}” non puoi più farlo su questa bacheca. Lo decide chi ne è titolare.`,
+    planFailed: (title: string) => `“${title}” non è stato pianificato. Riprova tra un attimo.`,
+    planCookFailed: (title: string) => `Non è stato possibile cambiare chi cucina “${title}”. Riprova tra un attimo.`,
     cook: 'Cucinato ✓',
     cookedOn: (board: string) => `su ${board}`,
     cookWord: 'Cucinato',
@@ -659,6 +671,40 @@ export const it: Strings = {
     purged: (title: string) => `Hai eliminato “${title}” per sempre.`,
     failed,
     notAllowed: 'Su questa bacheca non puoi più farlo. Lo decide chi ne è titolare.',
+  },
+  week: {
+    view: 'Vista',
+    columns: 'Colonne',
+    week: 'Settimana',
+    title: (monday: string, now = new Date()) => weekRange(monday, addDays(monday, 6), 'al', now),
+    today: 'Oggi',
+    previous: 'Settimana precedente',
+    next: 'Settimana successiva',
+    weekday,
+    weekdayShort,
+    dayOfMonth: (day: string) => dayNumber(day),
+    dayName: (day: string) => `${weekday(day)} ${dayMonth(day)}`,
+    dayPhrase,
+    planOn: (day: string) => `Pianifica un piatto per ${weekday(day).toLowerCase()}`,
+    plannedDish: (title: string, day: string) => `${title}, ${weekday(day).toLowerCase()}`,
+    more: (title: string) => `Altro su ${title}`,
+    emptyTitle: 'La settimana è ancora libera.',
+    emptyText: 'Scegli un piatto dalla bacheca e mettilo su un giorno.',
+    emptyButton: 'Scegli un piatto',
+    emptyPast: 'In questa settimana non era previsto niente.',
+    pickTitle: (day: string, today: string) => day === today ? 'Cosa si mangia oggi?' : `Cosa si mangia ${weekStart(day) === weekStart(today) ? weekday(day).toLowerCase() : `${weekday(day).toLowerCase()} ${dayMonth(day)}`}?`,
+    search: 'Cerca un piatto',
+    clearSearch: 'Cancella la ricerca',
+    noMatch: (query: string) => `Nessun piatto con “${query}” su questa bacheca.`,
+    pickDay: 'Che giorno?',
+    moveToDay: 'Sposta su un altro giorno',
+    liesHere: 'È già qui',
+    moveUp: 'Sposta su',
+    moveDown: 'Sposta giù',
+    remove: 'Togli dal piano',
+    moved: (day: string, today: string) => `Spostato a ${dayPhrase(day, today)}.`,
+    removed: 'Tolto dal piano.',
+    nowAt: (title: string, day: string, place: number, total: number) => `${title}, ora di ${weekday(day).toLowerCase()} al posto ${place} di ${total}.`,
   },
   offline: {
     headline: 'Sei offline.',

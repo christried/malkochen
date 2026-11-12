@@ -30,7 +30,35 @@ export function intlFor(locale: string) {
   const dateAndTime = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: ZONE })
   // "3. Sept." / "3 Sept", with the year only when it isn't this year.
   const dayOf = (at: Date) => (year.format(at) === year.format(new Date()) ? dayThisYear : day).format(at)
+  const monthName = new Intl.DateTimeFormat(locale, { month: 'long', timeZone: ZONE })
+  const weekdayLong = new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: ZONE })
+  const weekdayShort = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: ZONE })
+  const dayNumber = new Intl.DateTimeFormat(locale, { day: 'numeric', timeZone: ZONE })
+  // A calendar day, YYYY-MM-DD, as a moment: noon UTC is that day in German time too.
+  const noon = (date: string) => new Date(`${date}T12:00:00Z`)
+  // A word starting with a capital: Italian writes its days small.
+  const capital = (word: string) => word.charAt(0).toLocaleUpperCase(locale) + word.slice(1)
   return {
+    // "Donnerstag" / "Thursday", from a calendar day, YYYY-MM-DD.
+    weekday: (date: string) => capital(weekdayLong.format(noon(date))),
+    // "Do" / "Thu" / "Gio": without the dot some languages add.
+    weekdayShort: (date: string) => capital(weekdayShort.format(noon(date)).replace(/\.$/, '')),
+    // "19": the number of a day in its month.
+    dayNumber: (date: string) => dayNumber.format(noon(date)),
+    // "26. November": a day with its month, never its year.
+    dayMonth: (date: string) => longDayThisYear.format(noon(date)),
+    // "16. bis 22. November": a week from its first day to its last, joined
+    // by `to`. The month is named once if both are in it. The year appears
+    // when the week isn't in the year of `now` or spans two years: once at
+    // the end if both days share a month, else on both days.
+    weekRange: (first: string, last: string, to: string, now: Date) => {
+      const [a, b] = [noon(first), noon(last)]
+      const showYear = year.format(a) !== year.format(b) || year.format(a) !== year.format(now)
+      const dayWith = (at: Date) => (showYear ? longDay : longDayThisYear).format(at)
+      if (monthName.format(a) !== monthName.format(b)) return `${dayWith(a)} ${to} ${dayWith(b)}`
+      const start = longDayThisYear.format(a).replace(monthName.format(a), '').trim()
+      return `${start} ${to} ${dayWith(b)}`
+    },
     number: (count: number) => numbers.format(count),
     plural: (count: number, forms: PluralForms) => forms[plurals.select(count)] ?? forms.other,
     day: dayOf,
