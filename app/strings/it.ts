@@ -25,6 +25,10 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'title': return `nuovo titolo per ${named}`
     case 'recipe': return `ricetta modificata per ${named}`
     case 'add': return `${named} aggiunto`
+    case 'plan': return `${named} pianificato`
+    case 'planMove': return `${named} spostato nel piano settimanale`
+    case 'unplan': return `${named} tolto dal piano settimanale`
+    case 'planCook': return `chi cucina ${named}`
     case 'move': return `${named} spostato`
     case 'cook':
     case 'cookMany': return `${named} cucinato`

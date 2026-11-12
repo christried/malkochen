@@ -149,7 +149,7 @@ export function createKeptBoards({ store, userId, forgetImages }: KeptBoardsDeps
   return {
     opened,
     keep,
-    board: boardId => store.boards.load(userId, boardId),
+    board: async boardId => withPlan(await store.boards.load(userId, boardId)),
     keepListings,
     listings,
     keepHistory: (boardId, dishId, history) => {
@@ -171,6 +171,13 @@ export function createKeptBoards({ store, userId, forgetImages }: KeptBoardsDeps
       if (view) await drop(view.id)
     },
   }
+}
+
+// A Board kept before the Week Plan (#513) has no Planned Dishes: it reads as
+// one with an empty Plan.
+function withPlan(view: BoardView | null): BoardView | null {
+  if (view && !Array.isArray(view.plannedDishes)) view.plannedDishes = []
+  return view
 }
 
 // The addresses of the images a Board's Dishes show.

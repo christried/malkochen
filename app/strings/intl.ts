@@ -4,6 +4,15 @@
 // the same day.
 const ZONE = 'Europe/Berlin'
 
+// The calendar day in German time, as YYYY-MM-DD (en-CA writes it so).
+const calendarDay = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: ZONE })
+
+// The calendar day of a moment in German time, as YYYY-MM-DD: the day a Cooking
+// counts for, and the day of a Planned Dish.
+export function berlinDay(at: Date | string): string {
+  return calendarDay.format(typeof at === 'string' ? new Date(at) : at)
+}
+
 // A word's forms by plural category ("one", "other", and whichever others the
 // language has); "other" for any it leaves out.
 export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string }
@@ -17,8 +26,6 @@ export function intlFor(locale: string) {
   const longDayThisYear = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: ZONE })
   const longDay = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONE })
   const month = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: ZONE })
-  // The calendar day in German time, to tell today from other days.
-  const calendarDay = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: ZONE })
   const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone: ZONE })
   const dateAndTime = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: ZONE })
   // "3. Sept." / "3 Sept", with the year only when it isn't this year.

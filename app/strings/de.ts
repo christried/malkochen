@@ -19,7 +19,7 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -31,6 +31,10 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'title': return `neuer Titel für ${named}`
     case 'recipe': return `geändertes Rezept für ${named}`
     case 'add': return `${named} hinzugefügt`
+    case 'plan': return `${named} eingeplant`
+    case 'planMove': return `${named} im Wochenplan verschoben`
+    case 'unplan': return `${named} aus dem Wochenplan genommen`
+    case 'planCook': return `Wer kocht ${named}`
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`
