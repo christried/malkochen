@@ -109,13 +109,15 @@ let arrivalRun = 0
 async function arrive() {
   const run = ++arrivalRun
   const section = root.value
-  if (!section || reduced.value) return
+  if (!section) return
   const view = scroller?.getBoundingClientRect()
   const at = section.getBoundingClientRect()
   if (view && (at.bottom < view.top || at.top > view.bottom)) {
     emit('found')
     return
   }
+  // Reduced motion: the Transition's crossfade is all there is.
+  if (reduced.value) return
   arrival.value = 'leaving'
   await wait(300)
   if (run !== arrivalRun) return
