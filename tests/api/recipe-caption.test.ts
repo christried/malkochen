@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, test } from 'vitest'
-import { INSTRUCTIONS } from '../../server/recipe-finder/model'
+import { CAPTION_INSTRUCTIONS } from '../../server/recipe-finder/model'
 import type { RecipeFinderStatus } from '../../shared/recipe-finder'
 import { startAnthropicService, type AnthropicService } from '../support/anthropic-service'
 import {
@@ -180,7 +180,7 @@ test('what is sent is the instructions and the Caption as data, and nothing abou
   const { apiKey, body } = anthropic.requests[0]!
   expect(apiKey).toBe(TEST_ANTHROPIC_API_KEY)
   expect(body.model).toBe('claude-haiku-5-5')
-  expect(body.system).toBe(INSTRUCTIONS)
+  expect(body.system).toBe(CAPTION_INSTRUCTIONS)
   expect(body.messages).toEqual([{ role: 'user', content: `<caption>\n${RECIPE_CAPTION}\n</caption>` }])
   for (const unsent of ['tools', 'tool_choice', 'thinking', 'temperature', 'top_p', 'top_k', 'metadata']) expect(body).not.toHaveProperty(unsent)
   const sent = JSON.stringify(body)

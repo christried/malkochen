@@ -3,7 +3,7 @@ import { creatorName } from './creator'
 import { decodeEntities, metaTags } from './html'
 import { isObject, isRecipe, jsonLdNodes, type Json, type JsonObject } from './json-ld'
 import { httpUrl, withoutTracking } from './link'
-import { pageRecipe } from './recipe'
+import { recipeInPage } from './recipe'
 import { shortenTitle } from './title'
 import { nothingFound, type Strategy } from './types'
 
@@ -117,7 +117,7 @@ export const webPage: Strategy = {
   async recipe(url, { http }) {
     const page = await http.page(url.href)
     if (!page.html) return { outcome: 'unreadable' }
-    const recipe = pageRecipe(jsonLdNodes(page.html).filter(isRecipe))
+    const recipe = recipeInPage(page.html)
     return recipe ? { outcome: 'found', recipe } : { outcome: 'none' }
   },
 }

@@ -11,7 +11,7 @@ import { requireDishPermission } from './permission-checks'
 import { refundRateLimit, spendRateLimit } from './rate-limit'
 import { recipeFinderStateOf } from './recipe-finder'
 import { dishNotFound } from './session'
-import { lookupRecipe } from './source-lookup'
+import { lookupDestination, lookupPage, lookupRecipe } from './source-lookup'
 
 // "Rezept finden" (CONTEXT.md: Recipe Finder, #500): the Dish side of the
 // Recipe Finder. Whether the user may search, which Dish is looked at, the
@@ -20,13 +20,16 @@ import { lookupRecipe } from './source-lookup'
 
 const env = parseServerEnv(process.env)
 
-// The app's one Recipe Finder, which reads Captions with Claude Haiku when
-// there is an Anthropic API key. Without one it does nothing at all
+// The app's one Recipe Finder, which reads Captions and the pages they point
+// to with Claude Haiku when there is an Anthropic API key. Without one it
+// does nothing at all
 // (`recipeFinderAvailable`): no search starts, and the server says so in what
 // it serves, so "Rezept finden" isn't offered.
 export const recipeFinderAvailable = env.ANTHROPIC_API_KEY !== ''
 const findRecipe = createRecipeFinder({
   lookupRecipe,
+  lookupPage,
+  lookupDestination,
   readRecipe: recipeFinderAvailable ? createRecipeReader({ apiKey: env.ANTHROPIC_API_KEY, baseURL: env.ANTHROPIC_BASE_URL || undefined }) : null,
 })
 

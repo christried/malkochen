@@ -1,5 +1,5 @@
 import { decodeEntities } from './html'
-import { hasType, isObject, type Json, type JsonObject } from './json-ld'
+import { hasType, isObject, isRecipe, jsonLdNodes, type Json, type JsonObject } from './json-ld'
 import { sentencesOf } from './sentence'
 import type { PageRecipe } from './types'
 
@@ -17,6 +17,11 @@ export function pageRecipe(recipes: JsonObject[]): PageRecipe | null {
     if (ingredients.length || steps.length) return { ingredients, steps }
   }
   return null
+}
+
+// The recipe a page's HTML carries as schema.org Recipe data, if it does.
+export function recipeInPage(html: string): PageRecipe | null {
+  return pageRecipe(jsonLdNodes(html).filter(isRecipe))
 }
 
 // An ingredient list: a string per Ingredient, or one string with a line each.

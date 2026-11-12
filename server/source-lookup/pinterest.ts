@@ -64,6 +64,20 @@ async function pinPage(http: Http, found: SourceGuess, timeoutMs: number): Promi
   }
 }
 
+// Where the Pin leads to, which the Pin page names as og:see_also and again as
+// pinterestapp:source (both checked 2026-11-12 on Pins whose destination is a
+// blog, a short link and an Instagram Reel); og:see_also first. Only an
+// absolute http(s) link that is not Pinterest's own counts: a Pin of one's own
+// would only name itself or another Pin. The page's embedded JSON holds a
+// "link" for every related Pin too, so it is not read.
+function destinationOf(meta: Map<string, string>): string | null {
+  for (const name of ['og:see_also', 'pinterestapp:source']) {
+    const link = httpUrl(meta.get(name))
+    if (link && !HOST.test(new URL(link).hostname) && !SHORT_HOST.test(new URL(link).hostname)) return link
+  }
+  return null
+}
+
 export const pinterest: Strategy = {
   match(url) {
     if (SHORT_HOST.test(url.hostname)) return { kind: 'pinterest-pin', canonicalLink: withoutTracking(url) }
@@ -75,5 +89,17 @@ export const pinterest: Strategy = {
     if (!found) return nothingFound({ kind: 'pinterest-pin', canonicalLink: withoutTracking(url) })
     const [page, oembed] = await Promise.all([pinPage(http, found, timeoutMs), fromOembed(http, found)])
     return { ...found, ...page, ...oembed, playableVideo: false }
+  },
+
+  async destination(url, { http }) {
+    const found = pin(SHORT_HOST.test(url.hostname) ? await http.resolve(url.href, hop => pin(hop) !== null) : url)
+    // A short link that doesn't lead to a Pin couldn't be followed: another try may.
+    if (!found) return { outcome: 'unreadable' }
+    const { html } = await http.page(found.canonicalLink)
+    if (html === null) return { outcome: 'unreadable' }
+    const meta = metaTags(html)
+    // Only a page that says it is a Pin is believed (as for the title).
+    const link = meta.get('og:type') === 'pinterestapp:pin' ? destinationOf(meta) : null
+    return link ? { outcome: 'found', link } : { outcome: 'none' }
   },
 }

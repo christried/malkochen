@@ -1,6 +1,6 @@
 import { isDeployed } from '../env'
 import { publicFetch } from '../source-lookup/public-network'
-import { createRecipeLookup, createSourceLookup, type RecipeLookup, type SourceLookup } from '../source-lookup'
+import { createDestinationLookup, createPageLookup, createRecipeLookup, createSourceLookup, type DestinationLookup, type PageLookup, type RecipeLookup, type SourceLookup } from '../source-lookup'
 import { fixturePages, withFixtures, type LookupFixtures } from '../source-lookup/fixtures'
 
 // The fixtures the test servers know (SOURCE_LOOKUP_FIXTURES); none anywhere
@@ -20,4 +20,11 @@ export const lookupSource: SourceLookup = lookupFixtures ? withFixtures(createSo
 // The app's one reading of a link's page for its recipe (#499), which the
 // Recipe Finder uses. In tests the fixtures' pages stand in for the links
 // that have one.
-export const lookupRecipe: RecipeLookup = createRecipeLookup(lookupFixtures ? { fetch: fixturePages(lookupFixtures, publicFetch) } : {})
+const pageOptions = lookupFixtures ? { fetch: fixturePages(lookupFixtures, publicFetch) } : {}
+export const lookupRecipe: RecipeLookup = createRecipeLookup(pageOptions)
+
+// ... and the app's one reading of a page the Recipe Finder follows (#502):
+// the page a Caption names or a Pin leads to, and its one reading of where a
+// Pin says its recipe is. The fixtures' pages stand in here too.
+export const lookupPage: PageLookup = createPageLookup(pageOptions)
+export const lookupDestination: DestinationLookup = createDestinationLookup(pageOptions)

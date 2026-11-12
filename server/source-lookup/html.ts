@@ -2,6 +2,7 @@
 
 const ENTITIES: Record<string, string> = {
   amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ', shy: '',
+  deg: '°', frac12: '½', frac14: '¼', frac34: '¾', times: '×', euro: '€', copy: '©',
   ndash: '–', mdash: '—', hellip: '…', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
   laquo: '«', raquo: '»', middot: '·', bull: '•',
   auml: 'ä', ouml: 'ö', uuml: 'ü', Auml: 'Ä', Ouml: 'Ö', Uuml: 'Ü', szlig: 'ß', eacute: 'é', egrave: 'è',
