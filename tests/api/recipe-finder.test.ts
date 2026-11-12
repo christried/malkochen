@@ -21,6 +21,8 @@ const WIRTH = user('wirth')
 const KAY = user('kay')
 const IVERSON = user('iverson')
 const HAZELHURST = user('hazelhurst')
+const AMBROSE = user('ambrose')
+const THIBAULT = user('thibault')
 
 let resend: ResendService
 
@@ -221,4 +223,23 @@ test('the Admin list shows each user\'s email, picture and the searches counting
   expect((await own()).searchesToday).toBe(0)
 
   await switchFor(operator, hazelhurstId, false)
+})
+
+test('the Admin list puts who asked before who was switched on unasked, within each group', async () => {
+  const operator = await signIn(OPERATOR)
+  const ambroseId = await idOf(await signIn(AMBROSE, { name: 'Ambrose' }))
+  const thibault = await signIn(THIBAULT, { name: 'Thibault' })
+  const thibaultId = await idOf(thibault)
+
+  // Thibault never asked, so he has no request date, which must not float him up.
+  await switchFor(operator, thibaultId, true)
+  await ask(await signIn(AMBROSE))
+  await switchFor(operator, ambroseId, true)
+
+  const ids = (await listed(operator)).map(u => u.id)
+  expect(ids).toContain(ambroseId)
+  expect(ids.indexOf(ambroseId)).toBeLessThan(ids.indexOf(thibaultId))
+
+  await switchFor(operator, ambroseId, false)
+  await switchFor(operator, thibaultId, false)
 })

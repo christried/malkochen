@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { AdminRecipeFinderUser, RecipeFinderState } from '../../shared/recipe-finder'
 import { db } from '../db'
 import { eventLog, rateLimitUse, recipeFinder, user } from '../db/schema'
@@ -96,7 +96,9 @@ export async function recipeFinderUsers(): Promise<AdminRecipeFinderUser[]> {
     .from(recipeFinder)
     .innerJoin(user, eq(user.id, recipeFinder.userId))
     .leftJoin(rateLimitUse, and(eq(rateLimitUse.userId, user.id), eq(rateLimitUse.limited, 'recipe-search')))
-    .orderBy(recipeFinder.switchedOn, desc(recipeFinder.askedAt), user.username)
+    // Nulls last: a user switched on without asking has no request date, and
+    // Postgres would put them first under desc, above those who did ask.
+    .orderBy(recipeFinder.switchedOn, sql`${recipeFinder.askedAt} desc nulls last`, user.username)
   return rows.map(row => ({
     id: row.id,
     name: row.name ?? '',

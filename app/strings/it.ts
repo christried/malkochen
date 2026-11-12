@@ -819,7 +819,7 @@ export const it: Strings = {
       switchColumn: 'Trova ricette',
       // A request's day, from an ISO time: alone, and in a sentence.
       askedDay: (at: string) => addedDate(new Date(at)),
-      askedOn:(at: string) => `Richiesto il ${addedDate(new Date(at))}`,
+      askedOn: (at: string) => `Richiesto il ${addedDate(new Date(at))}`,
       searchesToday: (today: number) => `${number(today)} oggi`,
       searches: (total: number, today: number) => `${number(total)} ${plural(total, { one: 'ricerca', other: 'ricerche' })}, ${number(today)} oggi`,
       noSearches: 'Ancora nessuna ricerca',
