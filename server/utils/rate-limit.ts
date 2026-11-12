@@ -33,6 +33,18 @@ export async function spendRateLimit(userId: string, limited: RateLimited): Prom
   if ((counted?.calls ?? 0) > calls) throw createError({ statusCode: 429, statusMessage: 'Too many requests' })
 }
 
+// Gives back one of the user's calls to `limited` in the window they are in,
+// for work that failed through no fault of theirs (a page that didn't answer,
+// #500): it was counted before the work, so calls sent at once can't slip
+// under the limit, and shouldn't have cost them anything.
+export async function refundRateLimit(userId: string, limited: RateLimited): Promise<void> {
+  const { window } = RATE_LIMITS[limited]
+  await db
+    .update(rateLimitUse)
+    .set({ calls: sql`greatest(${rateLimitUse.calls} - 1, 0)` })
+    .where(and(eq(rateLimitUse.userId, userId), eq(rateLimitUse.limited, limited), gt(rateLimitUse.windowStart, sql`now() - ${window}::interval`)))
+}
+
 // The same for a caller without a session, told apart by IP address (on
 // Vercel x-forwarded-for is the visitor's, set by Vercel and not by the
 // client): counts one more call to `limited`, and says whether the client

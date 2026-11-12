@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, signIn, type Caller } from './client'
+import { RECIPE_BLOG } from '../support/source-lookup-fixtures'
+import { OPERATOR } from '../support/test-auth-env'
 
 // What a Dish's card shows of its Dish History (#335; PRD #318 stories
 // 28–31): the Board answer carries each Dish's Votes and how many Comments
@@ -10,7 +12,7 @@ import { ALLOWLISTED, signIn, type Caller } from './client'
 // Dish clears it. Yalow owns the Boards made here, Widnall joins them,
 // Blodgett is the outsider; all three are used by this file only.
 
-interface Dish { id: string, commentCount: number, votes: { up: boolean }[] }
+interface Dish { id: string, commentCount: number, votes: { up: boolean }[], recipe?: unknown }
 interface Board {
   id: string
   inviteToken: string
@@ -158,6 +160,23 @@ test('another Member\'s Recipe change neither marks the Dish nor is in its Dish 
 
   const res = await widnall.fetch(`/api/dishes/${dish.id}`, { method: 'PATCH', ...json({ recipe: { ingredients: ['Eier', 'Tomaten'], steps: ['Stocken lassen.'] } }) })
   expect(res.status).toBe(200)
+
+  expect(await isMarked(yalow, board.id, dish.id)).toBe(false)
+  const history = await (await openDish(yalow, dish.id)).json() as { entries: { kind: string }[] }
+  expect(history.entries.map(e => e.kind)).toEqual(['added'])
+})
+
+test('a Recipe the Recipe Finder found neither marks the Dish nor is in its Dish History (#500)', async () => {
+  const { board, yalow, widnall } = await sharedBoard('Rezept gefunden')
+  const added = await postDish(yalow, board.id, { title: 'Linsenlasagne', placeholder: 'bowl', source: { link: RECIPE_BLOG, kind: 'blog' } })
+  const dish = await added.json() as Dish
+  await opened(yalow, dish.id)
+  const { id } = await (await widnall.fetch('/api/me')).json() as { id: string }
+  expect((await (await signIn(OPERATOR)).fetch(`/api/admin/recipe-finder/${id}`, { method: 'PUT', ...json({ on: true }) })).status).toBe(200)
+
+  const res = await post(widnall, `/api/dishes/${dish.id}/find-recipe`)
+  expect(res.status).toBe(200)
+  expect((await dishOn(yalow, board.id, dish.id)).recipe).not.toBeNull()
 
   expect(await isMarked(yalow, board.id, dish.id)).toBe(false)
   const history = await (await openDish(yalow, dish.id)).json() as { entries: { kind: string }[] }

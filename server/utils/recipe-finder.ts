@@ -1,7 +1,7 @@
 import { desc, eq, sql } from 'drizzle-orm'
 import type { AdminRecipeFinderUser, RecipeFinderState } from '../../shared/recipe-finder'
 import { db } from '../db'
-import { recipeFinder, user } from '../db/schema'
+import { eventLog, recipeFinder, user } from '../db/schema'
 import { recipeFinderAskedEmail } from '../email'
 import { parseServerEnv } from '../env'
 import { detailsOf, userEvent, withEvents } from './events'
@@ -80,7 +80,13 @@ export async function switchRecipeFinder(userId: string, on: boolean, operatorId
 // newest first, then those who have it.
 export async function recipeFinderUsers(): Promise<AdminRecipeFinderUser[]> {
   const rows = await db
-    .select({ id: user.id, name: user.username, switchedOn: recipeFinder.switchedOn, askedAt: recipeFinder.askedAt })
+    .select({
+      id: user.id,
+      name: user.username,
+      switchedOn: recipeFinder.switchedOn,
+      askedAt: recipeFinder.askedAt,
+      searches: sql<number>`(select count(*)::int from ${eventLog} where ${eventLog.userId} = ${user.id} and ${eventLog.kind} in ('recipe_found', 'recipe_not_found', 'recipe_search_failed'))`,
+    })
     .from(recipeFinder)
     .innerJoin(user, eq(user.id, recipeFinder.userId))
     .orderBy(recipeFinder.switchedOn, desc(recipeFinder.askedAt), user.username)
@@ -89,5 +95,6 @@ export async function recipeFinderUsers(): Promise<AdminRecipeFinderUser[]> {
     name: row.name ?? '',
     state: row.switchedOn ? 'on' : 'asked',
     askedAt: row.askedAt?.toISOString() ?? null,
+    searches: row.searches,
   }))
 }

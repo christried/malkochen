@@ -15,4 +15,7 @@ export interface AdminRecipeFinderUser {
   state: 'asked' | 'on'
   // When they asked, as an ISO time; null when switched on unasked.
   askedAt: string | null
+  // How many searches they made, all time: their events of the Recipe Finder
+  // finding a Recipe, finding none and failing (#500).
+  searches: number
 }
