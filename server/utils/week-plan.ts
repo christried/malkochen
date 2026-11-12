@@ -2,7 +2,7 @@ import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { db, runAtomic } from '../db'
 import { dish, membership, plannedDish } from '../db/schema'
 import { plannedDishEvent, withEvents } from './events'
-import { isUniqueViolation } from './late-changes'
+import { madeAtOrNow, writeOnce, type DeviceIdStanding } from './late-changes'
 
 // The Week Plan (CONTEXT.md: Week Plan, Planned Dish; ADR 0014): the Dishes
 // a Board's Members put on days, and who cooks them. Planning, moving,
@@ -71,17 +71,42 @@ function landingPosition(boardId: string, day: string, exceptId: string, index: 
   return index === undefined ? others : sql`least(${index}::int, ${others})`
 }
 
+// How the id a device made for a new Planned Dish stands (late-changes.ts):
+// a repeat if it is a Planned Dish of that Dish that the user planned
+// (archived Dish or not), taken if it is any other's. One that is gone (taken
+// off the plan since) is free again, as a Dish deleted for good is
+// (dishIdStanding): the queue sends a device's writes in order, so a repeat
+// of a plan never arrives after the unplan that followed it.
+export async function plannedDishIdStanding(id: string, dishId: string, userId: string): Promise<DeviceIdStanding> {
+  const [found] = await db.select({ dishId: plannedDish.dishId, plannedBy: plannedDish.plannedBy }).from(plannedDish).where(eq(plannedDish.id, id))
+  if (!found) return 'free'
+  return found.dishId === dishId && found.plannedBy === userId ? 'repeat' : 'taken'
+}
+
+// The Planned Dish as the Board shows it: null if it is gone, or its Dish is
+// archived or not on the Board.
+async function visibleView(boardId: string, id: string): Promise<PlannedDishView | null> {
+  const [found] = await db
+    .select(VIEW)
+    .from(plannedDish)
+    .innerJoin(dish, eq(dish.id, plannedDish.dishId))
+    .where(and(eq(plannedDish.id, id), onBoard(boardId)))
+  return found ?? null
+}
+
 // Plans the Dish on a day, at `index` among the day's Planned Dishes or at
-// its end. Null unless the Dish is on the Board and not archived; 'taken' if
-// `id` (made on the device, ADR 0012) is another Planned Dish's.
+// its end, dated `madeAt` if it was made offline (late-changes.ts). Null
+// unless the Dish is on the Board and not archived (a repeat whose Dish was
+// archived since too); 'taken' if `id` (made on the device, ADR 0012) is
+// another user's or another Dish's Planned Dish. A repeat (the same id, Dish
+// and user) plans nothing again and answers the Planned Dish as it is now.
 export async function planDish(
   boardId: string,
   userId: string,
-  { id, dishId, day, index }: { id: string, dishId: string, day: string, index?: number },
+  { id, dishId, day, index, madeAt }: { id: string, dishId: string, day: string, index?: number, madeAt?: string },
 ): Promise<PlannedDishView | 'taken' | null> {
-  if (await viewOf(id)) return 'taken'
   const plannable = sql`exists (select 1 from ${dish} where ${and(eq(dish.id, dishId), onBoard(boardId))})`
-  try {
+  const standing = await writeOnce(() => plannedDishIdStanding(id, dishId, userId), async () => {
     await runAtomic(d => [
       // Leaves the place free, like a drop in a Column (renumberForDrop).
       ...index === undefined
@@ -93,20 +118,16 @@ export async function planDish(
           `)],
       withEvents(
         d,
-        sql`insert into ${plannedDish} (id, dish_id, day, position, planned_by)
-          select ${id}, ${dish.id}, ${day}::date, ${landingPosition(boardId, day, id, index)}, ${userId}
+        sql`insert into ${plannedDish} (id, dish_id, day, position, planned_by, planned_at)
+          select ${id}, ${dish.id}, ${day}::date, ${landingPosition(boardId, day, id, index)}, ${userId}, ${madeAtOrNow(madeAt)}
           from ${dish} where ${and(eq(dish.id, dishId), onBoard(boardId))}
           returning id, dish_id, day, position`,
         plannedDishEvent('dish_planned', userId),
       ),
     ])
-  }
-  catch (err) {
-    // The same id, planned at the same moment, got there first.
-    if (isUniqueViolation(err)) return 'taken'
-    throw err
-  }
-  return viewOf(id)
+  })
+  if (standing === 'taken') return 'taken'
+  return visibleView(boardId, id)
 }
 
 // Moves the Planned Dish to a day, at `index` among that day's others or at
