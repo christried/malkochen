@@ -614,7 +614,7 @@ export const it: Strings = {
     permission: {
       addDishes: { label: 'Aggiungere piatti', hint: 'Mettere nuovi piatti sulla bacheca, anche condividendoli.' },
       editDishes: { label: 'Modificare piatti', hint: 'Cambiare titolo, immagine, autore e link. Sempre per i propri piatti.' },
-      moveDishes: { label: 'Spostare piatti', hint: 'Portare i piatti in altre colonne e segnarli come cucinati.' },
+      moveDishes: { label: 'Spostare piatti', hint: 'Portare i piatti in altre colonne, segnarli come cucinati e pianificarli nel piano settimanale.' },
       archiveDishes: { label: 'Archiviare piatti', hint: 'Archiviare i piatti e recuperarli dall’archivio. Sempre per i propri piatti.' },
       editColumns: { label: 'Modificare colonne', hint: 'Aggiungere, rinominare, riordinare ed eliminare colonne.' },
       shareInvite: { label: 'Condividere il link d’invito', hint: 'Vedere, copiare e passare il link.' },
@@ -1011,6 +1011,7 @@ export const it: Strings = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Piatti',
+      weekPlan: 'Piano settimanale',
       cookings: 'Cucinato',
       talk: 'Commenti e pollici',
       columns: 'Colonne',
@@ -1037,6 +1038,9 @@ export const it: Strings = {
       dish_archived: 'Piatto archiviato',
       dish_restored: 'Piatto ripristinato',
       dish_deleted: 'Piatto eliminato per sempre',
+      dish_planned: 'Piatto pianificato',
+      planned_dish_moved: 'Piatto pianificato spostato',
+      dish_unplanned: 'Tolto dal piano settimanale',
       cooking_recorded: 'Cucinato',
       cooking_deleted: 'Cottura eliminata',
       cooking_restored: 'Cottura ripristinata',

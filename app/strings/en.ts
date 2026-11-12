@@ -600,7 +600,7 @@ export const en: Strings = {
     permission: {
       addDishes: { label: 'Add dishes', hint: 'Put new dishes on the board, by sharing too.' },
       editDishes: { label: 'Edit dishes', hint: 'Change the title, image, creator and link. Always for your own dishes.' },
-      moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns and mark them as cooked.' },
+      moveDishes: { label: 'Move dishes', hint: 'Bring dishes to other columns, mark them as cooked and plan them in the week plan.' },
       archiveDishes: { label: 'Archive dishes', hint: 'Archive dishes and bring them back from the archive. Always for your own dishes.' },
       editColumns: { label: 'Edit columns', hint: 'Add, rename, reorder and delete columns.' },
       shareInvite: { label: 'Share the invite link', hint: 'See, copy and pass on the link.' },
@@ -995,6 +995,7 @@ export const en: Strings = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Dishes',
+      weekPlan: 'Week plan',
       cookings: 'Cooking',
       talk: 'Comments and thumbs',
       columns: 'Columns',
@@ -1021,6 +1022,9 @@ export const en: Strings = {
       dish_archived: 'Dish archived',
       dish_restored: 'Dish restored',
       dish_deleted: 'Dish deleted for good',
+      dish_planned: 'Dish planned',
+      planned_dish_moved: 'Planned dish moved',
+      dish_unplanned: 'Taken off the week plan',
       cooking_recorded: 'Cooked',
       cooking_deleted: 'Cooking deleted',
       cooking_restored: 'Cooking restored',

@@ -34,6 +34,12 @@ export type EventDetails =
   // dish_moved: the Columns it went from and to, and the Board it came
   // from if that isn't the one it went to.
   | { from: string, to: string, fromBoard?: string, undo?: true }
+  // dish_planned: which Planned Dish, on which day (a Berlin date,
+  // 'YYYY-MM-DD'); planned_dish_moved: and from which day to which;
+  // dish_unplanned: which one.
+  | { plannedDish: string, day: string }
+  | { plannedDish: string, from: string, to: string }
+  | { plannedDish: string }
   // cooking_recorded, cooking_deleted, cooking_restored, and
   // snackbert_report_sent (#424, which Cooking was reported).
   | { cooking: string, undo?: true }
@@ -174,6 +180,28 @@ export function cookingEvent(kind: EventKind, user: string, { undo = false } = {
     dish: sql`changed.dish_id`,
     user,
     details: sql`jsonb_build_object('cooking', changed.id${undo ? sql`, 'undo', true` : sql``})`,
+  }
+}
+
+// The event of a Planned Dish a write changed (`changed`, its row), on the
+// Board its Dish is on. A move's (`movedId`) reads the day it was on from
+// `earlier` and is recorded for the moved Planned Dish alone, not for the
+// others the placement renumbered.
+export function plannedDishEvent(kind: 'dish_planned' | 'dish_unplanned', user: string): EventValues
+export function plannedDishEvent(kind: 'planned_dish_moved', user: string, movedId: string): EventValues
+export function plannedDishEvent(kind: EventKind, user: string, movedId?: string): EventValues {
+  const details = {
+    dish_planned: sql`jsonb_build_object('plannedDish', changed.id, 'day', changed.day)`,
+    planned_dish_moved: sql`jsonb_build_object('plannedDish', changed.id, 'from', earlier.day, 'to', changed.day)`,
+    dish_unplanned: sql`jsonb_build_object('plannedDish', changed.id)`,
+  }[kind as 'dish_planned']
+  return {
+    kind,
+    board: sql`(select ${dish.boardId} from ${dish} where ${dish.id} = changed.dish_id)`,
+    dish: sql`changed.dish_id`,
+    user,
+    details,
+    when: movedId === undefined ? undefined : sql`changed.id = ${movedId}`,
   }
 }
 
