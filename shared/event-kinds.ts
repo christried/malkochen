@@ -25,6 +25,12 @@ export const EVENT_KINDS = [
   'dish_restored',
   // An Archived Dish the Owner deleted for good.
   'dish_deleted',
+  // The Week Plan (CONTEXT.md: Week Plan, Planned Dish): a Dish put on a day,
+  // a Planned Dish moved to another day or place, and one taken off the plan
+  // (the Dish itself stays). `details.plannedDish` is the Planned Dish.
+  'dish_planned',
+  'planned_dish_moved',
+  'dish_unplanned',
   'cooking_recorded',
   'cooking_deleted',
   'cooking_restored',

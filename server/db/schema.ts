@@ -408,6 +408,28 @@ export const cooking = pgTable('cooking', {
 }, t => [index('cooking_dish_id_idx').on(t.dishId, t.cookedAt)])
 
 // ---------------------------------------------------------------------------
+// Planned Dish (CONTEXT.md: Week Plan, Planned Dish; ADR 0014): one Dish on
+// one day of its Board's Week Plan. It belongs to a Board through its Dish,
+// as a Cooking does, so it has no board_id: a Dish moved to another Board
+// takes none of them along (a trigger, migration 0050), and archiving the
+// Dish hides them while the rows stay. A Dish may be planned on several days,
+// and twice on one day, so nothing is unique on Dish and day.
+
+export const plannedDish = pgTable('planned_dish', {
+  // Made on the device (ADR 0012), like other offline-made rows.
+  id: uuid('id').primaryKey().defaultRandom(),
+  dishId: uuid('dish_id').notNull().references(() => dish.id, { onDelete: 'cascade' }),
+  // The day, a calendar date in Europe/Berlin as 'YYYY-MM-DD'.
+  day: date('day', { mode: 'string' }).notNull(),
+  // Its place among the Board's Planned Dishes of that day (0, 1, 2…, or
+  // gaps after a Dish was archived: those keep theirs).
+  position: integer('position').notNull(),
+  // Who planned it; kept (as unknown) if their account is ever deleted.
+  plannedBy: text('planned_by').references(() => user.id, { onDelete: 'set null' }),
+  plannedAt: timestamp('planned_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [index('planned_dish_dish_id_idx').on(t.dishId)])
+
+// ---------------------------------------------------------------------------
 // Snackbert Reports (CONTEXT.md: Snackbert Report, #424): one row per Report a
 // Member sent Snackbert about a Cooking. Several per Cooking are allowed (a
 // second helping). Nothing of the portion is ever stored here: the text,

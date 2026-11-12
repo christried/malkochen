@@ -712,7 +712,7 @@ export const de = {
     permission: {
       addDishes: { label: 'Gerichte hinzufügen', hint: 'Neue Gerichte aufs Board legen, auch über Teilen.' },
       editDishes: { label: 'Gerichte bearbeiten', hint: 'Titel, Bild, Creator und Link ändern. Eigene Gerichte immer.' },
-      moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen und als gekocht markieren.' },
+      moveDishes: { label: 'Gerichte verschieben', hint: 'Gerichte in andere Spalten bringen, als gekocht markieren und im Wochenplan einplanen.' },
       archiveDishes: { label: 'Gerichte archivieren', hint: 'Gerichte archivieren und aus dem Archiv zurückholen. Eigene Gerichte immer.' },
       editColumns: { label: 'Spalten bearbeiten', hint: 'Spalten hinzufügen, umbenennen, umsortieren und löschen.' },
       shareInvite: { label: 'Einladungslink teilen', hint: 'Den Link sehen, kopieren und weitergeben.' },
@@ -1179,6 +1179,7 @@ export const de = {
     // The groups of kinds the Event Log filters by.
     eventGroups: {
       dishes: 'Gerichte',
+      weekPlan: 'Wochenplan',
       cookings: 'Kochen',
       talk: 'Kommentare und Daumen',
       columns: 'Spalten',
@@ -1205,6 +1206,9 @@ export const de = {
       dish_archived: 'Gericht archiviert',
       dish_restored: 'Gericht wiederhergestellt',
       dish_deleted: 'Gericht endgültig gelöscht',
+      dish_planned: 'Gericht eingeplant',
+      planned_dish_moved: 'Eingeplantes Gericht verschoben',
+      dish_unplanned: 'Aus dem Wochenplan genommen',
       cooking_recorded: 'Gekocht',
       cooking_deleted: 'Kochen gelöscht',
       cooking_restored: 'Kochen wiederhergestellt',
