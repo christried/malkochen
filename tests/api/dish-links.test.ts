@@ -3,6 +3,7 @@ import { beforeAll, expect, test } from 'vitest'
 import { postDish } from './boards'
 import { ALLOWLISTED, anonymous, signIn, type Caller } from './client'
 import { everyEventAsText, watchEvents } from './event-log'
+import { foundRecipeAt } from './time-travel'
 
 // Dish Links (#401; CONTEXT.md: Dish Link). A Member of a Board, "Nur
 // ansehen" included, shares a Dish: POST /api/dishes/:id/link makes its
@@ -108,6 +109,22 @@ test('the page data holds the Dish own fields and nothing of its Board', async (
     source: { kind: 'tiktok', link: TIKTOK },
     path,
   })
+})
+
+test('the page data holds no Recipe: no Ingredients, no Steps, not the link it was found at (#495, ADR 0013)', async () => {
+  const { dishId, hedwig } = await setup('Ohne Rezept nach außen')
+  const edited = await hedwig.fetch(`/api/dishes/${dishId}`, { method: 'PATCH', ...json({ recipe: { ingredients: ['500 g Spätzlemehl', '250 g Bergkäse'], steps: ['Teig schaben.', 'Mit Käse schichten.'] } }) })
+  expect(edited.status).toBe(200)
+  await foundRecipeAt(dishId, 'https://omas-kueche.example/kaesespaetzle')
+  const path = await pathOf(hedwig, dishId)
+
+  for (const caller of [anonymous(), hedwig, await outsider()]) {
+    const res = await open(caller, path)
+    expect(res.status).toBe(200)
+    const text = await res.text()
+    expect(Object.keys(JSON.parse(text)).filter(key => key !== 'ownBoard').sort()).toEqual(['creator', 'focus', 'imageUrl', 'path', 'placeholder', 'source', 'title'])
+    for (const kept of ['Spätzlemehl', 'Bergkäse', 'schaben', 'schichten', 'omas-kueche']) expect(text).not.toContain(kept)
+  }
 })
 
 test('any slug opens it with the right secret, and a renamed Dish keeps its link', async () => {

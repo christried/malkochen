@@ -63,6 +63,13 @@ export async function endClientLimitWindow(client: string, limited: string): Pro
   await query(`update client_limit_use set window_start = window_start - interval '2 days' where client = $1 and limited = $2`, [client, limited])
 }
 
+// Gives a Dish's Recipe the link it was found at, as the Recipe Finder does
+// when it follows a link from the Caption (CONTEXT.md: Recipe Finder); no
+// Member can set it.
+export async function foundRecipeAt(dishId: string, link: string): Promise<void> {
+  await query('update dish set recipe_link = $2 where id = $1', [dishId, link])
+}
+
 async function query(text: string, values: unknown[]): Promise<void> {
   const client = new pg.Client({ connectionString: inject('databaseUrl') })
   await client.connect()
