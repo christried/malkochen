@@ -270,6 +270,28 @@ watch(editingRecipe, async (isEditing) => {
 })
 onBeforeUnmount(() => clearTimeout(keepTimer))
 
+// A Recipe the Recipe Finder found while the Recipe was out of sight (#504):
+// nothing was seen arrive, so the Toast says so and "Zeigen" scrolls to it
+// (smooth; reduced motion jumps). It only scrolls, so it works offline too.
+function showFoundRecipe() {
+  toast.value = {
+    text: t.recipe.finder.found,
+    duration: NOTICE_MS,
+    actions: [{
+      label: t.recipe.finder.show,
+      navigates: true,
+      run: () => {
+        const el = dialog.value
+        const section = el?.querySelector<HTMLElement>('[data-recipe-section]')
+        if (!el || !section) return
+        // Clear of the compact bar at the top.
+        const top = section.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 80
+        el.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+      },
+    }],
+  }
+}
+
 // What a Comment write answered (from the Dish History): haptics for one
 // deleted, and its notice in the Toast, offering "Rückgängig" if it comes
 // with an undo (whose result shows the same way); then what the write ended
@@ -361,6 +383,7 @@ watch(editing, async (isEditing) => {
           @comment="showComment"
           @vote="showVote"
           @notice="text => toast = { text, duration: NOTICE_MS }"
+          @recipe-found="showFoundRecipe"
           @copy="copying = true"
         />
       </template>

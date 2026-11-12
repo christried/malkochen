@@ -35,6 +35,9 @@ const emit = defineEmits<{
   copy: []
   // Something to tell the Member, as a Toast.
   notice: [text: string]
+  // A Recipe arrived by itself while the Recipe was out of sight (#504): the
+  // page says so in a Toast that scrolls to it.
+  recipeFound: []
 }>()
 const t = useStrings()
 const boardModule = useBoardModule()
@@ -329,6 +332,7 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         :may-edit="mayEdit"
         :unsent="boardModule.hasUnsentRecipe(dish.id)"
         @edit="emit('editRecipe')"
+        @found="emit('recipeFound')"
       />
 
       <DishHistory

@@ -5,11 +5,13 @@ const RECIPE_FINDER: string = '/api/me/recipe-finder'
 
 // The Recipe Finder in your settings (#498, ADR 0013): where you stand (null
 // until known), and asking for access. One state for all your devices, kept
-// on the server; only the Operator switches it on. Read again whenever the
-// settings open, so a switch by the Operator meanwhile shows. `failed`: the
-// last ask didn't work out.
+// on the server; only the Operator switches it on. One status for the whole
+// app (#504), so asking in Your Settings and the Dish detail see the same.
+// Read again whenever the settings open, so a switch by the Operator
+// meanwhile shows; the Dish detail reads it when it opens, if nobody has
+// yet. `failed`: the last ask didn't work out.
 export function useRecipeFinder() {
-  const status = ref<RecipeFinderStatus | null>(null)
+  const status = useState<RecipeFinderStatus | null>('recipe-finder-status', () => null)
   const busy = ref(false)
   const failed = ref(false)
 

@@ -255,6 +255,7 @@ const boardLoop = useBoardLoop(columnsEl, {
 // A Board opened from the device wasn't opened on the server: the first
 // answer from it does that.
 const { syncNow } = useBoardSync(() => id, boardModule, () => dragging.value, unsent, fromDevice)
+provide(boardSyncNowKey, () => void syncNow())
 
 // Unsent Changes (#459): once the app is up, those left from last time show
 // on the Board and go out; they go again whenever malkochen answers after

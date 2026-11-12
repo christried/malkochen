@@ -478,6 +478,22 @@ export const de = {
     discard: 'Verwerfen',
     // The switch of a long Recipe (RecipeSwitch): its name for screen readers.
     switchLabel: 'Zu Zutaten oder Schritten springen',
+    // The Recipe Finder in the Dish detail (#504): "Rezept finden" beside
+    // "Rezept hinzufügen", the card while it searches (to every Member), and
+    // what a search ended in. `found` and `show`: the Toast when a Recipe
+    // arrives while it is out of sight.
+    finder: {
+      find: 'Rezept finden',
+      searching: 'Rezept wird gesucht',
+      searchingAbout: 'Das dauert meist ein paar Sekunden, manchmal auch eine halbe Minute.',
+      none: 'Kein Rezept gefunden',
+      noneAbout: 'In der Caption und auf der verlinkten Seite stand keins.',
+      failed: 'Die Suche hat gerade nicht geklappt.',
+      again: 'Noch mal suchen',
+      quota: 'Für heute hat der Rezeptfinder genug gesucht. Morgen sucht er weiter.',
+      found: 'Rezept gefunden',
+      show: 'Zeigen',
+    },
   },
   // The Source pill on a Dish's image: short, so it fits on a card's.
   sources: {
