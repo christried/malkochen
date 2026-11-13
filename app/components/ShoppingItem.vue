@@ -210,10 +210,9 @@ onBeforeUnmount(() => {
     :data-shopping-item="entry.id"
     :data-ticked="entry.ticked || undefined"
   >
-    <Transition
-      name="swap"
-      mode="out-in"
-    >
+    <!-- A crossfade, both at once: the one going lies over the one coming.
+         (out-in left the row unrendered after an edit closed.) -->
+    <Transition name="swap">
       <ShoppingItemInput
         v-if="editing"
         key="edit"
@@ -396,6 +395,11 @@ onBeforeUnmount(() => {
 .swap-enter-active,
 .swap-leave-active {
   transition: opacity 150ms ease;
+}
+.swap-leave-active {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 .swap-enter-from,
 .swap-leave-to {
