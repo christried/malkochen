@@ -83,6 +83,9 @@ const inWeek = computed(() => view.value === 'week')
 // The Shopping List is a third view (#536), beside them in the same way.
 const inShopping = computed(() => view.value === 'shopping')
 const inColumns = computed(() => view.value === 'columns')
+// The list's add bar is open (it hides the FAB while it's up).
+const shoppingAdding = ref(false)
+const shoppingList = useTemplateRef<{ openAdd: () => void, focusAdd: () => void }>('shoppingList')
 const weekDragging = ref(false)
 // Which view just came in, for its pane to move over (styles below).
 const switched = ref<BoardViewChoice | null>(null)
@@ -762,6 +765,11 @@ const searchBar = useTemplateRef<{ focus: () => void }>('searchBar')
 useBoardShortcuts((shortcut) => {
   switch (shortcut.action) {
     case 'addDish':
+      // In the Shopping List "n" goes to its add field, not to Add Dish.
+      if (inShopping.value) {
+        shoppingList.value?.focusAdd()
+        return true
+      }
       if (!mayAdd.value) return false
       addDish()
       return true
@@ -1400,11 +1408,13 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       />
       <ShoppingList
         v-show="!searching && inShopping"
+        ref="shoppingList"
         class="shopping-pane mt-5"
         :class="{ 'pane-in': switched === 'shopping' }"
         :board="board"
         :visible="inShopping && !searching"
         @toast="showToast"
+        @adding="shoppingAdding = $event"
       />
     </ClientOnly>
 
@@ -1437,16 +1447,18 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       @landed="onFlightLanded"
     />
 
+    <!-- In the Shopping List it adds a line to "Sonstiges" through the add bar
+         (every Member may); on desktop the list has its own field instead. -->
     <button
-      v-if="mayAdd"
-      v-show="!selecting && inColumns"
+      v-if="mayAdd || inShopping"
+      v-show="!selecting && (inColumns || (inShopping && !shoppingAdding))"
       type="button"
       class="fab fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
-      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt }"
-      :aria-label="t.addDish.open"
-      :data-tooltip="t.addDish.open"
+      :class="{ 'fab-prompt': isEmpty && inColumns, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt, 'desktop:hidden': inShopping }"
+      :aria-label="inShopping ? t.shopping.addItem : t.addDish.open"
+      :data-tooltip="inShopping ? t.shopping.addItem : t.addDish.open"
       data-tour="add-button"
-      @click="addDish"
+      @click="inShopping ? shoppingList?.openAdd() : addDish()"
     >
       <svg
         viewBox="0 0 24 24"

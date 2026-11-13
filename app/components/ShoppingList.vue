@@ -2,6 +2,7 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { ShoppingEntry, ShoppingGroup as Group } from '~/board/shopping-list'
 import type { Toast } from '~/utils/toast'
+import { keyboardInset } from '~/utils/shopping-layout'
 
 // The Shopping List (CONTEXT.md: Shopping List, Shopping Item; ADR 0015;
 // #536): the Board's list of what to buy, a view beside the Columns and the
@@ -16,7 +17,7 @@ const props = defineProps<{
   // The Shopping List is the view showing (and not covered by the search).
   visible: boolean
 }>()
-const emit = defineEmits<{ toast: [Toast] }>()
+const emit = defineEmits<{ toast: [Toast], adding: [open: boolean] }>()
 
 const t = useStrings()
 const boardModule = useBoardModule()
@@ -34,15 +35,73 @@ const ticked = computed(() => groups.value.reduce((n, g) => n + g.items.filter(i
 // ---- Typing an item into "Sonstiges" ----
 
 const draft = ref('')
-const addField = useTemplateRef<{ focus: () => void }>('addField')
+// On a phone the FAB (or the empty list's button) opens the add bar: a field
+// docked on the keyboard. It stays open while lines go in, and closes on an
+// empty Enter, on focus leaving it, or when the view is left.
+const adding = ref(false)
+const barField = useTemplateRef<{ focus: () => void, blur: () => void }>('barField')
+function setAdding(open: boolean) {
+  adding.value = open
+  emit('adding', open)
+}
+async function openAdd() {
+  if (adding.value) {
+    barField.value?.focus()
+    return
+  }
+  setAdding(true)
+  // The field shows after this tick; focusing it inside the tap keeps the
+  // keyboard up on Android.
+  await nextTick()
+  barField.value?.focus()
+}
+function closeAdd() {
+  if (!adding.value) return
+  setAdding(false)
+  barField.value?.blur()
+}
+// Focus moving inside the bar (the "+", say) keeps it open.
+function onBarFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget
+  if (next instanceof Node && (event.currentTarget as HTMLElement).contains(next)) return
+  closeAdd()
+}
 function addItem() {
   const result = boardModule.addShoppingItem(draft.value)
-  if (!result) return
+  if (!result) {
+    // An empty Enter closes the bar.
+    closeAdd()
+    return
+  }
   draft.value = ''
   showShoppingResult(result)
   // Enter adds and keeps the field: several in a row.
-  addField.value?.focus()
+  barField.value?.focus()
 }
+function focusAdd() {
+  void openAdd()
+}
+defineExpose({ openAdd, focusAdd })
+
+// The bar rises with the on-screen keyboard: the keyboard takes the bottom of
+// the visual viewport, and the page keeps its height.
+const keyboard = ref(0)
+function measureKeyboard() {
+  const viewport = window.visualViewport
+  keyboard.value = keyboardInset(window.innerHeight, viewport?.height ?? window.innerHeight, viewport?.offsetTop ?? 0)
+}
+onMounted(() => {
+  measureKeyboard()
+  window.visualViewport?.addEventListener('resize', measureKeyboard)
+  window.visualViewport?.addEventListener('scroll', measureKeyboard)
+})
+onBeforeUnmount(() => {
+  window.visualViewport?.removeEventListener('resize', measureKeyboard)
+  window.visualViewport?.removeEventListener('scroll', measureKeyboard)
+})
+watch(() => props.visible, (now) => {
+  if (!now) closeAdd()
+})
 
 // ---- A line ----
 
@@ -108,12 +167,20 @@ function clearDone() {
       </button>
     </div>
 
-    <ShoppingItemInput
-      ref="addField"
-      v-model="draft"
-      variant="add"
-      @submit="addItem"
-    />
+    <!-- The phone's add bar: docked on the keyboard, shown while adding. -->
+    <div
+      v-show="adding"
+      class="fixed inset-x-0 bottom-0 z-shop-field rounded-t-[26px] bg-bg px-3 pb-2.5 pt-3.5 desktop:hidden"
+      :style="{ bottom: `${keyboard}px` }"
+      @focusout="onBarFocusOut"
+    >
+      <ShoppingItemInput
+        ref="barField"
+        v-model="draft"
+        variant="add"
+        @submit="addItem"
+      />
+    </div>
 
     <EmptyShoppingList v-if="isEmpty" />
     <TransitionGroup
