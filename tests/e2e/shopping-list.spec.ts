@@ -374,8 +374,12 @@ test('on the desktop the Dish groups fill two columns, the shorter one first: a 
   // The groups rise in turn when the list shows, and a group that changes
   // column leaves and enters for a moment (the hidden one is not visible):
   // measure once it has all settled.
-  // (Only the stagger's own animation: the page's idle loops never finish.)
-  await page.waitForFunction(() => document.getAnimations().every(a => !('animationName' in a) || (a as CSSAnimation).animationName !== 'shop-arrive' || a.playState === 'finished'))
+  // (Every animation and move in the list that ends: idle loops never finish.)
+  await page.waitForFunction(() => document.getAnimations().every((a) => {
+    const target = (a.effect as KeyframeEffect | null)?.target
+    const inList = target instanceof Element && !!target.closest('[data-testid="shopping-list"]')
+    return !inList || a.effect?.getTiming().iterations === Infinity || a.playState === 'finished'
+  }))
   const box = async (id: string) => {
     const group = shoppingList(page).locator(`[data-shopping-group="${id}"]:visible`)
     await expect(group).toHaveCount(1)
