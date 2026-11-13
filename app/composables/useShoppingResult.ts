@@ -4,8 +4,8 @@ import { NOTICE_MS, UNDO_WINDOW_MS, type Toast } from '~/utils/toast'
 // Showing what a Shopping List write answered (#536, #537), on the list, in
 // the Dish detail and on the Week Plan alike: a notice as a toast, then what
 // the write ended in once settled. With `done`, the toast says what was done
-// and, for a delete or a clear, offers "Rückgängig", which is the write's
-// own undo through the Board module; its result shows the same way.
+// and, for a delete, a clear or a put-on, offers "Rückgängig", which is the
+// write's own undo through the Board module; its result shows the same way.
 export function useShoppingResult(show: (toast: Toast) => void) {
   const t = useStrings()
 
