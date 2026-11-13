@@ -32,6 +32,70 @@ const groups = computed<Group[]>(() => {
 const isEmpty = computed(() => groups.value.length === 0)
 const ticked = computed(() => groups.value.reduce((n, g) => n + g.items.filter(i => i.ticked).length, 0))
 
+// Sonstiges, and the Dish groups in list order. On desktop Sonstiges has its
+// column even without lines (its field is there), so it gets an empty group.
+const wide = useMediaQuery('(min-width: 1200px)')
+const sonstiges = computed(() => groups.value.find(g => g.dishId === null))
+const other = computed<Group>(() => sonstiges.value ?? { dishId: null, title: null, dish: null, times: 1, items: [] })
+const dishGroups = computed(() => groups.value.filter(g => g.dishId !== null))
+// A group's place on the phone's one column, after Sonstiges.
+const orderOf = computed(() => new Map(dishGroups.value.map((g, i) => [g.dishId, i + 1])))
+
+// ---- Desktop: two masonry columns for the Dish groups ----
+// Each new Dish group goes into the shorter column. The column of each group
+// is set when the set of Dish groups changes, from the groups' heights
+// (measured with a ResizeObserver, so a group that has grown counts when the
+// next group comes). Between changes a group stays where it is, so nothing
+// jumps while lines are ticked.
+const GROUP_GAP = 18
+const root = useTemplateRef<HTMLElement>('root')
+const column = ref(new Map<string | null, 0 | 1>())
+const columns = computed(() => {
+  const cols: [Group[], Group[]] = [[], []]
+  for (const g of dishGroups.value) cols[column.value.get(g.dishId) === 1 ? 1 : 0].push(g)
+  return cols
+})
+const dishKeys = computed(() => dishGroups.value.map(g => g.dishId).join(','))
+const heights = new Map<string, number>()
+let observer: ResizeObserver | undefined
+// The layout was not measured while the list is hidden (its heights are 0
+// then), so the columns are worked out when it shows.
+let stale = true
+function groupElement(id: string): HTMLElement | undefined {
+  return root.value?.querySelector<HTMLElement>(`[data-shopping-group="${id}"]`) ?? undefined
+}
+function assignColumns() {
+  if (!props.visible) {
+    stale = true
+    return
+  }
+  stale = false
+  const ids = dishGroups.value.map(g => g.dishId!)
+  const hs = ids.map((id) => {
+    const el = groupElement(id)
+    if (el) observer?.observe(el)
+    return heights.get(id) ?? el?.offsetHeight ?? 0
+  })
+  const picked = masonryColumns(hs, GROUP_GAP)
+  column.value = new Map(ids.map((id, i) => [id, picked[i]!]))
+}
+watch(dishKeys, assignColumns, { flush: 'post' })
+watch(() => props.visible, (now) => {
+  if (now && stale) assignColumns()
+}, { flush: 'post' })
+onMounted(() => {
+  observer = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const el = entry.target as HTMLElement
+      const id = el.dataset.shoppingGroup
+      // A hidden group measures 0: that is no height to keep.
+      if (id && el.offsetHeight > 0) heights.set(id, el.offsetHeight)
+    }
+  })
+  assignColumns()
+})
+onBeforeUnmount(() => observer?.disconnect())
+
 // ---- Typing an item into "Sonstiges" ----
 
 const draft = ref('')
@@ -40,6 +104,8 @@ const draft = ref('')
 // empty Enter, on focus leaving it, or when the view is left.
 const adding = ref(false)
 const barField = useTemplateRef<{ focus: () => void, blur: () => void }>('barField')
+// The desktop field at the end of Sonstiges (or in the empty list's card).
+const deskField = useTemplateRef<{ focus: () => void }>('deskField')
 function setAdding(open: boolean) {
   adding.value = open
   emit('adding', open)
@@ -76,10 +142,13 @@ function addItem() {
   draft.value = ''
   showShoppingResult(result)
   // Enter adds and keeps the field: several in a row.
-  barField.value?.focus()
+  const field = adding.value ? barField.value : deskField.value
+  field?.focus()
 }
+// "n": on desktop the Sonstiges field, on a phone the add bar.
 function focusAdd() {
-  void openAdd()
+  if (wide.value) deskField.value?.focus()
+  else void openAdd()
 }
 defineExpose({ openAdd, focusAdd })
 
@@ -140,7 +209,7 @@ function clearDone() {
 
 <template>
   <section
-    class="shopping-list relative mx-auto pb-24 desktop:max-w-[760px] desktop:pb-10"
+    class="shopping-list relative mx-auto pb-[130px] desktop:max-w-[1080px] desktop:pb-10"
     :aria-labelledby="titleId"
     data-testid="shopping-list"
   >
@@ -183,24 +252,60 @@ function clearDone() {
     </div>
 
     <EmptyShoppingList v-if="isEmpty" />
-    <TransitionGroup
+    <!-- One column on a phone: the groups are flex items of this list, in
+         order (Sonstiges first). On desktop: Sonstiges, then two columns of
+         Dish groups. The column wrappers are `contents` on a phone. -->
+    <div
       v-else
-      tag="div"
-      name="group"
-      class="mt-5 flex flex-col gap-4"
+      ref="root"
+      class="mt-5 flex flex-col gap-3.5 desktop:flex-row desktop:items-start desktop:gap-x-7"
     >
-      <ShoppingGroup
-        v-for="group in groups"
-        :key="group.dishId ?? 'other'"
-        :group="group"
-        :editing-id="editing"
-        @tick="tick"
-        @edit="startEdit"
-        @save="saveEdit"
-        @cancel="cancelEdit"
-        @remove="remove"
-      />
-    </TransitionGroup>
+      <div
+        class="contents desktop:flex desktop:w-[360px] desktop:shrink-0 desktop:flex-col desktop:gap-[18px]"
+        :class="{ 'hidden desktop:flex': !sonstiges }"
+      >
+        <ShoppingGroup
+          :group="other"
+          :editing-id="editing"
+          class="shop-group"
+          :style="{ '--shop-i': 0 }"
+          @tick="tick"
+          @edit="startEdit"
+          @save="saveEdit"
+          @cancel="cancelEdit"
+          @remove="remove"
+        >
+          <ShoppingItemInput
+            ref="deskField"
+            v-model="draft"
+            variant="add"
+            class="mt-3 hidden desktop:flex"
+            @submit="addItem"
+          />
+        </ShoppingGroup>
+      </div>
+      <TransitionGroup
+        v-for="(col, c) in columns"
+        :key="c"
+        tag="div"
+        name="group"
+        class="contents desktop:flex desktop:min-w-0 desktop:flex-1 desktop:flex-col desktop:gap-[18px]"
+      >
+        <ShoppingGroup
+          v-for="group in col"
+          :key="group.dishId ?? 'other'"
+          :group="group"
+          :editing-id="editing"
+          class="shop-group"
+          :style="{ order: orderOf.get(group.dishId) ?? 0, '--shop-i': orderOf.get(group.dishId) ?? 0 }"
+          @tick="tick"
+          @edit="startEdit"
+          @save="saveEdit"
+          @cancel="cancelEdit"
+          @remove="remove"
+        />
+      </TransitionGroup>
+    </div>
   </section>
 </template>
 

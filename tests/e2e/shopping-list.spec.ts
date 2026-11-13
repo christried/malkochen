@@ -116,7 +116,7 @@ test('items are typed into "Sonstiges" one after another, ticked to the bottom, 
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['2 Hafermilch', 'Klopapier', 'Spülmittel'])
 })
 
-test('"Erledigte entfernen" clears the ticked lines, off while none is ticked, and "Rückgängig" brings them back', async ({ page }) => {
+test('"Erledigte entfernen" clears the ticked lines, is absent while none is ticked, and "Rückgängig" brings them back', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await signIn(page, OWNER)
   const boardId = await newBoard(page, 'Erledigtes')
@@ -126,7 +126,7 @@ test('"Erledigte entfernen" clears the ticked lines, off while none is ticked, a
   await openList(page, boardId)
 
   const clear = page.getByRole('button', { name: 'Erledigte entfernen' })
-  await expect(clear).toBeDisabled()
+  await expect(clear).toHaveCount(0)
   await page.getByRole('checkbox', { name: 'Reis' }).click()
   await page.getByRole('checkbox', { name: 'Sojasoße' }).click()
   await expect(clear).toBeEnabled()
@@ -134,7 +134,7 @@ test('"Erledigte entfernen" clears the ticked lines, off while none is ticked, a
   await clear.click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['Tofu'])
   await expect(page.getByText('2 Einträge entfernt.')).toBeVisible()
-  await expect(clear).toBeDisabled()
+  await expect(clear).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Rückgängig' }).click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['Tofu', 'Reis', 'Sojasoße'])
