@@ -80,14 +80,18 @@ function assignColumns() {
   const hs = ids.map((id) => {
     const el = groupElement(id)
     if (el) observer?.observe(el)
-    return heights.get(id) ?? el?.offsetHeight ?? 0
+    // Measured now, as far as the layout is; the observer's figure is kept
+    // for a group that is not drawn at this moment.
+    return el?.offsetHeight || heights.get(id) || 0
   })
   const picked = masonryColumns(hs, GROUP_GAP)
   column.value = new Map(ids.map((id, i) => [id, picked[i]!]))
 }
 watch(dishKeys, assignColumns, { flush: 'post' })
+// Coming to the list, the columns are worked out a frame later, when the
+// list has been laid out at its real size.
 watch(() => props.visible, (now) => {
-  if (now && stale) assignColumns()
+  if (now && stale) requestAnimationFrame(assignColumns)
 }, { flush: 'post' })
 onMounted(() => {
   observer = new ResizeObserver((entries) => {

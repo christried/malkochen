@@ -107,7 +107,8 @@ test('items are typed into "Sonstiges" one after another, ticked to the bottom, 
   // Removing one, and "Rückgängig".
   await page.getByRole('button', { name: '„Klopapier“ entfernen' }).click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['2 Hafermilch', 'Spülmittel'])
-  await expect(page.getByText('Eintrag entfernt.')).toBeVisible()
+  // The toast (a status), not the polite live line that says the same.
+  await expect(page.getByRole('status').getByText('Eintrag entfernt.')).toBeVisible()
   await page.getByRole('button', { name: 'Rückgängig' }).click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['2 Hafermilch', 'Klopapier', 'Spülmittel'])
 
@@ -300,7 +301,8 @@ test.describe('on a phone', () => {
     await openList(page, boardId)
 
     // No field on the list itself: the add bar is closed.
-    await expect(page.locator('[data-shopping-add]')).toBeHidden()
+    // (The desktop field is in the DOM too, hidden: the role query sees only the visible one.)
+    await expect(page.getByRole('textbox', { name: 'Neu in Sonstiges' })).toBeHidden()
     const fab = page.getByRole('button', { name: 'Eintrag hinzufügen' })
     await expect(fab).toBeVisible()
 
@@ -369,7 +371,16 @@ test('on the desktop the Dish groups fill two columns, the shorter one first: a 
   await putOn(page, boardId, third, ['Dill'])
   await openList(page, boardId)
 
-  const box = async (id: string) => (await shoppingList(page).locator(`[data-shopping-group="${id}"]`).boundingBox())!
+  // The groups rise in turn when the list shows, and a group that changes
+  // column leaves and enters for a moment (the hidden one is not visible):
+  // measure once it has all settled.
+  // (Only the stagger's own animation: the page's idle loops never finish.)
+  await page.waitForFunction(() => document.getAnimations().every(a => !('animationName' in a) || (a as CSSAnimation).animationName !== 'shop-arrive' || a.playState === 'finished'))
+  const box = async (id: string) => {
+    const group = shoppingList(page).locator(`[data-shopping-group="${id}"]:visible`)
+    await expect(group).toHaveCount(1)
+    return (await group.boundingBox())!
+  }
   const a = await box(big)
   const b = await box(small)
   const c = await box(third)
