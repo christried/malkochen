@@ -208,7 +208,7 @@ export interface PlanBody {
 export type { Late }
 
 // How "Rezept finden" ended (findRecipe).
-export type FindRecipeResult = RecipeSearchOutcome | 'quota' | 'conflict' | 'refused'
+export type FindRecipeResult = RecipeSearchOutcome | 'quota' | 'tooSoon' | 'conflict' | 'refused'
 
 type BoardColumn = BoardView['columns'][number]
 
@@ -601,18 +601,19 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // the Dish the server answers with: the Recipe found, "none" for nothing
   // found, or neither when the search failed. It needs a connection and is
   // never kept as an Unsent Change, so offline it is refused (as it is for a
-  // Dish the Member may not edit, one that has a Recipe or a search already,
+  // Dish the Member may not edit, one that has a Recipe or a search under way,
   // and one added offline and not sent yet). Not queued with the Dish's other
   // writes: it takes long, and an edit made meanwhile must not wait for it.
   // The result, for the page: how the search ended (`found`, `none`,
   // `failed`, which includes a request that went wrong); `quota`, the day's
-  // cap (429); `conflict`, the Dish isn't searchable any more as the server
+  // cap (429); `tooSoon`, the Dish was searched twice within the hour (429
+  // "Dish searched enough"); `conflict`, the Dish isn't searchable any more as the server
   // has it (409, or gone: 404), which a sync clears up; `refused`, the Recipe
   // Finder is off for the Member or has no key (403, 503), or nothing was
   // asked.
   async function findRecipe(dishId: string): Promise<FindRecipeResult> {
     const shown = find(dishId)?.dish
-    if (!shown || !may('editDishes', dishId) || offline?.() || isUnsentAdd(dishId) || shown.recipe || shown.recipeSearch) return 'refused'
+    if (!shown || !may('editDishes', dishId) || offline?.() || isUnsentAdd(dishId) || shown.recipe || shown.recipeSearch === 'looking') return 'refused'
     const before = shown.recipeSearch
     shown.recipeSearch = 'looking'
     try {
@@ -629,7 +630,7 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       // Only if nothing else has changed it: a poll may have brought the Recipe.
       if (now?.recipeSearch === 'looking') now.recipeSearch = before
       const status = error instanceof WriteFailed ? error.status : undefined
-      if (status === 429) return 'quota'
+      if (status === 429) return error instanceof WriteFailed && error.reason === 'Dish searched enough' ? 'tooSoon' : 'quota'
       if (status === 409 || status === 404) return 'conflict'
       if (status === 403 || status === 503) return 'refused'
       return 'failed'

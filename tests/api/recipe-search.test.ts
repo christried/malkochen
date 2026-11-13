@@ -4,14 +4,14 @@ import { postDish } from './boards'
 import { switchRecipeFinder, withoutSearchAfterAdding } from './recipe-finder-switch'
 import { anonymous, signIn, type Caller } from './client'
 import { everyEventAsText, watchEvents } from './event-log'
-import { backdateRecipeSearch, endLimitWindow, endLimitWindows, useUpLimit } from './time-travel'
+import { backdateRecipeSearch, endDishSearches, endLimitWindow, endLimitWindows, useUpLimit } from './time-travel'
 import { OPERATOR } from '../support/test-auth-env'
 import {
   DOWN_BLOG,
   NO_RECIPE_BLOG,
   OTHER_RECIPE_BLOG,
   OTHER_RECIPE_BLOG_RECIPE,
-  PASTA_TIKTOK,
+  UNTITLED_TIKTOK,
   RECIPE_BLOG,
   RECIPE_BLOG_RECIPE,
   SLOW_RECIPE_BLOG,
@@ -269,7 +269,7 @@ test('a search that has been looking for over five minutes counts as over, and t
   expect((await log.recorded()).filter(e => e.kind === 'recipe_found')).toHaveLength(1)
 })
 
-test('a page without recipe data: the Dish says nothing was found, and it isn\'t searched again until its Source changes', async () => {
+test('a page without recipe data: the Dish says nothing was found, and it can be searched again; another Source starts afresh', async () => {
   const wilkes = await finderUser(OWNER)
   const perlis = await signIn(MEMBER)
   const board = await sharedBoard(wilkes, 'Nichts gefunden', [perlis])
@@ -279,7 +279,9 @@ test('a page without recipe data: the Dish says nothing was found, and it isn\'t
 
   expect(answer).toMatchObject({ outcome: 'none', dish: { recipe: null, recipeSearch: 'none' } })
   expect(await onBoard(perlis, board.id, dish)).toMatchObject({ recipe: null, recipeSearch: 'none' })
-  await refusedWith(await findRecipe(wilkes, dish), 409, 'Nothing found for this Source')
+  // "Noch mal suchen" (#529).
+  expect(await found(wilkes, dish)).toMatchObject({ outcome: 'none', dish: { recipeSearch: 'none' } })
+  await endDishSearches(dish.id)
 
   // The same link again keeps it; another Source starts afresh.
   expect((await send(wilkes, 'PATCH', `/api/dishes/${dish.id}`, { source: { link: NO_RECIPE_BLOG, kind: 'blog' } })).status).toBe(200)
@@ -293,7 +295,8 @@ test('a page without recipe data: the Dish says nothing was found, and it isn\'t
 test('a kind of Source that never carries recipe data finds none, without a request', async () => {
   const wilkes = await finderUser(OWNER)
   const board = await sharedBoard(wilkes, 'Nur ein Video')
-  const dish = await addDish(wilkes, board.id, 'Pilzpasta', PASTA_TIKTOK)
+  // A post without a Caption (UNTITLED_TIKTOK has none), so no model is asked either.
+  const dish = await addDish(wilkes, board.id, 'Pilzpasta', UNTITLED_TIKTOK)
 
   expect(await found(wilkes, dish)).toMatchObject({ outcome: 'none', dish: { recipeSearch: 'none' } })
 })
@@ -385,7 +388,7 @@ test('the three ends of a search are in the Event Log, once each, as Dish events
   await found(milner, miss)
   await found(milner, broken)
   await findRecipe(milner, refusedOnes)
-  await findRecipe(milner, miss)
+  await findRecipe(milner, hit)
 
   expect(await log.recorded()).toEqual([
     { kind: 'recipe_found', boardId: board.id, dishId: hit.id, userId, details: null },
@@ -411,4 +414,27 @@ test('the Admin Page counts a user\'s searches from their events', async () => {
   expect(await searchesOf()).toBe(before + 3)
   const page = await (await operator.fetch('/api/admin/events?kinds=recipe_found,recipe_not_found,recipe_search_failed')).json() as { events: { kind: string, user: { id: string } }[] }
   expect(page.events.filter(e => e.user.id === id).map(e => e.kind).toSorted()).toEqual(expect.arrayContaining(['recipe_found', 'recipe_not_found', 'recipe_search_failed']))
+})
+
+test('a Dish is searched at most twice within the hour, whoever searched and however it ended; then it waits (#529)', async () => {
+  const wilkes = await finderUser(OWNER)
+  const sutherland = await finderUser(EDITOR)
+  const board = await sharedBoard(wilkes, 'Zweimal die Stunde', [sutherland])
+  const dish = await addDish(wilkes, board.id, 'Shakshuka', NO_RECIPE_BLOG)
+  const down = await addDish(wilkes, board.id, 'Kaputte Seite', DOWN_BLOG)
+
+  expect((await found(wilkes, dish)).outcome).toBe('none')
+  expect((await found(sutherland, dish)).outcome).toBe('none')
+  await refusedWith(await findRecipe(wilkes, dish), 429, 'Dish searched enough')
+  expect((await onBoard(wilkes, board.id, dish)).recipeSearch).toBe('none')
+
+  // Failed searches count too.
+  expect((await found(wilkes, down)).outcome).toBe('failed')
+  expect((await found(wilkes, down)).outcome).toBe('failed')
+  await refusedWith(await findRecipe(wilkes, down), 429, 'Dish searched enough')
+  expect((await onBoard(wilkes, board.id, down)).recipeSearch).toBeNull()
+
+  // An hour on, it may be searched again.
+  await endDishSearches(dish.id)
+  expect((await found(wilkes, dish)).outcome).toBe('none')
 })

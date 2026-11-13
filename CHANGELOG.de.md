@@ -11,6 +11,11 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 ### Changed
 
 - Die Datenschutzerklärung nennt jetzt auch den Wochenplan und die Einkaufsliste bei dem, was du auf einem Board speicherst.
+- Hat der Rezeptfinder kein Rezept gefunden, sucht er mit Noch mal suchen ein weiteres Mal. Ein Gericht kann zweimal pro Stunde gesucht werden.
+
+### Fixed
+
+- Rezept finden liest jetzt auch die Caption von Posts, die hinzugefügt wurden, bevor malkochen Captions behielt. So findet es auch das Rezept unter einem älteren TikTok.
 
 ## [1.3.0] - 2026-11-12
 

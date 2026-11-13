@@ -128,3 +128,9 @@ export async function databaseRows<Row = Record<string, unknown>>(text: string, 
 export async function backdateRecipeSearch(dishId: string, minutes: number): Promise<void> {
   await query(`update dish set recipe_search_at = recipe_search_at - make_interval(mins => $2) where id = $1`, [dishId, minutes])
 }
+
+// Makes the searches a Dish ended in an hour older (#529), so the two a Dish
+// may have within the hour are free again.
+export async function endDishSearches(dishId: string): Promise<void> {
+  await query(`update event_log set at = at - interval '1 hour' where dish_id = $1 and kind in ('recipe_found', 'recipe_not_found', 'recipe_search_failed')`, [dishId])
+}
