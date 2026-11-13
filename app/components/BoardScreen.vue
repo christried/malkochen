@@ -15,6 +15,7 @@ import { createSnackbertQuestion, type SnackbertAsking } from '~/snackbert/snack
 import type { PromptAnswer, PromptKind } from '~~/shared/event-kinds'
 import { boardPath, boardSettingsPath, dishAt, dishPath } from '~~/shared/address'
 import { boardLabel, dishOnBoard } from '~~/shared/board'
+import type { BoardViewChoice } from '~/composables/useBoardView'
 
 // A Board: its Columns with their Dishes. Phones show one Column at a time,
 // its name large above the Column tabs (ColumnHeadline), switched with the
@@ -79,9 +80,15 @@ useHead({ title: () => board.value ? `${boardLabel(board.value)} · ${t.app.name
 // and scroll are as they were. The Tour needs the Columns.
 const { view, show: showView } = useBoardView(hydrating)
 const inWeek = computed(() => view.value === 'week')
+// The Shopping List is a third view (#536), beside them in the same way.
+const inShopping = computed(() => view.value === 'shopping')
+const inColumns = computed(() => view.value === 'columns')
+// The list's add bar is open (it hides the FAB while it's up).
+const shoppingAdding = ref(false)
+const shoppingList = useTemplateRef<{ openAdd: () => void, focusAdd: () => void }>('shoppingList')
 const weekDragging = ref(false)
 // Which view just came in, for its pane to move over (styles below).
-const switched = ref<'columns' | 'week' | null>(null)
+const switched = ref<BoardViewChoice | null>(null)
 let switchedTimer: ReturnType<typeof setTimeout> | undefined
 watch(view, (now) => {
   switched.value = now
@@ -191,7 +198,7 @@ const { shot: columnCue, fire: cueColumn } = useOneShot<ColumnCue>()
 // sight: the pebble has nowhere to fly to.
 const { cookFromCard, onCardLeave, flight, onFlightLanded } = useGekochtCelebration(board, {
   cookDish,
-  target: columnId => inWeek.value
+  target: columnId => !inColumns.value
     ? null
     : isPhoneLayout()
       ? tabBar.value?.$el.querySelector(`[data-tab-column-id="${columnId}"]`) ?? null
@@ -249,7 +256,7 @@ function openDish(event: MouseEvent, dish: DishView) {
 function cookDish(dishId: string) {
   const result = boardModule.cookDish(dishId)
   // In the Week Plan the Columns are out of sight: focus has nowhere to go.
-  if (result) void showResult(result, { origin: null, moveFocus: !inWeek.value })
+  if (result) void showResult(result, { origin: null, moveFocus: inColumns.value })
 }
 
 const { drag, dragging, entries } = useDishDrag(columnsEl, {
@@ -758,6 +765,11 @@ const searchBar = useTemplateRef<{ focus: () => void }>('searchBar')
 useBoardShortcuts((shortcut) => {
   switch (shortcut.action) {
     case 'addDish':
+      // In the Shopping List "n" goes to its add field, not to Add Dish.
+      if (inShopping.value) {
+        shoppingList.value?.focusAdd()
+        return true
+      }
       if (!mayAdd.value) return false
       addDish()
       return true
@@ -1059,7 +1071,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
   <main
     v-if="board"
     class="board min-h-dvh bg-bg px-4 pb-32 pt-6 text-text tablet:px-10 desktop:px-16"
-    :class="{ following, dragging, 'drop-tinted': dropTint, 'in-week': inWeek }"
+    :class="{ following, dragging, 'drop-tinted': dropTint, 'in-week': !inColumns }"
     :style="{ '--tint': tint, '--drop-tint': dropTint, '--drop-wash': dropWash, ...colours }"
   >
     <header
@@ -1158,7 +1170,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 
     <!-- Phones: the active Column's name and subtitle, large. -->
     <ColumnHeadline
-      v-show="!searching && !inWeek"
+      v-show="!searching && inColumns"
       data-tour="columns"
       class="-mx-4 mt-5 px-4"
       :columns="board.columns"
@@ -1168,7 +1180,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     />
 
     <ColumnTabs
-      v-show="!searching && !inWeek"
+      v-show="!searching && inColumns"
       ref="tabBar"
       data-tour="columns"
       class="tabs-bar sticky top-0 z-tabs -mx-4 mt-4 px-4 tablet:hidden"
@@ -1184,7 +1196,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
     <!-- Around the Columns, so the edge indicators stay at the window's
          edges while the Columns scroll under them. -->
     <div
-      v-show="!searching && !inWeek"
+      v-show="!searching && inColumns"
       class="columns-pane relative -mx-4"
       :class="{ 'pane-in': switched === 'columns' }"
     >
@@ -1394,6 +1406,16 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
         @dragging="weekDragging = $event"
         @cook="(dishId, origin) => void cookFromCard(dishId, origin)"
       />
+      <ShoppingList
+        v-show="!searching && inShopping"
+        ref="shoppingList"
+        class="shopping-pane mt-5"
+        :class="{ 'pane-in': switched === 'shopping' }"
+        :board="board"
+        :visible="inShopping && !searching"
+        @toast="showToast"
+        @adding="shoppingAdding = $event"
+      />
     </ClientOnly>
 
     <!-- What malkochen is and the legal pages, after the last Dish (#405):
@@ -1425,32 +1447,36 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       @landed="onFlightLanded"
     />
 
-    <button
-      v-if="mayAdd"
-      v-show="!selecting && !inWeek"
-      type="button"
-      class="fab fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
-      :class="{ 'fab-prompt': isEmpty, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt }"
-      :aria-label="t.addDish.open"
-      :data-tooltip="t.addDish.open"
-      data-tour="add-button"
-      @click="addDish"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="28"
-        height="28"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        aria-hidden="true"
-      ><path d="M12 5v14M5 12h14" /></svg>
-      <span
-        class="fab-aura aura"
-        aria-hidden="true"
-      />
-    </button>
+    <Transition :enter-active-class="inShopping ? 'fab-pop' : ''">
+      <!-- In the Shopping List it adds a line to "Sonstiges" through the add bar
+           (every Member may); on desktop the list has its own field instead. -->
+      <button
+        v-if="mayAdd || inShopping"
+        v-show="!selecting && (inColumns || (inShopping && !shoppingAdding))"
+        type="button"
+        class="fab fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
+        :class="{ 'fab-prompt': isEmpty && inColumns, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt, 'desktop:hidden': inShopping }"
+        :aria-label="inShopping ? t.shopping.addItem : t.addDish.open"
+        :data-tooltip="inShopping ? t.shopping.addItem : t.addDish.open"
+        data-tour="add-button"
+        @click="inShopping ? shoppingList?.openAdd() : addDish()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="28"
+          height="28"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          aria-hidden="true"
+        ><path d="M12 5v14M5 12h14" /></svg>
+        <span
+          class="fab-aura aura"
+          aria-hidden="true"
+        />
+      </button>
+    </Transition>
 
     <SelectionBar
       v-if="selecting"
@@ -1583,7 +1609,7 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       v-model:adding="adding"
       :board="board"
       :idle="boardIdle"
-      :auto-start="!openedToAdd && !inWeek"
+      :auto-start="!openedToAdd && inColumns"
       :menu="menuDish && { dishId: menuDish.id, choosing: choosingColumn }"
       @close-menu="menuDish = null"
       @started="visit.shown()"
@@ -1687,7 +1713,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 .columns-pane.pane-in {
   animation: pane-from-left var(--dur-settle) var(--ease-settle) backwards;
 }
-.week-pane.pane-in {
+.week-pane.pane-in,
+.shopping-pane.pane-in {
   animation: pane-from-right var(--dur-settle) var(--ease-settle) backwards;
 }
 @keyframes pane-from-left {
@@ -1704,7 +1731,8 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 }
 @media (prefers-reduced-motion: reduce) {
   .columns-pane.pane-in,
-  .week-pane.pane-in {
+  .week-pane.pane-in,
+  .shopping-pane.pane-in {
     animation: pane-fade var(--dur-fade) var(--ease-fade) backwards;
   }
 }
@@ -1755,6 +1783,17 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 }
 .fab-lifted {
   translate: 0 -76px;
+}
+/* Back in Einkauf (from Woche, or once the add bar closes) the FAB pops in
+   (handoff: pop 460). The Transition only adds this class for the list, so the
+   Columns' FAB appears as it always has. Reduced motion: --dur-pop is 0. */
+.fab-pop {
+  animation: fab-pop-in var(--dur-pop) var(--ease-pop);
+}
+@keyframes fab-pop-in {
+  from {
+    scale: 0;
+  }
 }
 /* Above the Gekocht toast's two rows (#334), on a phone, where the toast
    spans the screen. */

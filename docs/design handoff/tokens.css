@@ -88,6 +88,16 @@
   --size-pd-today: 100px;
   --size-pd-desktop: 166px;
   --z-strip: 19;
+  /* R15 */
+  --color-tick: #A5C7AE;
+  --color-tick-ink: #10261A;
+  --color-swipe-danger: #C23B22;
+  --color-on-swipe-danger: #FFFFFF;
+  --size-shop-row: 56px;
+  --size-shop-row-desktop: 50px;
+  --size-shop-check: 28px;
+  --dur-sink-hold: 600ms;
+  --z-shop-field: 33;
 }
 .dark, [data-theme="dark"] {
   --color-bg: #131211;
@@ -117,6 +127,8 @@
   --color-view-track: rgba(255,255,255,.09);
   --color-match-tint: color-mix(in oklch, #F7B94A 38%, transparent);
   --shadow-small: 0 8px 18px -10px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.3);
+  --color-swipe-danger: #FF8A70;
+  --color-on-swipe-danger: #131211;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --color-bg: #131211;
@@ -146,6 +158,8 @@
   --color-view-track: rgba(255,255,255,.09);
   --color-match-tint: color-mix(in oklch, #F7B94A 38%, transparent);
   --shadow-small: 0 8px 18px -10px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.3);
+  --color-swipe-danger: #FF8A70;
+  --color-on-swipe-danger: #131211;
 } }
 @media (prefers-reduced-motion: reduce) { :root {
   --dur-tap: 0ms;

@@ -8,6 +8,8 @@ import { recipeAfterEdit } from '../../shared/recipe'
 import { guessKind, siteOf } from '../utils/link-guess'
 import { columnForNewDishes, landingIndex } from '../../shared/placement'
 import { putOnDay, takeOffPlan } from './week-plan'
+import { placeItem, putBack, takeOffList } from './shopping-list'
+import type { ShoppingItemView } from '../../shared/shopping-list'
 import type { Placeholder } from '../../shared/placeholders'
 import type { BoardTransport } from './board-module'
 import type { DeviceStore } from './device-store'
@@ -78,9 +80,28 @@ export type UnsentKind =
   | { kind: 'unplan', plannedId: string, dishId: string }
   // Who cooks a Planned Dish set (a Member's id) or cleared (null).
   | { kind: 'planCook', plannedId: string, dishId: string, cookId: string | null }
+  // The Shopping List (#534; CONTEXT.md: Shopping Item). An item typed into
+  // "Sonstiges" with the id the device made for it; an item's text changed,
+  // ticked or unticked, deleted; every ticked item cleared (`itemIds`: those
+  // the Member saw ticked; the server clears what is ticked when it
+  // arrives); deleted items brought back (`items`, each with where it was in
+  // the list); a Dish put on with the lines chosen, each with its id and its
+  // place in the Ingredients (`line`); a week of the Week Plan (its Monday),
+  // which the server collects when it arrives; and the items of a put-on
+  // taken back ("Rückgängig"). A change to an item gone meanwhile is dropped
+  // without telling the Member.
+  | { kind: 'shopAdd', itemId: string, text: string }
+  | { kind: 'shopText', itemId: string, text: string }
+  | { kind: 'shopTick', itemId: string, ticked: boolean }
+  | { kind: 'shopDelete', itemId: string }
+  | { kind: 'shopClear', itemIds: string[] }
+  | { kind: 'shopRestore', items: { item: ShoppingItemView, index: number }[] }
+  | { kind: 'shopDish', dishId: string, title: string, items: { id: string, text: string, line: number }[] }
+  | { kind: 'shopWeek', week: string }
+  | { kind: 'shopTakeBack', itemIds: string[] }
 
 // The writes the Unsent Changes are sent with.
-export type UnsentTransport = Pick<BoardTransport, 'addDishLate' | 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish' | 'planDish' | 'movePlannedDish' | 'unplanDish' | 'setPlannedDishCook'>
+export type UnsentTransport = Pick<BoardTransport, 'addDishLate' | 'moveDish' | 'cookDish' | 'cookDishes' | 'undoCooking' | 'uncookDishes' | 'writeComment' | 'editComment' | 'deleteComment' | 'setVote' | 'takeBackVote' | 'editDish' | 'planDish' | 'movePlannedDish' | 'unplanDish' | 'setPlannedDishCook' | 'addShoppingItem' | 'changeShoppingItem' | 'deleteShoppingItem' | 'clearShoppingItems' | 'restoreShoppingItems' | 'putDishOnShoppingList' | 'putWeekOnShoppingList' | 'takeBackShoppingItems'>
 
 // A Dish added offline, as the server answered once it had it: the Board
 // module puts it in place of the unsent one (takeArrivals).
@@ -289,6 +310,24 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
         return transport.unplanDish(change.plannedId, { madeAt })
       case 'planCook':
         return transport.setPlannedDishCook(change.plannedId, change.cookId, { madeAt })
+      case 'shopAdd':
+        return transport.addShoppingItem(change.boardId, { id: change.itemId, text: change.text }, { madeAt })
+      case 'shopText':
+        return transport.changeShoppingItem(change.itemId, { text: change.text }, { madeAt })
+      case 'shopTick':
+        return transport.changeShoppingItem(change.itemId, { ticked: change.ticked }, { madeAt })
+      case 'shopDelete':
+        return transport.deleteShoppingItem(change.itemId, { madeAt })
+      case 'shopClear':
+        return transport.clearShoppingItems(change.boardId, { madeAt })
+      case 'shopRestore':
+        return transport.restoreShoppingItems(change.boardId, change.items.map(i => i.item.id), { madeAt })
+      case 'shopDish':
+        return transport.putDishOnShoppingList(change.boardId, { dishId: change.dishId, items: change.items }, { madeAt })
+      case 'shopWeek':
+        return transport.putWeekOnShoppingList(change.boardId, change.week, { madeAt })
+      case 'shopTakeBack':
+        return transport.takeBackShoppingItems(change.boardId, change.itemIds, { madeAt })
     }
   }
 
@@ -338,6 +377,11 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
       catch (error) {
         if (signedOut(error)) stopped = 'signedOut'
         else if (unanswered(error)) stopped = 'unanswered'
+        // A change to a Shopping Item another Member deleted or cleared
+        // meanwhile goes quietly: the line is gone anyway (#533).
+        else if (goesQuietly(change, error)) {
+          // Nothing to tell.
+        }
         else {
           dropped.push(change)
           if (change.kind === 'add') dropDependants(change.dishId)
@@ -389,6 +433,13 @@ export function createUnsentChanges({ store, transport, userId }: UnsentDeps) {
       ('cookingId' in c && c.cookingId === cookingId && c.kind !== 'uncook')
       || (c.kind === 'cookMany' && c.cookingIds.includes(cookingId))),
   }
+}
+
+// Whether a change dropped with `error` goes without telling the Member: one
+// about Shopping Items the server no longer has (404).
+function goesQuietly(change: UnsentChange, error: unknown): boolean {
+  const quiet = change.kind === 'shopText' || change.kind === 'shopTick' || change.kind === 'shopDelete' || change.kind === 'shopRestore'
+  return quiet && error instanceof WriteFailed && error.status === 404
 }
 
 // The positions in `dishIds` of the Dishes other than `dishId`.
@@ -554,6 +605,44 @@ function apply(view: BoardView, change: UnsentChange) {
       if (planned) planned.cookId = change.cookId
       return
     }
+    case 'shopAdd': {
+      const place = Math.max(-1, ...view.shoppingItems.filter(i => i.dishId === null).map(i => i.place)) + 1
+      placeItem(view.shoppingItems, { id: change.itemId, text: change.text, ticked: false, dishId: null, dishTitle: null, dishOnBoard: false, place, putOn: 1 })
+      return
+    }
+    case 'shopText':
+    case 'shopTick': {
+      const item = view.shoppingItems.find(i => i.id === change.itemId)
+      if (item && change.kind === 'shopText') item.text = change.text
+      if (item && change.kind === 'shopTick') item.ticked = change.ticked
+      return
+    }
+    case 'shopDelete': {
+      takeOffList(view.shoppingItems, change.itemId)
+      return
+    }
+    case 'shopClear': {
+      for (const id of change.itemIds) takeOffList(view.shoppingItems, id)
+      return
+    }
+    case 'shopRestore': {
+      for (const { item, index } of [...change.items].sort((a, b) => a.index - b.index)) putBack(view.shoppingItems, { ...item }, index)
+      return
+    }
+    case 'shopDish': {
+      // Only while its Dish is on the Board: the server drops it otherwise.
+      if (!dishOnBoard(view, change.dishId)) return
+      const putOn = Math.max(0, ...view.shoppingItems.filter(i => i.dishId === change.dishId).map(i => i.putOn)) + 1
+      for (const { id, text, line } of change.items) placeItem(view.shoppingItems, { id, text, ticked: false, dishId: change.dishId, dishTitle: change.title, dishOnBoard: true, place: line, putOn })
+      return
+    }
+    case 'shopTakeBack': {
+      for (const id of change.itemIds) takeOffList(view.shoppingItems, id)
+      return
+    }
+    // A week shows once the server has collected its Dishes.
+    case 'shopWeek':
+      return
     // The card's Comment count follows the Comments written and deleted. The
     // Comments themselves are the Dish History's (dish-histories.ts).
     case 'comment':

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,100..900;1,100..900&amp;family=Figtree:ital,wght@0,300..900;1,300..900&amp;display=swap" rel="stylesheet"><style>body{margin:0;background:#F7F6F2}a{color:#1F1E1C;text-decoration:none}a:hover{color:#9B32D8}</style></helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#A5C7AE"></rect><rect x="26" y="34" width="48" height="40" rx="10" fill="#FFFFFF" stroke="#1F1E1C" stroke-width="3"></rect><circle cx="40" cy="54" r="6" fill="#F7B94A" stroke="#1F1E1C" stroke-width="3"></circle><rect x="50" y="52" width="16" height="4" rx="2" fill="#1F1E1C"></rect></svg></template>
+<div style="max-width:1320px;margin:0 auto;padding:56px 36px 110px;font-family:'Figtree',system-ui,sans-serif;color:#1F1E1C;display:flex;flex-direction:column;gap:72px">
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:28px">
+    <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:16px;font:600 12px ui-monospace,monospace"><a href="Malkochen.dc.html" style="color:#8A857D">← Übersicht</a><a href="Malkochen Week Plan.dc.html" style="color:#8A857D">← R14 · Wochenplan</a></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:600 11px ui-monospace,monospace;padding:4px 8px;border-radius:6px;background:#1F1E1C;color:#fff">R15</span><span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D">EINKAUFSLISTE</span></div>
+      <span style="font:500 52px/1.02 'Petrona',Georgia,serif;letter-spacing:-.025em;text-wrap:balance;max-width:900px">Eine Liste für alle, zum Abhaken mit einer Hand.</span>
+      <span style="font:italic 400 21px/1.35 'Petrona',Georgia,serif;color:#6F6B65;max-width:820px;text-wrap:pretty">Every screen and state of the brief, phone (360) and desktop (1280), light and dark. Switch the frame at the top. The frames are live: phone lists scroll, loops play.</span>
+    </div>
+    <div style="width:120px;height:129px"><dc-import name="Pose" pose="wink" still="{{ rm }}" style="width:100%;height:100%" hint-size="120px,129px"></dc-import></div>
+  </div>
+
+  <div style="position:sticky;top:12px;z-index:20;align-self:flex-start;display:flex;flex-wrap:wrap;gap:10px;padding:8px;border-radius:24px;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);box-shadow:0 12px 28px -14px rgba(70,55,30,.3), 0 0 0 1px rgba(31,30,28,.08)">
+    <sc-for list="{{ ctrls }}" as="g" hint-placeholder-count="4">
+      <div style="display:flex;gap:2px;padding:3px;border-radius:18px;background:#EFEDE8">
+        <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="2"><span onClick="{{ o.go }}" style="height:32px;padding:0 13px;border-radius:15px;display:flex;align-items:center;font:600 13px/1 'Figtree',system-ui;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.l }}</span></sc-for>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="6">
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">{{ sec.n }}</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">{{ sec.t }}</span></div>
+        <span style="font:15px/1.55 'Figtree',system-ui;color:#55524C;max-width:900px;text-wrap:pretty">{{ sec.d }}</span>
+      </div>
+      <sc-for list="{{ sec.states }}" as="s" hint-placeholder-count="3">
+        <div id="{{ s.id }}" data-card="1" style="display:flex;flex-wrap:wrap;gap:24px;padding:20px;border-radius:30px 26px 31px 27px;background:#fff;box-shadow:0 12px 28px -10px rgba(70,55,30,.14), 0 2px 6px rgba(70,55,30,.05)">
+          <div style="display:flex;flex-wrap:wrap;gap:18px">
+            <sc-for list="{{ s.frames }}" as="f" hint-placeholder-count="2">
+              <div data-screen-label="{{ f.label }}" style="display:flex;flex-direction:column;gap:8px">
+                <div style="position:relative;width:{{ s.bw }};height:{{ s.bh }};overflow:hidden;border-radius:{{ s.br }};background:#EFEDE8">
+                  <sc-if value="{{ s.on }}"><div style="position:absolute;left:0;top:0;width:{{ s.fw }};height:{{ s.fh }};transform:scale({{ s.z }});transform-origin:0 0"><dc-import name="ShopScreen" screen="{{ s.k }}" theme="{{ f.th }}" frame="{{ frame }}" still="{{ rm }}" spd="{{ spd }}" style="width:100%;height:100%" hint-size="100%,100%"></dc-import></div></sc-if>
+                </div>
+                <span style="font:500 11px ui-monospace,monospace;color:#8A857D">{{ f.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;min-width:280px;max-width:560px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:baseline;gap:10px"><a href="#{{ s.id }}" style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#EFEDE8">{{ s.id }}</a><span style="font:500 25px/1.1 'Petrona',Georgia,serif;letter-spacing:-.01em;text-wrap:balance">{{ s.t }}</span></div>
+            <span style="font:14.5px/1.55 'Figtree',system-ui;color:#3F3C37;text-wrap:pretty">{{ s.d }}</span>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:18px;background:#FBFAF6;border:1px solid rgba(31,30,28,.07)">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:600 10.5px/1 ui-monospace,monospace;letter-spacing:.06em;padding:4px 7px;border-radius:6px;background:{{ s.kindBg }};color:#1F1E1C">{{ s.kind }}</span></div>
+              <span style="font:13.5px/1.5 'Figtree',system-ui;color:#1F1E1C;text-wrap:pretty">{{ s.m }}</span>
+              <span style="font:13px/1.5 'Figtree',system-ui;color:#3F3C37;padding:8px 10px;border-radius:12px;background:#E9E4F7;text-wrap:pretty">Reduced motion: {{ s.r }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+  </sc-for>
+
+  <section style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">08</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">The empty list: Topfbert winks, no new art</span></div>
+      <span style="font:15px/1.55 'Figtree',system-ui;color:#55524C;max-width:900px;text-wrap:pretty">An empty shopping list is good news, not a gap to fill, so it gets the relaxed one of the three Tour poses: topfbert-wink from R12, with its numbered layers and the Tour idle on the shared 6 s clock (breathe, steam, one-eyed blink, the hat tip). Unmirrored, at the same sizes as the empty week. Built in Vue from the layers, no video. layers.json gets a shoppingEmpty block with placement and size only.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px">
+      <div style="display:flex;align-items:flex-end;gap:22px;padding:22px;border-radius:26px;background:#fff">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:150px;height:150px;border-radius:48% 52% 46% 54% / 55% 50% 50% 45%;background:color-mix(in oklch, #A5C7AE 30%, #FFFFFF);display:grid;place-items:center"><div style="width:120px;height:129px"><dc-import name="Pose" pose="wink" still="{{ rm }}" style="width:100%;height:100%" hint-size="120px,129px"></dc-import></div></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">loop · 6 s</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100px;height:107px"><dc-import name="Pose" pose="wink" still="{{ rm }}" style="width:100%;height:100%" hint-size="100px,107px"></dc-import></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">desktop 100</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:78px;height:84px"><dc-import name="Pose" pose="wink" still="{{ rm }}" style="width:100%;height:100%" hint-size="78px,84px"></dc-import></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">phone 78</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:78px;height:84px"><dc-import name="Pose" pose="wink" still="{{ true }}" style="width:100%;height:100%" hint-size="78px,84px"></dc-import></div><span style="font:500 11px ui-monospace,monospace;color:#8A857D">still</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;border-radius:22px;background:#fff;overflow:hidden;align-self:start">
+        <sc-for list="{{ layers }}" as="l" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;padding:11px 16px;border-top:1px solid rgba(31,30,28,.06)">
+            <span style="font:600 12px/1.4 ui-monospace,monospace">{{ l.l }}</span>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:13.5px/1.45 'Figtree',system-ui">{{ l.m }}</span><span style="font:500 11.5px/1.4 ui-monospace,monospace;color:#8A857D">{{ l.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">09</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">Final wording</span></div>
+    <div style="display:flex;flex-direction:column;border-radius:22px;background:#fff;overflow:hidden">
+      <sc-for list="{{ copy }}" as="c" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 24px;padding:16px 20px;border-top:1px solid rgba(31,30,28,.07)">
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 11px ui-monospace,monospace;letter-spacing:.06em;color:#8A857D">{{ c.where }}</span><span style="font:14px/1.5 'Figtree',system-ui;color:#8A857D;text-wrap:pretty">„{{ c.draft }}“</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 11px ui-monospace,monospace;letter-spacing:.06em;color:#3E7B52">FINAL</span><span style="font:500 15px/1.5 'Figtree',system-ui;text-wrap:pretty">{{ c.final }}</span><span style="font:13px/1.45 'Figtree',system-ui;color:#55524C;text-wrap:pretty">{{ c.why }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <span style="font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:#8A857D;margin-top:8px">NEW STRINGS</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">
+      <sc-for list="{{ strings }}" as="x" hint-placeholder-count="12">
+        <div style="display:flex;flex-direction:column;gap:4px;padding:11px 14px;border-radius:16px;background:#fff"><span style="font:500 10.5px/1.2 ui-monospace,monospace;color:#8A857D">{{ x.k }}</span><span style="font:500 14px/1.4 'Figtree',system-ui;text-wrap:pretty">„{{ x.v }}“</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">10</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">Where I decided differently</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+      <sc-for list="{{ decisions }}" as="x" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;gap:5px;padding:15px 17px;border-radius:20px;background:{{ x.bg }}"><span style="font:600 14px/1.35 'Figtree',system-ui">{{ x.t }}</span><span style="font:13.5px/1.5 'Figtree',system-ui;color:#3F3C37;text-wrap:pretty">{{ x.d }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px ui-monospace,monospace;padding:3px 7px;border-radius:5px;background:#1a1a1a;color:#fff">11</span><span style="font:500 34px/1.1 'Petrona',Georgia,serif;letter-spacing:-.02em">Handoff</span><a href="handoff/README.md" style="font:600 12px ui-monospace,monospace;color:#8A857D">README §11 →</a></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+      <sc-for list="{{ files }}" as="f" hint-placeholder-count="8">
+        <a href="{{ f.href }}" style="display:flex;flex-direction:column;gap:5px;padding:14px 16px;border-radius:20px;background:#fff" style-hover="box-shadow:0 0 0 2px #EFEDE8"><span style="font:600 12px/1.4 ui-monospace,monospace;word-break:break-all">{{ f.p }}</span><span style="font:13px/1.5 'Figtree',system-ui;color:#55524C;text-wrap:pretty">{{ f.d }}</span></a>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;frame&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;desktop&quot;],&quot;default&quot;:&quot;phone&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;both&quot;,&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;both&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;zoom&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[0.5,0.75,1],&quot;default&quot;:0.5,&quot;tsType&quot;:&quot;number&quot;},&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;slowMo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const UI = ['UI MOTION', '#FBE3B0'], MG = ['MOTION GRAPHIC', '#F2D2F9'], NO = ['NO OWN MOTION', '#EFEDE8'];
+const S = (id, k, t, d, kind, m, r) => ({ id, k, t, d, kind: kind[0], kindBg: kind[1], m, r });
+const VIEW = [
+  S('1a', 'list', 'Einkauf, the third view', 'Phone: the switch now spans its whole row under the top bar, 328 × 40, three equal segments of 109px with icon and label: "Spalten", "Woche", "Einkauf". Desktop: still right after the Board pill, 348 × 44 (116 per segment, as before). Remembered per device as in R14. The list: "Einkaufsliste" as the view title, "Erledigte entfernen" beside it while anything is ticked, then "Sonstiges" first and one group per Dish below, newest last. Each line is a full-width row with a pebble checkbox; ticked lines are crossed out and sit at the bottom of their group (Spülmittel, Penne, Cashews). The FAB adds a line (4a). Desktop: Sonstiges has its own 360px column with the field always there; the Dish groups flow into two columns beside it (2a).', UI, 'Press on a segment: tap. Rows: press scale .98 (tap). The view change is 1b.', 'Press without scale.'),
+  S('1b', 'switch', 'Woche to Einkauf and back', 'The frame loops it. The thumb slides on to the third segment, the week steps aside and the groups come in one after the other. Einkauf always opens at the top, with Sonstiges in view. The FAB, hidden in Woche since R14, comes back as "Eintrag hinzufügen".', UI, 'See Interaction "Switch to the list". Thumb: left → 66.6%, settle 480. Week: fade 240 + x 0 → −28 (settle 480). List: x +28 → 0 (settle 480); groups opacity 0 → 1 and y 14 → 0, staggered 40ms from +140ms. FAB: scale 0 → 1 (pop 460, +200ms). Back: groups drop out together (160), the FAB shrinks (150).', 'The thumb jumps and the two views crossfade in 200ms; the FAB appears with them. No shift, no stagger.')
+];
+const LIST = [
+  S('2a', 'more', 'Twice, long and gone', 'Phone, scrolled to the end. Crispy Tofu Bowl was put on twice: still one group, its lines in Recipe order with each line twice side by side, and a quiet "Zweimal auf der Liste" under the title. The long tofu line wraps freely, the checkbox stays at its first line. Veganer Käsekuchen has left the Board: its group keeps the title with "Nicht mehr auf dem Board" under it, no image, no chevron, nothing to open; its lines tick and go like all others. Desktop: each new Dish group goes into the shorter of the two Dish columns, so the order still reads left to right, top to bottom. Hover on a Dish heading (Pasta) fills it surface-muted and darkens the chevron; a click opens the Dish detail.', UI, 'Dish heading: press scale .98 (tap), then the card to detail morph with the group image as the shared element.', 'Press without scale; the detail crossfades in 200ms.'),
+  S('2b', 'empty', 'An empty list', 'One card says how things get on the list, in three lines with an icon each: from a Dish, from the Week Plan, or typed. Topfbert winks beside "Noch nichts zu kaufen." (section 08). Phone: "Etwas aufschreiben" opens the same field as the FAB. Desktop: the 520px card sits centred with the field already in it and focused, so typing starts straight away. No "Erledigte entfernen" here.', MG, 'Topfbert wink, built in Vue from the R12 layers: breathe, steam, one-eyed blink and the hat tip on the shared 6 s clock. The card pops in once (pop 460, +200ms). Paused off screen and under sheets.', 'Topfbert as the still (frame 0); the card fades in 200ms.'),
+  S('2c', 'offline', 'Without a connection', 'Everything works offline and is sent once the connection is back. Here "Hafermilch" was typed and "1 Zwiebel" ticked offline: each carries the existing quiet mark, the cloud and "Noch nicht gesendet", under its text, as on the Dish card and the Planned Dish. A deleted or cleared line has nothing left to mark; it goes with the next send. When two Members change the same line, the later change wins; a line deleted elsewhere stays deleted.', UI, 'The mark fades in and out (fade 240) and leaves by itself once sent. A ticked line sinks as always (3a).', 'The mark appears and disappears instantly.')
+];
+const TICK = [
+  S('3a', 'tick', 'Tick, and it sinks', 'The whole row is the target: full width, at least 56px tall (50 on desktop), so a thumb can hit it without looking twice. Here "2 Karotten". The pebble springs and fills sage, the check draws, a line runs through the text and it turns text-muted. After a short 600ms pause, long enough to see a wrong tap and untick in place, the line sinks to the bottom of its group and the lines below move up. A light haptic tick on release.', UI, 'See Interaction "Tick". Press scale .98 (tap). Pebble .82 → 1.18 → 1 (pop 380), fill sage 180, check stroke 220 from +60, strike 0 → 100% 260 from +80, text colour 200. Hold 600, then the line travels to its new place and the others close up (settle 480). Haptic SELECTION.', 'Fill, check and strike appear at once; after the same 600ms the line jumps to its place.'),
+  S('3b', 'untick', 'Untick, and it comes back', '"2 Karotten" from the bottom of the group: tap, the check and the strike retract, and the line goes back to its Recipe place between "1 Dose gehackte Tomaten" and "1 Zwiebel". In Sonstiges a line goes back to the order it was typed in.', UI, 'See Interaction "Untick and rise". Check retracts (stroke 160), strike 100 → 0% (200), colour 200. Hold 600, then travel (settle 480). Haptic SELECTION.', 'Everything changes at once; the line jumps back after 600ms.')
+];
+const CHANGE = [
+  S('4a', 'type', 'Typing several in a row', 'Phone: in Einkauf the FAB adds a line. It opens a field docked on the keyboard, labelled "Neu in Sonstiges" with "Was fehlt noch?" as placeholder; the return key says "Weiter". Enter adds the line at the end of Sonstiges\' open lines, clears the field and keeps keyboard and focus. Enter on an empty field, a tap outside or the keyboard swiped down closes it. Desktop: the field lives in the Sonstiges column; "n" focuses it from anywhere in the view ("/" stays search). The loop types "Tomatenmark" and "Zitronen".', UI, 'See Interaction "Type items in a row". The field rises with the keyboard (system timing). On Enter: a slot opens 0 → 56 (settle 380) and the line drops in from y −10 and .97 (settle 460, +80). The field clears without motion. Haptic none.', 'The line appears in place.'),
+  S('4b', 'edit', 'Changing a line', 'Phone: long-press a line (450ms, haptic LONG_PRESS). The row turns into our Input in place, labelled "Eintrag ändern", text selected, with a delete button inside the field; "Fertig" or a tap outside saves. Saving an empty text deletes the line, with the delete toast. Desktop: the pencil that appears on hover and focus, Enter on a focused line, or a double click; Escape cancels. The line keeps its place, and a ticked line stays ticked.', UI, 'Row to field: crossfade 150, outline 180 (Input). Back: crossfade 150.', 'The row and the field swap without motion.'),
+  S('4c', 'delete', 'Deleting a line', 'Phone: swipe a line left. From 96px "Entfernen" shows on danger; let go past half the width or with a quick flick and it goes, shorter swipes spring back. The edit field\'s delete button and the accessibility action do the same without a gesture. Desktop: the trash on hover and focus, or Delete on a focused line. It acts at once, toast "Eintrag entfernt." with "Rückgängig". The last line of a group takes the group with it; undo brings both back.', UI, 'See Interaction "Delete with undo". The row follows the finger; past 96px haptic GESTURE_THRESHOLD_ACTIVATE. Release: x → −105% (240 ease-in), the slot closes 56 → 0 (settle 380, +220). Desktop: x −24 and fade (200 ease-in), slot closes (+180). Toast in (settle 400, +260), the FAB moves up 76. Undo: the slot reopens and the line drops back (as 4a).', 'The line fades out in 200ms and the gap closes at once; the toast fades in.'),
+  S('4d', 'clear', '"Erledigte entfernen"', 'In the list header, only while something is ticked; with nothing ticked it isn\'t there at all. One tap clears every ticked line in every group, for everyone, with no dialog: toast "3 Einträge entfernt." with "Rückgängig". Groups left without lines disappear with them.', UI, 'See Interaction "Clear ticked with undo". Press scale .94 (tap). Ticked lines fade (160) and their slots close (settle 380), 30ms apart from top to bottom, from +140ms. The button fades out (200, +120). Toast in (settle 400, +200). Undo: the lines grow back in place (settle 380) and the button returns (fade 240).', 'Lines and button disappear at once; the toast fades in.')
+];
+const DISH = [
+  S('5a', 'detail', '"Auf die Einkaufsliste" in the Dish detail', 'The share row is full at 328px with "Einplanen", "Link teilen" and "Kopieren", and a fourth item would wrap. So the action sits where its content is: a full-width secondary button closing the Zutaten card, 48px, with the bag-plus icon. It only exists when the Recipe has Ingredients. The phone frame is scrolled to the card; desktop shows the panel the same way.', UI, 'Press scale .94 (tap). Opens 5b.', 'Press without scale.'),
+  S('5b', 'ingpick', 'Choosing what goes on', 'Phone: content-height sheet. Desktop: a 400px popover rising from the button inside the panel, like R14\'s pickers. "Auf die Einkaufsliste", the Dish under it, then "Nimm raus, was du schon zu Hause hast." and every Ingredient line as written, all ticked. The whole row toggles. With "2 EL Sojasoße", "2 EL Öl" and "1 Prise Salz" unticked, the button says "5 Zutaten hinzufügen" and counts along as you tap.', UI, 'Phone: Sheet open (Interaction "Sheet open / close"). Desktop: pop 360 from the button (scale .96 → 1, y +8 → 0, origin bottom). Rows rise 14px with a 40ms stagger, max 8. Toggle: fill 180, check stroke 200. The count in the button changes without motion.', 'Fade 200ms, no slide, no stagger.'),
+  S('5c', 'ingzero', 'Nothing left ticked', 'The button stays where it is, at 35%, and says why instead of "0 Zutaten hinzufügen": "Keine Zutat ausgewählt".', NO, 'Label swap only.', 'Nothing to reduce.'),
+  S('5d', 'ingdone', 'On the list', 'The frame loops it: the button is pressed, the sheet closes, toast "5 Zutaten auf der Einkaufsliste." with "Rückgängig". The lines go into this Dish\'s group at the end of the list. Doing it again adds the lines again to the same group, and its heading then says "Zweimal auf der Liste".', UI, 'See Interaction "Put a Dish on". Button press .97, sheet close 320 ease-in (desktop popout 200), toast in (settle 400, +200). Haptic CONFIRM.', 'The sheet fades out, the toast fades in.')
+];
+const WEEK = [
+  S('6a', 'week', '"Woche auf die Einkaufsliste" on the Week Plan', 'Phone: a labelled ghost button as a second header line, under the week title and aligned with it. The title row has no room left beside ‹ ›, and a bare bag icon would read as a shop. Desktop: a secondary pill in the header before "Heute" and the arrows. It takes every Dish planned from today to Sunday; in a week to come, the whole week. Here that is Mi to So: Räuchertofu, Crispy Tofu Bowl, Pad Thai, Linsensuppe, Gyoza, Tacos, Brunch.', UI, 'Press scale .94 (tap). The ring marks the button about to be tapped.', 'Press without scale.'),
+  S('6b', 'weekdone', 'The week goes on the list', 'No sheet: four Dishes go on with all their Ingredients. Crispy Tofu Bowl and Omas Linsensuppe are skipped because they already have a group, the Brunch because it has no Ingredients. Each Dish gets its group in plan order (day, then place in the day). Toast "4 Gerichte auf der Einkaufsliste." with "Rückgängig", which takes all four off again.', UI, 'See Interaction "Put a week on". Press .94 (tap), the bag icon squashes 1.3/.84 → 1 (pop 460), the days that were looked at get a butter ring pulse, 40ms apart (900 ease-out), so you can see what "Woche" covered. Toast in (settle 400, +120). Haptic CONFIRM.', 'No squash, no pulse; the toast fades in.'),
+  S('6c', 'weeknone', 'Nothing left to add', 'Tapping it again, or for a week where every planned Dish is already on the list or has no Ingredients: "Alles schon auf der Einkaufsliste." No undo, because nothing changed.', UI, 'Press and squash as 6b, no pulse. Toast in (settle 400), 3 s without the undo bar.', 'The toast fades in.'),
+  S('6d', 'weekpast', 'A past week', '9. bis 15. November: no button, since nothing in it can still be bought for. The header is one line again and the days start right below it.', NO, 'Browsing weeks as in R14; the second header line fades with the week (fade 240).', 'Swaps without motion.')
+];
+const PARTS = [
+  { ...S('7a', 'parts', 'ShoppingItem and ShoppingGroup', 'Phone: ticked, a long line that wraps, not sent yet, swiping, editing; then the four group headings: Sonstiges, a Dish, a Dish put on twice, a Dish that has left the Board. Desktop adds hover (pencil and trash), keyboard focus, removing, and Sonstiges with its field. Rows are 56 (phone) and 50 (desktop) per line of text.', UI, 'Per state as listed in components.json → ShoppingItem and ShoppingGroup.', 'As listed there.'), parts: 1 }
+];
+const LAYERS = [
+  ['whole', 'breathe: scale 1 → .985 / 1.025, twice per loop', 'r11-breathe 3s ease-in-out · pivot 70 123'],
+  ['steam_1, steam_2', 'R11 idle steam, half a loop apart', 'r11-steam 3s ease-out · phase 0 / −1.5s'],
+  ['eyes / eyes_closed', 'left eye only: the shared blink', 'r11-ieo / r11-iec 6s linear'],
+  ['wink', 'static: the right eye stays closed', '—'],
+  ['hat', 'tip: y −2.5 and −4° at 46–54%, small overshoot, rest by 64%', 'r12-tip 6s ease-in-out · pivot 18 36'],
+  ['mirror', 'not mirrored: the card text is on his right', 'layers.json → shoppingEmpty.mirror false'],
+  ['size', 'phone 78 × 84, desktop 100 × 107 (viewBox 0 -20 140 150)', 'layers.json → shoppingEmpty.size'],
+  ['reduced', 'no loop, no blink: frame 0', 'topfbert-wink.svg = the still'],
+  ['pause', 'off screen, under a sheet or dialog, app in background', 'shared clock keeps time']
+];
+const COPY = [
+  ['VIEW SWITCH', 'Einkauf / Liste', '„Einkauf“ (EN „Shopping“, IT „Spesa“).', '"Liste" is ambiguous on a Board where every Column is a list. "Einkaufsliste" doesn\'t fit a third of 328px with its icon. "Einkauf" says where you are going.'],
+  ['DISH DETAIL', 'Auf die Einkaufsliste', '„Auf die Einkaufsliste“ (kept). Sheet: same title, the Dish under it, „Nimm raus, was du schon zu Hause hast.“, button „5 Zutaten hinzufügen“ / „1 Zutat hinzufügen“, at 0 „Keine Zutat ausgewählt“.', 'The hint says the one thing to do in the sheet. At 0 the button tells why it is off instead of counting to zero.'],
+  ['TOAST AFTER A DISH', '5 Zutaten auf der Einkaufsliste.', '„5 Zutaten auf der Einkaufsliste.“ with „Rückgängig“; „1 Zutat auf der Einkaufsliste.“', 'Kept, plus the undo every change has.'],
+  ['WEEK', 'Woche auf die Einkaufsliste', '„Woche auf die Einkaufsliste“, toast „4 Gerichte auf der Einkaufsliste.“ / „1 Gericht auf der Einkaufsliste.“ with „Rückgängig“, or „Alles schon auf der Einkaufsliste.“ without.', 'Kept. "Alles schon" has no undo because nothing happened.'],
+  ['DELETE / CLEAR', 'Eintrag entfernt. / Erledigte entfernen / 3 Einträge entfernt.', '„Eintrag entfernt.“, „Erledigte entfernen“, „3 Einträge entfernt.“ / „1 Eintrag entfernt.“, each toast with „Rückgängig“.', 'Kept. "Erledigte" is what people say about ticked things.'],
+  ['EMPTY LIST', '(new)', '„Noch nichts zu kaufen.“, „So kommt etwas auf die Liste:“, „Im Gericht holst du seine Zutaten dazu.“, „Im Wochenplan kommt die ganze Woche auf einmal.“, „Oder du schreibst selbst etwas auf.“, button „Etwas aufschreiben“.', 'Short sentences, one per way in, in the order people meet them.'],
+  ['GROUP HEADINGS', '(new)', '„Sonstiges“ (kept), „Zweimal auf der Liste“ / „Dreimal auf der Liste“ / „{n}-mal auf der Liste“, „Nicht mehr auf dem Board“.', 'Plain facts, no warning tone for the Dish that left.']
+];
+const STRINGS = [
+  ['Switch', 'Einkauf'], ['View title', 'Einkaufsliste'], ['Header', 'Erledigte entfernen'], ['Group', 'Sonstiges'], ['', 'Zweimal auf der Liste'], ['', 'Dreimal auf der Liste'], ['', '{n}-mal auf der Liste'], ['', 'Nicht mehr auf dem Board'],
+  ['Item · unsent', 'Noch nicht gesendet'], ['Item · swipe', 'Entfernen'], ['Field', 'Neu in Sonstiges'], ['', 'Was fehlt noch?'], ['', 'Eintrag ändern'], ['Keyboard · return', 'Weiter'], ['', 'Fertig'],
+  ['FAB · aria', 'Eintrag hinzufügen'], ['Item · aria', '2 Karotten, Omas Linsensuppe, nicht erledigt'], ['', '2 Karotten, erledigt'], ['Item · actions', 'Ändern'], ['', 'Entfernen'], ['Group · aria', 'Omas Linsensuppe öffnen'],
+  ['Toast', 'Eintrag entfernt.'], ['', '3 Einträge entfernt.'], ['', '1 Eintrag entfernt.'], ['', 'Rückgängig'],
+  ['Empty', 'Noch nichts zu kaufen.'], ['', 'So kommt etwas auf die Liste:'], ['', 'Im Gericht holst du seine Zutaten dazu.'], ['', 'Im Wochenplan kommt die ganze Woche auf einmal.'], ['', 'Oder du schreibst selbst etwas auf.'], ['', 'Etwas aufschreiben'],
+  ['Detail', 'Auf die Einkaufsliste'], ['Picker', 'Nimm raus, was du schon zu Hause hast.'], ['', '5 Zutaten hinzufügen'], ['', '1 Zutat hinzufügen'], ['', 'Keine Zutat ausgewählt'], ['Toast', '5 Zutaten auf der Einkaufsliste.'], ['', '1 Zutat auf der Einkaufsliste.'],
+  ['Week', 'Woche auf die Einkaufsliste'], ['Toast', '4 Gerichte auf der Einkaufsliste.'], ['', '1 Gericht auf der Einkaufsliste.'], ['', 'Alles schon auf der Einkaufsliste.'],
+  ['Live region', '2 Karotten erledigt.'], ['', '2 Karotten wieder offen.'], ['', 'Tomatenmark hinzugefügt.']
+];
+const DEC = [
+  ['"Einkauf" for the third segment', 'Not "Liste" (every Column is a list) and not "Einkaufsliste" (too long for 109px with its icon). EN "Shopping", IT "Spesa". If a translation ever runs longer, the icons drop first, the labels stay.'],
+  ['Phone: the switch takes the whole row', '328 × 40 in three equal segments instead of 212 for two. Desktop keeps 116 per segment, now 348.'],
+  ['The FAB adds a line', 'In Einkauf the FAB is "Eintrag hinzufügen" and opens a field docked on the keyboard. No field sitting at the top of the list on the phone: in the shop the list is for ticking, and a permanent field would push the lines down and catch stray taps. Desktop has the field in place.'],
+  ['"Auf die Einkaufsliste" closes the Zutaten card', 'Not in the share row, which is full at 328px. It sits right under the lines it puts on, and only exists when there are Ingredients.'],
+  ['One group per Dish, also twice', 'A Dish put on again keeps its group: the lines double side by side in Recipe order and the heading says "Zweimal auf der Liste". Two groups with the same title would read as a mistake.'],
+  ['Week button on the phone is a labelled second line', 'Under the title, not an icon in the title row: there is no room beside ‹ › and the action needs its words.'],
+  ['Twice in the week means twice on the list', 'A Dish planned twice between today and Sunday goes on twice, as cooking twice means buying twice. What already has a group before the tap is skipped, so tapping twice is harmless.'],
+  ['Desktop: Sonstiges column plus two Dish columns', 'Lines stay 360 to 420px wide. Sonstiges and its field have a fixed column; Dish groups go into the shorter of two columns, in order.'],
+  ['600ms before a ticked line sinks', 'So a wrong tap can be undone right where it happened. Unticking brings a line back to its Recipe place, a typed line to its typing order.'],
+  ['"Erledigte entfernen" is hidden, not disabled', 'A greyed button would be one more thing to read in a shop.'],
+  ['Long-press 450ms to edit', 'Longer than R14\'s 300ms for dragging: a thumb resting on the list in the shop should not open a field. Swipe to delete is a shortcut; the field\'s delete button and the accessibility actions are the ways without gestures.'],
+  ['An emptied text deletes the line', 'Saving "" removes it with the delete toast and its undo.'],
+  ['Empty list: wink, no new art', 'Topfbert wink from R12 with its layers and idle. layers.json gets placement and size only.'],
+  ['Ticked lines stay until cleared', 'No automatic clean-up: the next person in the shop sees what is already in the basket.'],
+  ['Open, not designed', 'When a Dish\'s Recipe changes after it was put on, the list keeps the old lines (they are text as written). Suggestion: leave it so.']
+];
+const FILES = [
+  ['../Malkochen Shopping List.dc.html', 'This page. Frames: ShopScreen.dc.html (every phone and desktop state, light and dark, with props screen, frame, theme, still, spd).', 'Malkochen Shopping List.dc.html'],
+  ['handoff/components.json', '6 new components with variants, states, UI motion and tokens: ShoppingList, ShoppingGroup, ShoppingItem, ShoppingItemInput, IngredientPicker, EmptyShoppingList. ViewSwitch, WeekHeader, Toast, BottomSheet, Button and RecipeSection get an r15 note.', 'handoff/components.json'],
+  ['handoff/interactions.json', '9 new: Tick, Untick and rise, Delete with undo, Clear ticked with undo, Type items in a row, Change a line, Put a Dish on, Put a week on, Switch to the list. Each with a ms timeline and reduced motion.', 'handoff/interactions.json'],
+  ['handoff/tokens.json · tokens.css · tailwind.preset.js', 'Additions only: color.derived.tick, tick-ink, strike, swipe-danger (light + dark), size.shop-row, shop-row-desktop, shop-check, layout.shopping, motion.sink-hold, z.shop-field. CSS variables and Tailwind keys to match.', 'handoff/tokens.json'],
+  ['handoff/assets/r15-keyframes.css', 'Every r15-* keyframe used above: check, press, grow, arrive, squash, wash, pop.', 'handoff/assets/r15-keyframes.css'],
+  ['handoff/assets/topfbert/layers.json → shoppingEmpty', 'Placement, size and loop for Topfbert wink in the empty list. Additions only, no new SVG.', 'handoff/assets/topfbert/layers.json'],
+  ['handoff/README.md → §11 R15', 'What is new, what each file is for, every decision that differs from the brief.', 'handoff/README.md']
+];
+class Component extends DCLogic {
+  state = {};
+  componentDidMount() {
+    const poll = () => {
+      const vh = window.innerHeight || 800; let dirty = false;
+      const S = window.__r15set || (window.__r15set = {});
+      document.querySelectorAll('[data-card]').forEach(el => { const r = el.getBoundingClientRect(), on = r.bottom > -vh * 1.5 && r.top < vh * 2.5; if (!!S[el.id] !== on) { S[el.id] = on ? 1 : 0; dirty = true; } });
+      if (dirty && window.__r15inst) window.__r15inst.forceUpdate();
+    };
+    if (window.__r15poll) { document.removeEventListener('scroll', window.__r15poll, true); window.removeEventListener('scroll', window.__r15poll); }
+    window.__r15poll = poll;
+    document.addEventListener('scroll', poll, true); window.addEventListener('scroll', poll); window.addEventListener('resize', poll);
+    clearInterval(window.__r15iv); window.__r15iv = setInterval(poll, 500);
+    poll();
+  }
+  renderVals() {
+    window.__r15inst = this;
+    const frame = this.state.frame ?? this.props.frame ?? 'phone', theme = this.state.theme ?? this.props.theme ?? 'both';
+    const rm = this.state.rm ?? !!this.props.reducedMotion, spd = (this.state.slow ?? !!this.props.slowMo) ? 2 : 1;
+    const z = this.state.zoom ?? this.props.zoom ?? 0.5;
+    const ths = theme === 'both' ? ['light', 'dark'] : [theme];
+    const N = window.__r15set || (window.__r15set = { '1a': 1 });
+    const desk = frame === 'desktop';
+    const gate = s => {
+      const ph = !desk, fh = s.parts ? (ph ? 760 : 520) : (ph ? 760 : 800), fw = ph ? 360 : 1280, zz = ph ? 1 : z;
+      return { ...s, on: !!N[s.id], z: String(zz), fw: fw + 'px', fh: fh + 'px', bw: Math.round(fw * zz) + 'px', bh: Math.round(fh * zz) + 'px', br: ph ? '36px' : '12px',
+        frames: ths.map(th => ({ th, label: `${s.id} · ${th === 'light' ? 'Light' : 'Dark'} · ${ph ? 'Phone 360' : 'Desktop 1280 at ' + Math.round(zz * 100) + '%'}` })) };
+    };
+    const seg = (key, cur, opts) => ({ opts: opts.map(([v, l]) => ({ l, bg: cur === v ? '#1F1E1C' : 'transparent', fg: cur === v ? '#fff' : '#1F1E1C', go: () => this.setState({ [key]: v }) })) });
+    const ctrls = [seg('frame', frame, [['phone', 'Phone 360'], ['desktop', 'Desktop 1280']])];
+    if (desk) ctrls.push(seg('zoom', z, [[0.5, '50%'], [0.75, '75%'], [1, '100%']]));
+    ctrls.push(seg('theme', theme, [['both', 'Hell + Dunkel'], ['light', 'Hell'], ['dark', 'Dunkel']]), seg('rm', rm, [[false, 'Bewegung'], [true, 'Reduziert']]), seg('slow', spd === 2, [[false, '1×'], [true, '½×']]));
+    return {
+      rm, spd, frame, ctrls,
+      sections: [
+        { n: '01', t: 'Spalten, Woche and Einkauf', d: 'One Shopping List per Board, the same for every Member, as a third view beside the Columns and the Week Plan. Everyone may change it and no line carries a name. A line is text as written: nothing is added up or merged, so two Dishes needing flour give two lines.', states: VIEW },
+        { n: '02', t: 'The list', d: '"Sonstiges" first, then one group per Dish in the order they were put on, newest last. Inside a group the lines keep the Recipe\'s order; ticked lines sink to the bottom of their group. No reordering by hand.', states: LIST },
+        { n: '03', t: 'Ticking', d: 'The main action, done in a shop with one hand and maybe bad light: the whole row is the target and the tick is felt as well as seen.', states: TICK },
+        { n: '04', t: 'Changing the list', d: 'Typing, changing and deleting a line, and clearing everything that is ticked. Every removal acts at once and offers an undo, never a question.', states: CHANGE },
+        { n: '05', t: 'From a Dish', d: 'A Dish\'s Ingredients go on through a short sheet where you untick what you already have. Putting the same Dish on again adds its lines again.', states: DISH },
+        { n: '06', t: 'From the Week Plan', d: 'Everything planned from today to Sunday in one tap, without a sheet. Past weeks don\'t offer it.', states: WEEK },
+        { n: '07', t: 'Parts', d: 'The line and the group heading in each state, phone and desktop. Nothing about the list shows on the Dish card.', states: PARTS }
+      ].map(x => ({ ...x, states: x.states.map(gate) })),
+      layers: LAYERS.map(([l, m, t]) => ({ l, m, t })),
+      copy: COPY.map(([where, draft, final, why]) => ({ where: where + ' · DRAFT', draft, final, why })),
+      strings: STRINGS.map(([k, v]) => ({ k: k || '·', v })),
+      decisions: DEC.map(([t, d], i) => ({ t, d, bg: ['#FBE3B0', '#D5E4D8', '#DCE3F0', '#E9E4F7', '#F7DCCB'][i % 5] })),
+      files: FILES.map(([p, d, href]) => ({ p, d, href }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -434,6 +434,48 @@ export const plannedDish = pgTable('planned_dish', {
 }, t => [index('planned_dish_dish_id_idx').on(t.dishId)])
 
 // ---------------------------------------------------------------------------
+// The Shopping List (CONTEXT.md: Shopping List, Shopping Item; ADR 0015): one
+// row per Shopping Item, on its Board. An item copied from a Dish's
+// Ingredients belongs to that Dish's group; one typed by a Member to none
+// ("Sonstiges"). Items are copies: nothing here follows the Dish or its
+// Recipe, and archiving, moving, deleting or copying the Dish never touches
+// them (server/utils/shopping-list.ts).
+
+export const shoppingItem = pgTable('shopping_item', {
+  // Made on the device (ADR 0012), like other offline-made rows.
+  id: uuid('id').primaryKey().defaultRandom(),
+  boardId: uuid('board_id').notNull().references(() => board.id, { onDelete: 'cascade' }),
+  // The line as it is now, at most 200 characters.
+  text: text('text').notNull(),
+  // The Dish group: the Dish the item was put on with, null for "Sonstiges".
+  // No foreign key: the group stays when the Dish is deleted for good.
+  dishId: uuid('dish_id'),
+  // The Dish's title as last known, refreshed whenever the Dish is put on
+  // again: the group's title once the Dish has left the Board. Null for
+  // "Sonstiges".
+  dishTitle: text('dish_title'),
+  // When the group's Dish was first put on, the same on every item of the
+  // group: groups are in this order, newest last. Null for "Sonstiges".
+  groupAt: timestamp('group_at', { withTimezone: true }),
+  // Its place in its group. For a Dish's item: the line's place in the Dish's
+  // Ingredients (0-based among the non-empty lines), so a Dish put on twice
+  // reads A, A, B, B. For "Sonstiges": the typing order (0, 1, 2…, or gaps
+  // after a delete).
+  position: integer('position').notNull(),
+  // Which time its Dish was put on within the group, 1-based: the second
+  // put-on's items have 2. 1 for "Sonstiges".
+  putOn: integer('put_on').notNull().default(1),
+  ticked: boolean('ticked').notNull().default(false),
+  // Who added it; kept (as unknown) if their account is ever deleted. Never
+  // shown.
+  addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
+  addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+  // Deleted, or cleared by "Erledigte entfernen": gone from the list, and
+  // back with "Rückgängig" until the daily cleanup purges it.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+}, t => [index('shopping_item_board_id_idx').on(t.boardId)])
+
+// ---------------------------------------------------------------------------
 // Snackbert Reports (CONTEXT.md: Snackbert Report, #424): one row per Report a
 // Member sent Snackbert about a Cooking. Several per Cooking are allowed (a
 // second helping). Nothing of the portion is ever stored here: the text,

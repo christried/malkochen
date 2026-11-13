@@ -18,7 +18,7 @@ import { switchRecipeFinder, withoutSearchAfterAdding } from './recipe-finder-sw
 import { signIn, type Caller } from './client'
 import { everyEventAsText, watchEvents } from './event-log'
 import { startApiServer, type RunningServer } from './server-boot'
-import { endLimitWindows, useUpLimit } from './time-travel'
+import { endDishSearches, endLimitWindows, useUpLimit } from './time-travel'
 
 // "Rezept finden" reading a Caption (CONTEXT.md: Recipe Finder, Caption,
 // #501): when the Source's page carries no recipe data, a language model
@@ -191,7 +191,7 @@ test('what is sent is the instructions and the Caption as data, and nothing abou
   }
 })
 
-test('an empty answer ends as nothing found: the Board says so, and the Dish isn\'t searched again', async () => {
+test('an empty answer ends as nothing found: the Board says so, and "Noch mal suchen" asks the model again', async () => {
   const allen = await finderUser(OWNER)
   const noyce = await signIn(MEMBER)
   const board = await sharedBoard(allen, 'Nur Geplauder', [noyce])
@@ -202,8 +202,10 @@ test('an empty answer ends as nothing found: the Board says so, and the Dish isn
 
   expect(answer).toMatchObject({ outcome: 'none', dish: { recipe: null, recipeSearch: 'none' } })
   expect(await onBoard(noyce, board.id, dish)).toMatchObject({ recipe: null, recipeSearch: 'none' })
-  await refusedWith(await findRecipe(allen, dish), 409, 'Nothing found for this Source')
   expect(anthropic.requests).toHaveLength(1)
+  anthropic.answer(RECIPE)
+  expect(await found(allen, dish)).toMatchObject({ outcome: 'found', dish: { recipe: { ...RECIPE, link: null }, recipeSearch: null } })
+  expect(anthropic.requests).toHaveLength(2)
 })
 
 test('a refusal, a malformed answer, a dropped connection and a 500 each end as a failed search: no Recipe, repeatable, and no search of the day spent', async () => {
@@ -221,6 +223,7 @@ test('a refusal, a malformed answer, a dropped connection and a 500 each end as 
 
     expect(anthropic.requests.length, `${unanswered}`).toBeGreaterThanOrEqual(1)
     expect(await onBoard(kilby, board.id, dish)).toMatchObject({ recipe: null, recipeSearch: null })
+    await endDishSearches(dish.id)
   }
   // 29 used: the failed ones gave theirs back, so there is one left.
   anthropic.answer(RECIPE)
@@ -328,4 +331,25 @@ describe('without an API key', () => {
     // Not even the cap was looked at: with it, the same server refuses with 429 once it has a key.
     expect((await findRecipe(grove, dish)).status).toBe(429)
   })
+})
+
+test('a Dish added without its Caption has it read again from its Source when searched, keeps it, and the model reads it (#529)', async () => {
+  const allen = await finderUser(OWNER)
+  const board = await sharedBoard(allen, 'Alte Gerichte')
+  // As a Dish added before Dishes kept their Caption: the Source, no Caption.
+  const added = await withoutSearchAfterAdding(allen, () => postDish(allen, board.id, {
+    title: 'Linsensuppe',
+    placeholder: 'bowl',
+    source: { link: RECIPE_TIKTOK, kind: 'tiktok' },
+  }))
+  expect(added.status).toBe(201)
+  const dish = await added.json() as Dish
+  expect(dish.caption).toBeNull()
+  anthropic.answer(RECIPE)
+
+  const answer = await found(allen, dish)
+
+  expect(answer).toMatchObject({ outcome: 'found', dish: { caption: RECIPE_CAPTION, recipe: { ...RECIPE, link: null } } })
+  expect(anthropic.requests[0]!.body.messages).toEqual([{ role: 'user', content: `<caption>\n${RECIPE_CAPTION}\n</caption>` }])
+  expect((await onBoard(allen, board.id, dish)).caption).toBe(RECIPE_CAPTION)
 })

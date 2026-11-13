@@ -1,14 +1,16 @@
-// Which view of a Board the device shows (handoff ViewSwitch): the Columns or
-// the Week Plan. One choice per device for all Boards, kept in localStorage
-// as "malkochen:view" ("columns" or "week"); where that is unavailable (a
-// private window), for as long as the page stays open.
-export type BoardViewChoice = 'columns' | 'week'
+// Which view of a Board the device shows (handoff ViewSwitch): the Columns,
+// the Week Plan or the Shopping List. One choice per device for all Boards,
+// kept in localStorage as "malkochen:view" ("columns", "week" or
+// "shopping"); where that is unavailable (a private window), for as long as
+// the page stays open.
+export type BoardViewChoice = 'columns' | 'week' | 'shopping'
 
 const KEY = 'malkochen:view'
 
 function stored(): BoardViewChoice {
   try {
-    return localStorage.getItem(KEY) === 'week' ? 'week' : 'columns'
+    const kept = localStorage.getItem(KEY)
+    return kept === 'week' || kept === 'shopping' ? kept : 'columns'
   }
   catch {
     return 'columns'

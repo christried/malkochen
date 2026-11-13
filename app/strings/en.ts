@@ -27,6 +27,15 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'planMove': return `${named} moved in the week plan`
     case 'unplan': return `${named} taken off the week plan`
     case 'planCook': return `who cooks ${named}`
+    case 'shopAdd': return `${named} on the shopping list`
+    case 'shopText': return `changed item ${named}`
+    case 'shopTick': return `tick on ${named}`
+    case 'shopDelete': return `${named} removed from the shopping list`
+    case 'shopClear': return 'clear done'
+    case 'shopRestore': return `${named} brought back`
+    case 'shopDish': return `${named} put on the shopping list`
+    case 'shopWeek': return `week from ${dayMonth(label)} put on the shopping list`
+    case 'shopTakeBack': return 'undo on the shopping list'
     case 'move': return `${named} moved`
     case 'cook':
     case 'cookMany': return `${named} cooked`
@@ -429,6 +438,7 @@ export const en: Strings = {
       failed: 'The search didn’t work just now.',
       again: 'Search again',
       quota: 'The Recipe Finder has searched enough for today. It will search again tomorrow.',
+      tooSoon: 'This dish was just searched twice. You can try again in an hour.',
       found: 'Recipe found',
       show: 'Show',
     },
@@ -704,6 +714,47 @@ export const en: Strings = {
     cookButton: (name: string) => `Cooking: ${name}. Change`,
     cooksNow: (name: string) => `${name} is cooking now.`,
     cooksNobody: 'Nobody is set to cook any more.',
+  },
+  shopping: {
+    tab: 'Shopping',
+    title: 'Shopping list',
+    other: 'Other',
+    times: (count: number) => count === 2 ? 'On the list twice' : count === 3 ? 'On the list three times' : `On the list ${number(count)} times`,
+    gone: 'No longer on the board',
+    openDish: (title: string) => `Open ${title}`,
+    addItem: 'Add item',
+    addLabel: 'New in Other',
+    addPlaceholder: 'What do you still need?',
+    add: 'Add',
+    item: (text: string, group: string, ticked: boolean) => `${text}, ${group}, ${ticked ? 'done' : 'not done'}`,
+    edit: (text: string) => `Change “${text}”`,
+    remove: (text: string) => `Remove “${text}”`,
+    changeAction: 'Change',
+    removeAction: 'Remove',
+    editLabel: 'Change item',
+    tickedLive: (text: string) => `${text} done.`,
+    untickedLive: (text: string) => `${text} open again.`,
+    addedLive: (text: string) => `${text} added.`,
+    clearDone: 'Clear done',
+    emptyTitle: 'Nothing to buy yet.',
+    emptyHow: 'How things get on the list:',
+    emptyFromDish: 'In a dish, you add its ingredients.',
+    emptyFromWeek: 'In the week plan, the whole week goes on at once.',
+    emptyTyped: 'Or you write something down yourself.',
+    emptyWrite: 'Write something down',
+    removed: 'Item removed.',
+    cleared: (count: number) => count === 1 ? '1 item removed.' : `${number(count)} items removed.`,
+    failed: 'That didn’t work. Try again.',
+    full: 'The shopping list is full: it holds 500 items at most.',
+    dishGone: (title: string) => `“${title}” isn’t on the board any more.`,
+    putOn: 'Put on the shopping list',
+    pickText: 'Untick what you already have at home.',
+    putOnConfirm: (count: number) => count === 0 ? 'No ingredient chosen' : count === 1 ? 'Add 1 ingredient' : `Add ${number(count)} ingredients`,
+    putOnDone: (count: number) => count === 1 ? '1 ingredient on the shopping list.' : `${number(count)} ingredients on the shopping list.`,
+    putWeekOn: 'Put the week on the shopping list',
+    weekDone: (count: number) => count === 1 ? '1 dish on the shopping list.' : `${number(count)} dishes on the shopping list.`,
+    weekNothing: 'Everything’s on the shopping list already.',
+    weekLater: 'The week goes on the shopping list once you’re back online.',
   },
   offline: {
     headline: 'You’re offline.',
@@ -1060,6 +1111,7 @@ export const en: Strings = {
     eventGroups: {
       dishes: 'Dishes',
       weekPlan: 'Week plan',
+      shoppingList: 'Shopping list',
       cookings: 'Cooking',
       talk: 'Comments and thumbs',
       columns: 'Columns',
@@ -1090,6 +1142,16 @@ export const en: Strings = {
       planned_dish_moved: 'Planned dish moved',
       dish_unplanned: 'Taken off the week plan',
       planned_dish_cook_set: 'Cook changed',
+      shopping_item_added: 'Item added',
+      shopping_item_changed: 'Item changed',
+      shopping_item_ticked: 'Item ticked off',
+      shopping_item_unticked: 'Item unticked',
+      shopping_item_deleted: 'Item removed',
+      shopping_items_cleared: 'Done items cleared',
+      shopping_items_restored: 'Items restored',
+      dish_put_on_shopping_list: 'Dish put on the shopping list',
+      week_put_on_shopping_list: 'Week put on the shopping list',
+      shopping_items_taken_back: 'Items taken back',
       cooking_recorded: 'Cooked',
       cooking_deleted: 'Cooking deleted',
       cooking_restored: 'Cooking restored',

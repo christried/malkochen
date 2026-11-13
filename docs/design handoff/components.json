@@ -139,7 +139,8 @@
       "color.scrim",
       "motion.sheet"
     ],
-    "r14": "New contents: DishPicker (tall), DayPicker, CookPicker, PlannedDishMenu (content-height). On desktop these four are popovers anchored to their trigger, not centred dialogs."
+    "r14": "New contents: DishPicker (tall), DayPicker, CookPicker, PlannedDishMenu (content-height). On desktop these four are popovers anchored to their trigger, not centred dialogs.",
+    "r15": "New content: IngredientPicker (content-height). On desktop a popover anchored to its button, rising upwards (origin bottom), like the R14 pickers."
   },
   {
     "name": "Dialog",
@@ -190,7 +191,8 @@
       "shadow.fab"
     ],
     "r13": "New messages: \"Zutat entfernt\" / \"Schritt entfernt\" + Rückgängig, \"8 Zutaten eingefügt\" + Rückgängig, \"Rezept gefunden\" + Zeigen.",
-    "r14": "New: \"Für Donnerstag eingeplant.\" / \"Für heute eingeplant.\" / \"Für morgen eingeplant.\" / \"Für Donnerstag, 26. November eingeplant.\" + Rückgängig; \"Auf Freitag gelegt.\" + Rückgängig; \"Aus dem Plan genommen.\" + Rückgängig; \"Gekocht\" from the plan uses the existing 2-action variant with Topfbert above. Desktop: bottom left, 28px from the edges."
+    "r14": "New: \"Für Donnerstag eingeplant.\" / \"Für heute eingeplant.\" / \"Für morgen eingeplant.\" / \"Für Donnerstag, 26. November eingeplant.\" + Rückgängig; \"Auf Freitag gelegt.\" + Rückgängig; \"Aus dem Plan genommen.\" + Rückgängig; \"Gekocht\" from the plan uses the existing 2-action variant with Topfbert above. Desktop: bottom left, 28px from the edges.",
+    "r15": "New: \"5 Zutaten auf der Einkaufsliste.\" / \"1 Zutat …\", \"4 Gerichte auf der Einkaufsliste.\" / \"1 Gericht …\", \"Eintrag entfernt.\", \"3 Einträge entfernt.\" / \"1 Eintrag entfernt.\", each + Rückgängig (5 s). \"Alles schon auf der Einkaufsliste.\" has no action and no bar (3 s). FAB moves up 76 in Einkauf as everywhere."
   },
   {
     "name": "Button",
@@ -224,7 +226,8 @@
       "type.button-l"
     ],
     "r13": "Used as is: secondary (Rezept finden, Bearbeiten), dashed (Rezept hinzufügen, Zutat/Schritt hinzufügen), disabled 35% (offline).",
-    "r14": "Dish detail share row gets \"Einplanen\" first (ghost, calendar-plus icon 16, 600 14, padding 0 9): \"Einplanen\", \"Link teilen\", \"Kopieren\". The action row is unchanged."
+    "r14": "Dish detail share row gets \"Einplanen\" first (ghost, calendar-plus icon 16, 600 14, padding 0 9): \"Einplanen\", \"Link teilen\", \"Kopieren\". The action row is unchanged.",
+    "r15": "New uses: secondary full width 48 \"Auf die Einkaufsliste\" (bag-plus 18) closing the Zutaten card; ghost/secondary \"Woche auf die Einkaufsliste\"; secondary 40 \"Erledigte entfernen\" (trash 16) in the list header, absent when nothing is ticked; FAB in Einkauf = \"Eintrag hinzufügen\"."
   },
   {
     "name": "Input",
@@ -392,7 +395,8 @@
       "shadow.card",
       "color.surface",
       "color.text-muted"
-    ]
+    ],
+    "r15": "Zutaten (view mode, not editing) ends with the secondary button \"Auf die Einkaufsliste\" when it has at least one line. Opens IngredientPicker."
   },
   {
     "name": "RecipeList",
@@ -633,7 +637,8 @@
       "radius.pill",
       "type.label",
       "motion.settle"
-    ]
+    ],
+    "r15": "Three segments: \"Spalten\", \"Woche\", \"Einkauf\" (bag icon). Phone: the whole row, 328 × 40, segments 109; desktop: 348 × 44, segments 116. Thumb left = 3px + (100% − 6px) × index / 3, width (100% − 6px) / 3. If a locale overflows a segment, icons hide first. localStorage \"malkochen:view\" gains \"shopping\". ←/→ cycles three."
   },
   {
     "name": "WeekHeader",
@@ -664,7 +669,8 @@
       "type.display-m (desktop, 30)",
       "color.inverse",
       "shadow.small"
-    ]
+    ],
+    "r15": "New action \"Woche auf die Einkaufsliste\" (bag-plus 17, 600 14). Phone: ghost button as a second 36px line under the title (padding 0 11 0 9, aligned with the title), the day list starts at 90 instead of 54. Desktop: secondary pill 40 (surface, shadow.small) before \"Heute\" and the arrows. Not shown on past weeks. See Interaction \"Put a week on\"."
   },
   {
     "name": "WeekView",
@@ -960,6 +966,206 @@
     "tokens": [
       "radius.card",
       "shadow.card",
+      "type.title-s",
+      "motion.pop",
+      "motion.idle"
+    ]
+  },
+  {
+    "name": "ShoppingList",
+    "added": "R15",
+    "placement": "Third view of a Board (\"Einkauf\" in the ViewSwitch). One list per Board, shared by all Members; no names on lines.",
+    "variants": [
+      "phone: header 48 (title \"Einkaufsliste\" Petrona 500 23 + \"Erledigte entfernen\" while anything is ticked), then one column of ShoppingGroups, gutter 16, gap 14, bottom padding 130 (FAB)",
+      "desktop: header 60 (title Petrona 500 30), then a 360px column for Sonstiges (with ShoppingItemInput) and two equal columns for Dish groups, gap 18, gutter 28, top 140. Each new Dish group goes into the shorter Dish column (masonry in list order)",
+      "empty: EmptyShoppingList instead of groups"
+    ],
+    "states": [
+      "default",
+      "with ticked lines (header button shown)",
+      "nothing ticked (header button absent)",
+      "empty",
+      "offline (lines carry the unsent mark)"
+    ],
+    "rules": [
+      "order: \"Sonstiges\" first, then one group per Dish in the order its first line was put on, newest last",
+      "a Dish put on again keeps its group; its lines are added again",
+      "a group disappears with its last line",
+      "no manual reordering, no merging or adding up of amounts",
+      "opens scrolled to the top; nothing about the list appears on the DishCard"
+    ],
+    "motion": [
+      "view change: Interaction \"Switch to the list\"",
+      "groups stagger in 40ms from +140ms (settle 480)"
+    ],
+    "a11y": [
+      "region aria-label \"Einkaufsliste\"",
+      "each group is a list (ul) labelled by its heading",
+      "live region (polite) for tick / untick / add / remove: \"2 Karotten erledigt.\", \"2 Karotten wieder offen.\", \"Tomatenmark hinzugefügt.\", \"Eintrag entfernt.\""
+    ],
+    "persistence": "Offline-first: every change is stored locally and queued like other Unsent Changes; last write wins per line, a line deleted elsewhere stays deleted.",
+    "tokens": [
+      "layout.shopping",
+      "radius.card",
+      "shadow.card",
+      "type.title-m",
+      "type.display-m"
+    ]
+  },
+  {
+    "name": "ShoppingGroup",
+    "added": "R15",
+    "variants": [
+      "Sonstiges: heading \"Sonstiges\" (Petrona 500 19, padding 10 10 6 12); desktop: ShoppingItemInput at its end",
+      "Dish: heading row min 56, padding 6 10 6 6, thumb 44 (radius 15 13 16 14), title Petrona 500 18/1.2 two lines, chevron 17 at 45%. The whole heading is a link to the Dish detail",
+      "Dish put on several times: caption under the title \"Zweimal auf der Liste\" / \"Dreimal auf der Liste\" / \"{n}-mal auf der Liste\" (500 12.5, text-muted)",
+      "Dish gone (archived, moved, deleted): title only + \"Nicht mehr auf dem Board\" (500 12.5, text-muted), no image, no chevron, not a link",
+      "container: color.surface, radius.card, shadow.card, padding 6"
+    ],
+    "states": [
+      "default",
+      "heading hover (desktop): surface-muted, chevron 90%",
+      "heading pressed: scale .98",
+      "heading focus: focus ring"
+    ],
+    "sort": "open lines in Recipe order (Sonstiges: typing order), then ticked lines in the same order. Repeated lines from a Dish put on twice sit side by side.",
+    "motion": [
+      "heading tap: Card → detail morph, the group image is the shared element",
+      "group enters: y 14 → 0 + fade (settle 480)",
+      "group leaves with its last line: slot collapses (settle 380)"
+    ],
+    "tokens": [
+      "radius.card",
+      "radius.planned-thumb",
+      "shadow.card",
+      "type.title-s",
+      "type.caption"
+    ]
+  },
+  {
+    "name": "ShoppingItem",
+    "added": "R15",
+    "variants": [
+      "phone: full-width row, min-height 56 (size.shop-row), padding 16 12 16 10, text 500 17/24, wraps freely",
+      "desktop: min-height 50, padding 14 10, text 500 16/22",
+      "checkbox: 28px pebble (radius.blob), 2px line-strong border; ticked: fill color.derived.tick with tick-ink check (3.2 stroke); sits on the first text line (margin-top −2 / −3)",
+      "separator: 1px line from x 50 to −12, above every row but the first"
+    ],
+    "states": [
+      "open",
+      "ticked: check, strike (1.5px currentColor at 56%, box-decoration-break clone), text-muted",
+      "pressed: scale .98",
+      "hover (desktop): surface-muted + pencil and trash (34px circles, trash in danger)",
+      "focus (keyboard): focus ring + pencil and trash",
+      "unsent: cloud + \"Noch nicht gesendet\" (500 12.5, text-muted) under the text",
+      "swiping (phone): row moves with the finger over swipe-danger with trash + \"Entfernen\"",
+      "editing: replaced by ShoppingItemInput (edit variant)",
+      "arriving",
+      "leaving"
+    ],
+    "motion": [
+      "tick: Interaction \"Tick\"; untick: Interaction \"Untick and rise\"",
+      "tap target: the whole row (tick); long-press 450ms: edit; swipe left: delete",
+      "arrive: slot 0 → row height (settle 380), row y −10 + .97 → 0 (settle 460, +80)",
+      "leave: phone x → −105% (240 ease-in) / desktop x −24 + fade 200, then slot collapses (settle 380)"
+    ],
+    "a11y": [
+      "role=\"checkbox\" aria-checked on the row, label \"{Text}, {Gruppe}, erledigt / nicht erledigt\"",
+      "accessibility actions: Ändern, Entfernen",
+      "desktop keys on focus: Space ticks, Enter edits, Delete removes, ↑/↓ moves focus"
+    ],
+    "tokens": [
+      "size.shop-row",
+      "size.shop-row-desktop",
+      "size.shop-check",
+      "color.derived.tick",
+      "color.derived.strike",
+      "color.derived.swipe-danger",
+      "type.recipe"
+    ]
+  },
+  {
+    "name": "ShoppingItemInput",
+    "added": "R15",
+    "variants": [
+      "phone add bar: docked on the keyboard, background color.bg, radius 26 26 0 0, padding 14 12 10; Input (label in the border \"Neu in Sonstiges\", placeholder \"Was fehlt noch?\", 17/22) + 48px inverse \"+\" (35% while empty). Return key \"Weiter\" (enterkeyhint next)",
+      "desktop add field: Input 48px at the end of the Sonstiges group, label \"Neu in Sonstiges\" on surface, placeholder \"Was fehlt noch?\", \"↵\" key hint; \"n\" focuses it",
+      "edit: Input in place of the row, label \"Eintrag ändern\", text selected, 38px delete button (danger) inside; return key \"Fertig\""
+    ],
+    "states": [
+      "empty",
+      "focused (outline ink 2px)",
+      "typing",
+      "edit"
+    ],
+    "rules": [
+      "Enter adds the line to the end of Sonstiges' open lines, clears the field, keeps focus and keyboard",
+      "Enter on empty, tap outside or keyboard dismissed: closes (phone)",
+      "edit: Fertig / blur saves, Escape cancels, an empty text deletes the line (with the delete toast)",
+      "trims whitespace; nothing else is parsed"
+    ],
+    "motion": [
+      "bar rises with the keyboard (system timing)",
+      "field outline 180 (Input)",
+      "row ↔ edit field: crossfade 150"
+    ],
+    "tokens": [
+      "field.*",
+      "radius.field",
+      "z.shop-field"
+    ]
+  },
+  {
+    "name": "IngredientPicker",
+    "added": "R15",
+    "placement": "From \"Auf die Einkaufsliste\" at the end of the Zutaten card in the Dish detail.",
+    "variants": [
+      "phone: content-height BottomSheet; header thumb 46 + \"Auf die Einkaufsliste\" (Petrona 500 22) + Dish title (500 13.5, one line) + close",
+      "desktop: 400px popover rising from the button inside the detail panel (bottom = button top − 8, right 26), shadow.dialog + 1px line"
+    ],
+    "parts": [
+      "hint \"Nimm raus, was du schon zu Hause hast.\" (500 14, text-muted)",
+      "rows: every Ingredient line as written, all ticked; 26px pebble toggle, text 500 16/1.35 (text-muted when off), min 50 phone / 46 desktop, whole row toggles",
+      "confirm: primary 54px \"{n} Zutaten hinzufügen\" / \"1 Zutat hinzufügen\"; at 0 disabled 35% \"Keine Zutat ausgewählt\""
+    ],
+    "states": [
+      "all ticked",
+      "some unticked",
+      "none ticked (button disabled)",
+      "confirming"
+    ],
+    "motion": [
+      "phone: Sheet open / close; desktop: pop 360 (scale .96 → 1, y +8 → 0, origin bottom), popout 200",
+      "rows rise 14px, 40ms stagger, max 8",
+      "toggle: fill 180, check stroke 200",
+      "confirm: press .97, close, Toast"
+    ],
+    "tokens": [
+      "radius.sheet",
+      "shadow.sheet",
+      "shadow.dialog",
+      "color.derived.tick",
+      "type.title-s"
+    ]
+  },
+  {
+    "name": "EmptyShoppingList",
+    "added": "R15",
+    "variants": [
+      "phone: card (surface, radius.card, shadow.card, padding 14 16 16 12): Topfbert wink 78×84 + \"Noch nichts zu kaufen.\" (Petrona 500 22) + \"So kommt etwas auf die Liste:\"; three rows (36px icon circle + 500 15): \"Im Gericht holst du seine Zutaten dazu.\", \"Im Wochenplan kommt die ganze Woche auf einmal.\", \"Oder du schreibst selbst etwas auf.\"; Button primary 44 \"Etwas aufschreiben\" (opens the add bar, same as the FAB)",
+      "desktop: same card 520 wide, centred 40px under the header, shadow.dialog, Topfbert 100×107, with the add field focused instead of the button"
+    ],
+    "states": [
+      "default"
+    ],
+    "motion": [
+      "card: pop 460 once, +200ms",
+      "Topfbert: wink idle from layers (layers.json → shoppingEmpty), motion graphic in Vue, paused off screen / under sheets"
+    ],
+    "tokens": [
+      "radius.card",
+      "shadow.card",
+      "shadow.dialog",
       "type.title-s",
       "motion.pop",
       "motion.idle"

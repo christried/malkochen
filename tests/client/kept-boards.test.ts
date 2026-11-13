@@ -34,6 +34,7 @@ function boardFixture(id = 'board', slug = 'kochclub', permissions = ALL_PERMISS
     newDishIds: [],
     newInHistoryDishIds: [],
     plannedDishes: [],
+    shoppingItems: [],
     asOperator: false,
     columns: [
       { id: `${id}ideen`, name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish(`${id}a`), dish(`${id}b`)] },

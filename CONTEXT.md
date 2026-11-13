@@ -11,7 +11,7 @@ A named space (with an emoji) of Columns holding Dishes. A user can belong to ma
 _Avoid_: List, workspace, personal board
 
 **Board Version**:
-A number every change to what a Board's Members see on it moves on: its Dishes, Cookings, Votes, Comments, Columns, Week Plan, Members, name, emoji and Invite Link. What one Member has read or opened never moves it. An open Board asks only for it, and loads the whole Board when it moved (ADR 0008). Never shown to users, and not malkochen's Version.
+A number every change to what a Board's Members see on it moves on: its Dishes, Cookings, Votes, Comments, Columns, Week Plan, Shopping List, Members, name, emoji and Invite Link. What one Member has read or opened never moves it. An open Board asks only for it, and loads the whole Board when it moved (ADR 0008). Never shown to users, and not malkochen's Version.
 _Avoid_: Revision, etag, board timestamp
 
 **Unsent Change**:
@@ -45,6 +45,14 @@ _Avoid_: Calendar, schedule, meal plan, planner
 **Planned Dish**:
 One Dish on one day of a Week Plan, optionally with the Member who'll cook it ("Wer kocht"). A Dish can be planned on several days, and a day holds any number of Dishes in an order. It shows as cooked when its Dish has a Cooking dated that day, however that Cooking was recorded; "Gekocht ✓" on one of today's Planned Dishes records a Cooking just as it does on the card. It goes with its Dish when it's archived (and comes back on restore), is dropped when the Dish moves to another Board, and isn't part of a Copy; its cook is cleared when they leave the Board or delete their account. Planning, unplanning and moving it between days need the Permission to move Dishes, and aren't part of the Dish History.
 _Avoid_: Plan entry, slot, meal
+
+**Shopping List**:
+A Board's list of what to buy ("Einkaufsliste"). One per Board, the same for every Member, and a view of its own beside the Columns and the Week Plan. Members put a Dish's Ingredients on it ("Auf die Einkaufsliste", choosing which), or every Dish planned from today to that week's Sunday at once from the Week Plan, and type Shopping Items that belong to no Dish. It never adds amounts up: two Dishes needing flour give two lines, and so does one Dish put on twice. Right after a put-on, "Rückgängig" takes its lines off the list again. Every Member may change it, and nothing about it shows on a Dish's card or detail, in the Dish History, in Push Notifications or the Email Digest.
+_Avoid_: Grocery list, cart, basket
+
+**Shopping Item**:
+One line on a Shopping List ("Eintrag"): either copied from an Ingredient when a Member puts its Dish on the list, grouped under that Dish (shown as it is now, or as it was last once it's archived, moved or deleted), or typed by a Member under "Sonstiges". Once copied it no longer follows the Recipe. Members change its text or delete it. A Member ticks it off in the shop; it stays, crossed out, until someone unticks it or "Erledigte entfernen" clears every ticked one.
+_Avoid_: Ingredient (that's the Recipe's line), product, entry
 
 **Column Subtitle**:
 A short line under a Column's name saying what it's for (default: "Worauf hast du Lust?" for Ideen, "Das steht an." for Diese Woche). Members can set or clear it; the Gekocht Column's is fixed ("Schon geschafft!"), even when it's renamed, and shown in each viewer's language.
@@ -237,7 +245,7 @@ The Operator's page on how malkochen is used, reached from their Your Settings: 
 _Avoid_: Dashboard, admin panel, admin console
 
 **Event Log**:
-Everything that happens in malkochen, one event each time: on Boards (Dishes added, edited, moved, copied, archived, restored or deleted for good; Dishes planned, unplanned or moved on the Week Plan; Cookings, Comments and Votes; Columns, Permissions and the Invite Link changed; Boards created, archived, restored or deleted for good; Members joining, leaving or removed) and around them (sign-ups, sign-ins, Username and Your Settings changed, accounts deleted, Push Notifications and Email Digests sent, the Operator switching Open Sign-up). Each says when, what kind and which Board, Dish and user, and is kept indefinitely. The Admin Page shows names, titles and Comments as they are now, so what's been deleted shows as deleted there, never as it was.
+Everything that happens in malkochen, one event each time: on Boards (Dishes added, edited, moved, copied, archived, restored or deleted for good; Dishes planned, unplanned or moved on the Week Plan; Shopping Items added, changed, ticked, deleted or cleared; Cookings, Comments and Votes; Columns, Permissions and the Invite Link changed; Boards created, archived, restored or deleted for good; Members joining, leaving or removed) and around them (sign-ups, sign-ins, Username and Your Settings changed, accounts deleted, Push Notifications and Email Digests sent, the Operator switching Open Sign-up). Each says when, what kind and which Board, Dish and user, and is kept indefinitely. The Admin Page shows names, titles and Comments as they are now, so what's been deleted shows as deleted there, never as it was.
 _Avoid_: Activity feed, audit log, Dish History
 
 **Changelog**:

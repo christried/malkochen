@@ -4,6 +4,21 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-13
+
+### Added
+
+- Jedes Board hat jetzt eine Einkaufsliste, für alle darauf dieselbe: eine dritte Ansicht neben Spalten und Woche. Öffne ein Gericht und tippe auf Auf die Einkaufsliste, um seine Zutaten draufzulegen (was ihr schon habt, nimmst du raus), oder leg die ganze Woche auf einmal aus dem Wochenplan drauf. Tipp ein, was sonst noch fehlt, und im Laden hakst du mit einem Tipp ab. Erledigte entfernen räumt die Liste auf, und alles klappt auch ohne Verbindung.
+
+### Changed
+
+- Die Datenschutzerklärung nennt jetzt auch den Wochenplan und die Einkaufsliste bei dem, was du auf einem Board speicherst.
+- Hat der Rezeptfinder kein Rezept gefunden, sucht er mit Noch mal suchen ein weiteres Mal. Ein Gericht kann zweimal pro Stunde gesucht werden.
+
+### Fixed
+
+- Rezept finden liest jetzt auch die Caption von Posts, die hinzugefügt wurden, bevor malkochen Captions behielt. So findet es auch das Rezept unter einem älteren TikTok.
+
 ## [1.3.0] - 2026-11-12
 
 ### Added
@@ -87,7 +102,8 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 - Offen für alle: Jede und jeder kann sich anmelden, mit Google oder einem Code, den wir dir mailen, und lösch dein Konto selbst, wann immer du willst.
 - Was ist neu: diese Seite, ganz unten in deinen Einstellungen verlinkt und nach jedem Update mit „Neu“ markiert.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/christried/malkochen/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/christried/malkochen/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0

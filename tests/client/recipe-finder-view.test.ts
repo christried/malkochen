@@ -31,8 +31,9 @@ test('while a search runs every Member sees it, and "Rezept hinzufügen" is hidd
   expect(shown({ search: 'looking', mayEdit: false, finderOn: false })).toEqual({ view: 'searching', find: false, add: false })
 })
 
-test('after nothing was found every Member is told, and "Rezept finden" is gone', () => {
-  expect(shown({ search: 'none' })).toEqual({ view: 'none', find: false, add: true })
+test('after nothing was found every Member is told, and a Recipe Finder user who may edit gets "Noch mal suchen" (#529)', () => {
+  expect(shown({ search: 'none' })).toEqual({ view: 'none', find: true, add: true })
+  expect(shown({ search: 'none', finderOn: false })).toEqual({ view: 'none', find: false, add: true })
   expect(shown({ search: 'none', mayEdit: false, finderOn: false })).toEqual({ view: 'none', find: false, add: false })
 })
 
@@ -46,6 +47,10 @@ test('"Noch mal suchen" goes when the Recipe Finder was switched off meanwhile',
 
 test('at the day’s cap there is a note and "Rezept hinzufügen", but no search', () => {
   expect(shown({ note: 'quota' })).toEqual({ view: 'quota', find: false, add: true })
+})
+
+test('a Dish searched twice within the hour says so, with "Rezept hinzufügen" but no search (#529)', () => {
+  expect(shown({ note: 'tooSoon', search: 'none' })).toEqual({ view: 'tooSoon', find: false, add: true })
 })
 
 test('a search by someone else running wins over this user’s old note', () => {

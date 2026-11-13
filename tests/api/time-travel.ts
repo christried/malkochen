@@ -11,9 +11,9 @@ export async function backdateCooking(cookingId: string, minutes: number): Promi
   await query(`update cooking set cooked_at = cooked_at - make_interval(mins => $2), arrived_at = arrived_at - make_interval(mins => $2) where id = $1`, [cookingId, minutes])
 }
 
-// Makes a deleted Dish, Cooking, Comment or Board `days` longer deleted, as if it had been
+// Makes a deleted Dish, Cooking, Comment, Board or Shopping Item `days` longer deleted, as if it had been
 // deleted that long before.
-export async function backdateDeletion(table: 'dish' | 'cooking' | 'board' | 'comment', id: string, days: number): Promise<void> {
+export async function backdateDeletion(table: 'dish' | 'cooking' | 'board' | 'comment' | 'shopping_item', id: string, days: number): Promise<void> {
   await query(`update ${table} set deleted_at = deleted_at - make_interval(days => $2) where id = $1`, [id, days])
 }
 
@@ -127,4 +127,10 @@ export async function databaseRows<Row = Record<string, unknown>>(text: string, 
 // few minutes counts as over.
 export async function backdateRecipeSearch(dishId: string, minutes: number): Promise<void> {
   await query(`update dish set recipe_search_at = recipe_search_at - make_interval(mins => $2) where id = $1`, [dishId, minutes])
+}
+
+// Makes the searches a Dish ended in an hour older (#529), so the two a Dish
+// may have within the hour are free again.
+export async function endDishSearches(dishId: string): Promise<void> {
+  await query(`update event_log set at = at - interval '1 hour' where dish_id = $1 and kind in ('recipe_found', 'recipe_not_found', 'recipe_search_failed')`, [dishId])
 }

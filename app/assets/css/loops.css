@@ -493,3 +493,17 @@
 @keyframes r14-toast{from{transform:translateY(120px)}to{transform:none}}
 @keyframes r14-bar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @keyframes r14-topfbert{from{opacity:0;transform:translateY(24px) scale(.6)}to{opacity:1;transform:none}}
+
+/* Round 15 (docs/design handoff/assets/r15-keyframes.css, copied verbatim):
+   the Shopping List's UI motion. --h is a row's height. */
+@keyframes r15-check{0%{transform:scale(.82)}45%{transform:scale(1.18)}75%{transform:scale(.96)}100%{transform:none}}
+@keyframes r15-press{0%{transform:scale(.98)}100%{transform:none}}
+@keyframes r15-strike{from{background-size:0% 1.5px}to{background-size:100% 1.5px}}
+@keyframes r15-grow{from{height:0}to{height:var(--h)}}
+@keyframes r15-arrive{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes r15-collapse{from{height:var(--h);opacity:1}to{height:0;opacity:0}}
+@keyframes r15-swipe-out{to{transform:translateX(-105%)}}
+@keyframes r15-squash{0%{transform:none}30%{transform:scale(1.3,.84)}60%{transform:scale(.92,1.1)}100%{transform:none}}
+@keyframes r15-wash{0%{box-shadow:0 0 0 0 rgba(247,185,74,0)}30%{box-shadow:0 0 0 4px rgba(247,185,74,.6)}100%{box-shadow:0 0 0 0 rgba(247,185,74,0)}}
+@keyframes r15-pop-up{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes r15-popout{to{opacity:0;transform:scale(.97)}}

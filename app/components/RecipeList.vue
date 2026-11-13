@@ -73,6 +73,8 @@ const lineArrival = (i: number) => props.arriving ? { animation: `r13-in 420ms v
         <span class="min-w-0 flex-1 pt-1 text-recipe [overflow-wrap:anywhere] [text-wrap:pretty]">{{ line }}</span>
       </li>
     </ol>
+    <!-- Below the lines, inside the card: the Zutaten card's "Auf die Einkaufsliste" (#537). -->
+    <slot />
   </section>
 </template>
 

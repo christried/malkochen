@@ -1,7 +1,7 @@
-import { and, eq, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm'
 import type { RecipeSearchAnswer } from '../../shared/recipe'
 import { db } from '../db'
-import { dish } from '../db/schema'
+import { dish, eventLog } from '../db/schema'
 import { parseServerEnv } from '../env'
 import { createRecipeFinder, type RecipeFinderResult } from '../recipe-finder'
 import type { SourceKind } from '../source-lookup'
@@ -12,7 +12,7 @@ import { requireDishPermission } from './permission-checks'
 import { refundRateLimit, spendRateLimit, spendRateLimitIfWithin } from './rate-limit'
 import { recipeFinderStateOf } from './recipe-finder'
 import { dishNotFound } from './session'
-import { lookupDestination, lookupPage, lookupRecipe } from './source-lookup'
+import { lookupDestination, lookupPage, lookupRecipe, lookupSource } from './source-lookup'
 
 // "Rezept finden" (CONTEXT.md: Recipe Finder, #500): the Dish side of the
 // Recipe Finder. Whether the user may search, which Dish is looked at, the
@@ -35,6 +35,27 @@ const findRecipe = createRecipeFinder({
   readRecipe: recipeFinderAvailable ? createRecipeReader({ apiKey: env.ANTHROPIC_API_KEY, baseURL: env.ANTHROPIC_BASE_URL || undefined }) : null,
 })
 
+// How often one Dish may be searched (#529): at most twice within an hour,
+// whoever searched and however it ended, the search after adding too. A
+// third "Rezept finden" waits until the first of the two is an hour old.
+export const DISH_SEARCHES = { tries: 2, window: '1 hour' } as const
+
+// The Event Log kinds a search of a Dish ends in, one per search (finish).
+const SEARCH_ENDED = ['recipe_found', 'recipe_not_found', 'recipe_search_failed'] as const
+
+// Whether the Dish was searched DISH_SEARCHES.tries times within the window.
+async function searchedEnough(dishId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ searches: sql<number>`count(*)::int` })
+    .from(eventLog)
+    .where(and(
+      eq(eventLog.dishId, dishId),
+      inArray(eventLog.kind, [...SEARCH_ENDED]),
+      sql`${eventLog.at} > now() - ${DISH_SEARCHES.window}::interval`,
+    ))
+  return (row?.searches ?? 0) >= DISH_SEARCHES.tries
+}
+
 // No Recipe in the Dish yet: neither Ingredients nor Steps.
 const hasNoRecipe = sql`cardinality(${dish.recipeIngredients}) = 0 and cardinality(${dish.recipeSteps}) = 0`
 
@@ -55,7 +76,6 @@ async function whyNotClaimed(dishId: string, userId: string) {
   if (!found) return dishNotFound()
   if (!found.sourceLink) return refused(409, 'Dish has no Source')
   if (found.ingredients.length > 0 || found.steps.length > 0) return refused(409, 'Dish has a Recipe')
-  if (found.search === 'none') return refused(409, 'Nothing found for this Source')
   return refused(409, 'Already looking')
 }
 
@@ -88,12 +108,13 @@ function finish(dishId: string, startedAt: Date, userId: string, found: RecipeFi
   return withEvents(db, db.update(dish).set({ recipeSearch: null, recipeSearchAt: null }).where(claimed).returning(returning), dishEvent('recipe_search_failed', userId))
 }
 
-// The user looks for the Recipe of a Dish ("Rezept finden"). Refused (403)
-// unless the Recipe Finder is on for them and they may edit the Dish, 503
-// without an Anthropic API key, 404 for a Dish they can't see, and 409 unless
-// the Dish has a Source, no Recipe and no search under way or nothing found
-// for its Source; 429 once they used up
-// the day's searches. Answers how the search ended and the Dish as it is
+// The user looks for the Recipe of a Dish ("Rezept finden"), also again after
+// nothing was found ("Noch mal suchen"). Refused (403) unless the Recipe
+// Finder is on for them and they may edit the Dish, 503 without an Anthropic
+// API key, 404 for a Dish they can't see, and 409 unless the Dish has a
+// Source, no Recipe and no search under way; 429 "Dish searched enough" once
+// the Dish was searched twice within the hour (DISH_SEARCHES), and 429 once
+// they used up the day's searches. Answers how the search ended and the Dish as it is
 // then: a failed search (the page didn't answer) is an answer, and costs no
 // search of the day.
 export async function findRecipeFor(dishId: string, userId: string): Promise<RecipeSearchAnswer> {
@@ -101,6 +122,7 @@ export async function findRecipeFor(dishId: string, userId: string): Promise<Rec
   if (!recipeFinderAvailable) throw refused(503, 'Recipe Finder is not set up')
   await requireDishPermission(dishId, userId, 'editDishes')
   if ((await recipeFinderStateOf(userId)).state !== 'on') throw refused(403, 'Recipe Finder is off')
+  if (await searchedEnough(dishId)) throw refused(429, 'Dish searched enough')
 
   // One statement, so two taps can't both search. A search that has looked for
   // too long counts as over and may be claimed again.
@@ -112,7 +134,7 @@ export async function findRecipeFor(dishId: string, userId: string): Promise<Rec
       onMembersBoard(dishId, userId),
       isNotNull(dish.sourceLink),
       hasNoRecipe,
-      or(isNull(dish.recipeSearch), and(eq(dish.recipeSearch, 'looking'), sql`${dish.recipeSearchAt} < now() - ${SEARCH_LOOKS_FOR}::interval`)),
+      or(isNull(dish.recipeSearch), eq(dish.recipeSearch, 'none'), and(eq(dish.recipeSearch, 'looking'), sql`${dish.recipeSearchAt} < now() - ${SEARCH_LOOKS_FOR}::interval`)),
     ))
     .returning({ link: dish.sourceLink, kind: dish.sourceKind, caption: dish.caption })
   if (!claimed?.link || !claimed.kind) throw await whyNotClaimed(dishId, userId)
@@ -132,17 +154,36 @@ export async function findRecipeFor(dishId: string, userId: string): Promise<Rec
   return { outcome: result.outcome, dish: searched }
 }
 
+// Sources whose post carries a Caption (a blog's page has its recipe data,
+// which the Recipe Finder reads itself).
+const CAPTIONED: readonly SourceKind[] = ['tiktok', 'instagram-reel', 'instagram-post', 'youtube-short', 'pinterest-pin']
+
+// The Caption of a Dish that has none (#529): one added before Dishes kept
+// their Caption, or whose post didn't show it then (TikTok's oEmbed stopped
+// carrying it in November 2026, and the backfill of #395 read it so). Source
+// Lookup reads the post again; a Caption it finds is kept in the Dish, if it
+// still has none. Null when there is none to find, or the post can't be read.
+async function captionNow(dishId: string, source: { link: string, kind: SourceKind }): Promise<string | null> {
+  if (!CAPTIONED.includes(source.kind)) return null
+  const found = await lookupSource(source.link).catch(() => null)
+  if (!found?.caption) return null
+  await db.update(dish).set({ caption: found.caption }).where(and(eq(dish.id, dishId), isNull(dish.caption)))
+  return found.caption
+}
+
 // The search of a Dish already claimed as looking at `startedAt` and paid
-// for: finds, writes how it ended (finish) and gives the day's search back if
-// it failed. A finder that throws, which it isn't meant to, is a failed
-// search, so the Dish is never left looking.
+// for: finds (with the Caption read again if the Dish has none), writes how it
+// ended (finish) and gives the day's search back if it failed. A finder that
+// throws, which it isn't meant to, is a failed search, so the Dish is never
+// left looking.
 async function searchClaimed(
   dishId: string,
   startedAt: Date,
   userId: string,
   source: { link: string, kind: SourceKind, caption: string | null },
 ): Promise<RecipeFinderResult> {
-  const result = await findRecipe(source).catch((): RecipeFinderResult => ({ outcome: 'failed' }))
+  const caption = source.caption ?? await captionNow(dishId, source).catch(() => null)
+  const result = await findRecipe({ ...source, caption }).catch((): RecipeFinderResult => ({ outcome: 'failed' }))
   await finish(dishId, startedAt, userId, result)
   if (result.outcome === 'failed') await refundRateLimit(userId, 'recipe-search')
   return result

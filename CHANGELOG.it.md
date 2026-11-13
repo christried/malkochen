@@ -4,6 +4,21 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-13
+
+### Added
+
+- Ogni bacheca ha ora una lista della spesa, la stessa per tutti: una terza vista accanto a Colonne e Settimana. Apri un piatto e tocca Nella lista della spesa per aggiungerne gli ingredienti (togli quello che avete già), oppure metti tutta la settimana dal piano settimanale in un colpo. Scrivi cos'altro manca, e al negozio tocchi una riga per spuntarla. Rimuovi completate fa ordine, e tutto funziona anche senza connessione.
+
+### Changed
+
+- L’informativa sulla privacy ora nomina anche il piano settimanale e la lista della spesa tra ciò che salvi su una bacheca.
+- Se il Trova ricette non ha trovato nessuna ricetta, Cerca di nuovo lo fa cercare ancora. Un piatto si può cercare due volte all’ora.
+
+### Fixed
+
+- Trova ricetta ora legge anche la didascalia dei post aggiunti prima che malkochen tenesse le didascalie, così trova anche la ricetta sotto un TikTok più vecchio.
+
 ## [1.3.0] - 2026-11-12
 
 ### Added
@@ -87,7 +102,8 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 - Aperto a tutti: chiunque può iscriversi, con Google o con un codice che ti mandiamo per email, ed elimina il tuo account da solo quando vuoi.
 - Novità: questa pagina, in fondo alle tue impostazioni e segnata come Nuovo dopo ogni aggiornamento.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/christried/malkochen/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/christried/malkochen/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0

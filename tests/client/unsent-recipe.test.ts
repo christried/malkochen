@@ -40,6 +40,7 @@ function boardFixture(): BoardView {
     newDishIds: [],
     newInHistoryDishIds: [],
     plannedDishes: [],
+    shoppingItems: [],
     asOperator: false,
     columns: [
       { id: 'ideen', name: 'Ideen', subtitle: null, isGekocht: false, dishes: [dish('a'), b] },
