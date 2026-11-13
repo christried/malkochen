@@ -610,7 +610,8 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const there = everything.find(i => i.id === body.id)
     if (there) return structuredClone(there)
     if (full(1)) throw new WriteFailed(409)
-    const item = { id: body.id, text: body.text, ticked: false, dishId: null, dishTitle: null, dishOnBoard: false }
+    const place = Math.max(-1, ...shopping().filter(i => i.dishId === null).map(i => i.place)) + 1
+    const item = { id: body.id, text: body.text, ticked: false, dishId: null, dishTitle: null, dishOnBoard: false, place, putOn: 1 }
     placeItem(everything, item)
     showLive()
     return structuredClone(item)
@@ -646,14 +647,23 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     return structuredClone(back)
   }
 
-  function putDishOnServer(boardId: string, put: { dishId: string, items: { id: string, text: string }[] }): ShoppingItemView[] | null {
+  function takeBackItemsOnServer(boardId: string, ids: string[]): { ids: string[] } | null {
+    if (boardId !== server.id) return null
+    const taken = shopping().filter(i => ids.includes(i.id)).map(i => i.id)
+    for (const id of taken) deletedIds.add(id)
+    showLive()
+    return { ids: taken }
+  }
+
+  function putDishOnServer(boardId: string, put: { dishId: string, items: { id: string, text: string, line: number }[] }): ShoppingItemView[] | null {
     const dish = dishWithRecipe(put.dishId)
     if (boardId !== server.id || !dish) return null
     if (everything.some(i => i.id === put.items[0]?.id)) return structuredClone(everything.filter(i => put.items.some(p => p.id === i.id)))
     if (!dish.recipe?.ingredients.length) throw new WriteFailed(400)
     if (full(put.items.length)) throw new WriteFailed(409)
     for (const item of shopping()) if (item.dishId === dish.id) item.dishTitle = dish.title
-    const items = put.items.map(({ id, text }) => ({ id, text, ticked: false, dishId: dish.id, dishTitle: dish.title, dishOnBoard: true }))
+    const putOn = Math.max(0, ...everything.filter(i => i.dishId === dish.id && !deletedIds.has(i.id)).map(i => i.putOn)) + 1
+    const items = put.items.map(({ id, text, line }) => ({ id, text, ticked: false, dishId: dish.id, dishTitle: dish.title, dishOnBoard: true, place: line, putOn }))
     for (const item of items) placeItem(everything, item)
     showLive()
     return structuredClone(items)
@@ -665,11 +675,13 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     const sunday = new Date(Date.parse(`${week}T00:00:00Z`) + 6 * 86_400_000).toISOString().slice(0, 10)
     if (sunday < today) throw new WriteFailed(400)
     const from = today > week ? today : week
-    const dishIds = [...new Set(server.plannedDishes.filter(p => p.day >= from && p.day <= sunday).map(p => p.dishId))]
-      .filter(id => dishWithRecipe(id)?.recipe?.ingredients.length && !shopping().some(i => i.dishId === id))
-    const items = dishIds.flatMap((dishId) => {
-      const dish = dishWithRecipe(dishId)!
-      return dish.recipe!.ingredients.map(text => ({ id: crypto.randomUUID(), text, ticked: false, dishId, dishTitle: dish.title, dishOnBoard: true }))
+    // Every time a Dish is planned in the week is a put-on of its own.
+    const planned = server.plannedDishes.filter(p => p.day >= from && p.day <= sunday && dishWithRecipe(p.dishId)?.recipe?.ingredients.length && !shopping().some(i => i.dishId === p.dishId))
+    const dishIds = [...new Set(planned.map(p => p.dishId))]
+    const items = planned.flatMap((p) => {
+      const dish = dishWithRecipe(p.dishId)!
+      const putOn = planned.filter(q => q.dishId === p.dishId).indexOf(p) + 1
+      return dish.recipe!.ingredients.map((text, place) => ({ id: crypto.randomUUID(), text, ticked: false, dishId: p.dishId, dishTitle: dish.title, dishOnBoard: true, place, putOn }))
     })
     if (full(items.length)) throw new WriteFailed(409)
     for (const item of items) placeItem(everything, item)
@@ -737,6 +749,7 @@ export function memoryTransport(board: BoardView, otherBoards: BoardView[] = [])
     changeShoppingItem: (itemId, change, late) => answer('changeShoppingItem', `${itemId} ${'text' in change ? change.text : change.ticked}`, () => (shoppingMadeAt.push(late?.madeAt), changeItemOnServer(itemId, change))),
     deleteShoppingItem: (itemId, late) => answer('deleteShoppingItem', itemId, () => (shoppingMadeAt.push(late?.madeAt), deleteItemOnServer(itemId))).then(() => undefined),
     clearShoppingItems: (boardId, late) => answer('clearShoppingItems', boardId, () => (shoppingMadeAt.push(late?.madeAt), clearItemsOnServer(boardId))),
+    takeBackShoppingItems: (boardId, ids, late) => answer('takeBackShoppingItems', ids.join(), () => (shoppingMadeAt.push(late?.madeAt), takeBackItemsOnServer(boardId, ids))),
     restoreShoppingItems: (boardId, ids, late) => answer('restoreShoppingItems', ids.join(), () => (shoppingMadeAt.push(late?.madeAt), restoreItemsOnServer(boardId, ids))),
     putDishOnShoppingList: (boardId, put, late) => answer('putDishOnShoppingList', `${put.dishId} ${put.items.map(i => i.text).join('|')}`, () => (shoppingMadeAt.push(late?.madeAt), putDishOnServer(boardId, put))),
     putWeekOnShoppingList: (boardId, week, late) => answer('putWeekOnShoppingList', week, () => (shoppingMadeAt.push(late?.madeAt), putWeekOnServer(boardId, week, late?.madeAt))),

@@ -195,7 +195,7 @@ const ingredients = computed(() => located.value ? boardModule.ingredientsToPutO
 function onPutOn(anchor: HTMLElement) {
   Object.assign(puttingOn, { open: true, anchor })
 }
-function putOn(lines: string[]) {
+function putOn(lines: { line: number, text: string }[]) {
   const dish = located.value?.dish
   puttingOn.open = false
   if (!dish) return

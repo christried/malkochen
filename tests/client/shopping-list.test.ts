@@ -21,8 +21,8 @@ function dish(id: string, ingredients: string[] = []): DishView {
   return { id, code: `c${id}`, title: `Titel ${id}`, source: null, creator: null, caption: null, playableVideo: null, recipe: ingredients.length ? { ingredients, steps: [], link: null } : null, recipeSearch: null, imageUrl: `/images/${id}.jpg`, imageFocus: { x: 50, y: 50 }, placeholder: 'bowl', addedBy: null, createdAt: '2026-10-01T12:00:00.000Z', cookings: [], votes: [], commentCount: 0 }
 }
 
-const item = (id: string, text: string, { dishId = null as string | null, ticked = false, dishTitle = null as string | null, dishOnBoard = false } = {}): ShoppingItemView =>
-  ({ id, text, ticked, dishId, dishTitle: dishTitle ?? (dishId ? `Titel ${dishId}` : null), dishOnBoard: dishOnBoard || dishId === 'a' })
+const item = (id: string, text: string, { dishId = null as string | null, ticked = false, dishTitle = null as string | null, dishOnBoard = false, place = 0, putOn = 1 } = {}): ShoppingItemView =>
+  ({ id, text, ticked, dishId, dishTitle: dishTitle ?? (dishId ? `Titel ${dishId}` : null), dishOnBoard: dishOnBoard || dishId === 'a', place, putOn })
 
 // A Board with the Dishes a (Ingredients: Linsen, Tomaten, Zwiebel), b (no
 // Recipe) and c (Penne), planned: a on Tuesday, c on Sunday of the week of
@@ -44,10 +44,10 @@ function boardFixture(): BoardView {
     plannedDishes: [{ id: 'p1', dishId: 'a', day: '2026-11-10', cookId: null }, { id: 'p2', dishId: 'c', day: '2026-11-15', cookId: null }],
     shoppingItems: [
       item('s1', 'Hafermilch'),
-      item('s2', 'Klopapier', { ticked: true }),
-      item('s3', 'Spülmittel'),
+      item('s2', 'Klopapier', { ticked: true, place: 1 }),
+      item('s3', 'Spülmittel', { place: 2 }),
       item('a1', 'Linsen', { dishId: 'a' }),
-      item('a2', 'Tomaten', { dishId: 'a', ticked: true }),
+      item('a2', 'Tomaten', { dishId: 'a', ticked: true, place: 1 }),
       item('x1', 'Cashews', { dishId: 'x', dishTitle: 'Käsekuchen' }),
     ],
     asOperator: false,
@@ -277,7 +277,7 @@ test('"Erledigte entfernen" does nothing with nothing ticked', () => {
 test('putting a Dish on adds the chosen lines to the end of its group at once, and sends them in order', async () => {
   const { fake, module, shown } = phone()
 
-  const result = module.putDishOn('a', ['Linsen', 'Zwiebel'])!
+  const result = module.putDishOn('a', [{ line: 0, text: 'Linsen' }, { line: 2, text: 'Zwiebel' }])!
 
   expect(result.count).toBe(2)
   expect(shown()[1]).toEqual(['Titel a', ['Linsen', 'Linsen', 'Zwiebel', 'Tomaten']])
@@ -285,30 +285,143 @@ test('putting a Dish on adds the chosen lines to the end of its group at once, a
   expect(fake.sent).toContain('putDishOnShoppingList a Linsen|Zwiebel')
 })
 
+test('a Dish put on twice reads A, A, B, B with the ticked line last, and its group counts two put-ons', async () => {
+  const { module } = phone()
+  expect(module.shoppingList().map(g => g.times)).toEqual([1, 1, 1])
+
+  await module.putDishOn('a', [{ line: 0, text: 'Linsen' }, { line: 1, text: 'Tomaten' }])!.settled
+
+  const group = module.shoppingList()[1]!
+  expect(group.items.map(i => [i.text, i.putOn, i.ticked])).toEqual([['Linsen', 1, false], ['Linsen', 2, false], ['Tomaten', 2, false], ['Tomaten', 1, true]])
+  expect(group.times).toBe(2)
+})
+
+test('a group\'s lines keep their Recipe place whatever order they came in', () => {
+  const { module } = phone((board) => {
+    board.shoppingItems.push(item('a3', 'Zwiebel', { dishId: 'a', place: 2 }), item('a4', 'Salz', { dishId: 'a', place: 0, putOn: 2 }))
+  })
+  expect(module.shoppingList()[1]!.items.map(i => i.text)).toEqual(['Linsen', 'Salz', 'Zwiebel', 'Tomaten'])
+})
+
+test('a line typed into "Sonstiges" has the place after the last one typed, and was put on once', () => {
+  const { module, board } = phone()
+  module.addShoppingItem('Reis')
+  expect(board.value!.shoppingItems.find(i => i.text === 'Reis')).toMatchObject({ place: 3, putOn: 1 })
+})
+
+test('taking a Dish put-on back takes exactly its items off at once and on the server, and its group counts one put-on again', async () => {
+  const { module, shown, onServer } = phone()
+  const put = module.putDishOn('a', [{ line: 0, text: 'Linsen' }, { line: 2, text: 'Zwiebel' }])!
+  await put.settled
+  expect(module.shoppingList()[1]!.times).toBe(2)
+
+  const back = put.undo!()!
+
+  expect(shown()[1]).toEqual(['Titel a', ['Linsen', 'Tomaten']])
+  expect(module.shoppingList()[1]!.times).toBe(1)
+  expect(back.undo).toBeUndefined()
+  expect(await back.settled).toEqual({ count: 2 })
+  expect(onServer()).toEqual(['Hafermilch', 'Klopapier', 'Spülmittel', 'Linsen', 'Tomaten', 'Cashews'])
+})
+
+test('a take-back the server refuses puts the items back, with a notice', async () => {
+  const { fake, module, shown } = phone()
+  const put = module.putDishOn('a', [{ line: 0, text: 'Linsen' }])!
+  await put.settled
+  fake.failNext('takeBackShoppingItems', 500)
+
+  expect(await put.undo!()!.settled).toEqual({ count: 0, notice: 'shoppingFailed' })
+
+  expect(shown()[1]).toEqual(['Titel a', ['Linsen', 'Linsen', 'Tomaten']])
+})
+
+test('putting a week on can be taken back: just the items it put on go', async () => {
+  const { module, shown, onServer } = phone()
+  const week = (await module.putWeekOn('2026-11-09'))!
+  expect(week.dishes).toBe(1)
+  expect(shown().map(([title]) => title)).toEqual([null, 'Titel a', 'Käsekuchen', 'Titel c'])
+
+  await week.undo!()!.settled
+
+  expect(shown().map(([title]) => title)).toEqual([null, 'Titel a', 'Käsekuchen'])
+  expect(onServer()).not.toContain('Penne')
+  expect(await module.putWeekOn('2026-11-09')).toMatchObject({ dishes: 1 })
+})
+
+test('a week with nothing to put on, or kept for later, has nothing to take back', async () => {
+  const { module, fake } = phone()
+  await module.putWeekOn('2026-11-09')
+  expect((await module.putWeekOn('2026-11-09'))!.undo).toBeUndefined()
+  fake.setAnswers('none')
+  expect((await module.putWeekOn('2026-11-09'))!.undo).toBeUndefined()
+})
+
+test('a Dish planned twice in the week goes on twice, its group counting two put-ons', async () => {
+  const { module } = phone((board) => {
+    board.plannedDishes.push({ id: 'p3', dishId: 'c', day: '2026-11-13', cookId: null })
+  })
+  expect(await module.putWeekOn('2026-11-09')).toMatchObject({ dishes: 1 })
+  const group = module.shoppingList().find(g => g.dishId === 'c')!
+  expect(group.items.map(i => [i.text, i.putOn])).toEqual([['Penne', 1], ['Penne', 2]])
+  expect(group.times).toBe(2)
+})
+
+test('a Dish put on twice, offline, with its take-back is two Unsent Changes that go out in order', async () => {
+  const { fake, module, unsent, onServer } = phone()
+  fake.setAnswers('none')
+  const put = module.putDishOn('c', [{ line: 0, text: 'Penne' }])!
+  await put.settled
+
+  const back = put.undo!()!
+  expect(await back.settled).toEqual({ count: 1, unsent: true })
+
+  expect(module.shoppingList().some(g => g.dishId === 'c')).toBe(false)
+  expect(unsent.changes.value.map(c => c.kind)).toEqual(['shopDish', 'shopTakeBack'])
+  await answerAgain(fake)
+  fake.sent.length = 0
+  expect(asRun(await unsent.send())).toMatchObject({ sent: 2, dropped: [], emptied: true })
+  expect(fake.sent).toEqual(['putDishOnShoppingList c Penne', expect.stringMatching(/^takeBackShoppingItems /)])
+  expect(onServer()).not.toContain('Penne')
+})
+
+test('a take-back kept as an Unsent Change shows again on the reopened Board', async () => {
+  const { fake, module, store, unsent } = phone()
+  fake.setAnswers('none')
+  const put = module.putDishOn('a', [{ line: 0, text: 'Linsen' }])!
+  await put.settled
+  await put.undo!()!.settled
+  await unsent.saved()
+
+  const reopened = phoneOn(fake, store)
+  await reopened.module.layOverUnsent()
+
+  expect(reopened.shown()[1]).toEqual(['Titel a', ['Linsen', 'Tomaten']])
+})
+
 test('a Dish put on for the first time is a new group after the others', async () => {
   const { module, shown } = phone()
-  await module.putDishOn('c', ['Penne'])!.settled
+  await module.putDishOn('c', [{ line: 0, text: 'Penne' }])!.settled
   expect(shown().map(([title]) => title)).toEqual([null, 'Titel a', 'Käsekuchen', 'Titel c'])
 })
 
 test('a Dish without Ingredients, not on the Board, or with no line chosen is not put on', () => {
   const { module } = phone()
-  expect(module.putDishOn('b', ['Mehl'])).toBeNull()
-  expect(module.putDishOn('x', ['Cashews'])).toBeNull()
-  expect(module.putDishOn('a', [' '])).toBeNull()
+  expect(module.putDishOn('b', [{ line: 0, text: 'Mehl' }])).toBeNull()
+  expect(module.putDishOn('x', [{ line: 0, text: 'Cashews' }])).toBeNull()
+  expect(module.putDishOn('a', [{ line: 0, text: ' ' }])).toBeNull()
 })
 
 test('a Dish archived meanwhile is taken back off the list, with a notice', async () => {
   const { fake, module, shown } = phone()
   fake.deleteDishElsewhere('c')
-  expect(await module.putDishOn('c', ['Penne'])!.settled).toEqual({ count: 0, notice: 'dishGone' })
+  expect(await module.putDishOn('c', [{ line: 0, text: 'Penne' }])!.settled).toEqual({ count: 0, notice: 'dishGone' })
   expect(shown().map(([title]) => title)).toEqual([null, 'Titel a', 'Käsekuchen'])
 })
 
 test('putting a week on shows its items once the server answers, and says how many Dishes went on', async () => {
   const { module, shown } = phone()
 
-  expect(await module.putWeekOn('2026-11-09')).toEqual({ dishes: 1 })
+  expect(await module.putWeekOn('2026-11-09')).toMatchObject({ dishes: 1 })
   expect(shown().map(([title]) => title)).toEqual([null, 'Titel a', 'Käsekuchen', 'Titel c'])
   // Everything is on already.
   expect(await module.putWeekOn('2026-11-09')).toEqual({ dishes: 0 })
@@ -353,7 +466,7 @@ test('every write made without a connection is an Unsent Change, and they go out
   await module.changeShoppingItem('s1', '2 Hafermilch')!.settled
   await module.tickShoppingItem('s3', true)!.settled
   await module.deleteShoppingItem('x1')!.settled
-  await module.putDishOn('c', ['Penne'])!.settled
+  await module.putDishOn('c', [{ line: 0, text: 'Penne' }])!.settled
   await module.clearTicked()!.settled
   expect(await module.putWeekOn('2026-11-09')).toEqual({ dishes: 0, unsent: true })
 
@@ -395,7 +508,7 @@ test('a Board sync while list changes are unsent keeps them on top of what the s
   fake.setAnswers('none')
   await module.addShoppingItem('Reis')!.settled
   await module.deleteShoppingItem('s3')!.settled
-  await fake.transport.putDishOnShoppingList('board', { dishId: 'c', items: [{ id: 'c1', text: 'Penne' }] }).catch(() => {})
+  await fake.transport.putDishOnShoppingList('board', { dishId: 'c', items: [{ id: 'c1', text: 'Penne', line: 0 }] }).catch(() => {})
   fake.setAnswers('answering')
   fake.server.shoppingItems.push(item('n9', 'Brot'))
 
@@ -410,7 +523,7 @@ test('an offline change to an item gone meanwhile is dropped quietly; a Dish put
   await module.tickShoppingItem('s1', true)!.settled
   await module.changeShoppingItem('s3', 'Neu')!.settled
   await module.deleteShoppingItem('a1')!.settled
-  await module.putDishOn('c', ['Penne'])!.settled
+  await module.putDishOn('c', [{ line: 0, text: 'Penne' }])!.settled
   await answerAgain(fake)
   for (const id of ['s1', 's3', 'a1']) fake.deleteShoppingItemElsewhere(id)
   fake.deleteDishElsewhere('c')

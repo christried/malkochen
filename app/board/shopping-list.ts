@@ -27,7 +27,8 @@ export type ShoppingNotice = 'shoppingFailed' | 'shoppingFull' | 'dishGone'
 // What a write answers: how many items it put on, cleared or brought back
 // (`count`), a notice if it failed, and for one that may still fail after the
 // list changed, what it ended in once settled. `unsent`: it got no answer and
-// waits as an Unsent Change. `undo`: "Rückgängig", after a delete or a clear.
+// waits as an Unsent Change. `undo`: "Rückgängig", after a delete, a clear or
+// putting a Dish on (never on the result of an undo).
 export interface ShoppingResult {
   count: number
   notice?: ShoppingNotice
@@ -38,11 +39,13 @@ export interface ShoppingResult {
 
 // What putting a week on answers once the server has: how many Dishes went
 // on (0: everything was on already), or a notice; `unsent` when it waits as
-// an Unsent Change, its count not known yet.
+// an Unsent Change, its count not known yet. `undo`: "Rückgängig", taking back
+// just the items this put on; there when a Dish went on.
 export interface WeekResult {
   dishes: number
   notice?: ShoppingNotice
   unsent?: true
+  undo?: () => ShoppingResult | null
 }
 
 // A Shopping Item as the screen draws it; `unsent` while a change of it
@@ -53,11 +56,14 @@ export interface ShoppingEntry extends ShoppingItemView {
 
 // A group of the list: "Sonstiges" (`dishId` null), or a Dish's, with the
 // Dish while it is on the Board (its title and image as they are now; its
-// detail opens from it), else only its title as last known.
+// detail opens from it), else only its title as last known. `times`: how many
+// times its Dish was put on (the distinct put-ons among its items), 1 for
+// "Sonstiges".
 export interface ShoppingGroup {
   dishId: string | null
   title: string | null
   dish: DishView | null
+  times: number
   items: ShoppingEntry[]
 }
 
@@ -69,7 +75,8 @@ export interface ShoppingTransport {
   deleteShoppingItem: (itemId: string, late?: Late) => Promise<void>
   clearShoppingItems: (boardId: string, late?: Late) => Promise<{ ids: string[] }>
   restoreShoppingItems: (boardId: string, ids: string[], late?: Late) => Promise<ShoppingItemView[]>
-  putDishOnShoppingList: (boardId: string, put: { dishId: string, items: { id: string, text: string }[] }, late?: Late) => Promise<ShoppingItemView[]>
+  takeBackShoppingItems: (boardId: string, ids: string[], late?: Late) => Promise<{ ids: string[] }>
+  putDishOnShoppingList: (boardId: string, put: { dishId: string, items: { id: string, text: string, line: number }[] }, late?: Late) => Promise<ShoppingItemView[]>
   putWeekOnShoppingList: (boardId: string, week: string, late?: Late) => Promise<WeekPutOn>
 }
 
@@ -110,7 +117,7 @@ export function waitingItemIds(changes: readonly UnsentChange[]): Set<string> {
   const ids = new Set<string>()
   for (const c of changes) {
     if ('itemId' in c) ids.add(c.itemId)
-    if (c.kind === 'shopClear') c.itemIds.forEach(id => ids.add(id))
+    if (c.kind === 'shopClear' || c.kind === 'shopTakeBack') c.itemIds.forEach(id => ids.add(id))
     if (c.kind === 'shopRestore') c.items.forEach(({ item }) => ids.add(item.id))
     if (c.kind === 'shopDish') c.items.forEach(item => ids.add(item.id))
   }
@@ -119,21 +126,26 @@ export function waitingItemIds(changes: readonly UnsentChange[]): Set<string> {
 
 // The list as groups, in order: "Sonstiges" first (also when empty, never
 // shown empty by the page: it decides), then each Dish's group in the order
-// put on; in each, open lines first, ticked ones at the bottom, each kept in
-// its order. `dishOf` finds a Dish on the Board.
+// put on; in each, open lines first, ticked ones at the bottom, each by its
+// place (a Dish's line in its Recipe), a line put on twice side by side:
+// A, A, B, B. `dishOf` finds a Dish on the Board.
 export function groupsOf(items: ShoppingItemView[], dishOf: (dishId: string) => DishView | undefined, waiting: Set<string> = new Set()): ShoppingGroup[] {
   const groups = new Map<string | null, ShoppingGroup>()
   for (const item of items) {
     let group = groups.get(item.dishId)
     if (!group) {
       const dish = item.dishId === null ? undefined : dishOf(item.dishId)
-      group = { dishId: item.dishId, title: dish?.title ?? item.dishTitle, dish: dish ?? null, items: [] }
+      group = { dishId: item.dishId, title: dish?.title ?? item.dishTitle, dish: dish ?? null, times: 1, items: [] }
       groups.set(item.dishId, group)
     }
     group.items.push({ ...item, unsent: waiting.has(item.id) })
   }
   const ordered = [...groups.values()].sort((a, b) => (a.dishId === null ? 0 : 1) - (b.dishId === null ? 0 : 1))
-  for (const group of ordered) group.items = [...group.items.filter(i => !i.ticked), ...group.items.filter(i => i.ticked)]
+  const byPlace = (a: ShoppingEntry, b: ShoppingEntry) => a.place - b.place || a.putOn - b.putOn
+  for (const group of ordered) {
+    group.times = new Set(group.items.map(i => i.putOn)).size
+    group.items = [...group.items.filter(i => !i.ticked).sort(byPlace), ...group.items.filter(i => i.ticked).sort(byPlace)]
+  }
   return ordered
 }
 
@@ -225,7 +237,9 @@ export function createShoppingList({ board, transport, find, queued, unsent, que
     const line = text.trim()
     if (!board.value || !line) return null
     const id = crypto.randomUUID()
-    placeItem(board.value.shoppingItems, { id, text: line, ticked: false, dishId: null, dishTitle: null, dishOnBoard: false })
+    // Typing order: after the last place used in "Sonstiges".
+    const place = Math.max(-1, ...list().filter(i => i.dishId === null).map(i => i.place)) + 1
+    placeItem(board.value.shoppingItems, { id, text: line, ticked: false, dishId: null, dishTitle: null, dishOnBoard: false, place, putOn: 1 })
     return shoppingWrite({
       unsentKind: { kind: 'shopAdd', itemId: id, text: line },
       label: line,
@@ -369,19 +383,44 @@ export function createShoppingList({ board, transport, find, queued, unsent, que
     return { ...result, undo }
   }
 
-  // "Auf die Einkaufsliste": puts the Dish on with the lines chosen from its
-  // Ingredients, in their order, at the end of its group (a new group after
-  // the others if it has none). Null if the Dish isn't on the Board, has no
-  // Ingredients, or no line is chosen. Rolled back with a notice if the
-  // server refuses it: the Dish archived or moved meanwhile, or the list
-  // full.
-  function putDishOn(dishId: string, lines: string[]): ShoppingResult | null {
-    const dish = find(dishId)
-    const chosen = lines.map(l => l.trim()).filter(l => l !== '')
-    if (!dish || !board.value || chosen.length === 0 || ingredientsToPutOn(dishId).length === 0) return null
-    const items = chosen.map(text => ({ id: crypto.randomUUID(), text }))
-    for (const { id, text } of items) placeItem(board.value.shoppingItems, { id, text, ticked: false, dishId, dishTitle: dish.title, dishOnBoard: true })
+  // "Rückgängig" after putting a Dish or a week on: takes the items `ids` off
+  // the list at once, for everyone. Null if none is on the list. Back where
+  // they were, with a notice, if the server refuses it. It queues behind the
+  // put-on it undoes, so an unsent put-on and its take-back go out in order.
+  // There is no undo of an undo.
+  function takeBack(ids: string[]): ShoppingResult | null {
+    if (!board.value) return null
+    const back = list().flatMap((i, index) => ids.includes(i.id) ? [{ item: { ...i }, index }] : [])
+    if (back.length === 0) return null
+    for (const { item } of back) takeOffList(board.value.shoppingItems, item.id)
     return shoppingWrite({
+      unsentKind: { kind: 'shopTakeBack', itemIds: back.map(b => b.item.id) },
+      label: back[0]!.item.text,
+      count: back.length,
+      send: () => transport.takeBackShoppingItems(board.value!.id, back.map(b => b.item.id)),
+      rollBack: (gone) => {
+        if (gone) return null
+        for (const { item, index } of [...back].sort((a, b) => a.index - b.index)) putBack(list(), item, index)
+        return 'shoppingFailed'
+      },
+    })
+  }
+
+  // "Auf die Einkaufsliste": puts the Dish on with the lines chosen from its
+  // Ingredients (`line`: the index in `ingredientsToPutOn`), as its next
+  // put-on: each line at its place in the Recipe, next to the same line of
+  // the earlier put-ons (a new group after the others if it has none). Null
+  // if the Dish isn't on the Board, has no Ingredients, or no line is chosen.
+  // Rolled back with a notice if the server refuses it: the Dish archived or
+  // moved meanwhile, or the list full. `undo` takes just these items back.
+  function putDishOn(dishId: string, lines: { line: number, text: string }[]): ShoppingResult | null {
+    const dish = find(dishId)
+    const chosen = lines.map(l => ({ line: l.line, text: l.text.trim() })).filter(l => l.text !== '')
+    if (!dish || !board.value || chosen.length === 0 || ingredientsToPutOn(dishId).length === 0) return null
+    const items = chosen.map(({ line, text }) => ({ id: crypto.randomUUID(), text, line }))
+    const putOn = Math.max(0, ...list().filter(i => i.dishId === dishId).map(i => i.putOn)) + 1
+    for (const { id, text, line } of items) placeItem(board.value.shoppingItems, { id, text, ticked: false, dishId, dishTitle: dish.title, dishOnBoard: true, place: line, putOn })
+    const result = shoppingWrite({
       unsentKind: { kind: 'shopDish', dishId, title: dish.title, items },
       label: dish.title,
       count: items.length,
@@ -391,14 +430,16 @@ export function createShoppingList({ board, transport, find, queued, unsent, que
         return gone ? 'dishGone' : noticeFor(error)
       },
     })
+    return { ...result, undo: () => takeBack(items.map(i => i.id)) }
   }
 
   // "Woche auf die Einkaufsliste": puts every Dish planned from today (or
   // the week's Monday, 'YYYY-MM-DD', if later) to its Sunday on the list, as
-  // the server collects them. Nothing shows before the server answers; then
-  // its items do, and the answer says how many Dishes went on. Without an
-  // answer it waits as an Unsent Change, and the server collects its Dishes
-  // when it arrives.
+  // the server collects them (a Dish planned twice goes on twice). Nothing
+  // shows before the server answers; then its items do, and the answer says
+  // how many Dishes went on, with an `undo` taking those items back. Without
+  // an answer it waits as an Unsent Change, and the server collects its
+  // Dishes when it arrives.
   async function putWeekOn(week: string): Promise<WeekResult | null> {
     if (!board.value) return null
     const boardId = board.value.id
@@ -415,7 +456,8 @@ export function createShoppingList({ board, transport, find, queued, unsent, que
           send: async () => {
             const put = await transport.putWeekOnShoppingList(boardId, week)
             if (board.value?.id === boardId) put.items.forEach(i => placeItem(list(), i))
-            return { dishes: put.dishes }
+            const ids = put.items.map(i => i.id)
+            return put.dishes > 0 ? { dishes: put.dishes, undo: () => takeBack(ids) } : { dishes: 0 }
           },
         })
       }

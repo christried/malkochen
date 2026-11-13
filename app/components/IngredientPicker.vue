@@ -10,7 +10,7 @@ const props = defineProps<{
   subtitle: string
   ingredients: string[]
 }>()
-const emit = defineEmits<{ pick: [lines: string[]] }>()
+const emit = defineEmits<{ pick: [lines: { line: number, text: string }[]] }>()
 const t = useStrings()
 
 const chosen = ref<boolean[]>([])
@@ -26,7 +26,7 @@ function toggle(index: number) {
 }
 function confirm() {
   if (count.value === 0) return
-  emit('pick', props.ingredients.filter((_, i) => chosen.value[i]))
+  emit('pick', props.ingredients.flatMap((text, line) => chosen.value[line] ? [{ line, text }] : []))
 }
 </script>
 

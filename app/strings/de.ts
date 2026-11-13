@@ -20,7 +20,7 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook' | 'shopAdd' | 'shopText' | 'shopTick' | 'shopDelete' | 'shopClear' | 'shopRestore' | 'shopDish' | 'shopWeek'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook' | 'shopAdd' | 'shopText' | 'shopTick' | 'shopDelete' | 'shopClear' | 'shopRestore' | 'shopDish' | 'shopWeek' | 'shopTakeBack'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -44,6 +44,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'shopRestore': return `${named} zurückgeholt`
     case 'shopDish': return `${named} auf die Einkaufsliste`
     case 'shopWeek': return `Woche ab ${dayMonth(label)} auf die Einkaufsliste`
+    case 'shopTakeBack': return 'Rückgängig auf der Einkaufsliste'
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`
@@ -1375,6 +1376,7 @@ export const de = {
       shopping_items_restored: 'Einträge wiederhergestellt',
       dish_put_on_shopping_list: 'Gericht auf die Einkaufsliste',
       week_put_on_shopping_list: 'Woche auf die Einkaufsliste',
+      shopping_items_taken_back: 'Einträge zurückgenommen',
       cooking_recorded: 'Gekocht',
       cooking_deleted: 'Kochen gelöscht',
       cooking_restored: 'Kochen wiederhergestellt',

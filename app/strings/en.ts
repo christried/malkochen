@@ -35,6 +35,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'shopRestore': return `${named} brought back`
     case 'shopDish': return `${named} put on the shopping list`
     case 'shopWeek': return `week from ${dayMonth(label)} put on the shopping list`
+    case 'shopTakeBack': return 'Undo on the shopping list'
     case 'move': return `${named} moved`
     case 'cook':
     case 'cookMany': return `${named} cooked`
@@ -1153,6 +1154,7 @@ export const en: Strings = {
       shopping_items_restored: 'Items restored',
       dish_put_on_shopping_list: 'Dish put on the shopping list',
       week_put_on_shopping_list: 'Week put on the shopping list',
+      shopping_items_taken_back: 'Items taken back',
       cooking_recorded: 'Cooked',
       cooking_deleted: 'Cooking deleted',
       cooking_restored: 'Cooking restored',
