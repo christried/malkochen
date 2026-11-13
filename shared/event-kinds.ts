@@ -34,6 +34,22 @@ export const EVENT_KINDS = [
   'planned_dish_moved',
   'dish_unplanned',
   'planned_dish_cook_set',
+  // The Shopping List (CONTEXT.md: Shopping List, Shopping Item): an item
+  // typed into "Sonstiges", its text changed, ticked, unticked and deleted
+  // (`details.shoppingItem`); every ticked item cleared ("Erledigte
+  // entfernen") and deleted items brought back by "Rückgängig" (`details.items`,
+  // how many); a Dish put on with its chosen Ingredients (the event's Dish,
+  // `details.items`); and a week of the Week Plan put on (`details.week`, its
+  // Monday, and `details.dishes`, how many went on).
+  'shopping_item_added',
+  'shopping_item_changed',
+  'shopping_item_ticked',
+  'shopping_item_unticked',
+  'shopping_item_deleted',
+  'shopping_items_cleared',
+  'shopping_items_restored',
+  'dish_put_on_shopping_list',
+  'week_put_on_shopping_list',
   'cooking_recorded',
   'cooking_deleted',
   'cooking_restored',

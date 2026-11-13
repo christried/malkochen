@@ -9,7 +9,7 @@ import { fillSourceFacts, logSourceFacts } from '../../utils/source-facts-fill'
 export default defineEventHandler(async (event) => {
   requireCronSecret(event)
   const report = await cleanUp()
-  console.info(`[cleanup] purged ${report.purgedBoards} Boards, ${report.purgedDishes} Dishes, ${report.purgedCookings} Cookings and ${report.purgedComments} Comments, deleted ${report.deletedImages} images`)
+  console.info(`[cleanup] purged ${report.purgedBoards} Boards, ${report.purgedDishes} Dishes, ${report.purgedCookings} Cookings, ${report.purgedComments} Comments and ${report.purgedShoppingItems} Shopping Items, deleted ${report.deletedImages} images`)
   try {
     logSourceFacts(await fillSourceFacts())
   }

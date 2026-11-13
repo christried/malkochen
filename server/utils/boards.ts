@@ -15,6 +15,7 @@ import { usernameOf, pictureOf } from './people'
 import { accessOf, accessOn, memberBoardsOf } from './board-access'
 import { effectivePermissions, permits } from './permissions'
 import { plannedDishesOf, type PlannedDishView } from './week-plan'
+import { shoppingItemsOf, type ShoppingItemView } from './shopping-list'
 
 // The Board a user gets on their first sign-in (PRD story 3), named in
 // their language.
@@ -76,6 +77,9 @@ export interface BoardView extends BoardSummary {
   // Its whole Week Plan (CONTEXT.md: Week Plan), past weeks too, in order:
   // by day, then place in the day. Those of an Archived Dish aren't in it.
   plannedDishes: PlannedDishView[]
+  // Its whole Shopping List (CONTEXT.md: Shopping List, Shopping Item), in
+  // order: "Sonstiges" first, then the Dish groups.
+  shoppingItems: ShoppingItemView[]
   // The Operator visiting a Board they aren't a Member of (ADR 0009).
   asOperator: boolean
 }
@@ -258,12 +262,13 @@ export async function getBoard(boardId: string, userId: string, language: Langua
     .from(boardColumn)
     .where(eq(boardColumn.boardId, boardId))
     .orderBy(asc(boardColumn.position))
-  const [dishes, members, newDishIds, newInHistory, plannedDishes] = await Promise.all([
+  const [dishes, members, newDishIds, newInHistory, plannedDishes, shoppingItems] = await Promise.all([
     dishesByColumn(columns.map(c => c.id)),
     boardMembers(boardId, language),
     newSince && !view.asOperator ? newDishesSince(boardId, userId, newSince) : [],
     view.asOperator ? [] : newInHistoryDishIds(boardId, userId),
     plannedDishesOf(boardId),
+    shoppingItemsOf(boardId),
   ])
   return {
     ...view,
@@ -278,6 +283,7 @@ export async function getBoard(boardId: string, userId: string, language: Langua
     newDishIds,
     newInHistoryDishIds: newInHistory,
     plannedDishes,
+    shoppingItems,
   }
 }
 
