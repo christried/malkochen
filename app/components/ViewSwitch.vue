@@ -97,6 +97,7 @@ function onKeydown(event: KeyboardEvent) {
           v-if="segment.id === 'shopping'"
           name="bag"
           :size="16"
+          stroke-width="2.2"
         />
         <svg
           v-else
