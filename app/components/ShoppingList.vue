@@ -3,6 +3,7 @@ import type { BoardView } from '~~/server/utils/boards'
 import type { ShoppingEntry, ShoppingGroup as Group } from '~/board/shopping-list'
 import type { Toast } from '~/utils/toast'
 import { keyboardInset } from '~/utils/shopping-layout'
+import { playGroupLeave } from '~/utils/shopping-leave'
 
 // The Shopping List (CONTEXT.md: Shopping List, Shopping Item; ADR 0015;
 // #536): the Board's list of what to buy, a view beside the Columns and the
@@ -246,9 +247,22 @@ function remove(entry: ShoppingEntry) {
   showShoppingResult(result, { text: t.shopping.removed, undo: true })
 }
 
+// "Erledigte entfernen": the ticked lines fade one after another, not slide.
+// The flag is up while the removal's own leave runs: the next tick comes
+// after the patch that removes them.
+const clearing = ref(false)
 function clearDone() {
+  clearing.value = true
   const result = boardModule.clearTicked()
+  void nextTick(() => (clearing.value = false))
   if (result) showShoppingResult(result, { text: t.shopping.cleared(result.count), undo: true })
+}
+
+// A group leaving with its last line: its slot closes. The gap it keeps below
+// itself is the column's: 18px on the desktop columns, 14px in the phone's list.
+const PHONE_GROUP_GAP = 14
+function onGroupLeave(el: Element, done: () => void) {
+  void playGroupLeave(el as HTMLElement, clearing.value, wide.value ? GROUP_GAP : PHONE_GROUP_GAP).then(done)
 }
 </script>
 
@@ -329,6 +343,7 @@ function clearDone() {
         <ShoppingGroup
           :group="other"
           :editing-id="editing"
+          :clearing="clearing"
           class="shop-group"
           :style="{ '--shop-i': 0 }"
           @tick="tick"
@@ -352,12 +367,14 @@ function clearDone() {
         tag="div"
         name="group"
         class="contents desktop:flex desktop:min-w-0 desktop:flex-1 desktop:flex-col desktop:gap-[18px]"
+        @leave="onGroupLeave"
       >
         <ShoppingGroup
           v-for="group in col"
           :key="group.dishId ?? 'other'"
           :group="group"
           :editing-id="editing"
+          :clearing="clearing"
           class="shop-group"
           :style="{ order: orderOf.get(group.dishId) ?? 0, '--shop-i': orderOf.get(group.dishId) ?? 0 }"
           @tick="tick"
@@ -391,18 +408,14 @@ function clearDone() {
   }
 }
 
-/* A group coming or going fades; it settles to its place when the groups
-   move. Reduced motion: no moving, a fade. */
+/* A group coming fades; it settles to its place when the groups move. A group
+   going closes its slot in the script (shopping-leave.ts). Reduced motion: no
+   moving, a fade. */
 .group-move {
   transition: transform var(--dur-settle) var(--ease-settle);
 }
-.group-enter-active,
-.group-leave-active {
+.group-enter-active {
   transition: opacity var(--dur-fade) var(--ease-fade);
-}
-.group-leave-active {
-  position: absolute;
-  visibility: hidden;
 }
 .group-enter-from {
   opacity: 0;

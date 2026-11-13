@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { ShoppingEntry, ShoppingGroup as Group } from '~/board/shopping-list'
 import { morphOpen } from '~/utils/dish-morph'
+import { prefersReducedMotion } from '~/utils/motion'
 import { heldOrder, SINK_HOLD_MS } from '~/utils/shopping-lines'
+import { leaveKind, leavePlan, playEnter, playLeave } from '~/utils/shopping-leave'
 import { dishPath } from '~~/shared/address'
 
 // One group of the Shopping List (#536, R15): "Sonstiges" first, then one
@@ -10,10 +12,13 @@ import { dishPath } from '~~/shared/address'
 // it has gone, the title stays alone. A Dish put on twice says so under its
 // title. Its lines are ShoppingItem rows; a line's events come up here with
 // the line attached. A line this Member ticks or unticks waits 600ms where it
-// was before it moves to its new place in the group.
+// was before it moves to its new place in the group. A line that leaves or
+// comes back animates its slot (shopping-leave.ts); `clearing` is up while
+// "Erledigte entfernen" runs, so its lines fade one after another.
 const props = defineProps<{
   group: Group
   editingId: string | null
+  clearing: boolean
 }>()
 const emit = defineEmits<{
   tick: [entry: ShoppingEntry]
@@ -63,6 +68,21 @@ function onTick(entry: ShoppingEntry) {
   if (entry.ticked && held.value.has(entry.id)) release(entry.id)
   else holdAt(entry.id, lines.value.findIndex(line => line.id === entry.id))
   emit('tick', entry)
+}
+
+// ---- A line leaving or coming back: its slot closes or opens ----
+
+// The lines leaving in one patch (a clear) get their place in the stagger, top
+// to bottom; the count starts again once that patch is done.
+let leavingInPatch = 0
+function onLineLeave(el: Element, done: () => void) {
+  const plan = leavePlan(leaveKind(el, props.clearing), leavingInPatch, prefersReducedMotion())
+  leavingInPatch += 1
+  queueMicrotask(() => (leavingInPatch = 0))
+  void playLeave(el as HTMLElement, plan).then(done)
+}
+function onLineEnter(el: Element, done: () => void) {
+  void playEnter(el as HTMLElement).then(done)
 }
 
 // ---- The heading opens the Dish ----
@@ -147,6 +167,8 @@ function onHeadingClick(event: MouseEvent) {
       name="line"
       class="mt-1"
       :aria-labelledby="titleId"
+      @enter="onLineEnter"
+      @leave="onLineLeave"
     >
       <ShoppingItem
         v-for="entry in lines"
@@ -167,21 +189,21 @@ function onHeadingClick(event: MouseEvent) {
 
 <style scoped>
 /* The lines: one settling to its place moves (settle 480ms); a new line
-   arrives (460ms); one going fades. Reduced motion: no moving, the rest as
-   it is (the hold stays, in the script). */
+   arrives (460ms, its slot opening in the script); one going is played in
+   the script (shopping-leave.ts). Reduced motion: no moving, no arriving
+   (the script fades it), the hold stays in the script. */
 .line-move {
   transition: transform var(--dur-settle) var(--ease-settle);
 }
 .line-enter-active {
   animation: r15-arrive 460ms var(--ease-settle);
 }
-.line-leave-active {
-  position: absolute;
-  visibility: hidden;
-}
 @media (prefers-reduced-motion: reduce) {
   .line-move {
     transition: none;
+  }
+  .line-enter-active {
+    animation: none;
   }
 }
 </style>
