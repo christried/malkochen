@@ -4,6 +4,14 @@ Was sich bei malkochen für die geändert hat, die es nutzen, das Neueste zuerst
 
 ## [Unreleased]
 
+### Added
+
+- Jedes Board hat jetzt eine Einkaufsliste, für alle darauf dieselbe: eine dritte Ansicht neben Spalten und Woche. Öffne ein Gericht und tippe auf Auf die Einkaufsliste, um seine Zutaten draufzulegen (was ihr schon habt, nimmst du raus), oder leg die ganze Woche auf einmal aus dem Wochenplan drauf. Tipp ein, was sonst noch fehlt, und im Laden hakst du mit einem Tipp ab. Erledigte entfernen räumt die Liste auf, und alles klappt auch ohne Verbindung.
+
+### Changed
+
+- Die Datenschutzerklärung nennt jetzt auch den Wochenplan und die Einkaufsliste bei dem, was du auf einem Board speicherst.
+
 ## [1.3.0] - 2026-11-12
 
 ### Added

@@ -4,6 +4,14 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+### Added
+
+- Every board has a shopping list now, the same for everyone on it: a third view beside Columns and Week. Open a dish and tap Put on the shopping list to add its ingredients (untick what you already have), or put the whole week on at once from the week plan. Type in anything else you need, and in the shop tap a line to tick it off. Clear done tidies the list, and it all works without a connection too.
+
+### Changed
+
+- The privacy policy now names the week plan and the shopping list among what you store on a board.
+
 ## [1.3.0] - 2026-11-12
 
 ### Added
