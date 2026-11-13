@@ -30,6 +30,10 @@ module.exports = {
         'day-fill': 'var(--color-day-fill)',
         'view-track': 'var(--color-view-track)',
         'match-tint': 'var(--color-match-tint)',
+        'tick': 'var(--color-tick)',
+        'tick-ink': 'var(--color-tick-ink)',
+        'swipe-danger': 'var(--color-swipe-danger)',
+        'on-swipe-danger': 'var(--color-on-swipe-danger)',
       },
       fontFamily: { display: ['Petrona', 'Georgia', 'serif'], ui: ['Figtree', 'system-ui', 'sans-serif'], mono: ['ui-monospace', 'Menlo', 'monospace'] },
       fontSize: {
@@ -89,6 +93,7 @@ module.exports = {
         'celebrate': 'var(--dur-celebrate)',
         'idle': 'var(--dur-idle)',
         'search': 'var(--dur-search)',
+        'sink-hold': 'var(--dur-sink-hold)',
       },
       transitionTimingFunction: {
         'tap': 'var(--ease-tap)',
@@ -102,10 +107,11 @@ module.exports = {
         'idle': 'var(--ease-idle)',
         'search': 'var(--ease-search)',
       },
-      height: { 'pd': 'var(--size-pd)', 'pd-today': 'var(--size-pd-today)', 'pd-desktop': 'var(--size-pd-desktop)' },
+      height: { 'pd': 'var(--size-pd)', 'pd-today': 'var(--size-pd-today)', 'pd-desktop': 'var(--size-pd-desktop)', 'shop-row': 'var(--size-shop-row)', 'shop-row-desktop': 'var(--size-shop-row-desktop)', 'shop-check': 'var(--size-shop-check)' },
+      width: { 'shop-check': 'var(--size-shop-check)' },
       gridTemplateColumns: { 'week': 'repeat(7, minmax(0, 1fr))' },
       screens: { tablet: '768px', desktop: '1200px' },
-      zIndex: { 'board': '0', 'tabs': '2', 'fab': '6', 'drag': '20', 'scrim': '30', 'sheet': '31', 'dialog': '40', 'toast': '50', 'strip': '19' }
+      zIndex: { 'board': '0', 'tabs': '2', 'fab': '6', 'drag': '20', 'scrim': '30', 'sheet': '31', 'dialog': '40', 'toast': '50', 'strip': '19', 'shop-field': '33' }
     }
   }
 };

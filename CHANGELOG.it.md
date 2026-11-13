@@ -4,6 +4,14 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 
 ## [Unreleased]
 
+### Added
+
+- Ogni bacheca ha ora una lista della spesa, la stessa per tutti: una terza vista accanto a Colonne e Settimana. Apri un piatto e tocca Nella lista della spesa per aggiungerne gli ingredienti (togli quello che avete già), oppure metti tutta la settimana dal piano settimanale in un colpo. Scrivi cos'altro manca, e al negozio tocchi una riga per spuntarla. Rimuovi completate fa ordine, e tutto funziona anche senza connessione.
+
+### Changed
+
+- L’informativa sulla privacy ora nomina anche il piano settimanale e la lista della spesa tra ciò che salvi su una bacheca.
+
 ## [1.3.0] - 2026-11-12
 
 ### Added

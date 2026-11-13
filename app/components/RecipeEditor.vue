@@ -2,6 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { DishView } from '~~/server/utils/dishes'
 import { RECIPE_LIMITS } from '~~/shared/recipe'
+import { keyboardInset } from '~/utils/keyboard'
 import { motionMs, prefersReducedMotion, wait } from '~/utils/motion'
 import { backspaceOnEmpty, countShown, enterAt, limitsOf, moveLine, pasteInto, recipeToSave, type Caret, type RecipeKind } from '~/utils/recipe-lines'
 import { UNDO_WINDOW_MS, type Toast } from '~/utils/toast'
@@ -216,7 +217,7 @@ const lineName = (kind: RecipeKind, line: DraftLine, index: number) => line.text
 const keyboard = ref(0)
 function measureKeyboard() {
   const viewport = window.visualViewport
-  keyboard.value = viewport ? Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop)) : 0
+  keyboard.value = keyboardInset(window.innerHeight, viewport?.height ?? window.innerHeight, viewport?.offsetTop ?? 0)
 }
 onMounted(() => window.visualViewport?.addEventListener('resize', measureKeyboard))
 onBeforeUnmount(() => window.visualViewport?.removeEventListener('resize', measureKeyboard))

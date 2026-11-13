@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The line icons buttons share: a 24-unit grid, drawn in the text colour.
-withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip' | 'check' | 'camera' | 'link' | 'copy' | 'sign-out' | 'plus' | 'play', size?: number }>(), { size: 18 })
+withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up' | 'down' | 'grip' | 'check' | 'camera' | 'link' | 'copy' | 'sign-out' | 'plus' | 'play' | 'forward' | 'bag' | 'bag-plus' | 'trash' | 'pencil', size?: number }>(), { size: 18 })
 </script>
 
 <template>
@@ -35,6 +35,10 @@ withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up'
     <path
       v-else-if="name === 'back'"
       d="M15 6l-6 6 6 6"
+    />
+    <path
+      v-else-if="name === 'forward'"
+      d="M9 6l6 6-6 6"
     />
     <path
       v-else-if="name === 'up'"
@@ -84,6 +88,24 @@ withDefaults(defineProps<{ name: 'search' | 'close' | 'settings' | 'back' | 'up'
     <path
       v-else-if="name === 'sign-out'"
       d="M9 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3M15 16.5l4.5-4.5L15 7.5M19.5 12H9"
+    />
+    <!-- The Shopping List's bag (R15): the view switch's "Einkauf"; with a
+         plus, what puts a Dish or a week on it. -->
+    <path
+      v-else-if="name === 'bag'"
+      d="M5.5 8h13l-.9 11.1a2 2 0 0 1-2 1.9H8.4a2 2 0 0 1-2-1.9zM9 8V6.5a3 3 0 0 1 6 0V8"
+    />
+    <path
+      v-else-if="name === 'bag-plus'"
+      d="M5.5 8h13l-.9 11.1a2 2 0 0 1-2 1.9H8.4a2 2 0 0 1-2-1.9zM9 8V6.5a3 3 0 0 1 6 0V8M12 11.5v6M9 14.5h6"
+    />
+    <path
+      v-else-if="name === 'trash'"
+      d="M4.5 7h15M10 4h4M6.5 7l.8 11.6a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9L17.5 7M10 11v5.5M14 11v5.5"
+    />
+    <path
+      v-else-if="name === 'pencil'"
+      d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"
     />
     <path
       v-else

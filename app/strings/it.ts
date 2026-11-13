@@ -30,6 +30,15 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'planMove': return `${named} spostato nel piano settimanale`
     case 'unplan': return `${named} tolto dal piano settimanale`
     case 'planCook': return `chi cucina ${named}`
+    case 'shopAdd': return `${named} nella lista della spesa`
+    case 'shopText': return `voce modificata ${named}`
+    case 'shopTick': return `spunta su ${named}`
+    case 'shopDelete': return `${named} tolto dalla lista della spesa`
+    case 'shopClear': return 'rimuovi completate'
+    case 'shopRestore': return `${named} ripristinato`
+    case 'shopDish': return `${named} nella lista della spesa`
+    case 'shopWeek': return `settimana dal ${dayMonth(label)} nella lista della spesa`
+    case 'shopTakeBack': return 'annulla nella lista della spesa'
     case 'move': return `${named} spostato`
     case 'cook':
     case 'cookMany': return `${named} cucinato`
@@ -721,6 +730,47 @@ export const it: Strings = {
     cooksNow: (name: string) => `Ora cucina ${name}.`,
     cooksNobody: 'Non cucina più nessuno.',
   },
+  shopping: {
+    tab: 'Spesa',
+    title: 'Lista della spesa',
+    other: 'Altro',
+    times: (count: number) => count === 2 ? 'Due volte nella lista' : count === 3 ? 'Tre volte nella lista' : `${number(count)} volte nella lista`,
+    gone: 'Non più sulla board',
+    openDish: (title: string) => `Apri ${title}`,
+    addItem: 'Aggiungi voce',
+    addLabel: 'Nuova voce in Altro',
+    addPlaceholder: 'Cosa manca ancora?',
+    add: 'Aggiungi',
+    item: (text: string, group: string, ticked: boolean) => `${text}, ${group}, ${ticked ? 'completata' : 'non completata'}`,
+    edit: (text: string) => `Modifica “${text}”`,
+    remove: (text: string) => `Togli “${text}”`,
+    changeAction: 'Modifica',
+    removeAction: 'Togli',
+    editLabel: 'Modifica voce',
+    tickedLive: (text: string) => `${text} completata.`,
+    untickedLive: (text: string) => `${text} di nuovo da comprare.`,
+    addedLive: (text: string) => `${text} aggiunta.`,
+    clearDone: 'Rimuovi completate',
+    emptyTitle: 'Ancora niente da comprare.',
+    emptyHow: 'Così qualcosa finisce nella lista:',
+    emptyFromDish: 'In un piatto aggiungi i suoi ingredienti.',
+    emptyFromWeek: 'Nel piano settimanale entra tutta la settimana in una volta.',
+    emptyTyped: 'Oppure scrivi tu qualcosa.',
+    emptyWrite: 'Scrivi qualcosa',
+    removed: 'Voce tolta.',
+    cleared: (count: number) => count === 1 ? '1 voce tolta.' : `${number(count)} voci tolte.`,
+    failed: 'Non ha funzionato. Riprova.',
+    full: 'La lista della spesa è piena: al massimo 500 voci.',
+    dishGone: (title: string) => `“${title}” non è più sulla board.`,
+    putOn: 'Nella lista della spesa',
+    pickText: 'Togli quello che hai già a casa.',
+    putOnConfirm: (count: number) => count === 0 ? 'Nessun ingrediente scelto' : count === 1 ? 'Aggiungi 1 ingrediente' : `Aggiungi ${number(count)} ingredienti`,
+    putOnDone: (count: number) => count === 1 ? '1 ingrediente nella lista della spesa.' : `${number(count)} ingredienti nella lista della spesa.`,
+    putWeekOn: 'Settimana nella lista della spesa',
+    weekDone: (count: number) => count === 1 ? '1 piatto nella lista della spesa.' : `${number(count)} piatti nella lista della spesa.`,
+    weekNothing: 'È già tutto nella lista della spesa.',
+    weekLater: 'La settimana va nella lista della spesa appena torni online.',
+  },
   offline: {
     headline: 'Sei offline.',
     body: 'Appena torni online, puoi continuare da qui.',
@@ -1077,6 +1127,7 @@ export const it: Strings = {
     eventGroups: {
       dishes: 'Piatti',
       weekPlan: 'Piano settimanale',
+      shoppingList: 'Lista della spesa',
       cookings: 'Cucinato',
       talk: 'Commenti e pollici',
       columns: 'Colonne',
@@ -1107,6 +1158,16 @@ export const it: Strings = {
       planned_dish_moved: 'Piatto pianificato spostato',
       dish_unplanned: 'Tolto dal piano settimanale',
       planned_dish_cook_set: 'Chi cucina cambiato',
+      shopping_item_added: 'Voce aggiunta',
+      shopping_item_changed: 'Voce modificata',
+      shopping_item_ticked: 'Voce spuntata',
+      shopping_item_unticked: 'Spunta tolta',
+      shopping_item_deleted: 'Voce rimossa',
+      shopping_items_cleared: 'Completate rimosse',
+      shopping_items_restored: 'Voci ripristinate',
+      dish_put_on_shopping_list: 'Piatto nella lista della spesa',
+      week_put_on_shopping_list: 'Settimana nella lista della spesa',
+      shopping_items_taken_back: 'Voci ritirate',
       cooking_recorded: 'Cucinato',
       cooking_deleted: 'Cottura eliminata',
       cooking_restored: 'Cottura ripristinata',

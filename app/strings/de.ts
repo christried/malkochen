@@ -20,7 +20,7 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook' | 'shopAdd' | 'shopText' | 'shopTick' | 'shopDelete' | 'shopClear' | 'shopRestore' | 'shopDish' | 'shopWeek' | 'shopTakeBack'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -36,6 +36,15 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'planMove': return `${named} im Wochenplan verschoben`
     case 'unplan': return `${named} aus dem Wochenplan genommen`
     case 'planCook': return `Wer kocht ${named}`
+    case 'shopAdd': return `${named} auf der Einkaufsliste`
+    case 'shopText': return `geänderter Eintrag ${named}`
+    case 'shopTick': return `Haken bei ${named}`
+    case 'shopDelete': return `${named} von der Einkaufsliste entfernt`
+    case 'shopClear': return 'Erledigte entfernen'
+    case 'shopRestore': return `${named} zurückgeholt`
+    case 'shopDish': return `${named} auf die Einkaufsliste`
+    case 'shopWeek': return `Woche ab ${dayMonth(label)} auf die Einkaufsliste`
+    case 'shopTakeBack': return 'Rückgängig auf der Einkaufsliste'
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`
@@ -841,6 +850,67 @@ export const de = {
     cooksNow: (name: string) => `${name} kocht jetzt.`,
     cooksNobody: 'Niemand kocht mehr fest.',
   },
+  // The Shopping List (CONTEXT.md: Shopping List, Shopping Item; #536, #537):
+  // its view beside the Columns and the Week Plan.
+  shopping: {
+    // The view switch's third segment, and the list's title.
+    tab: 'Einkauf',
+    title: 'Einkaufsliste',
+    // The group of items that belong to no Dish.
+    other: 'Sonstiges',
+    // Under a Dish group's title: how often the Dish was put on (from
+    // twice), or that it has left the Board. Its heading opens the Dish.
+    times: (count: number) => count === 2 ? 'Zweimal auf der Liste' : count === 3 ? 'Dreimal auf der Liste' : `${number(count)}-mal auf der Liste`,
+    gone: 'Nicht mehr auf dem Board',
+    openDish: (title: string) => `${title} öffnen`,
+    // Typing items into "Sonstiges": on a phone the FAB (`addItem`) and the
+    // empty list's button open a field on the keyboard; on desktop it sits
+    // in the Sonstiges column. Enter adds and keeps the field.
+    addItem: 'Eintrag hinzufügen',
+    addLabel: 'Neu in Sonstiges',
+    addPlaceholder: 'Was fehlt noch?',
+    add: 'Hinzufügen',
+    // A line: the whole row ticks it (`item` is its label); a long press or
+    // the pencil changes it, a swipe or the trash removes it. `changeAction`
+    // and `removeAction` name those for assistive tech; `removeAction` also
+    // shows under a swiped line.
+    item: (text: string, group: string, ticked: boolean) => `${text}, ${group}, ${ticked ? 'erledigt' : 'nicht erledigt'}`,
+    edit: (text: string) => `„${text}“ ändern`,
+    remove: (text: string) => `„${text}“ entfernen`,
+    changeAction: 'Ändern',
+    removeAction: 'Entfernen',
+    editLabel: 'Eintrag ändern',
+    // Said politely to assistive tech after a tick, an untick and an add.
+    tickedLive: (text: string) => `${text} erledigt.`,
+    untickedLive: (text: string) => `${text} wieder offen.`,
+    addedLive: (text: string) => `${text} hinzugefügt.`,
+    clearDone: 'Erledigte entfernen',
+    // The empty list: how things get on it, one line each.
+    emptyTitle: 'Noch nichts zu kaufen.',
+    emptyHow: 'So kommt etwas auf die Liste:',
+    emptyFromDish: 'Im Gericht holst du seine Zutaten dazu.',
+    emptyFromWeek: 'Im Wochenplan kommt die ganze Woche auf einmal.',
+    emptyTyped: 'Oder du schreibst selbst etwas auf.',
+    emptyWrite: 'Etwas aufschreiben',
+    // Toasts; those after removing come with "Rückgängig".
+    removed: 'Eintrag entfernt.',
+    cleared: (count: number) => count === 1 ? '1 Eintrag entfernt.' : `${number(count)} Einträge entfernt.`,
+    failed: 'Das hat nicht geklappt. Versuch es nochmal.',
+    full: 'Die Einkaufsliste ist voll: Mehr als 500 Einträge gehen nicht.',
+    dishGone: (title: string) => `„${title}“ ist nicht mehr auf dem Board.`,
+    // "Auf die Einkaufsliste" in the Dish detail: its sheet of Ingredients,
+    // all ticked, and the toast after.
+    putOn: 'Auf die Einkaufsliste',
+    pickText: 'Nimm raus, was du schon zu Hause hast.',
+    // At 0 the button is off and says why.
+    putOnConfirm: (count: number) => count === 0 ? 'Keine Zutat ausgewählt' : count === 1 ? '1 Zutat hinzufügen' : `${number(count)} Zutaten hinzufügen`,
+    putOnDone: (count: number) => count === 1 ? '1 Zutat auf der Einkaufsliste.' : `${number(count)} Zutaten auf der Einkaufsliste.`,
+    // "Woche auf die Einkaufsliste" on the Week Plan, and its toasts.
+    putWeekOn: 'Woche auf die Einkaufsliste',
+    weekDone: (count: number) => count === 1 ? '1 Gericht auf der Einkaufsliste.' : `${number(count)} Gerichte auf der Einkaufsliste.`,
+    weekNothing: 'Alles schon auf der Einkaufsliste.',
+    weekLater: 'Die Woche kommt auf die Einkaufsliste, sobald du wieder Netz hast.',
+  },
   // public/offline.html repeats the first three, for the service worker,
   // and has its own copy of "malkochen ist gerade nicht erreichbar". The
   // offline bar (OfflineBar) says `bar` without a connection, `unreachable`
@@ -1262,6 +1332,7 @@ export const de = {
     eventGroups: {
       dishes: 'Gerichte',
       weekPlan: 'Wochenplan',
+      shoppingList: 'Einkaufsliste',
       cookings: 'Kochen',
       talk: 'Kommentare und Daumen',
       columns: 'Spalten',
@@ -1292,6 +1363,16 @@ export const de = {
       planned_dish_moved: 'Eingeplantes Gericht verschoben',
       dish_unplanned: 'Aus dem Wochenplan genommen',
       planned_dish_cook_set: 'Wer kocht geändert',
+      shopping_item_added: 'Eintrag hinzugefügt',
+      shopping_item_changed: 'Eintrag geändert',
+      shopping_item_ticked: 'Eintrag abgehakt',
+      shopping_item_unticked: 'Haken entfernt',
+      shopping_item_deleted: 'Eintrag entfernt',
+      shopping_items_cleared: 'Erledigte entfernt',
+      shopping_items_restored: 'Einträge wiederhergestellt',
+      dish_put_on_shopping_list: 'Gericht auf die Einkaufsliste',
+      week_put_on_shopping_list: 'Woche auf die Einkaufsliste',
+      shopping_items_taken_back: 'Einträge zurückgenommen',
       cooking_recorded: 'Gekocht',
       cooking_deleted: 'Kochen gelöscht',
       cooking_restored: 'Kochen wiederhergestellt',

@@ -6,6 +6,7 @@ import type { VoteResult } from '~/board/dish-votes'
 import type { CopiedDish } from '~~/server/utils/copies'
 import { boardPath as pathOfBoard, dishAt, dishPath, dishRef } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
+import { motionMs } from '~/utils/motion'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
 // on phones, a side panel over the Board from 768px (440px; 480px from
@@ -184,6 +185,32 @@ watch(() => planning.open, async (isOpen) => {
   if (isOpen) return
   await nextTick()
   dialog.value?.querySelector<HTMLElement>('[data-plan-dish]')?.focus()
+})
+
+// "Auf die Einkaufsliste" (#537): the Dish's Ingredients, all ticked, in a
+// sheet (a popover on desktop). The lines left ticked go on the Shopping
+// List, with a toast saying how many.
+const puttingOn = reactive({ open: false, anchor: null as HTMLElement | null })
+const { showShoppingResult } = useShoppingResult(shown => (toast.value = shown))
+const ingredients = computed(() => located.value ? boardModule.ingredientsToPutOn(located.value.dish.id) : [])
+function onPutOn(anchor: HTMLElement) {
+  Object.assign(puttingOn, { open: true, anchor })
+}
+function putOn(lines: { line: number, text: string }[]) {
+  const dish = located.value?.dish
+  puttingOn.open = false
+  if (!dish) return
+  const result = boardModule.putDishOn(dish.id, lines)
+  if (!result) return
+  hapticConfirm()
+  // The toast comes once the picker has closed: 200ms after (--dur-toast-delay,
+  // none under reduced motion).
+  setTimeout(() => showShoppingResult(result, { text: t.shopping.putOnDone(result.count), undo: true }, dish.title), motionMs('toast-delay'))
+}
+watch(() => puttingOn.open, async (isOpen) => {
+  if (isOpen) return
+  await nextTick()
+  dialog.value?.querySelector<HTMLElement>('[data-put-on-list]')?.focus()
 })
 
 // "Kopieren" (#402): a sheet over the detail with the Boards to copy the Dish
@@ -411,6 +438,7 @@ watch(editing, async (isEditing) => {
           @delete="onDelete"
           @cook="origin => actOnDish(boardModule.cookDish, { origin })"
           @plan="onPlan"
+          @put-on="onPutOn"
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
           @comment="showComment"
           @vote="showVote"
@@ -469,6 +497,53 @@ watch(editing, async (isEditing) => {
           :from="today"
           :dishes-on="boardModule.dishesOn"
           @pick="planOn"
+        />
+      </PickerSurface>
+      <PickerSurface
+        v-model:open="puttingOn.open"
+        :title="t.shopping.putOn"
+        :close-label="t.dish.closeMenu"
+        :anchor="puttingOn.anchor"
+        :width="400"
+        above
+      >
+        <!-- The Dish's thumb and title under the picker's title (the title
+             only in the popover; a sheet has its own). -->
+        <template
+          v-if="located"
+          #header="{ popover }"
+        >
+          <div class="flex items-center gap-3">
+            <!-- The picker is in the detail's markup even when closed, so its
+                 thumb is only made while it is open: the detail keeps its one
+                 image. -->
+            <span class="block h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[14px] bg-surface-muted">
+              <DishImage
+                v-if="puttingOn.open"
+                :image-url="located.dish.imageUrl"
+                :focus="located.dish.imageFocus"
+                :placeholder="located.dish.placeholder"
+                lazy
+              />
+            </span>
+            <div class="min-w-0">
+              <h2
+                v-if="popover"
+                class="font-display text-[22px] font-medium leading-tight"
+              >
+                {{ t.shopping.putOn }}
+              </h2>
+              <p class="truncate text-[13.5px] font-medium leading-snug text-text-muted">
+                {{ located.dish.title }}
+              </p>
+            </div>
+          </div>
+        </template>
+        <IngredientPicker
+          v-if="located"
+          :open="puttingOn.open"
+          :ingredients="ingredients"
+          @pick="putOn"
         />
       </PickerSurface>
       <AppSheet

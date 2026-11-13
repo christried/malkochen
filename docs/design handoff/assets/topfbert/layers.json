@@ -923,5 +923,28 @@
     "reducedMotion": "frame 0, no blink",
     "pause": "off screen, under a sheet or dialog, app in background",
     "theme": "one drawing for light and dark"
+  },
+  "shoppingEmpty": {
+    "added": "R15",
+    "use": "EmptyShoppingList card (\"Noch nichts zu kaufen.\")",
+    "pose": "wink",
+    "file": "topfbert-wink.svg",
+    "layers": "tour.poses.wink (no new files)",
+    "mirror": false,
+    "size": {
+      "phone": [
+        78,
+        84
+      ],
+      "desktop": [
+        100,
+        107
+      ]
+    },
+    "viewBox": "0 -20 140 150",
+    "loop": "tour idle for wink on the shared 6 s clock: r11-breathe (whole, ×2), r11-steam (steam_1, steam_2), r11-ieo / r11-iec (left eye only), r12-tip (hat)",
+    "reducedMotion": "frame 0, no blink",
+    "pause": "off screen, under a sheet or dialog, app in background",
+    "theme": "one drawing for light and dark"
   }
 }

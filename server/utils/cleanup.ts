@@ -4,6 +4,7 @@ import { comment, cooking, dish, user } from '../db/schema'
 import { sweepImages } from '../image-store/sweep'
 import { purgeExpiredBoards } from './archived-boards'
 import { RESTORABLE_FOR } from './dishes'
+import { purgeDeletedShoppingItems } from './shopping-list'
 import { storage } from './image-store'
 
 // The daily cleanup job (#195; server/api/cron/cleanup.get.ts). Archived
@@ -16,6 +17,8 @@ export interface CleanupReport {
   purgedDishes: number
   purgedCookings: number
   purgedComments: number
+  // Shopping Items deleted or cleared a day ago or longer (shopping-list.ts).
+  purgedShoppingItems: number
   deletedImages: number
 }
 
@@ -27,6 +30,7 @@ export async function cleanUp(): Promise<CleanupReport> {
   const purgedDishes = await db.delete(dish).where(lt(dish.deletedAt, deletedBefore)).returning({ id: dish.id })
   const purgedCookings = await db.delete(cooking).where(lt(cooking.deletedAt, deletedBefore)).returning({ id: cooking.id })
   const purgedComments = await db.delete(comment).where(lt(comment.deletedAt, deletedBefore)).returning({ id: comment.id })
+  const purgedShoppingItems = await purgeDeletedShoppingItems()
 
   // Read after the purge, so the purged Dishes' images go in the same sweep.
   // An Archived Dish, or a Dish on an Archived Board, keeps its image
@@ -38,7 +42,7 @@ export async function cleanUp(): Promise<CleanupReport> {
   const referenced = new Set([...dishImages, ...pictures].map(row => row.url))
   const deleted = await sweepImages({ storage, isReferenced: url => referenced.has(url), referenceCount: referenced.size })
 
-  return { purgedBoards, purgedDishes: purgedDishes.length, purgedCookings: purgedCookings.length, purgedComments: purgedComments.length, deletedImages: deleted.length }
+  return { purgedBoards, purgedDishes: purgedDishes.length, purgedCookings: purgedCookings.length, purgedComments: purgedComments.length, purgedShoppingItems, deletedImages: deleted.length }
 }
 
 // Removes a stored image at once, unless a Dish or a user still refers to

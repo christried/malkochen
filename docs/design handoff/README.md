@@ -2,7 +2,7 @@
 
 Overview page: `../Malkochen Handoff.dc.html` (renders everything below).
 
-Where things are in this repo: this folder holds the whole handoff, every round from R4 on. Each round's "Overview page" below is in `docs/design process files/`, with the other editable design files, which expect this folder next to them as `handoff/`. The offline overviews of R13 and R14 are in `overviews/`.
+Where things are in this repo: this folder holds the whole handoff, every round from R4 on. Each round's "Overview page" below is in `docs/design process files/`, with the other editable design files, which expect this folder next to them as `handoff/`. The offline overviews of R13, R14 and R15 are in `overviews/`.
 
 
 ## 1 · Design tokens
@@ -165,3 +165,50 @@ Overview page: `../Malkochen Week Plan.dc.html` (every screen and state, phone 3
 - The phone Dish FAB is hidden in Woche.
 - On desktop the pickers are popovers anchored to their trigger, not centred dialogs.
 - Open, not designed: Planned Dishes of an archived Dish. Suggestion: they leave the plan with it and come back with Archivieren's undo.
+
+## 11 · R15: Shopping List (Einkaufsliste)
+Overview page: `Malkochen Shopping List.dc.html`, offline as `overviews/R15 Shopping List (standalone).html` (every screen and state, phone 360 and desktop 1280, light and dark, motion and reduced motion per state, every new string). Copy the new files into `docs/design handoff/` next to the existing ones. Existing files only get additions.
+
+**What's new**
+- One Shopping List per Board, shared by every Member, no names on lines. A third view: "Spalten | Woche | Einkauf". A line is text as written; nothing is added up or merged.
+- "Sonstiges" first, then one group per Dish in the order it was put on. Lines in Recipe order, ticked lines sink to the bottom of their group. A Dish that left the Board keeps its group with the title only and "Nicht mehr auf dem Board".
+- Ways in: "Auf die Einkaufsliste" at the end of the Zutaten card (IngredientPicker, all ticked, untick what you have), "Woche auf die Einkaufsliste" in the WeekHeader (today to Sunday, no sheet), and typing into "Sonstiges" (phone FAB, desktop field).
+- Tick with the whole row, untick, change (long-press / pencil), delete (swipe / trash) with undo, "Erledigte entfernen" with undo. Works offline with the existing "Noch nicht gesendet" mark.
+
+**Files**
+- `components.json`: ShoppingList, ShoppingGroup, ShoppingItem, ShoppingItemInput, IngredientPicker, EmptyShoppingList. ViewSwitch, WeekHeader, Toast, BottomSheet, Button and RecipeSection get an `r15` note.
+- `interactions.json`: Tick, Untick and rise, Delete with undo, Clear ticked with undo, Type items in a row, Change a line, Put a Dish on, Put a week on, Switch to the list. Each with a ms timeline and reduced motion.
+- `tokens.json` / `tokens.css` / `tailwind.preset.js`: color.derived.tick, tick-ink, strike, swipe-danger (light + dark); size.shop; layout.shopping; motion.sink-hold; z.shop-field. Nothing existing changed.
+- `assets/r15-keyframes.css`: r15-check, r15-press, r15-strike, r15-grow, r15-arrive, r15-collapse, r15-swipe-out, r15-squash, r15-wash, r15-pop-up, r15-popout.
+- `assets/topfbert/layers.json → shoppingEmpty`: placement, size and loop for Topfbert wink in the empty list. No new SVG: it reuses the R12 wink pose and its layers.
+- Overview frames (design reference, not for build): `ShopScreen.dc.html`.
+
+**Motion, in short**
+- UI motion: view switch (thumb settle, views shift 28px, groups stagger 40ms, FAB pops back), tick (pebble pop, check draw, strike, 600ms hold, sink settle 480), untick and rise, line arrive and leave, swipe to delete, clear ticked (30ms stagger), picker sheet / popover, week button squash and day pulse, toasts.
+- Motion graphic: Topfbert wink in the empty list, the R12 Tour idle built in Vue from layers (no video). Reduced motion: the still.
+- Reduced motion everywhere: no scale, no travel, no stagger; states change at once or fade 200ms. The 600ms hold before a ticked line moves stays.
+
+**Final wording**
+- Switch: "Einkauf" (EN "Shopping", IT "Spesa"). View title: "Einkaufsliste".
+- Dish detail: "Auf die Einkaufsliste" (kept). Picker: "Nimm raus, was du schon zu Hause hast.", "5 Zutaten hinzufügen" / "1 Zutat hinzufügen", at 0 "Keine Zutat ausgewählt". Toast "5 Zutaten auf der Einkaufsliste." (kept) + Rückgängig.
+- Week: "Woche auf die Einkaufsliste" (kept), toast "4 Gerichte auf der Einkaufsliste." (kept) + Rückgängig; "Alles schon auf der Einkaufsliste." (kept) without action.
+- Delete: "Eintrag entfernt." (kept) + Rückgängig. Clear: "Erledigte entfernen" (kept), "3 Einträge entfernt." (kept) + Rückgängig.
+- Fields: "Neu in Sonstiges", "Was fehlt noch?", "Eintrag ändern"; FAB "Eintrag hinzufügen".
+- Groups: "Sonstiges", "Zweimal auf der Liste" / "Dreimal …" / "{n}-mal …", "Nicht mehr auf dem Board".
+- Empty: "Noch nichts zu kaufen.", "So kommt etwas auf die Liste:", "Im Gericht holst du seine Zutaten dazu.", "Im Wochenplan kommt die ganze Woche auf einmal.", "Oder du schreibst selbst etwas auf.", "Etwas aufschreiben".
+- All other new strings are in section 09 of the overview page.
+
+**Where I decided differently from the brief**
+- Label "Einkauf", not "Liste" (every Column is a list) or "Einkaufsliste" (too long for a third). Phone: the switch now spans the whole 328px row.
+- "Auf die Einkaufsliste" closes the Zutaten card instead of joining the share row, which is full at 328px.
+- Phone FAB in Einkauf adds a line through a field docked on the keyboard; no permanent field at the top of the phone list. Desktop has the field in the Sonstiges column.
+- A Dish put on twice keeps one group: its lines double side by side and the heading says "Zweimal auf der Liste".
+- Phone: "Woche auf die Einkaufsliste" is a labelled second header line, not an icon beside ‹ ›.
+- "Woche": a Dish planned twice between today and Sunday goes on twice; what already has a group is skipped, so tapping again is harmless.
+- Desktop: a 360px Sonstiges column plus two masonry columns for the Dish groups, instead of one wide list.
+- A ticked line waits 600ms before it sinks; unticking returns it to its Recipe place (typed lines: typing order).
+- "Erledigte entfernen" is hidden, not disabled, when nothing is ticked.
+- Editing is a 450ms long-press (longer than R14's 300ms drag) so a resting thumb in the shop doesn't open a field; saving an empty text deletes the line with undo.
+- "Alles schon auf der Einkaufsliste." has no undo, since nothing changed.
+- Ticked lines stay until someone clears them, so the next person in the shop sees what's done.
+- Open, not designed: a Dish whose Recipe changes after it was put on. Suggestion: the list keeps the old lines (they are text as written).

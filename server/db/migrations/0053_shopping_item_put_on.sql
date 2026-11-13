@@ -1,0 +1,1 @@
+ALTER TABLE "shopping_item" ADD COLUMN "put_on" integer DEFAULT 1 NOT NULL;

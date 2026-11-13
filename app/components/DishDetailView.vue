@@ -31,6 +31,9 @@ const emit = defineEmits<{
   cook: [origin: Point]
   // "Einplanen": the page opens the day picker at the button.
   plan: [anchor: HTMLElement]
+  // "Auf die Einkaufsliste" (#537): the page opens the Ingredient picker at
+  // the button.
+  putOn: [anchor: HTMLElement]
   deleteCooking: [cooking: CookingView]
   comment: [result: CommentResult]
   vote: [result: VoteResult]
@@ -368,13 +371,15 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
       </div>
 
       <!-- The Recipe (#496), after the share row, so the actions above it
-           never move and it starts in the same place on every Dish. -->
+           never move and it starts in the same place on every Dish. Its
+           Zutaten card ends with "Auf die Einkaufsliste" (#537). -->
       <RecipeSection
         :dish="dish"
         :may-edit="mayEdit"
         :unsent="boardModule.hasUnsentRecipe(dish.id)"
         @edit="emit('editRecipe')"
         @found="emit('recipeFound')"
+        @put-on="anchor => emit('putOn', anchor)"
       />
 
       <DishHistory

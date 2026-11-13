@@ -87,6 +87,26 @@ export function plannedDishIdParam(event: H3Event): string {
   return id
 }
 
+// Same for a Shopping Item (CONTEXT.md): one that doesn't exist, one deleted
+// or cleared and one on someone else's Board look alike. The app drops a
+// change sent late to one of them without telling the Member (ADR 0012).
+export function shoppingItemNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Shopping Item not found' })
+}
+
+// A Shopping Item id from the route. Anything that isn't a UUID can't be one.
+export function shoppingItemIdParam(event: H3Event): string {
+  const id = getRouterParam(event, 'id') ?? ''
+  if (!UUID.test(id)) throw shoppingItemNotFound()
+  return id
+}
+
+// The refusal for a Shopping List that would hold more than its limit
+// (shared/shopping-list.ts SHOPPING_LIMITS).
+export function shoppingListFull() {
+  return createError({ statusCode: 409, statusMessage: 'Shopping List full' })
+}
+
 // Same for a Cooking: one that doesn't exist and one on someone else's Board look alike.
 export function cookingNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Cooking not found' })

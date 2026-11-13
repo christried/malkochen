@@ -41,6 +41,13 @@ export type EventDetails =
   | { plannedDish: string, day: string }
   | { plannedDish: string, from: string, to: string }
   | { plannedDish: string, member?: string }
+  // shopping_item_added, _changed, _ticked, _unticked, _deleted: which
+  // Shopping Item; shopping_items_cleared, shopping_items_restored,
+  // shopping_items_taken_back and dish_put_on_shopping_list: how many;
+  // week_put_on_shopping_list: the week's Monday and how many Dishes went on.
+  | { shoppingItem: string }
+  | { items: number }
+  | { week: string, dishes: number }
   // cooking_recorded, cooking_deleted, cooking_restored, and
   // snackbert_report_sent (#424, which Cooking was reported).
   | { cooking: string, undo?: true }
@@ -209,6 +216,28 @@ export function plannedDishEvent(kind: EventKind, user: string, movedId?: string
     user,
     details,
     when: movedId === undefined ? undefined : sql`changed.id = ${movedId}`,
+  }
+}
+
+// The event of a Shopping List write (`changed`, its shopping_item rows,
+// with `board_id`; `dish_id` too for putting a Dish on), on the item's
+// Board. One per item for an item's own writes; the others are recorded
+// once (withEvents `once`) and count the rows they changed.
+export function shoppingEvent(kind: 'shopping_item_added' | 'shopping_item_changed' | 'shopping_item_ticked' | 'shopping_item_unticked' | 'shopping_item_deleted' | 'shopping_items_cleared' | 'shopping_items_restored' | 'shopping_items_taken_back' | 'dish_put_on_shopping_list', user: string): EventValues
+export function shoppingEvent(kind: 'week_put_on_shopping_list', user: string, week: string): EventValues
+export function shoppingEvent(kind: EventKind, user: string, week?: string): EventValues {
+  const count = sql`(select count(*)::int from changed)`
+  const details = kind === 'week_put_on_shopping_list'
+    ? sql`jsonb_build_object('week', ${week}::text, 'dishes', (select count(distinct dish_id)::int from changed))`
+    : kind === 'shopping_items_cleared' || kind === 'shopping_items_restored' || kind === 'shopping_items_taken_back' || kind === 'dish_put_on_shopping_list'
+      ? sql`jsonb_build_object('items', ${count})`
+      : sql`jsonb_build_object('shoppingItem', changed.id)`
+  return {
+    kind,
+    board: sql`changed.board_id`,
+    dish: kind === 'dish_put_on_shopping_list' ? sql`changed.dish_id` : undefined,
+    user,
+    details,
   }
 }
 
