@@ -6,6 +6,7 @@ import type { PlanEntry } from '~/board/board-module'
 import { addWeeks, isCurrentWeek, isPastDay, weekDays, weekStart } from '~/board/week-days'
 import { dishPath } from '~~/shared/address'
 import { NOTICE_MS, type Toast } from '~/utils/toast'
+import { WASH_FROM_MS, washDays } from '~/utils/week-wash'
 
 // The Week Plan (CONTEXT.md: Week Plan, Planned Dish; ADR 0014; handoff R14):
 // the Board's week, Monday to Sunday, one week at a time, a view beside the
@@ -98,16 +99,50 @@ watch(() => props.visible, async (visible) => {
   await settleScroll()
 })
 onMounted(() => void settleScroll())
-onBeforeUnmount(() => clearTimeout(enteringTimer))
+onBeforeUnmount(() => {
+  clearTimeout(enteringTimer)
+  washTimers.forEach(timer => clearTimeout(timer))
+})
 
 // ---- "Woche auf die Einkaufsliste" (#537) ----
 
 // For the current and later weeks, for every Member: puts the Dishes planned
 // from today (or the shown week's Monday) to its Sunday on the Shopping List.
-// The toast says how many went on once the server has answered.
+// The bag squashes on every tap. Once the server has answered, the toast says
+// how many Dishes went on and offers "Rückgängig", which takes exactly those
+// items off the list again; the days with Planned Dishes pulse. A week that
+// was on already gets a short notice, without an undo.
 const puttingWeek = ref(false)
+// Counts the taps: the bag's squash is keyed by it, so every tap plays it anew.
+const squashes = ref(0)
+// "Alles schon auf der Einkaufsliste." stays a shorter time than a notice.
+const NOTHING_MS = 3000
+const { showShoppingResult } = useShoppingResult(toast => emit('toast', toast))
+// The day pulses still to come, so a new answer starts them over.
+let washTimers: ReturnType<typeof setTimeout>[] = []
+
+// Each day with Planned Dishes from today to Sunday pulses its butter ring.
+// The class is removed and added again, so a second answer restarts it.
+// Nothing pulses for reduced motion.
+function washWeek() {
+  washTimers.forEach(timer => clearTimeout(timer))
+  washTimers = []
+  if (prefersReducedMotion()) return
+  const washed = washDays(days.value, isPast, day => (plan.value[day] ?? []).length)
+  for (const { day, at } of washed) {
+    washTimers.push(setTimeout(() => {
+      const el = surface.value?.querySelector<HTMLElement>(`.week-day[data-day="${day}"]`)
+      if (!el) return
+      el.classList.remove('day-wash')
+      void el.offsetWidth
+      el.classList.add('day-wash')
+    }, at))
+  }
+}
+
 async function putWeekOn() {
   if (puttingWeek.value) return
+  squashes.value++
   puttingWeek.value = true
   try {
     const result = await boardModule.putWeekOn(shownMonday.value)
@@ -118,10 +153,20 @@ async function putWeekOn() {
       return
     }
     hapticConfirm()
-    emit('toast', {
-      text: result.unsent ? t.shopping.weekLater : result.dishes === 0 ? t.shopping.weekNothing : t.shopping.weekDone(result.dishes),
-      duration: NOTICE_MS / 2,
-    })
+    if (result.unsent) {
+      emit('toast', { text: t.shopping.weekLater, duration: NOTICE_MS / 2 })
+      return
+    }
+    if (result.dishes === 0) {
+      emit('toast', { text: t.shopping.weekNothing, duration: NOTHING_MS })
+      return
+    }
+    // The toast comes with the first pulse, 120ms after the answer.
+    washWeek()
+    const { dishes, undo } = result
+    setTimeout(() => {
+      showShoppingResult({ count: dishes, undo }, { text: t.shopping.weekDone(dishes), undo: true })
+    }, prefersReducedMotion() ? 0 : WASH_FROM_MS)
   }
   finally {
     puttingWeek.value = false
@@ -391,7 +436,10 @@ function onSwipeEnd(event: PointerEvent) {
     @pointerup="onSwipeEnd"
     @pointercancel="swipe = null"
   >
-    <div class="flex min-h-12 items-center gap-2 desktop:min-h-[60px] desktop:gap-3">
+    <!-- The week's header: on a phone the title and ‹ › on one line, the
+         "Woche auf die Einkaufsliste" line below them (it wraps); on desktop
+         one row, the button before "Heute" and the arrows. -->
+    <div class="flex min-h-12 flex-wrap items-center gap-x-2 desktop:min-h-[60px] desktop:gap-x-3">
       <Transition
         name="title"
         mode="out-in"
@@ -406,6 +454,26 @@ function onSwipeEnd(event: PointerEvent) {
         </h2>
       </Transition>
       <span class="hidden flex-1 desktop:block" />
+      <!-- "Woche auf die Einkaufsliste" (#537, R15): left out on weeks gone by.
+           A ghost line under the title on a phone (last in the row, its own
+           line), a secondary pill on desktop. -->
+      <button
+        v-if="!pastWeek"
+        type="button"
+        class="order-last flex h-9 w-full items-center gap-2 rounded-pill pl-[9px] pr-[11px] text-[14px] font-semibold transition-[transform,opacity] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60 desktop:order-none desktop:h-10 desktop:w-auto desktop:bg-surface desktop:px-4 desktop:text-button desktop:shadow-small"
+        :disabled="puttingWeek"
+        data-put-week-on
+        @click="putWeekOn"
+      >
+        <AppIcon
+          :key="squashes"
+          name="bag-plus"
+          :size="17"
+          class="shrink-0"
+          :class="{ 'put-week-bag': squashes > 0 }"
+        />
+        {{ t.shopping.putWeekOn }}
+      </button>
       <Transition name="today">
         <button
           v-if="!current"
@@ -444,38 +512,6 @@ function onSwipeEnd(event: PointerEvent) {
       </button>
     </div>
 
-    <!-- "Woche auf die Einkaufsliste" (#537): left out on weeks gone by. -->
-    <button
-      v-if="!pastWeek"
-      type="button"
-      class="mt-2 flex h-10 items-center gap-2 rounded-pill bg-surface px-4 text-button shadow-small transition-[transform,opacity] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
-      :disabled="puttingWeek"
-      data-put-week-on
-      @click="putWeekOn"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="16"
-        height="16"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.4"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-        class="shrink-0"
-      ><path d="M3 4h2.5l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h7.9a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.6" /><circle
-        cx="9.5"
-        cy="19.5"
-        r="1.3"
-      /><circle
-        cx="17"
-        cy="19.5"
-        r="1.3"
-      /></svg>
-      {{ t.shopping.putWeekOn }}
-    </button>
-
     <div
       class="relative"
       :class="{ 'desktop:min-h-[calc(100dvh-250px)]': true }"
@@ -490,7 +526,7 @@ function onSwipeEnd(event: PointerEvent) {
       <Transition :name="`week-${direction}`">
         <div
           :key="shownMonday"
-          class="days mt-4 flex flex-col gap-4 desktop:mt-0 desktop:grid desktop:grid-cols-week desktop:items-stretch desktop:gap-3"
+          class="days mt-1.5 flex flex-col gap-4 desktop:mt-0 desktop:grid desktop:grid-cols-week desktop:items-stretch desktop:gap-3"
           :class="{ entering }"
           data-testid="week-days"
         >
@@ -806,5 +842,21 @@ function onSwipeEnd(event: PointerEvent) {
 }
 @keyframes fade-out {
   to { opacity: 0; }
+}
+
+/* "Woche auf die Einkaufsliste": the bag squashes on every tap (its key
+   restarts it), and each day with Dishes put on washes a butter ring
+   (WeekPlan's washWeek adds the class). Reduced motion: neither. */
+.put-week-bag {
+  animation: r15-squash var(--dur-pop) var(--ease-pop);
+}
+:deep(.week-day.day-wash) {
+  animation: r15-wash 900ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .put-week-bag,
+  :deep(.week-day.day-wash) {
+    animation: none;
+  }
 }
 </style>

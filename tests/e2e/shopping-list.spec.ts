@@ -4,7 +4,7 @@ import { ALLOWLISTED } from '../support/test-auth-env'
 import { signIn } from './auth'
 import { gotoHydrated, reloadHydrated } from './hydration'
 import { removeUsers } from './seed'
-import { addDish, newBoard, nextMonday, planOn } from './week'
+import { addDish, newBoard, nextMonday, planOn, today } from './week'
 
 // The Shopping List (#536, #537; CONTEXT.md: Shopping List, Shopping Item):
 // the switch to it, typing items, ticking, changing and removing them,
@@ -62,6 +62,14 @@ test('the switch shows the Shopping List, empty at first, and the choice survive
   await expect(radio(page, 'Woche')).toBeChecked()
   await radio(page, 'Woche').press('ArrowLeft')
   await expect(radio(page, 'Spalten')).toBeChecked()
+
+  // ← and → cycle: ← from Spalten comes round to Einkauf, → from Einkauf to Spalten.
+  await radio(page, 'Spalten').press('ArrowLeft')
+  await expect(radio(page, 'Einkauf')).toBeChecked()
+  await expect(shoppingList(page)).toBeVisible()
+  await radio(page, 'Einkauf').press('ArrowRight')
+  await expect(radio(page, 'Spalten')).toBeChecked()
+  await expect(page.getByTestId('columns')).toBeVisible()
 })
 
 test('items are typed into "Sonstiges" one after another, ticked to the bottom, unticked, changed and removed with "Rückgängig"', async ({ page }) => {
@@ -212,4 +220,92 @@ test('"Woche auf die Einkaufsliste" puts the week\'s Dishes on, says how many, t
   // side by side, in Recipe order.
   await expect(linesOf(page, 'Linsensuppe')).toHaveText(['Linsen', 'Linsen', 'Tomaten', 'Tomaten'])
   await expect(linesOf(page, 'Pasta')).toHaveText(['Penne'])
+})
+
+// "Rückgängig" after "Woche auf die Einkaufsliste" (#537, R15) takes just the
+// week's Dishes off the list, and the Sonstiges line stays; a week that is on
+// already offers no "Rückgängig".
+test('"Rückgängig" after "Woche auf die Einkaufsliste" takes the week\'s Dishes off the list again, and "Alles schon" has none', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Wochenrückgang')
+  const soup = await dishWith(page, boardId, 'Linsensuppe', ['Linsen', 'Tomaten'])
+  const pasta = await dishWith(page, boardId, 'Pasta', ['Penne'])
+  const monday = nextMonday()
+  await planOn(page, boardId, soup, monday)
+  await planOn(page, boardId, pasta, monday)
+  await planOn(page, boardId, soup, monday)
+  expect((await page.request.post(`/api/boards/${boardId}/shopping-items`, { data: { id: crypto.randomUUID(), text: 'Brot' } })).status()).toBe(201)
+  await gotoHydrated(page, `/b/${boardId}`)
+  await radio(page, 'Woche').click()
+  await page.getByRole('button', { name: 'Nächste Woche' }).click()
+
+  await page.getByRole('button', { name: 'Woche auf die Einkaufsliste' }).click()
+  await expect(page.getByText('2 Gerichte auf der Einkaufsliste.')).toBeVisible()
+  await page.getByRole('button', { name: 'Rückgängig' }).click()
+
+  // Only the week's Dishes went; the Sonstiges line stayed.
+  await radio(page, 'Einkauf').click()
+  await expect(linesOf(page, 'Linsensuppe')).toHaveCount(0)
+  await expect(linesOf(page, 'Pasta')).toHaveCount(0)
+  await expect(linesOf(page, 'Sonstiges')).toHaveText(['Brot'])
+
+  // Back on the week, which is still the one shown: put on again, then it is all on.
+  await radio(page, 'Woche').click()
+  await page.getByRole('button', { name: 'Woche auf die Einkaufsliste' }).click()
+  await expect(page.getByText('2 Gerichte auf der Einkaufsliste.')).toBeVisible()
+  await page.getByRole('button', { name: 'Woche auf die Einkaufsliste' }).click()
+  await expect(page.getByText('Alles schon auf der Einkaufsliste.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveCount(0)
+})
+
+// The placement of "Woche auf die Einkaufsliste" in the Week Plan's header
+// (#537, R15): on a phone a ghost line under the title, the day list below
+// it; on desktop a pill in the header row, before "Heute" and the arrows.
+test('on a phone the "Woche auf die Einkaufsliste" line sits under the week title, and the days start right below it', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 })
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Telefonwochenzeile')
+  // A Dish today keeps the empty week's card out of the way of the day list.
+  await planOn(page, boardId, await addDish(page, boardId, 'Gemüsepfanne'), today())
+  await gotoHydrated(page, `/b/${boardId}`)
+  await radio(page, 'Woche').click()
+
+  const title = (await page.getByTestId('week-title').boundingBox())!
+  const button = (await page.locator('[data-put-week-on]').boundingBox())!
+  const days = (await page.getByTestId('week-days').boundingBox())!
+  const next = (await page.getByRole('button', { name: 'Nächste Woche' }).boundingBox())!
+  // Below the title, its left edge with the title's; the arrows stay on the title's line.
+  expect(button.y).toBeGreaterThanOrEqual(title.y + title.height - 1)
+  expect(Math.abs(button.x - title.x)).toBeLessThanOrEqual(4)
+  expect(next.y).toBeLessThan(button.y)
+  expect(button.height).toBe(36)
+  // The day list starts 6px below the line.
+  expect(days.y - (button.y + button.height)).toBeGreaterThanOrEqual(0)
+  expect(days.y - (button.y + button.height)).toBeLessThanOrEqual(8)
+})
+
+test('on the desktop the "Woche auf die Einkaufsliste" pill sits in the header row, before "Heute" and the arrows', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Schreibtischwochenzeile')
+  await gotoHydrated(page, `/b/${boardId}`)
+  await radio(page, 'Woche').click()
+
+  const header = async () => ({
+    button: (await page.locator('[data-put-week-on]').boundingBox())!,
+    previous: (await page.getByRole('button', { name: 'Vorherige Woche' }).boundingBox())!,
+  })
+  const { button, previous } = await header()
+  expect(button.height).toBe(40)
+  expect(button.x + button.width).toBeLessThan(previous.x)
+  // In the header row: its middle level with the arrows'.
+  expect(Math.abs(button.y + button.height / 2 - (previous.y + previous.height / 2))).toBeLessThanOrEqual(4)
+
+  // Browsed away, "Heute" appears: it is after the pill and before the arrows.
+  await page.getByRole('button', { name: 'Nächste Woche' }).click()
+  const after = await header()
+  const todayButton = (await page.locator('[data-today-button]').boundingBox())!
+  expect(after.button.x + after.button.width).toBeLessThanOrEqual(todayButton.x)
+  expect(todayButton.x + todayButton.width).toBeLessThan(after.previous.x)
 })
