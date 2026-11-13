@@ -32,6 +32,15 @@ test('two lines ticked in the hold keep both places, in the order they had', () 
   expect(ids(heldOrder(afterTicks, new Map([['a', 0], ['b', 1]])))).toEqual(['a', 'b', 'c', 'd'])
 })
 
+test('an untick of a line that has sunk holds it at the bottom, then the module moves it back to its Recipe place', () => {
+  // Recipe order a, b, c, d; b was ticked and sank: a, c, d, b. Unticking it,
+  // the module puts it back at its Recipe place (a, b, c, d). Held at the
+  // place it had on screen, it waits there first.
+  const afterUntick = [line('a'), line('b'), line('c'), line('d')]
+  expect(ids(heldOrder(afterUntick, new Map([['b', 3]])))).toEqual(['a', 'c', 'd', 'b'])
+  expect(ids(heldOrder(afterUntick, new Map()))).toEqual(['a', 'b', 'c', 'd'])
+})
+
 test('a line ticked last of its group stays last', () => {
   const items = [line('a'), line('b'), line('c')]
   expect(ids(heldOrder(items, new Map([['c', 2]])))).toEqual(['a', 'b', 'c'])
@@ -82,11 +91,11 @@ test('the row follows a leftward finger and stays where it is for a rightward on
   expect(swipeOffset(0)).toBe(0)
 })
 
-// ---- swipeLeaves: past 35% of the row, or a flick, deletes; a short swipe springs back ----
+// ---- swipeLeaves: past 50% of the row, or a flick, deletes; a short swipe springs back ----
 
-test('a swipe past 35% of the row width leaves', () => {
-  expect(swipeLeaves(-120, 340, 0)).toBe(true)
-  expect(swipeLeaves(-118, 340, 0)).toBe(false)
+test('a swipe past 50% of the row width leaves', () => {
+  expect(swipeLeaves(-172, 340, 0)).toBe(true)
+  expect(swipeLeaves(-168, 340, 0)).toBe(false)
 })
 
 test('a fast flick leftwards leaves, even short', () => {

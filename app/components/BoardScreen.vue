@@ -1447,34 +1447,36 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
       @landed="onFlightLanded"
     />
 
-    <!-- In the Shopping List it adds a line to "Sonstiges" through the add bar
-         (every Member may); on desktop the list has its own field instead. -->
-    <button
-      v-if="mayAdd || inShopping"
-      v-show="!selecting && (inColumns || (inShopping && !shoppingAdding))"
-      type="button"
-      class="fab fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
-      :class="{ 'fab-prompt': isEmpty && inColumns, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt, 'desktop:hidden': inShopping }"
-      :aria-label="inShopping ? t.shopping.addItem : t.addDish.open"
-      :data-tooltip="inShopping ? t.shopping.addItem : t.addDish.open"
-      data-tour="add-button"
-      @click="inShopping ? shoppingList?.openAdd() : addDish()"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="28"
-        height="28"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        aria-hidden="true"
-      ><path d="M12 5v14M5 12h14" /></svg>
-      <span
-        class="fab-aura aura"
-        aria-hidden="true"
-      />
-    </button>
+    <Transition :enter-active-class="inShopping ? 'fab-pop' : ''">
+      <!-- In the Shopping List it adds a line to "Sonstiges" through the add bar
+           (every Member may); on desktop the list has its own field instead. -->
+      <button
+        v-if="mayAdd || inShopping"
+        v-show="!selecting && (inColumns || (inShopping && !shoppingAdding))"
+        type="button"
+        class="fab fixed bottom-[calc(1.5rem+var(--offline-bar,0px))] right-5 z-fab flex h-[66px] w-[66px] items-center justify-center text-on-inverse active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus tablet:bottom-[calc(2rem+var(--offline-bar,0px))] tablet:right-8 tablet:h-[70px] tablet:w-[70px]"
+        :class="{ 'fab-prompt': isEmpty && inColumns, 'fab-lifted': toast, 'fab-lifted-more': toast?.howWasIt, 'desktop:hidden': inShopping }"
+        :aria-label="inShopping ? t.shopping.addItem : t.addDish.open"
+        :data-tooltip="inShopping ? t.shopping.addItem : t.addDish.open"
+        data-tour="add-button"
+        @click="inShopping ? shoppingList?.openAdd() : addDish()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="28"
+          height="28"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          aria-hidden="true"
+        ><path d="M12 5v14M5 12h14" /></svg>
+        <span
+          class="fab-aura aura"
+          aria-hidden="true"
+        />
+      </button>
+    </Transition>
 
     <SelectionBar
       v-if="selecting"
@@ -1781,6 +1783,17 @@ function celebrateCooking({ dish, undo, settled }: BoardResult, origin?: Point |
 }
 .fab-lifted {
   translate: 0 -76px;
+}
+/* Back in Einkauf (from Woche, or once the add bar closes) the FAB pops in
+   (handoff: pop 460). The Transition only adds this class for the list, so the
+   Columns' FAB appears as it always has. Reduced motion: --dur-pop is 0. */
+.fab-pop {
+  animation: fab-pop-in var(--dur-pop) var(--ease-pop);
+}
+@keyframes fab-pop-in {
+  from {
+    scale: 0;
+  }
 }
 /* Above the Gekocht toast's two rows (#334), on a phone, where the toast
    spans the screen. */

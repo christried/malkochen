@@ -2,7 +2,10 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { ShoppingEntry, ShoppingGroup as Group } from '~/board/shopping-list'
 import type { Toast } from '~/utils/toast'
-import { keyboardInset } from '~/utils/shopping-layout'
+import { prefersReducedMotion } from '~/utils/motion'
+import { keyboardInset } from '~/utils/keyboard'
+import { playGroupLeave } from '~/utils/shopping-leave'
+import { SHOPPING_GROUP_GAP, useShoppingMasonry } from '~/composables/useShoppingMasonry'
 
 // The Shopping List (CONTEXT.md: Shopping List, Shopping Item; ADR 0015;
 // #536): the Board's list of what to buy, a view beside the Columns and the
@@ -41,70 +44,18 @@ const ticked = computed(() => groups.value.reduce((n, g) => n + g.items.filter(i
 // Sonstiges, and the Dish groups in list order. On desktop Sonstiges has its
 // column even without lines (its field is there), so it gets an empty group.
 const wide = useMediaQuery('(min-width: 1200px)')
-const sonstiges = computed(() => groups.value.find(g => g.dishId === null))
-const other = computed<Group>(() => sonstiges.value ?? { dishId: null, title: null, dish: null, times: 1, items: [] })
+// Sonstiges as the module has it: undefined while it has no lines.
+const sonstigesIfLines = computed(() => groups.value.find(g => g.dishId === null))
+const sonstigesGroup = computed<Group>(() => sonstigesIfLines.value ?? { dishId: null, title: null, dish: null, times: 1, items: [] })
 const dishGroups = computed(() => groups.value.filter(g => g.dishId !== null))
 // A group's place on the phone's one column, after Sonstiges.
 const orderOf = computed(() => new Map(dishGroups.value.map((g, i) => [g.dishId, i + 1])))
 
-// ---- Desktop: two masonry columns for the Dish groups ----
-// Each new Dish group goes into the shorter column. The column of each group
-// is set when the set of Dish groups changes, from the groups' heights
-// (measured with a ResizeObserver, so a group that has grown counts when the
-// next group comes). Between changes a group stays where it is, so nothing
-// jumps while lines are ticked.
-const GROUP_GAP = 18
+// ---- Desktop: two masonry columns for the Dish groups (useShoppingMasonry) ----
 const root = useTemplateRef<HTMLElement>('root')
-const column = ref(new Map<string | null, 0 | 1>())
-const columns = computed(() => {
-  const cols: [Group[], Group[]] = [[], []]
-  for (const g of dishGroups.value) cols[column.value.get(g.dishId) === 1 ? 1 : 0].push(g)
-  return cols
-})
-const dishKeys = computed(() => dishGroups.value.map(g => g.dishId).join(','))
-const heights = new Map<string, number>()
-let observer: ResizeObserver | undefined
-// The layout was not measured while the list is hidden (its heights are 0
-// then), so the columns are worked out when it shows.
-let stale = true
-function groupElement(id: string): HTMLElement | undefined {
-  return root.value?.querySelector<HTMLElement>(`[data-shopping-group="${id}"]`) ?? undefined
-}
-function assignColumns() {
-  if (!props.visible) {
-    stale = true
-    return
-  }
-  stale = false
-  const ids = dishGroups.value.map(g => g.dishId!)
-  const hs = ids.map((id) => {
-    const el = groupElement(id)
-    if (el) observer?.observe(el)
-    // Measured now, as far as the layout is; the observer's figure is kept
-    // for a group that is not drawn at this moment.
-    return el?.offsetHeight || heights.get(id) || 0
-  })
-  const picked = masonryColumns(hs, GROUP_GAP)
-  column.value = new Map(ids.map((id, i) => [id, picked[i]!]))
-}
-watch(dishKeys, assignColumns, { flush: 'post' })
-// Coming to the list, the columns are worked out a frame later, when the
-// list has been laid out at its real size.
-watch(() => props.visible, (now) => {
-  if (now && stale) requestAnimationFrame(assignColumns)
-}, { flush: 'post' })
-onMounted(() => {
-  observer = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      const el = entry.target as HTMLElement
-      const id = el.dataset.shoppingGroup
-      // A hidden group measures 0: that is no height to keep.
-      if (id && el.offsetHeight > 0) heights.set(id, el.offsetHeight)
-    }
-  })
-  assignColumns()
-})
-onBeforeUnmount(() => observer?.disconnect())
+// The list as a whole, which the add bar scrolls to the top of.
+const list = useTemplateRef<HTMLElement>('list')
+const { columns } = useShoppingMasonry(dishGroups, toRef(props, 'visible'), root)
 
 // ---- Typing an item into "Sonstiges" ----
 
@@ -126,6 +77,9 @@ async function openAdd() {
     return
   }
   setAdding(true)
+  // On a phone the list scrolls to its top, so Sonstiges is in view above the
+  // bar. Reduced motion: at once.
+  list.value?.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
   // The field shows after this tick; focusing it inside the tap keeps the
   // keyboard up on Android.
   await nextTick()
@@ -246,14 +200,28 @@ function remove(entry: ShoppingEntry) {
   showShoppingResult(result, { text: t.shopping.removed, undo: true })
 }
 
+// "Erledigte entfernen": the ticked lines fade one after another, not slide.
+// The flag is up while the removal's own leave runs: the next tick comes
+// after the patch that removes them.
+const clearing = ref(false)
 function clearDone() {
+  clearing.value = true
   const result = boardModule.clearTicked()
+  void nextTick(() => (clearing.value = false))
   if (result) showShoppingResult(result, { text: t.shopping.cleared(result.count), undo: true })
+}
+
+// A group leaving with its last line: its slot closes. The gap it keeps below
+// itself is the column's: 18px on the desktop columns, 14px in the phone's list.
+const PHONE_GROUP_GAP = 14
+function onGroupLeave(el: Element, done: () => void) {
+  void playGroupLeave(el as HTMLElement, clearing.value, wide.value ? SHOPPING_GROUP_GAP : PHONE_GROUP_GAP).then(done)
 }
 </script>
 
 <template>
   <section
+    ref="list"
     class="shopping-list relative mx-auto pb-[130px] desktop:max-w-[1080px] desktop:pb-10"
     :class="{ arriving }"
     :aria-labelledby="titleId"
@@ -324,11 +292,12 @@ function clearDone() {
     >
       <div
         class="contents desktop:flex desktop:w-[360px] desktop:shrink-0 desktop:flex-col desktop:gap-[18px]"
-        :class="{ 'hidden desktop:flex': !sonstiges }"
+        :class="{ 'hidden desktop:flex': !sonstigesIfLines }"
       >
         <ShoppingGroup
-          :group="other"
+          :group="sonstigesGroup"
           :editing-id="editing"
+          :clearing="clearing"
           class="shop-group"
           :style="{ '--shop-i': 0 }"
           @tick="tick"
@@ -352,12 +321,14 @@ function clearDone() {
         tag="div"
         name="group"
         class="contents desktop:flex desktop:min-w-0 desktop:flex-1 desktop:flex-col desktop:gap-[18px]"
+        @leave="onGroupLeave"
       >
         <ShoppingGroup
           v-for="group in col"
           :key="group.dishId ?? 'other'"
           :group="group"
           :editing-id="editing"
+          :clearing="clearing"
           class="shop-group"
           :style="{ order: orderOf.get(group.dishId) ?? 0, '--shop-i': orderOf.get(group.dishId) ?? 0 }"
           @tick="tick"
@@ -391,18 +362,14 @@ function clearDone() {
   }
 }
 
-/* A group coming or going fades; it settles to its place when the groups
-   move. Reduced motion: no moving, a fade. */
+/* A group coming fades; it settles to its place when the groups move. A group
+   going closes its slot in the script (shopping-leave.ts). Reduced motion: no
+   moving, a fade. */
 .group-move {
   transition: transform var(--dur-settle) var(--ease-settle);
 }
-.group-enter-active,
-.group-leave-active {
+.group-enter-active {
   transition: opacity var(--dur-fade) var(--ease-fade);
-}
-.group-leave-active {
-  position: absolute;
-  visibility: hidden;
 }
 .group-enter-from {
   opacity: 0;

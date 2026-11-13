@@ -237,8 +237,9 @@ async function dishRefusal(boardId: string, dishId: string): Promise<PutOnRefusa
 // made and its `line`, its place in the Ingredients), as the Dish's next
 // put-on: each line reads at its place in the Recipe, next to the same line
 // of the earlier put-ons. The group is new, after every other, if the Dish
-// has none on the list; and takes the Dish's title as it is now either way. A refusal if the Dish isn't on the Board
-// (archived, gone, another Board's) or has no Ingredients; 'full' if the
+// has none on the list; and takes the Dish's title as it is now either way.
+// A refusal if the Dish isn't on the Board (archived, gone, another Board's)
+// or has no Ingredients; 'full' if the
 // lines wouldn't fit, and then none goes on; 'taken' if an id is another
 // item's. A repeat (its first id is an item of this Dish the user added)
 // puts nothing on again and answers its items as they are now.

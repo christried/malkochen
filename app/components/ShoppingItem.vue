@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ShoppingEntry } from '~/board/shopping-list'
 import { hapticActivate, hapticLongPress } from '~/utils/haptics'
-import { prefersReducedMotion } from '~/utils/motion'
+import { motionMs, prefersReducedMotion } from '~/utils/motion'
 import { LONG_PRESS_MS, swipeLeaves, swipeOffset, touchAxis, type TouchAxis, velocityPxPerS } from '~/utils/shopping-lines'
 
 // One line of the Shopping List (#536, R15). A tap anywhere on the row ticks
@@ -9,7 +9,7 @@ import { LONG_PRESS_MS, swipeLeaves, swipeOffset, touchAxis, type TouchAxis, vel
 // group moves it) or back on. On a phone a long press changes it, and a swipe
 // left removes it; on a desktop the pencil and the trash appear on hover and
 // focus, and the keys do the same: Space ticks, Enter changes, Delete removes,
-// ↑ and ↓ move between lines. Lines not sent yet are marked "Noch nicht
+// ↑ and ↓ move between lines; a double click with a mouse changes it too. Lines not sent yet are marked "Noch nicht
 // gesendet". While the line is being changed, ShoppingItemInput's edit field
 // stands in for the row. The root is the `li`, so the group's TransitionGroup
 // animates the line itself.
@@ -35,9 +35,6 @@ const row = useTemplateRef<HTMLElement>('row')
 const PULSE_MS = 1000
 // A swipe past this many pixels gives a light buzz, as the handoff's threshold.
 const SWIPE_BUZZ_PX = 96
-// The swipe's leave: 240ms to the left, or a fade under reduced motion.
-const LEAVE_MS = 240
-const REDUCED_LEAVE_MS = 200
 
 // ---- A tick: the motion is for a tick by this Member, not for what arrives ----
 
@@ -58,6 +55,9 @@ let leaveTimer: ReturnType<typeof setTimeout> | undefined
 // The touch was a long press or a swipe, so the click it may leave is not a tick.
 let consumed = false
 let buzzed = false
+// The kind of pointer that last pressed the row: a double click counts with a
+// mouse only.
+let lastPointer = ''
 
 const offset = ref(0)
 const leaving = ref(false)
@@ -76,6 +76,7 @@ const dangerShown = computed(() => {
 
 function onPointerDown(event: PointerEvent) {
   consumed = false
+  lastPointer = event.pointerType
   if (event.pointerType !== 'touch' || !event.isPrimary || leaving.value) return
   press = { id: event.pointerId, x: event.clientX, y: event.clientY }
   earlier = null
@@ -143,12 +144,20 @@ function finish(at: number, cancelled: boolean) {
 
 function leave() {
   leaving.value = true
-  leaveTimer = setTimeout(() => emit('remove'), prefersReducedMotion() ? REDUCED_LEAVE_MS : LEAVE_MS)
+  // The swipe's leave takes the fade token: 240ms to the left, 200ms as a fade under reduced motion.
+  leaveTimer = setTimeout(() => emit('remove'), motionMs('fade'))
 }
 
 function spring() {
   springing.value = true
   offset.value = 0
+}
+
+// A double click on a desktop changes the line. Its two clicks have already
+// ticked and unticked it (each click is a tap), so the tick is as it was, and
+// the edit opens on the tick it had.
+function onDoubleClick() {
+  if (lastPointer !== 'touch') emit('edit')
 }
 
 // A long press or a swipe on a phone is not a tick; a tap is.
@@ -249,6 +258,7 @@ onBeforeUnmount(() => {
           :style="{ transform: rowTransform }"
           data-shopping-tick
           @click="onClick"
+          @dblclick="onDoubleClick"
           @keydown="onKeydown"
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
@@ -350,17 +360,18 @@ onBeforeUnmount(() => {
 /* The pebble: it fills in sage over 180ms; on a tick it pops (r15-check) and
    its check draws (r14-draw, with the path's 20-unit length). */
 .box {
-  transition: background-color 180ms ease, border-color 180ms ease;
+  transition: background-color var(--dur-lift) var(--ease-fade), border-color var(--dur-lift) var(--ease-fade);
 }
 .box .check path {
   stroke-dasharray: 20;
   stroke-dashoffset: 0;
 }
+/* The pop is 380ms, the handoff's (no token); the check starts a stagger after it. */
 .pulsing .box {
-  animation: r15-check 380ms ease;
+  animation: r15-check 380ms var(--ease-fade);
 }
 .pulsing .check path {
-  animation: r14-draw 220ms ease-out 60ms both;
+  animation: r14-draw 220ms ease-out var(--dur-stagger) both;
 }
 
 /* The strike: a background line, so it follows wrapped lines. It draws on a
@@ -372,7 +383,8 @@ onBeforeUnmount(() => {
   background-size: 0% 1.5px;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
-  transition: background-size 200ms ease, color 200ms ease;
+  /* 200ms for the untick's strike and colour (no token). */
+  transition: background-size 200ms var(--ease-fade), color 200ms var(--ease-fade);
 }
 .text.is-ticked {
   background-size: 100% 1.5px;
@@ -384,17 +396,19 @@ onBeforeUnmount(() => {
 
 /* A swipe: the row follows the finger; released it springs back (300ms) or
    leaves to the left (240ms ease-in). */
+/* 300ms for the spring back (no token). The leave is the fade token's 240ms. */
 .row-springing {
   transition: transform 300ms var(--ease-settle);
 }
 .row-leaving {
-  transition: transform 240ms ease-in;
+  transition: transform var(--dur-fade) ease-in;
 }
 
 /* The edit field crossfades with the row, 150ms. */
+/* 150ms for the crossfade (no token). */
 .swap-enter-active,
 .swap-leave-active {
-  transition: opacity 150ms ease;
+  transition: opacity 150ms var(--ease-fade);
 }
 .swap-leave-active {
   position: absolute;
@@ -414,7 +428,7 @@ onBeforeUnmount(() => {
   }
   .row-leaving {
     transform: none !important;
-    transition: opacity 200ms ease;
+    transition: opacity var(--dur-fade) var(--ease-fade);
     opacity: 0;
   }
 }

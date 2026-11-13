@@ -6,6 +6,7 @@ import type { VoteResult } from '~/board/dish-votes'
 import type { CopiedDish } from '~~/server/utils/copies'
 import { boardPath as pathOfBoard, dishAt, dishPath, dishRef } from '~~/shared/address'
 import { boardLabel } from '~~/shared/board'
+import { motionMs } from '~/utils/motion'
 
 // The Dish detail (PRD stories 41–45), a child route of its Board: full-screen
 // on phones, a side panel over the Board from 768px (440px; 480px from
@@ -202,7 +203,9 @@ function putOn(lines: { line: number, text: string }[]) {
   const result = boardModule.putDishOn(dish.id, lines)
   if (!result) return
   hapticConfirm()
-  showShoppingResult(result, { text: t.shopping.putOnDone(result.count), undo: true }, dish.title)
+  // The toast comes once the picker has closed: 200ms after (--dur-toast-delay,
+  // none under reduced motion).
+  setTimeout(() => showShoppingResult(result, { text: t.shopping.putOnDone(result.count), undo: true }, dish.title), motionMs('toast-delay'))
 }
 watch(() => puttingOn.open, async (isOpen) => {
   if (isOpen) return
