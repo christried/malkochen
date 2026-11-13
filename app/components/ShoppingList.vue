@@ -172,6 +172,18 @@ watch(() => props.visible, (now) => {
   if (!now) closeAdd()
 })
 
+// On coming to the list the groups come in one after another (`arriving`
+// lasts past the last one's settle). Only then: a redraw doesn't repeat it.
+const arriving = ref(false)
+let arrivingTimer: ReturnType<typeof setTimeout> | undefined
+watch(() => props.visible, (now) => {
+  if (!now) return
+  arriving.value = true
+  clearTimeout(arrivingTimer)
+  arrivingTimer = setTimeout(() => (arriving.value = false), 1200)
+}, { immediate: true })
+onBeforeUnmount(() => clearTimeout(arrivingTimer))
+
 // ---- A line ----
 
 function tick(entry: ShoppingEntry) {
@@ -210,6 +222,7 @@ function clearDone() {
 <template>
   <section
     class="shopping-list relative mx-auto pb-[130px] desktop:max-w-[1080px] desktop:pb-10"
+    :class="{ arriving }"
     :aria-labelledby="titleId"
     data-testid="shopping-list"
   >
@@ -310,6 +323,25 @@ function clearDone() {
 </template>
 
 <style scoped>
+/* Coming to the list: the groups rise 14px and fade in, 40ms apart from
+   140ms (--shop-i is each group's place), settling over 480ms. Reduced
+   motion: none. */
+.arriving .shop-group {
+  animation: shop-arrive var(--dur-settle) var(--ease-settle) backwards;
+  animation-delay: calc(140ms + var(--shop-i, 0) * 40ms);
+}
+@keyframes shop-arrive {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arriving .shop-group {
+    animation: none;
+  }
+}
+
 /* A group coming or going fades; it settles to its place when the groups
    move. Reduced motion: no moving, a fade. */
 .group-move {
