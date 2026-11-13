@@ -8,10 +8,16 @@ import { keyboardInset } from '~/utils/shopping-layout'
 // #536): the Board's list of what to buy, a view beside the Columns and the
 // Week Plan, the same for every Member. This component keeps the state and
 // makes the Board calls; the groups, lines and fields are ShoppingGroup,
-// ShoppingItem, ShoppingItemInput and EmptyShoppingList. "Erledigte
-// entfernen" clears every ticked line, with "Rückgängig" in a toast. Built
-// from the R14 patterns (cards, pills, toasts) until the Shopping List's own
-// handoff (#527) arrives.
+// ShoppingItem, ShoppingItemInput and EmptyShoppingList.
+//
+// Phone: one column, Sonstiges first. Lines are typed through the FAB, which
+// opens an add bar docked on the keyboard.
+// Desktop: a Sonstiges column with its field at the end, and two masonry
+// columns of Dish groups; "n" focuses the field. With nothing on the list,
+// EmptyShoppingList stands in, with its field on desktop. Coming to the list,
+// the groups rise in turn; what is said after a tick, an add or a removal goes
+// to a polite live region. "Erledigte entfernen" clears every ticked line,
+// with "Rückgängig" in a toast.
 const props = defineProps<{
   board: BoardView
   // The Shopping List is the view showing (and not covered by the search).
@@ -132,13 +138,23 @@ function onBarFocusOut(event: FocusEvent) {
   if (next instanceof Node && (event.currentTarget as HTMLElement).contains(next)) return
   closeAdd()
 }
+// What assistive tech hears after a change: one polite live line, cleared
+// first so the same words twice are read twice.
+const live = ref('')
+function say(text: string) {
+  live.value = ''
+  void nextTick(() => (live.value = text))
+}
+
 function addItem() {
-  const result = boardModule.addShoppingItem(draft.value)
+  const line = draft.value.trim()
+  const result = boardModule.addShoppingItem(line)
   if (!result) {
     // An empty Enter closes the bar.
     closeAdd()
     return
   }
+  say(t.shopping.addedLive(line))
   draft.value = ''
   showShoppingResult(result)
   // Enter adds and keeps the field: several in a row.
@@ -197,6 +213,7 @@ function tick(entry: ShoppingEntry) {
   const result = boardModule.tickShoppingItem(entry.id, !entry.ticked)
   if (!result) return
   hapticTick()
+  say(entry.ticked ? t.shopping.untickedLive(entry.text) : t.shopping.tickedLive(entry.text))
   showShoppingResult(result)
 }
 
@@ -216,7 +233,9 @@ function cancelEdit() {
 
 function remove(entry: ShoppingEntry) {
   const result = boardModule.deleteShoppingItem(entry.id)
-  if (result) showShoppingResult(result, { text: t.shopping.removed, undo: true })
+  if (!result) return
+  say(t.shopping.removed)
+  showShoppingResult(result, { text: t.shopping.removed, undo: true })
 }
 
 function clearDone() {
@@ -255,6 +274,11 @@ function clearDone() {
       </button>
     </div>
 
+    <p
+      class="sr-only"
+      aria-live="polite"
+      data-shopping-live
+    >{{ live }}</p>
     <!-- The phone's add bar: docked on the keyboard, shown while adding. -->
     <div
       v-show="adding"
