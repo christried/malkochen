@@ -764,7 +764,6 @@ export const it: Strings = {
     full: 'La lista della spesa è piena: al massimo 500 voci.',
     dishGone: (title: string) => `“${title}” non è più sulla board.`,
     putOn: 'Nella lista della spesa',
-    pickTitle: 'Cosa ti serve?',
     pickText: 'Togli quello che hai già a casa.',
     putOnConfirm: (count: number) => count === 0 ? 'Nessun ingrediente scelto' : count === 1 ? 'Aggiungi 1 ingrediente' : `Aggiungi ${number(count)} ingredienti`,
     putOnDone: (count: number) => count === 1 ? '1 ingrediente nella lista della spesa.' : `${number(count)} ingredienti nella lista della spesa.`,
