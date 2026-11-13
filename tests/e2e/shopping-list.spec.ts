@@ -160,6 +160,7 @@ test('"Auf die Einkaufsliste" in the Dish detail puts the lines left ticked on, 
   await page.getByRole('link', { name: 'Omas Linsensuppe' }).first().click()
   const detail = page.getByRole('dialog', { name: 'Omas Linsensuppe' })
   await detail.getByRole('button', { name: 'Auf die Einkaufsliste' }).click()
+  await expect(page.getByRole('dialog', { name: 'Auf die Einkaufsliste' })).toBeVisible()
   const picker = page.getByTestId('ingredient-picker')
   await expect(picker.getByRole('checkbox')).toHaveCount(3)
   for (const box of await picker.getByRole('checkbox').all()) await expect(box).toBeChecked()
@@ -175,6 +176,27 @@ test('"Auf die Einkaufsliste" in the Dish detail puts the lines left ticked on, 
   await page.keyboard.press('Escape')
   await radio(page, 'Einkauf').click()
   await expect(linesOf(page, 'Omas Linsensuppe')).toHaveText(['250 g rote Linsen', '1 Dose gehackte Tomaten'])
+})
+
+test('"Rückgängig" in the toast after "Auf die Einkaufsliste" takes the Dish off the list again', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Rückgängig küche')
+  await dishWith(page, boardId, 'Kichererbsen', ['Kichererbsen', 'Tahini'])
+  await gotoHydrated(page, `/b/${boardId}`)
+
+  await page.getByRole('link', { name: 'Kichererbsen' }).first().click()
+  await page.getByRole('dialog', { name: 'Kichererbsen' }).getByRole('button', { name: 'Auf die Einkaufsliste' }).click()
+  await page.getByTestId('ingredient-picker').getByRole('button', { name: '2 Zutaten hinzufügen' }).click()
+  await expect(page.getByText('2 Zutaten auf der Einkaufsliste.')).toBeVisible()
+
+  // Exact: the Board's pill is named after this Board, which says "Rückgängig" too.
+  await page.getByRole('button', { name: 'Rückgängig', exact: true }).click()
+  await page.keyboard.press('Escape')
+  await radio(page, 'Einkauf').click()
+  // The Board had nothing else on its list, so it is empty again.
+  await expect(page.getByTestId('empty-shopping-list')).toContainText('Noch nichts zu kaufen.')
+  await expect(linesOf(page, 'Kichererbsen')).toHaveCount(0)
 })
 
 test('unticking every line turns the confirm off', async ({ page }) => {

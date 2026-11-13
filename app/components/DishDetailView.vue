@@ -49,9 +49,6 @@ const t = useStrings()
 const boardModule = useBoardModule()
 const mayEdit = computed(() => boardModule.may('editDishes', props.dish.id))
 const mayMove = computed(() => boardModule.may('moveDishes'))
-// "Auf die Einkaufsliste", for every Member, only for a Dish with Ingredients
-// (#537). Nothing else about the list shows here.
-const hasIngredients = computed(() => boardModule.ingredientsToPutOn(props.dish.id).length > 0)
 const quietButton = 'flex min-w-0 items-center justify-center rounded-pill bg-surface-muted py-3.5 text-center text-button text-text transition-transform duration-tap ease-tap active:scale-95 disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-focus'
 // With "Einplanen" the row has three, so each gives up a little room.
 const shareButton = computed(() => `${quietButton} ${mayMove.value ? 'gap-1.5 px-2' : 'gap-2 px-3'}`)
@@ -373,53 +370,16 @@ const pillClass = 'absolute bottom-4 left-4 flex items-center gap-2 rounded-pill
         </NeedsNet>
       </div>
 
-      <!-- "Auf die Einkaufsliste" (#537): under the share row, as quiet as
-           it, for a Dish with Ingredients. It works offline (an Unsent
-           Change) once the Dish has been sent. -->
-      <NeedsNet
-        v-if="hasIngredients"
-        :note="false"
-        :allowed="!boardModule.isUnsentAdd(dish.id)"
-      >
-        <button
-          type="button"
-          :class="`${quietButton} w-full gap-2 px-3`"
-          aria-haspopup="dialog"
-          data-put-on-list
-          @click="emit('putOn', $event.currentTarget as HTMLElement)"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.4"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-            class="shrink-0"
-          ><path d="M3 4h2.5l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h7.9a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.6" /><circle
-            cx="9.5"
-            cy="19.5"
-            r="1.3"
-          /><circle
-            cx="17"
-            cy="19.5"
-            r="1.3"
-          /></svg>
-          {{ t.shopping.putOn }}
-        </button>
-      </NeedsNet>
-
       <!-- The Recipe (#496), after the share row, so the actions above it
-           never move and it starts in the same place on every Dish. -->
+           never move and it starts in the same place on every Dish. Its
+           Zutaten card ends with "Auf die Einkaufsliste" (#537). -->
       <RecipeSection
         :dish="dish"
         :may-edit="mayEdit"
         :unsent="boardModule.hasUnsentRecipe(dish.id)"
         @edit="emit('editRecipe')"
         @found="emit('recipeFound')"
+        @put-on="anchor => emit('putOn', anchor)"
       />
 
       <DishHistory

@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import type { ShoppingEntry, ShoppingGroup as Group } from '~/board/shopping-list'
+import { morphOpen } from '~/utils/dish-morph'
+import { heldOrder, SINK_HOLD_MS } from '~/utils/shopping-lines'
 import { dishPath } from '~~/shared/address'
 
-// One group of the Shopping List (#536): "Sonstiges" first, then one group per
-// Dish in the order put on. Its Dish's image and title open its detail while
-// the Dish is on the Board; once it has gone, the title stays alone. Its lines
-// are ShoppingItem rows; a line's events come up here with the line attached.
-defineProps<{
+// One group of the Shopping List (#536, R15): "Sonstiges" first, then one
+// group per Dish in the order put on. Its Dish's heading opens the detail
+// while the Dish is on the Board, its image morphing as a card's does; once
+// it has gone, the title stays alone. A Dish put on twice says so under its
+// title. Its lines are ShoppingItem rows; a line's events come up here with
+// the line attached. A line ticked by this Member waits 600ms where it was
+// before it sinks to the bottom of the group.
+const props = defineProps<{
   group: Group
   editingId: string | null
 }>()
@@ -20,21 +25,77 @@ const emit = defineEmits<{
 
 const t = useStrings()
 const address = useOpenBoardAddress()
+// The heading's title, which names the group for its lines (aria-labelledby).
+const titleId = useId()
+// How the group is named for its lines' labels.
+const groupName = computed(() => props.group.dishId === null ? t.shopping.other : (props.group.title ?? t.shopping.other))
+
+// ---- The lines' order: a ticked line holds its place for the hold ----
+
+// The place each line held when this Member ticked it, while it waits.
+const held = ref(new Map<string, number>())
+const holds = new Map<string, ReturnType<typeof setTimeout>>()
+const lines = computed(() => heldOrder(props.group.items, held.value))
+
+function holdAt(id: string, place: number) {
+  release(id)
+  held.value = new Map(held.value).set(id, place)
+  holds.set(id, setTimeout(() => release(id), SINK_HOLD_MS))
+}
+
+function release(id: string) {
+  clearTimeout(holds.get(id))
+  holds.delete(id)
+  if (!held.value.has(id)) return
+  const next = new Map(held.value)
+  next.delete(id)
+  held.value = next
+}
+
+onBeforeUnmount(() => {
+  for (const timer of holds.values()) clearTimeout(timer)
+})
+
+// A tap on a line. Ticking holds it where it is; unticking brings it back to
+// its Recipe place at once, with no hold.
+function onTick(entry: ShoppingEntry) {
+  if (entry.ticked) release(entry.id)
+  else holdAt(entry.id, lines.value.findIndex(line => line.id === entry.id))
+  emit('tick', entry)
+}
+
+// ---- The heading opens the Dish ----
+
+// Tapping the heading morphs the Dish's image into its detail, as a card does
+// (R14). Clicks for a new tab or window are left to the link.
+function onHeadingClick(event: MouseEvent) {
+  const dish = props.group.dish
+  if (!dish || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  const path = dishPath(address.value, dish)
+  const thumb = (event.currentTarget as HTMLElement).querySelector<HTMLElement>('[data-thumb]')
+  void morphOpen(thumb, path, async () => {
+    await navigateTo(path)
+  })
+}
 </script>
 
 <template>
   <section
-    class="rounded-card bg-surface p-2 shadow-card"
+    class="rounded-card bg-surface p-1.5 shadow-card"
     :data-shopping-group="group.dishId ?? 'other'"
   >
-    <h3 class="flex min-h-11 items-center gap-3 px-2 pt-1">
+    <h3 @click.capture="onHeadingClick">
       <NuxtLink
         v-if="group.dish"
         :to="dishPath(address, group.dish)"
-        class="flex min-w-0 items-center gap-3 rounded-[14px] focus-visible:outline-2 focus-visible:outline-focus"
+        class="group/heading flex min-h-14 min-w-0 items-center gap-3 rounded-[14px] py-1.5 pr-2.5 pl-1.5 transition-transform duration-tap ease-tap active:scale-[.98] motion-reduce:active:scale-100 desktop:hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus"
         :aria-label="t.shopping.openDish(group.dish.title)"
       >
-        <span class="block h-10 w-10 shrink-0 overflow-hidden rounded-[12px] bg-surface-muted">
+        <span
+          data-thumb
+          class="block h-11 w-11 shrink-0 overflow-hidden rounded-[15px_13px_16px_14px] bg-surface-muted"
+        >
           <DishImage
             :image-url="group.dish.imageUrl"
             :focus="group.dish.imageFocus"
@@ -42,24 +103,57 @@ const address = useOpenBoardAddress()
             lazy
           />
         </span>
-        <span class="truncate font-display text-[19px] font-medium leading-tight">{{ group.title }}</span>
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span
+            :id="titleId"
+            class="line-clamp-2 font-display text-[18px] font-medium leading-[1.2]"
+          >{{ group.title }}</span>
+          <span
+            v-if="group.times >= 2"
+            class="mt-0.5 text-[12.5px] font-medium text-text-muted"
+          >{{ t.shopping.times(group.times) }}</span>
+        </span>
+        <AppIcon
+          name="forward"
+          :size="17"
+          class="shrink-0 opacity-45 transition-opacity duration-tap desktop:group-hover/heading:opacity-90"
+        />
       </NuxtLink>
       <span
+        v-else-if="group.dishId !== null"
+        class="flex min-h-14 min-w-0 items-center gap-3 py-1.5 pr-2.5 pl-1.5"
+      >
+        <span
+          class="block h-11 w-11 shrink-0"
+          aria-hidden="true"
+        />
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span
+            :id="titleId"
+            class="line-clamp-2 font-display text-[18px] font-medium leading-[1.2]"
+          >{{ group.title }}</span>
+          <span class="mt-0.5 text-[12.5px] font-medium text-text-muted">{{ t.shopping.gone }}</span>
+        </span>
+      </span>
+      <span
         v-else
-        class="truncate font-display text-[19px] font-medium leading-tight"
-      >{{ group.dishId === null ? t.shopping.other : group.title }}</span>
+        :id="titleId"
+        class="block pt-2.5 pr-2.5 pb-1.5 pl-3 font-display text-[19px] font-medium leading-tight"
+      >{{ t.shopping.other }}</span>
     </h3>
     <TransitionGroup
       tag="ul"
       name="line"
       class="mt-1"
+      :aria-labelledby="titleId"
     >
       <ShoppingItem
-        v-for="entry in group.items"
+        v-for="entry in lines"
         :key="entry.id"
         :entry="entry"
         :editing="editingId === entry.id"
-        @tick="emit('tick', entry)"
+        :group-name="groupName"
+        @tick="onTick(entry)"
         @edit="emit('edit', entry)"
         @save="text => emit('save', entry, text)"
         @cancel="emit('cancel')"
@@ -71,21 +165,18 @@ const address = useOpenBoardAddress()
 </template>
 
 <style scoped>
-/* A tick: the line settles to the bottom of its group (move, settle 480ms);
-   one coming or going fades. Reduced motion: no moving, a fade. */
+/* The lines: one settling to its place moves (settle 480ms); a new line
+   arrives (460ms); one going fades. Reduced motion: no moving, the rest as
+   it is (the hold stays, in the script). */
 .line-move {
-  transition: translate var(--dur-settle) var(--ease-settle);
+  transition: transform var(--dur-settle) var(--ease-settle);
 }
-.line-enter-active,
-.line-leave-active {
-  transition: opacity var(--dur-fade) var(--ease-fade);
+.line-enter-active {
+  animation: r15-arrive 460ms var(--ease-settle);
 }
 .line-leave-active {
   position: absolute;
   visibility: hidden;
-}
-.line-enter-from {
-  opacity: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .line-move {

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { SHOPPING_LIMITS } from '~~/shared/shopping-list'
 
-// The Shopping List's text field in two variants (#536). "add" types items
-// into "Sonstiges": v-model is the draft, Enter submits, and the parent
+// The Shopping List's text field in two variants (#536, R15). "add" types
+// items into "Sonstiges": v-model is the draft, Enter submits, and the parent
 // refocuses the field through the exposed focus() so several go in a row.
-// "edit" changes a line's text in place: it starts from the line's text and
-// keeps its own copy while typing, saves on submit, and cancels on Escape or
-// the cross. The edit field takes the focus when it appears.
+// "edit" changes a line's text in place (R15): it starts from the line's text,
+// its text selected, and keeps its own copy while typing. Enter or leaving the
+// field saves; an empty text removes the line instead; Escape cancels. The
+// delete button in the field removes the line. The edit field takes the focus
+// when it appears.
 const props = defineProps<{
   variant: 'add' | 'edit'
   text?: string
@@ -15,11 +17,15 @@ const emit = defineEmits<{
   submit: []
   save: [text: string]
   cancel: []
+  remove: []
 }>()
 
 const t = useStrings()
 const draft = defineModel<string>({ default: '' })
 const edited = ref(props.text ?? '')
+// Once the field has saved, cancelled or removed, what comes after (its blur,
+// say) is ignored.
+let settled = false
 
 const field = useTemplateRef<HTMLInputElement>('field')
 const fieldId = useId()
@@ -32,8 +38,29 @@ function blur() {
 defineExpose({ focus, blur })
 
 onMounted(() => {
-  if (props.variant === 'edit') field.value?.focus()
+  if (props.variant !== 'edit') return
+  field.value?.focus()
+  field.value?.select()
 })
+
+function finish() {
+  if (settled) return
+  settled = true
+  if (edited.value.trim() === '') emit('remove')
+  else emit('save', edited.value)
+}
+
+function cancel() {
+  if (settled) return
+  settled = true
+  emit('cancel')
+}
+
+function remove() {
+  if (settled) return
+  settled = true
+  emit('remove')
+}
 </script>
 
 <template>
@@ -84,7 +111,7 @@ onMounted(() => {
   <form
     v-else
     class="flex min-h-14 flex-1 items-center gap-2 px-2"
-    @submit.prevent="emit('save', edited)"
+    @submit.prevent="finish"
   >
     <label class="min-w-0 flex-1">
       <span class="sr-only">{{ t.shopping.editLabel }}</span>
@@ -97,22 +124,24 @@ onMounted(() => {
         :maxlength="SHOPPING_LIMITS.characters"
         class="h-11 w-full rounded-pill bg-surface-muted px-4 text-body outline-none focus-visible:outline-2 focus-visible:outline-focus"
         data-shopping-edit
-        @keydown.esc.prevent="emit('cancel')"
+        @keydown.esc.prevent="cancel"
+        @blur="finish"
       >
     </label>
-    <button
-      type="submit"
-      class="h-11 shrink-0 rounded-pill bg-inverse px-4 text-button text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-    >
-      {{ t.shopping.save }}
-    </button>
+    <!-- Pressing the button must not blur the field first (that would save): the press is kept, the click removes. -->
     <button
       type="button"
-      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
-      :aria-label="t.shopping.cancel"
-      @click="emit('cancel')"
+      class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-swipe-danger text-on-swipe-danger transition-transform duration-tap ease-tap active:scale-95 motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      :aria-label="t.shopping.remove(text ?? '')"
+      data-shopping-remove
+      @pointerdown.prevent
+      @mousedown.prevent
+      @click="remove"
     >
-      <AppIcon name="close" />
+      <AppIcon
+        name="trash"
+        :size="18"
+      />
     </button>
   </form>
 </template>

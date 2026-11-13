@@ -884,8 +884,6 @@ export const de = {
     tickedLive: (text: string) => `${text} erledigt.`,
     untickedLive: (text: string) => `${text} wieder offen.`,
     addedLive: (text: string) => `${text} hinzugefügt.`,
-    save: 'Speichern',
-    cancel: 'Abbrechen',
     clearDone: 'Erledigte entfernen',
     // The empty list: how things get on it, one line each.
     emptyTitle: 'Noch nichts zu kaufen.',
@@ -903,7 +901,6 @@ export const de = {
     // "Auf die Einkaufsliste" in the Dish detail: its sheet of Ingredients,
     // all ticked, and the toast after.
     putOn: 'Auf die Einkaufsliste',
-    pickTitle: 'Was brauchst du?',
     pickText: 'Nimm raus, was du schon zu Hause hast.',
     // At 0 the button is off and says why.
     putOnConfirm: (count: number) => count === 0 ? 'Keine Zutat ausgewählt' : count === 1 ? '1 Zutat hinzufügen' : `${number(count)} Zutaten hinzufügen`,

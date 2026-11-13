@@ -16,13 +16,19 @@ import { prefersReducedMotion, wait } from '~/utils/motion'
 // edited while malkochen didn't answer carries "Noch nicht gesendet" on its
 // header (`unsent`). Editing is its own mode, which the page opens (`edit`).
 // A Recipe taller than two screens with both lists gets the sticky switch
-// between them (RecipeSwitch).
+// between them (RecipeSwitch). "Auf die Einkaufsliste" (#537) closes the
+// Zutaten card, for a Dish with Ingredients: it opens the Ingredient picker.
 const props = defineProps<{ dish: DishView, mayEdit: boolean, unsent: boolean }>()
 // `found`: a Recipe arrived by itself (from the search) while this section is
 // out of sight, so nothing was seen; the page says so in a Toast.
-const emit = defineEmits<{ edit: [], found: [] }>()
+// `putOn`: the button at the end of the Zutaten card, with the button as anchor.
+const emit = defineEmits<{ edit: [], found: [], putOn: [anchor: HTMLElement] }>()
 const t = useStrings()
 const headingId = useId()
+const boardModule = useBoardModule()
+// Only a Dish with Ingredient lines (blank ones don't count) offers it; it
+// works offline as an Unsent Change once the Dish has been sent.
+const hasIngredients = computed(() => boardModule.ingredientsToPutOn(props.dish.id).length > 0)
 
 // A Recipe found while the Member watched arrives with a show (handoff: A
 // found Recipe arrives): the search card goes first (`leaving`, 300ms) and
@@ -246,7 +252,27 @@ const quietButton = 'transition-transform duration-tap ease-tap active:scale-95 
           kind="ingredients"
           :lines="recipe.ingredients"
           :arriving="rise?.ingredients"
-        />
+        >
+          <NeedsNet
+            v-if="hasIngredients"
+            :note="false"
+            :allowed="!boardModule.isUnsentAdd(dish.id)"
+          >
+            <button
+              type="button"
+              class="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-pill bg-surface text-button text-text shadow-small transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
+              aria-haspopup="dialog"
+              data-put-on-list
+              @click="emit('putOn', $event.currentTarget as HTMLElement)"
+            >
+              <AppIcon
+                name="bag-plus"
+                :size="18"
+              />
+              {{ t.shopping.putOn }}
+            </button>
+          </NeedsNet>
+        </RecipeList>
       </div>
       <div
         v-if="recipe.steps.length"

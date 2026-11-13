@@ -15,7 +15,10 @@ const props = withDefaults(defineProps<{
   width?: number
   // Which edge of the anchor it lines up with.
   align?: 'start' | 'end'
-}>(), { width: 320, align: 'start' })
+  // Rises from the anchor when there is room above it, even with room below
+  // (the Ingredient picker from a button low in the Dish detail).
+  above?: boolean
+}>(), { width: 320, align: 'start', above: false })
 
 const panel = useTemplateRef<HTMLElement>('panel')
 const GAP = 8
@@ -61,13 +64,14 @@ function place() {
   const width = el.offsetWidth
   const height = el.offsetHeight
   const below = box.bottom + GAP + height <= innerHeight - EDGE
-  const above = box.top - GAP - height >= EDGE
-  const top = below || !above ? Math.max(EDGE, Math.min(box.bottom + GAP, innerHeight - EDGE - height)) : box.top - GAP - height
+  const room = box.top - GAP - height >= EDGE
+  const upward = props.above ? room : !below && room
+  const top = upward ? box.top - GAP - height : Math.max(EDGE, Math.min(box.bottom + GAP, innerHeight - EDGE - height))
   const wanted = props.align === 'end' ? box.right - width : box.left
   el.style.left = `${Math.max(EDGE, Math.min(wanted, innerWidth - EDGE - width))}px`
   el.style.top = `${top}px`
-  el.dataset.above = String(!below && above)
-  el.style.transformOrigin = `${props.align === 'end' ? 'right' : 'left'} ${!below && above ? 'bottom' : 'top'}`
+  el.dataset.above = String(upward)
+  el.style.transformOrigin = `${props.align === 'end' ? 'right' : 'left'} ${upward ? 'bottom' : 'top'}`
 }
 
 function onPressAnywhere(event: PointerEvent) {
