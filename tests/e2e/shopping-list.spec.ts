@@ -208,6 +208,8 @@ test('"Woche auf die Einkaufsliste" puts the week\'s Dishes on, says how many, t
   await expect(page.getByText('Alles schon auf der Einkaufsliste.')).toBeVisible()
 
   await radio(page, 'Einkauf').click()
-  await expect(linesOf(page, 'Linsensuppe')).toHaveText(['Linsen', 'Tomaten'])
+  // The soup is planned twice that week, so it went on twice: its lines
+  // side by side, in Recipe order.
+  await expect(linesOf(page, 'Linsensuppe')).toHaveText(['Linsen', 'Linsen', 'Tomaten', 'Tomaten'])
   await expect(linesOf(page, 'Pasta')).toHaveText(['Penne'])
 })
