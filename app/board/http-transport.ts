@@ -43,7 +43,7 @@ export function httpTransport(): BoardTransport {
     clearShoppingItems: (boardId, late) => asWrite($fetch<{ ids: string[] }>(`/api/boards/${boardId}/shopping-items/clear`, { method: 'POST', body: { ...late } })),
     restoreShoppingItems: (boardId, ids, late) => asWrite($fetch<ShoppingItemView[]>(`/api/boards/${boardId}/shopping-items/restore`, { method: 'POST', body: { ids, ...late } })),
     takeBackShoppingItems: (boardId, ids, late) => asWrite($fetch<{ ids: string[] }>(`/api/boards/${boardId}/shopping-items/take-back`, { method: 'POST', body: { ids, ...late } })),
-    putDishOnShoppingList:(boardId, put, late) => asWrite($fetch<ShoppingItemView[]>(`/api/boards/${boardId}/shopping-items/dish`, { method: 'POST', body: { ...put, ...late } })),
+    putDishOnShoppingList: (boardId, put, late) => asWrite($fetch<ShoppingItemView[]>(`/api/boards/${boardId}/shopping-items/dish`, { method: 'POST', body: { ...put, ...late } })),
     putWeekOnShoppingList: (boardId, week, late) => asWrite($fetch<WeekPutOn>(`/api/boards/${boardId}/shopping-items/week`, { method: 'POST', body: { week, ...late } })),
     openDish: dishId => asWrite($fetch<DishHistory>(`/api/dishes/${dishId}/open`, { method: 'POST' })),
     writeComment: (dishId, text, late) => asWrite($fetch<CommentView>(`/api/dishes/${dishId}/comments`, { method: 'POST', body: { text, ...late } })),

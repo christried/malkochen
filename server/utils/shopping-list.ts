@@ -239,9 +239,8 @@ async function dishRefusal(boardId: string, dishId: string): Promise<PutOnRefusa
 // of the earlier put-ons. The group is new, after every other, if the Dish
 // has none on the list; and takes the Dish's title as it is now either way.
 // A refusal if the Dish isn't on the Board (archived, gone, another Board's)
-// or has no Ingredients; 'full' if the
-// lines wouldn't fit, and then none goes on; 'taken' if an id is another
-// item's. A repeat (its first id is an item of this Dish the user added)
+// or has no Ingredients; 'full' if the lines wouldn't fit, and then none
+// goes on; 'taken' if an id is another item's. A repeat (its first id is an item of this Dish the user added)
 // puts nothing on again and answers its items as they are now.
 export async function putDishOn(
   boardId: string,
@@ -300,7 +299,8 @@ export function isMonday(day: string): boolean {
 // collected as the Board is when it arrives. Dishes that have a group on the
 // list already, have no Ingredients or are archived are skipped. 'past' for
 // a week that is over; 'full' if their lines wouldn't fit, and then none
-// goes on. Answers how many Dishes went on (each counted once, however many times), and their items.
+// goes on. Answers how many Dishes went on (each counted once, however many
+// times), and their items.
 export async function putWeekOn(
   boardId: string,
   userId: string,

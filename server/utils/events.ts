@@ -43,8 +43,8 @@ export type EventDetails =
   | { plannedDish: string, member?: string }
   // shopping_item_added, _changed, _ticked, _unticked, _deleted: which
   // Shopping Item; shopping_items_cleared, shopping_items_restored,
-  // shopping_items_taken_back and dish_put_on_shopping_list: how many; week_put_on_shopping_list: the
-  // week's Monday and how many Dishes went on.
+  // shopping_items_taken_back and dish_put_on_shopping_list: how many;
+  // week_put_on_shopping_list: the week's Monday and how many Dishes went on.
   | { shoppingItem: string }
   | { items: number }
   | { week: string, dishes: number }

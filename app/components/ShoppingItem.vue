@@ -9,8 +9,8 @@ import { LONG_PRESS_MS, swipeLeaves, swipeOffset, touchAxis, type TouchAxis, vel
 // group moves it) or back on. On a phone a long press changes it, and a swipe
 // left removes it; on a desktop the pencil and the trash appear on hover and
 // focus, and the keys do the same: Space ticks, Enter changes, Delete removes,
-// ↑ and ↓ move between lines; a double click with a mouse changes it too. Lines not sent yet are marked "Noch nicht
-// gesendet". While the line is being changed, ShoppingItemInput's edit field
+// ↑ and ↓ move between lines; a double click with a mouse changes it too.
+// Lines not sent yet are marked "Noch nicht gesendet". While the line is being changed, ShoppingItemInput's edit field
 // stands in for the row. The root is the `li`, so the group's TransitionGroup
 // animates the line itself.
 const props = defineProps<{
