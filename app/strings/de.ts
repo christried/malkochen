@@ -857,20 +857,42 @@ export const de = {
     title: 'Einkaufsliste',
     // The group of items that belong to no Dish.
     other: 'Sonstiges',
-    // Typing an item into "Sonstiges"; Enter adds it and keeps the field.
-    addLabel: 'Neuer Eintrag',
+    // Under a Dish group's title: how often the Dish was put on (from
+    // twice), or that it has left the Board. Its heading opens the Dish.
+    times: (count: number) => count === 2 ? 'Zweimal auf der Liste' : count === 3 ? 'Dreimal auf der Liste' : `${number(count)}-mal auf der Liste`,
+    gone: 'Nicht mehr auf dem Board',
+    openDish: (title: string) => `${title} öffnen`,
+    // Typing items into "Sonstiges": on a phone the FAB (`addItem`) and the
+    // empty list's button open a field on the keyboard; on desktop it sits
+    // in the Sonstiges column. Enter adds and keeps the field.
+    addItem: 'Eintrag hinzufügen',
+    addLabel: 'Neu in Sonstiges',
     addPlaceholder: 'Was fehlt noch?',
     add: 'Hinzufügen',
-    // A line: tapping it ticks it off; its buttons change and remove it.
+    // A line: the whole row ticks it (`item` is its label); a long press or
+    // the pencil changes it, a swipe or the trash removes it. `changeAction`
+    // and `removeAction` name those for assistive tech; `removeAction` also
+    // shows under a swiped line.
+    item: (text: string, group: string, ticked: boolean) => `${text}, ${group}, ${ticked ? 'erledigt' : 'nicht erledigt'}`,
     edit: (text: string) => `„${text}“ ändern`,
-    editLabel: 'Eintrag',
+    remove: (text: string) => `„${text}“ entfernen`,
+    changeAction: 'Ändern',
+    removeAction: 'Entfernen',
+    editLabel: 'Eintrag ändern',
+    // Said politely to assistive tech after a tick, an untick and an add.
+    tickedLive: (text: string) => `${text} erledigt.`,
+    untickedLive: (text: string) => `${text} wieder offen.`,
+    addedLive: (text: string) => `${text} hinzugefügt.`,
     save: 'Speichern',
     cancel: 'Abbrechen',
-    remove: (text: string) => `„${text}“ entfernen`,
-    openDish: (title: string) => `${title} öffnen`,
     clearDone: 'Erledigte entfernen',
-    // The empty list, saying how things get on it.
-    emptyTitle: 'Die Einkaufsliste ist leer.',
+    // The empty list: how things get on it, one line each.
+    emptyTitle: 'Noch nichts zu kaufen.',
+    emptyHow: 'So kommt etwas auf die Liste:',
+    emptyFromDish: 'Im Gericht holst du seine Zutaten dazu.',
+    emptyFromWeek: 'Im Wochenplan kommt die ganze Woche auf einmal.',
+    emptyTyped: 'Oder du schreibst selbst etwas auf.',
+    emptyWrite: 'Etwas aufschreiben',
     emptyText: 'Leg ein Gericht aus seinem Detail drauf, die Woche aus dem Wochenplan, oder tipp ein, was fehlt.',
     // Toasts; those after removing come with "Rückgängig".
     removed: 'Eintrag entfernt.',
@@ -882,8 +904,9 @@ export const de = {
     // all ticked, and the toast after.
     putOn: 'Auf die Einkaufsliste',
     pickTitle: 'Was brauchst du?',
-    pickText: 'Nimm raus, was ihr schon da habt.',
-    putOnConfirm: (count: number) => count === 1 ? '1 Zutat hinzufügen' : `${number(count)} Zutaten hinzufügen`,
+    pickText: 'Nimm raus, was du schon zu Hause hast.',
+    // At 0 the button is off and says why.
+    putOnConfirm: (count: number) => count === 0 ? 'Keine Zutat ausgewählt' : count === 1 ? '1 Zutat hinzufügen' : `${number(count)} Zutaten hinzufügen`,
     putOnDone: (count: number) => count === 1 ? '1 Zutat auf der Einkaufsliste.' : `${number(count)} Zutaten auf der Einkaufsliste.`,
     // "Woche auf die Einkaufsliste" on the Week Plan, and its toasts.
     putWeekOn: 'Woche auf die Einkaufsliste',

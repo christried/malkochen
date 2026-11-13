@@ -50,7 +50,7 @@ test('the switch shows the Shopping List, empty at first, and the choice survive
   await expect(radio(page, 'Einkauf')).toBeChecked()
   await expect(shoppingList(page)).toBeVisible()
   await expect(page.getByTestId('columns')).toBeHidden()
-  await expect(page.getByTestId('empty-shopping-list')).toContainText('Die Einkaufsliste ist leer.')
+  await expect(page.getByTestId('empty-shopping-list')).toContainText('Noch nichts zu kaufen.')
   await expect(page.getByRole('button', { name: 'Gericht hinzufügen' })).toBeHidden()
 
   await reloadHydrated(page)
@@ -70,7 +70,7 @@ test('items are typed into "Sonstiges" one after another, ticked to the bottom, 
   const boardId = await newBoard(page, 'Einkaufszettel')
   await openList(page, boardId)
 
-  const field = page.getByRole('textbox', { name: 'Neuer Eintrag' })
+  const field = page.getByRole('textbox', { name: 'Neu in Sonstiges' })
   await field.fill('Hafermilch')
   await field.press('Enter')
   await expect(field).toBeFocused()
@@ -180,7 +180,7 @@ test('unticking every line turns the confirm off', async ({ page }) => {
   await page.getByRole('dialog', { name: 'Pasta' }).getByRole('button', { name: 'Auf die Einkaufsliste' }).click()
   const picker = page.getByTestId('ingredient-picker')
   await picker.getByRole('checkbox', { name: 'Penne' }).click()
-  await expect(picker.getByRole('button', { name: '0 Zutaten hinzufügen' })).toBeDisabled()
+  await expect(picker.getByRole('button', { name: 'Keine Zutat ausgewählt' })).toBeDisabled()
 })
 
 test('"Woche auf die Einkaufsliste" puts the week\'s Dishes on, says how many, then that everything is on; a past week doesn\'t offer it', async ({ page }) => {
