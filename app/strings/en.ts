@@ -734,8 +734,6 @@ export const en: Strings = {
     tickedLive: (text: string) => `${text} done.`,
     untickedLive: (text: string) => `${text} open again.`,
     addedLive: (text: string) => `${text} added.`,
-    save: 'Save',
-    cancel: 'Cancel',
     clearDone: 'Clear done',
     emptyTitle: 'Nothing to buy yet.',
     emptyHow: 'How things get on the list:',

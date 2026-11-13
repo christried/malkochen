@@ -884,8 +884,6 @@ export const de = {
     tickedLive: (text: string) => `${text} erledigt.`,
     untickedLive: (text: string) => `${text} wieder offen.`,
     addedLive: (text: string) => `${text} hinzugefügt.`,
-    save: 'Speichern',
-    cancel: 'Abbrechen',
     clearDone: 'Erledigte entfernen',
     // The empty list: how things get on it, one line each.
     emptyTitle: 'Noch nichts zu kaufen.',
