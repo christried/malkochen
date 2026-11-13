@@ -4,6 +4,8 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-13
+
 ### Added
 
 - Every board has a shopping list now, the same for everyone on it: a third view beside Columns and Week. Open a dish and tap Put on the shopping list to add its ingredients (untick what you already have), or put the whole week on at once from the week plan. Type in anything else you need, and in the shop tap a line to tick it off. Clear done tidies the list, and it all works without a connection too.
@@ -100,7 +102,8 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 - Open to everyone: anyone can sign up, with Google or a code we email you, and delete your account yourself whenever you like.
 - What’s new: this page, linked at the end of your settings and marked New after every update.
 
-[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/christried/malkochen/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/christried/malkochen/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/christried/malkochen/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/christried/malkochen/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/christried/malkochen/compare/v1.1.2...v1.2.0
