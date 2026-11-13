@@ -66,6 +66,7 @@ const address = useOpenBoardAddress()
         @remove="emit('remove', entry)"
       />
     </TransitionGroup>
+    <slot />
   </section>
 </template>
 
