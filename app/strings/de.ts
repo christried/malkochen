@@ -894,7 +894,6 @@ export const de = {
     emptyFromWeek: 'Im Wochenplan kommt die ganze Woche auf einmal.',
     emptyTyped: 'Oder du schreibst selbst etwas auf.',
     emptyWrite: 'Etwas aufschreiben',
-    emptyText: 'Leg ein Gericht aus seinem Detail drauf, die Woche aus dem Wochenplan, oder tipp ein, was fehlt.',
     // Toasts; those after removing come with "Rückgängig".
     removed: 'Eintrag entfernt.',
     cleared: (count: number) => count === 1 ? '1 Eintrag entfernt.' : `${number(count)} Einträge entfernt.`,

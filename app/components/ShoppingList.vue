@@ -172,6 +172,12 @@ watch(() => props.visible, (now) => {
   if (!now) closeAdd()
 })
 
+// On desktop an empty list's card has its field, and it takes the focus when
+// the list shows: the next line can be typed at once.
+watch(() => props.visible, (now) => {
+  if (now && isEmpty.value && wide.value) void nextTick(() => deskField.value?.focus())
+}, { immediate: true })
+
 // On coming to the list the groups come in one after another (`arriving`
 // lasts past the last one's settle). Only then: a redraw doesn't repeat it.
 const arriving = ref(false)
@@ -264,7 +270,18 @@ function clearDone() {
       />
     </div>
 
-    <EmptyShoppingList v-if="isEmpty" />
+    <EmptyShoppingList
+      v-if="isEmpty"
+      @write="openAdd"
+    >
+      <ShoppingItemInput
+        ref="deskField"
+        v-model="draft"
+        variant="add"
+        class="hidden desktop:flex"
+        @submit="addItem"
+      />
+    </EmptyShoppingList>
     <!-- One column on a phone: the groups are flex items of this list, in
          order (Sonstiges first). On desktop: Sonstiges, then two columns of
          Dish groups. The column wrappers are `contents` on a phone. -->

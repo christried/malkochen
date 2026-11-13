@@ -759,7 +759,6 @@ export const it: Strings = {
     emptyFromWeek: 'Nel piano settimanale entra tutta la settimana in una volta.',
     emptyTyped: 'Oppure scrivi tu qualcosa.',
     emptyWrite: 'Scrivi qualcosa',
-    emptyText: 'Aggiungi un piatto dal suo dettaglio, la settimana dal piano settimanale, o scrivi cosa manca.',
     removed: 'Voce tolta.',
     cleared: (count: number) => count === 1 ? '1 voce tolta.' : `${number(count)} voci tolte.`,
     failed: 'Non ha funzionato. Riprova.',
