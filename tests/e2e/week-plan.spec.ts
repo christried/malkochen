@@ -336,6 +336,22 @@ test('on a phone the switch has its own row, the week opens on today with "+" in
   await floating.click()
   await expect(page.getByTestId('week-title')).toHaveText(de.week.title(weekStart(today())))
   await expect(floating).toHaveCount(0)
+
+  // The switch fills the 360px phone's row (328px between the 16px gutters),
+  // with the bag on Einkauf. On a narrower phone the words keep their room
+  // and the icons go, in all three segments.
+  const ansicht = page.getByRole('radiogroup', { name: 'Ansicht' })
+  await page.setViewportSize({ width: 360, height: 800 })
+  await expect(ansicht).toBeVisible()
+  expect((await ansicht.boundingBox())!.width).toBe(328)
+  await expect(page.getByRole('radio', { name: 'Einkauf' }).locator('svg path')).toHaveAttribute('d', /^M5\.5 8h13/)
+  await page.setViewportSize({ width: 230, height: 800 })
+  for (const name of ['Spalten', 'Woche', 'Einkauf']) {
+    await expect(page.getByRole('radio', { name })).toHaveText(name)
+    await expect(page.getByRole('radio', { name }).locator('svg')).toHaveCount(0)
+  }
+  await page.setViewportSize({ width: 360, height: 800 })
+  await expect(page.getByRole('radio', { name: 'Einkauf' }).locator('svg')).toHaveCount(1)
 })
 
 // "Einplanen" in the Dish detail (#518).
