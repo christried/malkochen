@@ -25,7 +25,9 @@ The user: "Implement the Spec for the shopping list fully, go through the github
 
 - Commit 48a304b: #530–#533 API done (`server/utils/shopping-list.ts`, endpoints under `server/api/boards/[id]/shopping-items/` and `server/api/shopping-items/`, `shared/shopping-list.ts`, events, admin strings, Datenschutz in `app/legal/datenschutz.ts` (EN "Clear done", IT "Rimuovi completate" — keep the UI button names in step), cleanup). `tests/api/shopping-list.test.ts` 40 tests green; full `pnpm test` green (2311).
 - Next commit: #534 Board module (`app/board/shopping-list.ts` = createShoppingList, groupsOf, placeItem; Unsent kinds shopAdd/shopText/shopTick/shopDelete/shopClear/shopRestore/shopDish/shopWeek in `unsent-changes.ts`, 404 on item writes dropped quietly via goesQuietly; transport; fake server in `tests/client/memory-transport.ts`; `tests/client/shopping-list.test.ts` 31 tests). Client project green (896).
-- Next: #536 view, #537 the two put-on actions, #538 Changelog, then PR + CI.
+- #536/#537 written (uncommitted until the nearby e2e specs pass): `ViewSwitch.vue` 3 segments ('shopping'), `useBoardView.ts`, `ShoppingList.vue`, `IngredientPicker.vue`, `useShoppingResult.ts`, `BoardScreen.vue` (inColumns/inShopping), `BoardSkeleton.vue` switch width 318px, `DishDetailView.vue` + `pages/b/[board]/[dish].vue` ("Auf die Einkaufsliste"), `WeekPlan.vue` ("Woche auf die Einkaufsliste" button under the header, hidden on past weeks), strings `shopping` block in de/en/it. `tests/e2e/shopping-list.spec.ts` 6 tests green locally (ALLOWLISTED[250]). Run e2e: `pnpm test:e2e tests/e2e/<file> --trace off`.
+- #538 Changelog written under [Unreleased] in all three files (Added + Changed for the Datenschutz), changelog test green.
+- Then: commit, remove this file, open the PR into staging (body like PR #522), watch CI, fix until green. Tell the user: Datenschutz wording needs the Operator's OK; screens built without the #527 handoff.
 
 ## Done first (WIP commit)
 
