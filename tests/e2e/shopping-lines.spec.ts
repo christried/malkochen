@@ -102,7 +102,7 @@ test.describe('on a phone', () => {
     const path = Array.from({ length: 12 }, (_, step) => ({ x: right - (step + 1) * 24, y }))
     await touch(page, { x: right, y }, path)
 
-    await expect(page.getByText('Eintrag entfernt.')).toBeVisible()
+    await expect(page.getByRole('status').getByText('Eintrag entfernt.')).toBeVisible()
     await expect(linesOf(page, 'Sonstiges')).toHaveText(['Tofu'])
     await page.getByRole('button', { name: 'Rückgängig' }).click()
     await expect(linesOf(page, 'Sonstiges')).toHaveText(['Reis', 'Tofu'])
@@ -121,7 +121,7 @@ test.describe('on a phone', () => {
 
     await expect.poll(() => rowTransform(page, 'Reis')).toBe('none')
     await expect(linesOf(page, 'Sonstiges')).toHaveText(['Reis'])
-    await expect(page.getByText('Eintrag entfernt.')).toHaveCount(0)
+    await expect(page.getByRole('status').getByText('Eintrag entfernt.')).toHaveCount(0)
 
     const { left } = await rowPoints(page, 'Reis')
     await touch(page, { x: left, y }, [])
@@ -144,7 +144,7 @@ test.describe('on a desktop', () => {
     await edit.fill('')
     await edit.press('Enter')
     await expect(linesOf(page, 'Sonstiges')).toHaveText(['Tofu'])
-    await expect(page.getByText('Eintrag entfernt.')).toBeVisible()
+    await expect(page.getByRole('status').getByText('Eintrag entfernt.')).toBeVisible()
     await page.getByRole('button', { name: 'Rückgängig' }).click()
     await expect(linesOf(page, 'Sonstiges')).toHaveText(['Reis', 'Tofu'])
   })

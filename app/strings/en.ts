@@ -741,7 +741,6 @@ export const en: Strings = {
     emptyFromWeek: 'In the week plan, the whole week goes on at once.',
     emptyTyped: 'Or you write something down yourself.',
     emptyWrite: 'Write something down',
-    emptyText: 'Put a dish on from its detail, the week from the week plan, or type in what you need.',
     removed: 'Item removed.',
     cleared: (count: number) => count === 1 ? '1 item removed.' : `${number(count)} items removed.`,
     failed: 'That didn’t work. Try again.',

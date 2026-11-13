@@ -160,6 +160,7 @@ function onHeadingClick(event: MouseEvent) {
         @remove="emit('remove', entry)"
       />
     </TransitionGroup>
+    <slot />
   </section>
 </template>
 

@@ -28,10 +28,14 @@ const edited = ref(props.text ?? '')
 let settled = false
 
 const field = useTemplateRef<HTMLInputElement>('field')
+const fieldId = useId()
 function focus() {
   field.value?.focus({ preventScroll: true })
 }
-defineExpose({ focus })
+function blur() {
+  field.value?.blur()
+}
+defineExpose({ focus, blur })
 
 onMounted(() => {
   if (props.variant !== 'edit') return
@@ -60,29 +64,43 @@ function remove() {
 </script>
 
 <template>
+  <!-- The phone's add bar and the desktop field are both this form; the
+       parent places it (the bar docked on the keyboard, or the Sonstiges
+       column's end). The label sits in the border (AppField). The "+" is
+       for phones: on desktop Enter is the way in, and "↵" shows the key. -->
   <form
     v-if="variant === 'add'"
-    class="mt-3 flex items-center gap-2"
+    class="flex items-center gap-2"
     @submit.prevent="emit('submit')"
   >
-    <label class="min-w-0 flex-1">
-      <span class="sr-only">{{ t.shopping.addLabel }}</span>
+    <AppField
+      :label="t.shopping.addLabel"
+      :control-id="fieldId"
+      class="min-w-0 flex-1"
+    >
       <input
+        :id="fieldId"
         ref="field"
         v-model="draft"
         type="text"
-        enterkeyhint="done"
+        enterkeyhint="next"
         autocomplete="off"
         :maxlength="SHOPPING_LIMITS.characters"
         :placeholder="t.shopping.addPlaceholder"
-        class="h-12 w-full rounded-pill bg-surface px-5 text-body shadow-small outline-none placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-focus"
+        class="h-12 w-full px-4 text-body outline-none placeholder:text-text-muted"
         data-shopping-add
       >
-    </label>
+      <span
+        class="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 text-[15px] text-text-muted desktop:block"
+        aria-hidden="true"
+      >↵</span>
+    </AppField>
     <button
       type="submit"
-      class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-inverse text-on-inverse transition-transform duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-inverse text-on-inverse transition-[transform,opacity] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus desktop:hidden"
+      :class="{ 'opacity-[.35]': !draft.trim() }"
       :aria-label="t.shopping.add"
+      @pointerdown.prevent
     >
       <AppIcon
         name="plus"

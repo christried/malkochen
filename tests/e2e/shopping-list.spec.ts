@@ -107,7 +107,8 @@ test('items are typed into "Sonstiges" one after another, ticked to the bottom, 
   // Removing one, and "Rückgängig".
   await page.getByRole('button', { name: '„Klopapier“ entfernen' }).click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['2 Hafermilch', 'Spülmittel'])
-  await expect(page.getByText('Eintrag entfernt.')).toBeVisible()
+  // The toast (a status), not the polite live line that says the same.
+  await expect(page.getByRole('status').getByText('Eintrag entfernt.')).toBeVisible()
   await page.getByRole('button', { name: 'Rückgängig' }).click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['2 Hafermilch', 'Klopapier', 'Spülmittel'])
 
@@ -116,7 +117,7 @@ test('items are typed into "Sonstiges" one after another, ticked to the bottom, 
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['2 Hafermilch', 'Klopapier', 'Spülmittel'])
 })
 
-test('"Erledigte entfernen" clears the ticked lines, off while none is ticked, and "Rückgängig" brings them back', async ({ page }) => {
+test('"Erledigte entfernen" clears the ticked lines, is absent while none is ticked, and "Rückgängig" brings them back', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await signIn(page, OWNER)
   const boardId = await newBoard(page, 'Erledigtes')
@@ -126,7 +127,7 @@ test('"Erledigte entfernen" clears the ticked lines, off while none is ticked, a
   await openList(page, boardId)
 
   const clear = page.getByRole('button', { name: 'Erledigte entfernen' })
-  await expect(clear).toBeDisabled()
+  await expect(clear).toHaveCount(0)
   await page.getByRole('checkbox', { name: 'Reis' }).click()
   await page.getByRole('checkbox', { name: 'Sojasoße' }).click()
   await expect(clear).toBeEnabled()
@@ -134,7 +135,7 @@ test('"Erledigte entfernen" clears the ticked lines, off while none is ticked, a
   await clear.click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['Tofu'])
   await expect(page.getByText('2 Einträge entfernt.')).toBeVisible()
-  await expect(clear).toBeDisabled()
+  await expect(clear).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Rückgängig' }).click()
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['Tofu', 'Reis', 'Sojasoße'])
@@ -279,6 +280,116 @@ test('"Rückgängig" after "Woche auf die Einkaufsliste" takes the week\'s Dishe
   await page.getByRole('button', { name: 'Woche auf die Einkaufsliste' }).click()
   await expect(page.getByText('Alles schon auf der Einkaufsliste.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveCount(0)
+})
+
+// The shell (#536, R15): the phone's FAB and add bar, the desktop columns with
+// the Sonstiges field, and the masonry of Dish groups.
+
+// A Dish's lines put on the list, through the API, as the Dish detail puts them.
+async function putOn(page: Page, boardId: string, dishId: string, lines: string[]) {
+  const items = lines.map((text, line) => ({ id: crypto.randomUUID(), text, line }))
+  const res = await page.request.post(`/api/boards/${boardId}/shopping-items/dish`, { data: { dishId, items } })
+  expect(res.status()).toBe(201)
+}
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true })
+
+  test('no field on top; the FAB opens the add bar, Enter adds lines and keeps the field, Enter on an empty field closes it', async ({ page }) => {
+    await signIn(page, OWNER)
+    const boardId = await newBoard(page, 'Telefonleiste')
+    await openList(page, boardId)
+
+    // No field on the list itself: the add bar is closed.
+    // (The desktop field is in the DOM too, hidden: the role query sees only the visible one.)
+    await expect(page.getByRole('textbox', { name: 'Neu in Sonstiges' })).toBeHidden()
+    const fab = page.getByRole('button', { name: 'Eintrag hinzufügen' })
+    await expect(fab).toBeVisible()
+
+    await fab.tap()
+    const field = page.getByRole('textbox', { name: 'Neu in Sonstiges' })
+    await expect(field).toBeFocused()
+    await expect(fab).toBeHidden()
+
+    await field.fill('Milch')
+    await field.press('Enter')
+    await expect(linesOf(page, 'Sonstiges')).toHaveText(['Milch'])
+    await expect(field).toBeFocused()
+    await expect(field).toHaveValue('')
+    await expect(page.locator('[data-shopping-live]')).toHaveText('Milch hinzugefügt.')
+
+    await field.fill('Butter')
+    await field.press('Enter')
+    await expect(linesOf(page, 'Sonstiges')).toHaveText(['Milch', 'Butter'])
+
+    // Enter on the empty field: the bar closes, the FAB comes back.
+    await field.press('Enter')
+    await expect(field).toBeHidden()
+    await expect(fab).toBeVisible()
+  })
+})
+
+test('on the desktop the Sonstiges column has its field at the end, and "n" focuses it', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Schreibtischfeld')
+  expect((await page.request.post(`/api/boards/${boardId}/shopping-items`, { data: { id: crypto.randomUUID(), text: 'Eier' } })).status()).toBe(201)
+  await openList(page, boardId)
+
+  const field = shoppingList(page).locator('[data-shopping-group="other"]').getByRole('textbox', { name: 'Neu in Sonstiges' })
+  await expect(field).toBeVisible()
+  // "n" anywhere on the list's view focuses it (not from a field of its own).
+  await page.getByRole('heading', { name: 'Einkaufsliste' }).click()
+  await page.keyboard.press('n')
+  await expect(field).toBeFocused()
+  await field.fill('Brot')
+  await field.press('Enter')
+  await expect(linesOf(page, 'Sonstiges')).toHaveText(['Eier', 'Brot'])
+  await expect(field).toBeFocused()
+})
+
+test('an empty list on the desktop shows its card with the field, focused', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Leeres Schreibtisch')
+  await openList(page, boardId)
+
+  const card = page.getByTestId('empty-shopping-list')
+  await expect(card.getByRole('textbox', { name: 'Neu in Sonstiges' })).toBeFocused()
+  await expect(card.getByRole('button', { name: 'Etwas aufschreiben' })).toBeHidden()
+})
+
+test('on the desktop the Dish groups fill two columns, the shorter one first: a second Dish sits beside the first, a third under the shorter', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await signIn(page, OWNER)
+  const boardId = await newBoard(page, 'Zwei Spalten')
+  const big = await dishWith(page, boardId, 'Großer Eintopf', ['Linsen', 'Tomaten', 'Karotten'])
+  const small = await dishWith(page, boardId, 'Kleiner Salat', ['Gurke'])
+  const third = await dishWith(page, boardId, 'Dritte Schüssel', ['Dill'])
+  await putOn(page, boardId, big, ['Linsen', 'Tomaten', 'Karotten'])
+  await putOn(page, boardId, small, ['Gurke'])
+  await putOn(page, boardId, third, ['Dill'])
+  await openList(page, boardId)
+
+  // The groups rise in turn when the list shows, and a group that changes
+  // column leaves and enters for a moment (the hidden one is not visible):
+  // measure once it has all settled.
+  // (Only the stagger's own animation: the page's idle loops never finish.)
+  await page.waitForFunction(() => document.getAnimations().every(a => !('animationName' in a) || (a as CSSAnimation).animationName !== 'shop-arrive' || a.playState === 'finished'))
+  const box = async (id: string) => {
+    const group = shoppingList(page).locator(`[data-shopping-group="${id}"]:visible`)
+    await expect(group).toHaveCount(1)
+    return (await group.boundingBox())!
+  }
+  const a = await box(big)
+  const b = await box(small)
+  const c = await box(third)
+  // The first Dish is in the left column; the second, the shorter, is to its right, at the top.
+  expect(b.x).toBeGreaterThan(a.x + a.width)
+  expect(Math.abs(b.y - a.y)).toBeLessThanOrEqual(2)
+  // The third goes into the shorter column, which is the right one: under the second.
+  expect(Math.abs(c.x - b.x)).toBeLessThanOrEqual(2)
+  expect(c.y).toBeGreaterThan(b.y + b.height - 1)
 })
 
 // The placement of "Woche auf die Einkaufsliste" in the Week Plan's header
