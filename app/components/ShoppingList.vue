@@ -3,7 +3,7 @@ import type { BoardView } from '~~/server/utils/boards'
 import type { ShoppingEntry, ShoppingGroup as Group } from '~/board/shopping-list'
 import type { Toast } from '~/utils/toast'
 import { prefersReducedMotion } from '~/utils/motion'
-import { keyboardInset } from '~/utils/shopping-layout'
+import { keyboardInset } from '~/utils/keyboard'
 import { playGroupLeave } from '~/utils/shopping-leave'
 
 // The Shopping List (CONTEXT.md: Shopping List, Shopping Item; ADR 0015;
