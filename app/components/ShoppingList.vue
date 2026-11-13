@@ -92,14 +92,18 @@ function clearDone() {
       >
         {{ t.shopping.title }}
       </h2>
+      <!-- Only while something is ticked: nothing to clear, no button. -->
       <button
-        v-if="!isEmpty"
+        v-if="ticked > 0"
         type="button"
-        class="h-10 shrink-0 rounded-pill bg-surface px-4 text-button shadow-small transition-[transform,opacity] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40 disabled:active:scale-100"
-        :disabled="ticked === 0"
+        class="flex h-10 shrink-0 items-center gap-1.5 rounded-pill bg-surface-muted px-4 text-button transition-[transform,opacity] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus"
         data-clear-done
         @click="clearDone"
       >
+        <AppIcon
+          name="trash"
+          :size="16"
+        />
         {{ t.shopping.clearDone }}
       </button>
     </div>
