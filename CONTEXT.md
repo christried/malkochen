@@ -47,7 +47,7 @@ One Dish on one day of a Week Plan, optionally with the Member who'll cook it ("
 _Avoid_: Plan entry, slot, meal
 
 **Shopping List**:
-A Board's list of what to buy ("Einkaufsliste"). One per Board, the same for every Member, and a view of its own beside the Columns and the Week Plan. Members put a Dish's Ingredients on it ("Auf die Einkaufsliste", choosing which), or every Dish planned from today to that week's Sunday at once from the Week Plan, and type Shopping Items that belong to no Dish. It never adds amounts up: two Dishes needing flour give two lines, and so does one Dish put on twice. Every Member may change it, and nothing about it shows on a Dish's card or detail, in the Dish History, in Push Notifications or the Email Digest.
+A Board's list of what to buy ("Einkaufsliste"). One per Board, the same for every Member, and a view of its own beside the Columns and the Week Plan. Members put a Dish's Ingredients on it ("Auf die Einkaufsliste", choosing which), or every Dish planned from today to that week's Sunday at once from the Week Plan, and type Shopping Items that belong to no Dish. It never adds amounts up: two Dishes needing flour give two lines, and so does one Dish put on twice. Right after a put-on, "Rückgängig" takes its lines off the list again. Every Member may change it, and nothing about it shows on a Dish's card or detail, in the Dish History, in Push Notifications or the Email Digest.
 _Avoid_: Grocery list, cart, basket
 
 **Shopping Item**:
