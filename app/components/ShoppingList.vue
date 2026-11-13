@@ -5,6 +5,7 @@ import type { Toast } from '~/utils/toast'
 import { prefersReducedMotion } from '~/utils/motion'
 import { keyboardInset } from '~/utils/keyboard'
 import { playGroupLeave } from '~/utils/shopping-leave'
+import { SHOPPING_GROUP_GAP, useShoppingMasonry } from '~/composables/useShoppingMasonry'
 
 // The Shopping List (CONTEXT.md: Shopping List, Shopping Item; ADR 0015;
 // #536): the Board's list of what to buy, a view beside the Columns and the
@@ -50,66 +51,11 @@ const dishGroups = computed(() => groups.value.filter(g => g.dishId !== null))
 // A group's place on the phone's one column, after Sonstiges.
 const orderOf = computed(() => new Map(dishGroups.value.map((g, i) => [g.dishId, i + 1])))
 
-// ---- Desktop: two masonry columns for the Dish groups ----
-// Each new Dish group goes into the shorter column. The column of each group
-// is set when the set of Dish groups changes, from the groups' heights
-// (measured with a ResizeObserver, so a group that has grown counts when the
-// next group comes). Between changes a group stays where it is, so nothing
-// jumps while lines are ticked.
-const GROUP_GAP = 18
+// ---- Desktop: two masonry columns for the Dish groups (useShoppingMasonry) ----
 const root = useTemplateRef<HTMLElement>('root')
 // The list as a whole, which the add bar scrolls to the top of.
 const list = useTemplateRef<HTMLElement>('list')
-const column = ref(new Map<string | null, 0 | 1>())
-const columns = computed(() => {
-  const cols: [Group[], Group[]] = [[], []]
-  for (const g of dishGroups.value) cols[column.value.get(g.dishId) === 1 ? 1 : 0].push(g)
-  return cols
-})
-const dishKeys = computed(() => dishGroups.value.map(g => g.dishId).join(','))
-const heights = new Map<string, number>()
-let observer: ResizeObserver | undefined
-// The layout was not measured while the list is hidden (its heights are 0
-// then), so the columns are worked out when it shows.
-let stale = true
-function groupElement(id: string): HTMLElement | undefined {
-  return root.value?.querySelector<HTMLElement>(`[data-shopping-group="${id}"]`) ?? undefined
-}
-function assignColumns() {
-  if (!props.visible) {
-    stale = true
-    return
-  }
-  stale = false
-  const ids = dishGroups.value.map(g => g.dishId!)
-  const groupHeights = ids.map((id) => {
-    const el = groupElement(id)
-    if (el) observer?.observe(el)
-    // Measured now, as far as the layout is; the observer's figure is kept
-    // for a group that is not drawn at this moment.
-    return el?.offsetHeight || heights.get(id) || 0
-  })
-  const picked = masonryColumns(groupHeights, GROUP_GAP)
-  column.value = new Map(ids.map((id, i) => [id, picked[i]!]))
-}
-watch(dishKeys, assignColumns, { flush: 'post' })
-// Coming to the list, the columns are worked out a frame later, when the
-// list has been laid out at its real size.
-watch(() => props.visible, (now) => {
-  if (now && stale) requestAnimationFrame(assignColumns)
-}, { flush: 'post' })
-onMounted(() => {
-  observer = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      const el = entry.target as HTMLElement
-      const id = el.dataset.shoppingGroup
-      // A hidden group measures 0: that is no height to keep.
-      if (id && el.offsetHeight > 0) heights.set(id, el.offsetHeight)
-    }
-  })
-  assignColumns()
-})
-onBeforeUnmount(() => observer?.disconnect())
+const { columns } = useShoppingMasonry(dishGroups, toRef(props, 'visible'), root)
 
 // ---- Typing an item into "Sonstiges" ----
 
@@ -269,7 +215,7 @@ function clearDone() {
 // itself is the column's: 18px on the desktop columns, 14px in the phone's list.
 const PHONE_GROUP_GAP = 14
 function onGroupLeave(el: Element, done: () => void) {
-  void playGroupLeave(el as HTMLElement, clearing.value, wide.value ? GROUP_GAP : PHONE_GROUP_GAP).then(done)
+  void playGroupLeave(el as HTMLElement, clearing.value, wide.value ? SHOPPING_GROUP_GAP : PHONE_GROUP_GAP).then(done)
 }
 </script>
 
