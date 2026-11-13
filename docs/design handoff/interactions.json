@@ -283,5 +283,129 @@
       "Rückgängig: removes the Cooking; tick fades (150), button and height come back (settle 480)"
     ],
     "reduced": "Button colour + check, tick appears, toast fades in; no confetti, Topfbert as the still; row shortens without motion."
+  },
+  {
+    "name": "Tick",
+    "added": "R15",
+    "where": "ShoppingItem (whole row)",
+    "steps": [
+      "0ms: press scale .98 (tap); haptic SELECTION on release",
+      "0–380ms: pebble .82 → 1.18 → 1 (pop) and fills sage (180)",
+      "60–280ms: check stroke-dashoffset 20 → 0 (220 ease-out)",
+      "80–340ms: strike background-size 0 → 100% (260 ease-out); text colour → text-muted (200)",
+      "340–940ms: hold (motion.sink-hold 600); a second tap in this window unticks in place",
+      "940–1420ms: the line travels to the end of its group, lines below close up (settle 480)",
+      "live region: \"{Text} erledigt.\"",
+      "syncs to every Member; offline: unsent mark (fade 240)"
+    ],
+    "reduced": "Fill, check and strike appear at once; after 600ms the line jumps to its place."
+  },
+  {
+    "name": "Untick and rise",
+    "added": "R15",
+    "where": "A ticked ShoppingItem",
+    "steps": [
+      "0ms: press .98 (tap); haptic SELECTION",
+      "0–160ms: check retracts, fill → surface; strike 100 → 0% (200); colour → text (200)",
+      "160–760ms: hold 600",
+      "760–1240ms: the line travels back to its Recipe place (Sonstiges: typing order), others make room (settle 480)",
+      "live region: \"{Text} wieder offen.\""
+    ],
+    "reduced": "Everything changes at once; the line jumps back after 600ms."
+  },
+  {
+    "name": "Delete with undo",
+    "added": "R15",
+    "where": "ShoppingItem: swipe left (phone), trash on hover/focus or Delete key (desktop), delete button in the edit field, accessibility action",
+    "steps": [
+      "phone: the row follows the finger, swipe-danger + trash + \"Entfernen\" behind it; at 96px haptic GESTURE_THRESHOLD_ACTIVATE",
+      "release past 50% width or flick > 600px/s: x → −105% (240 ease-in); shorter: springs back (settle 300)",
+      "desktop: x −24 + fade (200 ease-in)",
+      "+220ms (desktop +180): slot collapses (settle 380); last line of a group takes the group with it",
+      "+260ms: Toast \"Eintrag entfernt.\" + Rückgängig (5 s), FAB up 76",
+      "Rückgängig: slot reopens and the line drops back at its old index (as arrive)"
+    ],
+    "reduced": "Fades out 200ms, gap closes at once; toast fades in."
+  },
+  {
+    "name": "Clear ticked with undo",
+    "added": "R15",
+    "where": "\"Erledigte entfernen\" in the ShoppingList header (only while something is ticked)",
+    "steps": [
+      "0ms: press .94 (tap); no dialog",
+      "+0ms each, 30ms apart top to bottom: ticked lines fade (160)",
+      "+140ms each: their slots collapse (settle 380); groups left empty collapse with them",
+      "+120ms: the button fades out (200)",
+      "+200ms: Toast \"{n} Einträge entfernt.\" / \"1 Eintrag entfernt.\" + Rückgängig (5 s)",
+      "Rückgängig: lines grow back in place (settle 380), the button fades in (240)"
+    ],
+    "reduced": "Lines and button disappear at once; the toast fades in."
+  },
+  {
+    "name": "Type items in a row",
+    "added": "R15",
+    "where": "Phone: FAB \"Eintrag hinzufügen\" or \"Etwas aufschreiben\" (empty list) → add bar on the keyboard. Desktop: the Sonstiges field (\"n\")",
+    "steps": [
+      "open: FAB hides, bar rises with the keyboard, focus in the field; list scrolls to the top so Sonstiges is visible",
+      "typing: plain text, no parsing",
+      "Enter (\"Weiter\"): a slot opens at the end of Sonstiges' open lines (0 → 56, settle 380), the line drops in (y −10, .97 → 1, settle 460, +80); field clears, focus and keyboard stay",
+      "live region: \"{Text} hinzugefügt.\"",
+      "Enter on empty / tap outside / keyboard down: bar closes, FAB returns (pop 460)"
+    ],
+    "reduced": "The line appears in place; the FAB appears without pop."
+  },
+  {
+    "name": "Change a line",
+    "added": "R15",
+    "where": "ShoppingItem: long-press 450ms (phone, haptic LONG_PRESS), pencil / Enter / double click (desktop), accessibility action \"Ändern\"",
+    "steps": [
+      "row → ShoppingItemInput (edit) crossfade 150, text selected, keyboard up (phone, return \"Fertig\")",
+      "Fertig / blur: save, crossfade back 150; the line keeps its place and its tick",
+      "Escape: cancel",
+      "empty text saved: Delete with undo"
+    ],
+    "reduced": "Row and field swap without motion."
+  },
+  {
+    "name": "Put a Dish on",
+    "added": "R15",
+    "where": "Dish detail → \"Auf die Einkaufsliste\" (end of the Zutaten card, only with Ingredients) → IngredientPicker",
+    "steps": [
+      "tap: press .94; phone Sheet open (440), desktop pop 360 from the button (origin bottom)",
+      "rows rise 14px, 40ms stagger, max 8; all ticked",
+      "toggle a row: fill 180 + check 200; button count updates; at 0 disabled \"Keine Zutat ausgewählt\"",
+      "confirm: press .97, haptic CONFIRM; sheet close 320 ease-in / popout 200",
+      "+200ms: Toast \"{n} Zutaten auf der Einkaufsliste.\" + Rückgängig",
+      "lines go to this Dish's group (new at the end, or the existing one with \"Zweimal auf der Liste\")"
+    ],
+    "reduced": "Sheet / popover fade 200; toast fades in."
+  },
+  {
+    "name": "Put a week on",
+    "added": "R15",
+    "where": "WeekHeader \"Woche auf die Einkaufsliste\" (current and later weeks)",
+    "steps": [
+      "tap: press .94 (tap); haptic CONFIRM; no sheet",
+      "takes every Planned Dish from today (later weeks: Monday) to Sunday, in plan order; skips Dishes that already have a group and Dishes without Ingredients; a Dish planned twice in the range goes on twice",
+      "0–460ms: bag icon squash 1.3/.84 → .92/1.1 → 1 (pop)",
+      "+120ms, 40ms apart per day in range with Dishes: butter ring pulse 0 → 4px .6 → 0 (900 ease-out)",
+      "+120ms: Toast \"{n} Gerichte auf der Einkaufsliste.\" + Rückgängig (removes exactly what was added)",
+      "nothing to add: squash only, Toast \"Alles schon auf der Einkaufsliste.\" without action, 3 s"
+    ],
+    "reduced": "No squash, no pulse; the toast fades in."
+  },
+  {
+    "name": "Switch to the list",
+    "added": "R15",
+    "where": "ViewSwitch \"Einkauf\"",
+    "steps": [
+      "0–480ms: thumb → third segment (settle 480), labels colour 200",
+      "0–240ms: current view fades, x 0 → −28 (settle 480); phone Column tint → bg (600) when coming from Spalten",
+      "+140ms: list x +28 → 0 (settle 480); groups y 14 → 0 + fade, 40ms apart",
+      "+200ms: FAB \"Eintrag hinzufügen\" pops in (scale 0 → 1, pop 460) when coming from Woche",
+      "opens scrolled to the top; stored in \"malkochen:view\"",
+      "leaving: groups drop out together (160), FAB shrinks (150) when going to Woche"
+    ],
+    "reduced": "Thumb jumps; views crossfade 200ms; FAB appears with them."
   }
 ]
