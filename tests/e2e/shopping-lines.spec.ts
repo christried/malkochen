@@ -205,6 +205,14 @@ test.describe('on a desktop', () => {
     // After the hold it has sunk.
     await page.waitForTimeout(1000)
     await expect(linesOf(page, 'Sonstiges')).toHaveText(['Zwei', 'Drei', 'Eins'])
+
+    // Untick and rise: right after the untick the line still waits at the bottom ...
+    await lineRow(page, 'Eins').click()
+    await expect(lineRow(page, 'Eins')).toHaveAttribute('aria-checked', 'false')
+    await expect(linesOf(page, 'Sonstiges')).toHaveText(['Zwei', 'Drei', 'Eins'])
+    // ... and after the hold it travels back to its Recipe place.
+    await page.waitForTimeout(1000)
+    await expect(linesOf(page, 'Sonstiges')).toHaveText(['Eins', 'Zwei', 'Drei'])
   })
 
   test('the pencil and the trash show on hover, and a Dish put on twice says "Zweimal auf der Liste"', async ({ page }) => {

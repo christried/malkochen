@@ -9,8 +9,8 @@ import { dishPath } from '~~/shared/address'
 // while the Dish is on the Board, its image morphing as a card's does; once
 // it has gone, the title stays alone. A Dish put on twice says so under its
 // title. Its lines are ShoppingItem rows; a line's events come up here with
-// the line attached. A line ticked by this Member waits 600ms where it was
-// before it sinks to the bottom of the group.
+// the line attached. A line this Member ticks or unticks waits 600ms where it
+// was before it moves to its new place in the group.
 const props = defineProps<{
   group: Group
   editingId: string | null
@@ -56,10 +56,11 @@ onBeforeUnmount(() => {
   for (const timer of holds.values()) clearTimeout(timer)
 })
 
-// A tap on a line. Ticking holds it where it is; unticking brings it back to
-// its Recipe place at once, with no hold.
+// A tap on a line holds it where it is on screen, ticking or unticking, and
+// the module then moves it. The one exception: a second tap during a tick's
+// hold unticks it in place, and the line never moved, so it goes back at once.
 function onTick(entry: ShoppingEntry) {
-  if (entry.ticked) release(entry.id)
+  if (entry.ticked && held.value.has(entry.id)) release(entry.id)
   else holdAt(entry.id, lines.value.findIndex(line => line.id === entry.id))
   emit('tick', entry)
 }

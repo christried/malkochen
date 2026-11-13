@@ -32,6 +32,15 @@ test('two lines ticked in the hold keep both places, in the order they had', () 
   expect(ids(heldOrder(afterTicks, new Map([['a', 0], ['b', 1]])))).toEqual(['a', 'b', 'c', 'd'])
 })
 
+test('an untick of a line that has sunk holds it at the bottom, then the module moves it back to its Recipe place', () => {
+  // Recipe order a, b, c, d; b was ticked and sank: a, c, d, b. Unticking it,
+  // the module puts it back at its Recipe place (a, b, c, d). Held at the
+  // place it had on screen, it waits there first.
+  const afterUntick = [line('a'), line('b'), line('c'), line('d')]
+  expect(ids(heldOrder(afterUntick, new Map([['b', 3]])))).toEqual(['a', 'c', 'd', 'b'])
+  expect(ids(heldOrder(afterUntick, new Map()))).toEqual(['a', 'b', 'c', 'd'])
+})
+
 test('a line ticked last of its group stays last', () => {
   const items = [line('a'), line('b'), line('c')]
   expect(ids(heldOrder(items, new Map([['c', 2]])))).toEqual(['a', 'b', 'c'])

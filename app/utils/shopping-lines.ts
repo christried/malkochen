@@ -4,7 +4,7 @@
 // so the decisions test without a browser; ShoppingGroup and ShoppingItem
 // keep the timers and the pointer events.
 
-// How long a line ticked by this Member waits in place before it sinks
+// How long a line this Member ticks or unticks waits in place before it moves
 // (motion.sink-hold). Reduced motion keeps the hold.
 export const SINK_HOLD_MS = 600
 
@@ -24,10 +24,10 @@ export const SWIPE_FLICK_MIN_PX = 24
 
 // The order a group's lines show in. `items` is the module's order (open
 // lines in Recipe order, ticked ones at the bottom). `held` maps the id of a
-// line this Member ticked in the last 600ms to the place it had: it stays
-// there until the hold is over, and the rest keep the module's order around
-// it. Held lines are put back in ascending place, so two ticks side by side
-// keep both places.
+// line this Member ticked or unticked in the last 600ms to the place it had:
+// it stays there until the hold is over, and the rest keep the module's order
+// around it. Held lines are put back in ascending place, so two ticks side by
+// side keep both places.
 export function heldOrder<T extends { id: string }>(items: readonly T[], held: ReadonlyMap<string, number>): T[] {
   const rest = items.filter(item => !held.has(item.id))
   const holding = items
