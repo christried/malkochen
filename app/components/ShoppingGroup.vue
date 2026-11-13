@@ -34,6 +34,11 @@ const address = useOpenBoardAddress()
 const titleId = useId()
 // How the group is named for its lines' labels.
 const groupName = computed(() => props.group.dishId === null ? t.shopping.other : (props.group.title ?? t.shopping.other))
+// Under a Dish's title: how often it was put on, or that it has gone.
+const caption = computed(() => {
+  if (!props.group.dish) return t.shopping.gone
+  return props.group.times >= 2 ? t.shopping.times(props.group.times) : null
+})
 
 // ---- The lines' order: a ticked line holds its place for the hold ----
 
@@ -107,17 +112,24 @@ function onHeadingClick(event: MouseEvent) {
     :data-shopping-group="group.dishId ?? 'other'"
   >
     <h3 @click.capture="onHeadingClick">
-      <NuxtLink
-        v-if="group.dish"
-        :to="dishPath(address, group.dish)"
-        class="group/heading flex min-h-14 min-w-0 items-center gap-3 rounded-[14px] py-1.5 pr-2.5 pl-1.5 transition-transform duration-tap ease-tap active:scale-[.98] motion-reduce:active:scale-100 desktop:hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus"
-        :aria-label="t.shopping.openDish(group.dish.title)"
+      <!-- A Dish's heading is a link while the Dish is on the Board, and a plain
+           span once it has gone: the same inside either way. -->
+      <component
+        :is="group.dish ? 'NuxtLink' : 'span'"
+        v-if="group.dishId !== null"
+        :to="group.dish ? dishPath(address, group.dish) : undefined"
+        :aria-label="group.dish ? t.shopping.openDish(group.dish.title) : undefined"
+        class="flex min-h-14 min-w-0 items-center gap-3 py-1.5 pr-2.5 pl-1.5"
+        :class="group.dish && 'group/heading rounded-[14px] transition-transform duration-tap ease-tap active:scale-[.98] motion-reduce:active:scale-100 desktop:hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus'"
       >
         <span
-          data-thumb
-          class="block h-11 w-11 shrink-0 overflow-hidden rounded-[15px_13px_16px_14px] bg-surface-muted"
+          :data-thumb="group.dish ? '' : undefined"
+          class="block h-11 w-11 shrink-0"
+          :class="group.dish && 'overflow-hidden rounded-[15px_13px_16px_14px] bg-surface-muted'"
+          :aria-hidden="group.dish ? undefined : 'true'"
         >
           <DishImage
+            v-if="group.dish"
             :image-url="group.dish.imageUrl"
             :focus="group.dish.imageFocus"
             :placeholder="group.dish.placeholder"
@@ -130,32 +142,17 @@ function onHeadingClick(event: MouseEvent) {
             class="line-clamp-2 font-display text-[18px] font-medium leading-[1.2]"
           >{{ group.title }}</span>
           <span
-            v-if="group.times >= 2"
+            v-if="caption"
             class="mt-0.5 text-[12.5px] font-medium text-text-muted"
-          >{{ t.shopping.times(group.times) }}</span>
+          >{{ caption }}</span>
         </span>
         <AppIcon
+          v-if="group.dish"
           name="forward"
           :size="17"
           class="shrink-0 opacity-45 transition-opacity duration-tap desktop:group-hover/heading:opacity-90"
         />
-      </NuxtLink>
-      <span
-        v-else-if="group.dishId !== null"
-        class="flex min-h-14 min-w-0 items-center gap-3 py-1.5 pr-2.5 pl-1.5"
-      >
-        <span
-          class="block h-11 w-11 shrink-0"
-          aria-hidden="true"
-        />
-        <span class="flex min-w-0 flex-1 flex-col">
-          <span
-            :id="titleId"
-            class="line-clamp-2 font-display text-[18px] font-medium leading-[1.2]"
-          >{{ group.title }}</span>
-          <span class="mt-0.5 text-[12.5px] font-medium text-text-muted">{{ t.shopping.gone }}</span>
-        </span>
-      </span>
+      </component>
       <span
         v-else
         :id="titleId"
