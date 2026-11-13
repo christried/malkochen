@@ -157,9 +157,13 @@ function addItem() {
   say(t.shopping.addedLive(line))
   draft.value = ''
   showShoppingResult(result)
-  // Enter adds and keeps the field: several in a row.
-  const field = adding.value ? barField.value : deskField.value
-  field?.focus()
+  // Enter adds and keeps the field: several in a row. After the update: the
+  // first line can take the empty list's card away, field and all, and the
+  // one that stays is the Sonstiges column's.
+  void nextTick(() => {
+    const field = adding.value ? barField.value : deskField.value
+    field?.focus()
+  })
 }
 // "n": on desktop the Sonstiges field, on a phone the add bar.
 function focusAdd() {
