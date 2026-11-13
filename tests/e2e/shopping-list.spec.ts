@@ -91,7 +91,7 @@ test('items are typed into "Sonstiges" one after another, ticked to the bottom, 
 
   // Changing a line's text.
   await page.getByRole('button', { name: '„Hafermilch“ ändern' }).click()
-  const edit = page.getByRole('textbox', { name: 'Eintrag', exact: true })
+  const edit = page.getByRole('textbox', { name: 'Eintrag ändern', exact: true })
   await edit.fill('2 Hafermilch')
   await edit.press('Enter')
   await expect(linesOf(page, 'Sonstiges')).toHaveText(['2 Hafermilch', 'Klopapier', 'Spülmittel'])

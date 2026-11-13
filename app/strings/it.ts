@@ -38,7 +38,7 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'shopRestore': return `${named} ripristinato`
     case 'shopDish': return `${named} nella lista della spesa`
     case 'shopWeek': return `settimana dal ${dayMonth(label)} nella lista della spesa`
-    case 'shopTakeBack': return 'Annulla nella lista della spesa'
+    case 'shopTakeBack': return 'annulla nella lista della spesa'
     case 'move': return `${named} spostato`
     case 'cook':
     case 'cookMany': return `${named} cucinato`
