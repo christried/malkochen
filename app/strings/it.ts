@@ -750,8 +750,6 @@ export const it: Strings = {
     tickedLive: (text: string) => `${text} completata.`,
     untickedLive: (text: string) => `${text} di nuovo da comprare.`,
     addedLive: (text: string) => `${text} aggiunta.`,
-    save: 'Salva',
-    cancel: 'Annulla',
     clearDone: 'Rimuovi completate',
     emptyTitle: 'Ancora niente da comprare.',
     emptyHow: 'Così qualcosa finisce nella lista:',
