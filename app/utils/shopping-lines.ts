@@ -16,7 +16,7 @@ export const LONG_PRESS_MS = 450
 export const TOUCH_SLOP_PX = 8
 
 // A swipe that has pulled the line this far of its width leaves (deletes it).
-export const SWIPE_LEAVE_SHARE = 0.35
+export const SWIPE_LEAVE_SHARE = 0.5
 // A flick faster than this, leftwards, leaves too, if the line has moved at
 // least FLICK_MIN_PX: a tiny jerk of the thumb deletes nothing.
 export const SWIPE_FLICK_PX_PER_S = 600

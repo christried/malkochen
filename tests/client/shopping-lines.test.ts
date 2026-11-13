@@ -91,11 +91,11 @@ test('the row follows a leftward finger and stays where it is for a rightward on
   expect(swipeOffset(0)).toBe(0)
 })
 
-// ---- swipeLeaves: past 35% of the row, or a flick, deletes; a short swipe springs back ----
+// ---- swipeLeaves: past 50% of the row, or a flick, deletes; a short swipe springs back ----
 
-test('a swipe past 35% of the row width leaves', () => {
-  expect(swipeLeaves(-120, 340, 0)).toBe(true)
-  expect(swipeLeaves(-118, 340, 0)).toBe(false)
+test('a swipe past 50% of the row width leaves', () => {
+  expect(swipeLeaves(-172, 340, 0)).toBe(true)
+  expect(swipeLeaves(-168, 340, 0)).toBe(false)
 })
 
 test('a fast flick leftwards leaves, even short', () => {
