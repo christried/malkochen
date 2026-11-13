@@ -1,10 +1,11 @@
 // A write the server refused or never answered; `status` is its HTTP status
-// if there was one (404: the Dish is gone there). Without one, malkochen gave
+// if there was one (404: the Dish is gone there), and `reason` the status
+// message the server gave with it, where two refusals share a status. Without one, malkochen gave
 // no answer: the write may or may not have arrived (ADR 0012). Apart from the
 // Board module, so the Unsent Changes can tell the two apart without a loop
 // of imports.
 export class WriteFailed extends Error {
-  constructor(readonly status?: number) {
+  constructor(readonly status?: number, readonly reason?: string) {
     super(status === undefined ? 'Write failed' : `Write failed (${status})`)
   }
 }

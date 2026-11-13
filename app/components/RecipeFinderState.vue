@@ -7,8 +7,9 @@ import { finderShown, type FinderNote } from '~/board/recipe-finder-view'
 // "Rezept finden" beside "Rezept hinzufügen" for a user with the Recipe
 // Finder; "Rezept wird gesucht" for every Member while a search runs, with
 // Topfbert stirring; "Kein Rezept gefunden" once it found nothing; and, for
-// the user who searched, "Die Suche hat gerade nicht geklappt." or the note
-// that the day's cap is reached (these last while the detail stays open).
+// the user who searched, "Die Suche hat gerade nicht geklappt.", the note
+// that the day's cap is reached, or that this Dish was searched twice within
+// the hour (these last while the detail stays open).
 // One view shows at a time, swapped with a fade. "Rezept finden" needs a
 // connection, and a Dish the server has: it is greyed out without either.
 // `leaving`: the search is over and a Recipe is coming, so the card goes
@@ -57,7 +58,7 @@ async function find() {
   if (!mayPress.value) return
   note.value = null
   const result = await boardModule.findRecipe(props.dish.id)
-  if (result === 'failed' || result === 'quota') note.value = result
+  if (result === 'failed' || result === 'quota' || result === 'tooSoon') note.value = result
   else if (result === 'conflict') syncNow()
   else if (result === 'refused') void finder.refresh()
 }
@@ -102,12 +103,12 @@ const buttonShape = 'flex h-[52px] min-w-0 items-center justify-center gap-2 whi
 
         <!-- Nothing found, failed, daily cap. -->
         <div
-          v-else-if="shown.view === 'none' || shown.view === 'failed' || shown.view === 'quota'"
+          v-else-if="shown.view === 'none' || shown.view === 'failed' || shown.view === 'quota' || shown.view === 'tooSoon'"
           class="flex items-center gap-3"
           :data-recipe-note="shown.view"
         >
           <img
-            v-if="shown.view === 'failed' || shown.view === 'quota'"
+            v-if="shown.view !== 'none'"
             :src="shown.view === 'failed' ? '/illustrations/topfbert-oops.svg' : '/illustrations/topfbert-sleep.svg'"
             alt=""
             width="46"
@@ -115,7 +116,7 @@ const buttonShape = 'flex h-[52px] min-w-0 items-center justify-center gap-2 whi
             class="h-[49px] w-[46px] shrink-0"
           >
           <div class="flex min-w-0 flex-1 flex-col gap-1">
-            <span class="text-pretty font-display text-title-s">{{ shown.view === 'none' ? t.recipe.finder.none : shown.view === 'failed' ? t.recipe.finder.failed : t.recipe.finder.quota }}</span>
+            <span class="text-pretty font-display text-title-s">{{ shown.view === 'none' ? t.recipe.finder.none : shown.view === 'failed' ? t.recipe.finder.failed : shown.view === 'tooSoon' ? t.recipe.finder.tooSoon : t.recipe.finder.quota }}</span>
             <span
               v-if="shown.view === 'none'"
               class="text-pretty text-small text-text-muted"

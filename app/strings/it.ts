@@ -452,6 +452,7 @@ export const it: Strings = {
       failed: 'La ricerca non ha funzionato.',
       again: 'Cerca di nuovo',
       quota: 'Per oggi il Trova ricette ha cercato abbastanza. Domani cercherà di nuovo.',
+      tooSoon: 'Per questo piatto si è appena cercato due volte. Riprova tra un’ora.',
       found: 'Ricetta trovata',
       show: 'Mostra',
     },

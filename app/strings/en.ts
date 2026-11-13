@@ -438,6 +438,7 @@ export const en: Strings = {
       failed: 'The search didn’t work just now.',
       again: 'Search again',
       quota: 'The Recipe Finder has searched enough for today. It will search again tomorrow.',
+      tooSoon: 'This dish was just searched twice. You can try again in an hour.',
       found: 'Recipe found',
       show: 'Show',
     },

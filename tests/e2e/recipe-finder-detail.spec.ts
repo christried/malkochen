@@ -148,7 +148,7 @@ test('"Rezept finden" ends in a Recipe in the open detail, which is edited like 
   await expect(editor.getByRole('textbox', { name: 'Schritt 2' })).toHaveValue(RECIPE.steps[1]!)
 })
 
-test('a search that finds nothing says so to the Dish, with "Rezept hinzufügen" and no "Rezept finden", also after a reload', async ({ page, browser }) => {
+test('a search that finds nothing says so to the Dish, with "Rezept hinzufügen" and "Noch mal suchen", also after a reload; a third search within the hour waits', async ({ page, browser }) => {
   test.slow()
   await page.setViewportSize({ width: 360, height: 800 })
   const boardId = await boardWithDishes(page, browser, ['Neues Video'])
@@ -168,7 +168,15 @@ test('a search that finds nothing says so to the Dish, with "Rezept hinzufügen"
   detail = page.getByRole('dialog', { name: 'Neues Video' })
   await expect(detail.locator('[data-recipe-note="none"]')).toContainText('Kein Rezept gefunden')
   await expect(detail.getByRole('button', { name: 'Rezept hinzufügen' })).toBeVisible()
-  await expect(detail.getByRole('button', { name: 'Rezept finden' })).toHaveCount(0)
+
+  // "Noch mal suchen" (#529): a second search, and then the Dish waits an hour.
+  await detail.getByRole('button', { name: 'Noch mal suchen' }).click()
+  await expect(detail.locator('[data-recipe-searching]')).toHaveCount(0, { timeout: 20_000 })
+  await expect(detail.locator('[data-recipe-note="none"]')).toContainText('Kein Rezept gefunden')
+  await detail.getByRole('button', { name: 'Noch mal suchen' }).click()
+  await expect(detail.locator('[data-recipe-note="tooSoon"]')).toContainText('Für dieses Gericht wurde gerade zweimal gesucht.')
+  await expect(detail.getByRole('button', { name: 'Noch mal suchen' })).toHaveCount(0)
+  await expect(detail.getByRole('button', { name: 'Rezept hinzufügen' })).toBeVisible()
 })
 
 test('another Member with the Dish open sees "Rezept wird gesucht" and then the Recipe arrive, without a reload', async ({ page, browser }) => {

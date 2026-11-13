@@ -70,7 +70,8 @@ export function postColumn(boardId: string, name: string): Promise<ColumnView> {
 // malkochen (gotNoAnswer: no response, or a Vercel platform error) fails
 // without a status.
 function asWrite<T>(request: Promise<T>): Promise<T> {
-  return request.catch((error: { statusCode?: number }) => {
-    throw new WriteFailed(gotNoAnswer(error) ? undefined : error.statusCode)
+  return request.catch((error: { statusCode?: number, statusMessage?: string }) => {
+    if (gotNoAnswer(error)) throw new WriteFailed()
+    throw new WriteFailed(error.statusCode, error.statusMessage)
   })
 }

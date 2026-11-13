@@ -5,17 +5,17 @@ import type { RecipeSearch } from '../../shared/recipe'
 //
 // - `searching`: "Rezept wird gesucht", to every Member, while a search runs.
 // - `none`: "Kein Rezept gefunden", to every Member, once a search found
-//   nothing for the Dish's Source; "Rezept finden" doesn't come back until
-//   the Source changes (the server forgets it then).
-// - `failed` and `quota`: what this user's own search ended in (`note`; they
-//   last while the detail stays open).
+//   nothing for the Dish's Source, with "Noch mal suchen" (#529).
+// - `failed`, `quota` and `tooSoon`: what this user's own search ended in
+//   (`note`; they last while the detail stays open). `tooSoon`: the Dish was
+//   searched twice within the hour, so it can't be searched again yet.
 // - `action`: "Rezept finden" beside "Rezept hinzufügen".
 // - `add`: only "Rezept hinzufügen", for a Member who may edit.
 // - `nothing`: no more than the Recipe's own place gives.
-export type FinderView = 'searching' | 'none' | 'failed' | 'quota' | 'action' | 'add' | 'nothing'
+export type FinderView = 'searching' | 'none' | 'failed' | 'quota' | 'tooSoon' | 'action' | 'add' | 'nothing'
 
 // What this user's own search ended in, kept while the detail is open.
-export type FinderNote = 'failed' | 'quota'
+export type FinderNote = 'failed' | 'quota' | 'tooSoon'
 
 export interface FinderInput {
   hasRecipe: boolean
@@ -30,8 +30,8 @@ export interface FinderInput {
 
 export interface FinderShown {
   view: FinderView
-  // "Rezept finden", or "Noch mal suchen" in `failed`: only for a user with
-  // the Recipe Finder who may edit the Dish, which has a Source.
+  // "Rezept finden", or "Noch mal suchen" in `failed` and `none`: only for a
+  // user with the Recipe Finder who may edit the Dish, which has a Source.
   find: boolean
   // "Rezept hinzufügen": for a Member who may edit, except while a search runs.
   add: boolean
@@ -42,7 +42,7 @@ export function finderShown({ hasRecipe, hasSource, search, note, finderOn, mayE
   if (hasRecipe) return { view: 'nothing', find: false, add: false }
   if (search === 'looking') return { view: 'searching', find: false, add: false }
   if (note) return { view: note, find: note === 'failed' && mayFind, add: mayEdit }
-  if (search === 'none') return { view: 'none', find: false, add: mayEdit }
+  if (search === 'none') return { view: 'none', find: mayFind, add: mayEdit }
   if (mayFind) return { view: 'action', find: true, add: true }
   return { view: mayEdit ? 'add' : 'nothing', find: false, add: mayEdit }
 }

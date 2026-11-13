@@ -521,6 +521,7 @@ export const de = {
       failed: 'Die Suche hat gerade nicht geklappt.',
       again: 'Noch mal suchen',
       quota: 'Für heute hat der Rezeptfinder genug gesucht. Morgen sucht er weiter.',
+      tooSoon: 'Für dieses Gericht wurde gerade zweimal gesucht. In einer Stunde geht es wieder.',
       found: 'Rezept gefunden',
       show: 'Zeigen',
     },

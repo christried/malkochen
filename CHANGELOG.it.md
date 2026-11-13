@@ -11,6 +11,11 @@ Cosa è cambiato in malkochen per chi lo usa, dal più recente. Nell'app sotto "
 ### Changed
 
 - L’informativa sulla privacy ora nomina anche il piano settimanale e la lista della spesa tra ciò che salvi su una bacheca.
+- Se il Trova ricette non ha trovato nessuna ricetta, Cerca di nuovo lo fa cercare ancora. Un piatto si può cercare due volte all’ora.
+
+### Fixed
+
+- Trova ricetta ora legge anche la didascalia dei post aggiunti prima che malkochen tenesse le didascalie, così trova anche la ricetta sotto un TikTok più vecchio.
 
 ## [1.3.0] - 2026-11-12
 

@@ -11,6 +11,11 @@ What changed in malkochen for the people using it, newest first. Shown in the ap
 ### Changed
 
 - The privacy policy now names the week plan and the shopping list among what you store on a board.
+- When the Recipe Finder found no recipe, Search again asks it once more. A dish can be searched twice an hour.
+
+### Fixed
+
+- Find recipe now reads the caption of posts added before malkochen kept captions, so a recipe written under an older TikTok is found too.
 
 ## [1.3.0] - 2026-11-12
 
