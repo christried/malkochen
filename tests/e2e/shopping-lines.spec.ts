@@ -215,6 +215,28 @@ test.describe('on a desktop', () => {
     await expect(linesOf(page, 'Sonstiges')).toHaveText(['Eins', 'Zwei', 'Drei'])
   })
 
+  test('a double click changes the line, and the tick is as it was: two taps before it', async ({ page }) => {
+    await signIn(page, OWNER)
+    const boardId = await newBoard(page, 'Doppelklick')
+    await addLines(page, boardId, ['Reis', 'Tofu'])
+    await openList(page, boardId)
+
+    const edit = page.getByRole('textbox', { name: 'Eintrag ändern', exact: true })
+    // An open line: the double click ticks and unticks, and opens the change.
+    await lineRow(page, 'Reis').dblclick()
+    await expect(edit).toBeFocused()
+    await edit.press('Escape')
+    await expect(lineRow(page, 'Reis')).toHaveAttribute('aria-checked', 'false')
+
+    // A ticked line: the double click leaves it ticked.
+    await lineRow(page, 'Tofu').click()
+    await expect(lineRow(page, 'Tofu')).toHaveAttribute('aria-checked', 'true')
+    await lineRow(page, 'Tofu').dblclick()
+    await expect(edit).toBeFocused()
+    await edit.press('Escape')
+    await expect(lineRow(page, 'Tofu')).toHaveAttribute('aria-checked', 'true')
+  })
+
   test('the pencil and the trash show on hover, and a Dish put on twice says "Zweimal auf der Liste"', async ({ page }) => {
     await signIn(page, OWNER)
     const boardId = await newBoard(page, 'Zweimal')

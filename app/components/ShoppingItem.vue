@@ -9,7 +9,7 @@ import { LONG_PRESS_MS, swipeLeaves, swipeOffset, touchAxis, type TouchAxis, vel
 // group moves it) or back on. On a phone a long press changes it, and a swipe
 // left removes it; on a desktop the pencil and the trash appear on hover and
 // focus, and the keys do the same: Space ticks, Enter changes, Delete removes,
-// ↑ and ↓ move between lines. Lines not sent yet are marked "Noch nicht
+// ↑ and ↓ move between lines; a double click with a mouse changes it too. Lines not sent yet are marked "Noch nicht
 // gesendet". While the line is being changed, ShoppingItemInput's edit field
 // stands in for the row. The root is the `li`, so the group's TransitionGroup
 // animates the line itself.
@@ -58,6 +58,9 @@ let leaveTimer: ReturnType<typeof setTimeout> | undefined
 // The touch was a long press or a swipe, so the click it may leave is not a tick.
 let consumed = false
 let buzzed = false
+// The kind of pointer that last pressed the row: a double click counts with a
+// mouse only.
+let lastPointer = ''
 
 const offset = ref(0)
 const leaving = ref(false)
@@ -76,6 +79,7 @@ const dangerShown = computed(() => {
 
 function onPointerDown(event: PointerEvent) {
   consumed = false
+  lastPointer = event.pointerType
   if (event.pointerType !== 'touch' || !event.isPrimary || leaving.value) return
   press = { id: event.pointerId, x: event.clientX, y: event.clientY }
   earlier = null
@@ -149,6 +153,13 @@ function leave() {
 function spring() {
   springing.value = true
   offset.value = 0
+}
+
+// A double click on a desktop changes the line. Its two clicks have already
+// ticked and unticked it (each click is a tap), so the tick is as it was, and
+// the edit opens on the tick it had.
+function onDoubleClick() {
+  if (lastPointer !== 'touch') emit('edit')
 }
 
 // A long press or a swipe on a phone is not a tick; a tap is.
@@ -249,6 +260,7 @@ onBeforeUnmount(() => {
           :style="{ transform: rowTransform }"
           data-shopping-tick
           @click="onClick"
+          @dblclick="onDoubleClick"
           @keydown="onKeydown"
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
