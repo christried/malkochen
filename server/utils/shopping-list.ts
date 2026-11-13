@@ -36,11 +36,14 @@ const VIEW = {
   dishId: shoppingItem.dishId,
   dishTitle: sql<string | null>`coalesce(${dish.title}, ${shoppingItem.dishTitle})`,
   dishOnBoard: sql<boolean>`${dish.id} is not null`,
+  place: shoppingItem.position,
+  putOn: shoppingItem.putOn,
 }
 
 // The list's order: "Sonstiges" first, then the groups in the order their
-// Dishes were first put on, each item at its place in its group.
-const ORDER = [sql`${shoppingItem.groupAt} asc nulls first`, asc(shoppingItem.dishId), asc(shoppingItem.position), asc(shoppingItem.addedAt), asc(shoppingItem.id)]
+// Dishes were first put on, each item at its place in its group (a Dish's
+// line in its Recipe), a line put on several times side by side: A, A, B, B.
+const ORDER = [sql`${shoppingItem.groupAt} asc nulls first`, asc(shoppingItem.dishId), asc(shoppingItem.position), asc(shoppingItem.putOn), asc(shoppingItem.addedAt), asc(shoppingItem.id)]
 
 // The Board's Shopping List, in order.
 export async function shoppingItemsOf(boardId: string): Promise<ShoppingItemView[]> {
@@ -197,6 +200,25 @@ export async function restoreShoppingItems(boardId: string, userId: string, ids:
   return viewsOf(boardId, back)
 }
 
+// "Rückgängig" after putting a Dish or a week on: takes the items `ids` off
+// the Board's list, those of them on it (gone, deleted or another Board's
+// ones are left out). Like clearing, it only marks them deleted, so a restore
+// brings them back. One event, however many; none for none. Answers the ids
+// it took back.
+export async function takeBackShoppingItems(boardId: string, userId: string, ids: string[]): Promise<string[]> {
+  const [taken] = await runAtomic(d => [
+    withEvents(
+      d,
+      sql`update ${shoppingItem} set deleted_at = now()
+        where ${and(live(boardId), inArray(shoppingItem.id, ids))}
+        returning id, board_id`,
+      shoppingEvent('shopping_items_taken_back', userId),
+      { once: true },
+    ),
+  ])
+  return (taken?.rows ?? []).map(row => row.id as string)
+}
+
 // The Dish as putting it on sees it: on the Board, not archived.
 const dishOn = (boardId: string, dishId: string) => and(eq(dish.id, dishId), eq(dish.boardId, boardId), isNull(dish.deletedAt))
 
@@ -212,9 +234,10 @@ async function dishRefusal(boardId: string, dishId: string): Promise<PutOnRefusa
 
 // "Auf die Einkaufsliste": puts the Dish on the list with the lines the
 // Member chose from its Ingredients (`items`, each with the id the device
-// made), at the end of the Dish's group in the order sent. The group is new,
-// after every other, if the Dish has none on the list; and takes the Dish's
-// title as it is now either way. A refusal if the Dish isn't on the Board
+// made and its `line`, its place in the Ingredients), as the Dish's next
+// put-on: each line reads at its place in the Recipe, next to the same line
+// of the earlier put-ons. The group is new, after every other, if the Dish
+// has none on the list; and takes the Dish's title as it is now either way. A refusal if the Dish isn't on the Board
 // (archived, gone, another Board's) or has no Ingredients; 'full' if the
 // lines wouldn't fit, and then none goes on; 'taken' if an id is another
 // item's. A repeat (its first id is an item of this Dish the user added)
@@ -222,10 +245,10 @@ async function dishRefusal(boardId: string, dishId: string): Promise<PutOnRefusa
 export async function putDishOn(
   boardId: string,
   userId: string,
-  { dishId, items, madeAt }: { dishId: string, items: { id: string, text: string }[], madeAt?: string },
+  { dishId, items, madeAt }: { dishId: string, items: { id: string, text: string, line: number }[], madeAt?: string },
 ): Promise<ShoppingItemView[] | PutOnRefusal | 'full' | 'taken'> {
   const ids = items.map(item => item.id)
-  const lines = sql.join(items.map((item, i) => sql`(${item.id}::uuid, ${item.text}::text, ${i}::int)`), sql`, `)
+  const lines = sql.join(items.map(item => sql`(${item.id}::uuid, ${item.text}::text, ${item.line}::int)`), sql`, `)
   let refusal: PutOnRefusal | 'full' | null = null
   const standing = await writeOnce(() => itemIdStanding(ids[0]!, boardId, dishId, userId), async () => {
     const before = await dishRefusal(boardId, dishId)
@@ -240,14 +263,14 @@ export async function putDishOn(
         .where(and(eq(shoppingItem.boardId, boardId), eq(shoppingItem.dishId, dishId), sql`exists (select 1 from ${dish} where ${dishOn(boardId, dishId)})`)),
       withEvents(
         d,
-        sql`insert into ${shoppingItem} (id, board_id, text, dish_id, dish_title, group_at, position, added_by, added_at)
+        sql`insert into ${shoppingItem} (id, board_id, text, dish_id, dish_title, group_at, position, put_on, added_by, added_at)
           select v.id, ${boardId}, v.text, d.id, d.title,
-            coalesce(g.at, now()), g.next + v.ord, ${userId}, ${madeAtOrNow(madeAt)}
+            coalesce(g.at, now()), v.line, g.next, ${userId}, ${madeAtOrNow(madeAt)}
           from (select ${dish.id} as id, ${dish.title} as title from ${dish}
               where ${dishOn(boardId, dishId)} and cardinality(${dish.recipeIngredients}) > 0) d,
-            (select min(s.group_at) as at, coalesce(max(s.position) + 1, 0) as next from ${shoppingItem} s
+            (select min(s.group_at) as at, coalesce(max(s.put_on), 0) + 1 as next from ${shoppingItem} s
               where s.board_id = ${boardId} and s.dish_id = ${dishId} and s.deleted_at is null) g,
-            (values ${lines}) v(id, text, ord)
+            (values ${lines}) v(id, text, line)
           where ${roomFor(boardId, items.length)}
           returning id, board_id, dish_id`,
         shoppingEvent('dish_put_on_shopping_list', userId),
@@ -268,13 +291,15 @@ export function isMonday(day: string): boolean {
 
 // "Woche auf die Einkaufsliste": puts every Dish planned on the Week Plan
 // from today, or the week's Monday if that is later, to that week's Sunday
-// on the list, each once with all its Ingredients in their order, however
-// many of those days it is planned on; in the order of their first day there.
+// on the list, each as many times as it is planned on those days: put-on 1, 2,
+// 3… in plan order, each with all its Ingredients at their places in the
+// Recipe (so a Dish planned twice reads A, A, B, B); the groups in the order
+// of their Dish's first day there.
 // Today is the day it was made (`madeAt`, a Berlin date), and the Dishes are
 // collected as the Board is when it arrives. Dishes that have a group on the
 // list already, have no Ingredients or are archived are skipped. 'past' for
 // a week that is over; 'full' if their lines wouldn't fit, and then none
-// goes on. Answers how many Dishes went on, and their items.
+// goes on. Answers how many Dishes went on (each counted once, however many times), and their items.
 export async function putWeekOn(
   boardId: string,
   userId: string,
@@ -284,22 +309,27 @@ export async function putWeekOn(
   const monday = sql`${week}::date`
   const [{ over } = { over: true }] = await db.execute<{ over: boolean }>(sql`select ${monday} + 6 < ${today} as over`).then(r => r.rows)
   if (over) return 'past'
-  // The Dishes to put on, numbered in the order of their first day.
-  const dishes = sql`select ${dish.id} as id, ${dish.title} as title, ${dish.recipeIngredients} as lines,
-      row_number() over (order by min(${plannedDish.day}), min(${plannedDish.position}), ${dish.id}) as rank,
-      sum(cardinality(${dish.recipeIngredients})) over () as total
+  // The put-ons: one for every time a Dish is planned, numbered within the
+  // Dish in plan order, and the Dishes ranked in the order of their first day.
+  const dishes = sql`select id, title, lines, put_on,
+      dense_rank() over (order by first_day, first_position, id) as rank,
+      sum(cardinality(lines)) over () as total
+    from (select ${dish.id} as id, ${dish.title} as title, ${dish.recipeIngredients} as lines,
+      row_number() over plans as put_on,
+      first_value(${plannedDish.day}) over plans as first_day,
+      first_value(${plannedDish.position}) over plans as first_position
     from ${plannedDish} join ${dish} on ${dish.id} = ${plannedDish.dishId}
     where ${and(eq(dish.boardId, boardId), isNull(dish.deletedAt))}
       and ${plannedDish.day} between greatest(${today}, ${monday}) and ${monday} + 6
       and cardinality(${dish.recipeIngredients}) > 0
       and not exists (select 1 from ${shoppingItem} s where s.board_id = ${boardId} and s.dish_id = ${dish.id} and s.deleted_at is null)
-    group by ${dish.id}`
+    window plans as (partition by ${dish.id} order by ${plannedDish.day}, ${plannedDish.position}, ${plannedDish.id})) planned`
   const [inserted] = await runAtomic(d => [
     withEvents(
       d,
-      sql`insert into ${shoppingItem} (id, board_id, text, dish_id, dish_title, group_at, position, added_by, added_at)
+      sql`insert into ${shoppingItem} (id, board_id, text, dish_id, dish_title, group_at, position, put_on, added_by, added_at)
         select gen_random_uuid(), ${boardId}, line.text, p.id, p.title,
-          now() + p.rank * interval '1 microsecond', line.ord - 1, ${userId}, ${madeAtOrNow(madeAt)}
+          now() + p.rank * interval '1 microsecond', line.ord - 1, p.put_on, ${userId}, ${madeAtOrNow(madeAt)}
         from (${dishes}) p, unnest(p.lines) with ordinality as line(text, ord)
         where ${roomFor(boardId, sql`p.total`)}
         returning id, board_id, dish_id`,

@@ -40,7 +40,8 @@ export const EVENT_KINDS = [
   // entfernen") and deleted items brought back by "Rückgängig" (`details.items`,
   // how many); a Dish put on with its chosen Ingredients (the event's Dish,
   // `details.items`); and a week of the Week Plan put on (`details.week`, its
-  // Monday, and `details.dishes`, how many went on).
+  // Monday, and `details.dishes`, how many went on); and the items of such a
+  // put-on taken back again ("Rückgängig", `details.items`, how many).
   'shopping_item_added',
   'shopping_item_changed',
   'shopping_item_ticked',
@@ -50,6 +51,7 @@ export const EVENT_KINDS = [
   'shopping_items_restored',
   'dish_put_on_shopping_list',
   'week_put_on_shopping_list',
+  'shopping_items_taken_back',
   'cooking_recorded',
   'cooking_deleted',
   'cooking_restored',

@@ -457,8 +457,14 @@ export const shoppingItem = pgTable('shopping_item', {
   // When the group's Dish was first put on, the same on every item of the
   // group: groups are in this order, newest last. Null for "Sonstiges".
   groupAt: timestamp('group_at', { withTimezone: true }),
-  // Its place in its group (0, 1, 2…, or gaps after a delete).
+  // Its place in its group. For a Dish's item: the line's place in the Dish's
+  // Ingredients (0-based among the non-empty lines), so a Dish put on twice
+  // reads A, A, B, B. For "Sonstiges": the typing order (0, 1, 2…, or gaps
+  // after a delete).
   position: integer('position').notNull(),
+  // Which time its Dish was put on within the group, 1-based: the second
+  // put-on's items have 2. 1 for "Sonstiges".
+  putOn: integer('put_on').notNull().default(1),
   ticked: boolean('ticked').notNull().default(false),
   // Who added it; kept (as unknown) if their account is ever deleted. Never
   // shown.

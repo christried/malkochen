@@ -29,7 +29,7 @@ const leaver = () => signIn(ALLOWLISTED[255])
 const deleter = () => signIn(ALLOWLISTED[256])
 const operator = () => signIn(OPERATOR)
 
-interface Item { id: string, text: string, ticked: boolean, dishId: string | null, dishTitle: string | null, dishOnBoard: boolean }
+interface Item { id: string, text: string, ticked: boolean, dishId: string | null, dishTitle: string | null, dishOnBoard: boolean, place: number, putOn: number }
 interface Dish { id: string, title: string }
 interface Board {
   id: string
@@ -114,9 +114,10 @@ async function change(caller: Caller, id: string, body: Record<string, unknown>)
   return res.json()
 }
 
-// Puts the Dish on with the given lines, each with a new id.
-async function putOn(caller: Caller, boardId: string, dish: Dish, lines: string[]): Promise<Item[]> {
-  const res = await putOnRaw(caller, boardId, { dishId: dish.id, items: lines.map(text => ({ id: randomUUID(), text })) })
+// Puts the Dish on with the given lines, each with a new id, at the given
+// places in its Ingredients (0, 1, 2… if not given).
+async function putOn(caller: Caller, boardId: string, dish: Dish, lines: string[], places = lines.map((_, i) => i)): Promise<Item[]> {
+  const res = await putOnRaw(caller, boardId, { dishId: dish.id, items: lines.map((text, i) => ({ id: randomUUID(), text, line: places[i] })) })
   expect(res.status, await res.clone().text()).toBe(201)
   return res.json()
 }
@@ -141,7 +142,7 @@ test('the Owner, a Member with no Permissions and the Operator type items into "
   const res = await addRaw(grace, board.id, { id, text: '  Hafermilch ' })
 
   expect(res.status).toBe(201)
-  expect(await res.json()).toEqual({ id, text: 'Hafermilch', ticked: false, dishId: null, dishTitle: null, dishOnBoard: false })
+  expect(await res.json()).toEqual({ id, text: 'Hafermilch', ticked: false, dishId: null, dishTitle: null, dishOnBoard: false, place: 0, putOn: 1 })
   await add(ada, board.id, 'Klopapier')
   await add(babbage, board.id, 'Spülmittel')
   for (const caller of [ada, grace, babbage]) {
@@ -159,7 +160,7 @@ test('items are changed, ticked and unticked by any Member, the Owner and the Op
   expect(await change(ada, item.id, { ticked: false })).toMatchObject({ ticked: false })
   expect(await change(grace, item.id, { ticked: true })).toMatchObject({ ticked: true })
 
-  expect(await listOf(ada, board.id)).toEqual([{ id: item.id, text: '2 Hafermilch', ticked: true, dishId: null, dishTitle: null, dishOnBoard: false }])
+  expect(await listOf(ada, board.id)).toEqual([{ id: item.id, text: '2 Hafermilch', ticked: true, dishId: null, dishTitle: null, dishOnBoard: false, place: 0, putOn: 1 }])
 })
 
 test('a change takes either a text or a tick, not both and not neither', async () => {
@@ -186,7 +187,7 @@ test('an item is deleted by any Member, and "Rückgängig" brings it back as it 
   const res = await restoreRaw(grace, board.id, [b.id])
 
   expect(res.status).toBe(200)
-  expect(await res.json()).toEqual([{ id: b.id, text: 'B', ticked: true, dishId: null, dishTitle: null, dishOnBoard: false }])
+  expect(await res.json()).toEqual([{ id: b.id, text: 'B', ticked: true, dishId: null, dishTitle: null, dishOnBoard: false, place: 1, putOn: 1 }])
   expect((await listOf(ada, board.id)).map(i => i.id)).toEqual([a.id, b.id, c.id])
 })
 
@@ -226,6 +227,48 @@ test('restoring leaves out ids that aren\'t deleted items of the Board', async (
   expect(await textsOf(other.ada, other.board.id)).toEqual([])
 })
 
+const takeBackRaw = (caller: Caller, boardId: string, body: unknown) => send(caller, 'POST', `/api/boards/${boardId}/shopping-items/take-back`, body)
+
+test('taking a put-on back deletes just those live items of the Board, for everyone, and "Rückgängig" restores them', async () => {
+  const { board, ada, grace } = await freshBoard()
+  const other = await freshBoard()
+  const soup = await addDish(ada, board.id, 'Suppe', ['Linsen', 'Tomaten'])
+  const milk = await add(ada, board.id, 'Hafermilch')
+  const gone = await add(ada, board.id, 'Weg')
+  expect((await deleteRaw(ada, gone.id)).status).toBe(204)
+  const elsewhere = await add(other.ada, other.board.id, 'Woanders')
+  const first = await putOn(ada, board.id, soup, ['Linsen', 'Tomaten'])
+  const second = await putOn(ada, board.id, soup, ['Linsen', 'Tomaten'])
+  const watch = await watchEvents()
+
+  const res = await takeBackRaw(grace, board.id, { ids: [...second.map(i => i.id), gone.id, elsewhere.id, randomUUID()] })
+
+  expect(res.status, await res.clone().text()).toBe(200)
+  expect(new Set((await res.json() as { ids: string[] }).ids)).toEqual(new Set(second.map(i => i.id)))
+  expect((await listOf(ada, board.id)).map(i => i.id)).toEqual([milk.id, ...first.map(i => i.id)])
+  expect(await textsOf(other.ada, other.board.id)).toEqual(['Woanders'])
+  expect((await watch.recorded()).filter(e => e.kind === 'shopping_items_taken_back')).toEqual([
+    { kind: 'shopping_items_taken_back', boardId: board.id, dishId: null, userId: await idOf(grace), details: { items: 2 } },
+  ])
+
+  expect((await restoreRaw(ada, board.id, second.map(i => i.id))).status).toBe(200)
+  expect((await listOf(grace, board.id)).map(i => [i.text, i.putOn])).toEqual([['Hafermilch', 1], ['Linsen', 1], ['Linsen', 2], ['Tomaten', 1], ['Tomaten', 2]])
+})
+
+test('taking back nothing on the list answers no ids and records no event; a non-Member gets "not found", a bad body 400', async () => {
+  const { board, ada } = await freshBoard()
+  const item = await add(ada, board.id, 'Hafermilch')
+  const watch = await watchEvents()
+
+  expect(await (await takeBackRaw(ada, board.id, { ids: [randomUUID()] })).json()).toEqual({ ids: [] })
+  expect((await watch.recorded()).filter(e => e.kind === 'shopping_items_taken_back')).toEqual([])
+  expect((await takeBackRaw(await outsider(), board.id, { ids: [item.id] })).status).toBe(404)
+  for (const bad of [{}, { ids: [] }, { ids: ['nein'] }, { ids: [item.id], madeAt: 'gestern' }]) {
+    expect((await takeBackRaw(ada, board.id, bad)).status).toBe(400)
+  }
+  expect(await textsOf(ada, board.id)).toEqual(['Hafermilch'])
+})
+
 test.each([
   ['empty', ''],
   ['blank', '   '],
@@ -254,7 +297,7 @@ test('a list holds 500 items: the 501st, a put-on going over and a restore going
 
   const res = await addRaw(ada, board.id, { id: randomUUID(), text: 'Zu viel' })
   expect(res.status).toBe(409)
-  expect((await putOnRaw(ada, board.id, { dishId: big.id, items: [{ id: randomUUID(), text: 'Zutat 1' }] })).status).toBe(409)
+  expect((await putOnRaw(ada, board.id, { dishId: big.id, items: [{ id: randomUUID(), text: 'Zutat 1', line: 0 }] })).status).toBe(409)
 
   // Two gone, three to bring back: none comes back.
   for (const item of typed.slice(0, 3)) expect((await deleteRaw(ada, item.id)).status).toBe(204)
@@ -275,7 +318,7 @@ test('someone who isn\'t a Member gets "not found" for every write, and changes 
   expect((await deleteRaw(stranger, item.id)).status).toBe(404)
   expect((await clearRaw(stranger, board.id)).status).toBe(404)
   expect((await restoreRaw(stranger, board.id, [item.id])).status).toBe(404)
-  expect((await putOnRaw(stranger, board.id, { dishId: dish.id, items: [{ id: randomUUID(), text: 'Nudeln' }] })).status).toBe(404)
+  expect((await putOnRaw(stranger, board.id, { dishId: dish.id, items: [{ id: randomUUID(), text: 'Nudeln', line: 0 }] })).status).toBe(404)
   expect((await weekRaw(stranger, board.id, { week: '2031-06-02' })).status).toBe(404)
   expect((await stranger.fetch(`/api/boards/${board.id}`)).status).toBe(404)
 
@@ -328,7 +371,7 @@ test('each write moves the Board Version; a change to what an item already is mo
   seen = await versionOf(grace, board.id)
   await moves(() => clearRaw(grace, board.id), 200)
   await stays(() => clearRaw(grace, board.id), 200)
-  await moves(() => putOnRaw(grace, board.id, { dishId: ramen.id, items: [{ id: randomUUID(), text: 'Nudeln' }] }), 201)
+  await moves(() => putOnRaw(grace, board.id, { dishId: ramen.id, items: [{ id: randomUUID(), text: 'Nudeln', line: 0 }] }), 201)
   await stays(() => addRaw(grace, board.id, { id: randomUUID(), text: '' }), 400)
 })
 
@@ -409,18 +452,18 @@ test('a Dish put on goes under its group with the chosen lines, in the order sen
   const ids = [randomUUID(), randomUUID(), randomUUID()]
 
   const res = await putOnRaw(grace, board.id, { dishId: soup.id, items: [
-    { id: ids[0], text: '250 g rote Linsen' },
-    { id: ids[1], text: '2 Karotten' },
-    { id: ids[2], text: '1 Zwiebel' },
+    { id: ids[0], text: '250 g rote Linsen', line: 0 },
+    { id: ids[1], text: '2 Karotten', line: 2 },
+    { id: ids[2], text: '1 Zwiebel', line: 3 },
   ] })
   await add(grace, board.id, 'Hafermilch')
 
   expect(res.status).toBe(201)
-  const group = { dishId: soup.id, dishTitle: 'Omas Linsensuppe', dishOnBoard: true, ticked: false }
+  const group = { dishId: soup.id, dishTitle: 'Omas Linsensuppe', dishOnBoard: true, ticked: false, putOn: 1 }
   expect(await res.json()).toEqual([
-    { id: ids[0], text: '250 g rote Linsen', ...group },
-    { id: ids[1], text: '2 Karotten', ...group },
-    { id: ids[2], text: '1 Zwiebel', ...group },
+    { id: ids[0], text: '250 g rote Linsen', place: 0, ...group },
+    { id: ids[1], text: '2 Karotten', place: 2, ...group },
+    { id: ids[2], text: '1 Zwiebel', place: 3, ...group },
   ])
   expect((await listOf(ada, board.id)).map(i => [i.text, i.dishTitle])).toEqual([
     ['Hafermilch', null],
@@ -439,7 +482,42 @@ test('putting the same Dish on again appends its lines to its group, which keeps
 
   await putOn(ada, board.id, bowl, ['Tofu', 'Reis'])
 
-  expect(await textsOf(ada, board.id)).toEqual(['Tofu', 'Reis', 'Tofu', 'Reis', 'Penne'])
+  expect(await textsOf(ada, board.id)).toEqual(['Tofu', 'Tofu', 'Reis', 'Reis', 'Penne'])
+})
+
+test('a Dish put on twice reads A, A, B, B, the second put-on\'s items remembering it was the second', async () => {
+  const { board, ada } = await freshBoard()
+  const bowl = await addDish(ada, board.id, 'Crispy Tofu Bowl', ['Tofu', 'Reis'])
+  const first = await putOn(ada, board.id, bowl, ['Tofu', 'Reis'])
+  const second = await putOn(ada, board.id, bowl, ['Tofu', 'Reis'])
+
+  expect(first.map(i => i.putOn)).toEqual([1, 1])
+  expect(second.map(i => [i.place, i.putOn])).toEqual([[0, 2], [1, 2]])
+  expect((await listOf(ada, board.id)).map(i => [i.text, i.putOn])).toEqual([['Tofu', 1], ['Tofu', 2], ['Reis', 1], ['Reis', 2]])
+})
+
+test('a put-on choosing some lines keeps each at its place in the Recipe, whichever time it was put on', async () => {
+  const { board, ada } = await freshBoard()
+  const soup = await addDish(ada, board.id, 'Suppe', ['Linsen', 'Tomaten', 'Karotten'])
+  await putOn(ada, board.id, soup, ['Linsen', 'Tomaten', 'Karotten'])
+  await putOn(ada, board.id, soup, ['Karotten'], [2])
+
+  expect((await listOf(ada, board.id)).map(i => [i.text, i.place, i.putOn])).toEqual([
+    ['Linsen', 0, 1], ['Tomaten', 1, 1], ['Karotten', 2, 1], ['Karotten', 2, 2],
+  ])
+})
+
+test('a put-on whose lines are missing, repeated or out of the Recipe\'s range is a bad request', async () => {
+  const { board, ada } = await freshBoard()
+  const soup = await addDish(ada, board.id, 'Suppe', ['Linsen', 'Tomaten'])
+  const body = (...items: Record<string, unknown>[]) => putOnRaw(ada, board.id, { dishId: soup.id, items })
+
+  expect((await body({ id: randomUUID(), text: 'Linsen' })).status).toBe(400)
+  expect((await body({ id: randomUUID(), text: 'Linsen', line: -1 })).status).toBe(400)
+  expect((await body({ id: randomUUID(), text: 'Linsen', line: 1.5 })).status).toBe(400)
+  expect((await body({ id: randomUUID(), text: 'Linsen', line: 100 })).status).toBe(400)
+  expect((await body({ id: randomUUID(), text: 'Linsen', line: 0 }, { id: randomUUID(), text: 'Tomaten', line: 0 })).status).toBe(400)
+  expect(await listOf(ada, board.id)).toEqual([])
 })
 
 test('a renamed Dish\'s group shows its new title; archived, moved or deleted for good, its group keeps the last title and stays', async () => {
@@ -499,7 +577,7 @@ test('a Dish without Ingredients, archived, of another Board or missing, and an 
   const foreign = await addDish(other.ada, other.board.id, 'Fremd', ['Mehl'])
   const withRecipe = await addDish(ada, board.id, 'Mit Rezept', ['Mehl'])
   expect((await send(ada, 'DELETE', `/api/dishes/${archived.id}`)).status).toBe(204)
-  const line = () => [{ id: randomUUID(), text: 'Mehl' }]
+  const line = () => [{ id: randomUUID(), text: 'Mehl', line: 0 }]
 
   expect((await putOnRaw(grace, board.id, { dishId: plain.id, items: line() })).status).toBe(400)
   for (const dishId of [archived.id, foreign.id, randomUUID()]) {
@@ -508,9 +586,9 @@ test('a Dish without Ingredients, archived, of another Board or missing, and an 
     expect((await res.json() as { statusMessage: string }).statusMessage).toBe('Dish not found')
   }
   expect((await putOnRaw(grace, board.id, { dishId: withRecipe.id, items: [] })).status).toBe(400)
-  expect((await putOnRaw(grace, board.id, { dishId: withRecipe.id, items: [{ id: randomUUID(), text: '' }] })).status).toBe(400)
+  expect((await putOnRaw(grace, board.id, { dishId: withRecipe.id, items: [{ id: randomUUID(), text: '', line: 0 }] })).status).toBe(400)
   const twice = randomUUID()
-  expect((await putOnRaw(grace, board.id, { dishId: withRecipe.id, items: [{ id: twice, text: 'A' }, { id: twice, text: 'B' }] })).status).toBe(400)
+  expect((await putOnRaw(grace, board.id, { dishId: withRecipe.id, items: [{ id: twice, text: 'A', line: 0 }, { id: twice, text: 'B', line: 1 }] })).status).toBe(400)
 
   expect(await listOf(ada, board.id)).toEqual([])
 })
@@ -520,7 +598,7 @@ test('a Dish without Ingredients, archived, of another Board or missing, and an 
 // A week far ahead, so it counts from its Monday whatever today is.
 const LATER = { monday: '2031-06-02', tuesday: '2031-06-03', sunday: '2031-06-08', nextMonday: '2031-06-09', sundayBefore: '2031-06-01' }
 
-test('a week put on adds every Dish planned from its Monday to its Sunday, each once with all its Ingredients, in the order of their first day', async () => {
+test('a week put on adds every Dish planned from its Monday to its Sunday, each as many times as it is planned, with all its Ingredients, in the order of their first day', async () => {
   const { board, ada, grace } = await freshBoard()
   const [soup, pasta, bowl, before, after] = [
     await addDish(ada, board.id, 'Linsensuppe', ['Linsen', 'Tomaten']),
@@ -541,12 +619,27 @@ test('a week put on adds every Dish planned from its Monday to its Sunday, each 
   expect(res.status, await res.clone().text()).toBe(200)
   const answer = await res.json() as { dishes: number, items: Item[] }
   expect(answer.dishes).toBe(3)
-  expect(answer.items.map(i => i.text)).toEqual(['Tofu', 'Linsen', 'Tomaten', 'Penne'])
-  expect((await listOf(ada, board.id)).map(i => [i.dishTitle, i.text])).toEqual([
-    ['Bowl', 'Tofu'],
-    ['Linsensuppe', 'Linsen'],
-    ['Linsensuppe', 'Tomaten'],
-    ['Pasta', 'Penne'],
+  expect(answer.items.map(i => i.text)).toEqual(['Tofu', 'Linsen', 'Linsen', 'Tomaten', 'Tomaten', 'Penne'])
+  expect((await listOf(ada, board.id)).map(i => [i.dishTitle, i.text, i.putOn])).toEqual([
+    ['Bowl', 'Tofu', 1],
+    ['Linsensuppe', 'Linsen', 1],
+    ['Linsensuppe', 'Linsen', 2],
+    ['Linsensuppe', 'Tomaten', 1],
+    ['Linsensuppe', 'Tomaten', 2],
+    ['Pasta', 'Penne', 1],
+  ])
+})
+
+test('a Dish planned three times goes on three times, the put-ons numbered in plan order', async () => {
+  const { board, ada } = await freshBoard()
+  const soup = await addDish(ada, board.id, 'Suppe', ['Linsen', 'Tomaten'])
+  for (const day of [LATER.monday, LATER.tuesday, LATER.sunday]) await plan(ada, board.id, soup, day)
+
+  const answer = await (await weekRaw(ada, board.id, { week: LATER.monday })).json() as { dishes: number, items: Item[] }
+
+  expect(answer.dishes).toBe(1)
+  expect((await listOf(ada, board.id)).map(i => [i.text, i.place, i.putOn])).toEqual([
+    ['Linsen', 0, 1], ['Linsen', 0, 2], ['Linsen', 0, 3], ['Tomaten', 1, 1], ['Tomaten', 1, 2], ['Tomaten', 1, 3],
   ])
 })
 
@@ -663,7 +756,7 @@ test('each write applies when it arrives late, with the time it was made', async
   expect((await clearRaw(grace, board.id, { madeAt })).status).toBe(200)
   expect((await restoreRaw(grace, board.id, [id])).status).toBe(200)
   expect((await deleteRaw(grace, id, { madeAt })).status).toBe(204)
-  expect((await putOnRaw(grace, board.id, { dishId: soup.id, items: [{ id: randomUUID(), text: 'Linsen' }], madeAt })).status).toBe(201)
+  expect((await putOnRaw(grace, board.id, { dishId: soup.id, items: [{ id: randomUUID(), text: 'Linsen', line: 0 }], madeAt })).status).toBe(201)
   expect((await weekRaw(grace, board.id, { week: LATER.monday, madeAt })).status).toBe(200)
 
   expect(await textsOf(ada, board.id)).toEqual(['Linsen'])
@@ -671,7 +764,7 @@ test('each write applies when it arrives late, with the time it was made', async
     await addRaw(grace, board.id, { id: randomUUID(), text: 'A', madeAt: 'gestern' }),
     await deleteRaw(grace, id, { madeAt: 'gestern' }),
     await clearRaw(grace, board.id, { madeAt: 'gestern' }),
-    await putOnRaw(grace, board.id, { dishId: soup.id, items: [{ id: randomUUID(), text: 'Linsen' }], madeAt: 'gestern' }),
+    await putOnRaw(grace, board.id, { dishId: soup.id, items: [{ id: randomUUID(), text: 'Linsen', line: 0 }], madeAt: 'gestern' }),
     await weekRaw(grace, board.id, { week: LATER.monday, madeAt: 'gestern' }),
   ]) expect(res.status).toBe(400)
 })
@@ -725,7 +818,7 @@ test('a late put-on of a Dish archived, deleted for good or moved meanwhile is d
   expect((await send(ada, 'POST', `/api/dishes/${moved.id}/move`, { columnId: target.board.columns[0]!.id })).status).toBe(200)
 
   for (const dish of [archived, purged, moved]) {
-    const res = await putOnRaw(grace, board.id, { dishId: dish.id, items: [{ id: randomUUID(), text: 'x' }], madeAt: minutesAgo(5) })
+    const res = await putOnRaw(grace, board.id, { dishId: dish.id, items: [{ id: randomUUID(), text: 'x', line: 0 }], madeAt: minutesAgo(5) })
     expect(res.status).toBe(404)
     expect((await res.json() as { statusMessage: string }).statusMessage).toBe('Dish not found')
   }
@@ -747,7 +840,7 @@ test('the same add or put-on sent twice applies once; both answer 201, with one 
   const { board, ada, grace } = await freshBoard()
   const soup = await addDish(ada, board.id, 'Suppe', ['Linsen', 'Tomaten'])
   const add = { id: randomUUID(), text: 'Hafermilch', madeAt: minutesAgo(5) }
-  const put = { dishId: soup.id, items: [{ id: randomUUID(), text: 'Linsen' }, { id: randomUUID(), text: 'Tomaten' }], madeAt: minutesAgo(5) }
+  const put = { dishId: soup.id, items: [{ id: randomUUID(), text: 'Linsen', line: 0 }, { id: randomUUID(), text: 'Tomaten', line: 1 }], madeAt: minutesAgo(5) }
   const watch = await watchEvents()
 
   const [first, second] = await Promise.all([addRaw(grace, board.id, add), addRaw(grace, board.id, add)])
@@ -765,6 +858,6 @@ test('an id another user\'s item has, or another Board\'s, is refused with 409 a
   const soup = await addDish(ada, board.id, 'Suppe', ['Linsen'])
 
   expect((await addRaw(grace, board.id, { id: taken.id, text: 'Klopapier' })).status).toBe(409)
-  expect((await putOnRaw(grace, board.id, { dishId: soup.id, items: [{ id: taken.id, text: 'Linsen' }] })).status).toBe(409)
+  expect((await putOnRaw(grace, board.id, { dishId: soup.id, items: [{ id: taken.id, text: 'Linsen', line: 0 }] })).status).toBe(409)
   expect(await textsOf(ada, board.id)).toEqual(['Hafermilch'])
 })

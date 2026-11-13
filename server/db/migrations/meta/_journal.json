@@ -372,6 +372,13 @@
       "when": 1794521204761,
       "tag": "0052_shopping_item",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1794561222470,
+      "tag": "0053_shopping_item_put_on",
+      "breakpoints": true
     }
   ]
 }

@@ -8,7 +8,10 @@ export const SHOPPING_LIMITS = { characters: 200, items: 500 } as const
 
 // A Shopping Item as the Board load carries it, in the list's order:
 // "Sonstiges" first, then the Dish groups in the order their Dishes were
-// first put on, each in its own order. `dishId` is the item's group, null for
+// first put on, each in its own order: by `place` (a Dish item's line in its
+// Recipe's Ingredients, 0-based; the typing order for "Sonstiges"), then
+// `putOn` (which time its Dish was put on, 1-based; 1 for "Sonstiges"), so a
+// Dish put on twice reads A, A, B, B. `dishId` is the item's group, null for
 // "Sonstiges". `dishTitle` is the group's title: the Dish's as it is now while
 // it is on the Board and not archived (`dishOnBoard`), else as it was last
 // known; null for "Sonstiges". Who added an item is never shown.
@@ -19,6 +22,8 @@ export interface ShoppingItemView {
   dishId: string | null
   dishTitle: string | null
   dishOnBoard: boolean
+  place: number
+  putOn: number
 }
 
 // What putting a week on answers: how many Dishes went on, and their items.
