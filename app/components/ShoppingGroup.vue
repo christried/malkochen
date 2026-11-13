@@ -193,7 +193,7 @@ function onHeadingClick(event: MouseEvent) {
   transition: transform var(--dur-settle) var(--ease-settle);
 }
 .line-enter-active {
-  animation: r15-arrive 460ms var(--ease-settle);
+  animation: r15-arrive var(--dur-pop) var(--ease-settle);
 }
 @media (prefers-reduced-motion: reduce) {
   .line-move {
