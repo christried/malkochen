@@ -44,6 +44,11 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
           aria-hidden="true"
           class="name-pebble h-11 w-44 shadow-card"
         />
+        <!-- From 1200px the view switch sits here, as wide as the Board's. -->
+        <span
+          aria-hidden="true"
+          class="hidden h-11 w-[348px] shrink-0 rounded-pill bg-view-track desktop:block"
+        />
         <span
           v-for="icon in ['search', 'settings'] as const"
           :key="icon"
@@ -68,7 +73,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
       aria-hidden="true"
       class="mt-3 desktop:hidden"
     >
-      <span class="block h-10 w-[318px] max-w-full rounded-pill bg-view-track" />
+      <span class="block h-10 w-[328px] max-w-full rounded-pill bg-view-track" />
     </div>
 
     <ColumnHeadline

@@ -62,6 +62,14 @@ test('the switch shows the Shopping List, empty at first, and the choice survive
   await expect(radio(page, 'Woche')).toBeChecked()
   await radio(page, 'Woche').press('ArrowLeft')
   await expect(radio(page, 'Spalten')).toBeChecked()
+
+  // ← and → cycle: ← from Spalten comes round to Einkauf, → from Einkauf to Spalten.
+  await radio(page, 'Spalten').press('ArrowLeft')
+  await expect(radio(page, 'Einkauf')).toBeChecked()
+  await expect(shoppingList(page)).toBeVisible()
+  await radio(page, 'Einkauf').press('ArrowRight')
+  await expect(radio(page, 'Spalten')).toBeChecked()
+  await expect(page.getByTestId('columns')).toBeVisible()
 })
 
 test('items are typed into "Sonstiges" one after another, ticked to the bottom, unticked, changed and removed with "Rückgängig"', async ({ page }) => {
