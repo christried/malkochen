@@ -88,8 +88,8 @@ export type UnsentKind =
   // the list); a Dish put on with the lines chosen, each with its id and its
   // place in the Ingredients (`line`); a week of the Week Plan (its Monday),
   // which the server collects when it arrives; and the items of a put-on
-  // taken back ("Rückgängig"). A change to an item gone meanwhile is dropped without telling
-  // the Member.
+  // taken back ("Rückgängig"). A change to an item gone meanwhile is dropped
+  // without telling the Member.
   | { kind: 'shopAdd', itemId: string, text: string }
   | { kind: 'shopText', itemId: string, text: string }
   | { kind: 'shopTick', itemId: string, ticked: boolean }
