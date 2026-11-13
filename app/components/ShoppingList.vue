@@ -386,7 +386,7 @@ function clearDone() {
 /* A group coming or going fades; it settles to its place when the groups
    move. Reduced motion: no moving, a fade. */
 .group-move {
-  transition: translate var(--dur-settle) var(--ease-settle);
+  transition: transform var(--dur-settle) var(--ease-settle);
 }
 .group-enter-active,
 .group-leave-active {
