@@ -2,6 +2,7 @@
 import type { BoardView } from '~~/server/utils/boards'
 import type { ShoppingEntry, ShoppingGroup as Group } from '~/board/shopping-list'
 import type { Toast } from '~/utils/toast'
+import { prefersReducedMotion } from '~/utils/motion'
 import { keyboardInset } from '~/utils/shopping-layout'
 import { playGroupLeave } from '~/utils/shopping-leave'
 
@@ -56,6 +57,8 @@ const orderOf = computed(() => new Map(dishGroups.value.map((g, i) => [g.dishId,
 // jumps while lines are ticked.
 const GROUP_GAP = 18
 const root = useTemplateRef<HTMLElement>('root')
+// The list as a whole, which the add bar scrolls to the top of.
+const list = useTemplateRef<HTMLElement>('list')
 const column = ref(new Map<string | null, 0 | 1>())
 const columns = computed(() => {
   const cols: [Group[], Group[]] = [[], []]
@@ -127,6 +130,9 @@ async function openAdd() {
     return
   }
   setAdding(true)
+  // On a phone the list scrolls to its top, so Sonstiges is in view above the
+  // bar. Reduced motion: at once.
+  list.value?.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
   // The field shows after this tick; focusing it inside the tap keeps the
   // keyboard up on Android.
   await nextTick()
@@ -268,6 +274,7 @@ function onGroupLeave(el: Element, done: () => void) {
 
 <template>
   <section
+    ref="list"
     class="shopping-list relative mx-auto pb-[130px] desktop:max-w-[1080px] desktop:pb-10"
     :class="{ arriving }"
     :aria-labelledby="titleId"
