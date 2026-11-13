@@ -21,6 +21,7 @@ import { cookedOn, indexInDay, isDay, landingInDay, putOnDay, takeOffPlan } from
 import { createDishHistories, type HistoryTransport } from './dish-histories'
 import type { KeptBoards } from './kept-boards'
 import { createDishVotes, type VoteTransport } from './dish-votes'
+import { createShoppingList, takeOffList, type ShoppingTransport } from './shopping-list'
 
 // The client Board module (spec #61): owns the app's copy of an open Board.
 // Every change to it goes through an operation here, which changes the
@@ -156,7 +157,7 @@ function failedManyAs(error: unknown, notice: BulkNotice): BulkNotice {
 // (http-transport.ts), in memory under test. A failed write rejects with
 // WriteFailed. With the Dish History's (dish-histories.ts) and the Votes'
 // (dish-votes.ts).
-export interface BoardTransport extends HistoryTransport, VoteTransport {
+export interface BoardTransport extends HistoryTransport, VoteTransport, ShoppingTransport {
   addDish: (boardId: string, dish: AddDishBody) => Promise<AddedDish>
   // A Dish added offline, sent once malkochen answers (unsent-changes.ts):
   // the server looks its link up then (#462).
@@ -531,6 +532,11 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
       // A Dish planned offline that couldn't be goes from the Plan; the others
       // are put right by the Board load that follows.
       if (change.kind === 'plan' && board.value?.id === change.boardId) takeOffPlan(planned(), change.plannedId)
+      // Items typed or put on offline that couldn't be go from the list.
+      if (board.value?.id === change.boardId) {
+        if (change.kind === 'shopAdd') takeOffList(board.value.shoppingItems, change.itemId)
+        if (change.kind === 'shopDish') change.items.forEach(i => takeOffList(board.value!.shoppingItems, i.id))
+      }
     }
     return histories.droppedChanges(dropped)
   }
@@ -1490,11 +1496,14 @@ export function createBoardModule(board: Ref<BoardView | undefined>, uncounted: 
   // The Member's Votes on the Board's Dishes.
   const votes = createDishVotes({ transport, find: dishId => find(dishId)?.dish, queued, isRefused, mayVote: () => may('commentAndVote'), unsent, queueUnsent, anyUnsent })
 
+  // The Board's Shopping List (#534; shopping-list.ts).
+  const shopping = createShoppingList({ board, transport, find: dishId => find(dishId)?.dish, queued, unsent, queueUnsent, anyUnsent })
+
   // How many Dishes are on the Board, the Gekocht Column's included: it
   // follows every operation and poll, as the cards do.
   const dishCount = computed(() => board.value?.columns.reduce((count, c) => count + c.dishes.length, 0) ?? 0)
 
-  return { addDish, editDish, findRecipe, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, weekPlan, dishesOn, plannableDishes, planDish, movePlannedDish, unplanDish, setPlannedDishCook, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, hasUnsentRecipe, takeArrivals, arrivedAs, ...histories, ...votes, droppedChanges }
+  return { addDish, editDish, findRecipe, deleteDish, moveDish, moveToBoard, cookDish, deleteCooking, addColumn, moveDishes, cookDishes, deleteDishes, weekPlan, dishesOn, plannableDishes, planDish, movePlannedDish, unplanDish, setPlannedDishCook, sync, layOverUnsent, version, focusAfterDetail, dishCount, may, isRecording, isUnsentAdd, hasUnsentRecipe, takeArrivals, arrivedAs, ...histories, ...votes, ...shopping, droppedChanges }
 }
 
 // `uncounted`, counting its writes while under way and as they start, for
@@ -1527,8 +1536,16 @@ function counted(uncounted: BoardTransport) {
 // written, so nothing re-renders for nothing; and what is gone goes.
 // Whatever the server has wins, as the last write did there.
 function merge(shown: BoardView, fresh: BoardView) {
-  const { columns, plannedDishes, ...board } = fresh
+  const { columns, plannedDishes, shoppingItems, ...board } = fresh
   assignChanged(shown, board)
+  // The Shopping List: items still there stay the same objects.
+  const shownItems = new Map(shown.shoppingItems.map(i => [i.id, i]))
+  replaceChanged(shown.shoppingItems, shoppingItems.map((i) => {
+    const known = shownItems.get(i.id)
+    if (!known) return i
+    assignChanged(known, i)
+    return known
+  }))
   // The Week Plan: Planned Dishes still there stay the same objects.
   const shownPlanned = new Map(shown.plannedDishes.map(p => [p.id, p]))
   replaceChanged(shown.plannedDishes, plannedDishes.map((p) => {

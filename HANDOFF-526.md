@@ -21,7 +21,13 @@ The user: "Implement the Spec for the shopping list fully, go through the github
 - Run one API file: `pnpm vitest run --project api tests/api/week-plan.test.ts` (builds the app, ~1 min). Client tests: `--project client`. Node 22 here (CI uses 24), fine.
 - Migration generated with `DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres pnpm db:generate --name shopping_item`.
 
-## Done so far (uncommitted at handoff time, committed as WIP)
+## Progress log
+
+- Commit 48a304b: #530–#533 API done (`server/utils/shopping-list.ts`, endpoints under `server/api/boards/[id]/shopping-items/` and `server/api/shopping-items/`, `shared/shopping-list.ts`, events, admin strings, Datenschutz in `app/legal/datenschutz.ts` (EN "Clear done", IT "Rimuovi completate" — keep the UI button names in step), cleanup). `tests/api/shopping-list.test.ts` 40 tests green; full `pnpm test` green (2311).
+- Next commit: #534 Board module (`app/board/shopping-list.ts` = createShoppingList, groupsOf, placeItem; Unsent kinds shopAdd/shopText/shopTick/shopDelete/shopClear/shopRestore/shopDish/shopWeek in `unsent-changes.ts`, 404 on item writes dropped quietly via goesQuietly; transport; fake server in `tests/client/memory-transport.ts`; `tests/client/shopping-list.test.ts` 31 tests). Client project green (896).
+- Next: #536 view, #537 the two put-on actions, #538 Changelog, then PR + CI.
+
+## Done first (WIP commit)
 
 - `server/db/schema.ts`: `shoppingItem` table (id device-made, board_id cascade, text, dish_id no FK, dish_title, group_at, position, ticked, added_by set null, added_at, deleted_at soft delete).
 - `server/db/migrations/0052_shopping_item.sql` (+ snapshot, journal) with a `board_version` trigger using `board_version_by_board_id()`.

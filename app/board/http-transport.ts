@@ -6,6 +6,7 @@ import type { DishHistory } from '~~/server/utils/dish-history'
 import type { AddedDish, CookedDish, MovedDish, PlacedDish, SavedDish } from '~~/server/utils/dishes'
 import type { VoteView } from '~~/server/utils/votes'
 import type { PlannedDishView } from '~~/server/utils/week-plan'
+import type { ShoppingItemView, WeekPutOn } from '~~/shared/shopping-list'
 import type { RecipeSearchAnswer } from '~~/shared/recipe'
 import type { BoardTransport } from './board-module'
 import { gotNoAnswer, WriteFailed } from './write-failed'
@@ -36,6 +37,13 @@ export function httpTransport(): BoardTransport {
     movePlannedDish: (plannedId, to, late) => asWrite($fetch<PlannedDishView>(`/api/planned-dishes/${plannedId}`, { method: 'PATCH', body: { ...to, ...late } })),
     unplanDish: (plannedId, late) => asWrite($fetch<unknown>(`/api/planned-dishes/${plannedId}`, { method: 'DELETE', body: { ...late } })).then(() => undefined),
     setPlannedDishCook: (plannedId, cookId, late) => asWrite($fetch<PlannedDishView>(`/api/planned-dishes/${plannedId}/cook`, { method: 'PUT', body: { cookId, ...late } })),
+    addShoppingItem: (boardId, item, late) => asWrite($fetch<ShoppingItemView>(`/api/boards/${boardId}/shopping-items`, { method: 'POST', body: { ...item, ...late } })),
+    changeShoppingItem: (itemId, change, late) => asWrite($fetch<ShoppingItemView>(`/api/shopping-items/${itemId}`, { method: 'PATCH', body: { ...change, ...late } })),
+    deleteShoppingItem: (itemId, late) => asWrite($fetch<unknown>(`/api/shopping-items/${itemId}`, { method: 'DELETE', body: { ...late } })).then(() => undefined),
+    clearShoppingItems: (boardId, late) => asWrite($fetch<{ ids: string[] }>(`/api/boards/${boardId}/shopping-items/clear`, { method: 'POST', body: { ...late } })),
+    restoreShoppingItems: (boardId, ids, late) => asWrite($fetch<ShoppingItemView[]>(`/api/boards/${boardId}/shopping-items/restore`, { method: 'POST', body: { ids, ...late } })),
+    putDishOnShoppingList: (boardId, put, late) => asWrite($fetch<ShoppingItemView[]>(`/api/boards/${boardId}/shopping-items/dish`, { method: 'POST', body: { ...put, ...late } })),
+    putWeekOnShoppingList: (boardId, week, late) => asWrite($fetch<WeekPutOn>(`/api/boards/${boardId}/shopping-items/week`, { method: 'POST', body: { week, ...late } })),
     openDish: dishId => asWrite($fetch<DishHistory>(`/api/dishes/${dishId}/open`, { method: 'POST' })),
     writeComment: (dishId, text, late) => asWrite($fetch<CommentView>(`/api/dishes/${dishId}/comments`, { method: 'POST', body: { text, ...late } })),
     editComment: (commentId, text) => asWrite($fetch<CommentView>(`/api/comments/${commentId}`, { method: 'PATCH', body: { text } })),

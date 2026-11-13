@@ -30,6 +30,14 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'planMove': return `${named} spostato nel piano settimanale`
     case 'unplan': return `${named} tolto dal piano settimanale`
     case 'planCook': return `chi cucina ${named}`
+    case 'shopAdd': return `${named} nella lista della spesa`
+    case 'shopText': return `voce modificata ${named}`
+    case 'shopTick': return `spunta su ${named}`
+    case 'shopDelete': return `${named} tolto dalla lista della spesa`
+    case 'shopClear': return 'rimuovi completate'
+    case 'shopRestore': return `${named} ripristinato`
+    case 'shopDish': return `${named} nella lista della spesa`
+    case 'shopWeek': return `settimana dal ${dayMonth(label)} nella lista della spesa`
     case 'move': return `${named} spostato`
     case 'cook':
     case 'cookMany': return `${named} cucinato`

@@ -20,7 +20,7 @@ import { intlFor } from './intl'
 const VIDEO_PLATFORMS: Record<VideoPlatform, string> = { tiktok: 'TikTok', youtube: 'YouTube', instagram: 'Instagram' }
 
 // What an Unsent Change did, for the toast naming those that didn't arrive.
-export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook'
+export type UnsentKindName = 'move' | 'cook' | 'cookMany' | 'uncook' | 'uncookMany' | 'comment' | 'commentEdit' | 'commentDelete' | 'vote' | 'title' | 'recipe' | 'add' | 'plan' | 'planMove' | 'unplan' | 'planCook' | 'shopAdd' | 'shopText' | 'shopTick' | 'shopDelete' | 'shopClear' | 'shopRestore' | 'shopDish' | 'shopWeek'
 // `text`: a Comment's text, kept in the message so it can be written again.
 function unsentChange(kind: UnsentKindName, label: string, text?: string): string {
   const named = `„${label}“`
@@ -36,6 +36,14 @@ function unsentChange(kind: UnsentKindName, label: string, text?: string): strin
     case 'planMove': return `${named} im Wochenplan verschoben`
     case 'unplan': return `${named} aus dem Wochenplan genommen`
     case 'planCook': return `Wer kocht ${named}`
+    case 'shopAdd': return `${named} auf der Einkaufsliste`
+    case 'shopText': return `geänderter Eintrag ${named}`
+    case 'shopTick': return `Haken bei ${named}`
+    case 'shopDelete': return `${named} von der Einkaufsliste entfernt`
+    case 'shopClear': return 'Erledigte entfernen'
+    case 'shopRestore': return `${named} zurückgeholt`
+    case 'shopDish': return `${named} auf die Einkaufsliste`
+    case 'shopWeek': return `Woche ab ${dayMonth(label)} auf die Einkaufsliste`
     case 'move': return `${named} verschoben`
     case 'cook':
     case 'cookMany': return `${named} gekocht`

@@ -45,7 +45,7 @@ let resend: ResendService
 beforeAll(async () => {
   pushService = await startPushService()
   resend = await startResendService()
-  await Promise.all([...owners.map(signIn), member(), outsider(), operator(), leaver(), deleter()])
+  await Promise.all([...owners.map(email => signIn(email)), member(), outsider(), operator(), leaver(), deleter()])
 })
 afterAll(async () => {
   await pushService.close()

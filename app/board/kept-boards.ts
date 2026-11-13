@@ -174,9 +174,11 @@ export function createKeptBoards({ store, userId, forgetImages }: KeptBoardsDeps
 }
 
 // A Board kept before the Week Plan (#513) has no Planned Dishes: it reads as
-// one with an empty Plan.
+// one with an empty Plan. One kept before the Shopping List (#534) reads with
+// an empty list the same way.
 function withPlan(view: BoardView | null): BoardView | null {
   if (view && !Array.isArray(view.plannedDishes)) view.plannedDishes = []
+  if (view && !Array.isArray(view.shoppingItems)) view.shoppingItems = []
   return view
 }
 
