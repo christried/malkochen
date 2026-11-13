@@ -43,8 +43,9 @@ const ticked = computed(() => groups.value.reduce((n, g) => n + g.items.filter(i
 // Sonstiges, and the Dish groups in list order. On desktop Sonstiges has its
 // column even without lines (its field is there), so it gets an empty group.
 const wide = useMediaQuery('(min-width: 1200px)')
-const sonstiges = computed(() => groups.value.find(g => g.dishId === null))
-const other = computed<Group>(() => sonstiges.value ?? { dishId: null, title: null, dish: null, times: 1, items: [] })
+// Sonstiges as the module has it: undefined while it has no lines.
+const sonstigesIfLines = computed(() => groups.value.find(g => g.dishId === null))
+const sonstigesGroup = computed<Group>(() => sonstigesIfLines.value ?? { dishId: null, title: null, dish: null, times: 1, items: [] })
 const dishGroups = computed(() => groups.value.filter(g => g.dishId !== null))
 // A group's place on the phone's one column, after Sonstiges.
 const orderOf = computed(() => new Map(dishGroups.value.map((g, i) => [g.dishId, i + 1])))
@@ -81,14 +82,14 @@ function assignColumns() {
   }
   stale = false
   const ids = dishGroups.value.map(g => g.dishId!)
-  const hs = ids.map((id) => {
+  const groupHeights = ids.map((id) => {
     const el = groupElement(id)
     if (el) observer?.observe(el)
     // Measured now, as far as the layout is; the observer's figure is kept
     // for a group that is not drawn at this moment.
     return el?.offsetHeight || heights.get(id) || 0
   })
-  const picked = masonryColumns(hs, GROUP_GAP)
+  const picked = masonryColumns(groupHeights, GROUP_GAP)
   column.value = new Map(ids.map((id, i) => [id, picked[i]!]))
 }
 watch(dishKeys, assignColumns, { flush: 'post' })
@@ -345,10 +346,10 @@ function onGroupLeave(el: Element, done: () => void) {
     >
       <div
         class="contents desktop:flex desktop:w-[360px] desktop:shrink-0 desktop:flex-col desktop:gap-[18px]"
-        :class="{ 'hidden desktop:flex': !sonstiges }"
+        :class="{ 'hidden desktop:flex': !sonstigesIfLines }"
       >
         <ShoppingGroup
-          :group="other"
+          :group="sonstigesGroup"
           :editing-id="editing"
           :clearing="clearing"
           class="shop-group"
