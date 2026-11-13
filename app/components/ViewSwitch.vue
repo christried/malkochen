@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import type { BoardViewChoice } from '~/composables/useBoardView'
 
-// The switch between the Columns and the Week Plan at the top of a Board
-// (handoff ViewSwitch): two segments, "Spalten" and "Woche", on a track, the
-// thumb settling under the one shown (480ms). A radio group: ← and → move
-// between the two. On a phone 40px high on a row of its own, from 1200px 44px
-// right after the Board switcher's pill.
+// The switch between the Columns, the Week Plan and the Shopping List at the
+// top of a Board (handoff ViewSwitch): three segments, "Spalten", "Woche" and
+// "Einkauf", on a track, the thumb settling under the one shown (480ms). A
+// radio group: ← and → move between them. On a phone 40px high on a row of
+// its own, from 1200px 44px right after the Board switcher's pill.
 const view = defineModel<BoardViewChoice>({ required: true })
 const t = useStrings()
 const segments = computed(() => [
   { id: 'columns', label: t.week.columns },
   { id: 'week', label: t.week.week },
+  { id: 'shopping', label: t.shopping.tab },
 ] as const)
+const order: BoardViewChoice[] = ['columns', 'week', 'shopping']
 
 const buttons = useTemplateRef<HTMLElement>('buttons')
 
@@ -23,8 +25,9 @@ function choose(choice: BoardViewChoice) {
 }
 
 function onKeydown(event: KeyboardEvent) {
-  const next = event.key === 'ArrowRight' ? 'week' : event.key === 'ArrowLeft' ? 'columns' : null
-  if (!next) return
+  const by = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+  const next = order[order.indexOf(view.value) + by]
+  if (!by || !next) return
   event.preventDefault()
   choose(next)
   buttons.value?.querySelector<HTMLElement>(`[data-view="${next}"]`)?.focus()
@@ -36,13 +39,13 @@ function onKeydown(event: KeyboardEvent) {
     ref="buttons"
     role="radiogroup"
     :aria-label="t.week.view"
-    class="view-switch relative flex h-10 w-[212px] shrink-0 rounded-pill bg-view-track p-[3px] desktop:h-11 desktop:w-[232px]"
+    class="view-switch relative flex h-10 w-[318px] max-w-full shrink-0 rounded-pill bg-view-track p-[3px] desktop:h-11 desktop:w-[348px]"
     @keydown="onKeydown"
   >
     <span
       aria-hidden="true"
-      class="thumb absolute bottom-[3px] left-[3px] top-[3px] w-[calc(50%-3px)] rounded-pill bg-surface shadow-small"
-      :class="{ week: view === 'week' }"
+      class="thumb absolute bottom-[3px] left-[3px] top-[3px] w-[calc((100%-6px)/3)] rounded-pill bg-surface shadow-small"
+      :class="view"
     />
     <button
       v-for="segment in segments"
@@ -90,7 +93,7 @@ function onKeydown(event: KeyboardEvent) {
             rx="1.5"
           />
         </template>
-        <template v-else>
+        <template v-else-if="segment.id === 'week'">
           <rect
             x="4"
             y="5"
@@ -99,6 +102,19 @@ function onKeydown(event: KeyboardEvent) {
             rx="3"
           />
           <path d="M4 10h16M9 3v4M15 3v4" />
+        </template>
+        <template v-else>
+          <path d="M3 4h2.5l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h7.9a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.6" />
+          <circle
+            cx="9.5"
+            cy="19.5"
+            r="1.3"
+          />
+          <circle
+            cx="17"
+            cy="19.5"
+            r="1.3"
+          />
         </template>
       </svg>
       {{ segment.label }}
@@ -112,5 +128,8 @@ function onKeydown(event: KeyboardEvent) {
 }
 .thumb.week {
   translate: 100% 0;
+}
+.thumb.shopping {
+  translate: 200% 0;
 }
 </style>

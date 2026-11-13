@@ -186,6 +186,30 @@ watch(() => planning.open, async (isOpen) => {
   dialog.value?.querySelector<HTMLElement>('[data-plan-dish]')?.focus()
 })
 
+// "Auf die Einkaufsliste" (#537): the Dish's Ingredients, all ticked, in a
+// sheet (a popover on desktop). The lines left ticked go on the Shopping
+// List, with a toast saying how many.
+const puttingOn = reactive({ open: false, anchor: null as HTMLElement | null })
+const { showShoppingResult } = useShoppingResult(shown => (toast.value = shown))
+const ingredients = computed(() => located.value ? boardModule.ingredientsToPutOn(located.value.dish.id) : [])
+function onPutOn(anchor: HTMLElement) {
+  Object.assign(puttingOn, { open: true, anchor })
+}
+function putOn(lines: string[]) {
+  const dish = located.value?.dish
+  puttingOn.open = false
+  if (!dish) return
+  const result = boardModule.putDishOn(dish.id, lines)
+  if (!result) return
+  hapticConfirm()
+  showShoppingResult(result, { text: t.shopping.putOnDone(result.count) }, dish.title)
+}
+watch(() => puttingOn.open, async (isOpen) => {
+  if (isOpen) return
+  await nextTick()
+  dialog.value?.querySelector<HTMLElement>('[data-put-on-list]')?.focus()
+})
+
 // "Kopieren" (#402): a sheet over the detail with the Boards to copy the Dish
 // to. The Copy is made there; this Board doesn't change. The toast offers
 // "Öffnen", which goes to the Copy on that Board.
@@ -411,6 +435,7 @@ watch(editing, async (isEditing) => {
           @delete="onDelete"
           @cook="origin => actOnDish(boardModule.cookDish, { origin })"
           @plan="onPlan"
+          @put-on="onPutOn"
           @delete-cooking="cooking => actOnDish(dishId => boardModule.deleteCooking(dishId, cooking.id))"
           @comment="showComment"
           @vote="showVote"
@@ -469,6 +494,21 @@ watch(editing, async (isEditing) => {
           :from="today"
           :dishes-on="boardModule.dishesOn"
           @pick="planOn"
+        />
+      </PickerSurface>
+      <PickerSurface
+        v-model:open="puttingOn.open"
+        :title="t.shopping.pickTitle"
+        :close-label="t.dish.closeMenu"
+        :anchor="puttingOn.anchor"
+        :width="370"
+      >
+        <IngredientPicker
+          v-if="located"
+          :open="puttingOn.open"
+          :subtitle="located.dish.title"
+          :ingredients="ingredients"
+          @pick="putOn"
         />
       </PickerSurface>
       <AppSheet

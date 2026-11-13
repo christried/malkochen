@@ -68,7 +68,7 @@ useHead({ title: () => listing.value ? `${boardLabel(listing.value)} · ${t.app.
       aria-hidden="true"
       class="mt-3 desktop:hidden"
     >
-      <span class="block h-10 w-[212px] rounded-pill bg-view-track" />
+      <span class="block h-10 w-[318px] max-w-full rounded-pill bg-view-track" />
     </div>
 
     <ColumnHeadline

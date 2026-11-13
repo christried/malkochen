@@ -849,6 +849,48 @@ export const de = {
     cooksNow: (name: string) => `${name} kocht jetzt.`,
     cooksNobody: 'Niemand kocht mehr fest.',
   },
+  // The Shopping List (CONTEXT.md: Shopping List, Shopping Item; #536, #537):
+  // its view beside the Columns and the Week Plan.
+  shopping: {
+    // The view switch's third segment, and the list's title.
+    tab: 'Einkauf',
+    title: 'Einkaufsliste',
+    // The group of items that belong to no Dish.
+    other: 'Sonstiges',
+    // Typing an item into "Sonstiges"; Enter adds it and keeps the field.
+    addLabel: 'Neuer Eintrag',
+    addPlaceholder: 'Was fehlt noch?',
+    add: 'Hinzufügen',
+    // A line: tapping it ticks it off; its buttons change and remove it.
+    edit: (text: string) => `„${text}“ ändern`,
+    editLabel: 'Eintrag',
+    save: 'Speichern',
+    cancel: 'Abbrechen',
+    remove: (text: string) => `„${text}“ entfernen`,
+    openDish: (title: string) => `${title} öffnen`,
+    clearDone: 'Erledigte entfernen',
+    // The empty list, saying how things get on it.
+    emptyTitle: 'Die Einkaufsliste ist leer.',
+    emptyText: 'Leg ein Gericht aus seinem Detail drauf, die Woche aus dem Wochenplan, oder tipp ein, was fehlt.',
+    // Toasts; those after removing come with "Rückgängig".
+    removed: 'Eintrag entfernt.',
+    cleared: (count: number) => count === 1 ? '1 Eintrag entfernt.' : `${number(count)} Einträge entfernt.`,
+    failed: 'Das hat nicht geklappt. Versuch es nochmal.',
+    full: 'Die Einkaufsliste ist voll: Mehr als 500 Einträge gehen nicht.',
+    dishGone: (title: string) => `„${title}“ ist nicht mehr auf dem Board.`,
+    // "Auf die Einkaufsliste" in the Dish detail: its sheet of Ingredients,
+    // all ticked, and the toast after.
+    putOn: 'Auf die Einkaufsliste',
+    pickTitle: 'Was brauchst du?',
+    pickText: 'Nimm raus, was ihr schon da habt.',
+    putOnConfirm: (count: number) => count === 1 ? '1 Zutat hinzufügen' : `${number(count)} Zutaten hinzufügen`,
+    putOnDone: (count: number) => count === 1 ? '1 Zutat auf der Einkaufsliste.' : `${number(count)} Zutaten auf der Einkaufsliste.`,
+    // "Woche auf die Einkaufsliste" on the Week Plan, and its toasts.
+    putWeekOn: 'Woche auf die Einkaufsliste',
+    weekDone: (count: number) => count === 1 ? '1 Gericht auf der Einkaufsliste.' : `${number(count)} Gerichte auf der Einkaufsliste.`,
+    weekNothing: 'Alles schon auf der Einkaufsliste.',
+    weekLater: 'Die Woche kommt auf die Einkaufsliste, sobald du wieder Netz hast.',
+  },
   // public/offline.html repeats the first three, for the service worker,
   // and has its own copy of "malkochen ist gerade nicht erreichbar". The
   // offline bar (OfflineBar) says `bar` without a connection, `unreachable`

@@ -5,7 +5,7 @@ import type { DishView } from '~~/server/utils/dishes'
 import type { PlanEntry } from '~/board/board-module'
 import { addWeeks, isCurrentWeek, isPastDay, weekDays, weekStart } from '~/board/week-days'
 import { dishPath } from '~~/shared/address'
-import type { Toast } from '~/utils/toast'
+import { NOTICE_MS, type Toast } from '~/utils/toast'
 
 // The Week Plan (CONTEXT.md: Week Plan, Planned Dish; ADR 0014; handoff R14):
 // the Board's week, Monday to Sunday, one week at a time, a view beside the
@@ -99,6 +99,34 @@ watch(() => props.visible, async (visible) => {
 })
 onMounted(() => void settleScroll())
 onBeforeUnmount(() => clearTimeout(enteringTimer))
+
+// ---- "Woche auf die Einkaufsliste" (#537) ----
+
+// For the current and later weeks, for every Member: puts the Dishes planned
+// from today (or the shown week's Monday) to its Sunday on the Shopping List.
+// The toast says how many went on once the server has answered.
+const puttingWeek = ref(false)
+async function putWeekOn() {
+  if (puttingWeek.value) return
+  puttingWeek.value = true
+  try {
+    const result = await boardModule.putWeekOn(shownMonday.value)
+    if (!result) return
+    if (result.notice) {
+      hapticReject()
+      emit('toast', { text: result.notice === 'shoppingFull' ? t.shopping.full : t.shopping.failed, duration: NOTICE_MS })
+      return
+    }
+    hapticConfirm()
+    emit('toast', {
+      text: result.unsent ? t.shopping.weekLater : result.dishes === 0 ? t.shopping.weekNothing : t.shopping.weekDone(result.dishes),
+      duration: NOTICE_MS / 2,
+    })
+  }
+  finally {
+    puttingWeek.value = false
+  }
+}
 
 // ---- Showing what a write answered ----
 
@@ -415,6 +443,38 @@ function onSwipeEnd(event: PointerEvent) {
         />
       </button>
     </div>
+
+    <!-- "Woche auf die Einkaufsliste" (#537): left out on weeks gone by. -->
+    <button
+      v-if="!pastWeek"
+      type="button"
+      class="mt-2 flex h-10 items-center gap-2 rounded-pill bg-surface px-4 text-button shadow-small transition-[transform,opacity] duration-tap ease-tap active:scale-95 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-60"
+      :disabled="puttingWeek"
+      data-put-week-on
+      @click="putWeekOn"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        class="shrink-0"
+      ><path d="M3 4h2.5l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h7.9a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.6" /><circle
+        cx="9.5"
+        cy="19.5"
+        r="1.3"
+      /><circle
+        cx="17"
+        cy="19.5"
+        r="1.3"
+      /></svg>
+      {{ t.shopping.putWeekOn }}
+    </button>
 
     <div
       class="relative"
