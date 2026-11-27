@@ -80,8 +80,8 @@ test('Italian names: "Ada e Linus", then "e altri 2"', () => {
   expect(it.emailDigest.subject(3, null)).toBe('3 nuovi piatti sulle tue bacheche')
 })
 
-// Comments and Votes in the push and the Email Digest (#351, the user's
-// picks in docs/reviews/comment-and-vote-wordings.md; the push's layout #404).
+// Comments and Votes in the push and the Email Digest (#351; the push's
+// layout #404).
 test('a push about one Comment or one Vote, in each language', () => {
   expect(de.push.comment('Linsen-Dal', 'Mit doppelt Ingwer!')).toBe('Kommentar zu Linsen-Dal: „Mit doppelt Ingwer!“')
   expect(de.push.vote('Linsen-Dal', true)).toBe('Linsen-Dal 👍')

@@ -32,5 +32,3 @@ logs
 !.env.example
 
 .vscode/settings.json
-# Screenshots of the Atoms app (the style reference): approved as a direction, not for republishing
-docs/design process files/uploads/atoms-*.webp

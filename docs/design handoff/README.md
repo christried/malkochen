@@ -2,7 +2,7 @@
 
 Overview page: `../Malkochen Handoff.dc.html` (renders everything below).
 
-Where things are in this repo: this folder holds the whole handoff, every round from R4 on. Each round's "Overview page" below is in `docs/design process files/`, with the other editable design files, which expect this folder next to them as `handoff/`. The offline overviews of R13, R14 and R15 are in `overviews/`.
+Where things are in this repo: this folder holds the whole handoff, every round from R4 on. The offline overviews of R13, R14 and R15 are in `overviews/`.
 
 
 ## 1 · Design tokens

@@ -1,6 +1,6 @@
 # Test suite audit: keep, merge or cut?
 
-Research date: 2026-10-15. Scope: every Vitest project and Playwright spec file, and the CI workflow that runs them. Question from the user's review (`docs/reviews/review3.md`, line 11): are all tests worth keeping, given that the suite grows and runs take longer locally and in CI?
+Research date: 2026-10-15. Scope: every Vitest project and Playwright spec file, and the CI workflow that runs them. Question from the user's review: are all tests worth keeping, given that the suite grows and runs take longer locally and in CI?
 
 Repo state: `main` at `c3dd295`, clean working tree. No test, source file or CI setting was changed for this audit.
 
