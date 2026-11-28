@@ -4,9 +4,9 @@ status: accepted (supersedes ADR 0002)
 
 # 12 Placeholder Images, and Dishes moved off the removed ones
 
-The desktop review (`docs/reviews/desktop-review1.md`) found the 16 Placeholder Images of ADR 0002 not good enough. We keep the nine that work (ramen, burger, tacos, wok, bread, cake, smoothie, eintopf, dumplings) and add three drawn fresh by Claude Design in round 11: Pasta and Salat/Bowl under the existing keys `pasta` and `bowl`, and Frühstück under the new key `breakfast`, for 12 in all.
+Of the 16 Placeholder Images of ADR 0002, nine stay (ramen, burger, tacos, wok, bread, cake, smoothie, eintopf, dumplings) and three are drawn fresh by Claude Design: Pasta and Salat/Bowl under the existing keys `pasta` and `bowl`, and Frühstück under the new key `breakfast`, for 12 in all.
 
-A Dish stores a Placeholder Image's key. Dishes on `pasta` and `bowl` simply get the new drawings. The five removed keys can't just disappear, so a one-time migration moves every Dish on one of them to the closest key left, as the handoff's `illustrations.json → migration` lists it:
+A Dish stores a Placeholder Image's key. Dishes on `pasta` and `bowl` simply get the new drawings. A one-time migration moves every Dish on one of the five removed keys to the closest key left, as the handoff's `illustrations.json → migration` lists it:
 
 | Removed | Becomes |
 |---|---|

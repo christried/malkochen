@@ -14,7 +14,7 @@ malkochen runs in three places. Each has its own database, images, accounts and 
 
 **A ticket.** Branch from `staging`, the default branch, and open a PR into `staging` with `Closes #n`. Merge it with a merge commit once CI is green. No approval is needed, and nobody bypasses the rules. Then check that the Staging deploy is READY with its migration applied (the build log says "Migrations applied."), and try the change in Chrome on Staging, signed in as the Operator. Device checks (`ready-for-human`) happen on Staging, on the phone. A merged ticket is Staged: it is on Staging, not yet in production.
 
-**A Release**, when the Operator says "Release". The Changelog files and `package.json` are changed as `docs/agents/changelog.md` describes.
+**A Release**, when the Operator says "Release".
 
 1. A PR into `staging` dates everything under `## [Unreleased]` as one Version: the newest Version plus one (a minor only after the Operator's yes). Merge it on green CI. Then check that the Staging deploy is READY with its migration applied, and that on Staging the new Version and its Changelog Popup show: the agent sees them in Chrome or through the Vercel MCP `web_fetch_vercel_url`, since Staging is behind the Vercel login. Only after that check:
 2. A PR `staging` → `main` titled "Release x.y.z", merged on green CI with a merge commit.
